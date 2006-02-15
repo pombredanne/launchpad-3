@@ -77,7 +77,7 @@ from canonical.launchpad.browser.bugtask import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint, shortlist)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -837,61 +837,6 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugContactPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=inprogress_bugs_params)
-
-    def getSearchFilterLinks(self):
-        """Return a dict of links to various parts of the current filter."""
-        search_filter_links = []
-
-        # First, a link to all the bugs for the current package.
-        current_package = self.current_package
-        search_filter_links.append({
-            'title': str(current_package.displayname),
-            'url': self.getBugContactPackageSearchURL(current_package)})
-
-        # Add a link to the "unassigned" filter, if applicable.
-        if (self.unassigned_widget.hasInput() and
-            self.unassigned_widget.getInputValue()):
-            search_filter_links.append({
-                'title': "unassigned",
-                'url': self.getUnassignedBugsURL(current_package)})
-
-        return search_filter_links
-
-    def getStatusFilterLinks(self):
-        """Return links to filter on each status shown in the listing.
-
-        This is a separate method because status filter links are displayed
-        differently from other filter links, to communicate that they're an "OR"
-        match.
-        """
-        if not self.status_widget.hasInput():
-            return []
-
-        filter_statuses = self.status_widget.getInputValue()
-
-        status_filter_links = []
-        for status_name in filter_statuses:
-            status_filter_links.append({
-                'title': status_name.title.lower(),
-                'url': self.getBugContactPackageSearchURL(
-                    extra_params={"field.status": status_name.title})})
-
-        return status_filter_links
-
-    def getSearchTextFilterLink(self):
-        if not self.searchtext_widget.hasInput():
-            return None
-
-        searchtext_filter_link = {}
-
-        searchtext = self.searchtext_widget.getInputValue()
-        if searchtext:
-            searchtext_filter_link = {
-                'title': searchtext,
-                'url': self.getBugContactPackageSearchURL(
-                    extra_params={"field.searchtext": searchtext})}
-
-        return searchtext_filter_link
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained
@@ -1785,35 +1730,28 @@ class RequestPeopleMergeView(AddView):
     of those (s)he wants to claim.
     """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
+    _nextURL = '.'
 
     def nextURL(self):
         return self._nextURL
 
     def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
         user = getUtility(ILaunchBag).user
-        dupeaccount = kw['dupeaccount']
+        dupeaccount = data['dupeaccount']
         if dupeaccount == user:
             # Please, don't try to merge you into yourself.
             return
 
-        emails = list(getUtility(IEmailAddressSet).getByPerson(dupeaccount))
-        if len(emails) > 1:
+        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
+        emails_count = emails.count()
+        if emails_count > 1:
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
             # wants to claim.
             self._nextURL = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
             return
 
-        assert len(emails) == 1
+        assert emails_count == 1
         email = emails[0]
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
@@ -1905,7 +1843,7 @@ class FinishedPeopleMergeRequestView:
         """
         dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
         results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
-        assert len(results) == 1
+        assert results.count() == 1
         return results[0].email
 
 

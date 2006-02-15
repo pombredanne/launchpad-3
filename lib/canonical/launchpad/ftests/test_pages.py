@@ -21,6 +21,11 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 _db_is_setup = False
 
+
+class PageTestError(Exception):
+    pass
+
+
 class StartStory(unittest.TestCase):
     def setUp(self):
         """Setup the database"""
@@ -83,6 +88,107 @@ def tearDown(test):
     else:
         LaunchpadFunctionalTestSetup().tearDown()
 
+
+class PageTest(unittest.TestCase):
+    """A test case that represents a pagetest
+    
+    This can be either a story of pagetests, or a single 
+    'standalone' pagetest.
+
+    This is achieved by holding a testsuite for the story, and
+    delegating responsiblity for most methods to it.
+    We want this to be a TestCase instance and not a TestSuite
+    instance to be compatible with various test runners that
+    filter tests - they generally ignore test suites and may
+    select individual tests - but stories cannot be split up.
+    """
+
+    def __init__(self, storydir_or_single_test, package=None):
+        """Create a PageTest for storydir_or_single_test.
+
+        storydir_or_single_test should be an package relative file path.
+        package is the python package the page test is found under, it
+        defaults to canonical.launchpad
+        """
+        # we do not run the super __init__ because we are not using any of
+        # the base classes functionality, and we'd just have to give it a
+        # meaningless method.
+        self._description = storydir_or_single_test
+        self._suite = unittest.makeSuite(StartStory)
+        if package is None:
+            self._package = 'canonical.launchpad'
+        else:
+            self._package = package
+        if not os.path.isdir(storydir_or_single_test):
+            test_scripts = [os.path.basename(storydir_or_single_test)]
+            storydir_or_single_test = os.path.dirname(storydir_or_single_test)
+        else:
+            filenames = [filename
+                        for filename in os.listdir(storydir_or_single_test)
+                        if filename.lower().endswith('.txt')
+                        ]
+            filenames = sets.Set(filenames)
+            numberedfilenames = [filename for filename in filenames
+                                if len(filename) > 4
+                                and filename[:2].isdigit()
+                                and filename[2] == '-']
+            numberedfilenames = sets.Set(numberedfilenames)
+            unnumberedfilenames = filenames - numberedfilenames
+        
+            # A predictable order is important, even if it remains officially
+            # undefined for un-numbered filenames.
+            numberedfilenames = sorted(numberedfilenames)
+            unnumberedfilenames = sorted(unnumberedfilenames)
+            test_scripts = unnumberedfilenames + numberedfilenames
+    
+        modules = self._package.split('.')
+        if len(modules) == 0:
+            raise PageTestError('Invalid package: ' + self._package)
+        segments = storydir_or_single_test.split('/')
+        # either modules is in segments somewhere, or its not a valid package
+        # for the filename. 
+        # TODO ? split this into a method or make it a helper/part of the 
+        # FunctionalDocFileSuite facility.
+        while len(segments) > 0 and segments[:len(modules)] != modules:
+            segments.pop(0)
+        if not len(segments):
+            raise PageTestError('Test script dir %s not in packages %s' % 
+                                (storydir_or_single_test, self._package))
+        relative_dir = '/'.join(segments[len(modules):])
+        for leaf_filename in test_scripts:
+            filename = os.path.join(relative_dir, leaf_filename)
+            self._suite.addTest(FunctionalDocFileSuite(
+                filename, setUp=setUp, tearDown=tearDown, package=self._package
+                ))
+        self._suite.addTest(unittest.makeSuite(EndStory))
+
+    def countTestCases(self):
+        return self._suite.countTestCases()
+
+    def shortDescription(self):
+        return "pagetest: %s" % self._description
+
+    def id(self):
+        return self.shortDescription()
+
+    def __str__(self):
+        return self.shortDescription()
+
+    def __repr__(self):
+        return "<%s storydir=%s>" % \
+               (_strclass(self.__class__), self._description)
+
+    def run(self, result=None):
+        if result is None: result = self.defaultTestResult()
+        # TODO RBC 20060117 we can hook in pre and post story actions
+        # here much more tidily (and in self.debug too)
+        # - probably via self.setUp and self.tearDown
+        self._suite.run(result)
+
+    def debug(self):
+        self._suite.debug()
+
+
 def test_suite():
     suite = unittest.TestSuite()
     pagetestsdir = os.path.abspath(
@@ -97,35 +203,17 @@ def test_suite():
     stories.sort()
 
     for storydir in stories:
-        suite.addTest(unittest.makeSuite(StartStory))
-        filenames = [filename
-                    for filename in os.listdir(storydir)
-                    if filename.lower().endswith('.txt')
-                    ]
-        filenames = sets.Set(filenames)
-        numberedfilenames = [filename for filename in filenames
-                            if len(filename) > 4
-                            and filename[:2].isdigit()
-                            and filename[2] == '-']
-        numberedfilenames = sets.Set(numberedfilenames)
-        unnumberedfilenames = filenames - numberedfilenames
+        if storydir != 'standalone':
+            suite.addTest(PageTest(os.path.join('pagetests', storydir)))
+        else:
+            filenames = [filename
+                        for filename in os.listdir(storydir)
+                        if filename.lower().endswith('.txt')
+                        ]
+            for filename in filenames:
+                suite.addTest(PageTest(os.path.join('pagetests',
+                                                    'standalone', filename)))
 
-        # A predictable order is important, even if it remains officially
-        # undefined for un-numbered filenames.
-        numberedfilenames = list(numberedfilenames)
-        numberedfilenames.sort()
-        unnumberedfilenames = list(unnumberedfilenames)
-        unnumberedfilenames.sort()
-
-        for filename in unnumberedfilenames + numberedfilenames:
-            story = os.path.basename(storydir)
-            filename = os.path.join(
-                    os.pardir, 'pagetests', story, filename
-                    )
-            suite.addTest(FunctionalDocFileSuite(
-                filename, setUp=setUp, tearDown=tearDown
-                ))
-        suite.addTest(unittest.makeSuite(EndStory))
     return suite
 
 if __name__ == '__main__':
