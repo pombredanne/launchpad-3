@@ -916,13 +916,42 @@ def getFileType(fname):
         return SourcePackageFileType.TARBALL
 
 
+BINARYPACKAGE_EXTENSIONS = {
+    BinaryPackageFormat.DEB: '.deb',
+    BinaryPackageFormat.UDEB: '.udeb',
+    BinaryPackageFormat.RPM: '.rpm'}
+
+
 def getBinaryPackageFormat(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFormat.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFormat.UDEB
-    if fname.endswith(".rpm"):
-        return BinaryPackageFormat.RPM
+    """Return the BinaryPackageFormat for the given filename.
+
+    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
+    'DEB'
+    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
+    'UDEB'
+    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
+    'RPM'
+    """
+    for key, value in BINARYPACKAGE_EXTENSIONS.items():
+        if fname.endswith(value):
+            return key
+
+    # XXX: Is it okay to return None here?
+    # -- Guilherme Salgado, 2006-02-14
+    return None
+
+
+def getBinaryPackageExtension(format):
+    """Return the file extension for the given BinaryPackageFormat.
+
+    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
+    '.deb'
+    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
+    '.udeb'
+    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
+    '.rpm'
+    """
+    return BINARYPACKAGE_EXTENSIONS[format]
 
 
 def intOrZero(value):

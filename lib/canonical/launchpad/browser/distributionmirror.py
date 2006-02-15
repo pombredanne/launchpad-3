@@ -3,8 +3,7 @@
 __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
-           'DistributionMirrorOverviewMenu', 'DistributionMirrorAddSourceView',
-           'DistributionMirrorAddArchView', 'DistributionMirrorAddView',
+           'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
            'DistributionMirrorUploadFileListView']
 
 from StringIO import StringIO
@@ -22,7 +21,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IDistributionMirror, validate_distribution_mirror_schema,
     ILibraryFileAliasSet)
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 
@@ -36,20 +34,12 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
-    links = ['edit', 'admin', 'addarchrelease', 'addsourcerelease']
+    links = ['edit', 'admin']
 
     def initialize(self):
         if (self.context.content != MirrorContent.ARCHIVE
             and 'upload_file_list' not in self.links):
             self.links.append('upload_file_list')
-
-    def addarchrelease(self):
-        text = 'Register Arch Release'
-        return Link('+addarchrelease', text, icon='add')
-
-    def addsourcerelease(self):
-        text = 'Register Source Release'
-        return Link('+addsourcerelease', text, icon='add')
 
     def edit(self):
         text = 'Edit Details'
@@ -97,30 +87,6 @@ class DistributionMirrorEditView(SQLObjectEditView):
 
     def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
-
-
-class DistributionMirrorAddSourceView(GeneralFormView):
-
-    # XXX: This is a workaround while
-    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
-    __launchpad_facetname__ = 'overview'
-
-    def process(self, distro_release):
-        notify(SQLObjectCreatedEvent(
-            self.context.newMirrorSourceRelease(distro_release)))
-        self._nextURL = canonical_url(self.context)
-
-
-class DistributionMirrorAddArchView(GeneralFormView):
-
-    # XXX: This is a workaround while
-    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
-    __launchpad_facetname__ = 'overview'
-
-    def process(self, distro_arch_release, pocket):
-        notify(SQLObjectCreatedEvent(
-            self.context.newMirrorArchRelease(distro_arch_release, pocket)))
-        self._nextURL = canonical_url(self.context)
 
 
 class DistributionMirrorUploadFileListView(GeneralFormView):

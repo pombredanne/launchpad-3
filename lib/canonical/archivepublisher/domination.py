@@ -12,7 +12,7 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.database import (
+from canonical.launchpad.database.publishing import (
      BinaryPackagePublishing, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)
 

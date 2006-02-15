@@ -44,8 +44,7 @@
 
     <h2>Arch Releases Mirrored</h2>
     <div tal:condition="not: context/arch_releases">
-      This mirror has no registered Arch Releases. You can 
-      <a href="+addarchrelease">register</a> the first one.
+      This mirror has no registered Arch Releases.
     </div>
 
     <table tal:condition="context/arch_releases" class="listing">
@@ -53,6 +52,7 @@
       <tr>
         <th>Release</th>
         <th>Architecture</th>
+        <th>Component</th>
         <th>Pocket</th>
         <th>Status</th>
       </tr>
@@ -61,6 +61,7 @@
       <tr tal:repeat="arch_release context/arch_releases">
         <td tal:content="arch_release/distro_arch_release/distrorelease/title" />
         <td tal:content="arch_release/distro_arch_release/architecturetag" />
+        <td tal:content="arch_release/component/name" />
         <td tal:content="arch_release/pocket/title" />
         <td tal:content="arch_release/status/title" />
       </tr>
@@ -69,20 +70,23 @@
 
     <h2>Source Releases Mirrored</h2>
     <div tal:condition="not: context/source_releases">
-      This mirror has no registered Source Releases. You can 
-      <a href="+addsourcerelease">register</a> the first one.
+      This mirror has no registered Source Releases.
     </div>
 
     <table tal:condition="context/source_releases" class="listing">
     <thead>
       <tr>
         <th>Release</th>
+        <th>Component</th>
+        <th>Pocket</th>
         <th>Status</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="source_release context/source_releases">
         <td tal:content="source_release/distro_release/title" />
+        <td tal:content="source_release/component/name" />
+        <td tal:content="source_release/pocket/title" />
         <td tal:content="source_release/status/title" />
       </tr>
     </tbody>

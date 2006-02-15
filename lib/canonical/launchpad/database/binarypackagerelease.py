@@ -19,7 +19,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishing, SecureBinaryPackagePublishingHistory
     )
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
@@ -80,6 +79,11 @@ class BinaryPackageRelease(SQLBase):
         return DistributionSourcePackageRelease(
             distribution=self.build.distribution,
             sourcepackagerelease=self.build.sourcepackagerelease)
+
+    @property
+    def sourcepackagename(self):
+        """See IBinaryPackageRelease."""
+        return self.build.sourcepackagerelease.sourcepackagename.name
 
     def current(self, distroRelease):
         """Return currently published releases of this package for a given

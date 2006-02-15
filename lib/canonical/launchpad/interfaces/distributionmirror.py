@@ -3,9 +3,10 @@
 __metaclass__ = type
 
 __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
-           'IMirrorDistroReleaseSource', 'IMirrorProbeRecord']
+           'IMirrorDistroReleaseSource', 'IMirrorProbeRecord',
+           'IDistributionMirrorSet', 'PROBE_INTERVAL']
 
-from zope.schema import Bool, Choice, Datetime, TextLine, Bytes
+from zope.schema import Bool, Choice, Datetime, TextLine, Bytes, Int
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.validators.name import name_validator
@@ -15,9 +16,14 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad import _
 
 
+# The number of hours before we bother probing a mirror again
+PROBE_INTERVAL = 24
+
+
 class IDistributionMirror(Interface):
     """A mirror of a given distribution."""
 
+    id = Int(title=_('The unique id'), required=True, readonly=True)
     owner = Choice(title=_('Owner'), required=False, readonly=True,
                    vocabulary='ValidOwner')
     distribution = Attribute(_("The distribution that is mirrored"))
@@ -72,23 +78,77 @@ class IDistributionMirror(Interface):
     source_releases = Attribute('All MirrorDistroReleaseSources of this mirror')
     arch_releases = Attribute('All MirrorDistroArchReleases of this mirror')
 
-    def isOfficial(self):
+    def isOfficial():
         """Return True if this is an official mirror."""
 
-    def newMirrorArchRelease(distro_arch_release, pocket):
-        """Create and return a new MirrorDistroArchRelease for this
-        distribution.
+    def disableAndNotifyOwner():
+        """Mark this mirror as disabled and notifying the owner."""
+
+    def newProbeRecord():
+        """Create and return a new MirrorProbeRecord for this mirror."""
+
+    def deleteMirrorDistroArchRelease(distro_arch_release, pocket, component):
+        """Delete the MirrorDistroArchRelease with the given arch release and
+        pocket, in case it exists.
         """
 
-    def newMirrorSourceRelease(distro_release):
-        """Create and return a new MirrorDistroReleaseSource for this
-        distribution.
+    def ensureMirrorDistroArchRelease(distro_arch_release, pocket, component):
+        """Check if we have a MirrorDistroArchRelease with the given arch
+        release and pocket, creating one if not.
+
+        Return that MirrorDistroArchRelease.
+        """
+
+    def ensureMirrorDistroReleaseSource(distro_release, pocket, component):
+        """Check if we have a MirrorDistroReleaseSource with the given distro
+        release, creating one if not.
+
+        Return that MirrorDistroReleaseSource.
+        """
+
+    def deleteMirrorDistroReleaseSource(distro_release, pocket, component):
+        """Delete the MirrorDistroReleaseSource with the given distro release,
+        in case it exists.
+        """
+
+    def guessPackagesPaths():
+        """Guess all paths where we can probably find Packages.gz files on
+        this mirror.
+
+        Return a list containing, for each path, the DistroArchRelease,
+        the PackagePublishingPocket and the Component to which that given
+        Packages.gz file refer to and the path to the file itself.
+        """
+
+    def guessSourcesPaths():
+        """Guess and return all paths where we can probably find Sources.gz
+        files on this mirror.
+
+        Return a list containing, for each path, the DistroRelease, the
+        PackagePublishingPocket and the Component to which that given
+        Sources.gz file refer to and the path to the file itself.
+        """
+
+
+class IDistributionMirrorSet(Interface):
+    """The set of DistributionMirrors"""
+
+    def __getitem__(mirror_id):
+        """Return the DistributionMirror with the given id."""
+
+    def getMirrorsToProbe():
+        """Return all enabled mirrors that need to be probed.
+
+        A mirror needs to be probed either if it was never probed before or if
+        it wasn't probed in the last PROBE_INTERVAL hours.
         """
 
 
 class IMirrorDistroArchRelease(Interface):
     """The mirror of the packages of a given Distro Arch Release"""
 
+    # XXX: needs to be removed before merging.
+    id = Int(title=_('The unique id'), required=True, readonly=True)
     distribution_mirror = Attribute(_("The Distribution Mirror"))
     distro_arch_release = Choice(
         title=_('Distribution Arch Release'), required=True, readonly=True,
@@ -96,14 +156,21 @@ class IMirrorDistroArchRelease(Interface):
     status = Choice(
         title=_('Status'), required=True, readonly=False,
         vocabulary='MirrorStatus')
+    # Is it possible to use a Choice here without specifying a vocabulary?
+    component = Int(title=_('Component'), required=True, readonly=True)
     pocket = Choice(
-        title=_('Pocket'), required=True, readonly=False,
+        title=_('Pocket'), required=True, readonly=True,
         vocabulary='PackagePublishingPocket')
+
+    def getURLsToCheckUpdateness():
+        """ """
 
 
 class IMirrorDistroReleaseSource(Interface):
     """The mirror of a given Distro Release"""
 
+    # XXX: needs to be removed before merging.
+    id = Int(title=_('The unique id'), required=True, readonly=True)
     distribution_mirror = Attribute(_("The Distribution Mirror"))
     distro_release = Choice(
         title=_('Distribution Release'), required=True, readonly=True,
@@ -111,11 +178,19 @@ class IMirrorDistroReleaseSource(Interface):
     status = Choice(
         title=_('Status'), required=True, readonly=False,
         vocabulary='MirrorStatus')
+    # Is it possible to use a Choice here without specifying a vocabulary?
+    component = Int(title=_('Component'), required=True, readonly=True)
+    pocket = Choice(
+        title=_('Pocket'), required=True, readonly=True,
+        vocabulary='PackagePublishingPocket')
+
+    def getURLsToCheckUpdateness():
+        """ """
 
 
 class IMirrorProbeRecord(Interface):
     """A record stored when a mirror is probed.
-    
+
     We store this in order to have a history of that mirror's probes.
     """
 
