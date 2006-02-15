@@ -42,8 +42,10 @@ class IBuild(Interface):
     distribution = Attribute("Shortcut for its distribution.")
     distributionsourcepackagerelease = Attribute("The page showing the "
         "details for this sourcepackagerelease in this distribution.")
-    binarypackages = Attribute("A list of binary packages that resulted "
-        "from this build.")
+    binarypackages = Attribute(
+        "A list of binary packages that resulted from this build, "
+        "not limitted and ordered by name.")
+
     can_be_reset = Attribute(
         "Whether or not this build record can be reset.")
 

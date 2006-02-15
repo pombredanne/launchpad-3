@@ -96,6 +96,9 @@ class IDistroArchRelease(IHasOwner):
         not found.
         """
 
+    def getAllReleasesByStatus(status):
+        """Return all published binarypackages."""
+    
 class IDistroArchReleaseSet(Interface):
     """Interface for DistroArchReleaseSet"""
 

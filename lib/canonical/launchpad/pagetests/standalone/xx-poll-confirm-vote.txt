@@ -2,7 +2,7 @@
   results of the director-2004 poll.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/director-2004 HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/director-2004 HTTP/1.1
   ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -21,7 +21,7 @@
   got when voting.
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/director-2004 HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/director-2004 HTTP/1.1
   ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -60,7 +60,7 @@
   voted.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/leader-2004 HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/leader-2004 HTTP/1.1
   ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -76,7 +76,7 @@
   And now we confirm his vote on this poll too.
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/leader-2004 HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/leader-2004 HTTP/1.1
   ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
   ... Content-Type: application/x-www-form-urlencoded
   ... 

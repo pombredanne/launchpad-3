@@ -208,5 +208,5 @@ releasehistory
 --------------
 
     >>> print len(hoary_firefox_one.releasehistory)
-    1
+    2
 

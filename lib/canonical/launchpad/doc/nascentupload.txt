@@ -3,7 +3,7 @@
 (First some setup. We need a librarian for this test.)
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()  
+  >>> LibrarianTestSetup().setUp()
 
 We also need to set up the OpenPGP key used to sign things so that we can
 identify the upload signer later on.
@@ -17,6 +17,19 @@ Next we import the test keys so we have them ready for verification
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
+
+We need to be logged into the security model in order to get any further
+
+  >>> login('foo.bar@canonical.com')
+
+For the purpose of this test, hoary needs to be an open (development)
+distrorelease so that we can upload to it.
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
+  >>> from canonical.lp.dbschema import DistributionReleaseStatus
+  >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
 
 A nascent upload is a collection of files in a directory. They
 represent what may turn out to be an acceptible upload to a launchpad
@@ -51,7 +64,7 @@ the changes file specified exists, raising FileNotFound if it does not.
   Traceback (most recent call last):
   ...
   FileNotFound: DOES-NOT-EXIST
-  >>> ed_upload = NascentUpload(findPolicyByName('insecure'), 
+  >>> ed_upload = NascentUpload(findPolicyByName('insecure'),
   ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
   >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
   True
@@ -120,7 +133,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   True
 
   >>> ed_source_upload = NascentUpload(buildd_policy,
-  ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes", 
+  ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes",
   ...     MockLogger)
   >>> ed_source_upload.sourceful
   True
@@ -148,7 +161,7 @@ If the Architecture line does not match then we get an exception.
   >>> ed_mismatched_upload.sourceful
   True
   >>> ed_mismatched_upload.rejection_message
-  'Mismatch in binaryfulness. (arch) False != (files) True'
+  'Mismatch in binaryfulness. (arch) False != (files) True\nOne or more files uploaded with specific architecture but changes file does not list it.'
 
 We can distinguish between the arch-indep and arch-dep binary uploads.
 
@@ -221,7 +234,6 @@ Finally we can ask the upload to process itself.
   DEBUG: Beginning processing.
   DEBUG: Checking signature on changes file.
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
-  DEBUG: Daniel Silverstone (26) is in main's uploaders.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Verifying source file ed_0.2-20.dsc
@@ -235,7 +247,10 @@ Finally we can ask the upload to process itself.
   DEBUG: Done
   DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
   DEBUG: Finding and applying overrides.
+  DEBUG: getPublishedReleases() returned 0 possible source(s)
   DEBUG: ed: (source) NEW
+  DEBUG: Checking against i386 for ed
+  DEBUG: getReleasedPackages() returned 0 possibilit{y,ies}
   DEBUG: ed: (binary) NEW
   DEBUG: Finished checking upload.
   >>> print ed_upload.rejection_message+"\nEND"
@@ -243,8 +258,10 @@ Finally we can ask the upload to process itself.
   >>> ed_upload.rejected
   False
   >>> success, msgs = ed_upload.do_accept()
+  DEBUG: Building recipients list.
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
+  DEBUG: Creating a New queue entry
   >>> print success
   True
   >>> for msg in msgs:
@@ -258,12 +275,188 @@ Finally we can ask the upload to process itself.
    OK: ed_0.2-20.diff.gz
   NEW: ed_0.2-20_i386.deb
   <BLANKLINE>
+  -----BEGIN PGP SIGNED MESSAGE-----
+  Hash: SHA1
+  <BLANKLINE>
+  Format: 1.7
+  Date: Wed,  2 Apr 2003 17:19:47 +0100
+  Source: ed
+  Binary: ed
+  Architecture: source i386
+  Version: 0.2-20
+  Distribution: unstable
+  Urgency: low
+  Maintainer: James Troup <james@nocrew.org>
+  Changed-By: James Troup <james@nocrew.org>
+  Description:
+   ed         - The classic unix line editor
+  Closes: 122517 130327 179957
+  Changes:
+   ed (0.2-20) unstable; urgency=low
+   .
+     * Move to dpatch; existing non-debian/ changes split into
+       01_buf.c-tmpfile, 02_-Wall-cleanup, 03_ed.1-cleanup and
+       04_Makfile.in-no-libed.
+     * debian/rules: include /usr/share/dpatch/dpatch.make.
+     * debian/rules (build): depend on patch-stamp.
+     * debian/rules (clean): depend on unpatch.  Remove debian/patched.
+     * debian/rules (.PHONY): add 'patch' and 'unpatch'.
+     * debian/control (Build-Depends): add dpatch.
+   .
+     * debian/rules: update copyright.
+     * debian/copyright: likewise and update upstream URL.
+     * debian/changelog: remove local-variables stuff.
+   .
+     * debian/rules: use install_foo convenience variables.
+     * debian/rules (clean): remove *~ in any subdirectory.
+   .
+     * debian/control (Standards-Version): bump to 3.5.8.0.
+     * debian/postinst, debian/prerm: no longer do /usr/doc symlinks.
+   .
+     * config, test/*: unused aegis cruft; removed.
+     * Undo s/%/$/ change in RCS keywords.
+   .
+     * debian/postinst: provide editor.1.gz alternative; thanks to Ben Harris
+       <bjh21@cam.ac.uk> for the suggestion.  Closes: #122517
+     * 05_ed.1-warning-fix.dpatch: new patch to avoid groff warnings.  Thanks
+       to Colin Watson <cjwatson@debian.org>.  Closes: #179957
+     * 06_testsuite-Makefile.dpatch: new patch to ensure the test suite bombs
+       out on errors.  Thanks to Joel Baker <fenton@debian.org>.
+       Closes: #130327
+  Files:
+   22beb6b9d1fe984cd3a20571a4e958ac 522 editors important ed_0.2-20.dsc
+   f9e1e5f13725f581919e9bfd62272a05 8506 editors important ed_0.2-20.diff.gz
+   0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important ed_0.2-20_i386.deb
+  <BLANKLINE>
+  -----BEGIN PGP SIGNATURE-----
+  Version: GnuPG v1.4.1 (GNU/Linux)
+  <BLANKLINE>
+  iD8DBQFDTWC+K8hAFiBoeJURAnA7AJ9i9ZjWjtqUQ+nFJfPnsjOmfUq6DQCffPZZ
+  nwN7DFh8fuhURm3VCzcwIGc=
+  =jANz
+  -----END PGP SIGNATURE-----
+  <BLANKLINE>
+  <BLANKLINE>
   Your package contains new components which requires manual editing of
   the override file.  It is ok otherwise, so please be patient.  New
   packages are usually added to the overrides about once a week.
   <BLANKLINE>
-  You may have gotten the distrorelease wrong.  You'll may get warnings
-  above if files already exist in other distrorelease.
+  You may have gotten the distrorelease wrong.  If so, you may get warnings
+  above if files already exist in other distroreleases.
+  END
+
+Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
+(it's the only one we have, the process to retrieve a non-published
+SPR w/o at least and DRQ entry is quite unusual)
+
+  >>> from canonical.launchpad.database import (
+  ...     SourcePackageRelease, SourcePackageName)
+  >>> ed_name = SourcePackageName.selectOneBy(name='ed')
+  >>> ed_spr = SourcePackageRelease.selectBy(sourcepackagenameID=ed_name.id)[0]
+
+Check if we have rebuid the change's author line properly (as
+mentioned in bug # 30621)
+
+  >>> print ed_spr.changelog
+  ed (0.2-20) unstable; urgency=low
+  ...
+   -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
+
+Roll back everything so that we can try again
+
+  >>> import transaction
+  >>> transaction.abort()
+
+First up, construct an upload of just the ed source...
+
+  >>> class MockMunchyLogger:
+  ...     def debug(self, s):
+  ...         pass
+
+  >>> ed_src = NascentUpload(findPolicyByName('sync'), 
+  ...          datadir('split-upload-test'), "ed_0.2-20_source.changes", 
+  ...          MockMunchyLogger())
+  >>> ed_src.policy.setOptions(MockOptions())
+  >>> ed_src.process()
+  >>> ed_src.rejected
+  False
+  >>> success, msgs = ed_src.do_accept()
+  >>> success
+  True
+
+The ed source would be in NEW, so punt it into accepted.
+
+  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.launchpad.interfaces import QueueInconsistentStateError
+  >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> for item in new_queue:
+  ...     try:
+  ...         print "%s/%s" % (item.sourcepackagename.name, 
+  ...                          item.sourceversion)
+  ...         item.set_accepted()
+  ...         item.sync()
+  ...     except QueueInconsistentStateError, info:
+  ...         print info
+  ed/0.2-20
+
+
+Next we send in the binaries, since the source should be in ACCEPTED the
+binary should go straight there too.
+
+  >>> ed_bin = NascentUpload(findPolicyByName('sync'), 
+  ...          datadir('split-upload-test'), "ed_0.2-20_i386.changes", 
+  ...          MockMunchyLogger())
+  >>> ed_bin.policy.setOptions(MockOptions())
+  >>> ed_bin.policy.can_upload_binaries = True
+  >>> ed_bin.process()
+  >>> ed_bin.rejected
+  False
+  >>> print ed_bin.rejection_message+"\nEND"
+  END
+  >>> success, msgs = ed_bin.do_accept()
+  >>> success
+  True
+
+Chuck it all away again
+
+  >>> transaction.abort()
+
+And this time, try an upload to -updates, it'll have to be signed etc because
+we're using the insecure policy to check everything in it end-to-end
+
+  >>> ed_src = NascentUpload(findPolicyByName('sync'), 
+  ...          datadir('updates-upload-test'), "ed_0.2-20_source.changes", 
+  ...          MockMunchyLogger())
+  >>> ed_src.policy.setOptions(MockOptions())
+  >>> ed_src.policy.distrorelease = None # Override this by the changes
+  >>> ed_src.process()
+  >>> ed_src.rejected
+  False
+  >>> success, msgs = ed_src.do_accept()
+  >>> success
+  True
+  >>> print ed_src.queue_root.pocket.name
+  UPDATES
+
+Even though this went to a pocket and thus would be unapproved rather
+than accepted, the ed upload ought still make it to NEW instead of
+unapproved.
+
+  >>> print ed_src.queue_root.status.name
+  NEW
+
+Check the uploader behaviour against a missing orig.tar.gz file,
+bug # 30741.
+
+  >>> ed21_src = NascentUpload(findPolicyByName('sync'),
+  ...          datadir('ed-0.2-21'), "ed_0.2-21_source.changes",
+  ...          MockMunchyLogger())
+  >>> ed21_src.policy.setOptions(MockOptions())
+  >>> ed21_src.process()
+  >>> ed21_src.rejected
+  True
+  >>> print ed21_src.rejection_message+"\nEND"
+  Unable to find ed_0.2.orig.tar.gz in the distribution.
   END
 
 (and some tear down)

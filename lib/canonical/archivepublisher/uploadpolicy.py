@@ -7,7 +7,11 @@ __metaclass__ = type
 __all__ = ["findPolicyByName", "findPolicyByOptions"]
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IComponentSet)
+
+from canonical.lp.dbschema import (
+    PackagePublishingPocket, DistributionReleaseStatus)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -115,9 +119,13 @@ class AbstractUploadPolicy:
                 # list in the upload. Thusly a sourceful upload with one build
                 # has two architectures listed.
                 max = 2
+            if 'all' in upload.archs:
+                # Sometimes we get 'i386 all' which would count as two archs
+                # so if 'all' is present, we bump the permitted number up
+                # by one.
+                max += 1
             if len(upload.archs) > max:
                 upload.reject("Policy permits only one build per upload.")
-                
 
     def filterRecipients(self, upload, recipients):
         """Filter any recipients we feel we need to.
@@ -144,6 +152,16 @@ class AbstractUploadPolicy:
         components permitted (E.g. for the buildd uploads)
         """
         return []
+
+    def autoApprove(self, upload):
+        """Return whether or not the policy approves of the upload.
+
+        Often the pocket may decide whether or not a policy approves of an
+        upload. E.g. The insecure policy probably approves of things going
+        to the RELEASE pocket, but needs extra approval for UPDATES.
+        """
+        # The base policy approves of everything.
+        return True
 
     @classmethod
     def _registerPolicy(cls, policy_type):
@@ -178,6 +196,47 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         self.can_upload_binaries = False
         self.can_upload_mixed = False
 
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
+    def policySpecificChecks(self, upload):
+        """The insecure policy does not allow uploads to pockets or
+        closed distroreleases."""
+        AbstractUploadPolicy.policySpecificChecks(self, upload)
+        # XXX: dsilvers: 20060209: This is way too hairy/complex. bug#30983
+        distrorelease_is_open = self.distrorelease.releasestatus in (
+                DistributionReleaseStatus.EXPERIMENTAL,
+                DistributionReleaseStatus.DEVELOPMENT,
+                DistributionReleaseStatus.FROZEN)
+        if self.pocket == PackagePublishingPocket.RELEASE:
+            if distrorelease_is_open:
+                # RELEASE+open == okay
+                return
+            else:
+                upload.reject("Not permitted to upload to a release in "
+                              "%s state" %
+                              self.distrorelease.releasestatus.name)
+        elif self.pocket == PackagePublishingPocket.UPDATES:
+            if distrorelease_is_open:
+                upload.reject("Not permitted to upload to the UPDATES pocket "
+                              "in a release in %s state" %
+                              self.distrorelease.releasestatus.name)
+            else:
+                # UPDATES+closed == okay
+                return
+        else:
+            # Anything else == not okay
+            upload.reject("Not permitted to upload to %s in %s" % (
+                self.pocket.name, self.distrorelease.name))
+
+    def autoApprove(self, upload):
+        """The insecure policy only auto-approves RELEASE pocket stuff."""
+        if self.pocket == PackagePublishingPocket.RELEASE:
+            return True
+        return False
+
 # Register this as the 'insecure' policy
 AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
 
@@ -207,26 +266,32 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     def getDefaultPermittedComponents(self):
         """Return the set of components this distrorelease permits."""
         return set(
-            component.name for component in self.distrorelease.components)
+            component.name for component in getUtility(IComponentSet))
 
 # Register this as the 'buildd' policy
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
 
-class AutoSyncUploadPolicy(AbstractUploadPolicy):
-    """The auto-sync upload policy is invoked when processing uploads from
+class SyncUploadPolicy(AbstractUploadPolicy):
+    """The sync upload policy is invoked when processing uploads from
     the sync process.
     """
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
-        self.name = "autosync"
-        # We require the changes to be signed but not the dsc
+        self.name = "sync"
+        # We don't require changes or dsc to be signed for syncs
+        self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
         # We don't want binaries in a sync
         self.can_upload_mixed = False
         self.can_upload_binaries = False
 
-AbstractUploadPolicy._registerPolicy(AutoSyncUploadPolicy)
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
+AbstractUploadPolicy._registerPolicy(SyncUploadPolicy)
 
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
     """The anything goes upload policy is invoked when processing uploads
@@ -241,5 +306,41 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         # We require the changes to be signed but not the dsc
         self.unsigned_dsc_ok = True
 
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 
+class SecurityUploadPolicy(AbstractUploadPolicy):
+    """The security-upload policy allows binary uploads and doesn't mail
+    anyone when we use it.
+    """
+
+    def __init__(self):
+        AbstractUploadPolicy.__init__(self)
+        self.name = "security"
+        self.unsigned_dsc_ok = True
+        self.unsigned_changes_ok = True
+        self.can_upload_mixed = False
+        self.can_upload_binaries = True
+
+    def filterRecipients(self, upload, recipients):
+        """Do not mail *ANYONE* on security uploads."""
+        return []
+
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
+    def policySpecificChecks(self, upload):
+        """The insecure policy does not allow uploads to pockets or
+        closed distroreleases."""
+        AbstractUploadPolicy.policySpecificChecks(self, upload)
+        if self.pocket != PackagePublishingPocket.SECURITY:
+            upload.reject("Not permitted to do security upload to non "
+                          "SECURITY pocket")
+
+AbstractUploadPolicy._registerPolicy(SecurityUploadPolicy)
