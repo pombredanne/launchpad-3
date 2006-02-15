@@ -611,11 +611,16 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the search results be displayed as a list?"""
         return True
 
-    def search(self, searchtext=None, batch_start=None, context=None):
+    def search(self, searchtext=None, batch_start=None, context=None,
+               extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
         request.
+
+        :extra_params: is a dict that provides search params added to the search
+        criteria taken from the request. Params in :extra_params: take
+        precedence over request params.
         """
         if (self.searchtext_widget.hasInput() and
             self.searchtext_widget.getInputValue().isdigit()):
@@ -629,8 +634,12 @@ class BugTaskSearchListingView(LaunchpadView):
 
         # Normalize the form_values as search params. Every list argument will
         # be converted to an OR search, using the any() function.
+        data = getWidgetsData(
+            self, self.search_form_schema,
+            names=[
+                "status", "assignee", "severity", "unassigned", "assignee"])
         form_values = {}
-        for key, value in getWidgetsData(self, self.search_form_schema).items():
+        for key, value in data.items():
             if zope_isinstance(value, (list, tuple)):
                 form_values[key] = any(*value)
             else:
@@ -643,6 +652,9 @@ class BugTaskSearchListingView(LaunchpadView):
 
         if form_values:
             form_values["omit_dupes"] = True
+
+        if extra_params:
+            form_values.update(extra_params)
 
         search_params = BugTaskSearchParams(user=self.user, **form_values)
         search_params.orderby = get_sortorder_from_request(self.request)

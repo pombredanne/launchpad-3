@@ -660,44 +660,16 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class BasePersonBugTaskSearchListingView:
-    """A Base view class to be used by all bug listings on a person page.
-    
-    All bug listings on a person page are in some way related to that person.
-    This means that this person (our context) has to be in the
-    BugTaskSearchParams that will be given to the searchTasks() method. To do
-    this, subclasses must define an context_parameter class variable whose 
-    value should be either 'owner', 'subscriber' or 'assignee'.
-
-    Please note this is a base class that is not meant to be used as a view
-    class. Instead, you should derive from it and use the derived class.
-    """
-
-    context_parameter = None
-
-    def getExtraSearchParams(self):
-        assert self.context_parameter is not None
-        params = AdvancedBugTaskSearchView.getExtraSearchParams(self)
-        params[self.context_parameter] = self.context
-        return params
-
-    def hasSimpleMode(self):
-        return True
-
-    def shouldShowAdvancedSearchWidgets(self):
-        """Return True if this view's advanced form should be shown."""
-        form = self.request.form
-        if form.get('advanced') and not form.get('simple'):
-            return True
-        return False
-
-
-class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
+class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
-    context_parameter = 'owner'
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'owner': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
 
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug contact."""
@@ -853,25 +825,31 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return False
 
 
-class PersonAssignedBugTaskSearchListingView(
-        BasePersonBugTaskSearchListingView):
+class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
     context_parameter = 'assignee'
 
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
-    def shouldShowAssignee(self):
-        """Should we show the assignee in the list of results?"""
-        return False
+    def search(self):
+        """Return the open bugs assigned to a person."""
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'assignee': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
 
 
-class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
-    context_parameter = 'subscriber'
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'subscriber': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
 
 class PersonView:
     """A View class used in almost all Person's pages."""
