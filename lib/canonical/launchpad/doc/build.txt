@@ -35,7 +35,7 @@ Let's check the complex properties of a build object.
   True
 
   >>> firefox_build.build_icon
-  '/++resource++build-success'
+  '/@@/resource++build-success'
 
   >>> firefox_build.buildlog = 34
   >>> firefox_build.buildlog.url
