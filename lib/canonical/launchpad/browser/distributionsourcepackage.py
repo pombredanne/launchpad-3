@@ -18,7 +18,7 @@ from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, AdvancedBugTaskSearchView)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
-    GetitemNavigation, canonical_url)
+    GetitemNavigation, canonical_url, redirection)
 
 
 class DistributionSourcePackageFacets(StandardLaunchpadFacets):
@@ -57,6 +57,8 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
     BugTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage
+
+    redirection("+editbugcontact", "+subscribe")
 
     def breadcrumb(self):
         return self.context.sourcepackagename.name

@@ -32,7 +32,11 @@
               </a>
             </td>
             <td tal:content="builder/processor/name">LOCATION</td>
-            <td tal:content="builder/owner/displayname">Owner</td>
+            <td>
+              <img alt="[owner]" src="/++resource++user"/>
+              <a tal:content="builder/owner/displayname"
+                 tal:attributes="href builder/owner/fmt:url">Owner</a>
+            </td>
             <td tal:content="builder/status">STATUS</td>
           </tr>
           <tr>

@@ -19,8 +19,7 @@ __all__ = [
     'IBugTaskSet',
     'BugTaskSearchParams',
     'UNRESOLVED_BUGTASK_STATUSES',
-    'RESOLVED_BUGTASK_STATUSES',
-    'BUGTASK_BATCH_SIZE']
+    'RESOLVED_BUGTASK_STATUSES']
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
@@ -51,8 +50,6 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXCOMMITTED,
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
-
-BUGTASK_BATCH_SIZE = 20
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product

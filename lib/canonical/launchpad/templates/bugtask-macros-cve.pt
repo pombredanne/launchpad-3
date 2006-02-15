@@ -26,7 +26,14 @@
                tal:attributes="href bugtask/bug/fmt:url"
                >Foo Bar does not work</a>
           </td>
-          <td tal:content="bugtask/sourcepackagename/name">apache2</td>
+          <td tal:define="packagename bugtask/sourcepackagename">
+            <tal:packagename condition="packagename" content="packagename/name">
+              apache2
+            </tal:packagename>
+            <tal:nopackagename condition="not:packagename">
+              None
+            </tal:nopackagename>
+          </td>
           <td>
             <span tal:content="bugtask/status/title"
                   tal:attributes="class string:status${bugtask/status/title}"
