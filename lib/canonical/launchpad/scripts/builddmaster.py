@@ -805,24 +805,23 @@ class BuilddMaster:
     def rollback(self):
         self._tm.rollback()
 
-    def addDistroArchRelease(self, archrelease, pocket=None):
+    def addDistroArchRelease(self, distroarchrelease):
         """Setting up a workable DistroArchRelease for this session."""
-        # ensure we have a pocket
-        if not pocket:
-            pocket = dbschema.PackagePublishingPocket.RELEASE
+        self._logger.info("Adding DistroArchRelease %s/%s/%s"
+                          % (distroarchrelease.distrorelease.distribution.name,
+                             distroarchrelease.distrorelease.name,
+                             distroarchrelease.architecturetag))
 
-        self._logger.info("Adding DistroArchRelease %s/%s/%s/%s"
-                          % (archrelease.distrorelease.distribution.name,
-                             archrelease.distrorelease.name,
-                             archrelease.architecturetag, pocket))
-        # ensure ARCHRELEASE has a pocket
-        if not archrelease.getChroot(pocket):
-            self._logger.warn("Disabling: No CHROOT found for %s pocket '%s'"
-                              % (archrelease.title, pocket.title))
-            return
-
-        # Fill out the contents
-        self._archreleases.setdefault(archrelease, {})
+        # check ARCHRELEASE accross available pockets
+        for pocket in dbschema.PackagePublishingPocket.items:
+            if distroarchrelease.getChroot(pocket):
+                # Fill out the contents
+                self._archreleases.setdefault(distroarchrelease, {})
+            else:
+                self._logger.warn(
+                    "Disabling: No CHROOT for %s (%s) '%s'"
+                    % (distroarchrelease.distrorelease.name,
+                       distroarchrelease.architecturetag, pocket.title))
 
     def setupBuilders(self, archrelease):
         """Setting up a group of builder slaves for a given DistroArchRelease.
@@ -943,7 +942,8 @@ class BuilddMaster:
                 processor = distrorelease.nominatedarchindep.default_processor
                 pubrec.sourcepackagerelease.createBuild(
                     distroarchrelease=distrorelease.nominatedarchindep,
-                    processor=processor)
+                    processor=processor,
+                    pocket=pubrec.pocket)
                 self._logger.debug(header + "CREATING ALL")
                 continue
 
@@ -970,16 +970,20 @@ class BuilddMaster:
                     continue
 
                 # verify is isn't already present for this distroarchrelease
-                if not release.getBuildByArch(arch):
+                if not pubrec.sourcepackagerelease.getBuildByArchAndPocket(
+                    arch, pubrec.pocket):
                     # XXX cprov 20050831
                     # I could possibily be better designed, let's think about
                     # it in the future. Pick the first processor we found for
                     # this distroarchrelease.processorfamily. The data model
                     # should change to have a default processor for a
                     # processorfamily
+                    # XXX cprov 20060210: no security proxy for dbschema
+                    # is annoying
                     pubrec.sourcepackagerelease.createBuild(
                         distroarchrelease=arch,
-                        processor=arch.default_processor)
+                        processor=arch.default_processor,
+                        pocket=pubrec.pocket)
                     self._logger.debug(header + "CREATING %s" %
                                        arch.architecturetag)
 
@@ -1222,23 +1226,20 @@ class BuilddMaster:
 
         return result
 
-    def dispatchByProcessor(self, proc, queueItems, pocket=None):
-        """Dispach Jobs according specific procesor and pocket """
-        # ensure we have a pocket
-        if not pocket:
-            pocket = dbschema.PackagePublishingPocket.RELEASE
-
-        self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s), %s)"
-                               % (proc.name, len(queueItems), pocket.title))
+    def dispatchByProcessor(self, proc, queueItems):
+        """Dispach Jobs according specific procesor"""
+        self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s))"
+                               % (proc.name, len(queueItems)))
         builders = notes[proc]["builders"]
         builder = builders.firstAvailable()
 
         while builder is not None and len(queueItems) > 0:
-            self.startBuild(builders, builder, queueItems.pop(0), pocket)
+            self.startBuild(builders, builder, queueItems.pop(0))
             builder = builders.firstAvailable()
 
-    def startBuild(self, builders, builder, queueItem, pocket):
+    def startBuild(self, builders, builder, queueItem):
         """Find the list of files and give them to the builder."""
+        pocket = queueItem.build.pocket
 
         self.getLogger().debug("startBuild(%s, %s, %s, %s)"
                                % (builder.url, queueItem.name,
@@ -1246,6 +1247,9 @@ class BuilddMaster:
 
         # ensure build has the need chroot
         chroot = queueItem.archrelease.getChroot(pocket)
+        if chroot is None:
+            self.getLogger().warn("Aborting, cannot find CHROOT")
+            return
 
         try:
             builders.giveToBuilder(builder, chroot, self.librarian)

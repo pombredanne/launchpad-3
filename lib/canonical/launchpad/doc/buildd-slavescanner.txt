@@ -248,6 +248,7 @@ slave has the requested file in cache.
   ...         self.distrorelease = tmp_build.distrorelease
   ...         self.distroarchrelease = tmp_build.distroarchrelease
   ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
+  ...         self.pocket = tmp_build.pocket
 
   >>> import datetime, pytz
   >>> UTC = pytz.timezone('UTC')
@@ -500,13 +501,30 @@ is able to build stuff properly for that one
   ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  WARNING:root:Disabling: No CHROOT found for The Warty Warthog Release for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Release'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Backports'
   Unable to setup builder for ubuntu/warty/i386.
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Backports'
   WARNING:root.builders.x86:No builders are available
-  WARNING:root:Disabling: No CHROOT found for WOODY for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Release'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Backports'
   Unable to setup builder for debian/woody/i386.
-  WARNING:root:Disabling: No CHROOT found for Breezy Badger Autotest for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Release'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Backports'
   Unable to setup builder for ubuntu/breezy-autotest/i386.
+
 
 Inspect private attribute _archrelease contents. Remember
 archrelease was fetched in the begin of the test, it is warty/x86
@@ -555,7 +573,7 @@ Initialize BuildQueue missing attributes for building:
 
 Request a Mock slave build process:
 
-  >>> bm.startBuild(real_buildergroup, builder2, bqItem3, pocket)
+  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
   OkSlave has everything
   OkSlaves BUILDING
 

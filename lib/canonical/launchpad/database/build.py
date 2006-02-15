@@ -22,7 +22,8 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
 
-from canonical.lp.dbschema import EnumCol, BuildStatus
+from canonical.lp.dbschema import (
+    EnumCol, BuildStatus, PackagePublishingPocket)
 
 class Build(SQLBase):
     implements(IBuild)
@@ -45,6 +46,8 @@ class Build(SQLBase):
     gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey',
         default=None)
     changes = StringCol(dbName='changes', default=None)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
+                     notNull=True)
 
     @property
     def buildqueue_record(self):

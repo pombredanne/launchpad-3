@@ -1809,7 +1809,8 @@ class NascentUpload:
         if build_id is None:
             spr = self.policy.sourcepackagerelease
             build = spr.createBuild(self.distrorelease[archtag],
-                                    status=BuildStatus.FULLYBUILT)
+                                    status=BuildStatus.FULLYBUILT,
+                                    pocket=self.pocket)
             self.policy.build = build
         else:
             self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)

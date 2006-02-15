@@ -31,6 +31,7 @@ class IBuild(Interface):
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
+    pocket = Attribute("Target pocket of this build")
     distrorelease = Attribute("Direct parent needed by CanonicalURL")
     buildqueue_record = Attribute("Corespondent BuildQueue record")
 
