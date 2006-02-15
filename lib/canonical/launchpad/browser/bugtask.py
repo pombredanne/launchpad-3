@@ -27,6 +27,7 @@ from zope.app.form.utility import (
     setUpWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.schema.interfaces import IList
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.lp import dbschema
@@ -595,13 +596,6 @@ class BugTaskSearchListingView(LaunchpadView):
         setUpWidgets(self, self.search_form_schema, IInputWidget,
                      initial=self.initial_values)
 
-    @property
-    def unfilteredTaskCount(self):
-        """The number of tasks an empty search will return."""
-        # We need to pass in batch_start, so it doesn't use a value from
-        # the request.
-        return self.search(searchtext='', batch_start=0).batch.total()
-
     def showTableView(self):
         """Should the search results be displayed as a table?"""
         return False
@@ -610,47 +604,39 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the search results be displayed as a list?"""
         return True
 
-    def shouldShowAssignee(self):
-        """Should we show the assignee in the list of results?"""
-        return True
-
-    def getExtraSearchParams(self):
-        """Return extra search parameters to filter the bug list.
-
-        The search parameters should be returned as a dict with the
-        corresponding BugTaskSearchParams attribute name as the key.
-        """
-        return {}
-
     def search(self, searchtext=None, batch_start=None, context=None):
         """Return an ITableBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
         request.
         """
-        form_params = getWidgetsData(self, self.search_form_schema)
-        search_params = BugTaskSearchParams(user=self.user, omit_dupes=True)
-        search_params.orderby = get_sortorder_from_request(self.request)
-
-        if searchtext is None:
-            searchtext = form_params.get("searchtext")
-        if searchtext:
-            if searchtext.isdigit():
-                # The user wants to jump to a bug with a specific id.
-                try:
-                    bug = getUtility(IBugSet).get(int(searchtext))
-                except NotFoundError:
-                    pass
-                else:
-                    self.request.response.redirect(canonical_url(bug))
+        if (self.searchtext_widget.hasInput() and
+            self.searchtext_widget.getInputValue().isdigit()):
+            try:
+                bug = getUtility(IBugSet).get(
+                    int(self.searchtext_widget.getInputValue()))
+            except NotFoundError:
+                pass
             else:
-                # The user wants to filter on certain text.
-                search_params.searchtext = searchtext
+                self.request.response.redirect(canonical_url(bug))
 
-        # Allow subclasses to filter the search.
-        extra_params = self.getExtraSearchParams()
-        for param_name in extra_params:
-            setattr(search_params, param_name, extra_params[param_name])
+        # Normalize the form_values as search params. Every list argument will
+        # be converted to an OR search, using the any() function.
+        form_values = {}
+        for key, value in getWidgetsData(self, self.search_form_schema).items():
+            if zope_isinstance(value, (list, tuple)):
+                form_values[key] = any(*value)
+            else:
+                form_values[key] = value
+
+        unassigned = form_values.get("unassigned")
+        if unassigned:
+            form_values['assignee'] = NULL
+            del form_values['unassigned']
+
+        search_params = BugTaskSearchParams(
+            user=self.user, omit_dupes=True, **form_values)
+        search_params.orderby = get_sortorder_from_request(self.request)
 
         # Base classes can provide an explicit search context.
         if not context:
