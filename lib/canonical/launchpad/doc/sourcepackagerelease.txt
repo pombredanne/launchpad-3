@@ -117,9 +117,13 @@ Before the upload, the queue should be empty.
    >>> len(translation_import_queue)
    0
 
-Now we do the upload.
+Now we do the upload. It's necessary to retrive an ILibraryFileAlias
+correspondent to the alias (long) we already have.
 
-   >>> spr_test.attachTranslationFiles(alias, True)
+   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+   >>> file_alias = getUtility(ILibraryFileAliasSet)[alias]
+
+   >>> spr_test.attachTranslationFiles(file_alias, True)
 
 The commit is needed to see the new entries
 
