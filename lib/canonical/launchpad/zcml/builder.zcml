@@ -47,7 +47,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IBuilderSet"
         schema="canonical.launchpad.interfaces.IBuilder"
-        label="Register a new Builder Slave"
+        label="Register a new build machine"
         fields="name title description processor url owner"
         content_factory="canonical.launchpad.database.Builder"
         class="canonical.launchpad.browser.BuilderSetAddView"
@@ -99,11 +99,6 @@
             name="+index"
             lp:url="+builds/$name/+index" />
         <browser:page
-            template="../templates/builder-cancel.pt"
-            name="+cancel"
-            facet="overview"
-            lp:url="+builds/$name/+cancel" />
-        <browser:page
             template="../templates/builds-list.pt"
             name="+builds-list"
             facet="overview"
@@ -119,13 +114,24 @@
             lp:url="+builds/$buildername/+portlet-details" />
     </browser:pages>
 
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBuilder"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.BuilderView">
+        <browser:page
+            template="../templates/builder-cancel.pt"
+            name="+cancel"
+            facet="overview"
+            lp:url="+builds/$name/+cancel" />
+    </browser:pages>
+
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IBuilder"
         schema="canonical.launchpad.interfaces.IBuilder"
-        label="Edit Builder Details:"
+        label="Edit build machine details"
         facet="overview"
-        fields="name title description processor url trusted manual owner"
+        fields="name title description processor url manual owner"
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
         lp:url="+builds/$name/+edit">
@@ -135,12 +141,24 @@
         name="+mode"
         for="canonical.launchpad.interfaces.IBuilder"
         schema="canonical.launchpad.interfaces.IBuilder"
-        label="Change Builder Mode:"
+        label="Change build machine mode"
         facet="overview"
         fields="manual"
         permission="launchpad.Edit"
         template="../templates/builder-mode.pt"
         lp:url="+builds/$name/+mode">
+    </browser:editform>
+
+    <browser:editform
+        name="+admin"
+        for="canonical.launchpad.interfaces.IBuilder"
+        schema="canonical.launchpad.interfaces.IBuilder"
+        label="Administer builder"
+        facet="overview"
+        fields="name title description processor url manual owner trusted builderok failnotes"
+        permission="launchpad.Admin"
+        template="../templates/builder-admin.pt"
+        lp:url="+builds/$name/+admin">
     </browser:editform>
 
     <!-- BuildQueue -->

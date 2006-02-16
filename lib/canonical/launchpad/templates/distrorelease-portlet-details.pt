@@ -1,7 +1,7 @@
 <div class="portlet">
 
   <h4><span tal:replace="context/displayname">Warty
-      </span> Release Details:</h4>
+      </span> release details:</h4>
 
   <div class="portletBody portletContent">
 
@@ -10,7 +10,7 @@
     <span tal:replace="context/distribution/displayname" /></a><br />
 
     <b>Admin:</b><br />
-    <img src="/++resource++user.gif">
+    <img src="/@@/user.gif">
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">owner name</a><br />
 
@@ -39,7 +39,7 @@
 
     <span tal:condition="context/nominatedarchindep" tal:omit-tag>
       <b>Nominated Independent Architecture:</b><br />
-      <img src="/++resource++architecture">
+      <img src="/@@/architecture">
       <a tal:attributes="href context/nominatedarchindep/fmt:url"
          tal:content="context/nominatedarchindep/architecturetag" /> <br />
     </span> 

@@ -45,20 +45,40 @@ And we should see the comment.
   ...Use a new computer...
   ...You silly fart...
 
-Now we will examine Ticket #2 on Firefox. It should currently be Open. We
-should have the ability to make a comment. And we should be able to say that
-the ticket is "answered".
+Now we will examine Ticket #2 on Firefox. It should currently be Open,
+and w should have the ability to make a comment.
 
-If we POST that form, checking the "answers" box, we should set the status
-to "Answered" and we should get a date answered too.
+If we POST that form, we can provide an answer. This is simple a
+comment, we don't have to mark the ticket as answered.
 
   >>> print http(r"""
   ... POST /products/firefox/+ticket/2/+addmessage HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 112
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&field.resolved=answers&UPDATE_SUBMIT=Post+Comment""")
+  ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&UPDATE_SUBMIT=Post+Comment""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+ticket/2
+  ...
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...You silly fart...
+
+
+Finally, we will respond with a message from the person who created this
+ticket, also saying it is answered. That should set the status to
+Answered.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/+addmessage HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... field.subject=Use+a+new+computer&field.content=Yes.&field.resolved=on&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
   ...
   Location: http://.../products/firefox/+ticket/2
@@ -69,32 +89,7 @@ to "Answered" and we should get a date answered too.
   ... """)
   HTTP/1.1 200 Ok
   ...Answered...
-  ...Answered By:...
-  ...Foo Bar...
-  ...Answered:...
-
-
-Finally, we will respond with a message from the person who created this
-ticket, also saying it is answered. That should set the status to Closed.
-
-  >>> print http(r"""
-  ... POST /products/firefox/+ticket/2/+addmessage HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 112
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&field.resolved=answers&UPDATE_SUBMIT=Post+Comment""")
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../products/firefox/+ticket/2
-  ...
-
-  >>> print http(r"""
-  ... GET /products/firefox/+ticket/2 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Closed...
-  ...Answered By:...
+  ...Answered by:...
   ...Foo Bar...
   ...Answered:...
 

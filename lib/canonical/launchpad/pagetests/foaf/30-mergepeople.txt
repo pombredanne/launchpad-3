@@ -9,7 +9,7 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...<h1>Request Merge of User Accounts</h1>...
+  ...<h1>Merge Launchpad accounts</h1>...
   ...
 
 
@@ -97,7 +97,7 @@
   ... """ % dupe.id)
   HTTP/1.1 200 Ok
   ...
-  ...have more than one registered email...
+  ...has more than one registered e-mail address...
   ...
 
 
@@ -153,7 +153,7 @@
   ... """ % path)
   HTTP/1.1 200 Ok
   ...
-  ...You're trying to merge the user account...
+  ...trying to merge the Launchpad account...
   ...
 
 
@@ -202,7 +202,7 @@
   ... """ % path)
   HTTP/1.1 200 Ok
   ...
-  ...You're trying to merge the user account...
+  ...trying to merge the Launchpad account...
   ...
 
 
@@ -235,7 +235,83 @@
   >>> import canonical.database.sqlbase
   >>> canonical.database.sqlbase.flush_database_caches()
   >>> from canonical.launchpad.database import EmailAddressSet
-  >>> email = EmailAddressSet().getByEmail('foo@baz.com')
-  >>> email.person.name
+  >>> EmailAddressSet().getByEmail('foo@baz.com').person.name
   u'no-priv'
 
+
+  If the account we were trying to merge had a single email address, the
+  process would be a little simpler.
+
+  To demonstrate that, now we'll merge marilize@hbd.com into
+  no-priv@canonical.com.
+
+  >>> print http(r"""
+  ... POST /people/+requestmerge HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------1501047532899874819173278502
+  ... 
+  ... -----------------------------1501047532899874819173278502
+  ... Content-Disposition: form-data; name="field.dupeaccount"
+  ... 
+  ... marilize@hbd.com
+  ... -----------------------------1501047532899874819173278502
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Submit
+  ... -----------------------------1501047532899874819173278502--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: ./+mergerequest-sent?dupe=55
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/+mergerequest-sent?dupe=55 HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...An email message was sent to...marilize@hbd.com...
+  ...
+
+  Get the token we'll have to use to finish the registration process.
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/token/.../+accountmerge
+  ...
+
+
+  >>> path = "%s/+accountmerge" % base_path
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... password=test&SUBMIT_CHANGES=Submit""" % path)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/no-priv
+  ...
+  ...<div class="info-notification">The merge you requested was concluded with success. Now, everything that was owned by the duplicated account should be owned by your user account.</div>...
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/no-priv HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

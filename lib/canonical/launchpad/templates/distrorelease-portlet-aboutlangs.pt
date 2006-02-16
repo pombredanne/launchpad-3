@@ -1,8 +1,8 @@
 
 <div class="portlet">
-  <h4>Translating a Distribution Release</h4>
+  <h4>Translating a distribution release</h4>
   <div class="portletBody portletContent">
-    <img src="/++resource++info_icon.gif" />
+    <img src="/@@/info_icon.gif" />
     This page shows you all of the translations of the
     "<span tal:replace="context/name">hoary</span>" release of
     <span tal:replace="context/distribution/displayname">Ubuntu</span>. Pick

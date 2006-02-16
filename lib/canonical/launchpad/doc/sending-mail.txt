@@ -65,10 +65,8 @@ simple_sendmail_from_person uses the Person's preferred email address:
     ...     'test@canonical.com')
     >>> testing  = getUtility(IEmailAddressSet).getByEmail(
     ...     'testing@canonical.com')
-    >>> sample_person.preferredemail = testing
+    >>> sample_person.setPreferredEmail(testing)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
     >>> sample_person.preferredemail.email
     u'testing@canonical.com'
     >>> msgid = simple_sendmail_from_person(

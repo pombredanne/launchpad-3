@@ -6,14 +6,24 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.POMsgSet">
-      <require permission="zope.Public"
-          interface="canonical.launchpad.interfaces.IPOMsgSet"
-          set_attributes="fuzzy" />
+      <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
+      <require
+        permission="launchpad.Edit"
+        set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
     </content>
 
     <!-- Dummy PO Msg Set -->
     <content class="canonical.launchpad.database.DummyPOMsgSet">
-        <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
+      <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
+      <require
+        permission="launchpad.Edit"
+        set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
     </content>
+
+    <browser:page
+      for="*"
+      name="+pomsgset-translate"
+      permission="launchpad.AnyPerson"
+      template="../templates/pomsgset-translate.pt" />
 
 </configure>

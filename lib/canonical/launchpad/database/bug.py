@@ -4,6 +4,8 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet']
 
+import re
+
 from sets import Set
 from email.Utils import make_msgid
 
@@ -15,6 +17,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -26,14 +29,13 @@ from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
-from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
+from canonical.launchpad.database.bugtask import (
+    BugTask, BugTaskSet, bugtask_sort_key)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
-from zope.i18n import MessageIDFactory
-_ = MessageIDFactory("launchpad")
 
 
 class Bug(SQLBase):
@@ -150,16 +152,26 @@ class Bug(SQLBase):
 
         return sorted(emails)
 
-    # messages
+    # XXX, Brad Bollenbach, 2006-01-13: Setting publish_create_event to False
+    # allows us to suppress the create event when we *don't* want to have a
+    # separate email generated containing just the comment, e.g., when the user
+    # adds a comment on +editstatus. This is hackish though. See:
+    #
+    # https://launchpad.net/products/malone/+bug/25724
     def newMessage(self, owner=None, subject=None, content=None,
-        parent=None):
+                   parent=None, publish_create_event=True):
         """Create a new Message and link it to this ticket."""
-        msg = Message(parent=parent, owner=owner,
-            rfc822msgid=make_msgid('malone'), subject=subject)
+        msg = Message(
+            parent=parent, owner=owner, subject=subject,
+            rfc822msgid=make_msgid('malone'))
         MessageChunk(messageID=msg.id, content=content, sequence=1)
+
         bugmsg = BugMessage(bug=self, message=msg)
-        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
-        return msg
+
+        if publish_create_event:
+            notify(SQLObjectCreatedEvent(bugmsg, user=owner))
+
+        return bugmsg.message
 
     def linkMessage(self, message):
         """See IBug."""
@@ -200,8 +212,11 @@ class Bug(SQLBase):
             self.linkCVE(cve)
 
 
+
 class BugSet:
     implements(IBugSet)
+
+    valid_bug_name_re = re.compile(r'''^[a-z][a-z0-9\\+\\.\\-]+$''')
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
@@ -210,6 +225,21 @@ class BugSet:
         except SQLObjectNotFound:
             raise NotFoundError(
                 "Unable to locate bug with ID %s" % str(bugid))
+
+    def getByNameOrID(self, bugid):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
+        if self.valid_bug_name_re.match(bugid):
+            bug = Bug.selectOneBy(name=bugid)
+            if bug is None:
+                raise NotFoundError(
+                    "Unable to locate bug with ID %s" % str(bugid))
+        else:
+            try:
+                bug = self.get(bugid)
+            except ValueError:
+                raise NotFoundError(
+                    "Unable to locate bug with nickname %s" % str(bugid))
+        return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
@@ -294,7 +324,7 @@ class BugSet:
 
         # Extract the details needed to create the bug and optional msg.
         if not description:
-            description = msg.contents
+            description = msg.text_contents
 
         if not datecreated:
             datecreated = UTC_NOW
@@ -311,37 +341,15 @@ class BugSet:
 
         # Create the task on a product if one was passed.
         if product:
-            BugTask(bug=bug, product=product, owner=owner)
-
-            # If a product bug contact has been provided, subscribe that contact
-            # to all public bugs. Otherwise subscribe the product owner to all
-            # public bugs.
-            if not bug.private:
-                if product.bugcontact:
-                    bug.subscribe(product.bugcontact)
-                else:
-                    bug.subscribe(product.owner)
+            BugTaskSet().createTask(bug=bug, product=product, owner=owner)
 
         # Create the task on a source package name if one was passed.
         if distribution:
-            BugTask(
+            BugTaskSet().createTask(
                 bug=bug,
                 distribution=distribution,
                 sourcepackagename=sourcepackagename,
                 binarypackagename=binarypackagename,
                 owner=owner)
-
-            # If a distribution bug contact has been provided, subscribe that
-            # contact to all public bugs.
-            if distribution.bugcontact and not bug.private:
-                bug.subscribe(distribution.bugcontact)
-
-            # Subscribe package bug contacts to public bugs, if package
-            # information was provided.
-            if sourcepackagename:
-                package = distribution.getSourcePackage(sourcepackagename)
-                if package.bugcontacts and not bug.private:
-                    for pkg_bugcontact in package.bugcontacts:
-                        bug.subscribe(pkg_bugcontact.bugcontact)
 
         return bug

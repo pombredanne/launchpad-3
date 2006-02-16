@@ -28,14 +28,16 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
-    def getWikiSubmissions(language, pluralform):
-        """Return an iterator over all the submissions in any PO file for
-        this pluralform in this language, for the same msgid."""
+    def getCurrentSubmissionsIDs(language, pluralform):
+        """Return a list of IPOSubmission IDs that are currently published or
+        active in any PO file for the same language and prime msgid.
+        """
 
     def getCurrentSubmissions(language, pluralform):
-        """Return an iterator over each of the submissions out there that
-        are currently published or active in any PO file for the same
-        language and prime msgid."""
+        """Return an iterator over each of the submissions out there that are
+        currently published or active in any PO file for the same language and
+        prime msgid.
+        """
 
     def flags():
         """Return a list of flags on this set."""
@@ -57,13 +59,11 @@ class IPOTMsgSet(Interface):
         XXX very UI-specific, perhaps this should be elsewhere?
         """
 
-    def poMsgSet(language, variant=None):
-        """Retrieve the POMsgSet corresposponding to this POTMsgSet.
+    def getPOMsgSet(language, variant=None):
+        """Return the IPOMsgSet corresponding to this IPOTMsgSet or None.
 
-        The concrete POMsgSet is choosed by the language and variant
-        arguments, being language a Language object and variant a string.
-        If there is not POMsgSet for that language + variant convination, the
-        NotFoundError exception is raised.
+        :language: The language associated with the IPOMsgSet that we want.
+        :variant: The language variant.
         """
 
     def makeMessageIDSighting(text, pluralForm, update=False):

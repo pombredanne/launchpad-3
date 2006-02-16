@@ -7,7 +7,7 @@
 
   <div metal:fill-slot="body">
 
-  <h1>Standard Request Options</h1>
+  <h1>Standard request options</h1>
 
   <table>
   <tbody>
@@ -36,7 +36,7 @@
       <tbody>
         <tr tal:repeat="shipitrequest context/getAll">
           <td>
-            <img src="/++resource++edit.gif">
+            <img src="/@@/edit.gif">
             <a tal:attributes="href shipitrequest/fmt:url"
                tal:content="shipitrequest/description">description</a>
           </td>

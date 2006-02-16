@@ -187,11 +187,12 @@ class TicketContextMenu(ContextMenu):
 
     def reopen(self):
         text = 'Reopen Request'
-        return Link('+reopen', text, icon='edit',
-                    enabled=self.context.can_be_reopened)
+        enabled = (
+            self.context.can_be_reopened and self.user == self.context.owner)
+        return Link('+reopen', text, icon='edit', enabled=enabled)
 
     def history(self):
-        text = 'Show History'
+        text = 'History'
         return Link('+history', text, icon='list',
                     enabled=bool(self.context.reopenings))
 
@@ -245,4 +246,3 @@ class TicketSetContextMenu(ContextMenu):
     def finddistro(self):
         text = 'Find Distribution'
         return Link('/distros', text, icon='search')
-

@@ -19,6 +19,7 @@ from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
+from canonical.launchpad.helpers import shortlist
 
 
 class POTMsgSet(SQLBase):
@@ -35,31 +36,6 @@ class POTMsgSet(SQLBase):
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
-
-    def getWikiSubmissions(self, language, pluralform):
-        """See IPOTMsgSet"""
-        results = POSubmission.select("""
-            POSubmission.pomsgset = POMsgSet.id AND
-            POSubmission.pluralform = %d AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = %d AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %d""" % (pluralform,
-                language.id, self.primemsgid_ID),
-            clauseTables=['POMsgSet',
-                          'POFile',
-                          'POTMsgSet'],
-            orderBy=['-datecreated'],
-            distinct=True)
-        submissions = sets.Set()
-        translations = sets.Set()
-        for submission in results:
-            if submission.potranslation not in translations:
-                translations.add(submission.potranslation)
-                submissions.add(submission)
-        result = sorted(list(submissions), key=lambda x: x.datecreated)
-        result.reverse()
-        return result
 
     def getCurrentSubmissionsIDs(self, language, pluralform):
         """See IPOTMsgSet."""
@@ -78,7 +54,7 @@ class POTMsgSet(SQLBase):
                     ps2.publishedsubmission = POSubmission.id AND
                     ps2.pluralform = %s)
             WHERE
-                ps1 IS NOT NULL OR ps2 IS NOT NULL
+                ps1.id IS NOT NULL OR ps2.id IS NOT NULL
             ''' % sqlvalues(
                 language.id, self.primemsgid_ID, pluralform, pluralform))
 
@@ -93,7 +69,7 @@ class POTMsgSet(SQLBase):
                 'POSubmission.id IN (%s)' % ', '.join(ids),
                 orderBy='-datecreated')
 
-            return posubmissions
+            return shortlist(posubmissions)
         else:
             return []
 
@@ -129,14 +105,14 @@ class POTMsgSet(SQLBase):
         else:
             return sighting
 
-    def poMsgSet(self, language_code, variant=None):
+    def getPOMsgSet(self, language_code, variant=None):
         """See IPOTMsgSet."""
         if variant is None:
             variantspec = 'IS NULL'
         else:
             variantspec = ('= %s' % quote(variant))
 
-        pomsgset = POMsgSet.selectOne('''
+        return POMsgSet.selectOne('''
             POMsgSet.potmsgset = %d AND
             POMsgSet.pofile = POFile.id AND
             POFile.language = Language.id AND
@@ -146,10 +122,6 @@ class POTMsgSet(SQLBase):
                    variantspec,
                    quote(language_code)),
             clauseTables=['POFile', 'Language'])
-
-        if pomsgset is None:
-            raise NotFoundError(language_code, variant)
-        return pomsgset
 
     def translationsForLanguage(self, language):
         # To start with, find the number of plural forms. We either want the

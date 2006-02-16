@@ -35,12 +35,20 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistribution
 
+    @redirection('+source', status=301)
+    def redirect_source(self):
+        return canonical_url(self.context)
+
     def breadcrumb(self):
         return self.context.displayname
 
     @stepto('+packages')
     def packages(self):
         return getUtility(IPublishedPackageSet)
+
+    @stepthrough('+mirror')
+    def traverse_mirrors(self, name):
+        return self.context.getMirrorByName(name)
 
     @stepthrough('+source')
     def traverse_sources(self, name):
@@ -100,7 +108,8 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'editbugcontact', 'reassign', 'addrelease', 'builds']
+             'editbugcontact', 'reassign', 'addrelease', 'builds',
+             'officialmirrors', 'allmirrors', 'newmirror']
 
     def edit(self):
         text = 'Edit Details'
@@ -114,6 +123,18 @@ class DistributionOverviewMenu(ApplicationMenu):
     def reassign(self):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
+
+    def newmirror(self):
+        text = 'Register a New Mirror'
+        return Link('+newmirror', text, icon='add')
+
+    def officialmirrors(self):
+        text = 'List Official Mirrors'
+        return Link('+officialmirrors', text, icon='info')
+
+    def allmirrors(self):
+        text = 'List All Mirrors'
+        return Link('+allmirrors', text, icon='info')
 
     def allpkgs(self):
         text = 'List All Packages'

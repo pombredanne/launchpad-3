@@ -54,6 +54,10 @@ __all__ = (
 'ManifestEntryType',
 'ManifestEntryHint',
 'MirrorFreshness',
+'MirrorContent',
+'MirrorPulseType',
+'MirrorSpeed',
+'MirrorStatus',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
@@ -1419,47 +1423,26 @@ class TicketStatus(DBSchema):
     """The current status of a Support Request
 
     This enum tells us the current status of the support ticket. The
-    request has a simple lifecycle, from new to closed.
+    request has a simple lifecycle, from open to answered or rejected.
     """
 
-    NEW = Item(10, """
-        New
+    OPEN = Item(10,
+        """Open
 
-        This support ticket is new to the system and has not yet been
-        reviewed by any support engineer.
+        There might be someone that answered the support request, but
+        the submitter hasn't accepted the answer yet.
         """)
 
-    OPEN = Item(20, """
-        Open
+    ANSWERED = Item(20,
+        """Answered
 
-        This support ticket has been reviewed by a support engineer, and is
-        considered to be a valid issue. There may have been some
-        correspondence on the issue, but we do not think it has yet been
-        answered properly.
+        The submitter of the support request has accepted an answer.
         """)
 
-    ANSWERED = Item(30, """
-        Answered
+    REJECTED = Item(30,
+        """Rejected
 
-        We believe that the last correspondence from the support engineer
-        was sufficient to resolve the problem. At this stage, the customer
-        will receive email notifications asking them to confirm the
-        resolution of the problem by marking the request "closed".
-        Alternatively, they can re-open the request, marking it "open".
-        """)
-
-    CLOSED = Item(40, """
-        Closed
-
-        This request has been verified as "closed" by the customer.
-        """)
-
-    REJECTED = Item(50, """
-        Rejected
-
-        This request has been marked as "rejected" by the support engineer,
-        likely it represents sample data or a mistaken entry. This request
-        will not show on most lists or reports.
+        No acceptable answer was provided to the question.
         """)
 
 
@@ -2661,7 +2644,7 @@ class BuildStatus(DBSchema):
         """)
 
     FULLYBUILT = Item(1, """
-        Fully built
+        Successfully built
 
         Build record is an historic account of the build. The build is complete
         and needs no further work to complete it. The build log etc are all
@@ -2678,7 +2661,7 @@ class BuildStatus(DBSchema):
         """)
 
     MANUALDEPWAIT = Item(3, """
-        Manual dependency wait
+        Dependency wait
 
         Build record represents a package whose build dependencies cannot
         currently be satisfied within the relevant DistroArchRelease. This
@@ -2687,7 +2670,7 @@ class BuildStatus(DBSchema):
         """)
 
     CHROOTWAIT = Item(4, """
-        Chroot wait
+        Chroot problem
 
         Build record represents a build which needs a chroot currently known
         to be damaged or bad in some way. The buildd maintainer will have to
@@ -2706,6 +2689,147 @@ class MirrorFreshness(DBSchema):
         Freshness Unknown
 
         The Freshness was never verified and is unknown.
+        """)
+
+
+class MirrorContent(DBSchema):
+    """The content that is mirrored."""
+
+    ARCHIVE = Item(1, """
+        Archive
+
+        This mirror contains source and binary packages for a given
+        distribution. Mainly used for APT-based system.
+        """)
+
+    RELEASE = Item(2, """
+        Release
+
+        Mirror containing released installation images for a given
+        distribution.
+        """)
+
+    CDIMAGE = Item(3, """
+        CD Image
+
+        Mirrors containing CD images other than the installation ones, relesed
+        for a given distribution.
+        """)
+
+
+class MirrorPulseType(DBSchema):
+    """The method used by a mirror to update its contents."""
+
+    PULL = Item(1, """
+        Pull
+
+        Mirror has a supported network application to "pull" the original
+        content server periodically.
+        """)
+
+    PUSH = Item(2, """
+        Push
+
+        Original content server has enough access to the Mirror and is able to
+        "push" new modification as soon as they happen.
+        """)
+
+
+class MirrorSpeed(DBSchema):
+    """The speed of a given mirror."""
+
+    S128K = Item(1, """
+        128Kb per second
+
+        The upstream link of this mirror can make up to 128Kb per second.
+        """)
+
+    S256K = Item(2, """
+        256Kb per second
+
+        The upstream link of this mirror can make up to 256Kb per second.
+        """)
+
+    S512K = Item(3, """
+        512Kb per second
+
+        The upstream link of this mirror can make up to 512Kb per second.
+        """)
+
+    S1M = Item(4, """
+        1Mb per second
+
+        The upstream link of this mirror can make up to 1Mb per second.
+        """)
+
+    S2M = Item(5, """
+        2Mb per second
+
+        The upstream link of this mirror can make up to 2Mb per second.
+        """)
+
+    S10M = Item(6, """
+        10Mb per second
+
+        The upstream link of this mirror can make up to 10Mb per second.
+        """)
+
+    S100M = Item(7, """
+        100Mb per second
+
+        The upstream link of this mirror can make up to 100Mb per second.
+        """)
+
+
+class MirrorStatus(DBSchema):
+    """The status of a given mirror."""
+
+    UP = Item(1, """
+        Up to date
+
+        This mirror is up to date with the original content.
+        """)
+
+    ONEHOURBEHIND = Item(2, """
+        One hour behind
+
+        This mirror's content seems to have been last updated one hour ago.
+        """)
+
+    TWOHOURSBEHIND = Item(3, """
+        Two hours behind
+
+        This mirror's content seems to have been last updated two hours ago.
+        """)
+
+    SIXHOURSBEHIND = Item(4, """
+        Six hours behind
+
+        This mirror's content seems to have been last updated six hours ago.
+        """)
+
+    ONEDAYBEHIND = Item(5, """
+        One day behind
+
+        This mirror's content seems to have been last updated one day ago.
+        """)
+
+    TWODAYSBEHIND = Item(6, """
+        Two days behind
+
+        This mirror's content seems to have been last updated two days ago.
+        """)
+
+    ONEWEEKBEHIND = Item(7, """
+        One week behind
+
+        This mirror's content seems to have been last updated one week ago.
+        """)
+
+    UNKNOWN = Item(8, """
+        Unknown
+
+        We couldn't determine when this mirror's content was last updated.
         """)
 
 

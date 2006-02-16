@@ -76,11 +76,11 @@ Let's see some examples of how this works:
 
   >>> high_priority_task.status = BugTaskStatus.CONFIRMED
   >>> high_priority_task.statusdisplayhtml
-  u'confirmed, assigned to <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  u'confirmed, assigned to <img src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> high_priority_task.status = BugTaskStatus.REJECTED
   >>> high_priority_task.statusdisplayhtml
-  u'rejected by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  u'rejected by <img src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> high_priority_task.assignee = None
   >>> high_priority_task.statusdisplayhtml

@@ -12,7 +12,7 @@
     <h4>About Soyuz:</h4>
 
     <div class="portletBody portletContent">
-      <img src="/++resource++info_icon.gif" />
+      <img src="/@@/info_icon.gif" />
       "Soyuz" is the part of Launchpad that keeps track of the applications
       published in different distributions. It allows you to track, for
       example, the bugs in a distribution.
@@ -20,35 +20,23 @@
   </div>
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div class="portlet">
-    <h4>About Read-Only Distributions:</h4>
-
-    <div class="portletBody portletContent">
-      <img src="/++resource++info_icon.gif" />
-      Some of these distributions are read-only.
-      They can be browsed in Launchpad, but not altered or managed,
-      and their information might be out of date.
-    </div>
-  </div>
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
-    <p class="documentDescription">
-      This page shows all distributions that are registered in the
-      Launchpad.
+    <p>
+      There are <tal:count replace="view/count" /> distributions
+      registered in Launchpad.
     </p>
 
-    <table width="100%" class="listing">
+    <table class="listing">
+      <thead>
         <tr>
             <th>Name</th>
             <th>Title</th>
             <th>Domain Name</th>
         </tr>
-        <tr tal:repeat="distribution context"
-            tal:attributes="onclick
-                string:window.location='/distros/${distribution/name}'">
+      </thead>
+      <tbody>
+        <tr tal:repeat="distribution context">
             <td>
                 <a tal:content="distribution/name" 
 	               tal:attributes="href
@@ -66,16 +54,13 @@
                 domain.org
             </td>
         </tr>
+      </tbody>
     </table>    
 
     <div>
-      <div style="float: right;">
-        (<span tal:replace="view/count" />
-        distributions in total)
-      </div>
-      <div style="float: left;">
-        * read-only distribution.
-      </div>
+      * Read-only distribution.
+      Can be browsed in Launchpad, but not altered or managed,
+      and its information might be out of date.
     </div>
 
 

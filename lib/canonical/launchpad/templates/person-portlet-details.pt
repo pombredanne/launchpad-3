@@ -11,16 +11,18 @@
             tal:content="context/name">sabdfl</a>)<br />
 
       <tal:logged_in condition="request/lp:person">
-        <b>Preferred Email:</b><br />
+      <tal:visible_emails condition="not: context/hide_email_addresses">
+        <b>Preferred address:</b><br />
         <img tal:condition="context/preferredemail"
-             src="/++resource++email" />
+             src="/@@/email" />
         <span tal:condition="context/preferredemail"
               tal:replace="context/preferredemail/email">foo@bar.com</span>
         <tal:no_pref_mail condition="not: context/preferredemail">
-          <img src="/++resource++alert" />
+          <img src="/@@/alert" />
           <i>None set</i>
         </tal:no_pref_mail>
         <br />
+      </tal:visible_emails>
       </tal:logged_in>
 
       <b>Timezone:</b>
@@ -28,8 +30,8 @@
       <i tal:condition="not: context/timezone">None given</i><br />
 
       <b>Ubuntero:</b>
-      <tal:block condition="context/is_ubuntite">Yes</tal:block>
-      <tal:block condition="not: context/is_ubuntite">Not yet</tal:block>
+      <tal:block condition="context/is_ubuntero">Yes</tal:block>
+      <tal:block condition="not: context/is_ubuntero">Not yet</tal:block>
       <br />
 
       <b>Karma:</b>
@@ -59,13 +61,13 @@
       Here we are going to put all the emblems from teams this person
       belongs to.
     </tal:comment>
-    <tal:memberships repeat="membership context/myactivememberships">
-      <a tal:attributes="href membership/team/fmt:url"
-        ><img tal:condition="membership/team/emblem"
-              tal:attributes="src membership/team/emblem/url;
-                              title string:Emblem of ${membership/team/name}"
+    <tal:participations repeat="team context/teams_participated_in">
+      <a tal:attributes="href team/fmt:url"
+        ><img tal:condition="team/emblem"
+              tal:attributes="src team/emblem/url;
+                              title string:Emblem of ${team/name}"
           /></a>
-    </tal:memberships>
+    </tal:participations>
     
   </div>
 

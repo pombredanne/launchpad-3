@@ -1,15 +1,15 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/target/displayname">Ubuntu</span> Ticket
+  <h4><span tal:replace="context/target/displayname">Ubuntu</span> ticket
       #<span tal:replace="context/id">234</span>:</h4>
 
   <div class="portletBody portletContent">
 
     <b>Support request from:</b><br />
-    <img src="/++resource++user.gif" />
+    <img src="/@@/user.gif" />
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">Foo Bar</a><br />
-	
+
     <b>Status:</b>
     <span tal:replace="context/status/title">Open</span><br />
 
@@ -24,7 +24,7 @@
     <span tal:condition="context/sourcepackagename"
           tal:replace="context/sourcepackagename/name">moz-ff</span>
     <br />
-    
+
     <tal:block condition="context/datedue">
       <b>Due:</b>
       <span tal:replace="context/datedue/fmt:date" /><br />
@@ -35,7 +35,7 @@
 
     <b>Assignee:</b><br />
     <tal:block condition="context/assignee">
-      <img src="/++resource++user.gif" />
+      <img src="/@@/user.gif" />
       <a tal:attributes="href context/assignee/fmt:url"
          tal:content="context/assignee/browsername">Foo Bar</a>
     </tal:block>
@@ -44,9 +44,9 @@
     </tal:block>
     <br />
 
-    <b>Answered By:</b><br />
+    <b>Answered by:</b><br />
     <tal:block condition="context/answerer">
-      <img src="/++resource++user.gif" />
+      <img src="/@@/user.gif" />
       <a tal:attributes="href context/answerer/fmt:url"
          tal:content="context/answerer/browsername">Foo Bar</a>
     </tal:block>
@@ -55,7 +55,7 @@
     </tal:block>
     <br />
 
-    <b>Last Query:</b>
+    <b>Last query:</b>
     <span tal:replace="context/datelastquery/fmt:date" /><br />
 
     <tal:block condition="context/datelastresponse">
@@ -66,11 +66,6 @@
     <tal:block condition="context/dateanswered">
       <b>Answered:</b>
       <span tal:replace="context/dateanswered/fmt:date" /><br />
-    </tal:block>
-
-    <tal:block condition="context/dateclosed">
-      <b>Closed:</b>
-      <span tal:replace="context/dateclosed/fmt:date" /><br />
     </tal:block>
 
   </div>

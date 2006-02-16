@@ -133,10 +133,10 @@ class SourcePackageRelease(SQLBase):
     def open_tickets_count(self):
         """See ISourcePackageRelease."""
         results = Ticket.select("""
-            status IN (%s, %s) AND
+            status = %s AND
             distribution = %s AND
             sourcepackagename = %s
-            """ % sqlvalues(TicketStatus.NEW, TicketStatus.OPEN,
+            """ % sqlvalues(TicketStatus.OPEN,
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()
@@ -242,6 +242,12 @@ class SourcePackageRelease(SQLBase):
         for filename in filenames:
             # Fetch the file
             content = tarball.extractfile(filename).read()
+            if filename.startswith('source/'):
+                # Remove the special 'source/' prefix for the path.
+                filename = filename[len('source/'):]
+            elif filename.startswith('./source/'):
+                # Remove the special './source/' prefix for the path.
+                filename = filename[len('./source/'):]
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, is_published, importer,

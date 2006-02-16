@@ -127,6 +127,16 @@ Another example, this time for an upstream:
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'mark@hbd.com']
 
+If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
+contact will be subscribed:
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
+    ...     bug=new_bug, distribution=ubuntu, owner=sabdfl)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    ['foo.bar@canonical.com', 'mark@hbd.com', 'test@canonical.com']
+
 When an upstream does *not* have a specific bug contact set, the
 product.owner is used instead. So, if Firefox's bugcontact is unset,
 Sample Person, the Firefox "owner" will get subscribed instead:
@@ -153,28 +163,27 @@ private bugs:
 Now let's create a bug on a specific package, which has no package bug
 contacts:
 
-    >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
-    >>> ubuntu_mozilla_firefox.bugcontacts
+    >>> evolution = ubuntu.getSourcePackage("evolution")
+    >>> evolution.bugcontacts
     []
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="another test bug",
     ...     comment="another test description",
     ...     owner=foobar, distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename)
+    ...     sourcepackagename=evolution.sourcepackagename)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
 
-Adding a package bug contact for ubuntu_mozilla_firefox will mean that
-that package bug contact gets subscribed to all bugmail on bugs filed
-after the point that the bug contact was set.
+Adding a package bug contact for evolution will mean that that package
+bug contact gets subscribed to all bugmail on bugs filed after the point
+that the bug contact was set.
 
-So, if the Ubuntu team is added as a bug contact to
-ubuntu_mozilla_firefox:
+So, if the Ubuntu team is added as a bug contact to evolution:
 
     >>> ubuntu_team = personset.get(17)
-    >>> ubuntu_mozilla_firefox.addBugContact(ubuntu_team)
+    >>> evolution.addBugContact(ubuntu_team)
 
 The team will still *not* be a recipient of bugmail from the previous
 bug we created:
@@ -188,7 +197,7 @@ But the team will be subscribed to bugmail for future bugs:
     ...     title="yet another test bug",
     ...     comment="yet another test description",
     ...     owner=foobar, distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename)
+    ...     sourcepackagename=evolution.sourcepackagename)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
@@ -200,7 +209,7 @@ bug reports automatically:
     ...     title="yet another test bug",
     ...     comment="yet another test description",
     ...     owner=foobar, distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename,
+    ...     sourcepackagename=evolution.sourcepackagename,
     ...     private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())

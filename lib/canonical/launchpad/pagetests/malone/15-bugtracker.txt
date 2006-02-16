@@ -1,3 +1,4 @@
+  >>> from canonical.launchpad.helpers import backslashreplace
 
 First, let's make sure we can see the page listing all registered remote bug
 trackers.
@@ -6,7 +7,7 @@ trackers.
   ... GET /malone/bugtrackers/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Launchpad-registered Bug Trackers...
+  ...Bug trackers registered in Malone...
 
 Now we are going to add a bug tracker. First, can we see the form?
 
@@ -15,7 +16,58 @@ Now we are going to add a bug tracker. First, can we see the form?
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Register an External Bug Tracker...
+  ...Register an external bug tracker...
+
+We're not allowed to enter a name with uppercase characters, if we do so, we
+get a nice error message.
+
+  >>> print http(r"""
+  ... POST /malone/bugtrackers/+newbugtracker HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1137
+  ... Content-Type: multipart/form-data; boundary=---------------------------79153896411275119801134753838
+  ... 
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... TesTTrac
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.bugtrackertype"
+  ... 
+  ... Trac
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.bugtrackertype-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Test Trac Tracker
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... This is a test TRAC tracker.
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.baseurl"
+  ... 
+  ... http://trac.testing.org/tickets/
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.contactdetails"
+  ... 
+  ... blah blah
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------79153896411275119801134753838--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...An error occured...
+  ...
+  ...Invalid name 'TesTTrac'. Names must start with a letter...
+  ...
+
 
 Now, let's POST to the form. We expect to be redirected to the page for the
 new tracker.
@@ -66,14 +118,66 @@ new tracker.
   Location: http://localhost:9000/malone/bugtrackers/testtrac
   ...
 
-So let's view this new bug tracker.
+
+If we try to add a bugtracker with the same name of a existing one, we'll get
+a nice error message.
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/testtrac HTTP/1.1
+  ... POST /malone/bugtrackers/+newbugtracker HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1137
+  ... Content-Type: multipart/form-data; boundary=---------------------------79153896411275119801134753838
+  ... 
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... testtrac
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.bugtrackertype"
+  ... 
+  ... Trac
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.bugtrackertype-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Test Trac Tracker
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... This is a test TRAC tracker.
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.baseurl"
+  ... 
+  ... http://trac.testing.org/tickets/
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.contactdetails"
+  ... 
+  ... blah blah
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------79153896411275119801134753838--
   ... """)
   HTTP/1.1 200 Ok
-  ...Malone Bugtracker: Test Trac Tracker...
+  ...
+  ...An error occured...
+  ...
+  ...testtrac is already in use by another bugtracker...
+  ...
+
+
+Now, let's view this new bug tracker.
+
+  >>> print backslashreplace(str(http(r"""
+  ... GET /malone/bugtrackers/testtrac HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)))
+  HTTP/1.1 200 Ok
+  ...Bug tracker \u201cTest Trac Tracker\u201d...
 
 And lets see if we can edit it.
 

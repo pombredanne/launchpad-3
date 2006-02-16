@@ -15,7 +15,7 @@
 
     <div metal:fill-slot="main">
       <tal:block define="bn view/searchPeopleBatchNavigator">
-        <h1>People and Teams in Launchpad</h1>
+        <h1>People and teams in Launchpad</h1>
         <form name="search" action="." method="GET">
           <table style="margin-bottom: 1em;">
             <tr>
@@ -132,7 +132,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr tal:repeat="person python:list(bn.currentBatch())">
+                <tr tal:repeat="person bn/currentBatch">
                   <td><a tal:content="person/browsername"
                          tal:attributes="href person/name"/>
                   </td>

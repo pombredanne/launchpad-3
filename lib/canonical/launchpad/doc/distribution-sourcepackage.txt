@@ -44,22 +44,22 @@ List of current 'pmount in Ubuntu' as ISourcePackage:
     >>> [(sp.name, sp.distrorelease.name) for sp in dsp.by_distroreleases]
     [(u'pmount', u'hoary')]
 
-Publishing history of 'pmount in ubuntu':
+Publishing history of 'pmount in Ubuntu':
 
     >>> dsp.publishing_history.count()
     2
 
-Releases of 'pmount in ubuntu':
+Releases of 'pmount in Ubuntu':
 
     >>> [release.version for release in dsp.releases]
     [u'0.1-2', u'0.1-1']
 
-Binary packages of 'pmount in ubuntu':
+Binary packages of 'pmount in Ubuntu':
 
     >>> dsp.binary_package_names
     u'pmount'
 
-Current release of 'pmount in ubuntu':
+Current release of 'pmount in Ubuntu':
 
     >>> dsp.currentrelease.version
     u'0.1-2'
@@ -80,14 +80,14 @@ Useful methods:
     >>> dsp.bugtasks().count()
     0
 
-Retrieve a version of 'pmount in ubuntu' as a
+Retrieve a version of 'pmount in Ubuntu' as a
 IDistributionSourcePackageRelease or None if not found:
 
     >>> dsp.getVersion('1.0') is None
     True
 
     >>> dsp.getVersion('0.1-1').title
-    u'pmount 0.1-1 (source) in ubuntu'
+    u'pmount 0.1-1 (source) in Ubuntu'
 
 
 Package Bug Contact

@@ -141,30 +141,19 @@ class UpdateStatsTest(LaunchpadTestCase):
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
-        cur.execute("""
-            SELECT value from LaunchpadStatistic WHERE name='potemplate_count'
-            """)
-        self.failUnless(cur.fetchone()[0] > 0)
+        keys = [
+            'potemplate_count', 'pofile_count', 'pomsgid_count',
+            'translator_count', 'language_count',
+            'people_count', 'teams_count',
+            ]
 
-        cur.execute("""
-            SELECT value from LaunchpadStatistic WHERE name='pofile_count'
-            """)
-        self.failUnless(cur.fetchone()[0] > 0)
-
-        cur.execute("""
-            SELECT value from LaunchpadStatistic WHERE name='pomsgid_count'
-            """)
-        self.failUnless(cur.fetchone()[0] > 0)
-
-        cur.execute("""
-            SELECT value from LaunchpadStatistic WHERE name='translator_count'
-            """)
-        self.failUnless(cur.fetchone()[0] > 0)
-
-        cur.execute("""
-            SELECT value from LaunchpadStatistic WHERE name='language_count'
-            """)
-        self.failUnless(cur.fetchone()[0] > 0)
+        for key in keys:
+            cur.execute("""
+                SELECT value from LaunchpadStatistic WHERE name=%(key)s
+                """, vars())
+            row = cur.fetchone()
+            self.failIf(row is None, '%s not updated' % key)
+            self.failUnless(row[0] > 0, '%s is invalid' % key)
 
 
 def test_suite():

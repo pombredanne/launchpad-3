@@ -1,13 +1,13 @@
 <div class="portlet">
 
-  <h4>Filter Results:</h4>
+  <h4>Filter results:</h4>
 
   <div class="portletBody portletContent">
 
     <div class="lesser">
       <form method="GET">
         <input type="text" name="text">
-        <img src="/++resource++search" />
+        <img src="/@@/search" />
       </form>
     </div>
 

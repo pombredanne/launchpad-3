@@ -8,51 +8,64 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
     IPersonSet, IDistributionSet, IBugTrackerSet)
 
-class LaunchpadCelebrities:
+class CelebrityDescriptor:
+    """An attribute of LaunchpadCelebrities
 
+    This descriptor removes unnecessary boilerplate from the
+    LaunchpadCelebrities attribute, as well as optimizing database
+    access to ensure that using a celebrity causes at most one
+    database query per request.
+
+    TODO: By implementing a suitably clever wrapper, we should be able
+    to reduce the queries further, as we will only ever need to really
+    query the database if code attempts to access attributes of the
+    celebrity besides the non-volatile id and name attributes. However,
+    this is non trivial as we need to ensure that security and interface
+    declarations remain unchanged. Perhaps we need a way of instantiating
+    SQLObject instances in a 'lazy' mode? Or perhaps we should not worry
+    about volatile attribute changes and pass a selectResults value through
+    to the SQLObject.get method, which should allow us to instantiate a
+    real instance without hitting the database. -- StuartBishop 20060123
+    """
+    interface = None
+    name = None
+    id = None
+
+    def __init__(self, interface, name):
+        """Interface is used to lookup a utility which must have both
+        a get method to lookup by id, and a getByName method to lookup by
+        name.
+        """
+        self.interface = interface
+        self.name = name
+
+    def __get__(self, instance, cls=None):
+        if instance is None:
+            return self
+
+        utility = getUtility(self.interface)
+        if self.id is None:
+            celebrity = utility.getByName(self.name)
+            self.id = celebrity.id
+        else:
+            celebrity = utility.get(self.id)
+            assert celebrity is not None, 'Celebrity id has changed'
+            assert celebrity.name == self.name, 'Celebrity name has changed'
+        return celebrity
+
+
+class LaunchpadCelebrities:
+    """See ILaunchpadCelebrities"""
     implements(ILaunchpadCelebrities)
 
-    @property
-    def buttsource(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IPersonSet).getByName('buttsource')
+    buttsource = CelebrityDescriptor(IPersonSet, 'buttsource')
+    admin = CelebrityDescriptor(IPersonSet, 'admins')
+    ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
+    debian = CelebrityDescriptor(IDistributionSet, 'debian')
+    rosetta_expert = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
+    debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
+    shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
+    launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
+    mirror_admin = CelebrityDescriptor(IPersonSet, 'mirror-admins')
+    ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
 
-    @property
-    def admin(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IPersonSet).getByName('admins')
-
-    @property
-    def ubuntu(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IDistributionSet).getByName('ubuntu')
-
-    @property
-    def debian(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IDistributionSet).getByName('debian')
-
-    @property
-    def rosetta_expert(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IPersonSet).getByName('rosetta-admins')
-
-    @property
-    def debbugs(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IBugTrackerSet)['debbugs']
-
-    @property
-    def shipit_admin(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IPersonSet).getByName('shipit-admins')
-
-    @property
-    def launchpad_developers(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IPersonSet).getByName('launchpad')
-
-    @property
-    def ubuntu_bugzilla(self):
-        """See ILaunchpadCelebrities."""
-        return getUtility(IBugTrackerSet)['ubuntu-bugzilla']

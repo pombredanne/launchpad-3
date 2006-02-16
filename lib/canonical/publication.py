@@ -217,7 +217,6 @@ class LaunchpadBrowserPublication(
             request.response.setBody('')
 
     def endRequest(self, request, object):
-        da.clear_request_started()
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
-
+        da.clear_request_started()

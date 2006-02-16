@@ -62,7 +62,7 @@ which unresolved bug tasks exist.
   >>> len(other_releases_unresolved_bugs.keys())
   1
 
-  >>> other_releases_unresolved_bugs["woody"][0].id
+  >>> other_releases_unresolved_bugs["Woody"][0].id
   18
 
 General Unresolved Bugs
@@ -75,7 +75,7 @@ specific release.
 
   >>> general_unresolved_bugs = sourcepackage_bugs_view.general_unresolved_bugs
 
-  >>> len(general_unresolved_bugs)
+  >>> general_unresolved_bugs.count()
   3
 
   >>> taskids = [task.id for task in general_unresolved_bugs]
@@ -94,8 +94,8 @@ The SourcePackageBugsView methods are search aware.
   [3]
   >>> other_releases_bugs = sourcepackage_bugs_view.other_releases_unresolved_bugs
   >>> other_releases_bugs.keys()
-  [u'woody']
-  >>> woody_bugs = other_releases_bugs['woody']
+  [u'Woody']
+  >>> woody_bugs = other_releases_bugs['Woody']
   >>> [task.bug.id for task in woody_bugs]
   [3]
   >>> [task.bug.id for task in sourcepackage_bugs_view.general_unresolved_bugs]

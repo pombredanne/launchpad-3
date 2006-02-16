@@ -69,17 +69,18 @@ class SystemErrorView:
         return ('<div class="highlighted" '
                 'style="font-family: monospace; font-size: smaller;">'
                 '%s'
-                '</div') % html
+                '</div>') % html
 
     def maybeShowTraceback(self):
         """Return a traceback, but only if it is appropriate to do so."""
-        # Always show tracebacks in page tests, but formatted as plain text.
-        if self.pagetesting:
-            return self.inside_div('<pre>\n%s</pre>' % self.plaintext)
         # If the config says to show tracebacks, or we're on the debug port,
-        # or the logged in user is in the launchpad team, show HTML tracebacks.
-        elif self.show_tracebacks or self.debugging or self.specialuser:
-            return self.inside_div(self.htmltext)
+        # or the logged in user is in the launchpad team, show tracebacks.
+        if self.show_tracebacks or self.debugging or self.specialuser:
+            if self.pagetesting:
+                # Show tracebacks in page tests, but formatted as plain text.
+                return self.inside_div('<pre>\n%s</pre>' % self.plaintext)
+            else:
+                return self.inside_div(self.htmltext)
         else:
             return ''
 

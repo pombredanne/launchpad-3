@@ -10,15 +10,19 @@ import email.Errors
 import re
 
 import transaction
-from zope.component import getUtility, queryUtility
+from zope.component import getUtility
+from zope.interface import directlyProvides, directlyProvidedBy
 
-from canonical.launchpad.interfaces import (IPerson, IGPGHandler, 
-    IMailHandler, IMailBox, ILibraryFileAliasSet)
-from canonical.launchpad.helpers import (setupInteraction,
-    get_filename_from_message_id)
+from canonical.uuid import generate_uuid
+from canonical.launchpad.interfaces import (
+    IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
+    IWeaklyAuthenticatedPrincipal, GPGVerificationError)
+from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import notify_errors_list
+from canonical.librarian.interfaces import UploadFailed
 
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
@@ -64,32 +68,36 @@ def authenticateEmail(mail):
         setupInteraction(authutil.unauthenticatedPrincipal())
         return
     elif signature is None:
-        #XXX: When DifferentPrincipalsSameUser is implemented, a weakly
-        #     authenticated principal should be used. At the moment we have to
-        #     do all permission checks in the code instead of using security
-        #     adapter. -- Bjorn Tillenius, 2005-06-06
+        # Mark the principal so that application code can check that the
+        # user was weakly authenticated.
+        directlyProvides(
+            principal, directlyProvidedBy(principal),
+            IWeaklyAuthenticatedPrincipal)
         setupInteraction(principal, email_addr)
         return principal
 
     person = IPerson(principal)
     gpghandler = getUtility(IGPGHandler)
-    sig = gpghandler.verifySignature(
-        canonicalise_line_endings(signed_content), signature)
-    if sig is None:
+    try:
+        sig = gpghandler.getVerifiedSignature(
+            canonicalise_line_endings(signed_content), signature)
+    except GPGVerificationError, e:
         # verifySignature failed to verify the signature.
-        raise InvalidSignature("Signature couldn't be verified.")
+        raise InvalidSignature("Signature couldn't be verified: %s" % str(e))
 
-    # Log in the user if the key used to sign belongs to him.
     for gpgkey in person.gpgkeys:
         if gpgkey.fingerprint == sig.fingerprint:
-            setupInteraction(principal, email_addr)
-            return principal
-    # The key doesn't belong to the user.
-    raise InvalidSignature(
-        "The key used to sign the email doesn't belong to the user.")
+            break
+    else:
+        # The key doesn't belong to the user. Mark the principal so that the
+        # application code knows that the key used to sign the email isn't
+        # associated with the authenticated user.
+        directlyProvides(
+            principal, directlyProvidedBy(principal),
+            IWeaklyAuthenticatedPrincipal)
 
-    # The GPG signature couldn't be verified  
-    setupInteraction(authutil.unauthenticatedPrincipal())
+    setupInteraction(principal, email_addr)
+    return principal
 
 
 def handleMail(trans=transaction):
@@ -109,109 +117,139 @@ def handleMail(trans=transaction):
         notify_errors_list(error_msg, file_alias_url)
         trans.commit()
 
+    log = getLogger('process-mail')
     mailbox = getUtility(IMailBox)
+    log.info("Opening the mail box.")
     mailbox.open()
-    for mail_id, raw_mail in mailbox.items():
-        trans.begin()
-        try:
-            mail = signed_message_from_string(raw_mail)
-        except email.Errors.MessageError, error:
-            mailbox.delete(mail_id)
-            log = getLogger('canonical.launchpad.mail')
-            log.warn("Couldn't convert email to email.Message", exc_info=True)
-            continue
+    try:
+        for mail_id, raw_mail in mailbox.items():
+            log.info("Processing mail %s" % mail_id)
+            try:
+                file_alias_url = None
+                trans.begin()
 
-        # File the raw_mail in the Librarian
-        file_name = get_filename_from_message_id(mail['Message-Id'])
-        file_alias = getUtility(ILibraryFileAliasSet).create(
-                file_name, len(raw_mail),
-                cStringIO(raw_mail), 'message/rfc822')
-        # Let's save the url of the file alias, otherwise we might not
-        # be able to access it later if we get a DB exception.
-        file_alias_url = file_alias.url
+                # File the raw_mail in the Librarian
+                file_name = generate_uuid() + '.txt'
+                try:
+                    file_alias = getUtility(ILibraryFileAliasSet).create(
+                            file_name, len(raw_mail),
+                            cStringIO(raw_mail), 'message/rfc822')
+                except UploadFailed:
+                    # Something went wrong in the Librarian. It could be
+                    # that it's not running, but not necessarily. Log
+                    # the error and skip the message, but don't delete
+                    # it.
+                    log.error('Upload to Librarian failed', exc_info=True)
+                    continue
 
-        # If something goes wrong when handling the mail, the
-        # transaction will be aborted. Therefore we need to commit the
-        # transaction now, to ensure that the mail gets stored in the
-        # Librarian.
-        trans.commit()
-        trans.begin()
+                # Let's save the url of the file alias, otherwise we might not
+                # be able to access it later if we get a DB exception.
+                file_alias_url = file_alias.url
 
-        # If the Return-Path header is '<>', it probably means that it's
-        # a bounce from a message we sent.
-        if mail['Return-Path'] == '<>':
-            _handle_error("Message had an empty Return-Path.", file_alias_url)
-            continue
+                # If something goes wrong when handling the mail, the
+                # transaction will be aborted. Therefore we need to commit the
+                # transaction now, to ensure that the mail gets stored in the
+                # Librarian.
+                trans.commit()
+                trans.begin()
 
-        try:
-            principal = authenticateEmail(mail)
-        except InvalidSignature, error:
-            _handle_error(
-                "Invalid signature for %s:\n    %s" % (mail['From'],
-                                                       str(error)),
-                file_alias_url)
-            continue
-
-        if principal is None:
-            _handle_error('Unknown user: %s ' % mail['From'], file_alias_url)
-            continue
-
-        # Extract the domain the mail was sent to. Mails sent to
-        # Launchpad should have an X-Original-To header.
-        if mail.has_key('X-Original-To'):
-            addresses = [mail['X-Original-To']]
-        else:
-            log = getLogger('canonical.launchpad.mail')
-            log.warn(
-                "No X-Original-To header was present in email: %s" %
-                 file_alias_url)
-            # Process all addresses found as a fall back.
-            cc = mail.get_all('cc') or []
-            to = mail.get_all('to') or []
-            names_addresses = getaddresses(to + cc)
-            addresses = [addr for name, addr in names_addresses]
-
-        handler = None
-        for email_addr in addresses:
-            user, domain = email_addr.split('@')
-            handler = queryUtility(IMailHandler, name=domain)
-            if handler is not None:
-                break
-
-        if handler is None:
-            _handle_error(
-                "No handler registered for '%s' " % (', '.join(addresses)),
-                file_alias_url)
-            continue
-
-        try:
-            handled = handler.process(mail, email_addr, file_alias)
-        except:
-            # The handler shouldn't raise any exceptions. If it
-            # does, it's a programming error. We log the error instead
-            # of sending an email in order to keep it as simple as
-            # possible, we don't want any new exceptions raised here.
-            mailbox.delete(mail_id)
-            log = getLogger('canonical.launchpad.mail')
-            log.error(
-                "An exception was raised inside the handler: %s" % (
-                    file_alias_url),
-                exc_info=True)
-            continue
+                try:
+                    mail = signed_message_from_string(raw_mail)
+                except email.Errors.MessageError, error:
+                    mailbox.delete(mail_id)
+                    log = getLogger('canonical.launchpad.mail')
+                    log.warn(
+                        "Couldn't convert email to email.Message: %s" % (
+                            file_alias_url, ),
+                        exc_info=True)
+                    continue
 
 
-        if not handled:
-            _handle_error(
-                "Handler found, but message was not handled: %s" % (
-                    mail['From'], ),
-                file_alias_url) 
-            continue
+                # If the Return-Path header is '<>', it probably means
+                # that it's a bounce from a message we sent.
+                if mail['Return-Path'] == '<>':
+                    _handle_error(
+                        "Message had an empty Return-Path.", file_alias_url)
+                    continue
 
-        # Let's commit the transaction before we delete the mail, since
-        # we're favouring receiving the same mail twice in the case of
-        # an error, over loosing the processing of a message by deleting
-        # the message before committing.
-        trans.commit()
-        mailbox.delete(mail_id)
+                try:
+                    principal = authenticateEmail(mail)
+                except InvalidSignature, error:
+                    _handle_error(
+                        "Invalid signature for %s:\n    %s" % (mail['From'],
+                                                               str(error)),
+                        file_alias_url)
+                    continue
 
-    mailbox.close()
+                if principal is None:
+                    _handle_error(
+                        'Unknown user: %s ' % mail['From'], file_alias_url)
+                    continue
+
+                # Extract the domain the mail was sent to. Mails sent to
+                # Launchpad should have an X-Original-To header.
+                if mail.has_key('X-Original-To'):
+                    addresses = [mail['X-Original-To']]
+                else:
+                    log = getLogger('canonical.launchpad.mail')
+                    log.warn(
+                        "No X-Original-To header was present in email: %s" %
+                         file_alias_url)
+                    # Process all addresses found as a fall back.
+                    cc = mail.get_all('cc') or []
+                    to = mail.get_all('to') or []
+                    names_addresses = getaddresses(to + cc)
+                    addresses = [addr for name, addr in names_addresses]
+
+                handler = None
+                for email_addr in addresses:
+                    user, domain = email_addr.split('@')
+                    handler = mail_handlers.get(domain)
+                    if handler is not None:
+                        break
+
+                if handler is None:
+                    _handle_error(
+                        "No handler registered for '%s' " % (
+                            ', '.join(addresses)),
+                        file_alias_url)
+                    continue
+
+                handled = handler.process(mail, email_addr, file_alias)
+
+                if not handled:
+                    _handle_error(
+                        "Handler found, but message was not handled: %s" % (
+                            mail['From'], ),
+                        file_alias_url) 
+                    continue
+
+                # Commit the transaction before deleting the mail in
+                # case there are any errors. If an error occur while
+                # commiting the transaction, the mail will be deleted in
+                # the exception handler.
+                trans.commit()
+                mailbox.delete(mail_id)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except:
+                # This bare except is needed in order to prevent a bug
+                # in the email handling from causing the email interface
+                # to lock up. If an email causes an unexpected
+                # exception, we simply log the error and delete the
+                # email, so that it doesn't stop the rest of the emails
+                # from being processed.
+                mailbox.delete(mail_id)
+                log = getLogger('canonical.launchpad.mail')
+                if file_alias_url is not None:
+                    email_info = file_alias_url
+                else:
+                    email_info = raw_mail
+
+                log.error(
+                    "An exception was raised inside the handler:\n%s" % (
+                        email_info),
+                    exc_info=True)
+    finally:
+        log.info("Closing the mail box.")
+        mailbox.close()

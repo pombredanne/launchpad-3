@@ -14,7 +14,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.mail import (
-    simple_sendmail, simple_sendmail_from_person)
+    simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
@@ -179,21 +179,9 @@ def generate_bug_add_email(bug):
         body += u"         Status: %s\n" % bugtask.status.title
 
     # Add the description.
-    #
-    # XXX, Brad Bollenbach, 2005-06-29: A hack to workaround some data
-    # migration issues; many older bugs don't have descriptions
-    # set. The bug filed for this is at:
-    #
-    # https://launchpad.ubuntu.com/malone/bugs/1187
-    if bug.description:
-        description = bug.description
-    else:
-        # This bug is in need of some data migration love.
-        description = bug.messages[0].contents
-
     body += u"\n"
     mailwrapper = MailWrapper(width=72)
-    body += u"Description:\n%s" % mailwrapper.format(description)
+    body += u"Description:\n%s" % mailwrapper.format(bug.description)
 
     body = body.rstrip()
 
@@ -235,7 +223,6 @@ def generate_bug_edit_email(bug_delta):
                 u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
                 new_bug_dupe.id)
 
-
     if bug_delta.title is not None:
         body += u"Summary changed to:\n"
         body += u"    %s\n" % bug_delta.title
@@ -251,7 +238,7 @@ def generate_bug_edit_email(bug_delta):
         body += u"\n"
 
     if bug_delta.private is not None:
-        body += u"Secrecy changed to:\n"
+        body += u"Visibility changed to:\n"
         if bug_delta.private['new']:
             body += u"    Private\n"
         else:
@@ -369,14 +356,6 @@ def generate_bug_edit_email(bug_delta):
                     body += _get_task_change_row(
                         fieldname, oldval_display, newval_display)
 
-            if bugtask_delta.statusexplanation is not None:
-                status_exp_line = u"%15s: %s" % (
-                    u"Explanation", bugtask_delta.statusexplanation)
-                status_exp_wrapper = MailWrapper(
-                    width=72, indent=u" " * 17, indent_first_line=False)
-                body += status_exp_wrapper.format(status_exp_line)
-                body += u"\n"
-
     if bug_delta.added_bugtasks is not None:
         if not body[-2:] == u"\n\n":
             body += u"\n"
@@ -404,6 +383,11 @@ def generate_bug_edit_email(bug_delta):
 
     body = body.rstrip()
 
+    if bug_delta.comment_on_change:
+        comment_wrapper = MailWrapper(width=72)
+        body += "\n\nComment:\n"
+        body += comment_wrapper.format(bug_delta.comment_on_change)
+
     return (subject, body)
 
 
@@ -430,7 +414,7 @@ def generate_bug_comment_email(bug_comment):
             u"%(comment)s"
             % {'visibility' : visibility, 'bugurl' : canonical_url(bug),
                'comment' : comment_wrapper.format(
-                    bug_comment.message.contents)})
+                    bug_comment.message.text_contents)})
 
     body = body.rstrip()
 
@@ -681,9 +665,6 @@ def get_task_delta(old_task, new_task):
             changes[field_name]["old"] = old_val
             changes[field_name]["new"] = new_val
 
-    if old_task.statusexplanation != new_task.statusexplanation:
-        changes["statusexplanation"] = new_task.statusexplanation
-
     if changes:
         changes["bugtask"] = old_task
         return BugTaskDelta(**changes)
@@ -759,7 +740,8 @@ def notify_bugtask_edited(modified_bugtask, event):
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
         bugtask_deltas=bugtask_delta,
-        user=event.user)
+        user=event.user,
+        comment_on_change=event.comment_on_change)
 
     send_bug_edit_notification(bug_delta)
 
@@ -945,7 +927,7 @@ def notify_join_request(event):
         to_addrs.update(contactEmailAddresses(person))
 
     if to_addrs:
-        url = "%s/people/%s/+members/%s" % (event.appurl, team.name, user.name)
+        url = '%s/+member/%s' % (canonical_url(team), user.name)
         replacements = {'browsername': user.browsername,
                         'name': user.name,
                         'teamname': team.browsername,
@@ -967,8 +949,13 @@ def send_ticket_notification(ticket_event, subject, body):
     for notified_person in subscribers:
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
-                simple_sendmail_from_person(
-                    ticket_event.user, address, subject, body)
+                from_address = format_address(
+                    ticket_event.user.displayname,
+                    'ticket%s@%s' % (
+                        ticket_event.object.id,
+                        config.tickettracker.email_domain))
+                simple_sendmail(
+                    from_address, address, subject, body)
                 sent_addrs.add(address)
 
 
@@ -1029,7 +1016,7 @@ def notify_ticket_modified(ticket, event):
             # There should be a blank line between the changes and the
             # comment.
             body += '\n\n'
-        body += 'Comment:\n%s' % comment.contents
+        body += 'Comment:\n%s' % comment.text_contents
     else:
         raise AssertionError(
             "There shouldn't be more than one comment for a notification.")

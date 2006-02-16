@@ -8,11 +8,11 @@
 <div metal:fill-slot="main" class="visualPadding"
      tal:define="batch view/batch">
 
-  <h1>Bazaar: Upstream Revision Control Imports</h1>
+  <h1>Bazaar: Upstream revision control imports</h1>
 
   <form action="" method="GET">
     <fieldset>
-        <legend>Filter Criteria</legend>
+        <legend>Filter criteria</legend>
 
         <div class="formControls">
             <input type="text" name="text"

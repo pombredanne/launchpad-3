@@ -1,13 +1,13 @@
 <div class="portlet">
 
-  <h4>details:</h4>
+  <h4>Details:</h4>
 
   <div class="portletBody"
        tal:define="bug context/bug">
     <div class="portletContent">
 
       <b>Reported by:</b><br />
-      <img src="/++resource++user.gif" />
+      <img src="/@@/user.gif" />
       <a tal:attributes="href context/owner/fmt:url"
         tal:content="context/owner/browsername"
         style="text-decoration: underline"></a><br />

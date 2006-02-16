@@ -43,12 +43,12 @@
       The spec summary will go here.
     </tal:desc>
     <tal:has_page condition="context/specurl">
-      <img src="/++resource++link" />
+      <img src="/@@/link" />
       <a tal:attributes="href context/specurl">Read More</a>.
     </tal:has_page>
     <tal:has_milestone condition="context/milestone">
       Milestone target:
-      <img src="/++resource++target" />
+      <img src="/@@/target" />
       <a tal:attributes="href context/milestone/fmt:url">
         <span tal:replace="context/milestone/name">1.0</span>.</a>
     </tal:has_milestone>
@@ -56,10 +56,11 @@
 
   <p class="lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
-    <i tal:content="context/whiteboard">
-      white board text goes here
-    </i>
   </p>
+  <div
+    class="lesser"
+    tal:content="structure context/whiteboard/fmt:text-to-html"
+  >Whiteboard text goes here</div>
 
   <p class="lesser">
     <b>Priority:</b>

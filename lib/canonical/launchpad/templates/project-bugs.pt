@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Bug Summary for <span tal:replace="context/title">Project
+    <h1>Bug summary for <span tal:replace="context/title">Project
     Title</span></h1>
 
     <div tal:content="context/summary">Project Summary</div>
@@ -33,7 +33,7 @@
 
         <p tal:content="prod/summary">Product Summary</p>
 
-        <p><img src="/++resource++add.gif">
+        <p><img src="/@@/add.gif">
            <a href="#" tal:attributes="href prod/name">See all
            bugs in <span tal:replace="prod/displayname">product</span>...</a></p>
     
