@@ -653,7 +653,7 @@ Which is the one we wanted.
     >>> pomsgset_view.getTranslation(0)
     u'libreta de direcciones de Evolution'
 
-Finally, we are going to test the tab index generator to be sure the TAB key
+Now, we are going to test the tab index generator to be sure the TAB key
 will work as expected when navigating over the translation form.
 
     >>> request = DummyRequest()
@@ -669,5 +669,40 @@ Next time we call it, it's increased.
 
     >>> pofile_view.tab_index
     2
+
+It's time to check the submission of translations and the IPOFile statistics
+update.
+
+But first, let's see current values.
+
+    >>> pofile_es.updateStatistics()
+    (7, 1, 0)
+    >>> pofile_es.currentCount()
+    7
+    >>> pofile_es.updatesCount()
+    1
+    >>> pofile_es.rosettaCount()
+    0
+
+Now we do the submit
+
+    >>> request = DummyRequest(
+    ...     msgset_130=None,
+    ...     msgset_130_es_translation_0='Foo',
+    ...     msgset_138=None,
+    ...     msgset_138_es_translation_0='Bar',
+    ...     submit_translations='Save &amp; Continue')
+    >>> request.method = 'POST'
+    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view.initialize()
+
+And check again.
+
+    >>> pofile_es.currentCount()
+    7
+    >>> pofile_es.updatesCount()
+    2
+    >>> pofile_es.rosettaCount()
+    1
 
 And that's all, folks!
