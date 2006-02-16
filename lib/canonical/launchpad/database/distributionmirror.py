@@ -90,6 +90,7 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         self.enabled = False
         # XXX: Missing a call to simple_sendmail to notify the owner.
+        # -- Guilherme Salgado, 2006-02-16
 
     def newProbeRecord(self):
         """See IDistributionMirror"""
@@ -98,11 +99,6 @@ class DistributionMirror(SQLBase):
     def deleteMirrorDistroArchRelease(self, distro_arch_release, pocket,
                                       component):
         """See IDistributionMirror"""
-        # XXX: This is a hack because we can't give security proxied dbschema
-        # items to any of sqlobject's select() methods.
-        # https://launchpad.net/products/launchpad/+bug/31558
-        # -- Guilherme Salgado, 2006-02-10
-        pocket = PackagePublishingPocket.items[pocket.name]
         mirror = MirrorDistroArchRelease.selectOneBy(
             distribution_mirrorID=self.id,
             distro_arch_releaseID=distro_arch_release.id,
@@ -113,11 +109,6 @@ class DistributionMirror(SQLBase):
     def ensureMirrorDistroArchRelease(self, distro_arch_release, pocket,
                                       component):
         """See IDistributionMirror"""
-        # XXX: This is a hack because we can't give security proxied dbschema
-        # items to any of sqlobject's select() methods.
-        # https://launchpad.net/products/launchpad/+bug/31558
-        # -- Guilherme Salgado, 2006-02-10
-        pocket = PackagePublishingPocket.items[pocket.name]
         mirror = MirrorDistroArchRelease.selectOneBy(
             distribution_mirrorID=self.id,
             distro_arch_releaseID=distro_arch_release.id,
@@ -132,11 +123,6 @@ class DistributionMirror(SQLBase):
     def ensureMirrorDistroReleaseSource(self, distro_release, pocket,
                                         component):
         """See IDistributionMirror"""
-        # XXX: This is a hack because we can't give security proxied dbschema
-        # items to any of sqlobject's select() methods.
-        # https://launchpad.net/products/launchpad/+bug/31558
-        # -- Guilherme Salgado, 2006-02-10
-        pocket = PackagePublishingPocket.items[pocket.name]
         mirror = MirrorDistroReleaseSource.selectOneBy(
             distribution_mirrorID=self.id, distro_releaseID=distro_release.id,
             pocket=pocket, componentID=component.id)
@@ -148,11 +134,6 @@ class DistributionMirror(SQLBase):
 
     def deleteMirrorDistroReleaseSource(self, distro_release, pocket,
                                         component):
-        # XXX: This is a hack because we can't give security proxied dbschema
-        # items to any of sqlobject's select() methods.
-        # https://launchpad.net/products/launchpad/+bug/31558
-        # -- Guilherme Salgado, 2006-02-10
-        pocket = PackagePublishingPocket.items[pocket.name]
         """See IDistributionMirror"""
         mirror = MirrorDistroReleaseSource.selectOneBy(
             distribution_mirrorID=self.id, distro_releaseID=distro_release.id,
