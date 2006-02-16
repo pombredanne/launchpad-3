@@ -11,7 +11,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageRelease, IBinaryPackageReleaseSet, NotFoundError)
+    IBinaryPackageRelease, IBinaryPackageReleaseSet)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
