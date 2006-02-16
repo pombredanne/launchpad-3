@@ -36,6 +36,7 @@ from zope.app.form.utility import (
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.schema.interfaces import IList
 
+from canonical.config import config
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
@@ -49,12 +50,11 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch,
-    BUGTASK_BATCH_SIZE)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
+from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -651,9 +651,10 @@ class BugTaskSearchListingView(LaunchpadView):
         if self.showBatchedListing():
             if batch_start is None:
                 batch_start = int(self.request.get('batch_start', 0))
-            batch = Batch(tasks, batch_start, BUGTASK_BATCH_SIZE)
+            batch = Batch(tasks, batch_start, config.malone.buglist_batch_size)
         else:
             batch = tasks
+
         return BatchNavigator(batch=batch, request=self.request)
 
     def shouldShowAdvancedSearchWidgets(self):
@@ -1044,15 +1045,10 @@ class BugTargetTextView(LaunchpadView):
     """View for simple text page showing bugs filed against a bug target."""
 
     def render(self):
-        params = BugTaskSearchParams(getUtility(ILaunchBag).user)
-        tasks = self.context.searchTasks(params)
-        texts = []
         self.request.response.setHeader('Content-type', 'text/plain')
-        view = BugTextView(self.context, self.request)
+        tasks = self.context.searchTasks(BugTaskSearchParams(self.user))
 
-        for task in tasks:
-            texts.append(view.bug_text(task.bug))
-            texts.append(view.bugtask_text(task))
-
-        return u'\n'.join(texts)
+        # We use task.bugID rather than task.bug.id here as the latter
+        # would require an extra query per task.
+        return u''.join('%d\n' % task.bugID for task in tasks)
 

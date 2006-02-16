@@ -40,7 +40,7 @@ product bug contact are subscribed to this bug:
   >>> login(ANONYMOUS)
   >>> bugset = getUtility(IBugSet)
   >>> sorted([s.person.name for s in bugset.get(9).subscriptions])
-  [u'lifeless', u'sabdfl']
+  [u'guadamen', u'sabdfl']
   >>> logout()
 
 For a PRIVATE bug, only the reporter will be subscribed. There will be

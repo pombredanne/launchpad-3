@@ -363,8 +363,9 @@ class ProductSeriesView(LaunchpadView):
                 return
             if not self.cvs_details_already_in_use(self.cvsroot, self.cvsmodule,
                     self.cvsbranch):
-                self.errormsgs.append(
+                self.request.response.addErrorNotification(
                     'CVS repository details already in use by another product.')
+                self.has_errors = True
                 return
         elif rcstype == 'svn':
             if not validate_svn_repo(self.svnrepository):
