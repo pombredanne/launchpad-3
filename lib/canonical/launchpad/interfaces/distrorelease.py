@@ -207,6 +207,20 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         list for this distrorelease.
         """
 
+    def enableComponentByName(name):
+        """Enable component name in this DistroRelease.
+
+        Ensure component name exists and enable it via ComponentSelection.
+        Return the ComponentSelection row instance.
+        """
+
+    def enableSectionByName(name):
+        """Enable section name in this DistroRelease.
+
+        Ensure section name exists and enable it via SectionSelection.
+        Return the SectionSelection row instance.
+        """
+
     def getBinaryPackagePublishing(name, version, archtag, sourcename, orderBy):
         """Get BinaryPackagePublishings in a DistroRelease.
 

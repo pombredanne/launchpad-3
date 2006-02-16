@@ -68,8 +68,25 @@ build jobs will be created.
   ...     distroreleases.add(dar.distrorelease)
   ...     bm.addDistroArchRelease(dar)
   ...
-  WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
-  WARNING:root:Disabling: No CHROOT found for Breezy Badger Autotest for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Backports'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Release'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Backports'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Backports'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Release'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Backports'
+
 
 Only Ubuntu/Warty/i386 and Debian/Woody/i386 have an available CHROOT.
 
@@ -117,7 +134,7 @@ added by the current sample data and so on)
 Verify how many Build entries we have from sampledata:
 
   >>> Build.select().count()
-  5
+  6
 
 Create missing builds (packages w/o build entry) for those distroreleases.
 As we just insert a new sourcepackagerelease in run-time we expect to
@@ -131,7 +148,7 @@ absence of nominatedarchindep field for Woody:
 Check if we create a new Build entry for just added sourcepackagerelease:
 
   >>> Build.select().count()
-  6
+  7
 
   >>> b = Build.selectOneBy(sourcepackagereleaseID=srcpkgrel.id)
   >>> (b.sourcepackagerelease.name, b.distroarchrelease.distrorelease.name)
@@ -142,16 +159,16 @@ marked as NEEDSBUILD we can create BuildQueue entries for it
 
   >>> bm.addMissingBuildQueueEntries()
   >>> BuildQueue.select().count()
-  2
+  3
 
 A separate process is responsible for cleaning up the BuildQueue and
 scroring the jobs properly.
 
 The default score value is 0 (zero), attempt for the fact we already
-have a build queue entry added by the sampledata, that's why the 2nd
+have two build queue entries added by the sampledata, that's why the 3rd
 element of the result.
 
-  >>> job = BuildQueue.select(orderBy='id')[1]
+  >>> job = BuildQueue.select(orderBy='id')[2]
   >>> job.lastscore
   0
 

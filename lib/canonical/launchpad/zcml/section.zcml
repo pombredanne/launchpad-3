@@ -8,7 +8,11 @@
     <!-- Section -->
     <content class="canonical.launchpad.database.Section">
         <allow interface="canonical.launchpad.interfaces.ISection"/>
-        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <!-- Section -->
+    <content class="canonical.launchpad.database.SectionSelection">
+        <allow interface="canonical.launchpad.interfaces.ISectionSelection"/>
     </content>
 
     <!-- SectionSet -->

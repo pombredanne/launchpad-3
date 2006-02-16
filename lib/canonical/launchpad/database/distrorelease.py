@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
-    ISourcePackage, ISourcePackageNameSet,
+    ISourcePackage, ISourcePackageNameSet, IComponentSet, ISectionSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
@@ -57,8 +57,10 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
-from canonical.launchpad.database.component import Component
-from canonical.launchpad.database.section import Section
+from canonical.launchpad.database.component import (
+    Component, ComponentSelection)
+from canonical.launchpad.database.section import (
+    Section, SectionSelection)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
@@ -501,6 +503,18 @@ class DistroRelease(SQLBase, BugTargetBase):
         if section in permitted:
             return section
         raise NotFoundError(name)
+
+    def enableComponentByName(self, name):
+        """See IDistroRelease."""
+        component = getUtility(IComponentSet).ensure(name)
+        return ComponentSelection(distroreleaseID=self.id,
+                                  componentID=component.id)
+
+    def enableSectionByName(self, name):
+        """See IDistroRelease."""
+        section = getUtility(ISectionSet).ensure(name)
+        return SectionSelection(distroreleaseID=self.id,
+                                sectionID=section.id)
 
     def removeOldCacheItems(self):
         """See IDistroRelease."""

@@ -20,7 +20,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, TicketStatus)
+    SourcePackageFileType, BuildStatus, TicketStatus,
+    PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue)
@@ -135,10 +136,10 @@ class SourcePackageRelease(SQLBase):
     def open_tickets_count(self):
         """See ISourcePackageRelease."""
         results = Ticket.select("""
-            status IN (%s, %s) AND
+            status = %s AND
             distribution = %s AND
             sourcepackagename = %s
-            """ % sqlvalues(TicketStatus.NEW, TicketStatus.OPEN,
+            """ % sqlvalues(TicketStatus.OPEN,
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()
@@ -203,8 +204,11 @@ class SourcePackageRelease(SQLBase):
                                         libraryfile=file.id)
 
     def createBuild(self, distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=BuildStatus.NEEDSBUILD,
+                    pocket=None):
         """See ISourcePackageRelease."""
+        # assertion on new API
+        assert pocket is not None
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchrelease.processorfamily
@@ -216,30 +220,34 @@ class SourcePackageRelease(SQLBase):
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
-        return Build(distroarchrelease=distroarchrelease.id,
-                     sourcepackagerelease=self.id,
-                     processor=processor.id,
+        return Build(distroarchrelease=distroarchrelease,
+                     sourcepackagerelease=self,
+                     processor=processor,
                      buildstate=status,
-                     datecreated=datecreated)
+                     datecreated=datecreated,
+                     pocket=pocket)
 
-    def getBuildByArch(self, distroarchrelease):
+    def getBuildByArch(self, distroarchrelease,
+                       pocket=PackagePublishingPocket.RELEASE):
         """See ISourcePackageRelease."""
         query = """
         build.id = binarypackagerelease.build AND
         binarypackagerelease.id =
             binarypackagepublishing.binarypackagerelease AND
-        binarypackagepublishing.distroarchrelease = %d AND
-        build.sourcepackagerelease = %d AND
-        binarypackagerelease.architecturespecific = true
-        """  % (distroarchrelease.id, self.id)
+        binarypackagepublishing.distroarchrelease = %s AND
+        build.sourcepackagerelease = %s AND
+        binarypackagerelease.architecturespecific = true AND
+        build.pocket = %s
+        """  % sqlvalues(distroarchrelease, self, pocket)
 
         tables = ['binarypackagerelease', 'binarypackagepublishing']
 
         builds = Build.select(query, clauseTables=tables)
 
         if builds.count() == 0:
-            builds = Build.selectBy(distroarchreleaseID=distroarchrelease.id,
-                                    sourcepackagereleaseID=self.id)
+            builds = Build.selectBy(distroarchrelease=distroarchrelease,
+                                    sourcepackagerelease=self,
+                                    pocket=pocket)
             if builds.count() == 0:
                 return None
 

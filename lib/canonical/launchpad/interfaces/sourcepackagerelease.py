@@ -12,7 +12,8 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import valid_debian_version
 
-from canonical.lp.dbschema import BuildStatus
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingPocket)
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
@@ -82,21 +83,25 @@ class ISourcePackageRelease(Interface):
         """
 
     def createBuild(distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=BuildStatus.NEEDSBUILD,
+                    pocket=None):
         """Create a build for the given distroarchrelease and return it.
 
         If the processor isn't given, guess it from the distroarchrelease.
-        If the status isn't given, use NEEDSBUILD.
+        If the status isn't given, use NEEDSBUILD. 'pocket' is required
         """
 
-    def getBuildByArch(distroarchrelease):
+    def getBuildByArch(distroarchrelease,
+                       pocket=PackagePublishingPocket.RELEASE):
         """Return build for the given distroarchrelease.
 
         This will look only for published architecture-specific binary
         package releases in the given distroarchrelease. It uses the publishing
         tables to return a build, even if the build is from another
         distroarchrelease, so long as the binaries are published in the
-        distroarchrelease given.
+        distroarchrelease given. By default the argument pocket is RELEASE,
+        but it can be modified according the callsite and will return only
+        build in this distroarchrelease and this pocket.
 
         Return None if not found.
         """
