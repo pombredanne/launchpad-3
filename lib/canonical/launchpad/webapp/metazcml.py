@@ -489,7 +489,7 @@ class IPageDirective(
 
 
 def page(_context, name, permission, for_,
-         layer=IBrowserRequest, template=None, class_=None,
+         layer=IDefaultBrowserLayer, template=None, class_=None,
          allowed_interface=None, allowed_attributes=None,
          attribute='__call__', menu=None, title=None,
          facet=None
@@ -534,7 +534,7 @@ class IPagesDirective(
 class pages(original_pages):
 
     def __init__(self, _context, for_, permission,
-        layer=IBrowserRequest, class_=None,
+        layer=IDefaultBrowserLayer, class_=None,
         allowed_interface=None, allowed_attributes=None,
         facet=None):
         original_pages.__init__(self, _context, for_, permission,

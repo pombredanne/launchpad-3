@@ -223,7 +223,8 @@ def run(argv=list(sys.argv)):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     start_librarian()
-    start_trebuchet()
+    # XXX Trebuchet disabled.  SteveA, 2006-02-14
+    #start_trebuchet()
     start_buildsequencer()
 
     # Store our process id somewhere

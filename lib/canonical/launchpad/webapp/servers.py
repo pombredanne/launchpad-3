@@ -244,7 +244,7 @@ class HTTPPublicationRequestFactory:
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the DebugLayer on a request."""
 
-    def __call__(self, input_stream, env, output_steam=None):
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
         assert output_stream is None, 'output_stream is deprecated in Z3.2'
 
