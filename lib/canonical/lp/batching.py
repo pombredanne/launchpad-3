@@ -106,6 +106,8 @@ class BatchNavigator:
 
 class TableBatchNavigator(BatchNavigator):
     """See canonical.launchpad.interfaces.ITableBatchNavigator."""
+    implements(ITableBatchNavigator)
+
     def __init__(self, batch, request=None, columns_to_show=None):
         self.batch = batch
         self.request = request

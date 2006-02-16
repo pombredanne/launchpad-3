@@ -9,7 +9,7 @@
       permission="zope.Public" />
 
   <browser:page
-      for="canonical.lp.interfaces.IBatchNavigator"
+      for="canonical.lp.interfaces.ITableBatchNavigator"
       name="+table-view"
       template="../templates/batchnavigator-table-view.pt"
       permission="zope.Public" />

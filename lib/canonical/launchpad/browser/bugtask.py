@@ -647,7 +647,7 @@ class BugTaskSearchListingView(LaunchpadView):
             searchtext = data.get("searchtext")
             if searchtext and searchtext.isdigit():
                 try:
-                    bug = getUtility(IBugSet).get(int(data["searchtext"]))
+                    bug = getUtility(IBugSet).get(searchtext)
                 except NotFoundError:
                     pass
                 else:
@@ -666,8 +666,7 @@ class BugTaskSearchListingView(LaunchpadView):
             data.update(extra_params)
 
         # Force omitting dupes, if other search criteria were provided. This
-        # way, dups will be omitted for every search except the "All bugs ever
-        # reported" one.
+        # will omit dupes for every search except "All bugs ever reported".
         if data and not data.has_key("omit_dupes"):
             # We'll force omitting dupes until the advanced search reappears in a
             # near-future landing.

@@ -30,20 +30,6 @@ canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
     ...         for bugtask in assigned_bugtasks])
     [(7, 'UNCONFIRMED')]
 
-The advanced search allows us to change this behaviour. Let's search for
-bug tasks with status UNCONFIRMED and FIXCOMMITTED.
-
-    >>> form = {
-    ...     'orderby': u'-priority',
-    ...     'field.status': [u'Unconfirmed', u'Fix Released'],
-    ...     'field.status-empty-marker': u'1', 'search': u'Search'}
-    >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs', form)
-    >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
-    >>> sorted([(bugtask.bug.id, bugtask.status.name)
-    ...         for bugtask in assigned_bugtasks])
-    [(7, 'UNCONFIRMED'), (8, 'FIXRELEASED')]
-
-
 Reported bugs
 -------------
 
@@ -56,18 +42,6 @@ unassigned bug tasks.
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
     [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), (7, 'UNCONFIRMED', u'name16')]
-
-But the advanced search allows us to query only the bug tasks that aren't
-assigned.
-
-    >>> form = {'orderby': u'-priority', 'field.unassigned': u'on'}
-    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', form)
-    >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
-    >>> sorted([(bugtask.bug.id, bugtask.status.name,
-    ...          getattr(bugtask.assignee, 'name', None))
-    ...         for bugtask in reported_bugtasks])
-    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None)]
-
 
 Subscribed bugs
 ---------------
@@ -82,17 +56,6 @@ with any severity.
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
      (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
-
-The advanced search allows us to query only the bug tasks with severity
-Normal, Major and Critical.
-
-    >>> form = {'orderby': u'-priority',
-    ...         u'field.severity': [u'Normal', u'Major', u'Critical']}
-    >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs', form)
-    >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
-    >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
-    ...         for bugtask in subscribed_bugtasks])
-    [(1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
 
 Bugs for Bug Contact
 --------------------
@@ -149,21 +112,6 @@ Searching for all open bugs on Debian mozilla-firefox:
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
     [1, 2, 3]
-
-Searching for all unassigned bugs on Debian mozilla-firefox:
-
-    >>> form = {
-    ...     'search': "Search",
-    ...     'field.distribution': "debian",
-    ...     'field.sourcepackagename': "mozilla-firefox",
-    ...     'field.unassigned': True}
-
-    >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", form=form)
-
-    >>> bugtask_batch_navigator = packagebugs_search_view.search()
-    >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
-    [1, 3]
 
 There are helper methods to calculate links to the Open, Critical,
 Unassigned, and In Progress bug lists.
