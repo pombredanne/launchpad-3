@@ -196,7 +196,7 @@ class LibrarianWebTestCase(unittest.TestCase):
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     def setUp(self):
-        LaunchpadZopelessTestSetup().setUp()
+        LaunchpadZopelessTestSetup(dbuser=self.dbuser).setUp()
         LibrarianTestSetup().setUp()
 
     def tearDown(self):
