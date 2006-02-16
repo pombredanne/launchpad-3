@@ -82,9 +82,6 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
 
         connection = PsycopgAdapter._connection_factory(self)
 
-        cursor = connection.cursor()
-        cursor.execute('SELECT current_user;')
-        user = cursor.fetchone()
         if config.launchpad.db_statement_timeout is not None:
             cursor = connection.cursor()
             cursor.execute('SET statement_timeout TO %d' %
