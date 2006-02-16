@@ -270,3 +270,36 @@ database. getByRevisionId returns None.
 
 >>> revisionset.getByRevisionId('missing-revision-id') is None
 True
+
+== The Branch View ==
+
+>>> from zope.component import getView
+>>> from zope.publisher.browser import TestRequest
+
+The branch view generates an appropriate notice when a branch is missing a
+title or summary.
+
+>>> new = branchset.new('ok', ddaa, gterm_product, None,
+...     title='something', summary='something')
+>>> view = getView(new, '+index', TestRequest())
+>>> view.missing_title_or_summary_text() is None
+True
+
+>>> new = branchset.new('no_title', ddaa, gterm_product, None,
+...     title=None, summary='something')
+>>> view = getView(new, '+index', TestRequest())
+>>> view.missing_title_or_summary_text()
+'(this branch has no title)'
+
+>>> new = branchset.new('no_title', ddaa, gterm_product, None,
+...     title='something', summary=None)
+>>> view = getView(new, '+index', TestRequest())
+>>> view.missing_title_or_summary_text()
+'(this branch has no summary)'
+
+>>> new = branchset.new('no_title_or_summary', ddaa, gterm_product, None,
+...     title=None, summary=None)
+>>> view = getView(new, '+index', TestRequest())
+>>> view.missing_title_or_summary_text()
+'(this branch has neither title nor summary)'
+

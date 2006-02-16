@@ -33,7 +33,7 @@
 </tal:has_homepage>
 
 <tal:missing_title_or_summary
-  condition="python:(not context.title) or (not context.summary)">
+  condition="view/missing_title_or_summary_text">
   <br />
   <tal:comment condition="nothing">
     <!-- XXX: That duplicates the 'edit' link from the action portlet and
@@ -42,18 +42,7 @@
   </tal:comment>
   <img src="/++resource++edit.gif" />
   <a tal:attributes="href view/edit_link_url">Edit branch details</a>
-  <tal:missing_title
-    condition="python:(not context.title) and context.summary">
-    (this branch has no title)
-  </tal:missing_title>
-  <tal:missing_summary
-    condition="python:context.title and (not context.summary)">
-    (this branch has no summary)
-  </tal:missing_summary>
-  <tal:missing_both
-    condition="python:(not context.title) and (not context.summary)">
-    (this branch has neither title nor summary)
-  </tal:missing_both>
+  <span tal:replace="view/missing_title_or_summary_text" />
 </tal:missing_title_or_summary>
 
 </p>

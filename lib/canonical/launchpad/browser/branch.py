@@ -123,6 +123,18 @@ class BranchView(LaunchpadView):
         else:
             return self.supermirror_url()
 
+    def missing_title_or_summary_text(self):
+        if self.context.title:
+            if self.context.summary:
+                return None
+            else:
+                return '(this branch has no summary)'
+        else:
+            if self.context.summary:
+                return '(this branch has no title)'
+            else:
+                return '(this branch has neither title nor summary)'
+
 
 class BranchEditView(SQLObjectEditView):
 
