@@ -37,11 +37,11 @@
     <i tal:condition="context/is_blocked">Blocked<br /></i>
 
     <b>Registrant:</b><br />
-    <img src="/++resource++user.gif" />
+    <img src="/@@/user.gif" />
     <a tal:content="context/owner/browsername"
        tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />
     <b>Assignee:</b><br />
-    <img src="/++resource++user.gif" />
+    <img src="/@@/user.gif" />
     <a tal:condition="context/assignee"
        tal:content="context/assignee/browsername"
        tal:attributes="href context/assignee/fmt:url">Foo Bar</a>
@@ -52,13 +52,13 @@
     </tal:man_days>
 
     <b>Drafter:</b><br />
-    <img src="/++resource++user.gif" />
+    <img src="/@@/user.gif" />
     <a tal:condition="context/drafter"
        tal:content="context/drafter/browsername"
        tal:attributes="href context/drafter/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/drafter">No drafter</i><br />
     <b>Approver:</b><br />
-    <img src="/++resource++user.gif" />
+    <img src="/@@/user.gif" />
     <a tal:condition="context/approver"
        tal:content="context/approver/browsername"
        tal:attributes="href context/approver/fmt:url">Foo Bar</a>
