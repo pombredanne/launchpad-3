@@ -11,6 +11,8 @@ from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
 
+from sourcerer.deb.version import Version
+
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates)
 from canonical.database.constants import UTC_NOW
@@ -22,6 +24,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords)
+from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
@@ -34,12 +37,10 @@ from canonical.launchpad.database.distributionsourcepackagerelease import \
     DistributionSourcePackageRelease
 from canonical.launchpad.database.distroreleasesourcepackagerelease import \
     DistroReleaseSourcePackageRelease
-
 from canonical.launchpad.database.build import Build
-from sourcerer.deb.version import Version
 
 
-class SourcePackage:
+class SourcePackage(BugTargetBase):
     """A source package, e.g. apache2, in a distrorelease.  This object
     implements the MagicSourcePackage specification. It is not a true
     database object, but rather attempts to represent the concept of a
@@ -392,14 +393,6 @@ class SourcePackage:
             ret.append(n)
         return ret
 
-    def getVersion(self, version):
-        """See ISourcePackage."""
-        # XXX: untested and broken
-        dsp = DistributionSourcePackage(
-            self.distribution,
-            self.sourcepackagename)
-        return dsp.getVersion(version)
-
     # ticket related interfaces
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -446,8 +439,8 @@ class SourcePackage:
 
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
-        clauseTables=['SourcePackageRelease',
-                      'SourcePackagePublishingHistory']
+        clauseTables = ['SourcePackageRelease',
+                        'SourcePackagePublishingHistory']
         orderBy = ["-datebuilt"]
 
         condition_clauses = ["""

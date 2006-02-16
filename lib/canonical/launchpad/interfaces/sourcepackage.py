@@ -126,20 +126,6 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         bugs for each bug severity, as well as the total number of bugs
         associated with this sourcepackagename in this distribution."""
 
-    def getVersion(version):
-        """Returns the SourcePackageRelease that had the name of this
-        SourcePackage and the given version, and was published in this
-        distribution.
-
-        Note that it will look across the entire distribution, not just in
-        the current distrorelease. In Ubuntu and RedHat, and similar
-        distributions, a sourcepackagerelease name+version is UNIQUE across
-        all distroreleases. This may turn out not to be true in other types
-        of distribution, such as Gentoo.
-
-        The result is a DistributionSourcePackageRelease.
-        """
-
     shouldimport = Attribute("""Whether we should import this or not.
         By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
