@@ -14,7 +14,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.mail import (
-    simple_sendmail, simple_sendmail_from_person)
+    simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
@@ -179,21 +179,9 @@ def generate_bug_add_email(bug):
         body += u"         Status: %s\n" % bugtask.status.title
 
     # Add the description.
-    #
-    # XXX, Brad Bollenbach, 2005-06-29: A hack to workaround some data
-    # migration issues; many older bugs don't have descriptions
-    # set. The bug filed for this is at:
-    #
-    # https://launchpad.ubuntu.com/malone/bugs/1187
-    if bug.description:
-        description = bug.description
-    else:
-        # This bug is in need of some data migration love.
-        description = bug.messages[0].contents
-
     body += u"\n"
     mailwrapper = MailWrapper(width=72)
-    body += u"Description:\n%s" % mailwrapper.format(description)
+    body += u"Description:\n%s" % mailwrapper.format(bug.description)
 
     body = body.rstrip()
 
@@ -426,7 +414,7 @@ def generate_bug_comment_email(bug_comment):
             u"%(comment)s"
             % {'visibility' : visibility, 'bugurl' : canonical_url(bug),
                'comment' : comment_wrapper.format(
-                    bug_comment.message.contents)})
+                    bug_comment.message.text_contents)})
 
     body = body.rstrip()
 
@@ -961,8 +949,13 @@ def send_ticket_notification(ticket_event, subject, body):
     for notified_person in subscribers:
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
-                simple_sendmail_from_person(
-                    ticket_event.user, address, subject, body)
+                from_address = format_address(
+                    ticket_event.user.displayname,
+                    'ticket%s@%s' % (
+                        ticket_event.object.id,
+                        config.tickettracker.email_domain))
+                simple_sendmail(
+                    from_address, address, subject, body)
                 sent_addrs.add(address)
 
 
@@ -1023,7 +1016,7 @@ def notify_ticket_modified(ticket, event):
             # There should be a blank line between the changes and the
             # comment.
             body += '\n\n'
-        body += 'Comment:\n%s' % comment.contents
+        body += 'Comment:\n%s' % comment.text_contents
     else:
         raise AssertionError(
             "There shouldn't be more than one comment for a notification.")

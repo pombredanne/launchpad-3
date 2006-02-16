@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'BugTaskFactory',
     'bugtask_sort_key']
 
 import urllib
@@ -32,7 +31,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
@@ -373,6 +372,8 @@ class BugTaskSet:
             if arg_value is None:
                 continue
             if zope_isinstance(arg_value, any):
+                if not arg_value.query_values:
+                    continue
                 # The argument value is a list of acceptable
                 # filter values.
                 arg_values = sqlvalues(*arg_value.query_values)
@@ -474,6 +475,33 @@ class BugTaskSet:
                    severity=IBugTask['severity'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        if product:
+            assert distribution is None, (
+                "Can't pass both distribution and product.")
+            # If a product bug contact has been provided, subscribe that
+            # contact to all public bugs. Otherwise subscribe the
+            # product owner to all public bugs.
+            if not bug.private:
+                if product.bugcontact:
+                    bug.subscribe(product.bugcontact)
+                else:
+                    bug.subscribe(product.owner)
+        elif distribution:
+            # If a distribution bug contact has been provided, subscribe
+            # that contact to all public bugs.
+            if distribution.bugcontact and not bug.private:
+                bug.subscribe(distribution.bugcontact)
+
+            # Subscribe package bug contacts to public bugs, if package
+            # information was provided.
+            if sourcepackagename:
+                package = distribution.getSourcePackage(sourcepackagename)
+                if package.bugcontacts and not bug.private:
+                    for pkg_bugcontact in package.bugcontacts:
+                        bug.subscribe(pkg_bugcontact.bugcontact)
+        else:
+            assert distrorelease is not None, 'Got no bugtask target.'
+
         return BugTask(
             bug=bug,
             product=product,
@@ -542,9 +570,3 @@ class BugTaskSet:
         return BugTask.select(
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
-
-
-def BugTaskFactory(context, **kw):
-    # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
-    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
-

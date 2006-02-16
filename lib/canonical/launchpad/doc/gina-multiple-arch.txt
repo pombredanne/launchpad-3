@@ -186,6 +186,10 @@ And that one of the packages in main is here too:
     libdevel
     >>> print ekg.component.name
     main
+    >>> print ekg.architecturespecific
+    True
+    >>> print ekg.build.processor.name
+    386
 
 Check that the package it generates in universe was successfully
 processed. In particular, its section should be stripped of the
@@ -238,4 +242,8 @@ Check that we publishing bdftopcf into the correct distroarchrelease:
     ekg 1:1.5-4ubuntu1.2
     libgadu-dev 1:1.5-4ubuntu1.2
     libgadu3 1:1.5-4ubuntu1.2
+
+Be proper and clean up after ourselves.
+
+    >>> os.remove('/tmp/gina_test_archive')
 

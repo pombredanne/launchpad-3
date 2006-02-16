@@ -12,6 +12,7 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin)
+from sqlobject.sqlbuilder import AND, IN, NOT
 
 from canonical.launchpad.interfaces import ISprint, ISprintSet, NotFoundError
 
@@ -25,7 +26,7 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
 from canonical.lp.dbschema import (
-    SpecificationSort, SprintSpecificationStatus)
+    SpecificationSort, SprintSpecificationStatus, SpecificationStatus)
 
 
 class Sprint(SQLBase):
@@ -56,16 +57,24 @@ class Sprint(SQLBase):
     def specifications(self, quantity=None):
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
-        specs = Specification.select("""
-            Specification.id = SprintSpecification.specification AND
-            SprintSpecification.status = %s AND
-            SprintSpecification.sprint = %s
-            """ % sqlvalues(
-                SprintSpecificationStatus.CONFIRMED,
-                self.id),
+        # XXX: 20051221 jamesh
+        # the Specification.status check is duplicates the logic of
+        # spec.is_incomplete().  We do this so we can return an
+        # SelectResults object like other
+        # IHasSpecifications.specifications() methods.
+        return Specification.select(AND(
+            Specification.q.id == SprintSpecification.q.specificationID,
+            NOT(IN(Specification.q.status, [
+                SpecificationStatus.IMPLEMENTED,
+                SpecificationStatus.INFORMATIONAL,
+                SpecificationStatus.OBSOLETE,
+                SpecificationStatus.SUPERSEDED,
+            ])),
+            SprintSpecification.q.status == SprintSpecificationStatus.CONFIRMED,
+            SprintSpecification.q.sprintID == self.id),
             clauseTables=['SprintSpecification'],
-            orderBy=['-priority', 'status', 'name', 'id'])
-        return [spec for spec in specs if spec.is_incomplete]
+            orderBy=['-priority', 'status', 'name', 'id'],
+            limit=quantity)
 
     @property
     def attendances(self):

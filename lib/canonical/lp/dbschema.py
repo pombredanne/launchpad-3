@@ -1423,47 +1423,26 @@ class TicketStatus(DBSchema):
     """The current status of a Support Request
 
     This enum tells us the current status of the support ticket. The
-    request has a simple lifecycle, from new to closed.
+    request has a simple lifecycle, from open to answered or rejected.
     """
 
-    NEW = Item(10, """
-        New
+    OPEN = Item(10,
+        """Open
 
-        This support ticket is new to the system and has not yet been
-        reviewed by any support engineer.
+        There might be someone that answered the support request, but
+        the submitter hasn't accepted the answer yet.
         """)
 
-    OPEN = Item(20, """
-        Open
+    ANSWERED = Item(20,
+        """Answered
 
-        This support ticket has been reviewed by a support engineer, and is
-        considered to be a valid issue. There may have been some
-        correspondence on the issue, but we do not think it has yet been
-        answered properly.
+        The submitter of the support request has accepted an answer.
         """)
 
-    ANSWERED = Item(30, """
-        Answered
+    REJECTED = Item(30,
+        """Rejected
 
-        We believe that the last correspondence from the support engineer
-        was sufficient to resolve the problem. At this stage, the customer
-        will receive email notifications asking them to confirm the
-        resolution of the problem by marking the request "closed".
-        Alternatively, they can re-open the request, marking it "open".
-        """)
-
-    CLOSED = Item(40, """
-        Closed
-
-        This request has been verified as "closed" by the customer.
-        """)
-
-    REJECTED = Item(50, """
-        Rejected
-
-        This request has been marked as "rejected" by the support engineer,
-        likely it represents sample data or a mistaken entry. This request
-        will not show on most lists or reports.
+        No acceptable answer was provided to the question.
         """)
 
 
@@ -2665,7 +2644,7 @@ class BuildStatus(DBSchema):
         """)
 
     FULLYBUILT = Item(1, """
-        Fully built
+        Successfully built
 
         Build record is an historic account of the build. The build is complete
         and needs no further work to complete it. The build log etc are all
@@ -2682,7 +2661,7 @@ class BuildStatus(DBSchema):
         """)
 
     MANUALDEPWAIT = Item(3, """
-        Manual dependency wait
+        Dependency wait
 
         Build record represents a package whose build dependencies cannot
         currently be satisfied within the relevant DistroArchRelease. This
@@ -2691,7 +2670,7 @@ class BuildStatus(DBSchema):
         """)
 
     CHROOTWAIT = Item(4, """
-        Chroot wait
+        Chroot problem
 
         Build record represents a build which needs a chroot currently known
         to be damaged or bad in some way. The buildd maintainer will have to

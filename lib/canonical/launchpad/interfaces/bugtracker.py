@@ -10,13 +10,28 @@ __all__ = [
     'IRemoteBug',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Text, TextLine, Choice
+from zope.component import getUtility
 
 from canonical.lp import dbschema
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.validators.name import name_validator
+
+
+class BugTrackerNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another bugtracker.")
+
+    @property
+    def _content_iface(self):
+        return IBugTracker
+
+    def _getByName(self, name):
+        return getUtility(IBugTrackerSet).getByName(name)
+    
 
 class IBugTracker(Interface):
     """A remote a bug system."""
@@ -26,8 +41,9 @@ class IBugTracker(Interface):
         title=_('Bug Tracker Type'),
         vocabulary="BugTrackerType",
         default=dbschema.BugTrackerType.BUGZILLA)
-    name = TextLine(
+    name = BugTrackerNameField(
         title=_('Name'),
+        constraint=name_validator,
         description=_('An URL-friendly name for the bug tracker, '
         'such as "mozilla-bugs".'))
     title = TextLine(
@@ -65,6 +81,14 @@ class IBugTrackerSet(Interface):
     title = Attribute('Title')
 
     bugtracker_count = Attribute("The number of registered bug trackers.")
+
+    def get(bugtracker_id, default=None):
+        """Get a BugTracker by its id, or return default if it doesn't exist."""
+
+    def getByName(name, default=None):
+        """Get a BugTracker by its name, or return default if it doesn't
+        exist.
+        """
 
     def __getitem__(name):
         """Get a BugTracker by its name in the database.

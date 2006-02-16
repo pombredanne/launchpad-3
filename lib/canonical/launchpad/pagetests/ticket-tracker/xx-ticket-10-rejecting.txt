@@ -13,7 +13,7 @@ There is a page to allow us to reject a ticket.
 
   >>> print http(r"""
   ... GET /products/firefox/+ticket/2/+reject HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -24,7 +24,7 @@ portlet should allow us to Reopen the ticket.
 
   >>> print http(r"""
   ... POST /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 20
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -38,7 +38,7 @@ The reopening page should be visible.
 
   >>> print http(r"""
   ... GET /products/firefox/+ticket/2/+reopen HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -50,7 +50,7 @@ should see the "Show History" action item.
 
   >>> print http(r"""
   ... POST /products/firefox/+ticket/2/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 20
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -69,9 +69,9 @@ The +history page should be visible for this ticket.
   HTTP/1.1 200 Ok
   ...
           <td>...</td>
-          <td>Foo Bar</td>
+          <td>Sample Person</td>
           <td>Rejected</td>
-          <td>Foo Bar</td>
+          <td>Sample Person</td>
           <td>...
   ...
 

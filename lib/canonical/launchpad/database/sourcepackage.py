@@ -16,7 +16,8 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket)
+    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket,
+    BuildStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -52,26 +53,32 @@ class SourcePackage:
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
-        packages = SourcePackagePublishing.select("""
+        # XXX: jamesh, please check this.
+        #      from stevea, 2006-01-28
+        package = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease = 
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distrorelease.id),
-            clauseTables=['SourcePackageRelease'],
-            orderBy='datepublished')
-        if len(packages) == 0:
+            orderBy='datepublished',
+            clauseTables=['SourcePackageRelease'])
+        if package is None:
             self.currentrelease = None
         else:
             self.currentrelease = DistroReleaseSourcePackageRelease(
                 distrorelease=self.distrorelease,
                 sourcepackagerelease=SourcePackageRelease.get(
-                    packages[0].sourcepackagerelease.id))
+                    package.sourcepackagerelease.id))
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        pkgs = SourcePackagePublishing.select("""
+        # XXX: 20051219 jamesh
+        # Is the orderBy clause here correct, or just to avoid the warning?
+        # I've changed this to selectOne() with a limit to avoid the
+        # len() usage.
+        pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.version = %s AND
@@ -81,10 +88,10 @@ class SourcePackage:
                             self.distrorelease.id),
             orderBy='id',
             clauseTables=['SourcePackageRelease'])
-        if len(pkgs) == 0:
+        if pkg is None:
             return None
         return DistroReleaseSourcePackageRelease(
-            self.distrorelease, pkgs[0].sourcepackagerelease)
+            self.distrorelease, pkg.sourcepackagerelease)
 
     def _get_ubuntu(self):
         """This is a temporary measure while
@@ -181,11 +188,11 @@ class SourcePackage:
             SourcePackageRelease.sourcepackagename = %d AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            DistroRelease.distribution = %d
+            DistroRelease.distribution = %d AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % (self.sourcepackagename.id, self.distribution.id),
-            clauseTables=['SourcePackagePublishingHistory'])
+            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
 
         # sort by debian version number
         return sorted(list(ret), key=lambda item: Version(item.version))
@@ -439,19 +446,39 @@ class SourcePackage:
 
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
-        status_clause = ''
-        if status:
-            status_clause = "AND Build.buildstate=%s" % sqlvalues(status)
+        clauseTables=['SourcePackageRelease',
+                      'SourcePackagePublishingHistory']
+        orderBy = ["-datebuilt"]
 
-        querytxt = """
-            Build.sourcepackagerelease = SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id 
-            """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
-        querytxt += status_clause
-        return Build.select(querytxt,
-            clauseTables=['SourcePackageRelease',
-                          'SourcePackagePublishingHistory'],
-            orderBy="-datebuilt")
+        condition_clauses = ["""
+        Build.sourcepackagerelease = SourcePackageRelease.id AND
+        SourcePackageRelease.sourcepackagename = %s AND
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease =
+        SourcePackageRelease.id
+        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)]
+
+        # exclude gina-generated builds
+        # buildstate == FULLYBUILT && datebuilt == null
+        condition_clauses.append(
+            "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
+            % sqlvalues(BuildStatus.FULLYBUILT))
+
+        # XXX cprov 20060214: still not ordering ALL results (empty status)
+        # properly, the pending builds will pre presented in the DESC
+        # 'datebuilt' order. bug # 31392
+
+        if status is not None:
+            condition_clauses.append("Build.buildstate=%s"
+                                     % sqlvalues(status))
+
+        # Order NEEDSBUILD by lastscore, it should present the build
+        # in a more natural order.
+        if status == BuildStatus.NEEDSBUILD:
+            orderBy = "-BuildQueue.lastscore"
+            clauseTables.append('BuildQueue')
+            condition_clauses.append('BuildQueue.build = Build.id')
+
+
+        return Build.select(' AND '.join(condition_clauses),
+                            clauseTables=clauseTables, orderBy=orderBy)
