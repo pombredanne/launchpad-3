@@ -74,8 +74,8 @@
 
   <subsection|Supermirror?>
 
-  The Supermirror is the historic name for the the subsystem now implemented
-  by the Branch Puller, the SFTP Server, the Branch Warehouse, and the Branch
+  The Supermirror is the historic name for the subsystem now implemented by
+  the Branch Puller, the SFTP Server, the Branch Warehouse, and the Branch
   Publisher. The original Arch Supermirror was independent from Launchpad,
   while the Bazaar Supermirror is deeply integrated with Launchpad.
 
@@ -960,7 +960,7 @@
     <associate|auto-24|<tuple|7|6>>
     <associate|auto-25|<tuple|6|6>>
     <associate|auto-26|<tuple|7|6>>
-    <associate|auto-27|<tuple|8|6>>
+    <associate|auto-27|<tuple|8|7>>
     <associate|auto-28|<tuple|9|7>>
     <associate|auto-29|<tuple|3.3|7>>
     <associate|auto-3|<tuple|1|1>>
@@ -968,7 +968,7 @@
     <associate|auto-31|<tuple|3.3.1|7>>
     <associate|auto-32|<tuple|3.3.1.1|7>>
     <associate|auto-33|<tuple|3.3.1.2|7>>
-    <associate|auto-34|<tuple|3.3.2|7>>
+    <associate|auto-34|<tuple|3.3.2|8>>
     <associate|auto-35|<tuple|3.3.2.1|8>>
     <associate|auto-36|<tuple|3.4|8>>
     <associate|auto-37|<tuple|9|8>>
