@@ -17,34 +17,40 @@
 
       <h2>Current status</h2>
 
-      <table tal:condition="job" class="listing">
-        <tbody>
-          <tr>
-            <td class="left icon"><img alt="" src="/@@/progress" /></td>
-            <td>
-              <a tal:attributes="href job/build/fmt:url">
-                <span tal:replace="job/build/title">NAME</span>
-              </a>
-            </td>
-          </tr>
-          <tr class="secondary">
-            <td></td>
-            <td>
-              Requested
-              <tal:requested
-                content="job/build/datecreated/fmt:datetime"
-              />
-            </td>
-          </tr>
-          <tr class="secondary">
-            <td></td>
-            <td>
-              Started
-              <tal:built content="job/buildstart/fmt:datetime" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <tal:job condition="job">
+        <table class="listing">
+          <tbody>
+            <tr>
+              <td class="left icon"><img alt="" src="/@@/progress" /></td>
+              <td>
+                <a tal:attributes="href job/build/fmt:url">
+                  <span tal:replace="job/build/title">NAME</span>
+                </a>
+              </td>
+            </tr>
+            <tr class="secondary">
+              <td></td>
+              <td>
+                Requested
+                <tal:requested
+                  content="job/build/datecreated/fmt:datetime"
+                />
+              </td>
+            </tr>
+            <tr class="secondary">
+              <td></td>
+              <td>
+                Started
+                <tal:built content="job/buildstart/fmt:datetime" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <tal:logtail
+          condition="job/logtail"
+          content="structure job/logtail/fmt:text-to-html"
+        >Things are crashing and burning all over the place.</tal:logtail>
+      </tal:job>
       <p tal:condition="not: job">
         <tal:builder content="context/title" /> is idle.
       </p>
