@@ -3,11 +3,15 @@
 import unittest
 from cStringIO import StringIO
 from urllib2 import urlopen, HTTPError
+import datetime
 
 import transaction
 
+import pytz
+
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.launchpad.ftests.harness import _reconnect_sqlos
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.interfaces import DownloadFailed
@@ -18,6 +22,7 @@ from canonical.database.sqlbase import commit
 
 class LibrarianWebTestCase(unittest.TestCase):
     """Test the librarian's web interface."""
+    dbuser = 'librarian'
 
     # Add stuff to a librarian via the upload port, then check that it's
     # immediately visible on the web interface. (in an attempt to test ddaa's
@@ -33,6 +38,10 @@ class LibrarianWebTestCase(unittest.TestCase):
 
     def commit(self):
         transaction.commit()
+        # XXX Andrew Bennetts 2006-02-17:
+        # This shouldn't be needed, but the commit doesn't seem to have any
+        # effect unless this is called.
+        _reconnect_sqlos(dbuser='librarian')
 
     def test_uploadThenDownload(self):
         client = LibrarianClient()
@@ -157,6 +166,32 @@ class LibrarianWebTestCase(unittest.TestCase):
             config.librarian.download_host, config.librarian.download_port)
         f = urlopen(url)
         self.failUnless('Disallow: /' in f.read())
+        
+    def test_access_time(self):
+        # Add a file.
+        client = LibrarianClient()
+        filename = 'sample.txt'
+        id1 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
+        self.commit()
+
+        # Manually force last accessed time to be some time way in the past, so
+        # that it'll be very clear if it's updated or not (otherwise, depending
+        # on the resolution of clocks and things, an immediate access might not
+        # look any newer).
+        LibraryFileAlias.get(id1).last_accessed = datetime.datetime(
+            2004,1,1,12,0,0, tzinfo=pytz.timezone('Australia/Sydney'))
+        self.commit()
+
+        # Check that last_accessed is updated when the file is accessed over the
+        # web.
+        access_time_1 = LibraryFileAlias.get(id1).last_accessed
+        client = LibrarianClient()
+        url = client.getURLForAlias(id1)
+        urlopen(url).close()
+        self.commit()
+        access_time_2 = LibraryFileAlias.get(id1).last_accessed
+
+        self.failUnless(access_time_1 < access_time_2)
         
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):

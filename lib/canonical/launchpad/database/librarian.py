@@ -72,6 +72,9 @@ class LibraryFileAlias(SQLBase):
         self._datafile.close()
         self._datafile = None
 
+    def update_last_accessed(self):
+        self.last_accessed = UTC_NOW
+    
     products = RelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
                            intermediateTable='ProductReleaseFile')
