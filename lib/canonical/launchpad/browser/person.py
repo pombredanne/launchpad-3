@@ -652,6 +652,7 @@ class PersonRdfView:
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
 
+
 def userIsActiveTeamMember(team):
     """Return True if the user is an active member of this team."""
     user = getUtility(ILaunchBag).user
@@ -671,8 +672,11 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
                 'owner': self.context,
                 'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
 
+
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug contact."""
+
+    columns_to_show = ["id", "summary", "importance", "status"]
 
     @property
     def current_package(self):

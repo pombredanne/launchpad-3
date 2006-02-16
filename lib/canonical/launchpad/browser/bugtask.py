@@ -518,6 +518,7 @@ class BugListingPortletView(LaunchpadView):
 
         return search_filter_url
 
+
 def getInitialValuesFromSearchParams(search_params, form_schema):
     """Build a dictionary that can be given as initial values to
     setUpWidgets, based on the given search params.
@@ -562,6 +563,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
 
     return initial
 
+
 class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
@@ -580,6 +582,12 @@ class BugTaskSearchListingView(LaunchpadView):
         upstream_context = self._upstreamContext()
         distribution_context = self._distributionContext()
         distrorelease_context = self._distroReleaseContext()
+
+        assert (
+            upstream_context or distribution_context or
+            distrorelease_context), (
+            "Unrecognized context; don't know which report "
+            "columns to show.")
 
         if upstream_context:
             return ["id", "summary", "importance", "status"]
@@ -622,39 +630,56 @@ class BugTaskSearchListingView(LaunchpadView):
         criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
-        if (self.searchtext_widget.hasInput() and
-            self.searchtext_widget.getInputValue().isdigit()):
-            try:
-                bug = getUtility(IBugSet).get(
-                    int(self.searchtext_widget.getInputValue()))
-            except NotFoundError:
-                pass
-            else:
-                self.request.response.redirect(canonical_url(bug))
+        data = {}
+        if self.request.form.get("search"):
+            # It looks like the user clicked the "Search" button, so extract the
+            # form parameters.
 
-        # Normalize the form_values as search params. Every list argument will
-        # be converted to an OR search, using the any() function.
-        data = getWidgetsData(
-            self, self.search_form_schema,
-            names=[
-                "status", "assignee", "severity", "unassigned", "assignee"])
+            # Normalize the form_values as search params. Every list argument will
+            # be converted to an OR search, using the any() function.
+            data.update(
+                getWidgetsData(
+                    self, self.search_form_schema,
+                    names=[
+                        "searchtext", "status", "assignee", "severity",
+                        "unassigned"]))
+
+            searchtext = data.get("searchtext")
+            if searchtext and searchtext.isdigit():
+                try:
+                    bug = getUtility(IBugSet).get(int(data["searchtext"]))
+                except NotFoundError:
+                    pass
+                else:
+                    self.request.response.redirect(canonical_url(bug))
+
+            unassigned = data.get("unassigned")
+            if unassigned:
+                data['assignee'] = NULL
+                del data['unassigned']
+        else:
+            # The user didn't click the "Search" button, e.g., they came in at
+            # the default +bugs URL, so we'll inject default search parameters.
+            data['status'] = UNRESOLVED_BUGTASK_STATUSES
+
+        if extra_params:
+            data.update(extra_params)
+
+        # Force omitting dupes, if other search criteria were provided. This
+        # way, dups will be omitted for every search except the "All bugs ever
+        # reported" one.
+        if data and not data.has_key("omit_dupes"):
+            # We'll force omitting dupes until the advanced search reappears in a
+            # near-future landing.
+            data["omit_dupes"] = True
+
+        # "Normalize" the form data into search arguments.
         form_values = {}
         for key, value in data.items():
             if zope_isinstance(value, (list, tuple)):
                 form_values[key] = any(*value)
             else:
                 form_values[key] = value
-
-        unassigned = form_values.get("unassigned")
-        if unassigned:
-            form_values['assignee'] = NULL
-            del form_values['unassigned']
-
-        if form_values:
-            form_values["omit_dupes"] = True
-
-        if extra_params:
-            form_values.update(extra_params)
 
         search_params = BugTaskSearchParams(user=self.user, **form_values)
         search_params.orderby = get_sortorder_from_request(self.request)
