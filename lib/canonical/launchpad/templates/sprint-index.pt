@@ -19,7 +19,7 @@
       Sprint Summary Goes Here
     </span>
     <tal:has_homepage condition="context/home_page">
-      <img src="/++resource++sprint" />
+      <img src="/@@/sprint" />
       <a tal:attributes="href context/home_page">
         View the Meeting Home Page
       </a>
