@@ -372,27 +372,6 @@ class SourcePackage(BugTargetBase):
         # and make sure this change is immediately available
         flush_database_updates()
 
-    def bugsCounter(self):
-        # XXX: where does self.bugs come from?
-        #   -- kiko, 2005-09-23
-        ret = [len(self.bugs)]
-        severities = [
-            BugTaskSeverity.CRITICAL,
-            BugTaskSeverity.MAJOR,
-            BugTaskSeverity.NORMAL,
-            BugTaskSeverity.MINOR,
-            BugTaskSeverity.WISHLIST,
-            BugTaskStatus.FIXED,
-            BugTaskStatus.ACCEPTED,
-            ]
-        for severity in severities:
-            n = BugTask.selectBy(
-                severity=int(severity),
-                sourcepackagenameID=self.sourcepackagename.id,
-                distributionID=self.distribution.id).count()
-            ret.append(n)
-        return ret
-
     # ticket related interfaces
     def tickets(self, quantity=None):
         """See ITicketTarget."""

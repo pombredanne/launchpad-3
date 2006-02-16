@@ -121,12 +121,8 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         and record that it was done by the owner.
         """
 
-    def bugsCounter():
-        """A bug counter widget for sourcepackage. This finds the number of
-        bugs for each bug severity, as well as the total number of bugs
-        associated with this sourcepackagename in this distribution."""
-
     shouldimport = Attribute("""Whether we should import this or not.
         By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
         The attribute is True or False.""")
+
