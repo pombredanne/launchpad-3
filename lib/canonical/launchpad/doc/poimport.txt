@@ -147,7 +147,7 @@ It's newly created, so it has no message sets yet.
 
 And the statistics reflect it.
 
-    >>> pofile.currentcount
+    >>> pofile.currentCount()
     0
 
 Here are the contents of the file we'll be importing.
@@ -202,7 +202,7 @@ The number of activities performed is...
 
 And the statistics reflect it.
 
-    >>> pofile.currentcount
+    >>> pofile.currentCount()
     3
 
 Here's a current message set: i.e. it has a corresponding current message set
@@ -315,11 +315,11 @@ Here are the contents of another file we'll be importing. It has no errors.
 
 And the statistics reflect it.
 
-    >>> pofile.currentcount
+    >>> pofile.currentCount()
     1
-    >>> pofile.updatescount
+    >>> pofile.updatesCount()
     0
-    >>> pofile.rosettacount
+    >>> pofile.rosettaCount()
     1
 
 Check the notification email about the success of this import without errors.
@@ -394,11 +394,11 @@ The number of activities shouldn't change as the import was rejected.
 
 And the statistics reflect it.
 
-    >>> pofile.currentcount
+    >>> pofile.currentCount()
     1
-    >>> pofile.updatescount
+    >>> pofile.updatesCount()
     0
-    >>> pofile.rosettacount
+    >>> pofile.rosettaCount()
     0
 
 And the date should be the old one
