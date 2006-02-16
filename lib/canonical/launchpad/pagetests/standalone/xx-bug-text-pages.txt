@@ -15,7 +15,6 @@ Get text page for a single bug.
   subscribers: 
    Steve Alexander (stevea)
    Sample Person (name12)
-   Mark Shuttleworth (sabdfl)
   <BLANKLINE>
   task: firefox (upstream)
   status: Unconfirmed
