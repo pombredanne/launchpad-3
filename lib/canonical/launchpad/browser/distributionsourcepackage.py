@@ -12,14 +12,13 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, UNRESOLVED_BUGTASK_STATUSES, ILaunchBag,
-    DuplicateBugContactError, DeleteBugContactError, IPersonSet)
+    IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
+    DeleteBugContactError, IPersonSet)
 from canonical.launchpad.browser.bugtask import (
-    BugTargetTraversalMixin, BugTaskSearchListingView)
+    BugTargetTraversalMixin, AdvancedBugTaskSearchView)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
-    GetitemNavigation, canonical_url)
-from canonical.launchpad.searchbuilder import any
+    GetitemNavigation, canonical_url, redirection)
 
 
 class DistributionSourcePackageFacets(StandardLaunchpadFacets):
@@ -59,6 +58,8 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
 
     usedfor = IDistributionSourcePackage
 
+    redirection("+editbugcontact", "+subscribe")
+
     def breadcrumb(self):
         return self.context.sourcepackagename.name
 
@@ -76,20 +77,12 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
         return Link('+addticket', 'Request Support', icon='add')
 
 
-class DistributionSourcePackageBugsView(BugTaskSearchListingView):
+class DistributionSourcePackageBugsView(AdvancedBugTaskSearchView):
     """View class for the buglist for an IDistributionSourcePackage."""
 
     def _distributionContext(self):
         """Return the source package's distribution."""
         return self.context.distribution
-
-    def showTableView(self):
-        """Should the search results be displayed as a table?"""
-        return False
-
-    def showListView(self):
-        """Should the search results be displayed as a list?"""
-        return True
 
     def showBatchedListing(self):
         """Is the listing batched?"""
@@ -100,9 +93,14 @@ class DistributionSourcePackageBugsView(BugTaskSearchListingView):
         """Return the columns that should be displayed in the bug listing."""
         return ["assignedto", "id", "priority", "severity", "status", "title"]
 
-    def getExtraSearchParams(self):
-        """Search for all unresolved bugs on this package."""
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}
+    def hasSimpleMode(self):
+        return True
+
+    def shouldShowAdvancedSearchWidgets(self):
+        """Return True if this view's advanced form should be shown."""
+        if self.request.get('advanced') and not self.request.get('simple'):
+            return True
+        return False
 
 
 class DistributionSourcePackageView:

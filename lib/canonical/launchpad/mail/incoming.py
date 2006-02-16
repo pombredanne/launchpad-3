@@ -10,15 +10,16 @@ import email.Errors
 import re
 
 import transaction
-from zope.component import getUtility, queryUtility
+from zope.component import getUtility
 from zope.interface import directlyProvides, directlyProvidedBy
 
 from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
     IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
-    IWeaklyAuthenticatedPrincipal)
+    IWeaklyAuthenticatedPrincipal, GPGVerificationError)
 from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import notify_errors_list
 from canonical.librarian.interfaces import UploadFailed
@@ -77,11 +78,12 @@ def authenticateEmail(mail):
 
     person = IPerson(principal)
     gpghandler = getUtility(IGPGHandler)
-    sig = gpghandler.verifySignature(
-        canonicalise_line_endings(signed_content), signature)
-    if sig is None:
+    try:
+        sig = gpghandler.getVerifiedSignature(
+            canonicalise_line_endings(signed_content), signature)
+    except GPGVerificationError, e:
         # verifySignature failed to verify the signature.
-        raise InvalidSignature("Signature couldn't be verified.")
+        raise InvalidSignature("Signature couldn't be verified: %s" % str(e))
 
     for gpgkey in person.gpgkeys:
         if gpgkey.fingerprint == sig.fingerprint:
@@ -202,7 +204,7 @@ def handleMail(trans=transaction):
                 handler = None
                 for email_addr in addresses:
                     user, domain = email_addr.split('@')
-                    handler = queryUtility(IMailHandler, name=domain)
+                    handler = mail_handlers.get(domain)
                     if handler is not None:
                         break
 

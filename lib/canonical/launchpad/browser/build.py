@@ -40,15 +40,7 @@ class BuildOverviewMenu(ApplicationMenu):
     """Overview menu for build records """
     usedfor = IBuild
     facet = 'overview'
-    links = ['changes', 'buildlog', 'reset']
-
-    def changes(self):
-        text = 'View Changes'
-        return Link('+changes', text, icon='info')
-
-    def buildlog(self):
-        text = 'View Buildlog'
-        return Link('+buildlog', text, icon='info')
+    links = ['reset']
 
     @enabled_with_permission('launchpad.Admin')
     def reset(self):

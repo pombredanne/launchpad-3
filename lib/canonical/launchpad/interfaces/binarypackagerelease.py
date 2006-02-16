@@ -59,9 +59,6 @@ class IBinaryPackageRelease(Interface):
         """Return the SUPERSEDED BinaryPackages in a DistroRelease
            that comes from the same SourcePackage"""
 
-    def __getitem__(version):
-        """Return the packagename that matches the given version"""
-
     def addFile(file):
         """Create a BinaryPackageFile record referencing this build
         and attach the provided library file alias (file).

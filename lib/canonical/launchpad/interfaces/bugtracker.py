@@ -12,9 +12,26 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Text, TextLine, Choice
+from zope.component import getUtility
 
 from canonical.lp import dbschema
+
 from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.validators.name import name_validator
+
+
+class BugTrackerNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another bugtracker.")
+
+    @property
+    def _content_iface(self):
+        return IBugTracker
+
+    def _getByName(self, name):
+        return getUtility(IBugTrackerSet).getByName(name)
+    
 
 class IBugTracker(Interface):
     """A remote a bug system."""
@@ -24,16 +41,19 @@ class IBugTracker(Interface):
         title=_('Bug Tracker Type'),
         vocabulary="BugTrackerType",
         default=dbschema.BugTrackerType.BUGZILLA)
-    name = TextLine(
+    name = BugTrackerNameField(
         title=_('Name'),
+        constraint=name_validator,
         description=_('An URL-friendly name for the bug tracker, '
         'such as "mozilla-bugs".'))
     title = TextLine(
         title=_('Title'),
-        description=_('A descriptive label for this tracker to show in listings.'))
+        description=_(
+            'A descriptive label for this tracker to show in listings.'))
     summary = Text(
         title=_('Summary'),
-        description=_('A brief introduction or overview of this bug tracker instance.'))
+        description=_(
+            'A brief introduction or overview of this bug tracker instance.'))
     baseurl = TextLine(
         title=_('Base URL'),
         description=_('The top-level URL for the bug tracker. This '

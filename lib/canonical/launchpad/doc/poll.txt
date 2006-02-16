@@ -73,7 +73,7 @@ Query for not-yet-opened polls, one second before the poll opens.
 
 All polls must have a set of options for people to choose, and they'll always
 start with zero options. We're responsible for adding new ones.
-  >>> len(poll.getAllOptions())
+  >>> poll.getAllOptions().count()
   0
 
 Let's add some options to this poll, so people can start voting. :)

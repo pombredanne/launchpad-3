@@ -56,7 +56,7 @@
         layer="canonical.launchpad.layers.ShipItLayer"
         for="zope.interface.common.interfaces.IException"
         name="index.html"
-        template="../templates/shipit-default-error.pt"
+        template="../templates/shipit-oops.pt"
         permission="zope.Public"
         class="canonical.launchpad.webapp.error.SystemErrorView" />
 

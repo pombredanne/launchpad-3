@@ -11,7 +11,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageRelease, IBinaryPackageReleaseSet, NotFoundError)
+    IBinaryPackageRelease, IBinaryPackageReleaseSet)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -120,37 +120,6 @@ class BinaryPackageRelease(SQLBase):
         return shortlist(BinaryPackageRelease.select(
             query, clauseTables=clauseTables, distinct=True))
 
-    @property
-    def status(self):
-        """Returns the BinaryPackageRelease Status."""
-        # XXX: dsilvers: 20050901: This entire method is a wrong. It shouldn't
-        # exist like this because a BinaryPackageRelease is likely to be in
-        # more than one DistroArchRelease as time goes by. In particular it
-        # may be inherited.
-        # This method should be considered for removal when BinaryPackage is
-        # reworked properly.
-        packagepublishing = BinaryPackagePublishing.selectOneBy(
-            binarypackagereleaseID=self.id,
-            distroarchreleaseID=self.build.distroarchrelease.id)
-        if packagepublishing is None:
-            raise NotFoundError('BinaryPackageRelease not found in '
-                                'PackagePublishing')
-        return packagepublishing.status.title
-    
-    def __getitem__(self, version):
-        clauseTables = ["Build"]
-        query = """Build.id = build
-                   AND  Build.distroarchrelease = %d
-                   AND  binarypackagename = %d
-                   AND  version = %s""" % sqlvalues(
-                       self.build.distroarchrelease.id,
-                       self.binarypackagename.id,
-                       version)
-        item = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
-        if item is None:
-            raise NotFoundError("Version Not Found", version)
-        return item
-
     def addFile(self, file):
         """See IBinaryPackageRelease."""
         determined_filetype = None
@@ -198,37 +167,32 @@ class BinaryPackageReleaseSet:
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
-        query = ('''BinaryPackagePublishing.binarypackagerelease =
+        queries = ['''BinaryPackagePublishing.binarypackagerelease =
                         BinaryPackageRelease.id AND
                     BinaryPackagePublishing.distroarchrelease =
                         DistroArchRelease.id AND
                     DistroArchRelease.distrorelease = %d AND
                     BinaryPackageRelease.binarypackagename = 
                         BinaryPackageName.id'''
-            % distroreleaseID
-            )
-
-        # XXX: Rewrite this code to use "AND".join(); I'm hacking on an
-        # extra space here to make this work.
-        #   -- kiko, 2005-09-23
-        query += " "
+                 % distroreleaseID]
+            
 
         if fti:
-            query += """
-                AND
+            queries.append("""
                 (
                 BinaryPackageName.name
                     LIKE lower('%%' || %s || '%%')
                 OR BinaryPackageRelease.fti @@ ftq(%s))
-                """ % (quote_like(pattern), quote(pattern))
+                """ % (quote_like(pattern), quote(pattern)))
         else:
-            query += ('AND BinaryPackageName.name ILIKE %s '
-                      % sqlvalues('%%' + pattern + '%%')
-                      )
+            queries.append('BinaryPackageName.name ILIKE %s'
+                         % sqlvalues('%%' + pattern + '%%'))
 
         if archtag:
-            query += ('AND DistroArchRelease.architecturetag=%s'
-                      % sqlvalues(archtag))
+            queries.append('DistroArchRelease.architecturetag=%s'
+                         % sqlvalues(archtag))
+
+        query = " AND ".join(queries)
 
         return BinaryPackageRelease.select(query, clauseTables=clauseTables,
                                            orderBy='BinaryPackageName.name')
@@ -243,36 +207,33 @@ class BinaryPackageReleaseSet:
         # XXX: identical query to findByNameInDistroRelease; merge or
         # nuke one.
         #   -- kiko, 2005-09-23
-        query = ('''BinaryPackagePublishing.binarypackagerelease =
+        queries = ['''BinaryPackagePublishing.binarypackagerelease =
                         BinaryPackageRelease.id AND
                     BinaryPackagePublishing.distroarchrelease =
                         DistroArchRelease.id AND
                     DistroArchRelease.distrorelease = %d AND
                     BinaryPackageRelease.binarypackagename = 
                         BinaryPackageName.id'''
-            % distroreleaseID
-            )
+                 % distroreleaseID]
 
-        # XXX: Rewrite this code to use "AND".join(); I'm hacking on an
-        # extra space here to make this work.
-        #   -- kiko, 2005-09-23
-        query += " "
 
         if name:
-            query += 'AND BinaryPackageName.name = %s '% sqlvalues(name)
+            queries.append('BinaryPackageName.name = %s' % sqlvalues(name))
 
         # Look for a specific binarypackage version or if version == None
         # return the current one
         if version:
-            query += ('AND BinaryPackageRelease.version = %s '
-                      % sqlvalues(version))
+            queries.append('BinaryPackageRelease.version = %s'
+                         % sqlvalues(version))
         else:
-            query += ('AND BinaryPackagePublishing.status = %s '
-                      % sqlvalues(dbschema.PackagePublishingStatus.PUBLISHED))
+            queries.append('BinaryPackagePublishing.status = %s'
+                         % sqlvalues(dbschema.PackagePublishingStatus.PUBLISHED))
 
         if archtag:
-            query += ('AND DistroArchRelease.architecturetag = %s '
-                      % sqlvalues(archtag))
+            queries.append('DistroArchRelease.architecturetag = %s'
+                         % sqlvalues(archtag))
+
+        query = " AND ".join(queries)
 
         return BinaryPackageRelease.select(query, distinct=True,
                                            clauseTables=clauseTables,

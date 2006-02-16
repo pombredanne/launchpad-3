@@ -76,6 +76,28 @@ DistroRelease.getPublishedReleases:
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
     mozilla-firefox
 
+DistroRelease.getBinaryPackagePublishing will return
+BinaryPackagePublishing objects for the DistroRelease:
+
+    >>> from canonical.launchpad.database import DistroRelease
+    >>> warty = DistroRelease.get(1)
+    >>> bpp = warty.getBinaryPackagePublishing()
+    >>> print bpp.count()
+    1
+    >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
+    mozilla-firefox
+    >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
+    >>> print bpp.count()
+    0
+    >>> bpp = warty.getBinaryPackagePublishing(version="nosuchversion")
+    >>> print bpp.count()
+    0
+    >>> bpp = warty.getBinaryPackagePublishing(archtag="nosucharch")
+    >>> print bpp.count()
+    0
+    >>> bpp = warty.getBinaryPackagePublishing(sourcename="nosuchsource")
+    >>> print bpp.count()
+    0
 
 CVE BugTasks on a Distro Release
 --------------------------------
@@ -94,7 +116,7 @@ about Debian:
 There should be NO resolved CVE tasks:
 
     >>> tasks = woody.resolved_cve_bugtasks
-    >>> print len(tasks)
+    >>> print tasks.count()
     0
 
 DistroReleases have components and sections

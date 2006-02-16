@@ -12,17 +12,17 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, TextLine, Bool
+from zope.schema import Choice, TextLine, Text, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.launchpad.validators.name import name_validator 
+from canonical.launchpad.validators.name import name_validator
 
 
 class IBuilder(IHasOwner):
     """Build-slave information and state.
-    
+
     Builder instance represents a single builder slave instance within the
     Launchad Auto Build System. It should specify a 'processor' which the
     machine is based and able to build packages for; an URL, by which the
@@ -38,13 +38,13 @@ class IBuilder(IHasOwner):
                        description=_('Build Slave Processor, used to identify '
                                      'which jobs can be built by this device.')
                        )
-    
+
     owner = Choice(title=_('Owner'), required=True,
                    vocabulary='ValidOwner',
                    description=_('Builder owner, a Launchpad member which '
                                  'will be responsible for this device.')
                    )
- 
+
     url = TextLine(title=_('URL'), required=True,
                    description=_('Builder URL is user as unique device '
                                  'identification, includes protocol, host '
@@ -78,19 +78,25 @@ class IBuilder(IHasOwner):
                                  'automatically for slaves in that state')
                    )
 
-    builderok = Attribute("Whether or not the builder is ok")
-    failnotes = Attribute("The reason for a builder not being ok")
+    builderok = Bool(title=_('Builder State OK'), required=False,
+                     description=_('Whether or not the builder is ok')
+                     )
+
+    failnotes = Text(title=_('Failure Notes'), required=False,
+                     description=_('The reason for a builder not being ok')
+                     )
+
     slave = Attribute("xmlrpclib.Server instance correspondent to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
 
     def failbuilder(reason):
         """Mark builder as failed for a given reason."""
-    
+
 
 class IBuilderSet(Interface):
     """Collections of builders.
- 
+
     IBuilderSet provides access to all Builders in the system,
     and also acts as a Factory to allow the creation of new Builders.
     Methods on this interface should deal with the set of Builders:
@@ -167,7 +173,7 @@ class IBuildQueueSet(Interface):
 
     def calculateCandidates(archreleases, state):
         """Return the candidates for building
-        
+
         The result is a unsorted list of buildqueue items in a given state
         within a given distroarchrelease group.
         """

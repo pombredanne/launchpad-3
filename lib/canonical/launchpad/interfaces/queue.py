@@ -12,8 +12,9 @@ __all__ = [
     ]
 
 from zope.schema import Int
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from canonical.launchpad import _
+
 
 class IDistroReleaseQueue(Interface):
     """A Queue item for Lucille"""
@@ -33,6 +34,9 @@ class IDistroReleaseQueue(Interface):
     pocket = Int(
             title=_("The pocket"), required=True, readonly=False,
             )
+
+    changesfile = Attribute("The librarian alias for the changes file "
+                            "associated with this upload")
 
     def realiseUpload(logger=None):
         """Take this ACCEPTED upload and create the publishing records for it
