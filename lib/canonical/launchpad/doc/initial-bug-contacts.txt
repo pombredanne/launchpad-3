@@ -128,6 +128,7 @@ subscribe Foo Bar to the bug:
     >>> from canonical.launchpad.helpers import capture_state
     >>> from canonical.launchpad.components.bugtask import mark_task
     >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> from canonical.launchpad.mail import stub
 
     >>> old_state = capture_state(
     ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
@@ -144,6 +145,7 @@ subscribe Foo Bar to the bug:
     ...     ["id", "title", "sourcepackagename"])
 
     >>> notify(source_package_changed)
+    >>> transaction.commit()
 
 With the source package changed, we can see that Foo Bar is now
 subscribed:
@@ -152,6 +154,33 @@ subscribed:
     ...     [subscription.person.displayname for subscription in
     ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
     [u'Foo Bar', u'Sample Person', u'Steve Alexander']
+
+Foo Bar is sent an email giving him complete information about the bug
+that has just been retargeted, including the title, description, status,
+priority, etc.
+
+    >>> import email
+
+    >>> def by_to_addrs(a, b):
+    ...     return cmp(a[1], b[1])
+
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+
+    >>> len(test_emails)
+    4
+    >>> from_addr, to_addr, raw_message = test_emails.pop(1)
+    >>> print from_addr
+    bounces@canonical.com
+    >>> print to_addr
+    ['foo.bar@canonical.com']
+
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['Subject']
+    '[Bug 1] Firefox does not support SVG'
+    >>> print msg.get_payload(decode=True)
+    Public bug reported:
+    http://.../malone/bugs/...
 
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package. So, if Mark Shuttleworth

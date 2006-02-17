@@ -2,6 +2,9 @@
 
 """Subscribers for IBugTask-related events."""
 
+from canonical.launchpad.mailnotification import (
+    generate_bug_add_email, send_bug_notification)
+
 def update_package_bug_contact_subscriptions(modified_bugtask, event):
     """Modify the bug Cc list when a source package name changes."""
 
@@ -21,9 +24,16 @@ def update_package_bug_contact_subscriptions(modified_bugtask, event):
         bugtask_after_modification.distribution.getSourcePackage(
             bugtask_after_modification.sourcepackagename.name))
 
-    bug = bugtask_after_modification.bug
     # Subscribe all bug contacts for the new package that aren't already
     # subscribed to this bug.
+    bug = bugtask_after_modification.bug
+    subject, body = generate_bug_add_email(bug)
     for package_bug_contact in new_sourcepackage.bugcontacts:
         if not bug.isSubscribed(package_bug_contact):
-            bug.subscribe(package_bug_contact.bugcontact)
+            person = package_bug_contact.bugcontact
+            bug.subscribe(person)
+            # Send a notification to the new bug contact that looks identical to
+            # a new bug report.
+            send_bug_notification(
+                bug=bug, user=bug.owner, subject=subject, body=body,
+                to_addrs=str(person.preferredemail.email))
