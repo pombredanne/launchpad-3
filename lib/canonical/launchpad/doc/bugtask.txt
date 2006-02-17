@@ -523,6 +523,8 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
+    >>> from canonical.launchpad.helpers import capture_state
+
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
     >>> ubuntu_team = personset.get(17)
@@ -531,12 +533,6 @@ entitled _Privacy and Team Awareness_):
     >>> notify(SQLObjectToBeModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
 
-    >>> def capture_state(obj, *fields):
-    ...     class State: pass
-    ...     state = State()
-    ...     for field in fields:
-    ...         setattr(state, field, getattr(obj, field))
-    ...     return state
     >>> old_state = capture_state(
     ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
     ...     "summary", "description", "private", "name",

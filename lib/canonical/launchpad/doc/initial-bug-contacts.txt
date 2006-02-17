@@ -92,15 +92,99 @@ Package Bug Contacts and Bug Tasks
 
 Often a bug gets reported on package foo, when it should have been
 reported on bar. When a user, likely a bug triager or developer, changes
-the package, the bug contacts for the previous package get unsubscribed
-from the bug report, and the bug contacts for the new package get
+the source package, the bug contacts for the new package get
+subscribed. The bug contacts of the previous package also remain
 subscribed.
 
 To demonstrate, let's change the source package for bug #1 in
 mozilla-firefox in Ubuntu to be pmount in Ubuntu, and see how the
 subscribers list changes.
 
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
 
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
-    >>> ubuntu_
+    >>> ubuntu_pmount = ubuntu.getSourcePackage("pmount")
+
+    >>> bug_one_in_ubuntu_firefox = getUtility(IBugTaskSet).get(17)
+
+Foo Bar, a package bug contact for ubuntu mozilla-firefox and ubuntu
+pmount is currently not subscribed to bug 1.
+
+    >>> sorted(
+    ...     [subscription.person.displayname for subscription in
+    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
+    [u'Sample Person', u'Steve Alexander']
+
+Changing the package for bug_one_in_ubuntu_firefox to pmount will
+subscribe Foo Bar to the bug:
+
+    >>> from zope.event import notify
+
+    >>> import transaction
+    >>> from canonical.launchpad.event.sqlobjectevent import (
+    ...     SQLObjectModifiedEvent)
+    >>> from canonical.launchpad.helpers import capture_state
+    >>> from canonical.launchpad.components.bugtask import mark_task
+    >>> from canonical.launchpad.interfaces import IDistroBugTask
+
+    >>> old_state = capture_state(
+    ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
+    ...     "binarypackagename", "sourcepackagename", "priority",
+    ...     "assignee", "bugwatch", "milestone", "distribution")
+
+    >>> mark_task(old_state, IDistroBugTask)
+
+    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
+    ...     ubuntu_pmount.sourcepackagename)
+
+    >>> source_package_changed = SQLObjectModifiedEvent(
+    ...     bug_one_in_ubuntu_firefox, old_state,
+    ...     ["id", "title", "sourcepackagename"])
+
+    >>> notify(source_package_changed)
+
+With the source package changed, we can see that Foo Bar is now
+subscribed:
+
+    >>> sorted(
+    ...     [subscription.person.displayname for subscription in
+    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
+    [u'Foo Bar', u'Sample Person', u'Steve Alexander']
+
+If a bug is private, no changes are made to the subscriber list when a
+bug is reassigned to a different package. So, if Mark Shuttleworth
+becomes a bug contact for ubuntu mozilla-firefox:
+
+    >>> sabdfl = getUtility(IPersonSet).get(1)
+    >>> ubuntu_firefox.addBugContact(sabdfl)
+
+and the bug is made private:
+
+    >>> bug_one_in_ubuntu_firefox.bug.private = True
+
+and then the bug gets reassigned to mozilla firefox:
+
+    >>> old_state = capture_state(
+    ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
+    ...     "binarypackagename", "sourcepackagename", "priority",
+    ...     "assignee", "bugwatch", "milestone", "distribution")
+
+    >>> mark_task(old_state, IDistroBugTask)
+
+    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
+    ...     ubuntu_firefox.sourcepackagename)
+
+    >>> source_package_changed = SQLObjectModifiedEvent(
+    ...     bug_one_in_ubuntu_firefox, old_state,
+    ...     ["id", "title", "sourcepackagename"])
+
+    >>> notify(source_package_changed)
+
+the bug contacts remain unchanged:
+
+    >>> sorted(
+    ...     [subscription.person.displayname for subscription in
+    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
+    [u'Foo Bar', u'Sample Person', u'Steve Alexander']
