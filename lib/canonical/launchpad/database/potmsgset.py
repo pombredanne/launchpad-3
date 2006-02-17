@@ -241,44 +241,54 @@ class POTMsgSet(SQLBase):
     def normalizeNewLines(self, text):
         """See IPOTMsgSet."""
         msgid = self.primemsgid_.msgid
-        stripped_text = text.replace('\r\n', '')
-        stripped_msgid = msgid.replace('\r\n', '')
-        text_in_windows_style = '\r\n' in text
-        text_in_mac_style = '\r' in stripped_text
-        text_in_unix_style = '\n' in stripped_text
-        msgid_in_windows_style = '\r\n' in msgid
-        msgid_in_mac_style = '\r' in stripped_msgid
-        msgid_in_unix_style = '\n' in stripped_msgid
+        # There are three different kinds of newlines:
+        windows_style = '\r\n'
+        mac_style = '\r'
+        unix_style = '\n'
+        # We need the stripped variables because a 'windows' style will be at
+        # the same time a 'mac' and 'unix' style.
+        stripped_text = text.replace(windows_style, '')
+        stripped_msgid = msgid.replace(windows_style, '')
 
-        if ((msgid_in_windows_style and msgid_in_mac_style) or
-            (msgid_in_windows_style and msgid_in_unix_style) or
-            (msgid_in_mac_style and msgid_in_unix_style)):
-            raise AssertionError(
-                "Broken msgid, it's mixing different new line marks")
+        # Get the style that uses the msgid.
+        msgid_style = None
+        if windows_style in msgid:
+            msgid_style = windows_style
 
-        if ((text_in_windows_style and text_in_mac_style) or
-            (text_in_windows_style and text_in_unix_style) or
-            (text_in_mac_style and text_in_unix_style)):
-            raise AssertionError(
-                "Broken text, it's mixing different new line marks")
+        if mac_style in stripped_msgid:
+            if msgid_style is not None:
+                raise AssertionError(
+                    "Broken msgid (%r), it's mixing different new line marks"
+                        % msgid)
+            msgid_style = mac_style
 
-        if text_in_windows_style and not msgid_in_windows_style:
-            if msgid_in_mac_style:
-                text = text.replace('\r\n', '\r')
-                return text.replace('\n', '\r')
-            elif msgid_in_unix_style:
-                text = text.replace('\r\n', '\n')
-                return text.replace('\r', '\n')
-        elif text_in_mac_style and not msgid_in_mac_style:
-            if msgid_in_unix_style:
-                return text.replace('\r', '\n')
-            elif msgid_in_windows_style:
-                return text.replace('\r', '\r\n')
-        elif text_in_unix_style and not msgid_in_unix_style:
-            if msgid_in_mac_style:
-                return text.replace('\n', '\r')
-            elif msgid_in_windows_style:
-                return text.replace('\n', '\r\n')
+        if unix_style in stripped_msgid:
+            if msgid_style is not None:
+                raise AssertionError(
+                    "Broken msgid (%r), it's mixing different new line marks"
+                        % msgid)
+            msgid_style = unix_style
 
-        # We don't need to do anything, the text is not changed.
-        return text
+        # Get the style that uses the given text.
+        text_style = None
+        if windows_style in text:
+            text_style = windows_style
+
+        if mac_style in stripped_text:
+            if msgid_style is not None:
+                raise AssertionError(
+                    "Broken text, it's mixing different new line marks")
+            text_style = mac_style
+
+        if unix_style in stripped_text:
+            if msgid_style is not None:
+                raise AssertionError(
+                    "Broken text, it's mixing different new line marks")
+            text_style = unix_style
+
+        if msgid_style is None or text_style is None:
+            # We don't need to do anything, the text is not changed.
+            return text
+
+        # Fix the newline chars.
+        return text.replace(text_style, msgid_style)
