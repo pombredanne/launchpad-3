@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Binary package search results</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" /> 
@@ -16,13 +19,11 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Binary package search</h1>
-
     <form name="search" method="GET">
 
       <div>
-        <label for="name">Search binary packages in
-        <span tal:replace="context/title" />:
+        Find binary packages in <tal:archrelease replace="context/displayname" />
+        matching:
       </div>
       <div>    
       <input type="text"

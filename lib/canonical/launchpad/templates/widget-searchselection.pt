@@ -3,7 +3,7 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<body metal:fill-slot="main">
+<XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXbody metal:fill-slot="main">
 
 <tal:testvalues define="selection python: {'title':'Mozilla Firefox',
                          'summary':'''Mozilla Firefox is a streamlined 

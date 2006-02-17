@@ -1,9 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="malone">
-
-<body>
+    i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Malone</h1>
+      <div><i>The Launchpad bug tracker</i></div>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-about" />

@@ -1,9 +1,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
-
-<body>
+      i18n:domain="rosetta"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>
+        Programs you can translate into
+        <tal:language replace="context/language/englishname">Catalan</tal:language>
+      </h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-about" />
@@ -15,14 +21,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Programs you can translate</h1>
-
-  <p class="documentDescription">Below, you can see all of the registered
-    translation templates in <span
-    tal:replace="context/distrorelease/distribution/displayname">Ubuntu</span>
-    <span tal:replace="context/distrorelease/version">5.04</span>. Choose a
-    template name to begin translating.
-  </p>
+  <p>Choose a template name to begin translating.</p>
 
   <table class="listing sortable" width="100%" id="translationstatuses">
     <thead>

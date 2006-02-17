@@ -104,19 +104,17 @@ binarypackagenames_index = 'Binary package name set'
 
 bounties_index = 'Bounties registered in Launchpad'
 
-bounty_add = 'Register a new bounty'
-
-bounty_add = 'Register a bounty in Launchpad'
+bounty_add = 'Register a bounty'
 
 bounty_edit = ContextTitle(smartquote('Edit bounty "%s"'))
 
 bounty_link = ContextTitle('Link a bounty to %s')
 
-bounty_index = ContextTitle(smartquote('Bounty "%s"'))
+bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_edit = ContextTitle(smartquote('Edit branch "%s"'))
+branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
 
 branch_index = ContextTitle(smartquote('Bazaar branch "%s"'))
 
@@ -234,7 +232,7 @@ calendar_event_addform = ContextTitle('Add event to %s')
 
 calendar_event_display = ContextTitle(smartquote('Event "%s"'))
 
-calendar_event_editform = ContextTitle(smartquote('Edit event "%s"'))
+calendar_event_editform = ContextTitle(smartquote('Change "%s" event details'))
 
 calendar_subscribe = ContextTitle(smartquote('Subscribe to "%s"'))
 
@@ -466,9 +464,9 @@ object_reassignment = ContextTitle('Reassign %s')
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
-people_index = 'People registered with Launchpad'
+people_index = 'People registered in Launchpad'
 
-people_list = 'People registered with Launchpad'
+people_list = 'People registered in Launchpad'
 
 person_assignedbugs = ContextDisplayName('Bugs assigned to %s')
 
@@ -669,7 +667,7 @@ rosetta_preferences = 'Rosetta: Preferences'
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
-    return '%s %s details' % (context.product.displayname, context.name)
+    return 'Change %s %s details' % (context.product.displayname, context.name)
 
 productseries_new = ContextDisplayName('Register a new %s release series')
 
@@ -887,10 +885,13 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
+
 translationgroups = 'Rosetta translation groups'
 
-translationimportqueueentry_index = 'Translation Import Queue Entry'
-translationimportqueue_index = 'Translation Import Queue'
-translationimportqueue_blocked = 'Translation Import Queue - Blocked'
+translationimportqueueentry_index = 'Translation import queue entry'
+
+translationimportqueue_index = 'Translation import queue'
+
+translationimportqueue_blocked = 'Translation import queue - Blocked'
 
 unauthorized = 'Error: Not authorized'

@@ -14,9 +14,11 @@
   <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
-
+<metal:heading fill-slot="pageheading">
   <h1 i18n:translate="">Welcome to Launchpad</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
 
   <p i18n:translate="">
     Launchpad is a collection of services for

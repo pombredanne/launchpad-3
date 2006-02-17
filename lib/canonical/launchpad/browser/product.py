@@ -155,17 +155,13 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'editbugcontact', 'reassign', 'distributions', 'packages',
+        'edit', 'reassign', 'distributions', 'packages',
         'series_add', 'branch_add', 'milestone_add', 'launchpad_usage', 'rdf',
         'administer']
 
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
-
-    def editbugcontact(self):
-        text = 'Edit Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
 
     def reassign(self):
         text = 'Change Maintainer'
@@ -211,11 +207,15 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug']
+    links = ['filebug', 'bugcontact']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    def bugcontact(self):
+        text = 'Change Bug Contact'
+        return Link('+bugcontact', text, icon='edit')
 
 
 class ProductSupportMenu(ApplicationMenu):

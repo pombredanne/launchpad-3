@@ -16,10 +16,6 @@
 
 <div metal:fill-slot="main">
 
-  <p class="documentDescription">
-    
-  </p>
-
 </div>
 </body>
 </html>

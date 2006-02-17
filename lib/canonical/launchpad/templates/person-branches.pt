@@ -2,8 +2,12 @@
   xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-<body>
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Bazaar branches</h1>
+    </metal:heading>
   
 <metal:leftportlets fill-slot="portlets_one"
   ><div tal:replace="structure context/@@+portlet-details"
@@ -14,7 +18,6 @@
 /></metal:rightportlets>
 
 <div metal:fill-slot="main">
-  <h1>Bazaar branches</h1>
 
   <tal:has_authored_branches condition="context/authored_branches"
     ><h2>Branches authored</h2>

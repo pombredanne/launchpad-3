@@ -78,7 +78,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['search', 'support', 'packaging', 'edit', 'reassign',
+    links = ['support', 'packaging', 'edit', 'reassign',
              'addport', 'admin', 'builds']
 
     def edit(self):
@@ -94,19 +94,17 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Upstream Links'
         return Link('+packaging', text, icon='info')
 
+    # A search link isn't needed because the distro release overview has a search form.
+
     def support(self):
         text = 'Request Support'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
 
-    def search(self):
-        text = 'Search Packages'
-        return Link('+search', text, icon='search')
-
     @enabled_with_permission('launchpad.Admin')
     def addport(self):
         text = 'Add Port'
-        return Link('+addport', text, icon='edit')
+        return Link('+addport', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):

@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+      i18n:domain="launchpad"
+>
   <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Complete your registration</h1>
+    </metal:heading>
 
     <tal:dummy>
       This page uses the launchpad-addform.pt METAL.
@@ -12,8 +15,6 @@
   <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
-
-        <h1 metal:fill-slot="heading">Complete your registration</h1>
 
   </div>
 

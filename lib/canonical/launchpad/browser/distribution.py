@@ -108,16 +108,12 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'editbugcontact', 'reassign', 'addrelease', 'builds',
+             'reassign', 'addrelease', 'builds',
              'officialmirrors', 'allmirrors', 'newmirror']
 
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
-
-    def editbugcontact(self):
-        text = 'Edit Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
@@ -165,7 +161,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['new', 'cve_list']
+    links = ['new', 'bugcontact', 'cve_list']
 
     def cve_list(self):
         text = 'CVE List'
@@ -174,6 +170,10 @@ class DistributionBugsMenu(ApplicationMenu):
     def new(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    def bugcontact(self):
+        text = 'Change Bug Contact'
+        return Link('+bugcontact', text, icon='edit')
 
 
 class DistributionBountiesMenu(ApplicationMenu):

@@ -458,7 +458,6 @@
       for="canonical.launchpad.interfaces.IBugTask"
       schema="canonical.launchpad.interfaces.IBugSubscription"
       class="canonical.launchpad.browser.BugSubscriptionAddView"
-      label="Subscribe someone else to the bug report"
       fields="person"
       keyword_arguments="person"
       permission="launchpad.AnyPerson"

@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Linking to upstream</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div class="portlet">
@@ -19,10 +22,8 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Linking to upstream</h1>
-
   <p>
-    <abbr title="The Hypothetical Changeset Tool">HCT</abbr> uses packaging
+    <abbr>HCT</abbr>, the Hypothetical Changeset Tool, uses packaging
     information to link a source package in a distribution to an upstream
     product series.
   </p>

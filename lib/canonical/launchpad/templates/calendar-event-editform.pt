@@ -2,19 +2,21 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@launchpad_template/master"
-      i18n:domain="launchpad">
-
+      i18n:domain="launchpad"
+>
   <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <a tal:attributes="href context/fmt:url" tal:content="context/title"
+        >Foo</a>
+      </div>
+      <h1>Change event details</h1>
+    </metal:heading>
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+    <div metal:use-macro="context/@@launchpad_editform/editform" />
 
-      <h1 metal:fill-slot="heading">
-        Edit event <q tal:content="context/title">Event title</q>
-      </h1>
-
-    </div>
   </div>
 
   </body>

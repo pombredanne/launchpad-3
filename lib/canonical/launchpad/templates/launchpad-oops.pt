@@ -1,10 +1,10 @@
 <tal:layout define="columns1 default">
 <html metal:use-macro="context/@@main_template/master">
   <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 class="exception">Oops!</h1>
+    </metal:heading>
     <div metal:fill-slot="main">
-      <h1 class="exception">
-        Oops
-      </h1>
       <p>
         Sorry, something just went wrong in Launchpad.
       </p>

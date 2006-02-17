@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Binary package search results</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -11,15 +14,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Binary package search</h1>
-
-  <p class="documentDescription">
-    Use this form to search through the
-    packages in <span tal:replace="context/title" />.
-  </p>
-
   <form name="search" method="GET">
   
+    <div>Find packages with names containing:</div>
     <input type="text"
       name="text"
       size="35"
@@ -29,12 +26,6 @@
         tal:condition="not: view/searchrequested" />
     <input type="submit" value="Search Again"
         tal:condition="view/searchrequested" />
-
-    <p class="discreet">
-       Search for a software package in this release using the form
-       above. You will be shown a list of matching packages, and can
-       explore the archive from there.
-    </p>
 
   </form>
 

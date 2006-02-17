@@ -83,11 +83,10 @@
         for="canonical.launchpad.interfaces.IDistributionMirror"
         schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource"
         permission="launchpad.Edit"
-        label="Add Source Release"
         class="canonical.launchpad.browser.DistributionMirrorAddSourceView"
         fields="distro_release"
         arguments="distro_release"
-        template="../templates/distributionmirror-addarchrelease.pt">
+        template="../templates/distributionmirror-addsourcerelease.pt">
     </browser:generalform>
 
     <!-- MirrorDistroArchRelease -->

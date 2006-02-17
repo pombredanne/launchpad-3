@@ -379,7 +379,7 @@ class CommonMenuLinks:
     @enabled_with_permission('launchpad.Edit')
     def common_edithomepage(self):
         target = '+edithomepage'
-        text = 'Edit Home Page'
+        text = 'Home Page'
         return Link(target, text, icon='edit')
 
     def common_packages(self):
@@ -401,31 +401,31 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
-        text = 'Edit Personal Details'
+        text = 'Personal Details'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'Edit Email Addresses'
+        text = 'E-mail Addresses'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editwikinames(self):
         target = '+editwikinames'
-        text = 'Edit Wiki Names'
+        text = 'Wiki Names'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editircnicknames(self):
         target = '+editircnicknames'
-        text = 'Edit IRC Nicknames'
+        text = 'IRC Nicknames'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editjabberids(self):
         target = '+editjabberids'
-        text = 'Edit Jabber IDs'
+        text = 'Jabber IDs'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -445,7 +445,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'Edit SSH Keys'
+        text = 'SSH Keys'
         summary = (
             'Used if %s stores code on the Supermirror' %
             self.context.browsername)
@@ -454,14 +454,14 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editgpgkeys(self):
         target = '+editgpgkeys'
-        text = 'Edit OpenPGP Keys'
+        text = 'OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edithackergotchi(self):
         target = '+edithackergotchi'
-        text = 'Edit Hackergotchi'
+        text = 'Hackergotchi'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

@@ -2,53 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-  <metal:block fill-slot="head_epilogue">
-    <!-- CSS rules local to this page -->
-    <style>
-      .results th {
-        color: #828282;
-        border: 1px solid #cfcfcf;
-        background-color: #E0E0E0;
-        text-align: left;
-      }
-
-      .results td {
-        border: 1px solid #cfcfcf;
-      }
-
-      .odd {
-        background-color: #ededed;
-      }
-
-      .even {
-        background-color: #ffffff;
-      }
-
-      #portal-column-content {
-        margin-left: 0;
-        width: 74%;
-      }
-
-      #filter li {
-        margin-bottom: 2px;
-      }
-
-      #filter li:before {
-        content: "\00BB \0020";
-      }
-    </style>
-  </metal:block>
+      i18n:domain="malone"
+>
+  <body>
 
   <div metal:fill-slot="main">
-    <div id="portal-column-content">
-      <h2 class="lpcontext"
-          tal:content="string:${context/displayname}'s package bug reports">
-        Sample Person package bug reports
-      </h2>
+    <div id="portal-column-content" style="margin-left: 0; width: 74%;">
+      <h1>Bug reports by package</h1>
       <strong>
         <small tal:content="view/current_package/displayname">
           mozilla-firefox (Ubuntu)
@@ -66,41 +26,15 @@
           <input type="text" name="field.searchtext" size="40"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
-          <span style="color: #A8A8A8"><small>(Advanced search coming soon)</small></span>
+          <span class="discreet">(Advanced search coming soon)</span>
         </form>
         <script>
           <!--
               document.forms["search"].elements['field.searchtext'].focus();
             -->
         </script>
-        <br />
-        <table style="width: 55%; margin-left: 0;">
-          <tr>
-            <td id="filter-label" width="15%"
-                style="border-color: #DEDEDE;
-                       border-style: solid;
-                       border-width: 1px 1px 0px 1px;
-                       padding: 3px 0px 3px 0px;
-                       text-align: center;">
-              <small><strong>Filter</strong></small>
-            </td>
-            <td style="border-color: #DEDEDE;
-                       border-style: solid;
-                       border-width: 0px 0px 1px 0px;">
-              &nbsp;</td>
-          </tr>
-          <tr>
-            <td colspan="2"
-                style="border-color: #DEDEDE;
-                       border-style: solid;
-                       border-width: 0px 1px 1px 1px;
-                       padding: 5px;
-                       width: 5em;">
-              <small>
-              <ul id="filter"
-                  style="list-style: none;
-                         margin-left: 3px;
-                         padding-left: 3px;">
+        <div style="margin-top: 1em;">Filter:</div>
+        <ul style="margin-top: 0; margin-bottom: 1em;">
                 <li tal:repeat="search_link view/getSearchFilterLinks">
                   <a href="#"
                      tal:content="search_link/title"
@@ -130,24 +64,21 @@
                   </span>
                   in the title or description
                 </li>
-              </ul>
-              </small>
-            </td>
-          </tr>
-        </table>
-        <br />
+        </ul>
         <div>
           <small tal:content="structure batch_navigator/@@+navigation-links" />
         </div>
-        <table class="results">
+        <table class="listing">
+          <thead>
           <tr>
             <th width="8%">ID</th>
             <th width="60%">Summary</th>
             <th widtrh="16%">Importance</th>
             <th width="16%">Status</th>
           </tr>
-          <tr tal:repeat="bugtask batch_navigator/batch"
-              tal:attributes="class python:(repeat['bugtask'].odd() and 'odd') or 'even'">
+          </thead>
+          <tbody>
+          <tr tal:repeat="bugtask batch_navigator/batch">
             <td tal:content="bugtask/bug/id">42</td>
             <td>
               <a href="#"
@@ -159,6 +90,7 @@
             <td tal:content="bugtask/severity/title">Critical</td>
             <td tal:content="bugtask/status/title">Confirmed</td>
           </tr>
+          </tbody>
         </table>
         <div style="margin-bottom: 5px">
           <small tal:content="structure batch_navigator/@@+navigation-links" />

@@ -1,9 +1,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1
+        tal:define="distrorelease context/distrorelease; distro distrorelease/distribution"
+      >
+        <tal:distro replace="distro/displayname">Fooix</tal:distro>
+        <tal:release replace="distrorelease/displayname">3.1</tal:release> for
+        <tal:arch replace="context/architecturetag">i386</tal:arch>:
+        Overview
+      </h1>
+    </metal:heading>
 
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -18,15 +28,6 @@
 <div metal:fill-slot="main"
      tal:define="distrorelease context/distrorelease;
                  distro distrorelease/distribution">
-
-  <h1>Release overview</h1> 
-
-  <p class="documentDescription">This page is an overview of the
-    <span tal:replace="context/architecturetag">i386</span> architecture of 
-    <span tal:replace="distro/displayname">Ubuntu</span>
-    <span tal:replace="distrorelease/displayname">Hoary</span>. From here
-    you can see the state of binary packages for this architecture.
-  </p>
 
   <h2>Search binary packages</h2>
 
@@ -43,8 +44,7 @@
 
   <p class="discreet">
     This archive currently contains
-    <span tal:replace="context/package_count" /> software packages. Search
-    them now to find a specific package that meets your needs.
+    <tal:count replace="context/package_count">bazillions of</tal:count> software packages.
   </p>
 
 </div>

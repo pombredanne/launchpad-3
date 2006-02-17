@@ -1,19 +1,20 @@
 <tal:do-this-first tal:content="view/processForm" />
-
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-
-<body>
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Merge Launchpad accounts</h1>
+    </metal:heading>
 
 <div metal:fill-slot="main">
 
   <form action="" method="POST">
     <tal:block tal:condition="not: view/shouldShowConfirmationPage" >
-      <h1>Admin interface to merge two accounts</h1>
 
       <div tal:condition="view/errormessages" class="portalMessage"
            tal:repeat="errors view/errormessages"

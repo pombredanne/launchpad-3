@@ -266,7 +266,6 @@
       for="schoolbell.interfaces.ICalendarEvent"
       schema="schoolbell.interfaces.ICalendarEvent"
       fields="title description location dtstart duration"
-      label="Edit event"
       permission="launchpad.Edit"
       template="../templates/calendar-event-editform.pt"
       lp:url="$calendar/events/$event.id/+edit">
