@@ -256,17 +256,15 @@ class POTMsgSet(SQLBase):
             msgid_style = windows_style
 
         if mac_style in stripped_msgid:
-            if msgid_style is not None:
-                raise AssertionError(
-                    "Broken msgid (%r), it's mixing different new line marks"
-                        % msgid)
+            assert msgid_style is None, (
+                "Broken msgid (%r), it's mixing different new line marks"
+                    % msgid)
             msgid_style = mac_style
 
         if unix_style in stripped_msgid:
-            if msgid_style is not None:
-                raise AssertionError(
-                    "Broken msgid (%r), it's mixing different new line marks"
-                        % msgid)
+            assert msgid_style is None, (
+                "Broken msgid (%r), it's mixing different new line marks"
+                    % msgid)
             msgid_style = unix_style
 
         # Get the style that uses the given text.
@@ -275,15 +273,15 @@ class POTMsgSet(SQLBase):
             text_style = windows_style
 
         if mac_style in stripped_text:
-            if msgid_style is not None:
-                raise AssertionError(
-                    "Broken text, it's mixing different new line marks")
+            assert msgid_style is None, (
+                "Broken text (%r), it's mixing different new line marks"
+                    % text)
             text_style = mac_style
 
         if unix_style in stripped_text:
-            if msgid_style is not None:
-                raise AssertionError(
-                    "Broken text, it's mixing different new line marks")
+            assert msgid_style is None, (
+                "Broken text (%r), it's mixing different new line marks"
+                    % text)
             text_style = unix_style
 
         if msgid_style is None or text_style is None:

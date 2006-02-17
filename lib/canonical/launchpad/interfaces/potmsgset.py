@@ -4,7 +4,9 @@ from zope.interface import Interface, Attribute
 
 __metaclass__ = type
 
-__all__ = ('IPOTMsgSet', )
+__all__ = [
+    'IPOTMsgSet',
+    ]
 
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""
