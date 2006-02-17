@@ -7,7 +7,7 @@
     <div class="lesser">
       <form method="GET">
         <input type="text" name="text">
-        <img src="/++resource++search" />
+        <img src="/@@/search" />
       </form>
     </div>
 

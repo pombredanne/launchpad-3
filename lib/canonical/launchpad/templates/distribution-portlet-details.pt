@@ -6,17 +6,17 @@
   <div class="portletBody portletContent">
 
     <b>Registrant:</b><br />
-    <img src="/++resource++user.gif">
+    <img src="/@@/user.gif">
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">owner name</a> <br />
 
     <b>Members:</b><br />
-    <img src="/++resource++user.gif">
+    <img src="/@@/user.gif">
     <a tal:attributes="href string:${context/fmt:url}/+members"
        tal:content="context/members/browsername">members name</a><br /> 
 
     <b>Translation group:</b><br />
-    <img src="/++resource++languages.gif">
+    <img src="/@@/languages.gif">
     <tal:block condition="context/translationgroup">
     <a tal:attributes="href context/translationgroup/fmt:url"
        tal:content="context/translationgroup/title"
@@ -32,7 +32,7 @@
     <b>Uploads:</b><br />
     <tal:per_component repeat="dcu context/uploaders">
       <span tal:replace="dcu/component/name">main</span>:
-      <img src="/++resource++user" />
+      <img src="/@@/user" />
       <a tal:content="dcu/uploader/browsername"
          tal:attributes="href dcu/uploader/fmt:url" /><br />
     </tal:per_component>

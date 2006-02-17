@@ -614,12 +614,12 @@ class FOAFSearchView:
         if not name:
             return None
 
-        if searchfor == "all":
-            results = getUtility(IPersonSet).find(name)
-        elif searchfor == "peopleonly":
+        if searchfor == "peopleonly":
             results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
             results = getUtility(IPersonSet).findTeam(name)
+        else:
+            results = getUtility(IPersonSet).find(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
