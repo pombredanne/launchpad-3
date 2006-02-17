@@ -16,6 +16,9 @@ def update_package_bug_contact_subscriptions(modified_bugtask, event):
         bugtask_after_modification.sourcepackagename):
         return
 
+    if not bugtask_after_modification.sourcepackagename:
+        return
+
     # We don't make any changes to subscriber lists on private bugs.
     if bugtask_after_modification.bug.private:
         return

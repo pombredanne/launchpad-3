@@ -464,6 +464,14 @@ class BugTaskEditView(GeneralFormView):
                     edited_fields=self.fieldNames,
                     comment_on_change=comment_on_change))
 
+        if (bugtask_before_modification.sourcepackagename !=
+            bugtask.sourcepackagename):
+            # The source package was changed, so tell the user that we've
+            # subscribed the new bug contacts.
+            self.request.response.addNotification(
+                "The bug contacts for %s have been subscribed to this bug." % (
+                    bugtask.targetname))
+
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         return canonical_url(self.context)
