@@ -133,21 +133,23 @@ Instead, it'll be part of the past requests of that recipient.
 Searching for requests
 ----------------------
 
-We have twelve custom requests. Two of them are cancelled.
+We have thirteen custom requests. Two of them are cancelled.
 
   >>> [r.recipient.name 
   ...  for r in requestset.search(request_type='custom', omit_cancelled=False)]
-  [u'lifeless', u'cprov', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv', u'name16']
+  [u'lifeless', u'cprov', u'ddaa', u'debonzi', u'kurem', u'ddaa', u'carlos',
+   u'daf', u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv', u'name16']
 
   >>> [r.recipient.name for r in requestset.search(request_type='custom')]
-  [u'lifeless', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv']
+  [u'lifeless', u'ddaa', u'debonzi', u'kurem', u'ddaa', u'carlos', u'daf',
+   u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv']
 
 From the ten non-cancelled, one is approved.
 
   >>> approved = status=ShippingRequestStatus.APPROVED
   >>> [r.recipient.name 
   ...  for r in requestset.search(request_type='custom', status=approved)]
-  [u'jblack', u'no-priv']
+  [u'ddaa', u'jblack', u'no-priv']
 
 We have also two non-cancelled standard requests:
 
@@ -186,6 +188,11 @@ beginning of his email address.
   >>> [r.recipient.preferredemail.email
   ...  for r in requestset.search(recipient_text='Stuart.Bishop')]
   [u'stuart.bishop@canonical.com']
+
+  >>> [r.recipient.preferredemail.email
+  ...  for r in requestset.search(status=ShippingRequestStatus.PENDING,
+  ...                             recipient_text='david.allouche')]
+  [u'david.allouche@canonical.com']
 
 
 Exporting requests
@@ -235,10 +242,11 @@ to each country.
     >>> for line in csv_file.readlines():
     ...     line
     'Country,Shipped x86 CDs,Shipped AMD64 CDs,Shipped PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent\r\n'
-    'Bermuda,10,9,3,1,0,22,104.76%,30.99%,North America\r\n'
-    'Burkina Faso,5,3,2,1,0,10,100.00%,14.08%,Africa\r\n'
-    'Heard Island and McDonald Islands,10,3,2,1,0,15,100.00%,21.13%,Antarctica\r\n'
-    '\xc3\x85land Islands,9,6,9,0,1,24,100.00%,33.80%,Europe\r\n'
+    'Bermuda,10,9,3,1,0,22,104.76%,23.16%,North America\r\n'
+    'British Indian Ocean Territory,9,6,9,1,0,24,100.00%,25.26%,Asia\r\n'
+    'Burkina Faso,5,3,2,1,0,10,100.00%,10.53%,Africa\r\n'
+    'Heard Island and McDonald Islands,10,3,2,1,0,15,100.00%,15.79%,Antarctica\r\n'
+    '\xc3\x85land Islands,9,6,9,0,1,24,100.00%,25.26%,Europe\r\n'
 
 
 There's another report which gives us the number of shipments of all shipment
@@ -251,7 +259,7 @@ sizes we had.
     '10,1\r\n'
     '15,1\r\n'
     '22,1\r\n'
-    '24,1\r\n'
+    '24,2\r\n'
 
 
 There's also a report of requests by week.
@@ -265,7 +273,7 @@ There's also a report of requests by week.
     '2005,14,0,,,\r\n'
     '2005,15,0,,,\r\n'
     '2005,16,0,,,\r\n'
-    '2005,17,3,27,17,22\r\n'
+    '2005,17,4,36,23,31\r\n'
     '2005,18,4,36,18,46\r\n'
     '2005,19,1,9,6,9\r\n'
     '2005,20,1,9,6,9\r\n'
