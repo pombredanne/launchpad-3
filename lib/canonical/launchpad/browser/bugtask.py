@@ -44,13 +44,13 @@ from canonical.launchpad.webapp import (
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
-    IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
-    IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
+    ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch, IBugSet,
+    IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
+    IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -516,7 +516,6 @@ class BugListingPortletView(LaunchpadView):
             BugListing(context, 'Untriaged', '+bugs-untriaged', request),
             BugListing(context, 'Unassigned', '+bugs-unassigned', request),
             BugListing(context, 'All bugs ever reported', '+bugs-all', request),
-            BugListing(context, 'Advanced search', '+bugs-advanced', request),
             ]
 
 
@@ -584,7 +583,10 @@ class BugTaskSearchListingView(LaunchpadView):
         #     they need to. -- Bjorn Tillenius, 2005-09-29
         if self._upstreamContext():
             self.search_form_schema = IUpstreamBugTaskSearch
-        elif self._distributionContext() or self._distroReleaseContext():
+        elif (self._distributionContext()
+              or self._distroReleaseContext()
+              or self._sourcePackageContext()
+              or self._distroSourcePackageContext()):
             self.search_form_schema = IDistroBugTaskSearch
         elif self._personContext():
             self.search_form_schema = IPersonBugTaskSearch
@@ -689,8 +691,9 @@ class BugTaskSearchListingView(LaunchpadView):
             assert self._upstreamContext(), (
                 "Mass-targeting of bugtasks to milestones is currently only "
                 "supported for products")
-            assert self.user is not None and self.user.inTeam(self.context.owner), (
-                "You must be logged in to mass-assign bugtasks to milestones")
+            assert (self.user is not None and
+                    self.user.inTeam(self.context.owner)), \
+                    ("You must be logged in to mass-assign bugs to milestones")
 
         form_params = getWidgetsData(self, self.search_form_schema)
         milestone_assignment = form_params.get('milestone_assignment')
@@ -874,6 +877,19 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return IDistroRelease(self.context, None)
 
+    def _sourcePackageContext(self):
+        """Is this page being viewed in a [distrorelease] sourcepackage context?
+
+        Return the ISourcePackage if yes, otherwise return None.
+        """
+        return ISourcePackage(self.context, None)
+
+    def _distroSourcePackageContext(self):
+        """Is this page being viewed in a distribution sourcepackage context?
+
+        Return the IDistributionSourcePackage if yes, otherwise return None.
+        """
+        return IDistributionSourcePackage(self.context, None)
 
 class RedirectToAdvancedBugTasksView(BugTaskSearchListingView):
     """A view that will render the advanced search page if the user requested

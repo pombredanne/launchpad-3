@@ -126,10 +126,23 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
->>> check("/distros/ubuntu/+source/evolution/+bugs")
->>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
+
+>>> check("/distros/ubuntu/+source/evolution")
+>>> check("/distros/ubuntu/+source/evolution/+tickets")
 >>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
+>>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
+
 >>> check("/distros/ubuntu/hoary/i386/pmount/0.1-1")
+
+>>> check("/distros/ubuntu/+source/evolution/+bugs")
+>>> check("/distros/ubuntu/+source/evolution/+bugs-all")
+>>> check("/distros/ubuntu/+source/evolution/+bugs-open")
+>>> check("/distros/ubuntu/+source/evolution/+bugs-assigned-to", auth=True)
+>>> check("/distros/ubuntu/+source/evolution/+bugs-critical")
+>>> check("/distros/ubuntu/+source/evolution/+bugs-untriaged")
+>>> check("/distros/ubuntu/+source/evolution/+bugs-unassigned")
+>>> check("/distros/ubuntu/+source/evolution/+bugs-advanced")
+>>> check("/distros/ubuntu/+source/evolution/+portlet-bugtasklist-mybugs")
 
 >>> check("/distros/kubuntu/+bugs")
 >>> check("/distros/kubuntu/+specs")
@@ -168,6 +181,17 @@ spider -- StuartBishop 20050822
 >>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
 ...       auth=True)
+
+
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs-all")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs-open")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs-assigned-to", auth=True)
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs-critical")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs-untriaged")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs-unassigned")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs-advanced")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+portlet-bugtasklist-mybugs")
 
 >>> check("/malone")
 >>> check_redirect("/malone/assigned")
@@ -251,6 +275,7 @@ Viewing the bug in the context of a distro release source package in
 which the bug has not yet been reported.
 
 >>> check("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1")
+>>> check("/distros/ubuntu/warty/+source/mozilla-firefox/+bugs-advanced")
 >>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
 >>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
