@@ -67,7 +67,7 @@
     </div>
 
     <div>
-        <img src="/++resource++add.gif"><a href="+newproduct">Add a product</a>
+        <img src="/@@/add.gif"><a href="+newproduct">Add a product</a>
     </div>
 
 </div>
