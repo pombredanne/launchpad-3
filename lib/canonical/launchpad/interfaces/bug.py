@@ -168,12 +168,6 @@ class IBugTarget(Interface):
         :private: Is this a private bug? A boolean value.
         """
 
-    bugtasks = Attribute("A list of BugTasks for this target.")
-    open_bugtasks = Attribute("A list of Open BugTasks for this target.")
-    inprogress_bugtasks = Attribute("A list of In Progress BugTasks for this target.")
-    critical_bugtasks = Attribute("A list of Critical BugTasks for this target.")
-    unassigned_bugtasks = Attribute("A list of Unassigned BugTasks for this target.")
-
 
 class BugDistroReleaseTargetDetails:
     """The details of a bug targeted to a specific IDistroRelease.

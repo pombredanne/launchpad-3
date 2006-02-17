@@ -83,7 +83,6 @@ class Distribution(SQLBase, BugTargetBase):
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
     uploaders = MultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
