@@ -202,12 +202,6 @@ class SourcePackage(BugTargetBase):
         return self.sourcepackagename.name
 
     @property
-    def bugtasks(self):
-        querystr = "distribution=%s AND sourcepackagename=%s" % sqlvalues(
-            self.distribution.id, self.sourcepackagename.id)
-        return BugTask.select(querystr)
-
-    @property
     def potemplates(self):
         result = POTemplate.selectBy(
             distroreleaseID=self.distrorelease.id,
