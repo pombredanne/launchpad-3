@@ -43,7 +43,9 @@ def main():
             # have been imported into Malone, and thus won't change.
             log.info("Skipping updating Ubuntu Bugzilla watches.")
             continue
-        bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate()
+        # We want 1 day, but we'll use 23 hours because we can't count
+        # on the cron job hitting exactly the same time every day
+        bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate(23)
 
         try:
             remotesystem = externalsystem.ExternalSystem(bug_tracker)

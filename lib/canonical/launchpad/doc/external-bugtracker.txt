@@ -25,7 +25,7 @@ been updated in the last 23 hours.
     >>> bug_watches[3].lastchecked = now - timedelta(days=1)
     >>> flush_database_updates()
 
-    >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate():
+    >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate(23):
     ...     print bug_watch.remotebug
     123543
     42

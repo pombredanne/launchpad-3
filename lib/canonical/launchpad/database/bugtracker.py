@@ -64,13 +64,14 @@ class BugTracker(SQLBase):
                                     distinct=True,
                                     orderBy=['datecreated']))
 
-    def getBugWatchesNeedingUpdate(self):
+    def getBugWatchesNeedingUpdate(self, hours_since_last_check):
         """See IBugTracker."""
-        return BugWatch.select(
+        query = (
             """bugtracker = %s AND
-               (lastchecked < (now() at time zone 'UTC' - interval '23 hours') 
-                OR lastchecked IS NULL)""" % sqlvalues(self.id),
-            orderBy="remotebug")
+               (lastchecked < (now() at time zone 'UTC' - interval '%s hours')
+                OR lastchecked IS NULL)""" % sqlvalues(
+                    self.id, hours_since_last_check))
+        return BugWatch.select(query, orderBy="remotebug")
 
 
 class BugTrackerSet:

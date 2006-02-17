@@ -43,17 +43,18 @@ if the bug is closed:
     >>> external_bugzilla.malonify_status('CLOSED INVALID')
     'Rejected'
 
+If the status can't be converted, 'Unknown' is returned, and a warning
+is logged.
 
-We can get the status of a bug in the remote Bugzilla tracker:
+    >>> external_bugzilla.malonify_status('FOO')
+    WARNING:root:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org
+    'Unknown'
 
-    >>> external_bugzilla.get_bug_status(328430)
-    u'UNCONFIRMED'
+UNKNOWN maps to 'Unknown' without generating a warning.
 
-If the status can't be determined, for example if the bug isn't found,
-None is returned:
+    >>> external_bugzilla.malonify_status('UNKNOWN')
+    'Unknown'
 
-    >>> external_bugzilla.get_bug_status(1000) is None
-    True
 
 The main use of ExternalSystem is to update bug watches. This is done
 through updateBugWatches(), which expects a list of bug watches to
@@ -105,5 +106,5 @@ now no bug watches are in need of updating:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> len(gnome_bugzilla.getBugWatchesNeedingUpdate())
+    >>> len(gnome_bugzilla.getBugWatchesNeedingUpdate(23))
     0

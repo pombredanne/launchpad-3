@@ -57,9 +57,6 @@ class ExternalSystem(object):
                 self.bugtracker.name)
         self.version = self.remotesystem.version
 
-    def get_bug_status(self, bug_id):
-        return self.remotesystem.get_bug_status(bug_id)
-
     def malonify_status(self, status):
         return self.remotesystem.malonify_status(status)
 
@@ -121,53 +118,6 @@ class Bugzilla(ExternalSystem):
         version = bugzilla[0].getAttribute("version")
         return version
 
-    def get_bug_status(self, bug_id):
-        """Retrieve the bug status from a bug in a remote Bugzilla system.
-
-        Returns None if it cannot be determined.
-        """
-
-        data = {'form_name'   : 'buglist.cgi',
-                'bug_id_type' : 'include',
-                'bug_id'      : bug_id,
-                }
-        if self.version < '2.17.1':
-            data.update({'format' : 'rdf'})
-            status_tag = "bz:status"
-        else:
-            data.update({'ctype'  : 'rdf'})
-            status_tag = "bz:bug_status"
-        # Eventually attach authentication information here if we need it
-        #data.update({'Bugzilla_login'    : login,
-        #             'Bugzilla_password' : password,
-        #             'GoAheadAndLogIn'   : 1})
-        ret = self._postPage('buglist.cgi', data)
-        try:
-            document = minidom.parseString(ret)
-        except xml.parsers.expat.ExpatError, e:
-            log.error('Failed to parse XML description for %s bug %s: %s' %
-                      (self.baseurl, bug_id, e))
-            return None
-        result = None
-        if len(document.getElementsByTagName("bz:id")) > 0:
-            try:
-                status_node = document.getElementsByTagName(status_tag)[0]
-            except IndexError:
-                log.warn('No status found for %s bug %s' 
-                         (self.baseurl, bug_id))
-                return None
-            result = status_node.childNodes[0].data
-            try:
-                resolution_node = document.getElementsByTagName(
-                        "bz:resolution")[0]
-            except IndexError:
-                log.warn('No resolution found for %s bug %s',
-                         (self.baseurl, bug_id))
-                return None
-            if len(resolution_node.childNodes) > 0:
-                result = "%s %s" % (result, resolution_node.childNodes[0].data)
-        return result
-
     def malonify_status(self, status):
         """Translate a status from this system to the equivalent Malone status.
 
@@ -191,13 +141,17 @@ class Bugzilla(ExternalSystem):
                 malone_status = BugTaskStatus.FIXRELEASED
             else:
                 #XXX: Which are the valid resolutions? We should fail
-                #     if we don't know of the resolution.
+                #     if we don't know of the resolution. Bug 31745.
                 #     -- Bjorn Tillenius, 2005-02-03
                 malone_status = BugTaskStatus.REJECTED
         elif status in ['UNCONFIRMED', 'REOPENED', 'NEW', 'UPSTREAM']:
             malone_status = BugTaskStatus.UNCONFIRMED
         else:
-            raise AssertionError('Unknown Bugzilla status: %s' % status)
+            if status != 'UNKNOWN':
+                log.warning(
+                    "Unknown Bugzilla status '%s' at %s" % (
+                        status, self.baseurl))
+            return 'Unknown'
 
         return malone_status.title
 
@@ -218,10 +172,6 @@ class Bugzilla(ExternalSystem):
         else:
             data.update({'ctype'  : 'rdf'})
             status_tag = "bz:bug_status"
-        # Eventually attach authentication information here if we need it
-        #data.update({'Bugzilla_login'    : login,
-        #             'Bugzilla_password' : password,
-        #             'GoAheadAndLogIn'   : 1})
         buglist_xml = self._postPage('buglist.cgi', data)
         try:
             document = minidom.parseString(buglist_xml)
