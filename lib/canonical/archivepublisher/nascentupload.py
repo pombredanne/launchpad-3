@@ -1571,8 +1571,10 @@ class NascentUpload:
                         # uploaded. We therefore use this one.
                         override=possible[0]
                         archive_version = override.binarypackagerelease.version
-                        if apt_pkg.VersionCompare(uploaded_file.version,
-                                                  archive_version) <= 0:
+                        if (override.distroarchrelease ==
+                            self.distrorelease[archtag] and
+                            apt_pkg.VersionCompare(uploaded_file.version,
+                                                   archive_version) <= 0):
                             self.reject("%s: Version older than that in the "
                                         "archive. %s <= %s"
                                         % (uploaded_file.filename,
