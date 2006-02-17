@@ -198,3 +198,10 @@ DistroRelease can build meta objects for packages
    >>> pmount_srcrel = hoary.getSourcePackageRelease(pmount_rel)
    >>> IDistroReleaseSourcePackageRelease.providedBy(pmount_srcrel)
    True
+
+
+DistroRelease.updateCompletePackageCache will update the package cache for all
+binary packages names published in this distro release
+
+    >>> warty.updateCompletePackageCache()
+
