@@ -8,7 +8,6 @@
 import _pythonpath
 
 import sys
-import traceback
 import logging
 from optparse import OptionParser
 
@@ -17,7 +16,7 @@ from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, logger)
+    execute_zcml_for_scripts, logger_options, logger, log)
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.config import config
@@ -47,15 +46,14 @@ def main(argv):
     options = parse_options(argv[1:])
 
     # Get the global logger for this task.
-    logger_object = logger(options, 'launchpad-updatebranches')
+    logger(options, 'update-branches')
 
     # Create a lock file so we don't have two daemons running at the same time.
-    lockfile = LockFile(options.lockfilename, logger=logger_object)
+    lockfile = LockFile(options.lockfilename, logger=log)
     try:
         lockfile.acquire()
     except OSError:
-        logger_object.info("lockfile %s already exists, exiting",
-                           options.lockfilename)
+        log.info("lockfile %s already exists, exiting", options.lockfilename)
         return 1
 
     # We don't want debug messages from bzr at that point.
@@ -67,11 +65,11 @@ def main(argv):
         execute_zcml_for_scripts()
         ztm = initZopeless(dbuser=config.branchupdater.dbuser)
 
-        logger_object.debug('Starting branches update')
+        log.debug('Starting branches update')
         branchset = getUtility(IBranchSet)
         for branch in branchset:
             try:
-                sync_one_branch(logger_object, ztm, branch)
+                sync_one_branch(ztm, branch)
             except (KeyboardInterrupt, SystemExit):
                 # If either was raised, something really wants us to finish.
                 # Any other Exception is an error condition and must not
@@ -80,47 +78,36 @@ def main(argv):
             except:
                 # Yes, bare except. Bugs or error conditions when syncing any
                 # given branch must not prevent syncing the other branches.
-                log_exception(logger_object, with_traceback=True)
-                log_scan_failure(logger_object, branch)
-        logger_object.debug('Finished branches update')
+                log_scan_failure(branch)
+                log.exception('Unhandled exception')
+        log.debug('Finished branches update')
     finally:
         lockfile.release()
 
     return 0
 
 
-def sync_one_branch(logger_object, ztm, branch):
+def sync_one_branch(ztm, branch):
     """Run BzrSync on a single branch and handle expected exceptions."""
     try:
         bzrsync = BzrSync(
-            ztm, branch.id, branch_warehouse_url(branch), logger_object)
+            ztm, branch.id, branch_warehouse_url(branch), log)
     except NotBranchError:
         # The branch is not present in the Warehouse
-        log_scan_failure(logger_object, branch, "Branch not found")
+        log_scan_failure(branch, "Branch not found")
         return
     try:
         bzrsync.syncHistory()
     except ConnectionError:
         # A network glitch occured. Yes, that does happen.
-        log_exception(logger_object, with_traceback=False)
-        log_scan_failure(logger_object, branch)
+        log.shortException("Transient network failure")
+        log_scan_failure(branch)
 
 
-def log_exception(logger_object, with_traceback):
-    """Log the current exception at ERROR level with an optional traceback."""
-    if with_traceback:
-        report = traceback.format_exc()
-    else:
-        exctype, value = sys.exc_info()[:2]
-        report = ''.join(traceback.format_exception_only(exctype, value))
-    logger_object.error(report)
-
-
-def log_scan_failure(logger_object, branch, message="Failed to scan"):
+def log_scan_failure(branch, message="Failed to scan"):
     """Log diagnostic information for branches that could not be scanned."""
-    logger_object.warning(
-        "%s: %s", message, branch_warehouse_url(branch))
-    logger_object.warning("  branch.url = %r", branch.url)
+    log.warning("%s: %s\n    branch.url = %r",
+                message, branch_warehouse_url(branch), branch.url)
 
 
 def branch_warehouse_url(branch):
@@ -130,4 +117,5 @@ def branch_warehouse_url(branch):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    pass
+    #sys.exit(main(sys.argv))
