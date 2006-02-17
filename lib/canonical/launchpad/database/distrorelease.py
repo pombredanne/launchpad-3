@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
-    ISourcePackage, ISourcePackageNameSet,
+    ISourcePackage, ISourcePackageNameSet, IComponentSet, ISectionSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
@@ -57,8 +57,10 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
-from canonical.launchpad.database.component import Component
-from canonical.launchpad.database.section import Section
+from canonical.launchpad.database.component import (
+    Component, ComponentSelection)
+from canonical.launchpad.database.section import (
+    Section, SectionSelection)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
@@ -352,10 +354,13 @@ class DistroRelease(SQLBase, BugTargetBase):
                 archtag, self.distribution.name, self.name))
         return item
 
-    def getPublishedReleases(self, sourcepackage_or_name, pocket=None):
+    def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
+                             include_pending=False):
         """See IDistroRelease."""
-        # XXX: what is this providedBy crap?! change this to use multiple
-        # argument formats
+        # XXX cprov 20060213: we need a standard and easy API, no need
+        # to support multiple type arguments, only string name should be
+        # the best choice in here, the call site will be clearer.
+        # bug # 31317
         if ISourcePackage.providedBy(sourcepackage_or_name):
             spn = sourcepackage_or_name.name
         elif ISourcePackageName.providedBy(sourcepackage_or_name):
@@ -365,19 +370,28 @@ class DistroRelease(SQLBase, BugTargetBase):
             spn = spns.queryByName(sourcepackage_or_name)
             if spn is None:
                 return []
-        pocketclause = ""
+
+        queries = ["""
+        sourcepackagerelease=sourcepackagerelease.id AND
+        sourcepackagerelease.sourcepackagename=%s AND
+        distrorelease =%s
+        """ % sqlvalues(spn.id, self.id)]
+
         if pocket is not None:
-            pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
-        published = SourcePackagePublishing.select((
-            """
-            distrorelease = %s AND
-            status = %s AND
-            sourcepackagerelease = sourcepackagerelease.id AND
-            sourcepackagerelease.sourcepackagename = %s
-            """ % sqlvalues(self.id,
-                            PackagePublishingStatus.PUBLISHED,
-                            spn.id))+pocketclause,
+            queries.append("pocket=%s" % sqlvalues(pocket.value))
+
+        if include_pending:
+            queries.append("status in (%s, %s)" % sqlvalues(
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING))
+        else:
+            queries.append("status=%s" % sqlvalues(
+                PackagePublishingStatus.PUBLISHED))
+
+        published = SourcePackagePublishing.select(
+            " AND ".join(queries),
             clauseTables = ['SourcePackageRelease'])
+
         return shortlist(published)
 
     def getAllReleasesByStatus(self, status):
@@ -489,6 +503,18 @@ class DistroRelease(SQLBase, BugTargetBase):
         if section in permitted:
             return section
         raise NotFoundError(name)
+
+    def enableComponentByName(self, name):
+        """See IDistroRelease."""
+        component = getUtility(IComponentSet).ensure(name)
+        return ComponentSelection(distroreleaseID=self.id,
+                                  componentID=component.id)
+
+    def enableSectionByName(self, name):
+        """See IDistroRelease."""
+        section = getUtility(ISectionSet).ensure(name)
+        return SectionSelection(distroreleaseID=self.id,
+                                sectionID=section.id)
 
     def removeOldCacheItems(self):
         """See IDistroRelease."""

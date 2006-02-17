@@ -77,6 +77,8 @@ class IDistroReleaseQueue(Interface):
 
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
+    customfiles = Attribute("Custom upload files associated with this "
+                            "queue item")
 
     datecreated = Attribute("The date on which this queue was created.")
 

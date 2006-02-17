@@ -3,17 +3,18 @@
 __metaclass__ = type
 __all__ = [
     'Component',
+    'ComponentSelection',
     'ComponentSet'
     ]
 
 from zope.interface import implements
 
-from sqlobject import StringCol
+from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
-    IComponent, IComponentSet, NotFoundError)
+    IComponent, IComponentSelection, IComponentSet, NotFoundError)
 
 
 class Component(SQLBase):
@@ -24,6 +25,19 @@ class Component(SQLBase):
     _defaultOrder= ['id']
 
     name = StringCol(notNull=True, alternateID=True)
+
+
+class ComponentSelection(SQLBase):
+    """See IComponentSelection."""
+
+    implements(IComponentSelection)
+
+    _defaultOrder= ['id']
+
+    distrorelease = ForeignKey(dbName='distrorelease',
+                               foreignKey='DistroRelease', notNull=True)
+    component = ForeignKey(dbName='component',
+                           foreignKey='Component', notNull=True)
 
 
 class ComponentSet:

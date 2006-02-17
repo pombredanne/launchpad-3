@@ -150,11 +150,17 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
-    def getPublishedReleases(sourcepackage_or_name, pocket=None):
+    def getPublishedReleases(sourcepackage_or_name, pocket=None,
+                             include_pending=False):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+
+        If 'include_pending' is True, we return also the pending publication
+        records, those packages that will get published in the next publisher
+        run (it's only useful when we need to know if a given package is
+        known during a publisher run, mostly in pre-upload checks)
         """
 
     def getAllReleasesByStatus(status):
@@ -199,6 +205,20 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
 
         Raise NotFoundError if the section is not in the permitted section
         list for this distrorelease.
+        """
+
+    def enableComponentByName(name):
+        """Enable component name in this DistroRelease.
+
+        Ensure component name exists and enable it via ComponentSelection.
+        Return the ComponentSelection row instance.
+        """
+
+    def enableSectionByName(name):
+        """Enable section name in this DistroRelease.
+
+        Ensure section name exists and enable it via SectionSelection.
+        Return the SectionSelection row instance.
         """
 
     def getBinaryPackagePublishing(name, version, archtag, sourcename, orderBy):

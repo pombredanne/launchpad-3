@@ -125,14 +125,50 @@ ACCEPT
   Accepting alsa-utils
   Would be sending a mail:
      Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
-     Sender: []
-     Recipients: foo@bar.com
+     Sender: Root <root@localhost>
+     Recipients: Root <root@localhost>, foo@bar.com
      Body:
-  Fake Changesfile
-  <BLANKLINE>
   Accepted:
   alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
   ...Component: main Section: base
+  <BLANKLINE>
+  Fake Changesfile
+  <BLANKLINE>
+  ---------------------------------------------------------------------------
+                                                                1/4 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
+
+REJECT
+
+  >>> process = subprocess.Popen([sys.executable, script, "-NM", "reject",
+  ...                             "-R", "breezy-autotest", "alsa-utils"],
+  ...                            stdout=subprocess.PIPE)
+  >>> process.wait()
+  0
+
+  >>> print process.stdout.read()
+  Initialising connection to queue new
+  Running: "reject alsa-utils"
+  Rejecting ubuntu/breezy-autotest (NEW) 1/4
+  ---------------------------------------------------------------------------
+  Rejecting alsa-utils
+  Would be sending a mail:
+     Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
+     Sender: Root <root@localhost>
+     Recipients: Root <root@localhost>
+     Body:
+  Rejected:
+  alsa-utils 1.0.9a-4ubuntu1 was REJECTED.
+  ...Component: main Section: base
+  <BLANKLINE>
+  Fake Changesfile
+  <BLANKLINE>
+  ===
+  <BLANKLINE>
+  If you don't understand why your files were rejected, or if the
+  override file requires editing, reply to this email.
   <BLANKLINE>
   ---------------------------------------------------------------------------
                                                                 1/4 total

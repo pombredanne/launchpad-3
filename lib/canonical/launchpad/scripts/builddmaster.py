@@ -805,24 +805,23 @@ class BuilddMaster:
     def rollback(self):
         self._tm.rollback()
 
-    def addDistroArchRelease(self, archrelease, pocket=None):
+    def addDistroArchRelease(self, distroarchrelease):
         """Setting up a workable DistroArchRelease for this session."""
-        # ensure we have a pocket
-        if not pocket:
-            pocket = dbschema.PackagePublishingPocket.RELEASE
+        self._logger.info("Adding DistroArchRelease %s/%s/%s"
+                          % (distroarchrelease.distrorelease.distribution.name,
+                             distroarchrelease.distrorelease.name,
+                             distroarchrelease.architecturetag))
 
-        self._logger.info("Adding DistroArchRelease %s/%s/%s/%s"
-                          % (archrelease.distrorelease.distribution.name,
-                             archrelease.distrorelease.name,
-                             archrelease.architecturetag, pocket))
-        # ensure ARCHRELEASE has a pocket
-        if not archrelease.getChroot(pocket):
-            self._logger.warn("Disabling: No CHROOT found for %s pocket '%s'"
-                              % (archrelease.title, pocket.title))
-            return
-
-        # Fill out the contents
-        self._archreleases.setdefault(archrelease, {})
+        # check ARCHRELEASE accross available pockets
+        for pocket in dbschema.PackagePublishingPocket.items:
+            if distroarchrelease.getChroot(pocket):
+                # Fill out the contents
+                self._archreleases.setdefault(distroarchrelease, {})
+            else:
+                self._logger.warn(
+                    "Disabling: No CHROOT for %s (%s) '%s'"
+                    % (distroarchrelease.distrorelease.name,
+                       distroarchrelease.architecturetag, pocket.title))
 
     def setupBuilders(self, archrelease):
         """Setting up a group of builder slaves for a given DistroArchRelease.
@@ -870,13 +869,20 @@ class BuilddMaster:
         """Iterate over published package and ensure we have a proper
         build entry for it.
         """
+        # Do not create builds for distroreleases with no nominatedarchindep
+        # they can't build architecture independent packages properly.
+        if not distrorelease.nominatedarchindep:
+            self._logger.warn("No Nominated Architecture Independent, skipping"
+                              " distrorelease %s", distrorelease.title)
+            return
+
 
         pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
                                                      distrorelease)
 
         # 1. get all sourcepackagereleases published or pending in this
         # distrorelease
-        spp = distrorelease.getAllReleasesByStatus(
+        sources_published = distrorelease.getAllReleasesByStatus(
             dbschema.PackagePublishingStatus.PUBLISHED
             )
 
@@ -884,16 +890,8 @@ class BuilddMaster:
                           distrorelease.distribution.title,
                           distrorelease.title)
 
-        releases = set(pubrec.sourcepackagerelease for pubrec in spp)
-
-        self._logger.info("Found %d Sources to build.", len(releases))
-
-        # Do not create builds for distroreleases with no nominatedarchindep
-        # they can't build architecture independent packages properly.
-        if not distrorelease.nominatedarchindep:
-            self._logger.warn("No Nominated Architecture Independent, skipping"
-                              " distrorelease %s", distrorelease.title)
-            return
+        self._logger.info("Found %d Sources to build.",
+                          sources_published.count())
 
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
@@ -911,20 +909,21 @@ class BuilddMaster:
             return
 
         # 3. For each of the sourcepackagereleases, find its builds...
-        for release in releases:
+        for pubrec in sources_published:
             header = ("Build Record %s-%s for '%s' " %
-                      (release.name, release.version,
-                       release.architecturehintlist))
+                      (pubrec.sourcepackagerelease.name,
+                       pubrec.sourcepackagerelease.version,
+                       pubrec.sourcepackagerelease.architecturehintlist))
 
             # Abort packages with empty architecturehintlist, they are simply
             # wrong.
             # XXX cprov 20050931
             # This check should be done earlier in the upload component/hct
-            if release.architecturehintlist is None:
+            if pubrec.sourcepackagerelease.architecturehintlist is None:
                 self._logger.debug(header + "ABORT EMPTY ARCHHINTLIST")
                 continue
 
-            hintlist = release.architecturehintlist
+            hintlist = pubrec.sourcepackagerelease.architecturehintlist
             if hintlist == 'any':
                 hintlist = " ".join([arch.architecturetag for arch in archs])
 
@@ -932,7 +931,7 @@ class BuilddMaster:
             # in this case only one build entry is needed.
             if hintlist == 'all':
                 # it's already there, skip to next package
-                if release.builds:
+                if pubrec.sourcepackagerelease.builds:
                     # self._logger.debug(header + "SKIPPING ALL")
                     continue
 
@@ -941,9 +940,10 @@ class BuilddMaster:
                 # to build on one architecture, the distrorelease.
                 # nominatedarchindep
                 processor = distrorelease.nominatedarchindep.default_processor
-                release.createBuild(
+                pubrec.sourcepackagerelease.createBuild(
                     distroarchrelease=distrorelease.nominatedarchindep,
-                    processor=processor)
+                    processor=processor,
+                    pocket=pubrec.pocket)
                 self._logger.debug(header + "CREATING ALL")
                 continue
 
@@ -956,9 +956,9 @@ class BuilddMaster:
                 # architecture and the current architecture is not
                 # mentioned in the list, continues
                 supported = True
-                if release.name in pas_verify.permit:
+                if pubrec.sourcepackagerelease.name in pas_verify.permit:
                     if (arch.architecturetag not in
-                        pas_verify.permit[release.name]):
+                        pas_verify.permit[pubrec.sourcepackagerelease.name]):
                         supported = False
                 if not supported:
                     supported_list = hintlist.split()
@@ -970,20 +970,23 @@ class BuilddMaster:
                     continue
 
                 # verify is isn't already present for this distroarchrelease
-                if not release.getBuildByArch(arch):
+                if not pubrec.sourcepackagerelease.getBuildByArchAndPocket(
+                    arch, pubrec.pocket):
                     # XXX cprov 20050831
                     # I could possibily be better designed, let's think about
                     # it in the future. Pick the first processor we found for
                     # this distroarchrelease.processorfamily. The data model
                     # should change to have a default processor for a
                     # processorfamily
-                    release.createBuild(distroarchrelease=arch,
-                                        processor=arch.default_processor)
+                    # XXX cprov 20060210: no security proxy for dbschema
+                    # is annoying
+                    pubrec.sourcepackagerelease.createBuild(
+                        distroarchrelease=arch,
+                        processor=arch.default_processor,
+                        pocket=pubrec.pocket)
                     self._logger.debug(header + "CREATING %s" %
                                        arch.architecturetag)
-                #else:
-                #    self._logger.debug(header + "SKIPPING %s" %
-                #                       arch.architecturetag)
+
         self.commit()
 
     def addMissingBuildQueueEntries(self):
@@ -1223,23 +1226,20 @@ class BuilddMaster:
 
         return result
 
-    def dispatchByProcessor(self, proc, queueItems, pocket=None):
-        """Dispach Jobs according specific procesor and pocket """
-        # ensure we have a pocket
-        if not pocket:
-            pocket = dbschema.PackagePublishingPocket.RELEASE
-
-        self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s), %s)"
-                               % (proc.name, len(queueItems), pocket.title))
+    def dispatchByProcessor(self, proc, queueItems):
+        """Dispach Jobs according specific procesor"""
+        self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s))"
+                               % (proc.name, len(queueItems)))
         builders = notes[proc]["builders"]
         builder = builders.firstAvailable()
 
         while builder is not None and len(queueItems) > 0:
-            self.startBuild(builders, builder, queueItems.pop(0), pocket)
+            self.startBuild(builders, builder, queueItems.pop(0))
             builder = builders.firstAvailable()
 
-    def startBuild(self, builders, builder, queueItem, pocket):
+    def startBuild(self, builders, builder, queueItem):
         """Find the list of files and give them to the builder."""
+        pocket = queueItem.build.pocket
 
         self.getLogger().debug("startBuild(%s, %s, %s, %s)"
                                % (builder.url, queueItem.name,
@@ -1247,6 +1247,9 @@ class BuilddMaster:
 
         # ensure build has the need chroot
         chroot = queueItem.archrelease.getChroot(pocket)
+        if chroot is None:
+            self.getLogger().warn("Aborting, cannot find CHROOT")
+            return
 
         try:
             builders.giveToBuilder(builder, chroot, self.librarian)

@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISection',
+    'ISectionSelection',
     'ISectionSet',
     ]
 
@@ -22,6 +23,13 @@ class ISection(Interface):
 
     id = Attribute("The section ID")
     name = Attribute("The section name")
+
+
+class ISectionSelection(Interface):
+    """Represents the allowed section within a Distrorelease."""
+    id = Attribute("The ID")
+    distrorelease = Attribute("Target DistroRelease")
+    section = Attribute("Selected Section")
 
 
 class ISectionSet(Interface):

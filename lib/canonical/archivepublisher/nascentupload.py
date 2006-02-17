@@ -921,15 +921,18 @@ class NascentUpload:
                     uploaded_file.filename,
                     self.changes['version']))
         else:
+            found = False
+
             # Try and find the source in the distrorelease.
             dr = self.policy.distrorelease
             spn = getUtility(ISourcePackageNameSet).getOrCreateByName(source)
-            releases = dr.getPublishedReleases(spn, self.policy.pocket)
-            found = False
+            releases = dr.getPublishedReleases(spn, self.policy.pocket,
+                                               include_pending=True)
             for spr in releases:
                 if spr.sourcepackagerelease.version == source_version:
                     self.policy.sourcepackagerelease = spr.sourcepackagerelease
                     found = True
+
             # If we didn't find it, try to find it in the queues...
             if not found:
                 # Obtain the ACCEPTED queue
@@ -944,7 +947,7 @@ class NascentUpload:
                         self.policy.sourcepackagerelease = (
                             qitem.sourcepackagerelease )
                         found = True
-                        
+
             if not found:
                 # XXX: dsilvers: 20051012: Perhaps check the NEW queue too?
                 # bug 3138
@@ -1285,13 +1288,15 @@ class NascentUpload:
         # upload, go ahead and find it from the database.
         for sub_dsc_file in dsc_files:
             if not sub_dsc_file.present:
-                # The file is not present on disk, try downloading it.
-                library_file = self.distro.getFileByName(sub_dsc_file.filename,
-                                                         source=True,
-                                                         binary=False)
-                if library_file is None:
-                    self.reject("Unable to find %s in the distribution." % (
-                        sub_dsc_file.filename))
+                try:
+                    # The file is not present on disk, try downloading it.
+                    library_file = self.distro.getFileByName(
+                        sub_dsc_file.filename, source=True, binary=False)
+                except NotFoundError, info:
+                    self.reject("Unable to find %s in the distribution."
+                                % (sub_dsc_file.filename))
+                    # dismiss the source verification, it's already rejected
+                    return
                 else:
                     # Pump the file through.
                     self.logger.debug("Pumping %s out of the librarian" % (
@@ -1702,13 +1707,13 @@ class NascentUpload:
         assert self.rejected
 
         interpolations = {
-            "FROM": self.sender,
+            "SENDER": self.sender,
             "CHANGES": self.changes_basename,
-            "REJECTION": self.rejection_message,
+            "SUMMARY": self.rejection_message,
             "CHANGESFILE": guess_encoding(self.changes['filecontents'])
             }
         self.build_recipients()
-        interpolations['TO'] = ", ".join(self.recipients)
+        interpolations['RECIPIENT'] = ", ".join(self.recipients)
 
         interpolations = self.policy.filterInterpolations(self,
                                                           interpolations)
@@ -1804,7 +1809,8 @@ class NascentUpload:
         if build_id is None:
             spr = self.policy.sourcepackagerelease
             build = spr.createBuild(self.distrorelease[archtag],
-                                    status=BuildStatus.FULLYBUILT)
+                                    status=BuildStatus.FULLYBUILT,
+                                    pocket=self.pocket)
             self.policy.build = build
         else:
             self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)
@@ -1922,7 +1928,7 @@ class NascentUpload:
             return False, self.do_reject()
         try:
             interpolations = {
-                "FROM": self.sender,
+                "SENDER": self.sender,
                 "CHANGES": self.changes_basename,
                 "SUMMARY": self.build_summary(),
                 "CHANGESFILE": guess_encoding(self.changes['filecontents']),
@@ -1932,17 +1938,20 @@ class NascentUpload:
                 "SOURCE": self.changes['source'],
                 "VERSION": self.changes['version'],
                 "ARCH": self.changes['architecture'],
-                "MAINTAINERFROM": self.sender
                 }
             if self.signer:
                 interpolations['MAINTAINERFROM'] = self.changed_by['rfc2047']
+
             if interpolations['ANNOUNCE'] is None:
                 interpolations['ANNOUNCE'] = 'nowhere'
+
             self.build_recipients()
-            interpolations['TO'] = ", ".join(self.recipients)
+
+            interpolations['RECIPIENT'] = ", ".join(self.recipients)
 
             interpolations = self.policy.filterInterpolations(
                 self, interpolations)
+
             self.insert_into_queue()
 
             if self.is_new():
@@ -1956,7 +1965,7 @@ class NascentUpload:
                                                   "approval by a distro "
                                                   "manager\n")
                     return True, [accept_msg % interpolations]
-                
+
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the

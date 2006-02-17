@@ -19,9 +19,6 @@ Useful properties:
    >>> firefox_bin_release.name, firefox_bin_release.version
    (u'mozilla-firefox', u'0.9')
 
-   >>> firefox_bin_release.status
-   'Published'
-
    >>> firefox_bin_release.lastversions()
    []
    >>> from canonical.launchpad.interfaces import IDistroReleaseSet

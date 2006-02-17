@@ -445,6 +445,19 @@ unapproved.
   >>> print ed_src.queue_root.status.name
   NEW
 
+Check the uploader behaviour against a missing orig.tar.gz file,
+bug # 30741.
+
+  >>> ed21_src = NascentUpload(findPolicyByName('sync'),
+  ...          datadir('ed-0.2-21'), "ed_0.2-21_source.changes",
+  ...          MockMunchyLogger())
+  >>> ed21_src.policy.setOptions(MockOptions())
+  >>> ed21_src.process()
+  >>> ed21_src.rejected
+  True
+  >>> print ed21_src.rejection_message+"\nEND"
+  Unable to find ed_0.2.orig.tar.gz in the distribution.
+  END
 
 (and some tear down)
 

@@ -24,15 +24,7 @@ We use StringIO later to simulate bits of the build slave file retrieval
   >>> from StringIO import StringIO
 
 First let's test a essencial part of the BuilddMaster class, the
-BuildersGroup() class.
-
-  >>> from canonical.launchpad.database import DistroArchRelease
-
-Select a sigle DistroArchRelease
-
-  >>> archrelease = DistroArchRelease.get(1)
-
-Create an empty BuilderGroup object
+BuildersGroup() class, by creating an empty BuilderGroup object
 
   >>> from canonical.launchpad.scripts.builddmaster import BuilderGroup
 
@@ -73,11 +65,11 @@ The the mock slave.clean() method is modified to print a message for
 testing purposes.
 
 Initializing the sane_builder. It was not rescued, since the job
-identifier is sane (Build.id == 2 and BuildQueue.id == 1 exist):
+identifier is sane (Build.id == 8 and BuildQueue.id == 1 exist):
 
   >>> class SaneBuildingSlave:
   ...     def status(self):
-  ...         return ('BuilderStatus.BUILDING', '2-1')
+  ...         return ('BuilderStatus.BUILDING', '8-1')
   ...     def clean(self):
   ...         print 'Rescuing SaneSlave'
 
@@ -90,7 +82,7 @@ A sane WAITING slave:
 
   >>> class SaneWaitingSlave:
   ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '2-1')
+  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '8-1')
   ...     def clean(self):
   ...         print 'Rescuing SaneSlave'
 
@@ -256,6 +248,7 @@ slave has the requested file in cache.
   ...         self.distrorelease = tmp_build.distrorelease
   ...         self.distroarchrelease = tmp_build.distroarchrelease
   ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
+  ...         self.pocket = tmp_build.pocket
 
   >>> import datetime, pytz
   >>> UTC = pytz.timezone('UTC')
@@ -304,8 +297,16 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> from canonical.librarian.interfaces import ILibrarianClient
   >>> librarian = getUtility(ILibrarianClient)
 
-  We are not able to test succesfully built packages, but we can test
-  all other states:
+Remove any previous buildmaster ROOT directory, to avoid any garbage
+lock conflict (it would be recreated automatically if necessary)
+
+  >>> from canonical.config import config
+  >>> import shutil
+  >>> import os
+  >>> if os.access(config.builddmaster.root, os.F_OK):
+  ...     shutil.rmtree(config.builddmaster.root)
+
+Let's check the procedures to verify/collect running build process:
 
   WAITING - PACKAGEFAIL -> Package has failed to build, notice from
   builder is stored, but Build.buildstate is mark as 'Failed to Build':
@@ -444,7 +445,6 @@ Both access methods work as expected, remove the temporary file used here.
 
 Check uploader log storage:
 
-  >>> from canonical.config import config
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
   >>> failed_upload = os.listdir(failed_dir)[0]
   >>> uploader_log = open(os.path.join(failed_dir, failed_upload,
@@ -457,26 +457,42 @@ Check uploader log storage:
   DEBUG   Initialising connection.
   ...
   DEBUG   Got the upload directory lock
-  DEBUG   Finding policy
   ...
   DEBUG   Rolling back any remaining transactions.
   <BLANKLINE>
 
 Remove build upload results root
 
-  >>> import shutil
   >>> shutil.rmtree(config.builddmaster.root)
 
 
-BuilddMaster class:
+    BuilddMaster class
+    ===================
 
   >>> bm = BuilddMaster(logging.getLogger(), transaction)
+
+Retrive a known DistroArchrelease
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+
+Create a totally bogus CHROOT
+
+  >>> from canonical.lp import dbschema
+  >>> from canonical.launchpad.database import LibraryFileAlias
+  >>> from canonical.launchpad.database import PocketChroot
+  >>> pocket = dbschema.PackagePublishingPocket.RELEASE
+  >>> chroot = LibraryFileAlias.get(1)
+  >>> p = PocketChroot(distroarchreleaseID=hoary_i386.id,
+  ...                  pocket=pocket, chroot=chroot)
+
 
 As we do when building the BuildQueue entries we need to recognise
 all available distroarchrelease and figure out which slave builder
 is able to build stuff properly for that one
 
-  >>> for dar in DistroArchRelease.select():
+  >>> from canonical.launchpad.interfaces import IDistroArchReleaseSet
+  >>> for dar in getUtility(IDistroArchReleaseSet):
   ...     bm.addDistroArchRelease(dar)
   ...     try:
   ...         bm.setupBuilders(dar)
@@ -485,57 +501,84 @@ is able to build stuff properly for that one
   ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  WARNING:root:Disabling: No CHROOT found for The Warty Warthog Release for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Release'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for warty (i386) 'Backports'
   Unable to setup builder for ubuntu/warty/i386.
-  WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
-  Unable to setup builder for ubuntu/hoary/i386.
-  WARNING:root:Disabling: No CHROOT found for WOODY for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Backports'
+  WARNING:root.builders.x86:No builders are available
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Release'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for woody (i386) 'Backports'
   Unable to setup builder for debian/woody/i386.
-  WARNING:root:Disabling: No CHROOT found for Breezy Badger Autotest for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Release'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Security'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Updates'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Proposed'
+  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Backports'
   Unable to setup builder for ubuntu/breezy-autotest/i386.
 
-Since we don't have any builder available yet and the ETA to have
-seems to be a little far, the next output are boring.
 
-  >>> bm._archreleases
-  {}
+Inspect private attribute _archrelease contents. Remember
+archrelease was fetched in the begin of the test, it is warty/x86
 
-Scan active builders looking for information abut current jobs,
+  >>> len(bm._archreleases)
+  1
+
+  >>> bm._archreleases.keys()[0].title
+  u'The Hoary Hedgehog Release for i386 (x86)'
+
+  >>> real_buildergroup = bm._archreleases[hoary_i386]['builders']
+
+  >>> assert real_buildergroup.firstAvailable() is None
+
+Scan active builders looking for information about current jobs,
 collect result of finished jobs, everything is stored directly in
-the Launchpad DB.
+the Launchpad DB. (simply check if it doesn't explode)
 
   >>> bm.scanActiveBuilders()
 
 Create a list of jobs separated by processor to turn the dispatch
-process easier, than ry to dispatch them according his processor and
+process easier, then try to dispatch them according his processor and
 the available builder slaves at moment.
 
   >>> byproc = bm.sortAndSplitByProcessor()
+  >>> len(byproc)
+  1
+
+Inspect the organized list content:
+
+  >>> for proc, queueItems in byproc.iteritems():
+  ...     for item in queueItems:
+  ...         proc.name, item.id, item.build.buildstate.name
+  (u'x86', 2, 'NEEDSBUILD')
+
+Invoke dispacher on the available list: (no builder available atm)
+
   >>> for proc, queueItems in byproc.iteritems():
   ...     bm.dispatchByProcessor(proc, queueItems)
 
-Create a totally bogus but usable Chroot
-
-  >>> from canonical.lp import dbschema
-  >>> from canonical.launchpad.database import LibraryFileAlias
-  >>> from canonical.launchpad.database import PocketChroot
-  >>> pocket = dbschema.PackagePublishingPocket.RELEASE
-  >>> chroot = LibraryFileAlias.get(1)
-  >>> p = PocketChroot(distroarchreleaseID=archrelease.id,
-  ...                  pocket=pocket, chroot=chroot)
 
 Initialize BuildQueue missing attributes for building:
 
   >>> bqItem3.version = 'Demo'
-  >>> bqItem3.archrelease = archrelease
+  >>> bqItem3.archrelease = hoary_i386
 
-Request a Slave Build process:
+Request a Mock slave build process:
 
-  >>> bm.startBuild(buildergroup, builder2, bqItem3, pocket)
+  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
   OkSlave has everything
   OkSlaves BUILDING
 
 See OkSlave() class implementation for further details
+
 
 Remove locally installed Librarian server if necessary
 
