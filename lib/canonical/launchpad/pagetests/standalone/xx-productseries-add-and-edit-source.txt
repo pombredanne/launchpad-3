@@ -79,7 +79,22 @@ Test if we can add the FTP Details
   Location: http://localhost:9000/products/alsa-utils/+series/main...
   ...
 
-And we test if we can edit again changing the RCS
+And we test if the validator is working adding the same CVS details to
+another product
+
+  >>> print http(r"""
+  ... POST /products/netapplet/+series/releases/+source HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ...
+  ... ubuntupkg=netapplet&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&edit_productseries_source=Update+RCS+Details""")
+  HTTP/1.1 200 Ok
+  ...
+  ...CVS repository details already in use by another product...
+  ...
+
+Now we test if we can edit again changing the RCS
 
   >>> print http(r"""
   ... POST /products/alsa-utils/+series/main/+source HTTP/1.1

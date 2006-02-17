@@ -3,6 +3,8 @@ import sys
 import logging
 import optparse
 
+import _pythonpath
+
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger as logger_from_options)

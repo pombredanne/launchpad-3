@@ -14,11 +14,11 @@
       <tal:visible_emails condition="not: context/hide_email_addresses">
         <b>Preferred address:</b><br />
         <img tal:condition="context/preferredemail"
-             src="/++resource++email" />
+             src="/@@/email" />
         <span tal:condition="context/preferredemail"
               tal:replace="context/preferredemail/email">foo@bar.com</span>
         <tal:no_pref_mail condition="not: context/preferredemail">
-          <img src="/++resource++alert" />
+          <img src="/@@/alert" />
           <i>None set</i>
         </tal:no_pref_mail>
         <br />
