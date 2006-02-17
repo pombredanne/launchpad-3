@@ -46,7 +46,7 @@ from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch, IBugSet,
     IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
-    IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
+    IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
