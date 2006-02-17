@@ -336,7 +336,7 @@
         fields="distribution sourcepackagename"
         keyword_arguments="distribution sourcepackagename"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/bugtask-distrofix-addform.pt"
         lp:url="malone/bugs/$Bug.id/+distrotask">
     </browser:addform>
 

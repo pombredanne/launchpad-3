@@ -11,6 +11,7 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
+    'valid_distrotask'
     ]
 
 import urllib
@@ -234,3 +235,28 @@ def validate_distribution_mirror_schema(form_values):
 
     if errors:
         raise WidgetsError(errors)
+
+def valid_distrotask(bug, distribution, sourcepackagename=None):
+    """Check if a distribution bugtask already exists for a given bug.
+    
+    If it exists, WidgetsError will be raised.
+    """
+    from canonical.launchpad.interfaces import BugTaskSearchParams
+    errors = []
+    if sourcepackagename is not None:
+        errors.append(LaunchpadValidationError(_(
+            'Fix already requested for %s(%s)' %
+            (sourcepackagename.name, distribution.displayname))))
+    else:
+        errors.append(LaunchpadValidationError(_(
+            'Fix already requested for %s' % distribution.displayname)))
+    user = getUtility(ILaunchBag).user
+    params = BugTaskSearchParams(user, bug=bug,
+        sourcepackagename=sourcepackagename)
+    bugtask = distribution.searchTasks(params)
+    if bugtask: 
+        if bugtask[0].sourcepackagename is not None and (
+            sourcepackagename is None):
+            return
+        raise WidgetsError(errors)
+

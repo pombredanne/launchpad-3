@@ -18,12 +18,14 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
     IBug, ILaunchBag, IBugSet, IBugTaskSet, IBugLinkTarget,
-    IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError, 
+    valid_distrotask)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
@@ -213,17 +215,28 @@ class BugWithoutContextView:
 class BugAlsoReportInView(SQLObjectAddView):
     """View class for reporting a bug in other contexts."""
 
+    def __init__(self, context, request):
+        super(BugAlsoReportInView, self).__init__(context, request)
+        self.top_of_page_errors = []
+
     def create(self, product=None, distribution=None, sourcepackagename=None):
         """Create new bug task.
 
         Only one of product and distribution may be not None, and
-        if product is None, sourcepackagename has to be None.
+        if distribution is None, sourcepackagename has to be None.
         """
+        user = getUtility(ILaunchBag).user
+        bug = self.context.bug
+
+        if distribution:
+            try:
+                valid_distrotask(bug, distribution, sourcepackagename)
+            except WidgetsError, widgets_errors:
+                self.top_of_page_errors = widgets_errors
+                raise
         self.taskadded = getUtility(IBugTaskSet).createTask(
-            self.context.bug,
-            getUtility(ILaunchBag).user,
-            product=product,
-            distribution=distribution, sourcepackagename=sourcepackagename)
+            bug, user, product=product, distribution=distribution, 
+            sourcepackagename=sourcepackagename)
         return self.taskadded
 
     def nextURL(self):

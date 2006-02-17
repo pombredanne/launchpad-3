@@ -197,6 +197,8 @@ bugtask_view = BugTaskPageTitle()
 
 bugtask_edit = BugTaskPageTitle()
 
+bugtask_distrofix_addform = 'Request fix in a distribution'
+
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
