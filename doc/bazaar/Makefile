@@ -1,22 +1,22 @@
 LARGE_PNG:=$(patsubst %.dia,%.png,$(shell cd large-dia; ls *.dia))
 ALL_PNG:=$(patsubst %.dia,%.png,$(shell cd dia; ls *.dia)) $(LARGE_PNG)
 
-html: png bzr-launchpad.html
+html: png bazaar.html
 
-ps: png bzr-launchpad.ps
+ps: bazaar.ps
 
 png: $(ALL_PNG)
 
 clean:
-	rm -f bzr-launchpad.html
+	rm -f bazaar.html
 	rm -f *~
-	rm -f bzr-launchpad.ps
+	rm -f bazaar.ps
 	rm -f *.png
 
 %.html: html.xsl %.tmml
 	xsltproc $^ > $@
 
-%.ps: %.tmml
+%.ps: %.tmml png
 	texmacs -c $< $@ -x '(quit-TeXmacs)'
 
 %.tmml: %.tm

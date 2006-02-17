@@ -5,7 +5,7 @@ This directory contains high level documentation describing the interactions of
 the various non-web Launchpad subsystems that implement The Bazaar.
 
 You can export the documentation to HTML and Postscript using, respectively,
-``make html`` (the default target) and ``make ps``.
+``make html`` (that's the default target) and ``make ps``.
 
 Modifying
 =========
@@ -13,7 +13,7 @@ Modifying
 Please read this section before modifying the documentation.
 
 The documentation is written using GNU TeXmacs (``apt-get install texmacs``)
-and is saved as ``bzr-launchpad.tmml``. TeXmacs has a crashing bug which is
+and is saved as ``bazaar.tmml``. TeXmacs has a crashing bug which is
 exercised by ``unclutter`` (a little utility that hides the mouse cursor), so
 you must kill ``unclutter`` to use TeXmacs. The first minutes of use tend to be
 a bit painful when TeXmacs compiles a bunch fonts, please be patient, and start
