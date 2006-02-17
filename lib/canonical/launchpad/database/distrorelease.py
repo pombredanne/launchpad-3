@@ -639,7 +639,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # deal with broken encodings in these files; this will allow us
         # to regenerate these files as necessary.
         #
-        # The use of StringIO here should be safe: we do no encoding of
+        # The use of StringIO here should be safe: we do not encoding of
         # the content in the changes file (as doing so would be guessing
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
@@ -655,7 +655,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
         return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                           status=status, orderBy=['id'])
+                                           status=status)
 
     def getFancyQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
                             name=None, version=None, exact_match=False):
