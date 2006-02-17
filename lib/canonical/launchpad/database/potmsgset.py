@@ -190,24 +190,26 @@ class POTMsgSet(SQLBase):
             existing.set(datelastseen=UTC_NOW, inlastrevision=True)
             return existing
 
-    def apply_sanity_fixes(self, text):
+    def applySanityFixes(self, text):
         """See IPOTMsgSet."""
 
         # Fix the visual point that users copy & paste from the web interface.
-        new_text = self.convert_dot_to_space(text)
-        # And now set the same whitespaces at the start/end of the string.
-        new_text = self.normalize_whitespaces(new_text)
+        new_text = self.convertDotToSpace(text)
+        # Now, set the same whitespaces at the start/end of the string.
+        new_text = self.normalizeWhitespaces(new_text)
+        # And finally, fix the new line chars.
+        new_text = self.normalizeNewLines(new_text)
 
         return new_text
 
-    def convert_dot_to_space(self, text):
+    def convertDotToSpace(self, text):
         """See IPOTMsgSet."""
         if u'\u2022' in self.primemsgid_.msgid or u'\u2022' not in text:
             return text
 
         return text.replace(u'\u2022', ' ')
 
-    def normalize_whitespaces(self, text):
+    def normalizeWhitespaces(self, text):
         """See IPOTMsgSet."""
         if text is None:
             return text
@@ -235,3 +237,48 @@ class POTMsgSet(SQLBase):
             new_text = text
 
         return new_text
+
+    def normalizeNewLines(self, text):
+        """See IPOTMsgSet."""
+        msgid = self.primemsgid_.msgid
+        stripped_text = text.replace('\r\n', '')
+        stripped_msgid = msgid.replace('\r\n', '')
+        text_in_windows_style = '\r\n' in text
+        text_in_mac_style = '\r' in stripped_text
+        text_in_unix_style = '\n' in stripped_text
+        msgid_in_windows_style = '\r\n' in msgid
+        msgid_in_mac_style = '\r' in stripped_msgid
+        msgid_in_unix_style = '\n' in stripped_msgid
+
+        if ((msgid_in_windows_style and msgid_in_mac_style) or
+            (msgid_in_windows_style and msgid_in_unix_style) or
+            (msgid_in_mac_style and msgid_in_unix_style)):
+            raise AssertionError(
+                "Broken msgid, it's mixing different new line marks")
+
+        if ((text_in_windows_style and text_in_mac_style) or
+            (text_in_windows_style and text_in_unix_style) or
+            (text_in_mac_style and text_in_unix_style)):
+            raise AssertionError(
+                "Broken text, it's mixing different new line marks")
+
+        if text_in_windows_style and not msgid_in_windows_style:
+            if msgid_in_mac_style:
+                text = text.replace('\r\n', '\r')
+                return text.replace('\n', '\r')
+            elif msgid_in_unix_style:
+                text = text.replace('\r\n', '\n')
+                return text.replace('\r', '\n')
+        elif text_in_mac_style and not msgid_in_mac_style:
+            if msgid_in_unix_style:
+                return text.replace('\r', '\n')
+            elif msgid_in_windows_style:
+                return text.replace('\r', '\r\n')
+        elif text_in_unix_style and not msgid_in_unix_style:
+            if msgid_in_mac_style:
+                return text.replace('\n', '\r')
+            elif msgid_in_windows_style:
+                return text.replace('\n', '\r\n')
+
+        # We don't need to do anything, the text is not changed.
+        return text

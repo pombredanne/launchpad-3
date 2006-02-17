@@ -74,22 +74,25 @@ class IPOTMsgSet(Interface):
         is not, then a KeyError is raised.
         """
 
-    def sanity_fixes(text):
+    def applySanityFixes(text):
         """Return 'text' after doing some sanity checks and fixes against the
         msgid so we improve its value in case the user did some mistakes.
         """
 
-    def convert_dot_to_space(text):
+    def convertDotToSpace(text):
         """Return 'text' with the u'\u2022' char changed by a normal space.
 
-        If the self.primemsgid contains that character, 'text' is returned without
-        changes.
+        If the self.primemsgid contains that character, 'text' is returned
+        without changes.
         """
 
-    def normalize_whitespaces(text):
+    def normalizeWhitespaces(text):
         """Return 'text' with the same trailing and leading whitespaces
         that self.primemsgid has.
 
-        If 'text' has only whitespaces but self.primemsgid has other characters, the
-        empty string ('') is returned.
+        If 'text' has only whitespaces but self.primemsgid has other
+        characters, the empty string ('') is returned.
         """
+
+    def normalizeNewLines(text):
+        """Return 'text' with new lines chars on sync with the msgid."""
