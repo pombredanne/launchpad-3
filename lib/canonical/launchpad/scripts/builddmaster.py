@@ -970,8 +970,7 @@ class BuilddMaster:
                     continue
 
                 # verify is isn't already present for this distroarchrelease
-                if not pubrec.sourcepackagerelease.getBuildByArchAndPocket(
-                    arch, pubrec.pocket):
+                if not pubrec.sourcepackagerelease.getBuildByArch(arch):
                     # XXX cprov 20050831
                     # I could possibily be better designed, let's think about
                     # it in the future. Pick the first processor we found for
