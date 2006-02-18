@@ -1814,8 +1814,10 @@ class NascentUpload:
                                     status=BuildStatus.FULLYBUILT,
                                     pocket=self.pocket)
             self.policy.build = build
+            self.logger.debug("Build %s created" % build.id)
         else:
             self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)
+            self.logger.debug("Build %s found" % self.policy.build.id)
 
         return self.policy.build
 
@@ -1930,6 +1932,7 @@ class NascentUpload:
             return False, self.do_reject()
         try:
             interpolations = {
+                "MAINTAINERFROM": self.sender,
                 "SENDER": self.sender,
                 "CHANGES": self.changes_basename,
                 "SUMMARY": self.build_summary(),
