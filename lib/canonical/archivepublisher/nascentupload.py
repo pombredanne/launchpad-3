@@ -1499,9 +1499,9 @@ class NascentUpload:
                 spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                     uploaded_file.package)
                 possible = self.distrorelease.getPublishedReleases(
-                    spn, including_pending=True)
-                self.logger.debug("%d possible source(s) in %s"
-                                  % (len(possible), self.policy.pocket.name))
+                    spn, include_pending=True)
+                self.logger.debug(
+                    "%d possible source(s) in %s" % len(possible))
 
                 if possible:
                     self.logger.debug("%s: (source) exists" % (
