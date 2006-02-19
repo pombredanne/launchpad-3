@@ -926,8 +926,8 @@ class NascentUpload:
             # Try and find the source in the distrorelease.
             dr = self.policy.distrorelease
             spn = getUtility(ISourcePackageNameSet).getOrCreateByName(source)
-            releases = dr.getPublishedReleases(spn, self.policy.pocket,
-                                               include_pending=True)
+            # Check published source in any pocket
+            releases = dr.getPublishedReleases(spn, include_pending=True)
             for spr in releases:
                 if spr.sourcepackagerelease.version == source_version:
                     self.policy.sourcepackagerelease = spr.sourcepackagerelease
@@ -1096,8 +1096,7 @@ class NascentUpload:
             # in the entire file, reusing it is mandatory for first release
             spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                 uploaded_file.package)
-            old = self.distrorelease.getPublishedReleases(
-                spn, self.policy.pocket)
+            old = self.distrorelease.getPublishedReleases(spn)
 
             if uploaded_file.priority in priority_map:
                 # map priority tag to dbschema
@@ -1273,8 +1272,7 @@ class NascentUpload:
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                 dsc['source'])
         self.spn = spn
-        releases = self.distrorelease.getPublishedReleases(
-                spn, self.policy.pocket)
+        releases = self.distrorelease.getPublishedReleases(spn)
         apt_pkg.InitSystem()
 
         for pub_record in releases:
@@ -1496,16 +1494,15 @@ class NascentUpload:
                 continue
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease
+                # (any pocket would be enough)
+                self.logger.debug("getPublishedReleases()")
                 spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                     uploaded_file.package)
                 possible = self.distrorelease.getPublishedReleases(
-                    spn, self.policy.pocket)
-                if not possible:
-                    # Try the RELEASE pocket too, just in case
-                    possible = self.distrorelease.getPublishedReleases(
-                        spn, PackagePublishingPocket.RELEASE)
-                self.logger.debug("getPublishedReleases() returned %d "
-                                  "possible source(s)" % len(possible))
+                    spn, including_pending=True)
+                self.logger.debug("%d possible source(s) in %s"
+                                  % (len(possible), self.policy.pocket.name))
+
                 if possible:
                     self.logger.debug("%s: (source) exists" % (
                         uploaded_file.package))
@@ -1543,20 +1540,11 @@ class NascentUpload:
                     self.logger.debug("Checking against %s for %s" %(
                         archtag, uploaded_file.package))
                     dar = self.distrorelease[archtag]
-                    possible = dar.getReleasedPackages(bpn, self.policy.pocket)
-                    if not possible:
-                        # Try the RELEASE pocket
-                        possible = dar.getReleasedPackages(
-                            bpn, PackagePublishingPocket.RELEASE)
+                    possible = dar.getReleasedPackages(bpn)
                     if not possible:
                         # Try the other architectures...
                         for dar in self.distrorelease.architectures:
-                            possible = dar.getReleasedPackages(
-                                bpn, self.policy.pocket)
-                            if not possible:
-                                # and in the RELEASE pocket?
-                                possible = dar.getReleasedPackages(
-                                    bpn, PackagePublishingPocket.RELEASE)
+                            possible = dar.getReleasedPackages(bpn)
                             if possible:
                                 break
 
