@@ -235,7 +235,7 @@ class SourcePackageRelease(SQLBase):
             binarypackagepublishing.binarypackagerelease AND
         binarypackagepublishing.distroarchrelease = %s AND
         build.sourcepackagerelease = %s AND
-        binarypackagerelease.architecturespecific = true AND
+        binarypackagerelease.architecturespecific = true
         """  % sqlvalues(distroarchrelease.id, self.id)
 
         tables = ['binarypackagerelease', 'binarypackagepublishing']

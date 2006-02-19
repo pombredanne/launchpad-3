@@ -812,7 +812,7 @@ class BuilddMaster:
                              distroarchrelease.distrorelease.name,
                              distroarchrelease.architecturetag))
 
-        # check ARCHRELEASE accross available pockets
+        # check ARCHRELEASE across available pockets
         for pocket in dbschema.PackagePublishingPocket.items:
             if distroarchrelease.getChroot(pocket):
                 # Fill out the contents
@@ -885,13 +885,16 @@ class BuilddMaster:
         sources_published = distrorelease.getAllReleasesByStatus(
             dbschema.PackagePublishingStatus.PUBLISHED
             )
+        sources_pending = distrorelease.getAllReleasesByStatus(
+            dbschema.PackagePublishingStatus.PENDING
+            )
+        sources = sources_published.union(sources_pending)
 
         self._logger.info("Scanning publishing records for %s/%s...",
                           distrorelease.distribution.title,
                           distrorelease.title)
 
-        self._logger.info("Found %d Sources to build.",
-                          sources_published.count())
+        self._logger.info("Found %d Sources to build.", sources.count())
 
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
@@ -909,7 +912,7 @@ class BuilddMaster:
             return
 
         # 3. For each of the sourcepackagereleases, find its builds...
-        for pubrec in sources_published:
+        for pubrec in sources:
             header = ("Build Record %s-%s for '%s' " %
                       (pubrec.sourcepackagerelease.name,
                        pubrec.sourcepackagerelease.version,
@@ -983,8 +986,9 @@ class BuilddMaster:
                         distroarchrelease=arch,
                         processor=arch.default_processor,
                         pocket=pubrec.pocket)
-                    self._logger.debug(header + "CREATING %s" %
-                                       arch.architecturetag)
+                    self._logger.debug(header + "CREATING %s (%s)"
+                                       % (arch.architecturetag,
+                                          pubrec.pocket.name))
 
         self.commit()
 
