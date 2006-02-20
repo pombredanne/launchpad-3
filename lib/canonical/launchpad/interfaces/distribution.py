@@ -10,7 +10,7 @@ __all__ = [
     'IDistroPackageFinder',
     ]
 
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
@@ -105,7 +105,15 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
 
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    
+
+    official_malone = Bool(title=_('Uses Malone Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this distribution officially uses Malone for bug tracking.'))
+
+    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this distribution officially uses Rosetta for translation.'))
+
     # properties
     currentrelease = Attribute(
         "The current development release of this distribution. Note that "

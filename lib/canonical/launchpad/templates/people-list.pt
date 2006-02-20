@@ -14,7 +14,7 @@
                          next_url bn/nextBatchURL;">
 
   <table>
-    <tr tal:repeat="person python:list(bn.currentBatch())">      
+    <tr tal:repeat="person bn/currentBatch">      
       <td>
         <a tal:condition="person/browsername"
            tal:content="string: ${person/browsername} (${person/name})"

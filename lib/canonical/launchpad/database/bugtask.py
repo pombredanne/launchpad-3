@@ -278,7 +278,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # assignees with other status would just be confusing
             # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
-                '<img src="/++resource++user.gif" /> '
+                '<img src="/@@/user.gif" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))

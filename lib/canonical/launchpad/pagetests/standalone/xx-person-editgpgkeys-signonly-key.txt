@@ -5,10 +5,10 @@ Setup the stub KeyServer
   >>> z = ZecaTestSetup()
   >>> z.setUp()
   
-Sign only keys are registered on the standard +editgpgkeys page.
+Sign only keys are registered on the standard +editpgpkeys page.
 
   >>> print (http(r"""
-  ... GET /people/name12/+editgpgkeys HTTP/1.1
+  ... GET /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """))
   HTTP/1.1 200 Ok
@@ -22,7 +22,7 @@ Sign only keys are registered on the standard +editgpgkeys page.
 Claim a sign-only OpenPGP key:
 
   >>> print http(r"""
-  ... POST /people/name12/+editgpgkeys HTTP/1.1
+  ... POST /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -182,7 +182,7 @@ The key validation does not succeed with this key:
   ...
   <title>Confirm sign-only OpenPGP key</title>
   ...
-  ...Launchpad could not verify your signature: Invocation of op_verify: No data...
+  ...Launchpad could not verify your signature: No data...
   ...
 
 
@@ -230,7 +230,7 @@ the key:
 Check that the key has been imported:
 
   >>> print http(r"""
-  ... GET /people/name12/+editgpgkeys HTTP/1.1
+  ... GET /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
