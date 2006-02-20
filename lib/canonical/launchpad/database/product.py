@@ -98,8 +98,6 @@ class Product(SQLBase, BugTargetBase):
                 revision=0)
         return self.calendar
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='product',
-        orderBy='id')
     branches = MultipleJoin('Branch', joinColumn='product',
         orderBy='id')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product',
