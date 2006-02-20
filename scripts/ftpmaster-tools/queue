@@ -41,7 +41,7 @@ from canonical.archivepublisher.template_messages import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.archivepublisher.utils import (
-    fix_maintainer, ParseMaintError)
+    safe_fix_maintainer, ParseMaintError)
 
 from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
@@ -342,12 +342,12 @@ class QueueAction:
         else:
             os.remove(temp_name)
 
-            (rfc822, rfc2047, name, email) = fix_maintainer(
-                ascii_smash(changes['maintainer']), 'maintainer')
+            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+                changes['maintainer'], 'maintainer')
             full_set.add(email)
 
-            (rfc822, rfc2047, name, email) = fix_maintainer(
-                ascii_smash(changes['changed-by']), 'changed-by')
+            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+                changes['changed-by'], 'changed-by')
             full_set.add(email)
 
             # Finally, filter the set of recipients based on the whitelist

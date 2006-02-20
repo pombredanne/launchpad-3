@@ -22,7 +22,7 @@ import apt_inst
 import shutil
 import time
 
-from canonical.encoding import guess as guess_encoding, ascii_smash
+from canonical.encoding import guess as guess_encoding
 from canonical.cachedproperty import cachedproperty
 
 from canonical.archivepublisher.template_messages import (
@@ -32,12 +32,12 @@ from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
 
 from canonical.archivepublisher.utils import (
-    fix_maintainer, ParseMaintError, prefix_multi_line_string)
+    safe_fix_maintainer, ParseMaintError, prefix_multi_line_string)
 
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, PackagePublishingPocket, DistroReleaseQueueStatus)
+    BuildStatus, DistroReleaseQueueStatus)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -631,16 +631,9 @@ class NascentUpload:
         the address, the person's name, email address and person record within
         the launchpad database.
         """
-
-        if type(addr) != unicode:
-            # XXX: dsilvers: 20060203: For some reason, we don't always get
-            # given a unicode object, so if we don't, we turn it into one
-            # so that ascii_smash will do the right thing.
-            addr = guess_encoding(addr)
-
         try:
-            (rfc822, rfc2047, name, email) = fix_maintainer(
-                ascii_smash(addr), fieldname)
+            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+                addr, fieldname)
         except ParseMaintError, e:
             raise UploadError(str(e))
 
