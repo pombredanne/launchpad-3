@@ -124,6 +124,7 @@ class FileUploadProtocol(basic.LineReceiver):
                     "File-Content-ID and File-Alias-ID must both be specified"
                     )
 
+            # The Database-Name header is always required.
             if self.newFile.databaseName is None:
                 raise ProtocolViolation("Database-Name header is required")
             
@@ -198,6 +199,9 @@ class FileUploadProtocol(basic.LineReceiver):
     def header_database_name(self, value):
         self.newFile.databaseName = value
 
+    def header_debug_id(self, value):
+        self.newFile.debugID = value
+
     def rawDataReceived(self, data):
         realdata, rest = data[:self.bytesLeft], data[self.bytesLeft:]
         self.bytesLeft -= len(realdata)
@@ -213,6 +217,7 @@ class FileUploadProtocol(basic.LineReceiver):
                     self.sendLine('200 %s/%s' % (fileID, aliasID))
                 else:
                     self.sendLine('200')
+            deferred.addBoth(self.logDebugging)
             deferred.addCallback(_sendID)
             deferred.addErrback(self.translateErrors)
             deferred.addErrback(self.protocolErrors)
@@ -221,6 +226,12 @@ class FileUploadProtocol(basic.LineReceiver):
             # Treat remaining bytes (if any) as a new command
             self.state = 'command'
             self.setLineMode(rest)
+
+    def logDebugging(self, result_or_failure):
+        if self.newFile.debugID is not None:
+            for msg in self.newFile.debugLog:
+                log.msg('Debug %s: %s' % (self.newFile.debugID, msg))
+        return result_or_failure
 
     def _storeFile(self):
         return deferToThread(self.newFile.store)
