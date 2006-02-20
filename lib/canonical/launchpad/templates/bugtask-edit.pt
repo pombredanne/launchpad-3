@@ -192,7 +192,7 @@
                           tal:content="request/comment_on_change|nothing"></textarea>
               </div>
               <div>
-                <img src="/++resource++info_icon.gif" />
+                <img src="/@@/info_icon.gif" />
                 <span class="error" tal:content="view/comment_on_change_error">
                   An error on comment on change.
                 </span>

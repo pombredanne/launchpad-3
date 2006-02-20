@@ -279,6 +279,24 @@ OOPS references can take a number of forms:
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a rel="nofollow" href="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/38C23">OOPS   38C23</a></p>
 
+It should work if the configuration value doesn't end with a slash:
+
+    >>> from canonical.config import config
+    >>> old_config = config.launchpad.oops_root_url
+    >>> config.launchpad.oops_root_url = 'http://foo/bar'
+    >>> text = 'OOPS 38C23'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a rel="nofollow" href="http://foo/bar/38C23">OOPS 38C23</a></p>
+    >>> config.launchpad.oops_root_url = old_config
+
+Check against false positives:
+
+    >>> text = 'OOPS code'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>OOPS code</p>
+
+Reset login information.
+
     >>> login('test@canonical.com')
     >>> getUtility(ILaunchBag).login
     'test@canonical.com'

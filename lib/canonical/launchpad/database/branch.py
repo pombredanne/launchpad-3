@@ -6,7 +6,8 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin)
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
+    SQLObjectNotFound)
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol

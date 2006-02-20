@@ -77,7 +77,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugTaskView"
-        permission="zope.Public">
+        permission="launchpad.View">
       <browser:page
         name="+index"
         template="../templates/bugtask-index.pt" />
@@ -173,7 +173,7 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="30" />
     </browser:editform>
 
     <browser:editform
@@ -262,7 +262,7 @@
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"
-            displayWidth="60" />
+            displayWidth="30" />
     </browser:addform>
 
     <browser:addform
@@ -348,7 +348,7 @@
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit fix request"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
@@ -392,7 +392,7 @@
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit fix request"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget

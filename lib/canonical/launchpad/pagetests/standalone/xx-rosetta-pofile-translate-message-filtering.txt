@@ -68,9 +68,10 @@ If we select only untranslated strings, the URL reflects it:
   ... 
   ... offset=0&count=10&alt=&show=untranslated&pofile_translation_filter=Change""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated
-  ...
+  <BLANKLINE>
 
 And same thing if we select an alternative language to get suggestions from it.
 
@@ -82,9 +83,10 @@ And same thing if we select an alternative language to get suggestions from it.
   ... 
   ... offset=0&count=10&alt=af&show=need_review&pofile_translation_filter=Change""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?alt=af&show=need_review
-  ...
+  <BLANKLINE>
 
 Finally, we need to check that when we select the default values, the URL that
 we get doesn't have those arguments
@@ -97,7 +99,8 @@ we get doesn't have those arguments
   ... 
   ... offset=0&count=10&alt=&show=all&pofile_translation_filter=Change""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
-  ...
+  <BLANKLINE>
 

@@ -82,6 +82,7 @@ def export_shippingrun(shippingrun):
                    ('Ship to zip', 'postcode'),
                    ('Ship to country', 'countrycode'),
                    ('Ship to phone', 'phone'),
+                   ('Ship to email address', 'recipient_email'),
                    ('ship quantity PC', 'quantityx86approved'),
                    ('ship quantity 64-bit PC', 'quantityamd64approved'),
                    ('ship quantity Mac', 'quantityppcapproved'))
