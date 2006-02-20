@@ -126,8 +126,12 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
->>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
+
+>>> check("/distros/ubuntu/+source/evolution")
+>>> check("/distros/ubuntu/+source/evolution/+tickets")
 >>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
+>>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
+
 >>> check("/distros/ubuntu/hoary/i386/pmount/0.1-1")
 
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
@@ -329,7 +333,7 @@ And this is for a person:
 >>> check("/people/name16/+assignedbugs")
 >>> check("/people/name16/+packagebugs")
 >>> check("/people/name16/+editsshkeys", auth=True)
->>> check("/people/name16/+editgpgkeys", auth=True)
+>>> check("/people/name16/+editpgpkeys", auth=True)
 >>> check("/people/name16/+editwikinames", auth=True)
 >>> check("/people/name16/+editjabberids", auth=True)
 >>> check("/people/name16/+codesofconduct", auth=True)

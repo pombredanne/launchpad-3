@@ -12,7 +12,7 @@ import traceback
 import logging
 from optparse import OptionParser
 
-from bzrlib.errors import NotBranchError
+from bzrlib.errors import NotBranchError, ConnectionError
 
 from zope.component import getUtility
 from canonical.lp import initZopeless
@@ -40,8 +40,8 @@ def parse_options(args):
     logger_options(parser)
 
     (options, args) = parser.parse_args(args)
-
     return options
+
 
 def main(argv):
     options = parse_options(argv[1:])
@@ -68,30 +68,66 @@ def main(argv):
         ztm = initZopeless(dbuser=config.branchupdater.dbuser)
 
         logger_object.debug('Starting branches update')
-
-        prefixurl = config.branchupdater.prefixurl
-
         branchset = getUtility(IBranchSet)
-
         for branch in branchset:
-            # the prefixurl in the config should normally end with '/'
-            branch_url = "%s%08x" % (prefixurl, branch.id)
             try:
-                bzrsync = BzrSync(ztm, branch.id, branch_url, logger_object)
-            except NotBranchError:
-                logger_object.warning("Branch not found: %s", branch_url)
+                sync_one_branch(logger_object, ztm, branch)
+            except (KeyboardInterrupt, SystemExit):
+                # If either was raised, something really wants us to finish.
+                # Any other Exception is an error condition and must not
+                # terminate the script.
+                raise
             except:
-                logger_object.error(traceback.format_exc())
-                logger_object.error("Failed to scan: %s", branch_url)
-            else: 
-                bzrsync.syncHistory()
-
+                # Yes, bare except. Bugs or error conditions when syncing any
+                # given branch must not prevent syncing the other branches.
+                log_exception(logger_object, with_traceback=True)
+                log_scan_failure(logger_object, branch)
         logger_object.debug('Finished branches update')
     finally:
         lockfile.release()
 
     return 0
 
+
+def sync_one_branch(logger_object, ztm, branch):
+    """Run BzrSync on a single branch and handle expected exceptions."""
+    try:
+        bzrsync = BzrSync(
+            ztm, branch.id, branch_warehouse_url(branch), logger_object)
+    except NotBranchError:
+        # The branch is not present in the Warehouse
+        log_scan_failure(logger_object, branch, "Branch not found")
+        return
+    try:
+        bzrsync.syncHistory()
+    except ConnectionError:
+        # A network glitch occured. Yes, that does happen.
+        log_exception(logger_object, with_traceback=False)
+        log_scan_failure(logger_object, branch)
+
+
+def log_exception(logger_object, with_traceback):
+    """Log the current exception at ERROR level with an optional traceback."""
+    if with_traceback:
+        report = traceback.format_exc()
+    else:
+        exctype, value = sys.exc_info()[:2]
+        report = ''.join(traceback.format_exception_only(exctype, value))
+    logger_object.error(report)
+
+
+def log_scan_failure(logger_object, branch, message="Failed to scan"):
+    """Log diagnostic information for branches that could not be scanned."""
+    logger_object.warning(
+        "%s: %s", message, branch_warehouse_url(branch))
+    logger_object.warning("  branch.url = %r", branch.url)
+
+
+def branch_warehouse_url(branch):
+    # the prefixurl in the config should normally end with '/'
+    prefixurl = config.branchupdater.prefixurl        
+    return "%s%08x" % (prefixurl, branch.id)
+
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
-
