@@ -141,7 +141,8 @@ class POMsgSet(SQLBase):
                 self.id, pluralform))
         return selection
 
-    def activeSubmission(self, pluralform):
+    def getActiveSubmission(self, pluralform):
+        """See IPOMsgSet."""
         return POSubmission.selectOne(
             """POSelection.pomsgset = %d AND
                POSelection.pluralform = %d AND
@@ -248,7 +249,7 @@ class POMsgSet(SQLBase):
                 # the web flag
                 matches = 0
                 for pluralform in range(self.pluralforms):
-                    if (self.activeSubmission(pluralform) ==
+                    if (self.getActiveSubmission(pluralform) ==
                         self.getPublishedSubmission(pluralform)):
                         matches += 1
                 if matches == self.pluralforms:
@@ -515,7 +516,7 @@ class POMsgSet(SQLBase):
                 self.pofile.language.id, self.potmsgset.primemsgid_ID,
                 pluralform))
 
-        active_submission = self.activeSubmission(pluralform)
+        active_submission = self.getActiveSubmission(pluralform)
 
         if (active_submission is not None and
             active_submission.potranslation is not None):
@@ -556,7 +557,7 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         posubmission_ids = self.potmsgset.getCurrentSubmissionsIDs(
             self.pofile.language, pluralform)
-        active = self.activeSubmission(pluralform)
+        active = self.getActiveSubmission(pluralform)
 
         if active is not None and active.id in posubmission_ids:
             posubmission_ids.remove(active.id)
