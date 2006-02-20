@@ -337,7 +337,7 @@ class BugTaskBackportFixView:
 
         return release_target_details
 
-    def createTargetedTasks(self):
+    def createBackportTasks(self):
         """Create distrorelease-targeted tasks for this bug."""
         form = self.request.form
 
