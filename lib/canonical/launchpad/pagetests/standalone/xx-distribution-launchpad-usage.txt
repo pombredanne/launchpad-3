@@ -1,6 +1,6 @@
-You define Launchpad usage, whether the distribution uses Malone or
-Rosetta offically, on +launchpad. Anonymous doesn't have access to the
-page:
+The launchpad usage flags (whether the distribution uses Malone or
+Rosetta officially) are controlled by the +launchpad page. Anonymous
+doesn't have access to the page:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+launchpad HTTP/1.1

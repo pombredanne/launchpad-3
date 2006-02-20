@@ -25,7 +25,7 @@
     <tbody>
       <tr tal:repeat="bug context/bugs">
         <td>
-          <img alt="" src="/++resource++bug" />
+          <img alt="" src="/@@/bug" />
           <a href="#" tal:attributes="href bug/fmt:url"
           ><span tal:replace="string:#${bug/id}: ${bug/title}"
                  tal:condition="bug/required:launchpad.View">
