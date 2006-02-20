@@ -15,7 +15,7 @@ from canonical.launchpad.scripts import (
         )
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.interfaces import IPersonSet
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import connect
 
 _default_lock_file = '/var/lock/launchpad-karma-update.lock'
 
@@ -36,10 +36,11 @@ def update_karma_cache():
             dbuser=config.karmacacheupdater.dbuser,
             implicitBegin=False, isolation=AUTOCOMMIT_ISOLATION
             )
-    ztm.begin()
-    cur = cursor()
+    con = connect(config.karmacacheupdater.dbuser)
+    con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+    cur = con.cursor()
     karma_expires_after = '1 year'
-    
+
     # Calculate everyones karma. Karma degrades each day, becoming
     # worthless after karma_expires_after. This query produces odd results
     # when datecreated is in the future, but there is really no point adding
@@ -71,28 +72,69 @@ def update_karma_cache():
             "Setting person=%(person)d, category=%(category)d, "
             "points=%(points)d", vars()
             )
-        cur.execute("""
-            UPDATE KarmaCache SET karmavalue=%(points)s
-            WHERE person=%(person)s AND category=%(category)s
-            """, vars())
-        assert cur.rowcount in (0, 1), \
-                'Bad rowcount %r returned from DML' % (cur.rowcount,)
-        if cur.rowcount == 0:
+
+        if points <= 0:
+            # Don't allow our table to bloat with inactive users
             cur.execute("""
-                INSERT INTO KarmaCache (person, category, karmavalue)
-                VALUES (%(person)s, %(category)s, %(points)s)
+                DELETE FROM KarmaCache WHERE
+                person=%(person)s AND category=%(category)s
                 """, vars())
+        else:
+            # Attempt to UPDATE. If no rows modified, perform an INSERT
+            cur.execute("""
+                UPDATE KarmaCache SET karmavalue=%(points)s
+                WHERE person=%(person)s AND category=%(category)s
+                """, vars())
+            assert cur.rowcount in (0, 1), \
+                    'Bad rowcount %r returned from DML' % (cur.rowcount,)
+            if cur.rowcount == 0:
+                cur.execute("""
+                    INSERT INTO KarmaCache (person, category, karmavalue)
+                    VALUES (%(person)s, %(category)s, %(points)s)
+                    """, vars())
+
+    # VACUUM KarmaCache since we have just touched every record in it
+    cur.execute("""VACUUM KarmaCache""")
 
     # Update the KarmaTotalCache table
-    cur.execute("BEGIN")
     log.info("Rebuilding KarmaTotalCache")
-    cur.execute("DELETE FROM KarmaTotalCache")
+    # Trash old records
+    cur.execute("""
+        DELETE FROM KarmaTotalCache
+        WHERE person NOT IN (SELECT person FROM KarmaCache)
+        """)
+    # Update existing records
+    cur.execute("""
+        UPDATE KarmaTotalCache SET karma_total=sum_karmavalue
+        FROM (
+            SELECT person AS sum_person, SUM(karmavalue) AS sum_karmavalue
+            FROM KarmaCache GROUP BY person
+            ) AS sums
+        WHERE KarmaTotalCache.person = sum_person
+        """)
+
+    # VACUUM KarmaTotalCache since we have just touched every row in it.
+    cur.execute("""VACUUM KarmaTotalCache""")
+
+    # Insert new records into the KarmaTotalCache table. If deadlocks
+    # become a problem, first LOCK the corresponding rows in the Person table
+    # so the bulk insert cannot fail. We don't bother at the moment as this
+    # would involve granting UPDATE rights on the Person table to the
+    # karmacacheupdater user.
+    ## cur.execute("BEGIN")
+    ## cur.execute("""
+    ##     SELECT * FROM Person
+    ##     WHERE id NOT IN (SELECT person FROM KarmaTotalCache)
+    ##     FOR UPDATE
+    ##     """)
     cur.execute("""
         INSERT INTO KarmaTotalCache (person, karma_total)
         SELECT person, SUM(karmavalue) FROM KarmaCache
+        WHERE person NOT IN (SELECT person FROM KarmaTotalCache)
         GROUP BY person
         """)
-    cur.execute("COMMIT")
+    ## cur.execute("COMMIT")
+
 
 if __name__ == '__main__':
     parser = OptionParser()
