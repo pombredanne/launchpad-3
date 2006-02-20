@@ -24,6 +24,7 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
     IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll)
+from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import PollAlgorithm, PollSecrecy
 
 
@@ -263,7 +264,7 @@ class PollVoteView(BasePollView):
         """Process the condorcet-voting form to change a user's vote or 
         register a new one."""
         form = self.request.form
-        activeoptions = list(self.context.getActiveOptions())
+        activeoptions = shortlist(self.context.getActiveOptions())
         newvotes = {}
         for option in activeoptions:
             try:

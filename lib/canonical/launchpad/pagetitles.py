@@ -226,6 +226,8 @@ builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 
 builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
 
+builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
+
 calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add event to %s')
@@ -504,7 +506,11 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
-person_packagebugs = ContextDisplayName('Bugs on software %s maintains')
+person_packagebugs = ContextDisplayName("%s's package bug reports")
+
+person_packagebugs_overview = person_packagebugs
+
+person_packagebugs_search = person_packagebugs
 
 person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
@@ -677,6 +683,8 @@ shipit_exports = 'ShipIt exports'
 
 shipit_myrequest = "Your ShipIt order"
 
+shipit_oops = 'Error: Oops'
+
 shipit_reports = 'ShipIt reports'
 
 shipitrequests_index = 'ShipIt requests'
@@ -686,8 +694,6 @@ shipitrequests_search = 'Search ShipIt requests'
 shipitrequest_edit = 'Edit ShipIt request'
 
 shipit_notfound = 'Error: Page not found'
-
-shipit_default_error = 'Error: Oops'
 
 signedcodeofconduct_index = ContextDisplayName('%s')
 
@@ -702,8 +708,6 @@ signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 sourcepackage = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
-
-sourcepackage_buildlog = ContextTitle('Build log for %s')
 
 sourcepackage_builds = ContextTitle('Builds for %s')
 
@@ -726,13 +730,6 @@ sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_translations = ContextTitle(
     'Rosetta translation templates for %s')
-
-sourcepackagebuild_buildlog = 'Source package build log'
-
-sourcepackagebuild_changes = 'Source package changes'
-
-def sourcepackagebuild_index(context, view):
-    return 'Builds of %s' % context.sourcepackagerelease.sourcepackage.summary
 
 sourcepackagenames_index = 'Source package name set'
 

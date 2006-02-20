@@ -177,3 +177,8 @@ class DistroReleaseSourcePackageRelease:
     def sourcepackagename(self):
         """See ISourcePackageRelease."""
         return self.sourcepackagerelease.sourcepackagename
+
+    @property
+    def manifest(self):
+        """See ISourcePackageRelease."""
+        return self.sourcepackagerelease.manifest

@@ -40,6 +40,14 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- OOPS -->
+  <browser:page
+      for="zope.publisher.interfaces.http.IHTTPRequest"
+      name="+oopsmessage"
+      permission="zope.Public"
+      template="../templates/request-oopsmessage.pt"
+      />
+
 
 <facet facet="overview">
 
@@ -53,6 +61,13 @@
       name="+maintenancemessage"
       template="../templates/launchpad-maintenance.pt"
       class="canonical.launchpad.browser.MaintenanceMessage"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="*"
+      name="+main-template-macros"
+      template="../templates/main-template-macros.pt"
       permission="zope.Public"
       />
 

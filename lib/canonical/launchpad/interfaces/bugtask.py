@@ -21,7 +21,6 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'RESOLVED_BUGTASK_STATUSES']
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List)
@@ -29,26 +28,28 @@ from zope.schema import (
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
-_ = MessageIDFactory('launchpad')
 
 # XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
 # UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
 # break if it were added to the list below. See
 # <https://launchpad.net/malone/bugs/5320>
+# XXX: matsubara, 2006-02-02: I added the NEEDSINFO as a short-term solution
+# to bug https://launchpad.net/products/malone/+bug/4201
 UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.UNCONFIRMED,
     dbschema.BugTaskStatus.CONFIRMED,
-    dbschema.BugTaskStatus.INPROGRESS)
+    dbschema.BugTaskStatus.INPROGRESS,
+    dbschema.BugTaskStatus.NEEDSINFO)
 
 RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXCOMMITTED,
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
-
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -208,6 +209,13 @@ class IDistroBugTaskSearch(IBugTaskSearch):
 
 class IPersonBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a person."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
+        vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
 
 
 class IBugTaskDelta(Interface):
@@ -449,6 +457,9 @@ class IBugTaskSet(Interface):
                    priority=None, severity=None, assignee=None, owner=None,
                    milestone=None):
         """Create a bug task on a bug and return it.
+
+        If the bug is public, bug contacts will be automatically
+        subscribed.
 
         Exactly one of product, distribution or distrorelease must be provided.
         """

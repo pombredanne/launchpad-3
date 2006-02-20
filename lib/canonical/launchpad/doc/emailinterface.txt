@@ -34,7 +34,7 @@ But if you want you can use any of the available commands as well.
 
 Let's take an example where we file a bug on Firefox:
 
-    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Firefox
@@ -59,7 +59,7 @@ And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
 
     >>> from canonical.launchpad.ftests import login
-    >>> login('test@canonical.com')
+    >>> login('foo.bar@canonical.com')
 
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
@@ -118,30 +118,107 @@ And the entire body of the email was added as a comment:
 The owner of the bug was set to the submitter:
 
     >>> print bug.owner.displayname
-    Sample Person
+    Foo Bar
 
-If we would file a bug on Debian instead, we would submit a mail like
+A notification was sent to dilys, Foo Bar and Sample Person. Sample
+Person got notified since he's the owner of the product:
+
+    >>> len(stub.test_emails)
+    3
+    >>> dilys_msg, foo_bar_msg, sample_person_msg = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> dilys_msg['To']
+    'dilys@muse.19inch.net'
+    >>> foo_bar_msg['To']
+    'foo.bar@canonical.com'
+    >>> sample_person_msg['To']
+    'test@canonical.com'
+    >>> print sample_person_msg.get_payload()
+    Public bug reported:
+    ...
+    Affects: firefox (upstream)
+    ...
+    There is a bug in Firefox.
+    ...
+
+    >>> stub.test_emails = []
+
+If we would file a bug on Ubuntu instead, we would submit a mail like
 this:
 
+    >>> login('test@canonical.com')
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
-    ... Subject: A bug in Debian's Evolution package
+    ... Subject: A bug in Ubuntu's Mozilla package
     ...
-    ... There's a bug in Debian.
-    ...  affects /distros/debian/evolution
+    ... There's a bug in Ubuntu.
+    ...  affects /distros/ubuntu/mozilla-firefox
     ... """
     >>> process_email(submit_mail)
     >>> bug = get_latest_added_bug()
 
     >>> print bug.title
-    A bug in Debian's Evolution package
+    A bug in Ubuntu's Mozilla package
 
     >>> distrotask = bug.bugtasks[0]
     >>> print distrotask.distribution.name
-    debian
+    ubuntu
     >>> print distrotask.sourcepackagename.name
-    evolution
+    mozilla-firefox
+
+A notification was sent to dilys, Foo Bar and Sample Person. Foo
+Bar got notified since he's a bug contact for the mozilla package:
+
+    >>> len(stub.test_emails)
+    3
+    >>> dilys_msg, foo_bar_msg, sample_person_msg = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> dilys_msg['To']
+    'dilys@muse.19inch.net'
+    >>> foo_bar_msg['To']
+    'foo.bar@canonical.com'
+    >>> sample_person_msg['To']
+    'test@canonical.com'
+    >>> print sample_person_msg.get_payload()
+    Public bug reported:
+    ...
+    Affects: mozilla-firefox (Ubuntu)
+    ...
+    There's a bug in Ubuntu.
+    ...
+
+    >>> stub.test_emails = []
+
+It's possible to file a bug on more than product/package at once:
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Affects many packages
+    ...
+    ... A widespread bug.
+    ...  affects /distros/debian/evolution
+    ...  affects /distros/debian/mozilla-firefox
+    ...  affects /products/evolution
+    ...  affects /products/firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+
+    >>> print bug.title
+    Affects many packages
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    evolution (upstream)
+    firefox (upstream)
+    evolution (Debian)
+    mozilla-firefox (Debian)
 
 
 Add a comment
@@ -585,6 +662,11 @@ If we specify a non-existant user, an error message will be sent:
     There's no such person with the specified name or email: non_existant
     ...
 
+Let's subscribe Sample Person to the bug again, so that it has at least
+one subscriber:
+
+    >>> submit_commands(bug_four, 'subscribe test@canonical.com')
+
 
 affects $path [assignee $name|$email]
               [status $status]
@@ -600,6 +682,7 @@ the following form:
 If there is no task with the specified $path target, a new task is
 created:
 
+    >>> stub.test_emails = []
     >>> len(bug_four.bugtasks)
     1
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
@@ -609,6 +692,25 @@ created:
     2
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
     True
+
+A notification was sent to all the bug's subscribers, and to dilys:
+
+    >>> len(stub.test_emails)
+    2
+    >>> dilys_msg, sample_person_msg = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> dilys_msg['To']
+    'dilys@muse.19inch.net'
+    >>> sample_person_msg['To']
+    'test@canonical.com'
+    >>> print sample_person_msg.get_payload()
+    Public bug report changed:
+    ...
+    Also affects: Debian
+    ...
+
 
 Submitting the same thing again doesn't do anything, since the task
 already exists:
@@ -640,10 +742,20 @@ To set which source package the bug affects, we use:
 
     >>> submit_commands(bug_four, 'affects /distros/debian/mozilla-firefox')
     >>> len(bug_four.bugtasks)
-    3
+    2
     >>> debian_task = bug_four.bugtasks[-1]
     >>> print debian_task.sourcepackagename.name
     mozilla-firefox
+
+If we specify another source package in the same distribution, a new
+task will be created:
+
+    >>> submit_commands(bug_four, 'affects /distros/debian/evolution')
+    >>> len(bug_four.bugtasks)
+    3
+    >>> evolution_task = bug_four.bugtasks[-2]
+    >>> print evolution_task.sourcepackagename.name
+    evolution
 
 Let's take on the upstream task as well. This time we'll sneak in a
 'subscribe' command between the 'affects' and the other commands, to

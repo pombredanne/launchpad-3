@@ -52,7 +52,7 @@
     </table>
 
     <div style="text-align: right;" tal:condition="series/packagings">
-      <img src="/++resource++add.gif" />
+      <img src="/@@/add.gif" />
       <a tal:attributes="href string:${series/fmt:url}/+addpackage">
       Add Packaging Hint</a>
     </div>
