@@ -38,9 +38,7 @@ __all__ = [
     ]
 
 
-# NotFoundError deprecated and will go in Zope 3.3
-#class NotFoundError(zope.exceptions.NotFoundError):
-class NotFoundError(LookupError):
+class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 class NameNotAvailable(KeyError):

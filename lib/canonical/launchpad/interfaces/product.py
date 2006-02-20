@@ -287,7 +287,7 @@ class IProductSet(Interface):
     def get(productid):
         """Get a product by its id.
 
-        If the product can't be found a zope.exceptions.NotFoundError will be
+        If the product can't be found a NotFoundError will be
         raised.
         """
 

@@ -66,7 +66,7 @@ class IBugWatchSet(Interface):
     def get(id):
         """Get an IBugWatch by its ID.
 
-        Raise a zope.exceptions.NotFoundError if there is no IBugWatch
+        Raise a NotFoundError if there is no IBugWatch
         matching the given id.
         """
 

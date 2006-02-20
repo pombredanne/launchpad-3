@@ -48,8 +48,7 @@ class ISourcePackageNameSet(Interface):
     def get(sourcepackagenameid):
         """Return a sourcepackagename by its id.
 
-        If the sourcepackagename can't be found a zope.exceptions.NotFoundError
-        will be raised.
+        If the sourcepackagename can't be found a NotFoundError will be raised.
         """
 
     def findByName(name):

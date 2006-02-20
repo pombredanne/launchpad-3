@@ -88,7 +88,7 @@ class IMilestoneSet(Interface):
         """Get a milestone by its id.
 
         If the milestone with that ID is not found, a
-        zope.exceptions.NotFoundError will be raised.
+        NotFoundError will be raised.
         """
 
     def getByNameAndProduct(self, name, product, default=None):

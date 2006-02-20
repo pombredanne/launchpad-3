@@ -436,7 +436,7 @@ class IBugTaskSet(Interface):
     def get(task_id):
         """Retrieve a BugTask with the given id.
 
-        Raise a zope.exceptions.NotFoundError if there is no IBugTask
+        Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
         """
