@@ -15,14 +15,15 @@ from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
-        ISourcePackage, IBugEmailCommand, IBugTaskEmailCommand,
-        IBugEditEmailCommand, IBugTaskEditEmailCommand, IBugSet, ILaunchBag,
-        IBugTaskSet, BugTaskSearchParams, IBugTarget, IMessageSet,
+        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
+        BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+from canonical.launchpad.searchbuilder import NULL
 
 from canonical.lp.dbschema import (
     BugTaskStatus, BugTaskSeverity, BugTaskPriority)
@@ -323,32 +324,29 @@ class AffectsEmailCommand(EmailCommand):
             raise EmailProcessingError(
                 get_error_message('affects-no-arguments.txt'))
         try:
-            path_target = get_object(path, path_only=True)
+            bug_target = get_object(path, path_only=True)
         except PathStepNotFoundError, error:
             raise EmailProcessingError(
                 get_error_message(
                     'affects-path-not-found.txt',
                     pathstep_not_found=error.step, path=path))
-        if ISourcePackage.providedBy(path_target):
-            bug_target = path_target.distribution
-        else:
-            bug_target = path_target
-
+        event = None
         bugtask = self.getBugTask(bug, bug_target)
+        if (bugtask is None and
+            IDistributionSourcePackage.providedBy(bug_target)):
+            # If there's a distribution task with no source package, use
+            # that one.
+            bugtask = self.getBugTask(bug, bug_target.distribution)
+            if bugtask is not None:
+                bugtask_before_edit = Snapshot(
+                    bugtask, providing=IDistroBugTask)
+                bugtask.sourcepackagename = bug_target.sourcepackagename
+                event = SQLObjectModifiedEvent(
+                    bugtask, bugtask_before_edit, ['sourcepackagename'])
+
         if bugtask is None:
             bugtask = self._create_bug_task(bug, bug_target)
             event = SQLObjectCreatedEvent(bugtask)
-        else:
-            event = None
-
-        # The user may change the source package by issuing
-        # 'affects /distros/$distro/$sourcepackage'. Let's handle that here.
-        if ISourcePackage.providedBy(path_target):
-            bugtask_before_edit = Snapshot(bugtask, names='sourcepackagename')
-            if bugtask.sourcepackagename != path_target.sourcepackagename:
-                bugtask.sourcepackagename = path_target.sourcepackagename
-            event = SQLObjectModifiedEvent(
-                bugtask, bugtask_before_edit, ['sourcepackagename'])
 
         # Process the sub commands.
         while len(string_args) > 0:
@@ -399,21 +397,11 @@ class AffectsEmailCommand(EmailCommand):
 
         Returns None if no such bugtask is found.
         """
-        assert IBugTarget.providedBy(target), target
-        user = getUtility(ILaunchBag).user
+        for bugtask in bug.bugtasks:
+            if bugtask.target == target:
+                return bugtask
 
-        # Listify the results in order to avoid unnecessary SQL queries.
-        bug_tasks = list(
-            target.searchTasks(BugTaskSearchParams(user, bug=bug)))
-
-        assert len(bug_tasks) <= 1, 'Found more than one bug task.'
-        if len(bug_tasks) == 0:
-            return None
-        else:
-            bugtask = bug_tasks[0]
-
-        return bugtask
-
+        return None
 
 class AssigneeEmailCommand(EditEmailCommand):
     """Assigns someone to the bug."""

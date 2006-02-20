@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from canonical.launchpad.interfaces import IPerson
+from canonical.lp.dbschema import BranchLifecycleStatus
 
 # XXX This stuff was cargo-culted from ITicketTarget, that needs to be factored
 # out. See bug 4011. -- David Allouche 2005-09-09
@@ -74,6 +75,16 @@ class BranchTargetView:
                 categories[branch.lifecycle_status] = category
             category['branches'].append(branch)
         categories = categories.values()
-        def by_status(category):
-            return category['status'].value
-        return sorted(categories, key=by_status)
+        return sorted(categories, key=self.category_display_order)
+
+    @staticmethod
+    def category_display_order(category):
+        display_order = [
+            BranchLifecycleStatus.MATURE,
+            BranchLifecycleStatus.DEVELOPMENT,
+            BranchLifecycleStatus.EXPERIMENTAL,
+            BranchLifecycleStatus.MERGED,
+            BranchLifecycleStatus.ABANDONED,
+            BranchLifecycleStatus.NEW,
+            ]
+        return display_order.index(category['status'])

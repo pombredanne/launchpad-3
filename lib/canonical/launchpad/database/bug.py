@@ -17,6 +17,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -35,8 +36,6 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
-from zope.i18n import MessageIDFactory
-_ = MessageIDFactory("launchpad")
 
 
 class Bug(SQLBase):
@@ -235,7 +234,11 @@ class BugSet:
                 raise NotFoundError(
                     "Unable to locate bug with ID %s" % str(bugid))
         else:
-            bug = self.get(bugid)
+            try:
+                bug = self.get(bugid)
+            except ValueError:
+                raise NotFoundError(
+                    "Unable to locate bug with nickname %s" % str(bugid))
         return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):

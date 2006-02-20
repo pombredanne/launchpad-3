@@ -464,6 +464,10 @@ class SourcePackage:
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
+        # XXX cprov 20060214: still not ordering ALL results (empty status)
+        # properly, the pending builds will pre presented in the DESC
+        # 'datebuilt' order. bug # 31392
+
         if status is not None:
             condition_clauses.append("Build.buildstate=%s"
                                      % sqlvalues(status))
@@ -471,7 +475,7 @@ class SourcePackage:
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
         if status == BuildStatus.NEEDSBUILD:
-            orderBy = "BuildQueue.lastscore"
+            orderBy = "-BuildQueue.lastscore"
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
 

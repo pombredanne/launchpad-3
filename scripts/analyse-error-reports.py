@@ -15,7 +15,7 @@ import urllib
 import cgi
 import optparse
 
-COUNT = 20
+COUNT = 15
 
 # This pattern is intended to match the majority of search engines I
 # built up this list by checking what was accessing
@@ -94,6 +94,7 @@ class ErrorData:
 class ErrorSummary:
     def __init__(self):
         self.expired = {}
+        self.softtimeout = {}
         self.notfound = {}
         self.exceptions = {}
         self.exc_count = 0
@@ -154,9 +155,32 @@ class ErrorSummary:
         # string.
         evalue = re.sub("0x[abcdef0-9]+", "INSTANCE-ID", evalue)
 
+        # XXX: 20060209 jamesh
+        # temporary decoding of RequestQueryTimedOut exceptions
+        # this is gross.
+        if etype == 'RequestQueryTimedOut':
+            ns = { '__builtins__': {} }
+            try:
+                t = eval(evalue.replace('\\\\', '\\'), ns, ns)
+            except:
+                t = None
+            if isinstance(t, tuple) and len(t) == 2:
+                evalue = t[1].replace('\n', ' ')
+
         if etype in ['RequestExpired', 'RequestQueryTimedOut',
-                     'SoftRequestTimeout']:
+                     'ProgrammingError', 'SQLObjectMoreThanOneResultError',
+                     'RequestStatementTimedOut']:
+            evalue = re.sub(r"'(?:\\\\|\\[^\\]|[^'])*'",
+                            '$STRING', evalue)
+            evalue = re.sub(r'\b\d+', '$INT', evalue)
+
+
+        if etype in ['RequestExpired', 'RequestQueryTimedOut',
+                     'RequestStatementTimedOut']:
             self.addOops(self.expired, etype, evalue, url, oopsid,
+                         local_referer, is_bot)
+        elif etype in ['SoftRequestTimeout']:
+            self.addOops(self.softtimeout, etype, evalue, url, oopsid,
                          local_referer, is_bot)
         elif etype in ['NotFound', 'NotFoundError']:
             self.addOops(self.notfound, etype, evalue, url, oopsid,
@@ -171,9 +195,9 @@ class ErrorSummary:
             if os.path.isfile(path):
                 self.processOops(path)
 
-    def printTable(self, fp, source, title, count=COUNT):
-        if count >= 0:
-            fp.write('=== Top %d %s ===\n\n' % (count, title))
+    def printTable(self, fp, source, title):
+        if COUNT >= 0:
+            fp.write('=== Top %d %s ===\n\n' % (COUNT, title))
         else:
             fp.write('=== All %s ===\n\n' % title)
 
@@ -181,7 +205,7 @@ class ErrorSummary:
                         key=lambda data: data.count,
                         reverse=True)
 
-        for data in errors[:count]:
+        for data in errors[:COUNT]:
             fp.write('%4d %s: %s\n' % (data.count, data.etype, data.evalue))
             fp.write('    %d%% from search bots, %d%% referred from '
                      'local sites\n' 
@@ -210,9 +234,19 @@ class ErrorSummary:
         fp.write(" * Average exceptions per day: %.2f\n\n" %
                  (self.exc_count / days))
 
-        self.printTable(fp, self.expired, 'Time Out Pages')
-        self.printTable(fp, self.notfound, 'Not Found Errors')
+        fp.write(' * %d Exceptions\n'
+                 % sum(data.count for data in self.exceptions.itervalues()))
+        fp.write(' * %d Time Out Pages\n'
+                 % sum(data.count for data in self.expired.itervalues()))
+        fp.write(' * %d Soft Time Outs\n'
+                 % sum(data.count for data in self.softtimeout.itervalues()))
+        fp.write(' * %d Not Found Errors\n\n'
+                 % sum(data.count for data in self.notfound.itervalues()))
+
         self.printTable(fp, self.exceptions, 'Exceptions')
+        self.printTable(fp, self.expired, 'Time Out Pages')
+        self.printTable(fp, self.softtimeout, 'Soft Time Outs')
+        self.printTable(fp, self.notfound, 'Not Found Errors')
 
     def printHtmlTable(self, fp, source, title):
         fp.write('<h2>All %s</h2>\n' % title)
@@ -250,11 +284,7 @@ class ErrorSummary:
         fp.write('<html>\n'
                  '<head>\n'
                  '<title>Oops Report Summary</title>\n'
-                 '<style type="text/css">\n'
-                 '  .oops { font-size: small; list-style: none; }\n'
-                 '  .errurl { color: inherit; text-decoration: none; }\n'
-                 '  .pct { font-size: small; margin-left: 5em; }\n'
-                 '</style>\n'
+                 '<link rel="stylesheet" type="text/css" href="https://chinstrap.ubuntu.com/~mpt/oops.css" />\n'
                  '</head>\n'
                  '<body>\n'
                  '<h1>Oops Report Summary</h1>\n\n')
@@ -270,9 +300,25 @@ class ErrorSummary:
                  (self.exc_count / days))
         fp.write('</ul>\n\n')
 
-        self.printHtmlTable(fp, self.expired, 'Time Out Pages')
-        self.printHtmlTable(fp, self.notfound, 'Not Found Errors')
+        fp.write('<ul>\n')
+        fp.write('<li><a href="#exceptions">%d Exceptions</a></li>\n'
+                 % sum(data.count for data in self.exceptions.itervalues()))
+        fp.write('<li><a href="#timeouts">%d Time Out Pages</a></li>\n'
+                 % sum(data.count for data in self.expired.itervalues()))
+        fp.write('<li><a href="#soft-timeouts">%d Soft Time Outs</a></li>\n'
+                 % sum(data.count for data in self.softtimeout.itervalues()))
+        fp.write('<li><a href="#not-found">%d Not Found Errors</a></li>\n'
+                 % sum(data.count for data in self.notfound.itervalues()))
+        fp.write('</ul>\n\n')
+
+        fp.write('<a name="exceptions"></a>')
         self.printHtmlTable(fp, self.exceptions, 'Exceptions')
+        fp.write('<a name="timeouts"></a>')
+        self.printHtmlTable(fp, self.expired, 'Time Out Pages')
+        fp.write('<a name="soft-timeouts"></a>')
+        self.printHtmlTable(fp, self.softtimeout, 'Soft Time Outs')
+        fp.write('<a name="not-found"></a>')
+        self.printHtmlTable(fp, self.notfound, 'Not Found Errors')
 
         fp.write('</body>\n')
         fp.write('</html>\n')
