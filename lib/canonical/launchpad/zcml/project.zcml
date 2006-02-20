@@ -140,7 +140,7 @@
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
     </browser:addform>
 
     <browser:editform
@@ -200,19 +200,19 @@
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="screenshotsurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="wikiurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="downloadurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
     </browser:addform>
 
     <browser:addform

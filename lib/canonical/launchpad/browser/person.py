@@ -395,7 +395,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editwikinames', 'editircnicknames', 'editjabberids',
-             'editpassword', 'edithackergotchi', 'editsshkeys', 'editgpgkeys',
+             'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
@@ -452,8 +452,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def editgpgkeys(self):
-        target = '+editgpgkeys'
+    def editpgpkeys(self):
+        target = '+editpgpkeys'
         text = 'Edit OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
@@ -614,12 +614,12 @@ class FOAFSearchView:
         if not name:
             return None
 
-        if searchfor == "all":
-            results = getUtility(IPersonSet).find(name)
-        elif searchfor == "peopleonly":
+        if searchfor == "peopleonly":
             results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
             results = getUtility(IPersonSet).findTeam(name)
+        else:
+            results = getUtility(IPersonSet).find(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)

@@ -236,7 +236,7 @@
         <browser:widget
           field="description"
           class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="50"
+          displayWidth="30"
           height="5" />
     </browser:addform>
 

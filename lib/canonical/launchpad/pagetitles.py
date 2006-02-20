@@ -285,6 +285,8 @@ distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
+distribution_edit = ContextTitle('Edit %s')
+
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle(
@@ -484,7 +486,7 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editgpgkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
+person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
 
