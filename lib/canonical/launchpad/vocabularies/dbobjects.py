@@ -337,13 +337,13 @@ class BugVocabulary(SQLObjectVocabularyBase):
 class BountyVocabulary(SQLObjectVocabularyBase):
 
     _table = Bounty
+    # XXX: no _orderBy?
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
-    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
-    # no test data for me to check yet. This'll be fixed by the end
-    # of the week (2004/10/08) as we get Malone into usable shape.
+
     _table = BugTracker
+    _orderBy = 'title'
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
