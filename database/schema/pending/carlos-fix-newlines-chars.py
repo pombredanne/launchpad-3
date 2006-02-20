@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # Copyright 2006 Canonical Ltd. All rights reserved.
 
-import _pythonpath
-
 import sys
 from optparse import OptionParser
 
@@ -78,7 +76,7 @@ def main(argv):
         WHERE translation like '%\r%'
         """)
     translation_ids = cur.fetchall()
-    translation_ids = [set[0] for set in translation_ids]
+    translation_ids = [set_entry[0] for set_entry in translation_ids]
     logger_object.debug('There are %d translations to be checked' %
         len(translation_ids))
 
@@ -90,7 +88,7 @@ def main(argv):
         WHERE msgid LIKE '%\r%'
         """)
     msgid_ids = cur.fetchall()
-    msgid_ids = [set[0] for set in msgid_ids]
+    msgid_ids = [set_entry[0] for set_entry in msgid_ids]
     logger_object.debug('There are %d msgids to be checked' %
         len(msgid_ids))
 
