@@ -629,14 +629,17 @@ class BuilderGroup:
         uploader_argv.extend(extra_args)
 
         self.logger.debug("Invoking uploader on %s" % root)
+        self.logger.debug("%s" % uploader_argv)
         uploader_process = subprocess.Popen(uploader_argv,
                                             stdout=subprocess.PIPE)
         result_code = uploader_process.wait()
 
         if os.path.exists(upload_dir):
             self.logger.debug("The upload directory did not get moved.")
-            os.rename(upload_dir, os.path.join(upload_dir, "..",
-                                               "failed-to-move",
+            failed_dir = os.path.join(root, "failed-to-move")
+            if not os.path.exists(failed_dir):
+                os.mkdir(failed_dir)
+            os.rename(upload_dir, os.path.join(failed_dir,
                                                upload_leaf))
 
         self.logger.debug("Uploader returned %d" % result_code)
