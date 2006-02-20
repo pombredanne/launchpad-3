@@ -47,7 +47,7 @@ If the status can't be converted, 'Unknown' is returned, and a warning
 is logged.
 
     >>> external_bugzilla.malonify_status('FOO')
-    WARNING:root:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org
+    WARNING:...:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org
     'Unknown'
 
 UNKNOWN maps to 'Unknown' without generating a warning.
@@ -106,5 +106,5 @@ now no bug watches are in need of updating:
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> len(gnome_bugzilla.getBugWatchesNeedingUpdate(23))
+    >>> gnome_bugzilla.getBugWatchesNeedingUpdate(23).count()
     0
