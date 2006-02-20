@@ -22,7 +22,7 @@ __all__ = [
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
-    'BugTaskBackportTargetingView',
+    'BugTaskBackportFixView',
     'get_sortorder_from_request',
     'BugTargetTextView']
 
@@ -271,7 +271,7 @@ class BugTaskView:
             IDistroReleaseBugTask.providedBy(self.context))
 
 
-class BugTaskBackportTargetingView:
+class BugTaskBackportFixView:
     """View class for targeting bugs to IDistroReleases."""
 
     @property

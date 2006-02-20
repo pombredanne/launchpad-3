@@ -21,7 +21,7 @@
 
   <p class="documentDescription">
     Select the releases in which this bug must be fixed. If you make a mistake,
-    you can mark the task as Rejected.
+    you can later mark the task as Rejected.
   </p>
 
   <form action="" method="POST">
