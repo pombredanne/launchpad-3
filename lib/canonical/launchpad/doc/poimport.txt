@@ -145,6 +145,11 @@ It's newly created, so it has no message sets yet.
     >>> pofile.currentMessageSets().count()
     0
 
+And the statistics reflect it.
+
+    >>> pofile.currentCount()
+    0
+
 Here are the contents of the file we'll be importing.
 It has some validation errros.
 
@@ -190,10 +195,15 @@ template. Remember, we need to tell the system that this po file is a
     >>> transaction.commit()
     >>> pofile.doRawImport(FakeLogger())
 
-And the number of activities performed is...
+The number of activities performed is...
 
     >>> person.activities.count()
     2
+
+And the statistics reflect it.
+
+    >>> pofile.currentCount()
+    3
 
 Here's a current message set: i.e. it has a corresponding current message set
 in the PO template. It should not be publishedfuzzy.
@@ -303,6 +313,15 @@ Here are the contents of another file we'll be importing. It has no errors.
     >>> transaction.commit()
     >>> pofile.doRawImport(FakeLogger())
 
+And the statistics reflect it.
+
+    >>> pofile.currentCount()
+    1
+    >>> pofile.updatesCount()
+    0
+    >>> pofile.rosettaCount()
+    1
+
 Check the notification email about the success of this import without errors.
 
     >>> transaction.commit()
@@ -372,6 +391,15 @@ The number of activities shouldn't change as the import was rejected.
 
     >>> person.activities.count()
     3
+
+And the statistics reflect it.
+
+    >>> pofile.currentCount()
+    1
+    >>> pofile.updatesCount()
+    0
+    >>> pofile.rosettaCount()
+    0
 
 And the date should be the old one
 

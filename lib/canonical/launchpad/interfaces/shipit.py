@@ -126,6 +126,7 @@ class IShippingRequest(Interface):
             description=_('The Organization requesting the CDs')
             )
 
+    recipient_email = Attribute(_("The recipient's email address."))
     shipment = Attribute(_(
         "This request's Shipment or None if the request wasn't shipped yet."))
     countrycode = Attribute(

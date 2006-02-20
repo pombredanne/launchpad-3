@@ -194,6 +194,33 @@ Bar got notified since he's a bug contact for the mozilla package:
 
     >>> stub.test_emails = []
 
+It's possible to file a bug on more than product/package at once:
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Affects many packages
+    ...
+    ... A widespread bug.
+    ...  affects /distros/debian/evolution
+    ...  affects /distros/debian/mozilla-firefox
+    ...  affects /products/evolution
+    ...  affects /products/firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+
+    >>> print bug.title
+    Affects many packages
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    evolution (upstream)
+    firefox (upstream)
+    evolution (Debian)
+    mozilla-firefox (Debian)
+
+
 Add a comment
 -------------
 
@@ -715,10 +742,20 @@ To set which source package the bug affects, we use:
 
     >>> submit_commands(bug_four, 'affects /distros/debian/mozilla-firefox')
     >>> len(bug_four.bugtasks)
-    3
+    2
     >>> debian_task = bug_four.bugtasks[-1]
     >>> print debian_task.sourcepackagename.name
     mozilla-firefox
+
+If we specify another source package in the same distribution, a new
+task will be created:
+
+    >>> submit_commands(bug_four, 'affects /distros/debian/evolution')
+    >>> len(bug_four.bugtasks)
+    3
+    >>> evolution_task = bug_four.bugtasks[-2]
+    >>> print evolution_task.sourcepackagename.name
+    evolution
 
 Let's take on the upstream task as well. This time we'll sneak in a
 'subscribe' command between the 'affects' and the other commands, to

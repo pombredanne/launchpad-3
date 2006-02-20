@@ -6,7 +6,6 @@ __all__ = [
     'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
     'JabberIDSet', 'IrcID', 'IrcIDSet']
 
-import itertools
 import sets
 from datetime import datetime, timedelta
 import pytz
@@ -20,7 +19,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
@@ -33,16 +32,14 @@ from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet,
-    ILaunchpadStatisticSet)
+    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.karma import (
-    KarmaAction, Karma, KarmaCategory)
+from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -53,7 +50,7 @@ from canonical.launchpad.database.specificationfeedback import (
 from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
-    TeamMembership, TeamParticipation)
+    TeamMembership, TeamParticipation, TeamMembershipSet)
 
 from canonical.launchpad.database.branch import Branch
 
@@ -296,11 +293,11 @@ class Person(SQLBase):
             OR Specification.assignee = %(my_id)d
             OR Specification.drafter = %(my_id)d
             OR Specification.id IN (
-                SELECT SpecificationFeedback.id
+                SELECT SpecificationFeedback.specification
                 FROM SpecificationFeedback
                 WHERE SpecificationFeedback.reviewer = %(my_id)s
                 UNION
-                SELECT SpecificationSubscription.id
+                SELECT SpecificationSubscription.specification
                 FROM SpecificationSubscription
                 WHERE SpecificationSubscription.person = %(my_id)d
                 )
@@ -537,16 +534,11 @@ class Person(SQLBase):
             return
 
         assert not person.hasMembershipEntryFor(self)
-        assert status in [TeamMembershipStatus.APPROVED,
-                          TeamMembershipStatus.PROPOSED]
 
         expires = self.defaultexpirationdate
-        TeamMembership(personID=person.id, teamID=self.id, status=status,
-                       dateexpires=expires, reviewer=reviewer, 
-                       reviewercomment=comment)
-
-        if status == TeamMembershipStatus.APPROVED:
-            _fillTeamParticipation(person, self)
+        TeamMembershipSet().new(
+            person, self, status, dateexpires=expires, reviewer=reviewer,
+            reviewercomment=comment)
 
     def setMembershipStatus(self, person, status, expires=None, reviewer=None,
                             comment=None):
@@ -557,43 +549,19 @@ class Person(SQLBase):
         #      -- SteveAlexander, 2005-04-23
         assert tm is not None
 
-        approved = TeamMembershipStatus.APPROVED
-        admin = TeamMembershipStatus.ADMIN
-        expired = TeamMembershipStatus.EXPIRED
-        declined = TeamMembershipStatus.DECLINED
-        deactivated = TeamMembershipStatus.DEACTIVATED
-        proposed = TeamMembershipStatus.PROPOSED
-
-        # Make sure the transition from the current status to the given status
-        # is allowed. All allowed transitions are in the TeamMembership spec.
-        if tm.status in [admin, approved]:
-            assert status in [approved, admin, expired, deactivated]
-        elif tm.status in [deactivated]:
-            assert status in [approved]
-        elif tm.status in [expired]:
-            assert status in [approved]
-        elif tm.status in [proposed]:
-            assert status in [approved, declined]
-        elif tm.status in [declined]:
-            assert status in [proposed, approved]
-
         now = datetime.now(pytz.timezone('UTC'))
         if expires is not None and expires <= now:
+            status = TeamMembershipStatus.EXPIRED
+            # XXX: This is a workaround while 
+            # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
             expires = now
-            status = expired
 
-        tm.status = status
+        tm.setStatus(status)
         tm.dateexpires = expires
         tm.reviewer = reviewer
         tm.reviewercomment = comment
 
         tm.syncUpdate()
-
-        if ((status == approved and tm.status != admin) or
-            (status == admin and tm.status != approved)):
-            _fillTeamParticipation(person, self)
-        elif status in [deactivated, expired]:
-            _cleanTeamParticipation(person, self)
 
     def _getMembersByStatus(self, status):
         # XXX Needs a system doc test. SteveAlexander 2005-04-23
@@ -634,7 +602,9 @@ class Person(SQLBase):
     @property 
     def allmembers(self):
         """See IPerson."""
-        return _getAllMembers(self)
+        query = ('Person.id = TeamParticipation.person AND '
+                 'TeamParticipation.team = %d' % self.id)
+        return Person.select(query, clauseTables=['TeamParticipation'])
 
     @property
     def all_member_count(self):
@@ -960,7 +930,7 @@ class PersonSet:
             except nickname.NicknameGenerationError:
                 return None, None
         else:
-            if self.getByName(name) is not None:
+            if self.getByName(name, ignore_merged=False) is not None:
                 return None, None
 
         if not passwordEncrypted and password is not None:
@@ -980,6 +950,7 @@ class PersonSet:
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
+        assert self.getByName(name, ignore_merged=False) is None
         person = Person(name=name, displayname=displayname, givenname=givenname,
                         familyname=familyname, password=password)
         wikinameset = getUtility(IWikiNameSet)
@@ -1767,76 +1738,4 @@ class IrcIDSet:
 
     def new(self, person, network, nickname):
         return IrcID(personID=person.id, network=network, nickname=nickname)
-
-
-def _getAllMembers(team, orderBy='name'):
-    query = ('Person.id = TeamParticipation.person AND '
-             'TeamParticipation.team = %d' % team.id)
-    return Person.select(query, clauseTables=['TeamParticipation'],
-                         orderBy=orderBy)
-
-
-def _cleanTeamParticipation(person, team):
-    """Remove relevant entries in TeamParticipation for <person> and <team>.
-
-    Remove all tuples "person, team" from TeamParticipation for the given
-    person and team (together with all its superteams), unless this person is
-    an indirect member of the given team. More information on how to use the
-    TeamParticipation table can be found in the TeamParticipationUsage spec or
-    the teammembership.txt system doctest.
-    """
-    # First of all, we remove <person> from <team> (and its superteams).
-    _removeParticipantFromTeamAndSuperTeams(person, team)
-
-    # Then, if <person> is a team, we remove all its participants from <team>
-    # (and its superteams).
-    if person.isTeam():
-        for submember in person.allmembers:
-            if submember not in team.activemembers:
-                _cleanTeamParticipation(submember, team)
-
-
-def _removeParticipantFromTeamAndSuperTeams(person, team):
-    """If <person> is a participant (that is, has a TeamParticipation entry)
-    of any team that is a subteam of <team>, then <person> should be kept as
-    a participant of <team> and (as a consequence) all its superteams.
-    Otherwise, <person> is removed from <team> and we repeat this process for
-    each superteam of <team>.
-    """
-    for subteam in team.getSubTeams():
-        # There's no need to worry for the case where person == subteam because
-        # a team doesn't have a teamparticipation entry for itself and then a
-        # call to team.hasParticipationEntryFor(team) will always return
-        # False.
-        if person.hasParticipationEntryFor(subteam):
-            # This is an indirect member of this team and thus it should
-            # be kept as so.
-            return
-
-    result = TeamParticipation.selectOneBy(personID=person.id, teamID=team.id)
-    if result is not None:
-        result.destroySelf()
-
-    for superteam in team.getSuperTeams():
-        if person not in superteam.activemembers:
-            _removeParticipantFromTeamAndSuperTeams(person, superteam)
-
-
-def _fillTeamParticipation(member, team):
-    """Add relevant entries in TeamParticipation for given member and team.
-
-    Add a tuple "member, team" in TeamParticipation for the given team and all
-    of its superteams. More information on how to use the TeamParticipation 
-    table can be found in the TeamParticipationUsage spec.
-    """
-    members = [member]
-    if member.teamowner is not None:
-        # The given member is, in fact, a team, and in this case we must 
-        # add all of its members to the given team and to its superteams.
-        members.extend(_getAllMembers(member))
-
-    for m in members:
-        for t in itertools.chain(team.getSuperTeams(), [team]):
-            if not m.hasParticipationEntryFor(t):
-                TeamParticipation(personID=m.id, teamID=t.id)
 

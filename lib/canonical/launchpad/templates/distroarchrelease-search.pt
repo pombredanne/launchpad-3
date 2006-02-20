@@ -41,7 +41,7 @@
     <tal:has_matches condition="view/searchresults">
 
       <tal:per_match repeat="darbpr view/searchresults">
-        <img src="/++resource++package-binary" />
+        <img src="/@@/package-binary" />
         <a tal:content="darbpr/name"
            tal:attributes="href darbpr/fmt:url">foobar</a>:
         <div style="margin-left: 30px; font-size: 80%;"
@@ -59,7 +59,7 @@
 
     <tal:no_matches condition="not: view/matches">
 
-      <img src="/++resource++alert" />
+      <img src="/@@/alert" />
       <i>No packages matching "<span tal:replace="view/text">amarok</span>"
       are published in
       <span tal:replace="context/displayname">hoary</span>.</i>

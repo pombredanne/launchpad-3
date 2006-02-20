@@ -182,6 +182,8 @@ class POFileView(LaunchpadView):
 
     def initialize(self):
         self.form = self.request.form
+        # Whether this page is redirecting or not.
+        self.redirecting = False
         # When we start we don't have any error.
         self.pomsgset_views_with_errors = []
         # Initialize the tab index for the form entries.
@@ -409,6 +411,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
     def _filter_translations(self):
         """Handle a form submission to filter translations."""
         # We need to redirect to the new URL based on the new given arguments.
+        self.redirecting = True
         self.request.response.redirect(self.createURL())
 
     def _upload(self):
@@ -516,12 +519,17 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             # Get the next set of message sets. If there was no error, we want
             # to increase the offset by count first.
             self.offset = self.next_offset
+            self.redirecting = True
+            self.request.response.redirect(self.createURL())
         else:
             # Notify the errors.
             self.request.response.addErrorNotification(
                 "There are %d errors in the translations you provided."
                 " Please, correct them before continuing." %
                     len(self.pomsgset_views_with_errors))
+
+        # update the statistis for this po file
+        self.context.updateStatistics()
 
     def lang_selector(self):
         second_lang_code = self.second_lang_code
@@ -580,6 +588,12 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return '%s?%s' % (self.request.getURL(), query_portion)
         else:
             return self.request.getURL()
+
+    def render(self):
+        if self.redirecting:
+            return u''
+        else:
+            return LaunchpadView.render(self)
 
 
 class POExportView(BaseExportView):
