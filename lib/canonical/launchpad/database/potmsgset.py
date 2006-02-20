@@ -273,13 +273,13 @@ class POTMsgSet(SQLBase):
             text_style = windows_style
 
         if mac_style in stripped_text:
-            assert msgid_style is None, (
+            assert text_style is None, (
                 "Broken text (%r), it's mixing different new line marks"
                     % text)
             text_style = mac_style
 
         if unix_style in stripped_text:
-            assert msgid_style is None, (
+            assert text_style is None, (
                 "Broken text (%r), it's mixing different new line marks"
                     % text)
             text_style = unix_style
