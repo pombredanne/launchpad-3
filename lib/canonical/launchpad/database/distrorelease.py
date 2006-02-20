@@ -396,8 +396,22 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     def getAllReleasesByStatus(self, status):
         """See IDistroRelease."""
-        return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
-                                                status=status)
+        queries = ['distrorelease=%s AND status=%s'
+                   % sqlvalues(self.id, status)]
+
+        unstable_states = [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.EXPERIMENTAL,
+            ]
+
+        if self.releasestatus not in unstable_states:
+            # do not consider publication to RELEASE pocket in
+            # CURRENT/SUPPORTED distrorelease. They must not change.
+            queries.append(
+                'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
+
+        return SourcePackagePublishing.select(" AND ".join(queries))
 
     def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
                                    sourcename=None, orderBy=None):
