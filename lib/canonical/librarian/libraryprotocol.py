@@ -3,9 +3,6 @@
 
 __metaclass__ = type
 
-# XXX: Write doctests for this network protocol in the style of page tests.
-#       - Andrew Bennetts, 2005-03-24.
-
 from datetime import datetime
 from pytz import utc
 
