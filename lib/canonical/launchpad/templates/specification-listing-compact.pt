@@ -1,7 +1,7 @@
 <table width="100%">
   <tr>
     <td width="10px">
-      <img src="/++resource++spec" />
+      <img src="/@@/spec" />
     </td>
     <td width="70%">
       <a tal:attributes="href context/fmt:url"
@@ -9,7 +9,7 @@
     </td>
     <td class="lesser">
       <tal:block condition="context/specurl">
-        <img src="/++resource++link" />
+        <img src="/@@/link" />
         <a tal:attributes="href context/specurl">Web Page</a>
       </tal:block>
     </td>
@@ -27,7 +27,7 @@
       <i tal:condition="context/needs_discussion">Needs discussion.</i>
       <i tal:condition="not: context/direction_approved">Needs guidance.</i>
       <tal:block condition="context/assignee">
-        <img src="/++resource++user.gif" />&nbsp;<a
+        <img src="/@@/user.gif" />&nbsp;<a
              tal:attributes="href context/assignee/fmt:url"
              tal:content="context/assignee/browsername">Foo Bar</a>
       </tal:block>

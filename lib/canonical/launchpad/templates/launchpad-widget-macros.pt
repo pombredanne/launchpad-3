@@ -26,7 +26,7 @@
               </div>
                
               <div tal:condition="error">
-                <img src="/++resource++info_icon.gif" />
+                <img src="/@@/info_icon.gif" />
                 <span tal:replace="structure error">
                       An error message</span>
               </div>

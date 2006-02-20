@@ -341,7 +341,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 '(using <kbd>gpg --send-keys KEY</kbd>) and that you '
                 'entered the fingerprint correctly (as produced by <kbd>'
                 'gpg --fingerprint YOU</kdb>). Try later or '
-                '<a href="%s/+editgpgkeys">cancel your request</a>.'
+                '<a href="%s/+editpgpkeys">cancel your request</a>.'
                 % (key, person_url))
             return None
 
@@ -351,7 +351,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 'The key %s cannot be validated because it has been '
                 'publicly revoked. You will need to generate a new key '
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                'process to <a href="%s/+editgpgkeys">find and import</a> '
+                'process to <a href="%s/+editpgpkeys">find and import</a> '
                 'the new key.' % (key.keyid, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
@@ -362,7 +362,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 'The key %s cannot be validated because it has expired. '
                 'You will need to generate a new key '
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                'process to <a href="%s/+editgpgkeys">find and import</a> '
+                'process to <a href="%s/+editpgpkeys">find and import</a> '
                 'the new key.' % (key.keyid, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
@@ -385,7 +385,7 @@ class ValidateEmailView(BaseLoginTokenView):
             lpkey.active = True
             lpkey.can_encrypt = can_encrypt
             self.success('The key %s was successfully revalidated. '
-                         '<a href="%s/+editgpgkeys">See more Information</a>'
+                         '<a href="%s/+editpgpkeys">See more Information</a>'
                          % (lpkey.displayname, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
