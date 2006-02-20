@@ -770,7 +770,7 @@ class BuilderGroup:
                     continue
                 if slavestatus[0] == BuilderStatus.IDLE:
                     return builder
-        return
+        return None
 
 
 class BuilddMaster:
@@ -885,16 +885,13 @@ class BuilddMaster:
         sources_published = distrorelease.getAllReleasesByStatus(
             dbschema.PackagePublishingStatus.PUBLISHED
             )
-        sources_pending = distrorelease.getAllReleasesByStatus(
-            dbschema.PackagePublishingStatus.PENDING
-            )
-        sources = sources_published.union(sources_pending)
 
         self._logger.info("Scanning publishing records for %s/%s...",
                           distrorelease.distribution.title,
                           distrorelease.title)
 
-        self._logger.info("Found %d Sources to build.", sources.count())
+        self._logger.info("Found %d Sources to build.",
+                          sources_published.count())
 
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
@@ -912,7 +909,7 @@ class BuilddMaster:
             return
 
         # 3. For each of the sourcepackagereleases, find its builds...
-        for pubrec in sources:
+        for pubrec in sources_published:
             header = ("Build Record %s-%s for '%s' " %
                       (pubrec.sourcepackagerelease.name,
                        pubrec.sourcepackagerelease.version,
