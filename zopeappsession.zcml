@@ -1,5 +1,9 @@
-<configure xmlns="http://namespaces.zope.org/zope"
-           package="zope.app.session">
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="zope"
+    package="zope.app.session"
+    >
 
   <!-- The following is a direct copy of zope/app/session/configure.zcml
        but with the parts that directly depend on the ZODB taken out.
