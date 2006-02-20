@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
 
 import _pythonpath
 
