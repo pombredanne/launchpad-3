@@ -126,6 +126,9 @@ class FileUploadProtocol(basic.LineReceiver):
                 raise ProtocolViolation(
                     "File-Content-ID and File-Alias-ID must both be specified"
                     )
+
+            if self.newFile.databaseName is None:
+                raise ProtocolViolation("Database-Name header is required")
             
             # If that's ok, we're ready to receive the file.
             self.state = 'file'
