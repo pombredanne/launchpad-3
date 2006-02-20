@@ -130,8 +130,8 @@ class BugContextMenu(ContextMenu):
         enabled = (
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
-        text = 'Target Fix to Releases'
-        return Link('+target', text, icon='milestone', enabled=enabled)
+        text = 'Backport fix to releases'
+        return Link('+backport', text, icon='bug', enabled=enabled)
 
 
 class BugView:

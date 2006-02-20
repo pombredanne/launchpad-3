@@ -22,7 +22,7 @@ __all__ = [
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
-    'BugTaskReleaseTargetingView',
+    'BugTaskBackportTargetingView',
     'get_sortorder_from_request',
     'BugTargetTextView']
 
@@ -271,7 +271,7 @@ class BugTaskView:
             IDistroReleaseBugTask.providedBy(self.context))
 
 
-class BugTaskReleaseTargetingView:
+class BugTaskBackportTargetingView:
     """View class for targeting bugs to IDistroReleases."""
 
     @property
@@ -311,6 +311,11 @@ class BugTaskReleaseTargetingView:
         release_target_details = []
         sourcepackagename = bugtask.sourcepackagename
         for possible_target in distribution.releases:
+            # Exclude the current release from this list, because it doesn't
+            # make sense to "backport a fix" to the current release.
+            if possible_target == distribution.currentrelease:
+                continue
+
             if sourcepackagename is not None:
                 sourcepackage = possible_target.getSourcePackage(
                     sourcepackagename)
