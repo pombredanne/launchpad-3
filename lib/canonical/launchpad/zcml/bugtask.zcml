@@ -276,7 +276,7 @@
         keyword_arguments="bugtracker remotebug"
         permission="launchpad.AnyPerson"
         template="../templates/bug-watch-add.pt"
-        lp:url="malone/bugs/$Bugs.id/watches/+new" />
+        lp:url="malone/bugs/$Bugs.id/+addwatch" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"

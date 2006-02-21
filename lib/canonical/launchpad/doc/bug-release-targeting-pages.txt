@@ -37,7 +37,7 @@ that the data is as we expect it to be.
   >>> from canonical.launchpad.interfaces import (
   ...     IDistroReleaseSet, ISourcePackageNameSet, IPersonSet)
   >>> from canonical.lp import dbschema
-  >>> from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
+  >>> from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 
   >>> distroreleaseset = getUtility(IDistroReleaseSet)
   >>> spnameset = getUtility(ISourcePackageNameSet)
