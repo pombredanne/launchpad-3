@@ -17,7 +17,6 @@ from email import message_from_string
 from optparse import OptionParser
 from zope.component import getUtility
 
-from canonical.encoding import guess
 from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -33,7 +32,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.launchpad.mail import sendmail
 
-from canonical.encoding import ascii_smash
+from canonical.encoding import ascii_smash, guess as guess_encoding
 
 from canonical.archivepublisher.template_messages import (
     announce_template, rejection_template)
@@ -499,7 +498,10 @@ class QueueActionReject(QueueAction):
                         queue_item.changesfile)
 
                     queue_item.changesfile.open()
-                    changescontent = queue_item.changesfile.read()
+                    # XXX cprov 20060221: guess_encoding breaks the
+                    # GPG signature.
+                    changescontent = guess_encoding(
+                        queue_item.changesfile.read())
                     queue_item.changesfile.close()
 
                     replacements = {
@@ -512,7 +514,7 @@ class QueueActionReject(QueueAction):
 
                     # append an email describing this action.
                     message = rejection_template % replacements
-                    self.send_email(message.decode('ascii'))
+                    self.send_email(message)
 
         self.printRule()
         self.printBottom()
@@ -552,7 +554,10 @@ class QueueActionAccept(QueueAction):
                         recipients.append(self.announcelist)
 
                     queue_item.changesfile.open()
-                    changescontent = queue_item.changesfile.read()
+                    # XXX cprov 20060221: guess_encoding breaks the
+                    # GPG signature.
+                    changescontent = guess_encoding(
+                        queue_item.changesfile.read())
                     queue_item.changesfile.close()
 
                     replacements = {
@@ -567,7 +572,7 @@ class QueueActionAccept(QueueAction):
 
                     # append an email describing this action.
                     message = announce_template % replacements
-                    self.send_email(message.decode('ascii'))
+                    self.send_email(message)
 
         self.printRule()
         self.printBottom()
