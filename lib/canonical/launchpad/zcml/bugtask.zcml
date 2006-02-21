@@ -366,7 +366,7 @@
     <browser:page
         name="+backport"
         for="canonical.launchpad.interfaces.IDistroBugTask"
-        class="canonical.launchpad.browser.BugTaskBackportFixView"
+        class="canonical.launchpad.browser.BugTaskBackportView"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-backport-fixing.pt"
         />
@@ -410,7 +410,7 @@
     <browser:page
       name="+backport"
       for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
-      class="canonical.launchpad.browser.BugTaskBackportFixView"
+      class="canonical.launchpad.browser.BugTaskBackportView"
       permission="launchpad.AnyPerson"
       template="../templates/bugtask-backport-fixing.pt"
       />

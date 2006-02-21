@@ -1,19 +1,18 @@
-From the distrorelease task page, you can access the release targeting
-screen to select specific releases to which a bugfix should be
-targeted.
+From the distrorelease task page, you can access the backport fix screen
+to select specific releases to which a bugfix should be backported.
 
   >>> print http(r"""
-  ... GET /distros/debian/woody/+source/mozilla-firefox/+bug/1/+target HTTP/1.1
+  ... GET /distros/debian/woody/+source/mozilla-firefox/+bug/1/+backport HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
 
-To target to a specific release, select the checkbox beside that
+To backport to a specific release, select the checkbox beside that
 release.
 
   >>> print http(r"""
-  ... POST /distros/debian/woody/+source/mozilla-firefox/+bug/1/+target HTTP/1.1
+  ... POST /distros/debian/woody/+source/mozilla-firefox/+bug/1/+backport HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 70
   ... Content-Type: application/x-www-form-urlencoded
@@ -22,8 +21,8 @@ release.
   HTTP/1.1 303 See Other
   ...
 
-You are brought back to the task page. The newly targeted bug task is
-shown in the "also reported in" portlet.
+You are brought back to the task page. The new bug task is shown in the
+"also reported in" portlet.
 
   >>> print http(r"""
   ... GET /distros/debian/woody/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
