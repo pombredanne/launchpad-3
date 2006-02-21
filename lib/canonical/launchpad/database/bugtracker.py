@@ -30,7 +30,9 @@ class BugTracker(SQLBase):
     bugzilla.gnome.org are each distinct BugTracker's.
     """
     implements(IBugTracker)
+
     _table = 'BugTracker'
+
     bugtrackertype = EnumCol(dbName='bugtrackertype',
         schema=BugTrackerType, notNull=True)
     name = StringCol(notNull=True, unique=True)
@@ -105,7 +107,7 @@ class BugTrackerSet:
             return item
 
     def __iter__(self):
-        for row in self.table.select():
+        for row in self.table.select(orderBy="title"):
             yield row
 
     def normalise_baseurl(self, baseurl):

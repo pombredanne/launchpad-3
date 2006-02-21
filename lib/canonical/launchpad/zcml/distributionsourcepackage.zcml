@@ -69,10 +69,6 @@
       template="../templates/distributionsourcepackage-portlet-releases.pt"
       />
     <browser:page
-      name="+portlet-bugs"
-      template="../templates/distributionsourcepackage-portlet-bugs.pt"
-      />
-    <browser:page
       name="+portlet-tickets"
       template="../templates/distributionsourcepackage-portlet-tickets.pt"
       />
