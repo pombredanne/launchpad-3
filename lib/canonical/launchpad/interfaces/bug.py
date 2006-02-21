@@ -10,12 +10,10 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
-    'IBugTarget',
-    'BugDistroReleaseTargetDetails']
+    ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
@@ -143,59 +141,6 @@ class IBug(IMessageTarget):
         """
 
 
-class IBugTarget(Interface):
-    """An entity on which a bug can be reported.
-
-    Examples include an IDistribution, an IDistroRelease and an
-    IProduct.
-    """
-    def searchTasks(search_params):
-        """Search the IBugTasks reported on this entity.
-
-        :search_params: a BugTaskSearchParams object
-
-        Return an iterable of matching results.
-
-        Note: milestone is currently ignored for all IBugTargets
-        except IProduct.
-        """
-
-    def createBug(owner, title, comment, private=False):
-        """Create a new bug on this target.
-
-        :title: The title of the bug, as a string.
-        :comment: The initial comment/default description.
-        :private: Is this a private bug? A boolean value.
-        """
-
-    bugtasks = Attribute("A list of BugTasks for this target.")
-    open_bugtasks = Attribute("A list of Open BugTasks for this target.")
-    inprogress_bugtasks = Attribute("A list of In Progress BugTasks for this target.")
-    critical_bugtasks = Attribute("A list of Critical BugTasks for this target.")
-    unconfirmed_bugtasks = Attribute("A list of Unconfirmed BugTasks for this target.")
-    unassigned_bugtasks = Attribute("A list of Unassigned BugTasks for this target.")
-
-
-class BugDistroReleaseTargetDetails:
-    """The details of a bug targeted to a specific IDistroRelease.
-
-    The following attributes are provided:
-
-    :release: The IDistroRelease.
-    :istargeted: Is there a fix targeted to this release?
-    :sourcepackage: The sourcepackage to which the fix would be targeted.
-    :assignee: An IPerson, or None if no assignee.
-    :status: A BugTaskStatus dbschema item, or None, if release is not targeted.
-    """
-    def __init__(self, release, istargeted=False, sourcepackage=None,
-                 assignee=None, status=None):
-        self.release = release
-        self.istargeted = istargeted
-        self.sourcepackage = sourcepackage
-        self.assignee = assignee
-        self.status = status
-
-
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
 
@@ -249,8 +194,11 @@ class IBugAddForm(IBug):
             vocabulary="BinaryAndSourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
-            description=_("""Ubuntu, Debian, Gentoo, etc."""),
-            vocabulary="Distribution")
+            description=_(
+                "Ubuntu, Debian, Gentoo, etc. You can file bugs only on "
+                "distrubutions using Malone as their primary bug "
+                "tracker."),
+            vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are

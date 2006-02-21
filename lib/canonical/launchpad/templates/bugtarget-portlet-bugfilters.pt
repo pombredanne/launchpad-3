@@ -43,7 +43,7 @@
     <a tal:attributes="href view/getSearchFilterURL">
       All bugs ever reported
     </a>
-    (<span tal:content="python:len(context.bugtasks)">42</span>)
+    (<span tal:content="context/all_bugtasks/count">42</span>)
   </li>
 </ul>
 

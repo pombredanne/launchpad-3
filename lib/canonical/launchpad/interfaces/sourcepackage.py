@@ -11,7 +11,8 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.interfaces import IBugTarget, ITicketTarget
+from canonical.launchpad.interfaces.tickettarget import ITicketTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 
 _ = MessageIDFactory('launchpad')
 
@@ -121,26 +122,8 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         and record that it was done by the owner.
         """
 
-    def bugsCounter():
-        """A bug counter widget for sourcepackage. This finds the number of
-        bugs for each bug severity, as well as the total number of bugs
-        associated with this sourcepackagename in this distribution."""
-
-    def getVersion(version):
-        """Returns the SourcePackageRelease that had the name of this
-        SourcePackage and the given version, and was published in this
-        distribution.
-
-        Note that it will look across the entire distribution, not just in
-        the current distrorelease. In Ubuntu and RedHat, and similar
-        distributions, a sourcepackagerelease name+version is UNIQUE across
-        all distroreleases. This may turn out not to be true in other types
-        of distribution, such as Gentoo.
-
-        The result is a DistributionSourcePackageRelease.
-        """
-
     shouldimport = Attribute("""Whether we should import this or not.
         By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
         The attribute is True or False.""")
+

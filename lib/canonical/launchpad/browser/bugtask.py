@@ -14,7 +14,7 @@ __all__ = [
     'BugTaskSearchListingView',
     'BugTargetView',
     'BugTaskView',
-    'BugTaskReleaseTargetingView',
+    'BugTaskBackportView',
     'get_sortorder_from_request',
     'BugTargetTextView']
 
@@ -37,18 +37,18 @@ from canonical.launchpad.webapp import (
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
-    IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
-    IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
+    ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch, IBugSet,
+    IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
+    IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
+from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -264,7 +264,7 @@ class BugTaskView:
             IDistroReleaseBugTask.providedBy(self.context))
 
 
-class BugTaskReleaseTargetingView:
+class BugTaskBackportView:
     """View class for targeting bugs to IDistroReleases."""
 
     @property
@@ -304,6 +304,11 @@ class BugTaskReleaseTargetingView:
         release_target_details = []
         sourcepackagename = bugtask.sourcepackagename
         for possible_target in distribution.releases:
+            # Exclude the current release from this list, because it doesn't
+            # make sense to "backport a fix" to the current release.
+            if possible_target == distribution.currentrelease:
+                continue
+
             if sourcepackagename is not None:
                 sourcepackage = possible_target.getSourcePackage(
                     sourcepackagename)
@@ -325,7 +330,7 @@ class BugTaskReleaseTargetingView:
 
         return release_target_details
 
-    def createTargetedTasks(self):
+    def createBackportTasks(self):
         """Create distrorelease-targeted tasks for this bug."""
         form = self.request.form
 
@@ -601,7 +606,10 @@ class BugTaskSearchListingView(LaunchpadView):
         #     they need to. -- Bjorn Tillenius, 2005-09-29
         if self._upstreamContext():
             self.search_form_schema = IUpstreamBugTaskSearch
-        elif self._distributionContext() or self._distroReleaseContext():
+        elif (self._distributionContext()
+              or self._distroReleaseContext()
+              or self._sourcePackageContext()
+              or self._distroSourcePackageContext()):
             self.search_form_schema = IDistroBugTaskSearch
         elif self._personContext():
             self.search_form_schema = IPersonBugTaskSearch
@@ -723,8 +731,9 @@ class BugTaskSearchListingView(LaunchpadView):
             assert self._upstreamContext(), (
                 "Mass-targeting of bugtasks to milestones is currently only "
                 "supported for products")
-            assert self.user is not None and self.user.inTeam(self.context.owner), (
-                "You must be logged in to mass-assign bugtasks to milestones")
+            assert (self.user is not None and
+                    self.user.inTeam(self.context.owner)), \
+                    ("You must be logged in to mass-assign bugs to milestones")
 
         form_params = getWidgetsData(self, self.search_form_schema)
         milestone_assignment = form_params.get('milestone_assignment')
@@ -889,6 +898,19 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return IDistroRelease(self.context, None)
 
+    def _sourcePackageContext(self):
+        """Is this page being viewed in a [distrorelease] sourcepackage context?
+
+        Return the ISourcePackage if yes, otherwise return None.
+        """
+        return ISourcePackage(self.context, None)
+
+    def _distroSourcePackageContext(self):
+        """Is this page being viewed in a distribution sourcepackage context?
+
+        Return the IDistributionSourcePackage if yes, otherwise return None.
+        """
+        return IDistributionSourcePackage(self.context, None)
 
 class BugTargetView:
     """Used to grab bugs for a bug target; used by the latest bugs portlet"""

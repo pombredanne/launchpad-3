@@ -108,9 +108,6 @@ class DistributionSourcePackageView:
         self.context = context
         self.request = request
 
-    def latest_bugtasks(self):
-        return self.context.bugtasks(quantity=5)
-
     def latest_tickets(self):
         return self.context.tickets(quantity=5)
 

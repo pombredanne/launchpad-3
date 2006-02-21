@@ -17,6 +17,9 @@ class BugTargetBase:
 
     All IBugTargets should inherit from this class.
     """
+    def searchTasks(self, query):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        raise NotImplementedError
 
     @property
     def open_bugtasks(self):
@@ -63,3 +66,11 @@ class BugTargetBase:
             omit_dupes=True)
 
         return self.searchTasks(unassigned_tasks_query)
+
+    @property
+    def all_bugtasks(self):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        all_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
+
+        return self.searchTasks(all_tasks_query)

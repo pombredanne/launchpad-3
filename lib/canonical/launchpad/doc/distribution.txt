@@ -274,3 +274,24 @@ they're accessible and actually contain the whatever they should.
     ...  for mirror in ubuntu.enabled_mirrors]
     [(u'random-mirror', u'Afghanistan'), (u'another-random-mirror', u'British Indian Ocean Territory')]
 
+Launchpad Usage
+---------------
+
+A distribution can specify if it uses Malone or Rosetta officially.
+Ubuntu uses both Malone and Rosetta:
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ubuntu.official_malone
+    True
+    >>> ubuntu.official_rosetta
+    True
+
+While Debian uses neither:
+
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian.official_malone
+    False
+    >>> debian.official_rosetta
+    False
+
