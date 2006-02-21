@@ -7,7 +7,7 @@ View bugs on Mozilla Firefox as the no-privs user:
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h1>...Mozilla Firefox</h1>
+      Mozilla Firefox
   ...
 
 Note that the no-privs user doesn't have the permissions to see bug #7.

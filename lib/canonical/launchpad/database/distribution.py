@@ -10,13 +10,21 @@ from sqlobject import (
     RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+
 from canonical.launchpad.components.bugtarget import BugTargetBase
+
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.distrorelease import DistroRelease
+from canonical.launchpad.database.publishedpackage import PublishedPackage
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (
@@ -25,19 +33,13 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishing)
-from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.librarian import LibraryFileAlias
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus,
@@ -572,4 +574,5 @@ class DistributionSet:
             domainname=domainname,
             members=members,
             owner=owner)
+
 

@@ -596,7 +596,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishing', 'DistroArchRelease'],
             distinct=True)
-        if len(bprs) == 0:
+        if bprs.count() == 0:
             return
 
         # find or create the cache entry
