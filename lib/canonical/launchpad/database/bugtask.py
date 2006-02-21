@@ -31,7 +31,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, IRemoteBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
@@ -145,12 +145,18 @@ class BugTask(SQLBase, BugTaskMixin):
         if self.product is not None:
             # This is an upstream task.
             mark_task(self, IUpstreamBugTask)
+            root_target = self.product
         elif self.distrorelease is not None:
             # This is a distro release task.
             mark_task(self, IDistroReleaseBugTask)
+            root_target = self.distrorelease.distribution
         else:
             # This is a distro task.
             mark_task(self, IDistroBugTask)
+            root_target = self.distribution
+
+        if not root_target.official_malone:
+            mark_task(self, IRemoteBugTask)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
         # We need to overwrite this method to make sure whenever we change a

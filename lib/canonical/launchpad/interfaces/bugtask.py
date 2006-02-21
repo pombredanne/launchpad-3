@@ -16,6 +16,7 @@ __all__ = [
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
+    'IRemoteBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
@@ -316,6 +317,17 @@ class IDistroReleaseBugTask(IBugTask):
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
+
+
+class IRemoteBugTask(IBugTask):
+    """A bug task for products/distributions not using Malone.
+
+    The status of the bug will be updated from a remote bug watch.
+    """
+    status = Choice(
+        title=_('Status'), vocabulary='BugTaskStatus', required=False)
+    severity = Choice(
+        title=_('Severity'), vocabulary='BugTaskSeverity', required=False)
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
