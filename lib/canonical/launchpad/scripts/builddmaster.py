@@ -898,6 +898,8 @@ class BuilddMaster:
             if wanted_arch.id in initialized_arch_ids:
                 archs.add(wanted_arch)
 
+        self._logger.info("Supported %s"
+                          % " ".join([a.architecturetag for a in archs]))
 
         # XXX cprov 20050831
         # Avoid entering in the huge loop if we don't find at least

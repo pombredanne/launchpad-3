@@ -501,28 +501,9 @@ is able to build stuff properly for that one
   ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Release'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Backports'
   Unable to setup builder for ubuntu/warty/i386.
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Backports'
   WARNING:root.builders.x86:No builders are available
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Release'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Backports'
   Unable to setup builder for debian/woody/i386.
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Release'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Backports'
   Unable to setup builder for ubuntu/breezy-autotest/i386.
 
 

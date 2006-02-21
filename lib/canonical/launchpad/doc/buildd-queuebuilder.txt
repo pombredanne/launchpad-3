@@ -68,25 +68,6 @@ build jobs will be created.
   ...     distroreleases.add(dar.distrorelease)
   ...     bm.addDistroArchRelease(dar)
   ...
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Backports'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Release'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Backports'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Backports'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Release'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Backports'
-
 
 Only Ubuntu/Warty/i386 and Debian/Woody/i386 have an available CHROOT.
 
@@ -120,8 +101,13 @@ added by the current sample data and so on)
   >>> srcfile.libraryfile.filename, srcfile.sourcepackagerelease.name
   (u'netapplet-1.0.0.tar.gz', u'test-buildd')
 
+We need to publish the source in order to get it visible to the
+createMissingBuilds() method. Additionally if the target is an already
+released distrorelease it can only be visible if published in in
+special pocket (UPDATES, SECURITY or BACKPORTS)
+
   >>> published = PackagePublishingStatus.PUBLISHED
-  >>> release_pocket = PackagePublishingPocket.RELEASE
+  >>> release_pocket = PackagePublishingPocket.UPDATES
   >>> p = SecureSourcePackagePublishingHistory(
   ...                                    sourcepackagerelease=srcpkgrel.id,
   ...                                    distroreleaseID=warty.id,
@@ -130,6 +116,7 @@ added by the current sample data and so on)
   ...                                    component=srcpkgrel.component,
   ...                                    section=srcpkgrel.section,
   ...                                    datecreated=UTC_NOW)
+
 
 Verify how many Build entries we have from sampledata:
 
