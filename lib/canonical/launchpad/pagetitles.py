@@ -52,9 +52,9 @@ class BugTaskPageTitle:
             context.bug.id, context.targetname, context.bug.title)
 
 
-class BugTaskTargetingTitle:
+class BugTaskBackportingTitle:
     def __call__(self, context, view):
-        return "Bug #%d in %s - Target fix to releases" % (
+        return "Bug #%d in %s - Backport fix to releases" % (
             context.bug.id, context.targetname)
 
 
@@ -176,11 +176,11 @@ def bugs_assigned(context, view):
 
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
+bugtask_backport_fixing = BugTaskBackportingTitle()
+
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
-
-bugtask_release_targeting = BugTaskTargetingTitle()
 
 bugtask_requestfix = LaunchbagBugID('Bug #%d - Request fix in a product')
 
