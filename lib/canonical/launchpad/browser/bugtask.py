@@ -22,7 +22,7 @@ __all__ = [
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
-    'BugTaskReleaseTargetingView',
+    'BugTaskBackportView',
     'get_sortorder_from_request',
     'BugTargetTextView']
 
@@ -55,7 +55,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
+from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -271,7 +271,7 @@ class BugTaskView:
             IDistroReleaseBugTask.providedBy(self.context))
 
 
-class BugTaskReleaseTargetingView:
+class BugTaskBackportView:
     """View class for targeting bugs to IDistroReleases."""
 
     @property
@@ -311,6 +311,11 @@ class BugTaskReleaseTargetingView:
         release_target_details = []
         sourcepackagename = bugtask.sourcepackagename
         for possible_target in distribution.releases:
+            # Exclude the current release from this list, because it doesn't
+            # make sense to "backport a fix" to the current release.
+            if possible_target == distribution.currentrelease:
+                continue
+
             if sourcepackagename is not None:
                 sourcepackage = possible_target.getSourcePackage(
                     sourcepackagename)
@@ -332,7 +337,7 @@ class BugTaskReleaseTargetingView:
 
         return release_target_details
 
-    def createTargetedTasks(self):
+    def createBackportTasks(self):
         """Create distrorelease-targeted tasks for this bug."""
         form = self.request.form
 

@@ -88,7 +88,7 @@ def export_shippingrun(shippingrun):
                    ('ship quantity Mac', 'quantityppcapproved'))
 
     csv_file = StringIO()
-    csv_writer = csv.writer(csv_file)
+    csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
     row = [label for label, attr in file_fields]
     row.extend(['token', 'Ship via', 'display'])
     csv_writer.writerow(row)
