@@ -11,7 +11,8 @@ __all__ = [
 from zope.interface import Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IBugTarget, ITicketTarget
+from canonical.launchpad.interfaces.tickettarget import ITicketTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 
 
 class ISourcePackage(IBugTarget, ITicketTarget):

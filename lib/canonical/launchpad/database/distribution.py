@@ -7,7 +7,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
+    BoolCol, ForeignKey, MultipleJoin, RelatedJoin, StringCol,
+    SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
@@ -83,12 +84,15 @@ class Distribution(SQLBase, BugTargetBase):
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
     uploaders = MultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
     source_package_caches = MultipleJoin('DistributionSourcePackageCache',
         joinColumn='distribution', orderBy='name')
+    official_malone = BoolCol(dbName='official_malone', notNull=True,
+        default=False)
+    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
+        default=False)
 
     @property
     def enabled_official_mirrors(self):

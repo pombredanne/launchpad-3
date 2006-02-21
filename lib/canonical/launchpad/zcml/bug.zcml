@@ -164,12 +164,12 @@
         arguments=""
         keyword_arguments="distribution packagename title comment private"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-add.pt"
+        template="../templates/malone-filebug.pt"
         lp:url="malone/bugs/+product">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="30" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"

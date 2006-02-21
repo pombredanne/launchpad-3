@@ -173,7 +173,7 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="30" />
     </browser:editform>
 
     <browser:editform
@@ -262,7 +262,7 @@
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"
-            displayWidth="60" />
+            displayWidth="30" />
     </browser:addform>
 
     <browser:addform
@@ -276,25 +276,29 @@
         keyword_arguments="bugtracker remotebug"
         permission="launchpad.AnyPerson"
         template="../templates/bug-watch-add.pt"
-        lp:url="malone/bugs/$Bugs.id/watches/+new" />
+        lp:url="malone/bugs/$Bugs.id/+addwatch" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         name="+index" />
 
-    <browser:addform
+    <browser:page
         name="+upstreamtask"
-        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request fix in a product"
-        fields="product"
-        arguments=""
-        keyword_arguments="product"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        attribute="render_upstreamtask"
         lp:url="malone/bugs/$Bug.id/+upstreamtask">
-    </browser:addform>
+    </browser:page>
+
+    <browser:page
+        name="+distrotask"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
+        permission="launchpad.AnyPerson"
+        attribute="render_distrotask"
+        lp:url="malone/bugs/$Bug.id/+distrotask"
+        />
 
     <browser:generalform
         name="+editstatus-page"
@@ -326,19 +330,6 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroBugTask"
         name="+index" />
-
-    <browser:addform
-        name="+distrotask"
-        schema="canonical.launchpad.interfaces.IDistroBugTask"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request fix in a distribution"
-        fields="distribution sourcepackagename"
-        keyword_arguments="distribution sourcepackagename"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-distrofix-addform.pt"
-        lp:url="malone/bugs/$Bug.id/+distrotask">
-    </browser:addform>
 
     <browser:editform
         name="+editstatus-page"
@@ -373,11 +364,11 @@
     </browser:schemadisplay>
 
     <browser:page
-        name="+target"
+        name="+backport"
         for="canonical.launchpad.interfaces.IDistroBugTask"
-        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+        class="canonical.launchpad.browser.BugTaskBackportView"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-release-targeting.pt"
+        template="../templates/bugtask-backport-fixing.pt"
         />
 
     <browser:defaultView
@@ -417,11 +408,11 @@
     </browser:schemadisplay>
 
     <browser:page
-      name="+target"
+      name="+backport"
       for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
-      class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+      class="canonical.launchpad.browser.BugTaskBackportView"
       permission="launchpad.AnyPerson"
-      template="../templates/bugtask-release-targeting.pt"
+      template="../templates/bugtask-backport-fixing.pt"
       />
 
     <browser:page
