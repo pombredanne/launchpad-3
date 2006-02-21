@@ -963,14 +963,10 @@ class DistributionUsingMaloneVocabulary:
             yield self.getTerm(distribution)
 
     def __len__(self):
-        return len(list(iter(self)))
+        return Distribution.selectBy(official_malone=True).count()
 
     def __contains__(self, obj):
-        if not IDistribution.providedBy(obj):
-            return False
-        found_dist = Distribution.selectOne(
-            "id=%s AND official_malone is True" % sqlvalues(obj.id))
-        return found_dist is not None
+        return IDistribution.providedBy(obj) and obj.official_malone
 
     def getQuery(self):
         return None

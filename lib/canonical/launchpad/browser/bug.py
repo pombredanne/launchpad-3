@@ -27,7 +27,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
-    NotFoundError)
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -306,7 +306,7 @@ class BugAlsoReportInView(GeneralFormView):
             elif distribution is not None:
                 target = distribution
             else:
-                raise AssertionError(
+                raise UnexpectedFormData(
                     'Neither product nor distribution was provided')
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch

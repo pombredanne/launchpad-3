@@ -38,7 +38,7 @@ happen.
 If we POST the form without entering any information, it will complain
 that product is required:
 
-    >>> request = LaunchpadTestRequest(form=dict(FORM_SUBMIT=''))
+    >>> request = LaunchpadTestRequest(form={'FORM_SUBMIT': ''})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
@@ -46,8 +46,8 @@ that product is required:
     >>> add_task_view.errors
     MissingInputError: ('product', 'Product', 'the field is required')
 
-In order to order to show that all the events get fired off, let's
-create an event listener and register it:
+In order to show that all the events get fired off, let's create an
+event listener and register it:
 
     >>> from zope.interface import Interface
     >>> from canonical.launchpad.ftests.event import TestEventListener
@@ -69,7 +69,7 @@ be created:
     SQLObjectCreatedEvent: <BugTask at ...>
     ''
 
-The Evolution bug task was added to the bug:
+The Thunderbird bug task was added to the bug:
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
@@ -81,7 +81,8 @@ tracker, but omit the remote bug number, an error message is given:
 
     >>> request = LaunchpadTestRequest(
     ...     form={'FORM_SUBMIT': '', 'field.product': 'evolution',
-    ...           'field.bugtracker-empty-marker': 1, 'field.bugtracker': 2})
+    ...           'field.bugtracker-empty-marker': '1',
+    ...           'field.bugtracker': '2'})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
