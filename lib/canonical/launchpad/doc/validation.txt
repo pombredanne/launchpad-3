@@ -7,24 +7,28 @@ The valid_distrotask() function is used to guarantee that distribution
 bugtasks are unique per bug. Let's get the objects we'll need to demonstrate
 this
 
->>> from canonical.launchpad.interfaces import (
-...     IBugSet, IDistributionSet, ISourcePackageNameSet, valid_distrotask) 
->>> bug_two = getUtility(IBugSet).get(2)
->>> debian = getUtility(IDistributionSet).getByName('debian')
->>> mozilla_firefox = getUtility(
-...     ISourcePackageNameSet).queryByName('mozilla-firefox')
->>> evolution = getUtility(ISourcePackageNameSet).queryByName('evolution') 
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IDistributionSet, ISourcePackageNameSet,
+    ...     valid_distrotask) 
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> mozilla_firefox = getUtility(
+    ...     ISourcePackageNameSet).queryByName('mozilla-firefox')
+    >>> evolution = getUtility(ISourcePackageNameSet).queryByName('evolution') 
 
 We aren't allowed to add a distrotask with the same sourcepackage
->>> valid_distrotask(bug_two, debian, mozilla_firefox)
-Traceback (most recent call last):
-  ...
-WidgetsError: LaunchpadValidationError: ... 
+
+    >>> valid_distrotask(bug_two, debian, mozilla_firefox)
+    Traceback (most recent call last):
+      ...
+    WidgetsError: LaunchpadValidationError: ... 
 
 But it's legal to have two bugtasks with different sourcepackages
->>> valid_distrotask(bug_two, debian, evolution) 
+
+    >>> valid_distrotask(bug_two, debian, evolution) 
 
 As the validator check for the uniqueness of a bugtask, we're allowed to add a
 distrotask without a sourcepackage.
->>> valid_distrotask(bug_two, debian, None)
+
+    >>> valid_distrotask(bug_two, debian, None)
 

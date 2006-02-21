@@ -216,7 +216,7 @@ class BugAlsoReportInView(SQLObjectAddView):
     """View class for reporting a bug in other contexts."""
 
     def __init__(self, context, request):
-        super(BugAlsoReportInView, self).__init__(context, request)
+        SQLObjectAddView.__init__(self, context, request)
         self.top_of_page_errors = []
 
     def create(self, product=None, distribution=None, sourcepackagename=None):
