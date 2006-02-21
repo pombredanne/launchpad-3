@@ -37,13 +37,6 @@
       <span tal:replace="context/parentrelease/name" /></a> <br />
     </span> 
 
-    <span tal:condition="context/nominatedarchindep" tal:omit-tag>
-      <b>Nominated Independent Architecture:</b><br />
-      <img src="/++resource++architecture">
-      <a tal:attributes="href context/nominatedarchindep/fmt:url"
-         tal:content="context/nominatedarchindep/architecturetag" /> <br />
-    </span> 
-
     <span tal:condition="context/architectures" tal:omit-tag>
       <b>Architectures:</b><br />
         <ul>
