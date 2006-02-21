@@ -9,11 +9,11 @@
   ...
       <title>All packages in Ubuntu Linux</title>
   ...
-      <strong>1</strong>
-      &rarr;
-      <strong>5</strong>
-      of
-      5 results
+          <strong>1</strong>
+          &rarr;
+          <strong>5</strong>
+          of
+          5 results
   ...
         <a href="...">alsa-utils</a>
   ...
