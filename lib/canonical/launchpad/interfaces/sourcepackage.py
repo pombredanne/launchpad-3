@@ -11,7 +11,8 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.interfaces import IBugTarget, ITicketTarget
+from canonical.launchpad.interfaces.tickettarget import ITicketTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 
 _ = MessageIDFactory('launchpad')
 
