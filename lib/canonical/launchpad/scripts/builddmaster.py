@@ -947,7 +947,8 @@ class BuilddMaster:
                     distroarchrelease=distrorelease.nominatedarchindep,
                     processor=processor,
                     pocket=pubrec.pocket)
-                self._logger.debug(header + "CREATING ALL")
+                self._logger.debug(header + "CREATING ALL (%s)"
+                                   % pubrec.pocket.name)
                 continue
 
             # the sourcepackage release builds in a specific list of

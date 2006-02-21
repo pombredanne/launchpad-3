@@ -60,7 +60,7 @@ Thank you for your contribution to %(DISTRO)s.
 """
 
 announce_template="""From: %(MAINTAINERFROM)s
-To: %(RECIPIENT)s
+To: %(ANNOUNCE)s
 Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
 
 Accepted:
