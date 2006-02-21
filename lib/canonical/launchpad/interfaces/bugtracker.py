@@ -70,6 +70,14 @@ class IBugTracker(Interface):
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""
 
+    def getBugWatchesNeedingUpdate(hours_since_last_check):
+        """Get the bug watches needing to be updated.
+
+        All bug watches not being updated for the last
+        :hours_since_last_check: hours are considered needing to be
+        updated.
+        """
+
 
 class IBugTrackerSet(Interface):
     """A set of IBugTracker's.

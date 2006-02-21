@@ -98,8 +98,6 @@ class Product(SQLBase, BugTargetBase):
                 revision=0)
         return self.calendar
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='product',
-        orderBy='id')
     branches = MultipleJoin('Branch', joinColumn='product',
         orderBy='id')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product',
@@ -295,33 +293,6 @@ class Product(SQLBase, BugTargetBase):
             distinct=True
             )
         return distros
-
-    def bugsummary(self):
-        """Return a matrix of the number of bugs for each status and severity.
-        """
-        # XXX: This needs a comment that gives an example of the structure
-        #      within a typical dict that is returned.
-        #      The code is hard to read when you can't picture exactly
-        #      what it is doing.
-        # - Steve Alexander, Tue Nov 30 16:49:40 UTC 2004
-        bugmatrix = {}
-        for severity in BugTaskSeverity.items:
-            bugmatrix[severity] = {}
-            for status in BugTaskStatus.items:
-                bugmatrix[severity][status] = 0
-        for bugtask in self.bugtasks:
-            bugmatrix[bugtask.severity][bugtask.bugstatus] += 1
-        resultset = [['']]
-        for status in BugTaskStatus.items:
-            resultset[0].append(status.title)
-        severities = BugTaskSeverity.items
-        for severity in severities:
-            statuses = BugTaskStatus.items
-            statusline = [severity.title]
-            for status in statuses:
-                statusline.append(bugmatrix[severity][status])
-            resultset.append(statusline)
-        return resultset
 
     def ensureRelatedBounty(self, bounty):
         """See IProduct."""

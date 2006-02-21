@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
-    DeleteBugContactError, IPersonSet)
+    DeleteBugContactError, IPersonSet, BugTaskSearchParams)
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, AdvancedBugTaskSearchView)
 from canonical.launchpad.webapp import (
@@ -108,9 +108,6 @@ class DistributionSourcePackageView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def latest_bugtasks(self):
-        return self.context.bugtasks(quantity=5)
 
     def latest_tickets(self):
         return self.context.tickets(quantity=5)
