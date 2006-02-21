@@ -3,18 +3,20 @@ import sys
 import logging
 import optparse
 
-from pyme.constants import validity
+import _pythonpath
+
+import gpgme
 
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger as logger_from_options)
 from canonical.launchpad.scripts.keyringtrustanalyser import *
 
 validity_map = {
-    'UNDEFINED': validity.UNDEFINED,
-    'NEVER':     validity.NEVER,
-    'MARGINAL':  validity.MARGINAL,
-    'FULL':      validity.FULL,
-    'ULTIMATE':  validity.ULTIMATE,
+    'UNDEFINED': gpgme.VALIDITY_UNDEFINED,
+    'NEVER':     gpgme.VALIDITY_NEVER,
+    'MARGINAL':  gpgme.VALIDITY_MARGINAL,
+    'FULL':      gpgme.VALIDITY_FULL,
+    'ULTIMATE':  gpgme.VALIDITY_ULTIMATE,
     }
 
 def main(argv):

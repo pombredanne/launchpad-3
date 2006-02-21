@@ -1,6 +1,6 @@
 
   >>> print http(r"""
-  ... POST /people/name12/+editgpgkeys HTTP/1.1
+  ... POST /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... action=deactivate_gpg&DEACTIVATE_GPGKEY=2""")
   HTTP/1.1 200 Ok
@@ -12,7 +12,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/name12/+editgpgkeys HTTP/1.1
+  ... POST /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... action=revalidate_gpg&REVALIDATE_GPGKEY=2""")
   HTTP/1.1 200 Ok
@@ -47,7 +47,7 @@ Finish the current Interaction
 
 
   >>> print http(r"""
-  ... POST /people/name12/+editgpgkeys HTTP/1.1
+  ... POST /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... action=remove_gpgtoken&REMOVE_GPGTOKEN=%s""" % tokenfingerprint)
   HTTP/1.1 200 Ok

@@ -3,7 +3,7 @@
 from zope.interface import implements
 from zope.component import getUtility
 
-from pyme.constants import validity
+import gpgme
 
 from canonical.database.sqlbase import flush_database_updates
 
@@ -21,7 +21,7 @@ __all__ = [
     'mergeClusters',
     ]
 
-def addTrustedKeyring(filename, ownertrust=validity.MARGINAL):
+def addTrustedKeyring(filename, ownertrust=gpgme.VALIDITY_MARGINAL):
     """Add a keyring of keys owned by people trusted to make good signatues.
     """
     gpg = getUtility(IGPGHandler)
@@ -34,7 +34,7 @@ def addOtherKeyring(filename):
     gpg = getUtility(IGPGHandler)
     gpg.importKeyringFile(filename)
 
-def getValidUids(minvalid=validity.MARGINAL):
+def getValidUids(minvalid=gpgme.VALIDITY_MARGINAL):
     """Returns an iterator yielding (fingerprint, email) pairs.
     
     Only UIDs assigned a validity of at least 'minvalid' are returned.
@@ -47,7 +47,7 @@ def getValidUids(minvalid=validity.MARGINAL):
                 uid.validity >= minvalid):
                 yield key.fingerprint, uid.email
 
-def findEmailClusters(minvalid=validity.MARGINAL):
+def findEmailClusters(minvalid=gpgme.VALIDITY_MARGINAL):
     """Returns an iterator yielding sets of related email addresses.
     
     Two email addresses are considered to be related if they appear as
