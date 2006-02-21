@@ -500,7 +500,9 @@ class BugTaskSet:
                     for pkg_bugcontact in package.bugcontacts:
                         bug.subscribe(pkg_bugcontact.bugcontact)
         else:
-            assert distrorelease is not None, 'Got no bugtask target.'
+            assert distrorelease is not None, 'Got no bugtask target'
+            assert distrorelease != distrorelease.distribution.currentrelease, (
+                'Bugtasks cannot be opened on the current release.')
 
         return BugTask(
             bug=bug,

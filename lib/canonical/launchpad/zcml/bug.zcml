@@ -164,7 +164,7 @@
         arguments=""
         keyword_arguments="distribution packagename title comment private"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-add.pt"
+        template="../templates/malone-filebug.pt"
         lp:url="malone/bugs/+product">
         <browser:widget
            field="title"
