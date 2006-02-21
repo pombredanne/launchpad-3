@@ -557,12 +557,12 @@ class QueueActionAccept(QueueAction):
 
                     replacements = {
                         "MAINTAINERFROM": sender,
-                        "RECIPIENT": ", ".join(recipients),
                         "SOURCE": src_rel.name,
                         "VERSION": src_rel.version,
                         "ARCH": 'source',
                         "CHANGESFILE": changescontent,
                         "SUMMARY": summary,
+                        "ANNOUNCE": ", ".join(recipients),
                         }
 
                     # append an email describing this action.
