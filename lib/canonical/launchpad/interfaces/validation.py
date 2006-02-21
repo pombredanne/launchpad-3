@@ -25,6 +25,7 @@ from zope.app.form.interfaces import WidgetsError
 from canonical.launchpad import _
 from canonical.launchpad.searchbuilder import NULL
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.lp.dbschema import MirrorPulseType
@@ -244,7 +245,6 @@ def valid_distrotask(bug, distribution, sourcepackagename=None):
     If it exists, WidgetsError will be raised.
     """
     from canonical.launchpad.helpers import shortlist
-    from canonical.launchpad.interfaces import BugTaskSearchParams
     errors = []
     if sourcepackagename is not None:
         msg = LaunchpadValidationError(_(
