@@ -22,7 +22,6 @@ import tempfile
 import os
 import apt_pkg
 import subprocess
-import shutil
 import time
 
 from zope.component import getUtility
@@ -41,7 +40,6 @@ from canonical import encoding
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.scripts import log
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
@@ -72,7 +70,7 @@ class BuildDaemonPackagesArchSpecific:
             fd = open(self.pas_file, "r")
         except IOError:
             return
-        
+
         all_archs = set([a.architecturetag for a in
                          self.distrorelease.architectures])
         for line in fd:
@@ -81,7 +79,6 @@ class BuildDaemonPackagesArchSpecific:
             line = line.strip()
             if line == "":
                 continue
-            log.debug("PAS:in: " + line)
             is_source = False
             if line.startswith("%"):
                 is_source = True
@@ -111,10 +108,9 @@ class BuildDaemonPackagesArchSpecific:
                 if is_source:
                     # But if it's a src pkg then we can still use the
                     # information
-                    log.debug("PAS: %s no archs" % pkgname)
                     self.permit[pkgname] = set()
                 continue
-            
+
             if not is_source:
                 # We need to find a sourcepackagename
                 # If the sourcepackagename changes across arch then
@@ -133,11 +129,10 @@ class BuildDaemonPackagesArchSpecific:
                 pkg = pkgs[0].binarypackagerelease
                 src_pkg = pkg.build.sourcepackagerelease
                 pkgname = src_pkg.sourcepackagename.name
-            log.debug("PAS: %s %s" % (pkgname, " ".join(archs)))
             self.permit[pkgname] = archs
 
         fd.close()
-                
+
 
 # XXX cprov 20050628
 # I couldn't found something similar in hct.utils, but probably there is.
@@ -820,11 +815,6 @@ class BuilddMaster:
             if distroarchrelease.getChroot(pocket):
                 # Fill out the contents
                 self._archreleases.setdefault(distroarchrelease, {})
-            else:
-                self._logger.warn(
-                    "Disabling: No CHROOT for %s (%s) '%s'"
-                    % (distroarchrelease.distrorelease.name,
-                       distroarchrelease.architecturetag, pocket.title))
 
     def setupBuilders(self, archrelease):
         """Setting up a group of builder slaves for a given DistroArchRelease.
@@ -898,8 +888,16 @@ class BuilddMaster:
 
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
-        archs = set(arch for arch in distrorelease.architectures
-                    if arch in self._archreleases)
+        # XXX cprov 20060221: this approach is used several times in this code,
+        # it retrieves all the information available from the DB and handle it
+        # within the python domain, which is really slow and confusing.
+        archs = set()
+        initialized_arch_ids = [arch.id for arch in self._archreleases]
+
+        for wanted_arch in distrorelease.architectures:
+            if wanted_arch.id in initialized_arch_ids:
+                archs.add(wanted_arch)
+
 
         # XXX cprov 20050831
         # Avoid entering in the huge loop if we don't find at least
@@ -938,7 +936,7 @@ class BuilddMaster:
                     # self._logger.debug(header + "SKIPPING ALL")
                     continue
 
-                # packages with an architecture hint of "all" or "any" are
+                # packages with an architecture hint of "all" are
                 # architecture independent.  Therefore we only need
                 # to build on one architecture, the distrorelease.
                 # nominatedarchindep
