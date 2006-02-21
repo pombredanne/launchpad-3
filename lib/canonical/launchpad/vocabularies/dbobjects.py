@@ -21,6 +21,7 @@ __all__ = [
     'BugWatchVocabulary',
     'CountryNameVocabulary',
     'DistributionVocabulary',
+    'DistributionUsingMaloneVocabulary',
     'DistroReleaseVocabulary',
     'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
@@ -66,7 +67,7 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ITeam, IPersonSet, IEmailAddressSet)
+    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam)
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -337,13 +338,13 @@ class BugVocabulary(SQLObjectVocabularyBase):
 class BountyVocabulary(SQLObjectVocabularyBase):
 
     _table = Bounty
+    # XXX: no _orderBy?
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
-    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
-    # no test data for me to check yet. This'll be fixed by the end
-    # of the week (2004/10/08) as we get Malone into usable shape.
+
     _table = BugTracker
+    _orderBy = 'title'
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
@@ -934,6 +935,52 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
         if self._orderBy:
             kw['orderBy'] = self._orderBy
         return self._table.select("name LIKE %s" % like_query, **kw)
+
+
+class DistributionUsingMaloneVocabulary:
+    """All the distributions that uses Malone officially."""
+
+    implements(IVocabulary, IVocabularyTokenized)
+
+    _orderBy = 'displayname'
+
+    def __init__(self, context=None):
+        self.context = context
+
+    def getTermByToken(self, token):
+        obj = Distribution.selectOne(
+            "official_malone is True AND name=%s" % sqlvalues(token))
+        if obj is None:
+            raise LookupError(token)
+        else:
+            return self.getTerm(obj)
+
+    def __iter__(self):
+        """Return an iterator which provides the terms from the vocabulary."""
+        distributions_using_malone = Distribution.selectBy(
+            official_malone=True, orderBy=self._orderBy)
+        for distribution in distributions_using_malone:
+            yield self.getTerm(distribution)
+
+    def __len__(self):
+        return Distribution.selectBy(official_malone=True).count()
+
+    def __contains__(self, obj):
+        return IDistribution.providedBy(obj) and obj.official_malone
+
+    def getQuery(self):
+        return None
+
+    def getTerm(self, obj):
+        if obj not in self:
+            raise LookupError(obj)
+        return SimpleTerm(obj, obj.name, obj.displayname)
+
+    def getTermByToken(self, token):
+        found_dist = Distribution.selectOneBy(name=token, official_malone=True)
+        if found_dist is None:
+            raise LookupError(token)
+        return self.getTerm(found_dist)
 
 
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):

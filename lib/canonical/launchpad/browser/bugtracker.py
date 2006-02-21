@@ -129,3 +129,4 @@ class RemoteBug:
     def title(self):
         return 'Remote Bug #%s in %s' % (self.remotebug,
                                          self.bugtracker.title)
+

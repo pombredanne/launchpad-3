@@ -55,7 +55,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
+from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 

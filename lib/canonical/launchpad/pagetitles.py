@@ -126,21 +126,6 @@ branchtarget_branches = ContextTitle('Branches for %s')
 
 bug_activity = ContextId('Bug #%s - Activity log')
 
-def bug_add(context, view):
-    # XXX, Brad Bollenbach, 2005-07-15: This is a hack until our fancy
-    # new page title machinery allows for two different pages that use
-    # the same template to have different titles (the way ZCML does.)
-    # See https://launchpad.ubuntu.com/malone/bugs/1376
-    product_context = IProduct(context, None)
-    distro_context = IDistribution(context, None)
-    distrorelease_context = IDistroRelease(context, None)
-
-    if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Report a bug about %s')
-        return context_title(context, view)
-    else:
-        return "Report a bug"
-
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
 bug_attachment_add = LaunchbagBugID('Bug #%d - Add an attachment')
@@ -189,13 +174,17 @@ def bugs_assigned(context, view):
     else:
         return 'No-one to display bugs for'
 
+bugtarget_filebug = ContextTitle('Report a bug about %s')
+
 bugtask_backport_fixing = BugTaskBackportingTitle()
+
+bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_view = BugTaskPageTitle()
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request fix in a product')
 
-bugtask_edit = BugTaskPageTitle()
+bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
@@ -442,6 +431,8 @@ malone_about = 'About Malone'
 malone_distros_index = 'Report a bug about a distribution'
 
 malone_index = 'Malone: the Launchpad bug tracker'
+
+malone_filebug = "Report a bug"
 
 # malone_people_index is a redirect
 
