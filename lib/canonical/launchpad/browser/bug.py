@@ -16,18 +16,25 @@ __all__ = [
     'DeprecatedAssignedBugsView',
     'BugTextView']
 
+from zope.app.form.interfaces import WidgetsError
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.interfaces import Unauthorized
+from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    IBug, ILaunchBag, IBugSet, IBugTaskSet, IBugLinkTarget,
-    IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
+    IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
+    IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
+    NotFoundError, UnexpectedFormData, valid_distrotask)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.webapp import GeneralFormView, stepthrough
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp import GeneralFormView, stepthrough
 
 
 class BugSetNavigation(Navigation):
@@ -61,7 +68,7 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
              'addsubscriber', 'addattachment', 'linktocve', 'unlinkcve',
-             'addwatch', 'filebug', 'activitylog', 'targetfix']
+             'addwatch', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -126,12 +133,12 @@ class BugContextMenu(ContextMenu):
         text = 'Activity Log'
         return Link('+activity', text, icon='list')
 
-    def targetfix(self):
+    def backportfix(self):
         enabled = (
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
-        text = 'Target Fix to Releases'
-        return Link('+target', text, icon='milestone', enabled=enabled)
+        text = 'Backport Fix to Releases'
+        return Link('+backport', text, icon='bug', enabled=enabled)
 
 
 class BugView:
@@ -210,25 +217,108 @@ class BugWithoutContextView:
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
-class BugAlsoReportInView(SQLObjectAddView):
+class BugAlsoReportInView(GeneralFormView):
     """View class for reporting a bug in other contexts."""
 
-    def create(self, product=None, distribution=None, sourcepackagename=None):
+    schema = IAddBugTaskForm
+    fieldNames = None
+    template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
+    process_status = None
+
+    def __init__(self, context, request):
+        """Override GeneralFormView.__init__() not to set up widgets."""
+        self.context = context
+        self.request = request
+        self.errors = {}
+
+    @property
+    def _keyword_arguments(self):
+        """All the fields should be given as keyword arguments."""
+        return self.fieldNames
+
+    def render_upstreamtask(self):
+        self.label = "Request fix in a product"
+        self.fieldNames = ['product', 'bugtracker', 'remotebug']
+        self._setUpWidgets()
+        return self.template()
+
+    def render_distrotask(self):
+        self.label = "Request fix in a distribution"
+        self.fieldNames = [
+            'distribution', 'sourcepackagename', 'bugtracker', 'remotebug']
+        self._setUpWidgets()
+        return self.template()
+
+    def widgets(self):
+        """Return the widgets that should be rendered by the main macro.
+
+        We will place the bug watch widgets ourself, so we don't want
+        them rendered automatically.
+        """
+        bug_watch_widgets = [
+            self.schema['bugtracker'], self.schema['remotebug']]
+        return [
+            widget for widget in GeneralFormView.widgets(self)
+            if widget.context not in bug_watch_widgets
+            ]
+
+    def validate(self, data):
+        """Validate the form.
+
+        Check that:
+            * We have a unique distribution task
+            * If bugtracker is not None, remotebug has to be not None
+        """
+        errors = []
+        widgets_data = {}
+        bugtracker = data.get('bugtracker')
+        remotebug = data.get('remotebug')
+        distribution = data.get('distribution')
+        sourcepackagename = data.get('sourcepackagename')
+        if distribution:
+            valid_distrotask(self.context.bug, distribution, sourcepackagename)
+        if bugtracker is not None and remotebug is None:
+            errors.append(LaunchpadValidationError(
+                "Please specify the remote bug number in the remote "
+                "bug tracker."))
+            widgets_data['bugtracker'] = bugtracker
+            widgets_data['remotebug'] = remotebug
+
+        if errors:
+            raise WidgetsError(errors, widgetsData=widgets_data)
+
+    def process(self, product=None, distribution=None, sourcepackagename=None,
+                bugtracker=None, remotebug=None):
         """Create new bug task.
 
         Only one of product and distribution may be not None, and
-        if product is None, sourcepackagename has to be None.
+        if distribution is None, sourcepackagename has to be None.
         """
-        self.taskadded = getUtility(IBugTaskSet).createTask(
+        taskadded = getUtility(IBugTaskSet).createTask(
             self.context.bug,
             getUtility(ILaunchBag).user,
             product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
-        return self.taskadded
 
-    def nextURL(self):
-        """Return the user to the URL of the task they just added."""
-        return canonical_url(self.taskadded)
+        if bugtracker is not None:
+            user = getUtility(ILaunchBag).user
+            bug_watch = getUtility(IBugWatchSet).createBugWatch(
+                bug=taskadded.bug, owner=user, bugtracker=bugtracker,
+                remotebug=remotebug)
+            notify(SQLObjectCreatedEvent(bug_watch))
+            if product is not None:
+                target = product
+            elif distribution is not None:
+                target = distribution
+            else:
+                raise UnexpectedFormData(
+                    'Neither product nor distribution was provided')
+            if not target.official_malone:
+                taskadded.bugwatch = bug_watch
+
+        notify(SQLObjectCreatedEvent(taskadded))
+        self._nextURL = canonical_url(taskadded)
+        return ''
 
 
 class BugSetView:

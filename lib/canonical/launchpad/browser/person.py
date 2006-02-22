@@ -395,7 +395,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editwikinames', 'editircnicknames', 'editjabberids',
-             'editpassword', 'edithackergotchi', 'editsshkeys', 'editgpgkeys',
+             'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
@@ -452,8 +452,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def editgpgkeys(self):
-        target = '+editgpgkeys'
+    def editpgpkeys(self):
+        target = '+editpgpkeys'
         text = 'OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
@@ -614,12 +614,12 @@ class FOAFSearchView:
         if not name:
             return None
 
-        if searchfor == "all":
-            results = getUtility(IPersonSet).find(name)
-        elif searchfor == "peopleonly":
+        if searchfor == "peopleonly":
             results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
             results = getUtility(IPersonSet).findTeam(name)
+        else:
+            results = getUtility(IPersonSet).find(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
@@ -837,61 +837,6 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugContactPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=inprogress_bugs_params)
-
-    def getSearchFilterLinks(self):
-        """Return a dict of links to various parts of the current filter."""
-        search_filter_links = []
-
-        # First, a link to all the bugs for the current package.
-        current_package = self.current_package
-        search_filter_links.append({
-            'title': str(current_package.displayname),
-            'url': self.getBugContactPackageSearchURL(current_package)})
-
-        # Add a link to the "unassigned" filter, if applicable.
-        if (self.unassigned_widget.hasInput() and
-            self.unassigned_widget.getInputValue()):
-            search_filter_links.append({
-                'title': "unassigned",
-                'url': self.getUnassignedBugsURL(current_package)})
-
-        return search_filter_links
-
-    def getStatusFilterLinks(self):
-        """Return links to filter on each status shown in the listing.
-
-        This is a separate method because status filter links are displayed
-        differently from other filter links, to communicate that they're an "OR"
-        match.
-        """
-        if not self.status_widget.hasInput():
-            return []
-
-        filter_statuses = self.status_widget.getInputValue()
-
-        status_filter_links = []
-        for status_name in filter_statuses:
-            status_filter_links.append({
-                'title': status_name.title.lower(),
-                'url': self.getBugContactPackageSearchURL(
-                    extra_params={"field.status": status_name.title})})
-
-        return status_filter_links
-
-    def getSearchTextFilterLink(self):
-        if not self.searchtext_widget.hasInput():
-            return None
-
-        searchtext_filter_link = {}
-
-        searchtext = self.searchtext_widget.getInputValue()
-        if searchtext:
-            searchtext_filter_link = {
-                'title': searchtext,
-                'url': self.getBugContactPackageSearchURL(
-                    extra_params={"field.searchtext": searchtext})}
-
-        return searchtext_filter_link
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained

@@ -82,7 +82,7 @@
       <browser:widget
           field="homepage_content"
           class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="50"
+          displayWidth="30"
           height="30" />
   </browser:editform>
 
@@ -273,9 +273,9 @@
           template="../templates/person-editjabberids.pt"
           lp:url="/people/$person.id/+editjabberids" />
       <browser:page
-          name="+editgpgkeys"
-          template="../templates/person-editgpgkeys.pt"
-          lp:url="/people/$person.id/+editgpgkeys" />
+          name="+editpgpkeys"
+          template="../templates/person-editpgpkeys.pt"
+          lp:url="/people/$person.id/+editpgpkeys" />
   </browser:pages>
 
   <browser:pages
@@ -492,15 +492,15 @@
       <browser:widget
           field="url"
           class="zope.app.form.browser.TextWidget"
-          displayWidth="65" />
+          displayWidth="30" />
       <browser:widget
           field="home_page"
           class="zope.app.form.browser.TextWidget"
-          displayWidth="65" />
+          displayWidth="30" />
       <browser:widget
           field="title"
           class="zope.app.form.browser.TextWidget"
-          displayWidth="65" />
+          displayWidth="30" />
       <browser:widget
           field="summary"
           class="zope.app.form.browser.TextAreaWidget"
@@ -546,7 +546,7 @@
       <browser:widget
           field="teamdescription"
           class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="50"
+          displayWidth="30"
           height="10" />
   </browser:addform>
 

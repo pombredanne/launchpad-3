@@ -33,38 +33,6 @@
               document.forms["search"].elements['field.searchtext'].focus();
             -->
         </script>
-        <div style="margin-top: 1em;">Filter:</div>
-        <ul style="margin-top: 0; margin-bottom: 1em;">
-                <li tal:repeat="search_link view/getSearchFilterLinks">
-                  <a href="#"
-                     tal:content="search_link/title"
-                     tal:attributes="href search_link/url">
-                    mozilla-firefox (Ubuntu)</a><span tal:condition="not:repeat/search_link/end"></span>
-                </li>
-                <li tal:condition="view/getStatusFilterLinks">
-                  <span tal:repeat="status_filter_link view/getStatusFilterLinks">
-                    <span tal:condition="repeat/status_filter_link/end">
-                      <span tal:condition="python:repeat['status_filter_link'].length() > 1">
-                        or
-                      </span>
-                    </span>
-                    <a href="#"
-                       tal:content="status_filter_link/title"
-                       tal:attributes="href status_filter_link/url">
-                      in progress
-                    </a><span tal:condition="not:repeat/status_filter_link/end">,</span></span>
-                </li>
-                <li tal:condition="view/getSearchTextFilterLink">contains
-                  <span tal:define="searchtext_filter_link view/getSearchTextFilterLink">
-                    <a href="#"
-                       tal:content="searchtext_filter_link/title"
-                       tal:attributes="href searchtext_filter_link/url">
-                      foobar
-                    </a>
-                  </span>
-                  in the title or description
-                </li>
-        </ul>
         <div>
           <small tal:content="structure batch_navigator/@@+navigation-links" />
         </div>

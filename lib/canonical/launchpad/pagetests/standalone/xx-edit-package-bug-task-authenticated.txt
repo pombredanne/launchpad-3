@@ -3,7 +3,7 @@ needs to be fixed.
 
   >>> print http(r"""
   ... GET /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -14,7 +14,7 @@ Any authenticated user can edit a source package bug task.
 
   >>> print http(r"""
   ... POST /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1316
   ... Content-Type: multipart/form-data; boundary=---------------------------89019536856698512711194452
   ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
@@ -71,14 +71,14 @@ Any authenticated user can edit a source package bug task.
 
   >>> print http(r"""
   ... GET /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...<option selected="selected" value="Medium">Medium</option>...
 
   >>> print http(r"""
   ... POST /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1346
   ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
   ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
@@ -134,7 +134,7 @@ Any authenticated user can edit a source package bug task.
 
   >>> print http(r"""
   ... GET /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...<option selected="selected" value="Low">Low</option>...

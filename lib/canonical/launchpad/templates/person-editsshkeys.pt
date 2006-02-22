@@ -50,10 +50,10 @@
     <div>
         <label>Public key line</label>
         <div class="formHelp">
-            Insert the contents of <tt>~/.ssh/id_dsa.pub</tt> or
-            <tt>~/.ssh/id_rsa.pub</tt>.  Only SSH v2 keys are supported.
+            Insert the contents of <code>~/.ssh/id_dsa.pub</code> or
+            <code>~/.ssh/id_rsa.pub</code>.  Only SSH v2 keys are supported.
         </div>
-        <textarea name="sshkey" width="60" height="6"></textarea>
+        <textarea name="sshkey" width="30" height="6"></textarea>
         <input type="submit" value="Import Public Key">
     </form>
     </div>

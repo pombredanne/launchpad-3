@@ -12,6 +12,10 @@
   <div tal:content="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
+<metal:rightportlets fill-slot="portlets_two">
+    <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main"
      tal:define="listing_columns view/task_columns">
 

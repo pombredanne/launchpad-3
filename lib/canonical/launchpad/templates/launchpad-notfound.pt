@@ -14,12 +14,17 @@
         We&#8217;re working hard to fix those broken links.
       </p>
       <p i18n:translate="">
-        Otherwise, check that you typed the address correctly.
+        Otherwise, check that you entered the address correctly,
+        or complain to the maintainers of the page that linked here.
       </p>
-      <p tal:condition="request/oopsid">
-        The reference for this error is
-        <tt class="oopsid" tal:content="request/oopsid">OOPS-A1234</tt>.
-        Please include it in any related bug report or email.
+      <p>
+        If this is blocking your work, you can
+        <a href="https://launchpad.net/products/launchpad/+addticket"
+        >make a support request</a>
+        so we can help you out.
+        Include the error ID
+        <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
+        in your request.
       </p>
     <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

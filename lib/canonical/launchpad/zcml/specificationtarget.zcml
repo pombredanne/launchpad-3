@@ -56,7 +56,7 @@
     <browser:widget
       field="specurl"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="60" />
+      displayWidth="30" />
   </browser:addform>
 
 </facet>

@@ -7,6 +7,7 @@ __all__ = [
     'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
+    'DistributionEditView',
     'DistributionSetView',
     'DistributionSetAddView',
     'DistributionBugContactEditView'
@@ -109,7 +110,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
              'reassign', 'addrelease', 'builds',
-             'officialmirrors', 'allmirrors', 'newmirror']
+             'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
 
     def edit(self):
         text = 'Edit Details'
@@ -156,6 +157,11 @@ class DistributionOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'Builds'
         return Link('+builds', text, icon='info')
+
+    def launchpad_usage(self):
+        text = 'Define Launchpad Usage'
+        return Link('+launchpad', text, icon='edit')
+
 
 class DistributionBugsMenu(ApplicationMenu):
 
@@ -286,6 +292,17 @@ class DistributionView(BuildRecordsView):
         the given text.
         """
         return self.context.searchSourcePackages(self.text)
+
+
+class DistributionEditView(SQLObjectEditView):
+    """View class that lets you edit a Distribution object.
+
+    It redirects to the main distribution page after a successful edit.
+    """
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class DistributionSetView:
 

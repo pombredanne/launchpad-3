@@ -278,7 +278,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # assignees with other status would just be confusing
             # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
-                '<img src="/++resource++user.gif" /> '
+                '<img src="/@@/user.gif" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
@@ -500,7 +500,9 @@ class BugTaskSet:
                     for pkg_bugcontact in package.bugcontacts:
                         bug.subscribe(pkg_bugcontact.bugcontact)
         else:
-            assert distrorelease is not None, 'Got no bugtask target.'
+            assert distrorelease is not None, 'Got no bugtask target'
+            assert distrorelease != distrorelease.distribution.currentrelease, (
+                'Bugtasks cannot be opened on the current release.')
 
         return BugTask(
             bug=bug,

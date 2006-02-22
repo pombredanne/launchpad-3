@@ -95,9 +95,9 @@
         </form>
         <tal:block condition="not: bn">
           <p> 
-            Some accounts have been created automatically by Launchpad
-            and may be duplicates.  If you find you have more than one
-            account, perhaps for different email addresses, please
+            <b>Duplicate accounts</b> may have been created
+            automatically by Launchpad. If you find you have more than
+            one account, perhaps for different email addresses, you can
             <a href="+requestmerge">merge the duplicate accounts</a>.
           </p>
         </tal:block>
@@ -134,7 +134,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr tal:repeat="person python:list(bn.currentBatch())">
+                <tr tal:repeat="person bn/currentBatch">
                   <td><a tal:content="person/browsername"
                          tal:attributes="href person/name"/>
                   </td>

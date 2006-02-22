@@ -24,21 +24,43 @@
 
 <div metal:fill-slot="main">
 
-  <tal:createtasks condition="view/createTargetedTasks" />
+  <tal:createtasks condition="view/createBackportTasks" />
 
+<<<<<<< TREE
   <p>
     Select the releases in which this bug must be fixed, including
     backport fixes. If you make a mistake, you can mark the task as
     Rejected.
+=======
+  <h1>Backport fix to releases</h1>
+
+  <p>
+    A <i>backport</i> is a fix that is uploaded to an already-released version
+    of a distribution, e.g., to fix a security vulnerability or critical data
+    loss bug.
+  </p>
+
+  <p>
+    Select the releases in which this bug must be fixed. If you make a mistake,
+    you can later mark the task as Rejected.
+>>>>>>> MERGE-SOURCE
   </p>
 
   <form action="" method="POST">
-    <tal:distrorelease
+    <p>
+      <b tal:define="distribution python:context.distribution or context.distrorelease.distribution">
+        Previous
+        <span tal:content="distribution/displayname">foo</span>
+        releases:</b>
+    </p>
+
+    <ul style="list-style: none">
+      <li
          tal:repeat="release_target_details view/release_target_details">
-      <tal:block tal:define="releasename release_target_details/release/name;
-                             sourcepackage release_target_details/sourcepackage|nothing;
-                             spname release_target_details/sourcepackage/sourcepackagename/name|nothing">
-        <tal:has_spname condition="spname">
+        <tal:block tal:define="releasename release_target_details/release/name;
+                               sourcepackage release_target_details/sourcepackage|nothing;
+                               spname release_target_details/sourcepackage/sourcepackagename/name|nothing">
+          <tal:has_spname condition="spname">
             <input type="checkbox"
                    name="target"
                    tal:attributes="value string:${releasename}.${spname};
@@ -48,8 +70,8 @@
                tal:attributes="href string:${sourcepackage/fmt:url}/+bugs">
               warty mozilla-firefox
             </a>
-        </tal:has_spname>
-        <tal:lacks_spname condition="not: spname">
+          </tal:has_spname>
+          <tal:lacks_spname condition="not: spname">
             <input type="checkbox"
                    name="target"
                    tal:attributes="value string:${releasename};
@@ -57,30 +79,31 @@
                                    checked release_target_details/istargeted" />
             <a tal:content="string:${releasename}" 
                tal:attributes="href
-               string:${release_target_details/release/fmt:url}/+bugs">
+                               string:${release_target_details/release/fmt:url}/+bugs">
               warty mozilla-firefox
             </a>
-        </tal:lacks_spname>
-        <tal:targeted condition="release_target_details/istargeted">
-          <tal:status content="release_target_details/status/title" />,
-          <tal:assigned condition="release_target_details/assignee">
-            Assigned to
-            <a tal:attributes="href release_target_details/assignee/fmt:url"
-               tal:content="release_target_details/assignee/displayname">
-              Foo Bar
-            </a>
-           </tal:assigned>
-           <tal:unassigned condition="not: release_target_details/assignee">
-             Unassigned
-           </tal:unassigned>
-        </tal:targeted>
-        <br />
-      </tal:block>
-    </tal:distrorelease>
-
+          </tal:lacks_spname>
+          <tal:targeted condition="release_target_details/istargeted">
+            <tal:status content="release_target_details/status/title" />,
+            <tal:assigned condition="release_target_details/assignee">
+              Assigned to
+              <a tal:attributes="href release_target_details/assignee/fmt:url"
+                 tal:content="release_target_details/assignee/displayname">
+                Foo Bar
+              </a>
+            </tal:assigned>
+            <tal:unassigned condition="not: release_target_details/assignee">
+              Unassigned
+            </tal:unassigned>
+          </tal:targeted>
+          <br />
+        </tal:block>
+      </li>
+    </ul>
     <br />
-
-    <input type="submit" name="savetargets" value="Target Fix to Selected Releases" />
+    <p>
+    <input type="submit" name="savetargets" value="Backport Fix to Selected Releases" />
+    </p>
 
   </form>
 

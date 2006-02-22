@@ -30,6 +30,12 @@
          tal:condition="status"
          tal:content="status" />
 
+      <div class="portalError"
+        tal:repeat="top_of_page_error view/top_of_page_errors"
+        tal:content="structure top_of_page_error">
+        Schema validation errors.
+      </div>
+
       <p tal:condition="context/bug/duplicateof"
          class="portalMessage">
         This bug is a duplicate of
@@ -202,7 +208,7 @@
                           tal:content="request/comment_on_change|nothing"></textarea>
               </div>
               <div>
-                <img src="/++resource++info_icon.gif" />
+                <img src="/@@/info_icon.gif" />
                 <span class="error" tal:content="view/comment_on_change_error">
                   An error on comment on change.
                 </span>

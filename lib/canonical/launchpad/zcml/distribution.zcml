@@ -13,7 +13,8 @@
             permission="launchpad.Edit"
             set_attributes="displayname title summary description
                             translationgroup translationpermission
-                            members owner bugcontact"
+                            members owner bugcontact official_malone
+                            official_rosetta"
             />
     </content>
 
@@ -213,12 +214,12 @@
         facet="bugs"
         keyword_arguments="packagename title comment private"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-add.pt"
+        template="../templates/bugtarget-filebug.pt"
         lp:url="/distros/$Distribution.name/+filebug">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="50" />
+           displayWidth="30" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
@@ -232,8 +233,20 @@
         schema="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         fields="displayname title summary description"
-        template="../templates/launchpad-editform.pt"
+        template="../templates/distribution-edit.pt"
         lp:url="/distros/$Distribution.name/+edit" />
+
+    <browser:editform
+        name="+launchpad"
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionEditView"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        fields="official_rosetta official_malone"
+        permission="launchpad.Edit"
+        label="Describe Launchpad usage"
+        template="../templates/distribution-edit.pt"
+        />
 
     <browser:editform
         name="+selectmemberteam"

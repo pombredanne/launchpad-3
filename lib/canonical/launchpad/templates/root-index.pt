@@ -48,7 +48,7 @@
     <tbody>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/distros/ubuntu">The Ubuntu Distribution</a></b>
@@ -61,7 +61,7 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/products/gnomebaker">GnomeBaker</a></b>
@@ -74,7 +74,7 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/products/bzr">Bazaar-NG</a></b>

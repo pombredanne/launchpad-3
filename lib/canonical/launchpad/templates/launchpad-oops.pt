@@ -7,29 +7,25 @@
     <div metal:fill-slot="main">
       <p>
         Sorry, something just went wrong in Launchpad.
+        We&#8217;ve recorded what happened,
+        and we&#8217;ll fix it as soon as possible.
+        Sorry for the inconvenience.
       </p>
       <p>
-        Please <a href="/products/launchpad/+bugs">report this as a bug</a>,
-        after checking that it isn&#8217;t reported already.
+        If this is blocking your work, you can
+        <a href="https://launchpad.net/products/launchpad/+addticket"
+        >make a support request</a> so we can help you out.
+        Include the error ID
+        <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
+        in your request.
       </p>
-
-      <tal:comment condition="nothing">
-        XXX: system-error@launchpad.ubuntu.com is not working. Please uncomment
-        this once it's working.
-        <p>
-          (If this error is preventing you from reporting bugs,
-          <a href="mailto:system-error@launchpad.ubuntu.com">e-mail us</a>
-          instead, with &#8220;Bug&#8221; in the Subject line.)
-        </p>
-      </tal:comment>
-
-      <tal:oopsmessage tal:replace="structure request/@@+oopsmessage" />
-
       <p>
-        Thanks for helping improve Launchpad, and sorry for the inconvenience.
+        If you can&rsquo;t make a support request, e-mail
+        <a href="mailto:system-error@launchpad.net"
+        ><code>system-error@launchpad.net</code></a>
+        with the error ID and details of your problem.
       </p>
-
-      <tal:replace tal:replace="structure view/maybeShowTraceback" />
+      <tal:traceback replace="structure view/maybeShowTraceback" />
     </div>
   </body>
 </html>

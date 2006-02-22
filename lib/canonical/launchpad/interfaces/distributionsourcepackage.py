@@ -12,7 +12,7 @@ __all__ = [
 
 from zope.interface import Attribute
 
-from canonical.launchpad.interfaces.bug import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.tickettarget import ITicketTarget
 
 class DuplicateBugContactError(Exception):

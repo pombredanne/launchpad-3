@@ -58,7 +58,7 @@
       <tal:XXX condition="nothing">
         kiko 2005-07-05: ubuntu is hardcoded
       </tal:XXX>
-      <a href="distros/ubuntu">View Ubuntu Bugs</a> - find and
+      <a href="/distros/ubuntu/+bugs">View Ubuntu Bugs</a> - find and
         view bugs filed in Ubuntu.
     </li>
     <li>

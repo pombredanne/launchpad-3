@@ -1,0 +1,39 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="malone"
+>
+  <body>
+
+  <div metal:fill-slot="main">
+
+<<<<<<< TREE
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+=======
+  <tal:uses_malone tal:condition="context/official_malone">
+    <div metal:use-macro="context/@@launchpad_addform/addform">
+
+>>>>>>> MERGE-SOURCE
+
+          <p metal:fill-slot="extra_info">
+            Before reporting a bug, please ensure it hasn&#8217;t
+            been <a tal:attributes="href string:${context/fmt:url}/+bugs">reported already</a>.
+          </p>
+
+    </div>
+  </tal:uses_malone>
+
+  <tal:not_uses_malone tal:condition="not: context/official_malone">
+    <p class="portalMessage">
+      <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+    </p>
+
+    <div>
+    In order to file a bug on <span tal:replace="context/displayname">Alsa Utils</span>, please do so in its official bug tracker or on its package in the distribution you're using.
+    </div>
+  </tal:not_uses_malone>
+
+  </div>
+
+</html>
+

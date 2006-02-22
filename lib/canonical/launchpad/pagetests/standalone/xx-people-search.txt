@@ -1,5 +1,5 @@
 
-  Test the search for people and teams.
+  Search for all people and teams named like "foo bar".
 
   >>> print http(r"""
   ... GET /people?searchfor=all&name=foo+bar HTTP/1.1
@@ -9,4 +9,14 @@
   Content-Type: text/html;charset=utf-8
   ...
   	    <input ...foo bar...
+  ...
+
+
+  Now search for all people and teams named like "zzzzzzzzzzzzz".
+
+  >>> print http(r"""
+  ... GET /people?searchfor=all&name=zzzzzzzzzzzzz HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<h1>People and teams in Launchpad</h1>...
   ...

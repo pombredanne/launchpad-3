@@ -90,15 +90,15 @@
     <browser:widget
       field="url"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="65" />
+      displayWidth="30" />
     <browser:widget
       field="home_page"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="65" />
+      displayWidth="30" />
     <browser:widget
       field="title"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="65" />
+      displayWidth="30" />
     <browser:widget
       field="summary"
       class="zope.app.form.browser.TextAreaWidget"
