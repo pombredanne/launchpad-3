@@ -57,6 +57,6 @@ redirected to the bug page. We need to start the Librarian first.
   ... ------------P7v4Oj3X8teE7hHMyHGM69--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/products/firefox/+bug/1
-  ...

@@ -45,7 +45,7 @@ OK, so lets try POSTING to the form.
   ... -----------------------------185962309721203306911361655462--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: .../hoary/amd64
-  ...
 

@@ -8,6 +8,7 @@ __docformat__ = 'restructuredtext'
 __all__ = [
     'GeneralFormView',
     'GeneralFormViewFactory',
+    'NoRenderingOnRedirect',
     ]
 
 from transaction import get_transaction
@@ -28,7 +29,26 @@ from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 
 
-class GeneralFormView(BrowserView):
+class NoRenderingOnRedirect:
+    """Mix-in for not rendering the page on redirects."""
+
+    def __call__(self):
+        # Call update() here instead of from the template to avoid
+        # rendering the page on redirects.
+        self.update()
+        if self.request.response.getStatus() in [302, 303]:
+            # Don't render the page on redirects.
+            return ''
+        else:
+            page_attribute = getattr(self, '__page_attribute__', None)
+            if page_attribute is not None:
+                output = getattr(self, page_attribute)
+            else:
+                output = self.index
+            return output()
+
+
+class GeneralFormView(BrowserView, NoRenderingOnRedirect):
     """Simple Generalised Form Base Class
 
     Subclasses should provide a `schema` attribute defining the schema
@@ -158,10 +178,17 @@ class GeneralFormView(BrowserView):
 
         return self.process_status
 
+    def update(self):
+        """NoRenderingOnRedirect class calls this method."""
+        return self.process_form()
+
     def _abortAndSetStatus(self):
         """Abort the current transaction and set self.process_status."""
         self.process_status = _("Please fix the problems below and try again.")
         get_transaction().abort()
+
+    def __call__(self):
+        return NoRenderingOnRedirect.__call__(self)
 
 
 def GeneralFormViewFactory(name, schema, label, permission, layer,

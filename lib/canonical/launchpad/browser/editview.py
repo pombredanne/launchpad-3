@@ -27,10 +27,10 @@ from zope.interface import providedBy
 
 from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.event.sqlobjectevent import (
-        SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent
-        )
+        SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent)
+from canonical.launchpad.webapp.generalform import NoRenderingOnRedirect
 
-class SQLObjectEditView(EditView):
+class SQLObjectEditView(EditView, NoRenderingOnRedirect):
     """An editview that publishes an SQLObjectModifiedEvent, that provides
     a copy of the SQLObject before and after the object was modified with
     an edit form, so that listeners can figure out *what* changed."""
@@ -134,3 +134,5 @@ class SQLObjectEditView(EditView):
 
             return self.update_status
 
+    def __call__(self):
+        return NoRenderingOnRedirect.__call__(self)

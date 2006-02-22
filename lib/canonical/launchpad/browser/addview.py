@@ -13,8 +13,9 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectModifiedEvent
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.webapp.generalform import NoRenderingOnRedirect
 
-class SQLObjectAddView(AddView):
+class SQLObjectAddView(AddView, NoRenderingOnRedirect):
     """An AddView for SQLObjects."""
 
     def add(self, content):
@@ -94,3 +95,6 @@ class SQLObjectAddView(AddView):
             raise WidgetsError(*errors)
 
         return content
+
+    def __call__(self):
+        return NoRenderingOnRedirect.__call__(self)
