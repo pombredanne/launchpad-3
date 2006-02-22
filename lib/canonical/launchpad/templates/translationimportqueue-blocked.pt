@@ -83,7 +83,7 @@
   </tal:block>
 
   <p tal:condition="not: context/hasBlockedEntries">
-    There are no files being blocked.
+    There are no files blocked.
   </p>
 </div>
 

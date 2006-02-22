@@ -241,7 +241,6 @@
         schema="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         fields="members"
-        label="Select a new distribution members team"
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
@@ -264,7 +263,6 @@
         facet="translations"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        label="Select a new translation group"
         template="../templates/distribution-translators.pt"
         lp:url="/distros/$Distribution.name/+changetranslators" />
 
@@ -274,7 +272,6 @@
       schema="canonical.launchpad.interfaces.IDistributionBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
       facet="bounties"
-      label="Link an existing bounty"
       fields="distribution bounty"
       keyword_arguments="distribution bounty"
       permission="launchpad.AnyPerson"

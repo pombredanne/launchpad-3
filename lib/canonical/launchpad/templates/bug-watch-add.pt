@@ -3,9 +3,18 @@
   xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-
-<body>
+  i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/++resource++bug" />
+        <a tal:attributes="href context/bug/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+      </div>
+      <h1>Add watch</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/bug/@@+portlet-details" />
@@ -20,12 +29,11 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Malone can monitor the status of a bug reported in an external
-      bug tracker, such as debbugs or Bugzilla. Monitoring the
-      external bug in Malone means that you can receive updates from
+    <p metal:fill-slot="extra_info">
+      Monitoring a bug report in an external bug tracker, such as debbugs or
+      Bugzilla, will let you receive updates from
       Malone when the status of the external bug report changes.
-    </div>
+    </p>
 
   </div>
 

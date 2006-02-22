@@ -207,7 +207,6 @@
       name="+add"
       for="schoolbell.interfaces.IEditCalendar"
       schema="schoolbell.interfaces.ICalendarEvent"
-      label="New event"
       fields="title description location dtstart duration"
       permission="launchpad.Edit"
       template="../templates/calendar-event-addform.pt"

@@ -569,7 +569,7 @@ class BaseListView:
 
 class PeopleListView(BaseListView):
 
-    header = "People List"
+    header = "People Launchpad knows about"
 
     def getList(self):
         return self.getPeopleList()
@@ -577,7 +577,7 @@ class PeopleListView(BaseListView):
 
 class TeamListView(BaseListView):
 
-    header = "Team List"
+    header = "Teams registered in Launchpad"
 
     def getList(self):
         return self.getTeamsList()
@@ -585,7 +585,7 @@ class TeamListView(BaseListView):
 
 class UbunteroListView(BaseListView):
 
-    header = "Ubuntero List"
+    header = "Ubunteros registered in Launchpad"
 
     def getList(self):
         return self.getUbunterosList()

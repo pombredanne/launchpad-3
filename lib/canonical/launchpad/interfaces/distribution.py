@@ -51,7 +51,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_("The distro's domain name."), required=True)
     translationgroup = Choice(
         title = _("Translation group"),
-        description = _("The translation group for this product. This group "
+        description = _("The translation group for this distribution. This group "
             "is made up of a set of translators for all the languages "
             "approved by the group manager. These translators then have "
             "permission to edit the groups translation files, based on the "

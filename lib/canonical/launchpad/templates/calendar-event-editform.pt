@@ -6,10 +6,6 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <div>
-        <a tal:attributes="href context/fmt:url" tal:content="context/title"
-        >Foo</a>
-      </div>
       <h1>Change event details</h1>
     </metal:heading>
 

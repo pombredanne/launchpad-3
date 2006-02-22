@@ -198,11 +198,12 @@ bugtask_edit = BugTaskPageTitle()
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-bugtracker_edit = ContextTitle(smartquote('Edit bug tracker "%s"'))
+bugtracker_edit = ContextTitle(
+    smartquote('Change details for "%s" bug tracker'))
 
 bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
 
-bugtrackers_add = 'Register a bug tracker in Malone'
+bugtrackers_add = 'Register an external bug tracker'
 
 bugtrackers_index = 'Bug trackers registered in Malone'
 
@@ -464,9 +465,10 @@ object_reassignment = ContextTitle('Reassign %s')
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
-people_index = 'People registered in Launchpad'
+people_index = 'People and teams in Launchpad'
 
-people_list = 'People registered in Launchpad'
+def people_list(context, view):
+    return '%s' % view.header
 
 person_assignedbugs = ContextDisplayName('Bugs assigned to %s')
 

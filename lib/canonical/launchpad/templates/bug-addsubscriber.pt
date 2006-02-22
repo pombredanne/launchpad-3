@@ -10,10 +10,9 @@
       <div>
         <img alt="" src="/++resource++bug" />
         <a tal:attributes="href context/fmt:url"
-        >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>
-      </div>
-      <h1 tal:content="context/title">Bug summary</h1>
-      <h2>Subscribe someone else to the bug report</h2>
+        >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
+        <tal:title replace="context/title">Bug summary</tal:title>
+      <h1>Subscribe someone else to the bug report</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">

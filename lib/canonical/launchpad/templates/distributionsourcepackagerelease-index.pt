@@ -1,9 +1,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>
+        <tal:release replace="context/sourcepackagerelease/title" />
+        source package release
+      </h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -14,8 +20,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-  <h2><span tal:replace="context/displayname"/> source package release</h2>
 
   <p>
     Binary packages produced in this distribution for this version of 

@@ -7,19 +7,23 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Confirm OpenPGP key: <span tal:replace="context/fingerprint"/> by 
+      <h1>Confirm OpenPGP key</h1>
     </metal:heading>
 
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-         <span tal:replace="context/requester/displayname"/></h1>
 
       <div tal:condition="view/errormessage" class="portalMessage"
            tal:content="structure view/errormessage">
       </div>
 
-      <p>To confirm your OpenPGP key, please enter your Launchpad password.</p>
+        <p>
+          To confirm the OpenPGP key
+          <code tal:content="context/fingerprint">12345</code> for
+          <tal:name replace="context/requester/displayname">Foo Bar</tal:name>,
+          please enter your Launchpad password.
+        </p>
 
       <form autocomplete="off" name="validate" action="" method="POST">
         <div class="field">

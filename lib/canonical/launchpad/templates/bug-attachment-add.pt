@@ -1,7 +1,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/++resource++bug" />
+        <a tal:attributes="href context/fmt:url"
+        >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
+        <tal:title replace="context/title">Foo doesn't work</tal:title>
+      </div>
+      <h1>Add an attachment</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -17,19 +28,6 @@
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
-
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Add an attachment</h1>
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      An attachment can provide valuable information about the bug. It
-      can also provide a direct solution to a bug - for example a patch
-      that fixes the bug.
-      <br /><br />
-    </div>
-
-    <legend metal:fill-slot="form_legend">Upload Attachment</legend>
 
   </div>
 

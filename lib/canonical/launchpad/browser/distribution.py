@@ -154,7 +154,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+addrelease', text, icon='add')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Builds'
         return Link('+builds', text, icon='info')
 
 class DistributionBugsMenu(ApplicationMenu):

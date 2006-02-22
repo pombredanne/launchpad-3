@@ -100,7 +100,7 @@ class BuilderOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change Details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
