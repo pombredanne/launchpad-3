@@ -38,7 +38,7 @@ class NoRenderingOnRedirect:
         self.update()
         if self.request.response.getStatus() in [302, 303]:
             # Don't render the page on redirects.
-            return ''
+            return u''
         else:
             page_attribute = getattr(self, '__page_attribute__', None)
             if page_attribute is not None:
@@ -188,6 +188,11 @@ class GeneralFormView(BrowserView, NoRenderingOnRedirect):
         get_transaction().abort()
 
     def __call__(self):
+        #XXX: BrowserView doesn't define __call__(), but somehow
+        #     NoRenderingOnRedirect.__call__() won't be called unless we
+        #     define this method and call it explicitly. It's probably
+        #     due to some ZCML magic which should be removed.
+        #     -- Bjorn Tillenius, 2006-02-22
         return NoRenderingOnRedirect.__call__(self)
 
 

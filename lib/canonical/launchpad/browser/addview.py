@@ -97,4 +97,9 @@ class SQLObjectAddView(AddView, NoRenderingOnRedirect):
         return content
 
     def __call__(self):
+        #XXX: SQLObjectAddView doesn't define __call__(), but somehow
+        #     NoRenderingOnRedirect.__call__() won't be called unless we
+        #     define this method and call it explicitly. It's probably
+        #     due to some ZCML magic which should be removed.
+        #     -- Bjorn Tillenius, 2006-02-22
         return NoRenderingOnRedirect.__call__(self)
