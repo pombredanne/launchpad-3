@@ -34,11 +34,9 @@ After we've edited it, we get redirected to the bug page.
   ... ------------bq7K7HDJcmP4iO20V5sJxR--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/products/firefox/+bug/1
-  ...
-  <input ...  name="field.contenttype" ... value="text/html" ...>
-  ...
 
 
 If change the attachment to be a patch, the content type will be
@@ -73,8 +71,6 @@ changed to text/plain.
   ... ------------FtZrnGK020WLeDwj8VTBw0--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/products/firefox/+bug/1
-  ...
-  <input ...  name="field.contenttype" ... value="text/plain" ...>
-  ...

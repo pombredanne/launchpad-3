@@ -29,7 +29,7 @@
            tal:content="bugtask/status/title">
           $BugTask.status
         <img tal:condition="bugtask/statusexplanation"
-             src="/++resource++text"
+             src="/@@/text"
              />
         </a>
       </td>
@@ -49,10 +49,10 @@
           <a style="display: block; text-decoration: none; padding: 3px"
              tal:attributes="href tasklink">
             <img tal:condition="bugtask/assignee"
-                 src="/++resource++user.gif" alt="" />
+                 src="/@@/user.gif" alt="" />
             <img
               alt="Linked to "
-              src="/++resource++arrowRight.gif"
+              src="/@@/arrowRight.gif"
             />
             <span tal:replace="bugtask/bugwatch/bugtracker/name">Zilla</span>
             #<span tal:replace="bugtask/bugwatch/remotebug">123</span>
@@ -63,7 +63,7 @@
           <a style="display: block; text-decoration: none;"
              tal:attributes="href tasklink">
             <tal:has_assignee condition="bugtask/assignee">
-              <img src="/++resource++user.gif"
+              <img src="/@@/user.gif"
                    style="padding-bottom: 2px"
                    alt="" />
               <span tal:replace="bugtask/assignee/browsername">
@@ -89,7 +89,7 @@
 
   Request fix:
   <span style="white-space: nowrap">
-      <img src="/++resource++add.gif" alt="+" />
+      <img src="/@@/add.gif" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+upstreamtask"
          title="Mark this bug as occurring upstream">
         Upstream&hellip;
@@ -97,7 +97,7 @@
   </span>
 
   <span style="white-space: nowrap">
-      <img src="/++resource++add.gif" alt="+" />
+      <img src="/@@/add.gif" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
          title="Mark this bug as occurring in a distro package">
         In Distribution&hellip;

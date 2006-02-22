@@ -223,3 +223,24 @@ incomplete source is uploaded).
     AssertionError: searching in an explicitly empty space is pointless
 
 
+Launchpad Usage
+---------------
+
+A distribution can specify if it uses Malone or Rosetta officially.
+Ubuntu uses both Malone and Rosetta:
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ubuntu.official_malone
+    True
+    >>> ubuntu.official_rosetta
+    True
+
+While Debian uses neither:
+
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian.official_malone
+    False
+    >>> debian.official_rosetta
+    False
+

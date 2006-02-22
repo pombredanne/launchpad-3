@@ -26,14 +26,14 @@
         <tal:builder repeat="builder context/getBuilders">
           <tr>
             <td>
-              <img alt="[builder]" src="/++resource++info" />
+              <img alt="[builder]" src="/@@/info" />
               <a tal:attributes="href builder/fmt:url">
                  <span tal:replace="builder/name" />
               </a>
             </td>
             <td tal:content="builder/processor/name">LOCATION</td>
             <td>
-              <img alt="[owner]" src="/++resource++user"/>
+              <img alt="[owner]" src="/@@/user"/>
               <a tal:content="builder/owner/displayname"
                  tal:attributes="href builder/owner/fmt:url">Owner</a>
             </td>

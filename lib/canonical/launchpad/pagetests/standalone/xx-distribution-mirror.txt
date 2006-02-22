@@ -265,9 +265,9 @@
   ... -----------------------------1666515360919918511589873832--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/distros/ubuntu/+mirror/mymirror
-  ...
 
 
   >>> print http(r"""
@@ -374,6 +374,7 @@
   ... -----------------------------122658562518459659403293498--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
 
   
@@ -488,9 +489,9 @@
   ... -----------------------------152768659419116023661563519383--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/distros/ubuntu/+mirror/mymirror
-  ...
 
 
   And in the mirror's main page we can now see that it's an official mirror.
