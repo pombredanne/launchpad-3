@@ -32,6 +32,17 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.helpers import getBinaryPackageExtension
 
 
+STATUS_TIMES = [
+    (MirrorStatus.UP, 0.5),
+    (MirrorStatus.ONEHOURBEHIND, 1.5),
+    (MirrorStatus.TWOHOURSBEHIND, 2.5),
+    (MirrorStatus.SIXHOURSBEHIND, 6.5),
+    (MirrorStatus.ONEDAYBEHIND, 24.5),
+    (MirrorStatus.TWODAYSBEHIND, 48.5),
+    (MirrorStatus.ONEWEEKBEHIND, 168.5)
+    ]
+
+
 class DistributionMirror(SQLBase):
     """See IDistributionMirror"""
 
@@ -92,9 +103,9 @@ class DistributionMirror(SQLBase):
         # XXX: Missing a call to simple_sendmail to notify the owner.
         # -- Guilherme Salgado, 2006-02-16
 
-    def newProbeRecord(self):
+    def newProbeRecord(self, log_file):
         """See IDistributionMirror"""
-        return MirrorProbeRecord(distribution_mirror=self)
+        return MirrorProbeRecord(distribution_mirror=self, log_file=log_file)
 
     def deleteMirrorDistroArchRelease(self, distro_arch_release, pocket,
                                       component):
@@ -206,17 +217,6 @@ class DistributionMirrorSet:
         return DistributionMirror.select(query)
 
 
-STATUS_TIMES = {
-    MirrorStatus.UP: (0, 0.5),
-    MirrorStatus.ONEHOURBEHIND: (0.51, 1.5),
-    MirrorStatus.TWOHOURSBEHIND: (1.51, 2.5),
-    MirrorStatus.SIXHOURSBEHIND: (2.51, 6.5),
-    MirrorStatus.ONEDAYBEHIND: (6.51, 24.5),
-    MirrorStatus.TWODAYSBEHIND: (24.51, 48.5),
-    MirrorStatus.ONEWEEKBEHIND: (48.51, 168.5)
-    }
-
-
 class MirrorDistroArchRelease(SQLBase):
     """See IMirrorDistroArchRelease"""
 
@@ -253,15 +253,9 @@ class MirrorDistroArchRelease(SQLBase):
         return '%s/pool/%s/%s' % (base_url, path, name)
 
     def getURLsToCheckUpdateness(self, when=None):
-        """Return a dictionary mapping each different MirrorStatus to a URL on
-        this mirror.
-
-        These URLs should be checked and, if they are accessible, we know
-        that's the current status of this mirror.
-        """
-        now = datetime.now(pytz.timezone('UTC'))
+        """See IMirrorDistroArchRelease"""
         if when is not None:
-            now = when
+            when = datetime.now(pytz.timezone('UTC'))
             
         base_query = """
             pocket = %s AND component = %s AND distroarchrelease = %s
@@ -272,7 +266,7 @@ class MirrorDistroArchRelease(SQLBase):
 
         # Check if there was any recent upload on this distro release.
         status, interval = STATUS_TIMES.items()[-1]
-        oldest_status_time = now - timedelta(hours=interval[1])
+        oldest_status_time = when - timedelta(hours=interval[1])
         query = (base_query + " AND datepublished > %s" 
                  % sqlvalues(oldest_status_time))
         recent_uploads = SecureBinaryPackagePublishingHistory.select(
@@ -284,7 +278,8 @@ class MirrorDistroArchRelease(SQLBase):
             results = SecureBinaryPackagePublishingHistory.select(
                 base_query, orderBy='-datepublished', limit=1)
 
-            if not results:
+            results = list(results)
+            if not len(results):
                 # This should not happen when running on production because
                 # the publishing records are correctly filled. But that's not
                 # true when it comes to our sampledata.
@@ -296,7 +291,7 @@ class MirrorDistroArchRelease(SQLBase):
                        self.pocket.name, self.component.name))
                 return {}
 
-            assert results.count() == 1
+            assert len(results) == 1
             sourcepackagerelease = results[0].binarypackagerelease
             url = self._getBinaryPackageReleaseURL(sourcepackagerelease)
             return {MirrorStatus.UP: url}
@@ -304,20 +299,21 @@ class MirrorDistroArchRelease(SQLBase):
         urls = {}
         for status, interval in STATUS_TIMES.items():
             end, start = interval
-            start = now - timedelta(hours=start)
-            end = now - timedelta(hours=end)
+            start = when - timedelta(hours=start)
+            end = when - timedelta(hours=end)
 
             query = (base_query + " AND datepublished BETWEEN %s AND %s"
                      % sqlvalues(start, end))
             results = SecureBinaryPackagePublishingHistory.select(
                 query, orderBy='-datepublished', limit=1)
 
-            if not results:
+            results = list(results)
+            if not len(results):
                 # No uploads that would allow us to know the mirror was in
                 # this status, so we better skip it.
                 continue
 
-            assert results.count() == 1
+            assert len(results) == 1
             item = results[0]
             url = self._getBinaryPackageReleaseURL(item.binarypackagerelease)
             urls.update({status: url})
@@ -360,12 +356,7 @@ class MirrorDistroReleaseSource(SQLBase):
     # it right now.
     # -- Guilherme Salgado, 2006-02-15
     def getURLsToCheckUpdateness(self, when=None):
-        """Return a dictionary mapping each different MirrorStatus to a URL on
-        this mirror.
-
-        These URLs should be checked and, if they are accessible, we know
-        that's the current status of this mirror.
-        """
+        """See IMirrorDistroReleaseSource"""
         now = datetime.now(pytz.timezone('UTC'))
         if when is not None:
             now = when

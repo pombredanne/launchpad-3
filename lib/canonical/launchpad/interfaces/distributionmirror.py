@@ -84,7 +84,7 @@ class IDistributionMirror(Interface):
     def disableAndNotifyOwner():
         """Mark this mirror as disabled and notifying the owner."""
 
-    def newProbeRecord():
+    def newProbeRecord(log_file):
         """Create and return a new MirrorProbeRecord for this mirror."""
 
     def deleteMirrorDistroArchRelease(distro_arch_release, pocket, component):
@@ -147,8 +147,6 @@ class IDistributionMirrorSet(Interface):
 class IMirrorDistroArchRelease(Interface):
     """The mirror of the packages of a given Distro Arch Release"""
 
-    # XXX: needs to be removed before merging.
-    id = Int(title=_('The unique id'), required=True, readonly=True)
     distribution_mirror = Attribute(_("The Distribution Mirror"))
     distro_arch_release = Choice(
         title=_('Distribution Arch Release'), required=True, readonly=True,
@@ -163,14 +161,17 @@ class IMirrorDistroArchRelease(Interface):
         vocabulary='PackagePublishingPocket')
 
     def getURLsToCheckUpdateness():
-        """ """
+        """Return a dictionary mapping each different MirrorStatus to a URL on
+        this mirror.
+
+        These URLs should be checked and, if they are accessible, we know
+        that's the current status of this mirror.
+        """
 
 
 class IMirrorDistroReleaseSource(Interface):
     """The mirror of a given Distro Release"""
 
-    # XXX: needs to be removed before merging.
-    id = Int(title=_('The unique id'), required=True, readonly=True)
     distribution_mirror = Attribute(_("The Distribution Mirror"))
     distro_release = Choice(
         title=_('Distribution Release'), required=True, readonly=True,
@@ -185,7 +186,12 @@ class IMirrorDistroReleaseSource(Interface):
         vocabulary='PackagePublishingPocket')
 
     def getURLsToCheckUpdateness():
-        """ """
+        """Return a dictionary mapping each different MirrorStatus to a URL on
+        this mirror.
+
+        These URLs should be checked and, if they are accessible, we know
+        that's the current status of this mirror.
+        """
 
 
 class IMirrorProbeRecord(Interface):
@@ -197,4 +203,4 @@ class IMirrorProbeRecord(Interface):
     distribution_mirror = Attribute(_("The Distribution Mirror"))
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-
+    log_file = Attribute(_("The log of this probing."))

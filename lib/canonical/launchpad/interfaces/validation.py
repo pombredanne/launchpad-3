@@ -11,7 +11,7 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
-    'valid_distributionmirror_file_list'
+    'valid_distributionmirror_file_list',
     ]
 
 import urllib

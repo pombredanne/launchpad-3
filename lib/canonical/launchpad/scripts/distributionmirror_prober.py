@@ -1,10 +1,17 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+import httplib
 import urlparse
 
 from twisted.internet import defer, protocol, reactor
 from twisted.web.http import HTTPClient
 from twisted.web import error
+
+from canonical.launchpad.interfaces import IDistroArchRelease, IDistroRelease
+from canonical.lp.dbschema import MirrorStatus
+
+
+PROBER_TIMEOUT = 3
 
 
 class ProberProtocol(HTTPClient):
@@ -17,50 +24,50 @@ class ProberProtocol(HTTPClient):
     def makeRequest(self):
         """Request path presence via HTTP/1.1 using HEAD.
 
-        Uses facotry.host and factory.host
+        Uses factory.host and factory.path
         """
         self.sendCommand('HEAD', self.factory.path)
         self.sendHeader('HOST', self.factory.host)
         self.endHeaders()
         
-    def lineReceived(self, data):
-        """Receive lines from Server and parse them."""
-        line = data.strip()
-        if line.startswith('HTTP'):
-            self.factory.parseResult(line)
-
-    def handleResponse(self, response):
-        """Force the connection end anyway."""
+    def handleStatus(self, version, status, message):
+        self.factory.runCallback(status)
         self.transport.loseConnection()
 
+    def handleResponse(self, response):
+        # The status is all we need, so we don't need to do anything with 
+        # the response
+        pass
 
-class ProberTimeout(error.Error):
-    """The initialized URL did not return at time."""
+
+class ProberTimeout(Exception):
+    """The initialized URL did not return in time."""
 
 
 class ProberFactory(protocol.ClientFactory):
     """Factory using ProberProtocol to probe single URL existence."""
+
     protocol = ProberProtocol
 
-    def __init__(self, url, timeout=1):
+    def __init__(self, url, timeout=PROBER_TIMEOUT):
         self.deferred = defer.Deferred()
         self.setTimeout(timeout)
-        self.setURL(str(url))
+        self.setURL(url.encode('ascii'))
+        self.timedOut = False
         
     def setTimeout(self, timeout):
-        self.timeout = timeout
         self.timeoutCall = reactor.callLater(timeout, self.timeOut)
 
     def timeOut(self):
+        self.timedOut = True
         self.deferred.errback(ProberTimeout('TIMEOUT'))
 
     def _parse(self, url, defaultPort=80):
-        parsed = urlparse.urlparse(url)
-        scheme = parsed[0]
-        path = urlparse.urlunparse(('','') + parsed[2:])
-        host, port = parsed[1], defaultPort
+        scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
+        port = defaultPort
         if ':' in host:
             host, port = host.split(':')
+            assert port.isdigit()
             port = int(port)
         return scheme, host, port, path
 
@@ -73,66 +80,102 @@ class ProberFactory(protocol.ClientFactory):
             self.port = port
         self.path = path
 
-    def buildProtocol(self, addr):
-        return protocol.ClientFactory.buildProtocol(self, addr)
-    
-    def parseResult(self, line):
+    def runCallback(self, status):
         if self.timeoutCall.active():
             self.timeoutCall.cancel()
-        self.deferred.callback(line)
+        if not self.timedOut:
+            self.deferred.callback(status)
 
 
-def returnResult(result, prober):
-    return '"%s" -> %s' % (prober.url, result)
-    return prober.url
+class MirrorProberCallbacks(object):
 
-def printResult(result, prober):
-    print result
-    return prober.url
+    def __init__(self, mirror, release, pocket, component, url, log_file):
+        self.mirror = mirror
+        self.release = release
+        self.pocket = pocket
+        self.component = component
+        self.url = url
+        self.log_file = log_file
+        if IDistroArchRelease.providedBy(release):
+            self.mirror_class_name = 'MirrorDistroArchRelease'
+            self.deleteMethod = self.mirror.deleteMirrorDistroArchRelease
+            self.ensureMethod = self.mirror.ensureMirrorDistroArchRelease
+        elif IDistroRelease.providedBy(release):
+            self.mirror_class_name = 'MirrorDistroRelease'
+            self.deleteMethod = self.mirror.deleteMirrorDistroReleaseSource
+            self.ensureMethod = self.mirror.ensureMirrorDistroReleaseSource
+        else:
+            raise AssertionError('release must provide either '
+                                 'IDistroArchRelease or IDistroRelease.')
 
-def printError(reason, prober):
-    if reason.type == ProberTimeout:
-        print "timeout in %s" % prober.url
-    else:
-        print "another error in %s: %s" % (prober.url, reason)
-    return prober.url
+    def deleteMirrorRelease(self, failure):
+        """Delete the mirror for self.release, self.pocket and self.component.
 
-def checkComplete(result, unchecked, prober):
-    if len(unchecked):
-        unchecked.remove(result)
+        If the failure we get from twisted is not a timeout, then this failure
+        is propagated.
+        """
+        self.deleteMethod(self.release, self.pocket, self.component)
+        msg = ('Deleted %s with url %s because of %s.'
+               % (self.mirror_class_name, self.url, failure.getErrorMessage()))
+        self.log_file.write(msg)
+        if failure.type != ProberTimeout:
+            return failure
+        return None
 
-    if not len(unchecked):
-        reactor.callLater(0, finish)
+    def ensureOrDeleteMirrorRelease(self, http_status):
+        """If http_status is httplib.OK, then make sure we have a mirror for
+        self.release, self.pocket and self.component.
 
-def finish():
-    print 'Done'
-    reactor.stop()
+        If http_status is anything other than httplib.OK, we delete the
+        mirror.
+        """
+        if http_status == str(httplib.OK):
+            msg = ('Ensuring %s with url %s exists in the database.'
+                   % (self.mirror_class_name, self.url))
+            mirror = self.ensureMethod(
+                self.release, self.pocket, self.component)
+        else:
+            msg = ('Deleted %s with url %s because we got a "%s" response.'
+                   % (self.mirror_class_name, self.url, http_status))
+            self.deleteMethod(self.release, self.pocket, self.component)
+            mirror = None
 
+        self.log_file.write(msg)
+        return mirror
 
-if __name__ == '__main__':
-    
-    urls = [
-        'http://all.mirrors.com/pub/ubuntu',
-        'http://localhost/',
-        'http://localhost/index.html',
-        'http://localhost/index.php',
-        'http://www.terra.com.br/dists/warty',
-        'http://locahost/ubuntu/dists/warty',
-        'http://www.gwyddion.com/dists/',
-        'http://archive.ubuntu.com/ubuntu/dists/breezy/main/source/Sources.gz',
-        'http://foo.bar.com/pub/ubuntu',
-        ]
-    
-    unchecked = urls[:]
-    index = 0
-    
-    for url in urls:
-        index += 1
-        prober = ProberFactory(url)
-        prober.deferred.addCallback(returnResult, prober)
-        prober.deferred.addCallback(printResult, prober)
-        prober.deferred.addErrback(printError, prober)
-        prober.deferred.addBoth(checkComplete, unchecked, prober)
-        reactor.connectTCP(prober.host, prober.port, prober)
-        
-    reactor.run()
+    def updateMirrorStatus(self, arch_or_source_mirror):
+        """Update the status of this MirrorDistro{ArchRelease,ReleaseSource}.
+
+        This is done by issuing HTTP HEAD requests on that mirror looking for 
+        some packages found in our publishing records. Then, knowing what 
+        packages the mirror contains and when these packages were published,
+        we can have an idea of when that mirror was last updated.
+        """
+        if arch_or_source_mirror is None:
+            return
+        # We start setting the status to unknown, and then we move on trying to
+        # find one of the recently published packages mirrored there.
+        arch_or_source_mirror.status = MirrorStatus.UNKNOWN
+        status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
+        for status, url in status_url_mapping.items():
+            prober = ProberFactory(url, timeout=PROBER_TIMEOUT)
+            prober.deferred.addCallback(
+                self.setMirrorStatus, arch_or_source_mirror, status, url)
+            prober.deferred.addErrback(self.logError, url)
+            reactor.connectTCP(prober.host, prober.port, prober)
+
+    def setMirrorStatus(self, http_status, arch_or_source_mirror, status):
+        """Update the status of the given arch or source mirror.
+
+        The status is changed only if http_status is a '200 OK' and if the
+        given status refers to a more recent date than the current one.
+        """
+        if http_status != str(httplib.OK):
+            return
+        if arch_or_source_mirror.status > status:
+            arch_or_source_mirror.status = status
+
+    def logError(self, failure, url):
+        self.log_file.write("%s on %s" % (failure.getErrorMessage(), url))
+        return None
+
