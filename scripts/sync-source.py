@@ -34,7 +34,7 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import (sqlvalues, cursor)
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 from canonical.launchpad.helpers import shortlist
@@ -1008,20 +1008,42 @@ def read_current_binaries(distrorelease):
     #            want to check against, which we don't know till we
     #            have the .dsc file and currently this function is
     #            run well before that.
-    for distroarchrelease in distrorelease.architectures:
-        bpp = distroarchrelease.getAllReleasesByStatus(
-            dbschema.PackagePublishingStatus.PUBLISHED)
+    
+    #     for distroarchrelease in distrorelease.architectures:
+    #         bpp = distroarchrelease.getAllReleasesByStatus(
+    #             dbschema.PackagePublishingStatus.PUBLISHED)
 
-        for bp in bpp:
-            component = bp.component.name
-            version = bp.binarypackagerelease.version
-            pkg = bp.binarypackagerelease.binarypackagename.name
-        
-            if not B.has_key(pkg):
+    #         for bp in bpp:
+    #             component = bp.component.name
+    #             version = bp.binarypackagerelease.version
+    #             pkg = bp.binarypackagerelease.binarypackagename.name
+    
+    #             if not B.has_key(pkg):
+    #                 B[pkg] = [version, component]
+    #             else:
+    #                 if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
+    #                     B[pkg] = [version, component]
+
+    # XXX: so... let's fall back on raw SQL
+    dar_ids = ", ".join([(str(dar.id)) for dar in distrorelease.architectures])
+    cur = cursor()
+    query = """
+SELECT bpn.name, bpr.version, c.name
+  FROM binarypackagerelease bpr, binarypackagename bpn, component c,
+       securebinarypackagepublishinghistory sbpph, distroarchrelease dar
+ WHERE bpr.binarypackagename = bpn.id AND sbpph.binarypackagerelease = bpr.id
+   AND sbpph.component = c.id AND sbpph.distroarchrelease = dar.id
+   AND sbpph.status = %s AND dar.id in (%s)""" \
+             % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
+    cur.execute(query)
+    print "Getting binaries for %s..." % (distrorelease.name)
+    for (pkg, version, component) in cur.fetchall():
+        if not B.has_key(pkg):
+            B[pkg] = [version, component]
+        else:
+            if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
                 B[pkg] = [version, component]
-            else:
-                if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
-                    B[pkg] = [version, component]
+
     return B
 
 ################################################################################
