@@ -44,7 +44,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -425,6 +425,10 @@ class BugTaskEditView(GeneralFormView):
                 # Pass the comment_on_change_error as a list here, because
                 # WidgetsError expects a list of errors.
                 raise WidgetsError([self.comment_on_change_error])
+        distro = bugtask.distribution
+        sourcename = bugtask.sourcepackagename
+        if distro is not None and sourcename != data['sourcepackagename']:
+            valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
 
         return data
 
@@ -956,6 +960,7 @@ class BugTaskSearchListingView(LaunchpadView):
         Return the IDistributionSourcePackage if yes, otherwise return None.
         """
         return IDistributionSourcePackage(self.context, None)
+
 
 class BugTargetView:
     """Used to grab bugs for a bug target; used by the latest bugs portlet"""

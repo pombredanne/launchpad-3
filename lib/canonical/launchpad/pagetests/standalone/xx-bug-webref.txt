@@ -36,9 +36,9 @@ Now we can test if we can add a external web reference in the page
   ... -----------------------------915798226605112199728632740--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/ubuntu/+bug/2
-  ...
 
 Now we should see the Link added to the bug page
 

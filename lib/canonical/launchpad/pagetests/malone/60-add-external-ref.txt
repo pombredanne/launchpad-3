@@ -46,10 +46,8 @@ how to add a URL external reference.
   ... ------------0xKhTmLbOuNdArY--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
-          <h1>Add Web link</h1>
-  ...name="field.url" size="30" type="text" value="http://www.example.com"...
-  ...name="field.title"...
 
 
   >>> print http(r"""
