@@ -820,7 +820,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugtracker'::pg_catalog.regclass;
 
-INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'http://bugzilla.mozilla.org/', 12, 'Carrier pigeon only');
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'https://bugzilla.mozilla.org/', 12, 'Carrier pigeon only');
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (2, 1, 'gnome-bugzilla', 'GnomeGBug GTracker', 'This is the Gnome Bugzilla bug tracking system. It covers all the applications in the Gnome Desktop and Gnome Fifth Toe.', 'http://bugzilla.gnome.org/', 16, 'Jeff Waugh, in his pants.');
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (3, 2, 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1, NULL);
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (4, 1, 'ubuntu-bugzilla', 'The Ubuntu.com bugzilla', 'The Ubuntu.com bugzilla tracks bugs in all products Ubuntu supports, in the Canonical.com hosted websites and in Bazaar and the Arch supermirror', 'http://bugzilla.ubuntu.com/', 1, NULL);
@@ -843,12 +843,12 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'build'::pg_catalog.regclass;
 
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, NULL, 'Sample changes :)....', 14);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, NULL, 'changes', 20);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (8, '2005-09-30 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, NULL, 'wanted changes', 14);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (9, '2005-10-01 00:00:00', 1, 1, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, NULL, 'broken changes', 20);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (10, '2006-01-27 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, NULL, 'coming from gina', 26);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (11, '2006-02-14 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, NULL, 'wanted changes', 25);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease) VALUES (8, '2005-09-30 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 14);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease) VALUES (9, '2005-10-01 00:00:00', 1, 1, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease) VALUES (10, '2006-01-27 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 26);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease) VALUES (11, '2006-02-14 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 25);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'build'::pg_catalog.regclass;
@@ -1395,6 +1395,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeue'::pg_catalog.regclass;
 
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (1, 3, 1, 0, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeue'::pg_catalog.regclass;
@@ -1402,6 +1403,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeuebuild'::pg_catalog.regclass;
 
+INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (1, 1, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeuebuild'::pg_catalog.regclass;

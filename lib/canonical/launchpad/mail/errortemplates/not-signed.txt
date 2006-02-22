@@ -1,2 +1,2 @@
-The email you sent included commands to edit the bug, but you didn't
-sign the email with your GPG key.
+The message you sent included commands to modify the bug report, but you didn't
+sign the message with your OpenPGP key.

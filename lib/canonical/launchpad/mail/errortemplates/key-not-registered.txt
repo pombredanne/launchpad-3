@@ -1,1 +1,3 @@
-The email you sent included commands to edit the bug, but your GPG key isn't imported into Launchpad. Please go to %(import_url)s to import your key.
+The message you sent included commands to modify the bug report, but
+your OpenPGP key isn't imported into Launchpad. Please go to
+%(import_url)s to import your key.

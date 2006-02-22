@@ -173,7 +173,7 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="30" />
     </browser:editform>
 
     <browser:editform
@@ -262,7 +262,7 @@
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"
-            displayWidth="60" />
+            displayWidth="30" />
     </browser:addform>
 
     <browser:addform
@@ -276,7 +276,7 @@
         keyword_arguments="bugtracker remotebug"
         permission="launchpad.AnyPerson"
         template="../templates/bug-watch-add.pt"
-        lp:url="malone/bugs/$Bugs.id/watches/+new" />
+        lp:url="malone/bugs/$Bugs.id/+addwatch" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
