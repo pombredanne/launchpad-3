@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (c) 2005 Canonical Ltd.
+# Copyright (c) 2006 Canonical Ltd.
 # Author: David Allouche <david@allouche.net>
 
 """Script for Importd that converts baz branches to bzr and publish them.
@@ -30,7 +30,10 @@ class BatchProgress(DummyProgress):
 
 
 def main(quiet, from_branch, to_location, blacklist_path):
-    unused = blacklist_path
+    if isInBlacklist(from_branch, blacklist_path):
+        print 'blacklisted:', from_branch
+        print "Not exporting to bzr"
+        return 0
     to_location = os.path.realpath(str(to_location))
     from_branch = pybaz.Version(from_branch)
     if quiet:
@@ -43,7 +46,17 @@ def main(quiet, from_branch, to_location, blacklist_path):
         to_location, from_branch, printer, 
         max_count=None, reuse_history_from=[],
         progress_bar=progress_bar)
+    return 0
 
+def isInBlacklist(from_branch, blacklist_path):
+    blacklist = open(blacklist_path)
+    return from_branch in parseBlacklist(blacklist)
+
+def parseBlacklist(blacklist):
+    for line in blacklist:
+        line = line.strip()
+        if line:
+            yield line
 
 if __name__ == '__main__':
     args = sys.argv[1:]
