@@ -7,16 +7,25 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
+    BoolCol, ForeignKey, MultipleJoin, RelatedJoin, StringCol,
+    SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+
 from canonical.launchpad.components.bugtarget import BugTargetBase
+
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.distrorelease import DistroRelease
+from canonical.launchpad.database.publishedpackage import PublishedPackage
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (
@@ -25,19 +34,13 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishing)
-from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.librarian import LibraryFileAlias
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus,
@@ -81,12 +84,15 @@ class Distribution(SQLBase, BugTargetBase):
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
     uploaders = MultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
     source_package_caches = MultipleJoin('DistributionSourcePackageCache',
         joinColumn='distribution', orderBy='name')
+    official_malone = BoolCol(dbName='official_malone', notNull=True,
+        default=False)
+    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
+        default=False)
 
     @property
     def enabled_official_mirrors(self):
@@ -578,3 +584,4 @@ class DistroPackageFinder:
     def __init__(self, distribution=None, processorfamily=None):
         self.distribution = distribution
         # XXX kiko: and what about processorfamily?
+

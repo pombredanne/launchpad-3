@@ -39,9 +39,9 @@ Now, we will POST to it. We expect to be redirected to the spec home page.
   ... -----------------------------17148587251480984875899951709--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/canvas
-  ...
 
 
 And on that page, we expect to see that the spec is targeted to the 1.0

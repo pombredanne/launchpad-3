@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.launchpad.scripts.keyringtrustanalyser import *
 from zope.component import getUtility
-from pyme.constants import validity
+import gpgme
 
 test_fpr = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 foobar_fpr = '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
@@ -58,7 +58,7 @@ class TestKeyringTrustAnalyser(FunctionalTestCase):
         # small amount of test data.
         filename = keys_for_tests.test_pubkey_file_from_email(
             'test@canonical.com')
-        addTrustedKeyring(filename, validity.ULTIMATE)
+        addTrustedKeyring(filename, gpgme.VALIDITY_ULTIMATE)
 
     def _addUntrustedKeys(self):
         for ring in keys_for_tests.test_keyrings():
@@ -74,7 +74,7 @@ class TestKeyringTrustAnalyser(FunctionalTestCase):
         self.assertEqual(len(keys), 1)
         key = keys[0]
         self.assertTrue('test@canonical.com' in key.emails)
-        self.assertEqual(key.owner_trust, validity.ULTIMATE)
+        self.assertEqual(key.owner_trust, gpgme.VALIDITY_ULTIMATE)
 
     def testAddOtherKeyring(self):
         """Test addOtherKeyring"""
