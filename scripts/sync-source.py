@@ -966,7 +966,7 @@ def read_current_source(distrorelease, valid_components="", arguments=None):
     if Options.all:
         spp = distrorelease.getAllSourceReleasesByStatus(
             dbschema.PackagePublishingStatus.PUBLISHED)
-    except:
+    else:
         spp = []
         for package in arguments:
             spp.extend(distrorelease.getPublishedReleases(package))
