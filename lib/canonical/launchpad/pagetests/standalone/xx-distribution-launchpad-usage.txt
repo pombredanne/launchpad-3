@@ -56,9 +56,9 @@ the distribution index page:
   ... ------------QXxp0JqS8QGKEJaR6rljsl--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/distros/ubuntu
-  ...
 
 On the distribution page we can see that it doesn't use Malone and
 Rosetta anymore:
