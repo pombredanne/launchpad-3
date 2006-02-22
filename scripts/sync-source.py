@@ -889,7 +889,10 @@ def check_dsc(dsc, current_sources, current_binaries):
             # Check that a non-main source package is not trying to
             # override a main binary package
             if current_component == "main" and source_component != "main":
-                dak_utils.fubar("%s is in main but it's source (%s) is not." % (binary, source))
+                if not Options.forcemore:
+                    dak_utils.fubar("%s is in main but it's source (%s) is not." % (binary, source))
+                else:
+                    dak_utils.warn("%s is in main but it's source (%s) is not - continuing anyway." % (binary, source))
 
             # Check that a source package is not trying to override an
             # ubuntu-modified binary package
@@ -1256,6 +1259,9 @@ def options_setup():
     parser.add_option("-f", "--force", dest="force",
                       default=False, action="store_true",
                       help="force sync over the top of Ubuntu changes")
+    parser.add_option("-F", "--force-more", dest="forcemore",
+                      default=False, action="store_true",
+                      help="force sync even when components don't match")
     parser.add_option("-n", "--noaction", dest="action",
                       default=True, action="store_false",
                       help="don't do anything")
