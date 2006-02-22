@@ -1361,7 +1361,7 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    initZopeless(dbuser="ro")
+    initZopeless(dbuser="ro", dbname="launchpad_prod", dbhost="emperor")
 
     execute_zcml_for_scripts()
 
