@@ -16,13 +16,25 @@
           5 results
   ...
         <a href="...">alsa-utils</a>
-  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
         <a href="...">evolution</a>
-  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
         <a href="...">mozilla-firefox</a>
-  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
         <a href="...">netapplet</a>
-  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
         <a href="...">pmount</a>
   ...
 
