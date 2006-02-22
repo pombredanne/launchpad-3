@@ -39,19 +39,24 @@ class SandboxHelper(object):
     def setUp(self):
         self.here = os.getcwd()
         self.home_dir = os.environ.get('HOME')
+        self.saved_editor = os.environ.get('EDITOR')
         self.sandbox_path = os.path.join(self.here, ',,job_test')
         shutil.rmtree(self.sandbox_path, ignore_errors=True)
         os.mkdir(self.sandbox_path)
         os.chdir(self.sandbox_path)
         os.environ['HOME'] = self.sandbox_path
+        del os.environ['EDITOR']
         arch.set_my_id("John Doe <jdoe@example.com>")
 
     def tearDown(self):
         os.environ['HOME'] = self.home_dir
+        if self.saved_editor is not None:
+            os.environ['EDITOR'] = self.saved_editor
         shutil.rmtree(self.sandbox_path, ignore_errors=True)
         os.chdir(self.here)
         del self.here
         del self.home_dir
+        del self.saved_editor
         del self.sandbox_path
 
     def mkdir(self, name):
@@ -387,6 +392,7 @@ class TestHTTPRequestHandler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+
 class WebserverHelper(SandboxHelper):
 
     HTTP_PORTS = range(13000, 0x8000)
@@ -458,6 +464,7 @@ class WebserverHelper(SandboxHelper):
             import os
             os.environ["http_proxy"] = self._http_proxy
         SandboxHelper.tearDown(self)
+
 
 class WebserverTestCase(unittest.TestCase):
     """Base class for test cases that need a WebserverHelper."""
