@@ -41,6 +41,17 @@
         permission="zope.Public"
         name="+bugs"
         template="../templates/buglisting-default.pt"/>
+
+    <browser:generalform
+        for="canonical.launchpad.interfaces.IBugTarget"
+        permission="zope.Public"
+        schema="canonical.launchpad.interfaces.IBugTaskSearch"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        fields="status severity priority assignee owner omit_dupes
+                searchtext"
+        name="+bugs-advanced-search"
+        template="../templates/bugtarget-advanced-search.pt" />
+
   </facet>
 
 </configure>

@@ -184,10 +184,17 @@ class IBugTaskSearch(Interface):
         title=_('Severity:'),
         value_type=IBugTask['severity'],
         required=False)
+    priority = List(
+        title=_('Priority:'),
+        value_type=IBugTask['priority'],
+        required=False)
     assignee = Choice(
         title=_('Assignee:'), vocabulary='ValidAssignee', required=False)
-    unassigned = Bool(title=_('Unassigned bugs only'), required=False)
-    include_dupes = Bool(title=_('Include duplicate bugs'), required=False)
+    owner = Choice(
+        title=_('Reporter:'), vocabulary='ValidAssignee', required=False)
+    omit_dupes = Bool(
+        title=_('Omit duplicate bugs'), required=False,
+        default=True)
     statusexplanation = TextLine(
         title=_("Status notes:"), required=False)
     attachmenttype = List(

@@ -22,6 +22,7 @@ import urllib
 
 from zope.event import notify
 from zope.interface import providedBy
+from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
 from zope.app.form.utility import (
     setUpWidgets, getWidgetsData, applyWidgetsChanges)
@@ -575,12 +576,6 @@ class BugTaskSearchListingView(LaunchpadView):
     Subclasses should define getExtraSearchParams() to filter the
     search.
     """
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-        # The initial values to be used when setting up the widgets of this 
-        # page.
-        self.initial_values = {}
-
     @property
     def columns_to_show(self):
         """Returns a sequence of column names to be shown in the listing."""
@@ -616,8 +611,7 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             raise TypeError("Unknown context: %s" % repr(self.context))
 
-        setUpWidgets(self, self.search_form_schema, IInputWidget,
-                     initial=self.initial_values)
+        setUpWidgets(self, self.search_form_schema, IInputWidget)
 
     def showTableView(self):
         """Should the search results be displayed as a table?"""
@@ -650,7 +644,7 @@ class BugTaskSearchListingView(LaunchpadView):
                     self, self.search_form_schema,
                     names=[
                         "searchtext", "status", "assignee", "severity",
-                        "unassigned"]))
+                        "priority", "owner", "omit_dupes"]))
 
             searchtext = data.get("searchtext")
             if searchtext and searchtext.isdigit():
@@ -661,10 +655,9 @@ class BugTaskSearchListingView(LaunchpadView):
                 else:
                     self.request.response.redirect(canonical_url(bug))
 
-            unassigned = data.get("unassigned")
-            if unassigned:
+            assignee_option = self.request.form.get("assignee_option")
+            if assignee_option == "none":
                 data['assignee'] = NULL
-                del data['unassigned']
         else:
             # The user didn't click the "Search" button, e.g., they came in at
             # the default +bugs URL, so we'll inject default search parameters.
@@ -673,11 +666,9 @@ class BugTaskSearchListingView(LaunchpadView):
         if extra_params:
             data.update(extra_params)
 
-        # Force omitting dupes, if other search criteria were provided. This
-        # will omit dupes for every search except "All bugs ever reported".
-        if data and not data.has_key("omit_dupes"):
-            # We'll force omitting dupes until the advanced search reappears in a
-            # near-future landing.
+        if data.get("omit_dupes") is None:
+            # The "omit dupes" parameter wasn't provided, so default to omitting
+            # dupes from reports, of course.
             data["omit_dupes"] = True
 
         # "Normalize" the form data into search arguments.
@@ -706,6 +697,60 @@ class BugTaskSearchListingView(LaunchpadView):
         return TableBatchNavigator(
             batch=batch, request=self.request,
             columns_to_show=self.columns_to_show)
+
+    def getWidgetValues(self, vocabulary_name, default_values=None):
+        """Return data used to render a field's widget."""
+        widget_values = []
+        if not default_values:
+            default_values = []
+
+        vocabulary_registry = getVocabularyRegistry()
+        for term in vocabulary_registry.get(None, vocabulary_name):
+            values = {}
+            values["value"] = term.token
+            values["title"] = term.token
+            if term.value in default_values:
+                values["checked"] = True
+            else:
+                values["checked"] = False
+
+            widget_values.append(values)
+
+        return widget_values
+
+    def getStatusWidgetValues(self):
+        """Return data used to render the status checkboxes."""
+        return self.getWidgetValues(
+            vocabulary_name="BugTaskStatus",
+            default_values=UNRESOLVED_BUGTASK_STATUSES)
+
+    def getPriorityWidgetValues(self):
+        """Return data used to render the priority checkboxes."""
+        return self.getWidgetValues(vocabulary_name="BugTaskPriority")
+
+    def getSeverityWidgetValues(self):
+        """Return data used to render the severity checkboxes."""
+        return self.getWidgetValues("BugTaskSeverity")
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs in %s: Advanced Search" % self.context.displayname
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs in %s" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+bugs"
+
+    def shouldShowAssigneeWidget(self):
+        """Should the assignee widget be shown on the advanced search page?"""
+        return True
+
+    def shouldShowReporterWidget(self):
+        """Should the reporter widget be shown on the advanced search page?"""
+        return True
 
     def shouldShowAdvancedSearchWidgets(self):
         """Return True if the advanced search widgets should be shown."""

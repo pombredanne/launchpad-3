@@ -23,12 +23,11 @@ from zope.app.form.interfaces import WidgetsError
 from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.pagetemplate.simpleviewclass import SimpleViewClass
-from zope.app.publisher.browser import BrowserView
-
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
-class GeneralFormView(BrowserView):
+class GeneralFormView(LaunchpadView):
     """Simple Generalised Form Base Class
 
     Subclasses should provide a `schema` attribute defining the schema
@@ -84,7 +83,7 @@ class GeneralFormView(BrowserView):
 
     # internal methods, should not be overridden
     def __init__(self, context, request):
-        BrowserView.__init__(self, context, request)
+        LaunchpadView.__init__(self, context, request)
 
         self.errors = {}
         self.process_status = None

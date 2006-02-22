@@ -672,6 +672,23 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
                 'owner': self.context,
                 'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
 
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Reported by %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs reported %s" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+reportedbugs"
+
+    def shouldShowReporterWidget(self):
+        """Should the reporter widget be shown on the advanced search page?"""
+        return False
+
 
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug contact."""
@@ -843,6 +860,23 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
                 'assignee': self.context,
                 'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
 
+    def shouldShowAssigneeWidget(self):
+        """Should the assignee widget be shown on the advanced search page?"""
+        return False
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Assigned to %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs assigned to %s" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+assignedbugs"
+
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
@@ -854,6 +888,20 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
             self, extra_params={
                 'subscriber': self.context,
                 'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs %s is Cc'd to: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs %s is Cc'd to" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+subscribedbugs"
+
 
 class PersonView:
     """A View class used in almost all Person's pages."""
