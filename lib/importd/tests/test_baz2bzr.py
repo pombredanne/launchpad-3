@@ -4,8 +4,9 @@
 
 import sys
 import os
-import unittest
+import shutil
 from subprocess import Popen, call, STDOUT, PIPE
+import unittest
 
 import pybaz
 import bzrlib.branch
@@ -26,11 +27,19 @@ class Baz2bzrTestCase(unittest.TestCase):
         self.sandbox_helper.tearDown()
 
     def extractCannedArchive(self, number):
-        """Extract the canned archive with the given sequence number."""
-        basedir = os.dirname(__file__)
+        """Extract the canned archive with the given sequence number.
+
+        Remove any previously extracted canned archive.
+        """
+        basedir = os.path.dirname(__file__)
+        # Use the saved cwd to turn __file__ into an absolute path
+        basedir = os.path.join(self.sandbox_helper.here, basedir)
         tarball = os.path.join(basedir, 'importd@example.com-%d.tgz' % number)
         target_dir = self.sandbox_helper.path('archives')
-        retcode = call(['tar', 'xzf', tarball], chdir=target_dir)
+        archive_path = os.path.join(target_dir, 'importd@example.com')
+        if os.path.isdir(archive_path):
+            shutil.rmtree(archive_path)
+        retcode = call(['tar', 'xzf', tarball], cwd=target_dir)
         assert retcode == 0, 'failed to extract canned archive %d' % number
 
     def registerCannedArchive(self):
@@ -50,47 +59,59 @@ class Baz2bzrTestCase(unittest.TestCase):
 
     def bzrBranch(self):
         """Return the bzrlib Branch object for the produced branch."""
-        return bzrlib.branch.Branch(self.bzrBranchPath())
+        return bzrlib.branch.Branch.open(self.bzrBranchPath())
 
-    def pipeBaz2bzr(self, args):
-        """Execute baz2bzr on pipes with the provided argument list.
+    def callBaz2bzr(self, args):
+        """Execute baz2bzr with the provided argument list.
 
-        Return the combined output of its stdout and stderr output, and raise
-        AssertionError if the exit code is non-zero.
+        Does not redirect stdio so baz2bzr can be traced with pdb.
+
+        :raise AssertionError: if the exit code is non-zero.
         """
-        script = os.dirname(baz2bzr.__file__)
-        process = Popen(
-            [sys.executable, script] + args,
-            stdin=PIPE, stderr=STDOUT, stdout=PIPE)
-        process.stdin.close()
-        output = process.read()
-        retcode = process.wait()
-        assert retcode == 0, 'baz2bzr failed\n%s\nexit %d' % (output, retcode)
-        return output
+        # Use the saved cwd to turn __file__ into an absolute path
+        script = os.path.join(self.sandbox_helper.here, baz2bzr.__file__)
+        retcode = call([sys.executable, script] + args)
+        assert retcode == 0, 'baz2bzr failed (status %d)' % retcode
 
 
 class TestBaz2bzrFeatures(Baz2bzrTestCase):
 
     def test_conversion(self):
+        # test the initial import
         self.extractCannedArchive(1)
         self.registerCannedArchive()
-        bzrworking = self.sandbox_helper('bzrworking')
+        bzrworking = self.sandbox_helper.path('bzrworking')
         version = self.cannedArchiveVersion()
-        self.pipeBaz2bzr([version.fullname, bzrworking, '/dev/null'])
+        self.callBaz2bzr([version.fullname, bzrworking, '/dev/null'])
         branch = self.bzrBranch()
         history = branch.revision_history()
         self.assertEqual(len(history), 2)
-        rev0 = branch.get_revisions(history[0])
-        expected_rev0 = (
-            'revid', 'timestamp', 'timezone', 'committer', 'message', 'revprops')
-        self.assertRevisionMatches(rev0, expected_rev0)
-        rev1 = branch.get_revisions(history[1])
-        expected_rev1 = (
-            'revid', 'timestamp', 'timezone', 'committer', 'message', 'revprops')
-        self.assertRevisionMatches(rev1, expected_rev1)
+        self.assertRevisionMatchesExpected(branch, 0)
+        self.assertRevisionMatchesExpected(branch, 1)
+        # test updating the bzr branch
+        self.extractCannedArchive(2)
+        self.callBaz2bzr([version.fullname, bzrworking, '/dev/null'])
+        history = branch.revision_history()
+        self.assertEqual(len(history), 3)
+        self.assertRevisionMatchesExpected(branch, 0)
+        self.assertRevisionMatchesExpected(branch, 1)
+        self.assertRevisionMatchesExpected(branch, 2)
 
-    def assertRevisionMatches(self, revision, expected):
+
+    def assertRevisionMatchesExpected(self, branch, index):
         """Match revision attributes against expected data."""
+        history = branch.revision_history()
+        expected_revs = [
+            ('Arch-1:importd@example.com%test--branch--0--base-0',
+             1140542478.0, None, 'david', 'Initial revision\n',
+             {'converted-by': 'launchpad.net', 'cscvs-id': 'MAIN.1'}),
+            ('Arch-1:importd@example.com%test--branch--0--patch-1',
+             1140542480.0, None, 'david', 'change 1\n',
+             {'converted-by': 'launchpad.net', 'cscvs-id': 'MAIN.2'}),
+            ('Arch-1:importd@example.com%test--branch--0--patch-2',
+             1140542509.0, None, 'david', 'change 2\n',
+             {'converted-by': 'launchpad.net', 'cscvs-id': 'MAIN.3'})]
+        revision = branch.get_revision(history[index])
         revision_attrs = (
             revision.revision_id,
             revision.timestamp,
@@ -98,7 +119,7 @@ class TestBaz2bzrFeatures(Baz2bzrTestCase):
             revision.committer,
             revision.message,
             revision.properties)
-        self.assertEqual(revision_attrs, expected)
+        self.assertEqual(revision_attrs, expected_revs[index])
 
 
 TestUtil.register(__name__)
