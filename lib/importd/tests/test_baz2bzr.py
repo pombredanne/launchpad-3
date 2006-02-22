@@ -158,28 +158,6 @@ class TestBaz2bzrFeatures(Baz2bzrTestCase):
         self.assertRevisionMatchesExpected(branch, 1)
         self.assertRevisionMatchesExpected(branch, 2)
 
-    expected_lines = [
-        '0/2 revisions',
-        '1/2 revisions',
-        '2/2 revisions',
-        'Cleaning up',
-        'Import complete.',
-        ''] # empty item denotes final newline
-
-    def test_pipe_output(self):
-        self.extractCannedArchive(1)
-        self.registerCannedArchive()
-        output = self.pipeBaz2bzr(
-            [self.version.fullname, self.bzrworking, '/dev/null'])
-        self.assertEqual(output, '\n'.join(self.expected_lines))
-
-    def test_pty_output(self):
-        self.extractCannedArchive(1)
-        self.registerCannedArchive()
-        output = self.ptyBaz2bzr(
-            [self.version.fullname, self.bzrworking, '/dev/null'])
-        self.assertEqual(output, '\r\n'.join(self.expected_lines))
-
     def assertRevisionMatchesExpected(self, branch, index):
         """Match revision attributes against expected data."""
         history = branch.revision_history()
@@ -202,6 +180,28 @@ class TestBaz2bzrFeatures(Baz2bzrTestCase):
             revision.message,
             revision.properties)
         self.assertEqual(revision_attrs, expected_revs[index])
+
+    def test_pipe_output(self):
+        self.extractCannedArchive(1)
+        self.registerCannedArchive()
+        output = self.pipeBaz2bzr(
+            [self.version.fullname, self.bzrworking, '/dev/null'])
+        self.assertEqual(output, '\n'.join(self.expected_lines))
+
+    def test_pty_output(self):
+        self.extractCannedArchive(1)
+        self.registerCannedArchive()
+        output = self.ptyBaz2bzr(
+            [self.version.fullname, self.bzrworking, '/dev/null'])
+        self.assertEqual(output, '\r\n'.join(self.expected_lines))
+
+    expected_lines = [
+        '0/2 revisions',
+        '1/2 revisions',
+        '2/2 revisions',
+        'Cleaning up',
+        'Import complete.',
+        ''] # empty item denotes final newline
 
 
 TestUtil.register(__name__)
