@@ -85,10 +85,9 @@ distribution.
   ... -----------------------------83093195616674742681104656048--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://.../distros/ubuntu/+spec/networkmagic
+  Content-Length: 0
   ...
+  Location: http://.../distros/ubuntu/+spec/networkmagic
 
 
 OK, that created a new specification. Let's make sure we can see it.

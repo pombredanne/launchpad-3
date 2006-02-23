@@ -33,9 +33,9 @@ Now, let's POST to it, to subscribe sabdfl.
   ... -----------------------------12077743959310110181447415077--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+bug/1
-  ...
 
 Now, we should see Mark Shuttleworth as a subscriber.
 
