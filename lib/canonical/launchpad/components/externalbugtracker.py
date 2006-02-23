@@ -1,4 +1,8 @@
-#!/usr/bin/env python 
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""External bugtrackers."""
+
+__metaclass__ = type
 
 import urllib
 import urllib2
@@ -17,9 +21,7 @@ LP_USER_AGENT = "Launchpad Bugscraper/0.1 (http://launchpad.net/malone)"
 
 
 class UnknownBugTrackerTypeError(Exception):
-    """
-    Exception class to catch systems we don't have a class for yet
-    """
+    """ Exception class to catch systems we don't have a class for yet."""
 
     def __init__(self, bugtrackertypename, bugtrackername):
         self.bugtrackertypename = bugtrackertypename
@@ -30,9 +32,7 @@ class UnknownBugTrackerTypeError(Exception):
 
 
 class BugTrackerConnectError(Exception):
-    """
-    Exception class to catch misc errors contacting a bugtracker
-    """
+    """Exception class to catch misc errors contacting a bugtracker."""
 
     def __init__(self, url, error):
         self.url = url

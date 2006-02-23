@@ -6,8 +6,9 @@ watches. This document describes how they work. Since we don't want to
 depend on a working network connection, we use a slightly modified
 implementation.
 
-    >>> from canonical.launchpad.ftests.externalsystem import TestBugzilla
-    >>> from canonical.malone.externalsystem import ExternalSystem
+    >>> from canonical.launchpad.ftests.externalbugtracker import TestBugzilla
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     ExternalSystem)
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
     >>> test_remote_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
