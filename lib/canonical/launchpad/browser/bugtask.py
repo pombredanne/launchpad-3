@@ -367,9 +367,11 @@ class BugTaskBackportView:
                 continue
             # A target value looks like 'warty.mozilla-firefox'. If
             # there was no specific sourcepackage targeted, it would
-            # look like 'warty.'
+            # look like 'warty.'. 
             if "." in target:
-                releasename, spname = target.split(".")
+                # We need to ensure we split into two parts, because 
+                # some packages names contains dots.
+                releasename, spname = target.split(".", 1)
                 spname = getUtility(ISourcePackageNameSet).queryByName(spname)
             else:
                 releasename = target
