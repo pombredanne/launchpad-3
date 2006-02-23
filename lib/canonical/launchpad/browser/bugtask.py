@@ -975,7 +975,7 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
 
     def getExtraSearchParams(self):
         """Return the extra parameters for a search that used the advanced form.
-        
+
         This method can also be used to get the extra parameters when a simple
         form is submitted. This allows us to hide the advanced form in some
         pages and still use this method to get the extra params of the

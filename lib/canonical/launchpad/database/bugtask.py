@@ -21,9 +21,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.lp.dbschema import (
-    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity)
-
+from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -35,18 +33,18 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open': BugTaskStatus.UNCONFIRMED,
-                    'forwarded': BugTaskStatus.CONFIRMED,
-                    'done': BugTaskStatus.FIXRELEASED}
+debbugsstatusmap = {'open':      dbschema.BugTaskStatus.UNCONFIRMED,
+                    'forwarded': dbschema.BugTaskStatus.CONFIRMED,
+                    'done':      dbschema.BugTaskStatus.FIXRELEASED}
 
-debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
-                      'minor': BugTaskSeverity.MINOR,
-                      'normal': BugTaskSeverity.NORMAL,
-                      None: BugTaskSeverity.NORMAL,
-                      'important': BugTaskSeverity.MAJOR,
-                      'serious': BugTaskSeverity.MAJOR,
-                      'grave': BugTaskSeverity.MAJOR,
-                      'critical': BugTaskSeverity.CRITICAL}
+debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
+                      'minor':     dbschema.BugTaskSeverity.MINOR,
+                      'normal':    dbschema.BugTaskSeverity.NORMAL,
+                      None:        dbschema.BugTaskSeverity.NORMAL,
+                      'important': dbschema.BugTaskSeverity.MAJOR,
+                      'serious':   dbschema.BugTaskSeverity.MAJOR,
+                      'grave':     dbschema.BugTaskSeverity.MAJOR,
+                      'critical':  dbschema.BugTaskSeverity.CRITICAL}
 
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
@@ -79,6 +77,20 @@ def bugtask_sort_key(bugtask):
             sourcepackagename)
 
 
+def sanitize_sql_id(value):
+    """Returns the correct ID for use in an SQL conditional."""
+    is_sqlobject = ISQLObject(value, None)
+    if is_sqlobject:
+        return value.id
+    elif isinstance(value, dbschema.Item):
+        return int(value.value)
+    else:
+        try:
+            return int(value)
+        except ValueError:
+            raise AssertionError("Couldn't convert %r to an integer" % value)
+
+
 class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
@@ -101,17 +113,17 @@ class BugTask(SQLBase, BugTaskMixin):
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
-    status = EnumCol(
+    status = dbschema.EnumCol(
         dbName='status', notNull=True,
-        schema=BugTaskStatus,
-        default=BugTaskStatus.UNCONFIRMED)
+        schema=dbschema.BugTaskStatus,
+        default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
-    priority = EnumCol(
-        dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
-    severity = EnumCol(
+    priority = dbschema.EnumCol(
+        dbName='priority', notNull=False, schema=dbschema.BugTaskPriority, default=None)
+    severity = dbschema.EnumCol(
         dbName='severity', notNull=True,
-        schema=BugTaskSeverity,
-        default=BugTaskSeverity.NORMAL)
+        schema=dbschema.BugTaskSeverity,
+        default=dbschema.BugTaskSeverity.NORMAL)
     binarypackagename = ForeignKey(
         dbName='binarypackagename', foreignKey='BinaryPackageName',
         notNull=False, default=None)
@@ -283,16 +295,18 @@ class BugTask(SQLBase, BugTaskMixin):
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXCOMMITTED):
+            if status in (dbschema.BugTaskStatus.REJECTED, 
+                          dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
-            elif  status == BugTaskStatus.CONFIRMED:
+            elif  status == dbschema.BugTaskStatus.CONFIRMED:
                 return '%s, assigned to %s' % (status.title.lower(), assignee_html)
 
         # The status is something other than REJECTED, FIXCOMMITTED or
         # CONFIRMED (whether assigned to someone or not), so we'll
         # show only the status.
-        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED,
-                      BugTaskStatus.FIXRELEASED):
+        if status in (dbschema.BugTaskStatus.REJECTED, 
+                      dbschema.BugTaskStatus.UNCONFIRMED,
+                      dbschema.BugTaskStatus.FIXRELEASED):
             return status.title.lower()
 
         return status.title.lower() + ' (unassigned)'
@@ -372,11 +386,14 @@ class BugTaskSet:
             if arg_value is None:
                 continue
             if zope_isinstance(arg_value, any):
+                # When an any() clause is provided, the argument value
+                # is a list of acceptable filter values.
                 if not arg_value.query_values:
                     continue
-                # The argument value is a list of acceptable
-                # filter values.
-                arg_values = sqlvalues(*arg_value.query_values)
+                # There could be SQLObjects inside the any() clause; we
+                # need to sanitize each of the arguments.
+                real_values = [sanitize_sql_id(v) for v in arg_value.query_values]
+                arg_values = sqlvalues(*real_values)
                 where_arg = ", ".join(arg_values)
                 clause = "BugTask.%s IN (%s)" % (arg_name, where_arg)
             elif arg_value is NULL:
@@ -385,12 +402,7 @@ class BugTaskSet:
                 # arg_name.
                 clause = "BugTask.%s IS NULL" % arg_name
             else:
-                # We have either an ISQLObject, or a dbschema value.
-                is_sqlobject = ISQLObject(arg_value, None)
-                if is_sqlobject:
-                    clause = "BugTask.%s = %d" % (arg_name, arg_value.id)
-                else:
-                    clause = "BugTask.%s = %d" % (arg_name, int(arg_value.value))
+                clause = "BugTask.%s = %d" % (arg_name, sanitize_sql_id(arg_value))
             extra_clauses.append(clause)
 
         if params.omit_dupes:
@@ -525,7 +537,7 @@ class BugTaskSet:
         else:
             showclosed = (
                 ' AND BugTask.status < %s' %
-                sqlvalues(BugTaskStatus.FIXCOMMITTED))
+                sqlvalues(dbschema.BugTaskStatus.FIXCOMMITTED))
 
         priority_severity_filter = ""
         if minpriority is not None:
