@@ -96,7 +96,7 @@ html[xmlns] .mozclear
 }
 
 #footWrapper {
-	background: url('http://www.ubuntu.com/include/footer-bg.png');
+	background: url(http://www.ubuntu.com/include/footer-bg.png);
 	background-repeat: repeat-x;
 	border-bottom: 2px solid #583D1E;
 }
@@ -106,7 +106,7 @@ html[xmlns] .mozclear
 	color: #5B4832;
 	position: relative;
 	text-align: center;
-	background-image: url('http://www.ubuntu.com/include/footer-image2.png');
+	background-image: url(http://www.ubuntu.com/include/footer-image2.png);
 	background-repeat: repeat-y;
 	background-position: left top;
 	padding: 10px;
@@ -194,7 +194,7 @@ p, h1, h2, h3, h4, h5, h6
 }
 #rightColumn li.active
 {
-	background-image: url('http://www.ubuntu.com/include/little-u.gif');
+	background-image: url(http://www.ubuntu.com/include/little-u.gif);
 	background-repeat: no-repeat;
 	background-position: top left;
 }
