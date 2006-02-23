@@ -340,7 +340,7 @@ For a person:
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
     ...                              orderby='targetname')
     >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
-    [u'evolution (Ubuntu)', u'evolution (upstream)', u'mozilla-firefox (debian)', u'mozilla-firefox (ubuntu)']
+    [u'evolution (Ubuntu)', u'evolution (upstream)', u'linux-source-2.6.15 (Ubuntu)', u'mozilla-firefox (debian)', u'mozilla-firefox (ubuntu)']
 
 It's also possible to search bugs that a person is subscribed to:
 
