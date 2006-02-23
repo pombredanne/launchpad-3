@@ -54,3 +54,11 @@
   ...Firefox install instructions should be complete...
   ...
 
+Test searching for a specific milestone:
+
+  >>> print http(r"""
+  ... GET /products/firefox/+bugs-advanced?field.searchtext=&orderby=-priority%2C-severity&advanced=1&field.assignee=&field.unassigned.used=&field.include_dupes.used=&field.status%3Alist=Unconfirmed&field.status%3Alist=Needs+Info&field.status%3Alist=Confirmed&field.status%3Alist=In+Progress&field.status-empty-marker=1&field.severity-empty-marker=1&field.attachmenttype-empty-marker=1&field.milestone%3Alist=1&field.milestone-empty-marker=1&search=Search HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+

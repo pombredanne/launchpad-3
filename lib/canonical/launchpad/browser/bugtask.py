@@ -13,7 +13,6 @@ __all__ = [
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'AssignedBugTasksView',
-    'BugTasksOldView',
     'OpenBugTasksView',
     'CriticalBugTasksView',
     'UntriagedBugTasksView',
@@ -50,7 +49,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -431,6 +430,10 @@ class BugTaskEditView(GeneralFormView):
                 # Pass the comment_on_change_error as a list here, because
                 # WidgetsError expects a list of errors.
                 raise WidgetsError([self.comment_on_change_error])
+        distro = bugtask.distribution
+        sourcename = bugtask.sourcepackagename
+        if distro is not None and sourcename != data['sourcepackagename']:
+            valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
 
         return data
 
@@ -975,7 +978,7 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
 
     def getExtraSearchParams(self):
         """Return the extra parameters for a search that used the advanced form.
-        
+
         This method can also be used to get the extra parameters when a simple
         form is submitted. This allows us to hide the advanced form in some
         pages and still use this method to get the extra params of the
@@ -1037,17 +1040,6 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         We need to know this in order to provide a button to switch to that
         mode when we are in the advanced mode.
         """
-        return False
-
-
-class BugTasksOldView(AdvancedBugTaskSearchView):
-    """The old +bugs view has to be an AdvancedBugTaskSearchView but shouldn't
-    display the advanced widgets.
-
-    We keep this view around to not break existing bookmars.
-    """
-
-    def shouldShowAdvancedSearchWidgets(self):
         return False
 
 

@@ -75,9 +75,9 @@ Now, post the branch creation form for the product.
   ... -----------------------------10133907381973361475472259166--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/people/name16/+branch/applets/main
-  ...
 
 Let's make sure we can see the page for the newly created branch.
 This page includes a link to other branches associated with that product,
@@ -225,9 +225,9 @@ no associated product.
   ... -----------------------------16855892469756896411380849908--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/people/name16/+branch/+junk/pyresources
-  ...
 
 Let's make sure we can see the page for the newly created junk branch.
 Because it has no product, it has no link to other product branches.

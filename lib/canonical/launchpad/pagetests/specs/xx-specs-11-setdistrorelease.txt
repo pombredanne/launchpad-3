@@ -73,8 +73,9 @@ Then we try to add a specification to that distro
   ... -----------------------------172939122815469920901060052744--
   ... """)
   HTTP/1.1 303 See Other
-  ... Location: http://.../distros/ubuntu/+spec/testspec
+  Content-Length: 0
   ...
+  Location: http://.../distros/ubuntu/+spec/testspec
 
 We're redirected to the Specification page
 
@@ -132,9 +133,9 @@ We are able to target a specification to a distrorelease.
   ... -----------------------------117456295555762087296338191--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../distros/ubuntu/+spec/media-integrity-check
-  ...
 
 After the POST we should see the release goal on the specification page.
 

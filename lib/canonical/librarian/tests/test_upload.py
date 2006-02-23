@@ -36,6 +36,8 @@ class MockFile:
     bytes = ''
     stored = False
     databaseName = None
+    debugID = None
+    debugLog = ()
 
     def __init__(self, name):
         self.name = name

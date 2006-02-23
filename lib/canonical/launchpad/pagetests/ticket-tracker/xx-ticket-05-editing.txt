@@ -34,9 +34,9 @@ When we post the form, we should be redirected back to the ticket page.
   ... -----------------------------17140377397995372101692325465--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+ticket/2
-  ...
 
 And viewing that page should show the updated information.
 
@@ -87,9 +87,9 @@ POSTing the form should redirect to the ticket page.
   ... -----------------------------1096313169858343073413109827--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+ticket/2
-  ...
 
 And looking at that page should show the new details.
 
