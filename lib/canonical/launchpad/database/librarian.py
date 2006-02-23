@@ -73,8 +73,17 @@ class LibraryFileAlias(SQLBase):
         self._datafile = None
 
     def update_last_accessed(self):
-        self.last_accessed = UTC_NOW
-    
+        """Update last_accessed if it has not been updated recently.
+
+        This method relies on the system clock being vaguely sane, but
+        does not cause real harm if this is not the case.
+        """
+        # Update last_accessed no more than once every 6 hours.
+        precision = timedelta(hours=6)
+        now = datetime.utcnow().replace(tzinfo=utc)
+        if self.last_accessed + precision < now:
+            self.last_accessed = UTC_NOW
+
     products = RelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
                            intermediateTable='ProductReleaseFile')
