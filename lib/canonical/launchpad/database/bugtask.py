@@ -13,8 +13,6 @@ import datetime
 from sqlobject import ForeignKey, StringCol
 from sqlobject import SQLObjectNotFound
 
-from sqlos.interfaces import ISQLObject
-
 import pytz
 
 from zope.component import getUtility
@@ -22,7 +20,8 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import (
+    SQLBase, sqlvalues, quote_like, convert_to_sql_id)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
@@ -75,20 +74,6 @@ def bugtask_sort_key(bugtask):
         distribution = '-'
     return (bugtask.bug, distribution, product, distrorelease,
             sourcepackagename)
-
-
-def sanitize_sql_id(value):
-    """Returns the correct ID for use in an SQL conditional."""
-    is_sqlobject = ISQLObject(value, None)
-    if is_sqlobject:
-        return value.id
-    elif isinstance(value, dbschema.Item):
-        return int(value.value)
-    else:
-        try:
-            return int(value)
-        except ValueError:
-            raise AssertionError("Couldn't convert %r to an integer" % value)
 
 
 class BugTask(SQLBase, BugTaskMixin):
@@ -392,7 +377,8 @@ class BugTaskSet:
                     continue
                 # There could be SQLObjects inside the any() clause; we
                 # need to sanitize each of the arguments.
-                real_values = [sanitize_sql_id(v) for v in arg_value.query_values]
+                real_values = [convert_to_sql_id(v)
+                               for v in arg_value.query_values]
                 arg_values = sqlvalues(*real_values)
                 where_arg = ", ".join(arg_values)
                 clause = "BugTask.%s IN (%s)" % (arg_name, where_arg)
@@ -402,7 +388,8 @@ class BugTaskSet:
                 # arg_name.
                 clause = "BugTask.%s IS NULL" % arg_name
             else:
-                clause = "BugTask.%s = %d" % (arg_name, sanitize_sql_id(arg_value))
+                clause = "BugTask.%s = %d" % (arg_name,
+                                              convert_to_sql_id(arg_value))
             extra_clauses.append(clause)
 
         if params.omit_dupes:
