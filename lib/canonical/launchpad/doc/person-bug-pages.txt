@@ -55,7 +55,10 @@ unassigned bug tasks.
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), (7, 'UNCONFIRMED', u'name16')]
+    [(1, 'UNCONFIRMED', None),
+     (3, 'UNCONFIRMED', None),
+    (7, 'UNCONFIRMED', u'name16'),
+    (9, 'CONFIRMED', None)]
 
 But the advanced search allows us to query only the bug tasks that aren't
 assigned.
@@ -66,7 +69,9 @@ assigned.
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None)]
+    [(1, 'UNCONFIRMED', None),
+     (3, 'UNCONFIRMED', None),
+     (9, 'CONFIRMED', None)]
 
 
 Subscribed bugs
@@ -81,7 +86,8 @@ with any severity.
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
-     (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
+     (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL'),
+     (9, 'CONFIRMED', 'NORMAL'), (9, 'UNCONFIRMED', 'NORMAL')]
 
 The advanced search allows us to query only the bug tasks with severity
 Normal, Major and Critical.
@@ -92,7 +98,8 @@ Normal, Major and Critical.
     >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
-    [(1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
+    [(1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL'),
+     (9, 'CONFIRMED', 'NORMAL'), (9, 'UNCONFIRMED', 'NORMAL')]
 
 Bugs for Bug Contact
 --------------------
