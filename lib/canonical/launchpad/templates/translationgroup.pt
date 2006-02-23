@@ -2,9 +2,13 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="rosetta"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div><a href="/rosetta/groups">Translation groups</a></div>
+      <h1 tal:content="context/title">Savants Translation Group</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
 </metal:leftportlets>
@@ -14,8 +18,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-  <h1>Translation group overview</h1>
 
   <p class="documentDescription" tal:content="context/summary">
       $TranslationGroup.summary goes here. This should be quite short,

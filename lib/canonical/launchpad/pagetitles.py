@@ -463,7 +463,7 @@ def package_bugs(context, view):
 people_index = 'People and teams in Launchpad'
 
 def people_list(context, view):
-    return '%s' % view.header
+    return view.header
 
 person_assignedbugs = ContextDisplayName('Bugs assigned to %s')
 
@@ -645,7 +645,8 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Product and group registration in Launchpad'
 
-registry_listall = 'Launchpad: Complete list' # bug 3508
+def registry_listall(context, view):
+    return view.header
 
 registry_review = 'Review Launchpad items'
 
@@ -882,6 +883,9 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
+
+translationgroup_appoint = ContextTitle(
+    smartquote('Appoint a new translator to "%s"'))
 
 translationgroups = 'Rosetta translation groups'
 

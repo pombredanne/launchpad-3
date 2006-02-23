@@ -125,7 +125,6 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
-        label="Edit release series details"
         fields="name displayname summary"
         class="canonical.launchpad.browser.ProductSeriesEditView"
         facet="overview"

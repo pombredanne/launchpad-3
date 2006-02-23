@@ -39,7 +39,6 @@
     <div class="body">
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
       <tal:layout condition="columns1|nothing">
-        <div class="debug" tal:content="context/title | nothing" />
         <div class="pageheading">
           <metal:block define-slot="pageheading">
           </metal:block>
@@ -57,8 +56,6 @@
       <tal:layout condition="not: columns1|nothing">
         <div id="portal-columns">
           <div id="portal-column-content">
-            <!-- Temporary until context/title is replaced by headings: -->
-            <div class="debug" tal:content="context/title | nothing" />
             <div class="pageheading">
               <metal:block define-slot="pageheading">
               </metal:block>

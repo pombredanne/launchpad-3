@@ -7,13 +7,8 @@
 
   <div metal:fill-slot="main">
 
-<<<<<<< TREE
-  <div metal:use-macro="context/@@launchpad_addform/addform">
-=======
   <tal:uses_malone tal:condition="context/official_malone">
     <div metal:use-macro="context/@@launchpad_addform/addform">
-
->>>>>>> MERGE-SOURCE
 
           <p metal:fill-slot="extra_info">
             Before reporting a bug, please ensure it hasn&#8217;t
