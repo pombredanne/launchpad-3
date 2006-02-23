@@ -18,7 +18,7 @@ source package blank.
   ... -----------------------------1447716409915377146573672
   ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Continue
+  ... Add
   ... -----------------------------1447716409915377146573672--
   ... """)
   HTTP/1.1 303 See Other
@@ -35,120 +35,6 @@ Now we test if the ubuntu distribution is on the request list.
   HTTP/1.1 200 Ok
   ...
   ...>Ubuntu</a>...
-  ...
-
-It should not be possible to add the same distrotask again.
-
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
-  ... Content-Length: 424
-  ...
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.distribution"
-  ... 
-  ... ubuntu
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... 
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------1447716409915377146573672--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Please fix the problems below and try again...
-  ...
-  ...Fix already requested for Ubuntu...
-  ...
-
-It's perfectly valid to have another distrotask with a different
-sourcepackagename
-
-  >>> print http(r"""
-  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
-  ... Content-Length: 424
-  ...
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.distribution"
-  ... 
-  ... ubuntu
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... mozilla-firefox
-  ... -----------------------------1447716409915377146573672
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Continue
-  ... -----------------------------1447716409915377146573672--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/6
-  ...
-
-But it's not possible to change a bugtask to a existing one.
-
-  >>> print http(r"""
-  ... POST /distros/ubuntu/+bug/6/+editstatus HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1346
-  ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
-  ... 
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
-  ... 
-  ... mozilla-firefox
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.binarypackagename"
-  ... 
-  ... 
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.status"
-  ... 
-  ... Unconfirmed
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... Low
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.assignee"
-  ... 
-  ... 
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------16131040782095479517127443199--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Please fix the problems below and try again...
-  ...
-  ...Fix already requested for mozilla-firefox(Ubuntu)...
   ...
 
 At the same time we add a distribution task we can add a bug watch.

@@ -2,7 +2,7 @@ From the distribution task page, you can access the screen to select
 specific releases to which a bugfix should be backported.
 
   >>> print http(r"""
-  ... GET /distros/debian/+source/mozilla-firefox/+bug/1/+backport HTTP/1.1
+  ... GET /distros/ubuntu/+source/linux-source-2.6.15/+bug/9/+backport HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -12,13 +12,20 @@ To backport to a specific release, select the checkbox beside that
 release.
 
   >>> print http(r"""
-  ... POST /distros/debian/+source/mozilla-firefox/+bug/1/+backport HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... POST /distros/ubuntu/+source/linux-source-2.6.15/+bug/9/+backport HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 72
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... target=woody.mozilla-firefox&savetargets=Backport+Fix+to+Selected+Releases""")
+  ... target=grumpy.linux-source-2.6.15&savetargets=Backport+Fix+to+Selected+Releases""")
+  HTTP/1.1 303 See Other
+  ...
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+source/linux-source-2.6.15/+bug/9/+backport HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... target=grumpy.linux-2.6.15&savetargets=Backport+Fix+to+Selected+Releases""")
   HTTP/1.1 303 See Other
   ...
 
@@ -26,14 +33,12 @@ You are brought back to the task page. The new bug task is shown in the
 "also reported in" portlet.
 
   >>> print http(r"""
-  ... GET /distros/debian/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... GET /distros/ubuntu/+source/linux-source-2.6.15/+bug/9/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Cookie: launchpad=2RlITCZlIZAagraDp8iQ-00xVfInmZ8u45u9mbE2n1S0ApJdWxVP.0
   ... """)
   HTTP/1.1 200 Ok
   ...
   ...Also reported in:...
-  ...mozilla-firefox (Debian Woody)...
+  ...linux-source-2.6.15 (Ubuntu Grumpy)...
   ...
 
