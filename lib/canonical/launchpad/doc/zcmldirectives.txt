@@ -56,60 +56,6 @@ default view for the IFooLayer layer.
     >>> canonical.launchpad.ftests.FooView = FooView
 
 
-== Overriding the browser:defaultView directive ==
-
-We override browser:defaultView to allow us to specify a layer rather
-than use the hardcoded IDefaultBrowserLayer.
-
-This is something we should ensure is fixed upstream.
-
-First, a unit test of the overridden directive.
-
-    >>> from canonical.launchpad.webapp.metazcml import defaultView
-    >>> context = Context()
-    >>> context.info = "INFO"
-
-Name some variables to mirror the names used as arguments.
-
-    >>> name = "NAME"
-    >>> for_ = "FOR_"
-    >>> layer =  "LAYER"
-    >>> defaultView(context, name, for_, layer)
-    >>> context
-    ((('defaultViewName', 'FOR_', 'LAYER', 'NAME'),
-      <function handler>,
-      ('Adapters',
-       'register',
-       ('FOR_', 'LAYER'),
-       <InterfaceClass zope.component.interfaces.IDefaultViewName>,
-       '',
-       'NAME',
-       'INFO')),
-     (None,
-      <function provideInterface>,
-      ('', 'FOR_')))
-
-Next, a functional/integration test of the overridden directive.
-
-    >>> print queryDefaultViewName(fooobject, request)
-    None
-
-    >>> from zope.configuration import xmlconfig
-    >>> zcmlcontext = xmlconfig.string("""
-    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta-overrides.zcml" />
-    ...   <browser:defaultView
-    ...     for="canonical.launchpad.ftests.IFoo"
-    ...     name="mandrill"
-    ...     layer="canonical.launchpad.ftests.IFooLayer"
-    ...     />
-    ... </configure>
-    ... """)
-
-    >>> print queryDefaultViewName(fooobject, request)
-    mandrill
-
-
 == Overriding the browser:page directive ==
 
 We override browser:page to allow us to specify the facet that the
@@ -136,12 +82,11 @@ Name some variables to mirror the names used as arguments.
        'FOR_',
        'NAME',
        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
       <function handler>,
-      ('Adapters',
-       'register',
+      ('provideAdapter',
        ('FOR_',
-        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+        <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
        <InterfaceClass zope.interface.Interface>,
        'NAME',
        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
@@ -233,12 +178,11 @@ facet is not specified for the inner page.
        'FOR_',
        'NAME',
        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
       <function handler>,
-      ('Adapters',
-       'register',
+      ('provideAdapter',
        ('FOR_',
-        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+        <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
        <InterfaceClass zope.interface.Interface>,
        'NAME',
        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
@@ -250,12 +194,11 @@ facet is not specified for the inner page.
        'FOR_',
        'OTHER NAME',
        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
       <function handler>,
-      ('Adapters',
-       'register',
+      ('provideAdapter',
        ('FOR_',
-        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+        <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
        <InterfaceClass zope.interface.Interface>,
        'OTHER NAME',
        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,

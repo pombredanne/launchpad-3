@@ -6,7 +6,8 @@ Searching
 
 Simple searching is possible on the distro source package bug view page.
 
-  >>> from zope.component import getView, getUtility
+  >>> from zope.component import getUtility
+  >>> from zope.component import getView
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ISourcePackageNameSet)
