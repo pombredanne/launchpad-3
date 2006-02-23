@@ -1283,7 +1283,7 @@ INSERT INTO distribution (id, name, title, description, domainname, "owner", luc
 customizeable GNU/Linux Distribution that is designed to let you build every
 single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL, NULL, false, false);
+single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL, NULL, true, false);
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 1, NULL, 1, NULL, NULL, NULL, false, false);
