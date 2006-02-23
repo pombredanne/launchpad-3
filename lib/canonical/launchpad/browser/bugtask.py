@@ -13,7 +13,6 @@ __all__ = [
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'AssignedBugTasksView',
-    'BugTasksOldView',
     'OpenBugTasksView',
     'CriticalBugTasksView',
     'UntriagedBugTasksView',
@@ -1039,17 +1038,6 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         We need to know this in order to provide a button to switch to that
         mode when we are in the advanced mode.
         """
-        return False
-
-
-class BugTasksOldView(AdvancedBugTaskSearchView):
-    """The old +bugs view has to be an AdvancedBugTaskSearchView but shouldn't
-    display the advanced widgets.
-
-    We keep this view around to not break existing bookmars.
-    """
-
-    def shouldShowAdvancedSearchWidgets(self):
         return False
 
 
