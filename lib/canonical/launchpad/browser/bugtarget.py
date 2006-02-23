@@ -45,7 +45,7 @@ class FileBugView(SQLObjectAddView):
                 # never published, but the quick fix for now is to note
                 # the issue and move on.
                 self.notification += ("<br /><br />Note that the package %r "
-                                      "was never published in %s; the bug "
+                                      "is not published in %s; the bug "
                                       "has therefore been targeted to the "
                                       "distribution only."
                                       % (packagename, context.displayname))
