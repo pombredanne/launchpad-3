@@ -5,9 +5,12 @@ import urllib2
 import xml.parsers.expat
 from xml.dom import minidom
 
+from zope.interface import implements
+
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
 from canonical.launchpad.scripts import log
+from canonical.launchpad.interfaces import IExternalBugtracker
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.1 (http://launchpad.net/malone)"
@@ -45,6 +48,8 @@ class ExternalSystem(object):
     which loads and calls through to a subclass for each system type
     we know about,
     """
+
+    implements(IExternalBugtracker)
 
     def __init__(self, bugtracker, version=None):
         self.bugtracker = bugtracker
