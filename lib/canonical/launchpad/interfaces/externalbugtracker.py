@@ -17,8 +17,8 @@ class IExternalBugtracker(Interface):
     def updateBugWatches(bug_watches):
         """Update the given bug watches."""
 
-    def malone_status(remote_status):
-        """Converts the remote status string to a Malone status string.
+    def convertRemoteStatus(remote_status):
+        """Converts the remote status string to a BugTaskStatus item.
 
-        Return 'UNKNOWN' if it can't be converted.
+        Return None if it can't be converted.
         """

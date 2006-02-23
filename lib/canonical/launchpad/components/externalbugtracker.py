@@ -62,16 +62,19 @@ class ExternalSystem(object):
                 self.bugtracker.name)
         self.version = self.remotesystem.version
 
-    def malonify_status(self, status):
-        return self.remotesystem.malonify_status(status)
+    def convertRemoteStatus(self, remote_status):
+        """See IExternalBugtracker."""
+        return self.remotesystem.convertRemoteStatus(remote_status)
 
     def updateBugWatches(self, bug_watches):
-        """Update the given bug watches."""
+        """See IExternalBugtracker."""
         return self.remotesystem.updateBugWatches(bug_watches)
 
 
 class Bugzilla(ExternalSystem):
     """A class that deals with communications with a remote Bugzilla system."""
+
+    implements(IExternalBugtracker)
 
     def __init__(self, baseurl, version=None):
         if baseurl[-1] == "/":
@@ -123,24 +126,24 @@ class Bugzilla(ExternalSystem):
         version = bugzilla[0].getAttribute("version")
         return version
 
-    def malonify_status(self, status):
-        """Translate a status from this system to the equivalent Malone status.
+    def convertRemoteStatus(self, remote_status):
+        """See IExternalBugtracker.
 
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
         """
-        if ' ' in status:
-            status, resolution = status.split(' ')
+        if ' ' in remote_status:
+            remote_status, resolution = remote_status.split(' ')
         else:
             resolution = ''
 
-        if status == 'ASSIGNED':
+        if remote_status == 'ASSIGNED':
            malone_status = BugTaskStatus.CONFIRMED
-        elif status == 'NEEDINFO':
+        elif remote_status == 'NEEDINFO':
             malone_status = BugTaskStatus.NEEDSINFO
-        elif status == 'PENDINGUPLOAD':
+        elif remote_status == 'PENDINGUPLOAD':
             malone_status = BugTaskStatus.FIXCOMMITTED
-        elif status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
+        elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if resolution == 'FIXED':
                 malone_status = BugTaskStatus.FIXRELEASED
@@ -149,16 +152,16 @@ class Bugzilla(ExternalSystem):
                 #     if we don't know of the resolution. Bug 31745.
                 #     -- Bjorn Tillenius, 2005-02-03
                 malone_status = BugTaskStatus.REJECTED
-        elif status in ['UNCONFIRMED', 'REOPENED', 'NEW', 'UPSTREAM']:
+        elif remote_status in ['UNCONFIRMED', 'REOPENED', 'NEW', 'UPSTREAM']:
             malone_status = BugTaskStatus.UNCONFIRMED
         else:
-            if status != 'UNKNOWN':
+            if remote_status != 'UNKNOWN':
                 log.warning(
                     "Unknown Bugzilla status '%s' at %s" % (
-                        status, self.baseurl))
-            return 'Unknown'
+                        remote_status, self.baseurl))
+            malone_status = None
 
-        return malone_status.title
+        return malone_status
 
     def updateBugWatches(self, bug_watches):
         """Update the given bug watches."""

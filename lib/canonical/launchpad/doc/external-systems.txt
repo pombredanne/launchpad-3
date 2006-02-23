@@ -23,38 +23,38 @@ status. Bugzilla statuses consist of two parts, the status, and the
 resolution, separated by a space character. The resolution only exists
 if the bug is closed:
 
-    >>> external_bugzilla.malonify_status('UNCONFIRMED')
+    >>> external_bugzilla.convertRemoteStatus('UNCONFIRMED').title
     'Unconfirmed'
-    >>> external_bugzilla.malonify_status('NEW')
+    >>> external_bugzilla.convertRemoteStatus('NEW').title
     'Unconfirmed'
-    >>> external_bugzilla.malonify_status('ASSIGNED')
+    >>> external_bugzilla.convertRemoteStatus('ASSIGNED').title
     'Confirmed'
-    >>> external_bugzilla.malonify_status('REOPENED')
+    >>> external_bugzilla.convertRemoteStatus('REOPENED').title
     'Unconfirmed'
-    >>> external_bugzilla.malonify_status('NEEDINFO')
+    >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
     'Needs Info'
-    >>> external_bugzilla.malonify_status('UPSTREAM')
+    >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
     'Unconfirmed'
-    >>> external_bugzilla.malonify_status('PENDINGUPLOAD')
+    >>> external_bugzilla.convertRemoteStatus('PENDINGUPLOAD').title
     'Fix Committed'
-    >>> external_bugzilla.malonify_status('RESOLVED FIXED')
+    >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
-    >>> external_bugzilla.malonify_status('VERIFIED WONTFIX')
+    >>> external_bugzilla.convertRemoteStatus('VERIFIED WONTFIX').title
     'Rejected'
-    >>> external_bugzilla.malonify_status('CLOSED INVALID')
+    >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Rejected'
 
-If the status can't be converted, 'Unknown' is returned, and a warning
+If the status can't be converted, None is returned, and a warning
 is logged.
 
-    >>> external_bugzilla.malonify_status('FOO')
+    >>> external_bugzilla.convertRemoteStatus('FOO') is None
     WARNING:...:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org
-    'Unknown'
+    True
 
-UNKNOWN maps to 'Unknown' without generating a warning.
+UNKNOWN maps to None without generating a warning.
 
-    >>> external_bugzilla.malonify_status('UNKNOWN')
-    'Unknown'
+    >>> external_bugzilla.convertRemoteStatus('UNKNOWN') is None
+    True
 
 
 The main use of ExternalSystem is to update bug watches. This is done
