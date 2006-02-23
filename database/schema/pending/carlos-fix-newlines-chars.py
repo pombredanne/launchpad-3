@@ -18,6 +18,11 @@ def parse_options(args):
     """
     parser = OptionParser()
 
+    parser.add_option("-c", "--check", dest="check",
+        default=False,
+        action='store_true',
+        help="Whether the script should only check if there are broken entries.")
+
     # Add the verbose/quiet options.
     logger_options(parser)
 
@@ -25,10 +30,73 @@ def parse_options(args):
 
     return options
 
-def fix_newlines(pomsgsets):
-    """Fix the pomsgsets' translations newlines, if needed."""
+def check_newlines(pomsgsets, logger_object):
+    """Check the pomsgsets' translations newlines to match the msgid's ones.
+
+    :arg pomsgsets: A set of IPOMsgSets to check.
+    """
+    processed_translations = []
+    for pomsgset in pomsgsets:
+        translations = {}
+        if pomsgset.pofile.language.pluralforms is None:
+            # We don't know the amount of plural forms this language has,
+            # we assume there is just one of them.
+            plural_forms = 1
+        else:
+            plural_forms = pomsgset.pofile.language.pluralforms
+
+        for plural_form in range(plural_forms):
+            # Get current translations.
+            active = pomsgset.getActiveSubmission(plural_form)
+            if active is None:
+                # There is no active translation for this plural form.
+                continue
+            else:
+                potranslation = active.potranslation
+                translations[plural_form] = potranslation.translation
+                processed_translations.append(potranslation.id)
+
+        pomsgid = pomsgset.potmsgset.getPOMsgIDs()[0]
+        if u'\r' in pomsgid.msgid:
+            # The msgid contains the u'\r' char.
+            for translation in translations.itervalues():
+                if u'\r' not in translation and u'\n' in translation:
+                    # But the translation is ussing another style.
+                    logger_object.warn("Newline styles doesn't match: msgid: %r, translation %r" % (
+                        pomsgid.msgid, translation))
+        elif u'\n' in pomsgid.msgid:
+            # The msgid doesn't contain the u'\r' char but the u'\n'.
+            for translation in translations.itervalues():
+                if u'\n' not in translation and u'\r' in translation:
+                    # But the translation is ussing another style.
+                    logger_object.warn("Newline styles doesn't match: msgid: %r, translation %r" % (
+                        pomsgid.msgid, translation))
+        else:
+            # The msgid doesn't have any style of newline char so we ignore
+            # the check, the user is free to use whatever he wants.
+            continue
+
+        return processed_translations
+
+def fix_newlines(pomsgsets, ztm, assert_if_carriage_return_present=False):
+    """Fix the pomsgsets' translations newlines, if needed.
+
+    :arg pomsgsets: A set of IPOMsgSets to fix.
+    :arg ztm: A transaction manager object.
+    :arg assert_if_carriage_return_present: Check if there are u'\r' chars as
+        part of the msgid.
+    """
     fixed_translations = []
     for pomsgset in pomsgsets:
+        # Check to be sure that the translations that we are checking don't
+        # have a msgid with the u'\r' char.
+        if assert_if_carriage_return_present:
+            pomsgids = pomsgset.potmsgset.getPOMsgIDs()
+            for pomsgid in pomsgids:
+                assert u'\r' not in pomsgid.msgid, (
+                    "The msgid (%r) has a u'\\r' char on it but it should not"
+                    " be there!" % pomsgid.msgid)
+
         translations = {}
         owner = None
         if pomsgset.pofile.language.pluralforms is None:
@@ -40,18 +108,23 @@ def fix_newlines(pomsgsets):
 
         for plural_form in range(plural_forms):
             # Get current translations.
-            published = pomsgset.getActiveSubmission(plural_form)
-            if published is None:
-                # There is no published translation for this plural form.
+            active = pomsgset.getActiveSubmission(plural_form)
+            if active is None:
+                # There is no active translation for this plural form.
                 continue
             else:
-                owner = published.person
-                potranslation = published.potranslation
+                owner = active.person
+                potranslation = active.potranslation
                 translations[plural_form] = potranslation.translation
                 fixed_translations.append(potranslation.id)
-        # Submit the translation again so it's fixed if it's need.
-        pomsgset.updateTranslationSet(owner, translations,
-            pomsgset.isfuzzy, False, force_edition_rights=True)
+
+        if translations:
+            # Submit the translation again so it's fixed if it's need.
+            pomsgset.updateTranslationSet(owner, translations,
+                pomsgset.isfuzzy, False, force_edition_rights=True)
+
+        # Commit the transaction and store the changed entries.
+        ztm.commit()
 
         return fixed_translations
 
@@ -62,13 +135,13 @@ def main(argv):
     # Get the global logger for this task.
     logger_object = logger(options, 'rosetta-poimport')
 
-    logger_object.debug('Starting the fixing process')
+    logger_object.info('Starting the fixing process')
 
     # Setup zcml machinery to be able to use getUtility
     execute_zcml_for_scripts()
     ztm = initZopeless(dbuser=config.rosetta.poimport.dbuser)
 
-    # Get the list of IPOTranslation ids that have the '\r' char.
+    # Get the list of IPOTranslation ids that have the u'\r' char.
     cur = cursor()
     cur.execute("""
         SELECT id
@@ -77,10 +150,10 @@ def main(argv):
         """)
     translation_ids = cur.fetchall()
     translation_ids = [set_entry[0] for set_entry in translation_ids]
-    logger_object.debug('There are %d translations to be checked' %
+    logger_object.info('There are %d translations to be checked' %
         len(translation_ids))
 
-    # Get the list of IPOMsgIDs ids that have the '\r' char.
+    # Get the list of IPOMsgIDs ids that have the u'\r' char.
     cur = cursor()
     cur.execute("""
         SELECT id
@@ -89,10 +162,10 @@ def main(argv):
         """)
     msgid_ids = cur.fetchall()
     msgid_ids = [set_entry[0] for set_entry in msgid_ids]
-    logger_object.debug('There are %d msgids to be checked' %
+    logger_object.info('There are %d msgids to be checked' %
         len(msgid_ids))
 
-    # Let's review first the entries that have the '\r' char as part of
+    # Let's review first the entries that have the u'\r' char as part of
     # the msgid. We are assuming here that the msgid_singular and
     # msgid_plural have the same kind of new lines so we only check the
     # singular ones.
@@ -103,19 +176,21 @@ def main(argv):
             POTMsgSet.primemsgid = %d
             """ % id, clauseTables=['POTMsgSet'])
 
-        # Fix all translations associated with this msgid.
-        fixed_translation_ids = fix_newlines(pomsgsets)
+        if options.check:
+            # Only check for broken entries
+            processed_translation_ids = check_newlines(
+                pomsgsets, logger_object)
+        else:
+            # Fix all translations associated with this msgid.
+            processed_translation_ids = fix_newlines(pomsgsets, ztm)
 
-        for translation_id in fixed_translation_ids:
+        for translation_id in processed_translation_ids:
             if translation_id in translation_ids:
                 # Remove this translation from the list of
                 # translations to process as we are fixing it now atm.
                 translation_ids.remove(translation_id)
 
-    # Commit the transaction and store the changed entries.
-    ztm.commit()
-
-    logger_object.debug(
+    logger_object.info(
         'There are %d translations to be checked after msgids are done.' %
             len(translation_ids))
 
@@ -127,15 +202,16 @@ def main(argv):
             POSubmission.pomsgset = POMsgSet.id
             """ % id, clauseTables=['POSelection', 'POSubmission'])
 
-        # Fix all msgsets associated with this translation. Usually, the fix
-        # is just leave it as '\n' because the msgid should not have the '\r'
-        # char, we already processed all those.
-        fix_newlines(pomsgsets)
+        if options.check:
+            # Only check for broken entries
+            check_newlines(pomsgsets, logger_object)
+        else:
+            # Fix all msgsets associated with this translation. Usually, the
+            # fix is just leave it as u'\n' because the msgid should not have
+            # the u'\r' char, we already processed all those.
+            fix_newlines(pomsgsets, ztm, assert_if_carriage_return_present=True)
 
-    # Commit the transaction and store the changed entries.
-    ztm.commit()
-
-    logger_object.debug('Finished the fixing process')
+    logger_object.info('Finished the fixing process')
 
 
 if __name__ == '__main__':

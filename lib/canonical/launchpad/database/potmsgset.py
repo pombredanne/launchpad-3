@@ -81,18 +81,15 @@ class POTMsgSet(SQLBase):
                     for flag in self.flagscomment.replace(' ', '').split(',')
                     if flag != '']
 
-    def messageIDs(self):
+    def getPOMsgIDs(self):
         """See IPOTMsgSet."""
-        results = POMsgID.select('''
+        return POMsgID.select('''
             POMsgIDSighting.potmsgset = %d AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
             POMsgIDSighting.inlastrevision = TRUE
             ''' % self.id,
             clauseTables=['POMsgIDSighting'],
             orderBy='POMsgIDSighting.pluralform')
-
-        for pomsgid in results:
-            yield pomsgid
 
     def getPOMsgIDSighting(self, pluralForm):
         """See IPOTMsgSet."""
@@ -138,7 +135,7 @@ class POTMsgSet(SQLBase):
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
-        if len(list(self.messageIDs())) == 1:
+        if len(list(self.getPOMsgIDs())) == 1:
             pluralforms = 1
 
         if pluralforms == None:
@@ -257,13 +254,13 @@ class POTMsgSet(SQLBase):
 
         if mac_style in stripped_msgid:
             assert msgid_style is None, (
-                "Broken msgid (%r), it's mixing different new line marks"
+                "Broken msgid (%r), it's mixing different new line markers"
                     % msgid)
             msgid_style = mac_style
 
         if unix_style in stripped_msgid:
             assert msgid_style is None, (
-                "Broken msgid (%r), it's mixing different new line marks"
+                "Broken msgid (%r), it's mixing different new line markers"
                     % msgid)
             msgid_style = unix_style
 
@@ -274,13 +271,13 @@ class POTMsgSet(SQLBase):
 
         if mac_style in stripped_text:
             assert text_style is None, (
-                "Broken text (%r), it's mixing different new line marks"
+                "Broken text (%r), it's mixing different new line markers"
                     % text)
             text_style = mac_style
 
         if unix_style in stripped_text:
             assert text_style is None, (
-                "Broken text (%r), it's mixing different new line marks"
+                "Broken text (%r), it's mixing different new line markers"
                     % text)
             text_style = unix_style
 

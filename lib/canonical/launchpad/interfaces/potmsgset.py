@@ -44,8 +44,8 @@ class IPOTMsgSet(Interface):
     def flags():
         """Return a list of flags on this set."""
 
-    def messageIDs():
-        """Return an iterator over this set's message IDs.
+    def getPOMsgIDs():
+        """Return an iterator over this set's IPOMsgID.
 
         The maximum number of items this iterator returns is 2.
         """
@@ -76,25 +76,28 @@ class IPOTMsgSet(Interface):
         is not, then a KeyError is raised.
         """
 
-    def applySanityFixes(text):
-        """Return 'text' after doing some sanity checks and fixes against the
-        msgid so we improve its value in case the user did some mistakes.
+    def applySanityFixes(unicode_text):
+        """Return 'unicode_text' after doing some sanity checks and fixes
+        against the msgid improving its value in case the user did any mistake.
+
+        :arg unicode_text: An unicode or string that needs to be checked.
         """
 
-    def convertDotToSpace(text):
-        """Return 'text' with the u'\u2022' char changed by a normal space.
+    def convertDotToSpace(unicode_text):
+        """Return 'unicode_text' with the u'\u2022' char changed with a normal
+        space.
 
-        If the self.primemsgid contains that character, 'text' is returned
-        without changes.
+        If the self.primemsgid contains that character, 'unicode_text' is
+        returned without changes.
         """
 
-    def normalizeWhitespaces(text):
-        """Return 'text' with the same trailing and leading whitespaces
+    def normalizeWhitespaces(unicode_text):
+        """Return 'unicode_text' with the same trailing and leading whitespaces
         that self.primemsgid has.
 
-        If 'text' has only whitespaces but self.primemsgid has other
-        characters, the empty string ('') is returned.
+        If 'unicode_text' has only whitespaces but self.primemsgid has other
+        characters, the empty string (u'') is returned.
         """
 
-    def normalizeNewLines(text):
-        """Return 'text' with new lines chars on sync with the msgid."""
+    def normalizeNewLines(unicode_text):
+        """Return 'unicode_text' with new lines chars in sync with the msgid."""

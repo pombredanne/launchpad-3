@@ -89,7 +89,7 @@ class POMsgSet(SQLBase):
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
-        if len(list(self.potmsgset.messageIDs())) > 1:
+        if len(list(self.potmsgset.getPOMsgIDs())) > 1:
             # this messageset has plurals so return the expected number of
             # pluralforms for this language
             return self.pofile.pluralforms
@@ -169,7 +169,7 @@ class POMsgSet(SQLBase):
         # First, check that the translations are correct.
         potmsgset = self.potmsgset
         msgids_text = [messageid.msgid
-                       for messageid in potmsgset.messageIDs()]
+                       for messageid in potmsgset.getPOMsgIDs()]
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
