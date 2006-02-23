@@ -11,7 +11,6 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
-    'valid_distrotask'
     ]
 
 import urllib
@@ -23,9 +22,7 @@ from zope.exceptions import NotFoundError
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
-from canonical.launchpad.searchbuilder import NULL
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.lp.dbschema import MirrorPulseType
@@ -235,38 +232,5 @@ def validate_distribution_mirror_schema(form_values):
             "All mirrors require at least one URL (HTTP, FTP or "
             "Rsync) to be specified.")))
 
-    if errors:
-        raise WidgetsError(errors)
-
-
-def valid_distrotask(bug, distribution, sourcepackagename=None):
-    """Check if a distribution bugtask already exists for a given bug.
-    
-    If it exists, WidgetsError will be raised.
-    """
-    from canonical.launchpad.helpers import shortlist
-    errors = []
-    if sourcepackagename is not None:
-        msg = LaunchpadValidationError(_(
-            'Fix already requested for %s(%s)' %
-            (sourcepackagename.name, distribution.displayname)))
-    else:
-        msg = LaunchpadValidationError(_(
-            'Fix already requested for %s' % distribution.displayname))
-        sourcepackagename = NULL
-    user = getUtility(ILaunchBag).user
-    params = BugTaskSearchParams(
-        user, bug=bug, sourcepackagename=sourcepackagename)
-    bugtasks = shortlist(distribution.searchTasks(params), longest_expected=1)
-    if bugtasks: 
-        # We have to raise WidgetsError if a bugtask is found, the only case we
-        # should skip it is when we're removing a sourcepackagename from a
-        # existing bugtask
-        assert len(bugtasks) == 1
-        if bugtasks[0].sourcepackagename is not None and (
-            sourcepackagename is None):
-            return
-        errors.append(msg)
-            
     if errors:
         raise WidgetsError(errors)

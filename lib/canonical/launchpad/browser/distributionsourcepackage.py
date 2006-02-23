@@ -13,7 +13,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
-    DeleteBugContactError, IPersonSet)
+    DeleteBugContactError, IPersonSet, BugTaskSearchParams)
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, AdvancedBugTaskSearchView)
 from canonical.launchpad.webapp import (
