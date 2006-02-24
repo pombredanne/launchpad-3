@@ -8,7 +8,6 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.security.management import queryInteraction
 
 from canonical.config import config
