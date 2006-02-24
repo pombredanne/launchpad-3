@@ -23,7 +23,7 @@ class BugTaskAssigneeWidget(Widget):
     __call__ = ViewPageTemplateFile(
         "../launchpad/templates/bugtask-assignee-widget.pt")
 
-    def __init__(self, context, request):
+    def __init__(self, context, vocabulary, request):
         Widget.__init__(self, context, request)
 
         # This is a radio button widget so, since at least one radio
@@ -46,26 +46,34 @@ class BugTaskAssigneeWidget(Widget):
         self.assign_to = "assign_to"
 
     def validate(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """
+        This method used to be part of zope.app.form.interfaces.IInputWidget
+        in Zope 3.0, but is no longer part of the interface in Zope 3.2
+        """
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
         if self.request.form.get(self.name + ".option") == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
-                    self.name, self.label, ValidationError("Missing value for assignee"))
-
-            try:
+                        self.name, self.label,
+                        ValidationError("Missing value for assignee")
+                        )
+            if not self.assignee_chooser_widget.hasValidInput():
+                raise WidgetInputError(
+                        self.name, self.label,
+                        ValidationError("Assignee not found")
+                        )
+            #try:
                 # A ConversionError is expected if the user provides
                 # an assignee value that doesn't exist in the
                 # assignee_chooser_widget's vocabulary.
-                self.assignee_chooser_widget.validate()
-            except ConversionError:
+            #except ConversionError:
                 # Turn the ConversionError into a WidgetInputError.
-                raise WidgetInputError(
-                    self.assignee_chooser_widget.name,
-                    self.assignee_chooser_widget.label,
-                    ValidationError("Assignee not found"))
+            #    raise WidgetInputError(
+            #        self.assignee_chooser_widget.name,
+            #        self.assignee_chooser_widget.label,
+            #        ValidationError("Assignee not found"))
 
     def hasInput(self):
         """See zope.app.form.interfaces.IInputWidget."""
