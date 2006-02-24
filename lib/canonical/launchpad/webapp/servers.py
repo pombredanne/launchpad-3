@@ -3,6 +3,12 @@
 
 __metaclass__ = type
 
+# XXX: Open a bug on this warning - we need to migrate to the WSGI publisher
+import warnings
+warnings.filterwarnings(
+        'ignore', 'PublisherHTTPServer', DeprecationWarning
+        )
+
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
@@ -179,9 +185,9 @@ class LaunchpadTestRequest(TestRequest):
     def notifications(self):
         return self.response.notifications
 
-    def _createResponse(self, outstream):
+    def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
-        return LaunchpadTestResponse(outstream)
+        return LaunchpadTestResponse()
 
 
 class LaunchpadTestResponse(NotificationResponse, BrowserResponse):
