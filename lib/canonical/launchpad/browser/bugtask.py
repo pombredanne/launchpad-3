@@ -444,6 +444,7 @@ class BugTaskEditView(GeneralFormView):
 
         bugtask_before_modification = helpers.Snapshot(
             bugtask, providing=providedBy(bugtask))
+
         changed = applyWidgetsChanges(
             self, self.schema, target=bugtask, names=self.fieldNames)
 

@@ -1,0 +1,11 @@
+Editing Bug Tasks
+=================
+
+A bugtask's status, assignee, package name, milestone, etc., can be modified on
+its +editstatus page.
+
+Product Reassignment and Milestones
+-----------------------------------
+
+Changing the product of a bugtask (for example, it might have been filed on the
+wrong product, a bug triager notices this and fixes the situation),
