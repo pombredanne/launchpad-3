@@ -315,8 +315,8 @@ class ZopelessTransactionManager(object):
         txn = self.manager.begin()
         txn.join(self._dm())
 
-    def commit(self, sub=False):
-        self.manager.get().commit(sub)
+    def commit(self):
+        self.manager.get().commit()
 
         # We always remove the existing transaction & connection, for
         # simplicity.  SQLObject does connection pooling, and we don't have any
@@ -327,9 +327,9 @@ class ZopelessTransactionManager(object):
         if self.implicitBegin:
             self.begin()
 
-    def abort(self, sub=False):
+    def abort(self):
         objects = list(self._dm().objects)
-        self.manager.get().abort(sub)
+        self.manager.get().abort()
         for obj in objects:
             obj.reset()
             obj.expire()
