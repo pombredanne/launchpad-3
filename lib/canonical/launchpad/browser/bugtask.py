@@ -43,13 +43,12 @@ from canonical.launchpad.webapp import (
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch, IBugSet,
-    IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
-    IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
-    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
-    NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
+    IBugTaskSet, IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch,
+    BugTaskSearchParams, IUpstreamBugTask, IDistroBugTask,
+    IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
+    IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
+    ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -579,17 +578,10 @@ class BugTaskSearchListingView(LaunchpadView):
         #     the search form. Sub classes, like
         #     AdvancedBugTaskSearchView should use a seperate schema if
         #     they need to. -- Bjorn Tillenius, 2005-09-29
-        if self._upstreamContext():
-            self.search_form_schema = IUpstreamBugTaskSearch
-        elif (self._distributionContext()
-              or self._distroReleaseContext()
-              or self._sourcePackageContext()
-              or self._distroSourcePackageContext()):
-            self.search_form_schema = IDistroBugTaskSearch
-        elif self._personContext():
+        if self._personContext():
             self.search_form_schema = IPersonBugTaskSearch
         else:
-            raise TypeError("Unknown context: %s" % repr(self.context))
+            self.search_form_schema = IBugTaskSearch
 
         setUpWidgets(self, self.search_form_schema, IInputWidget,
                      initial=self.initial_values)
