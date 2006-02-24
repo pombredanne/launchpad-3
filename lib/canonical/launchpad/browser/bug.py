@@ -27,7 +27,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
-    NotFoundError, UnexpectedFormData, valid_distrotask)
+    NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -276,6 +276,7 @@ class BugAlsoReportInView(GeneralFormView):
         """Validate the form.
 
         Check that:
+            * We have a unique upstream task
             * We have a unique distribution task
             * If bugtracker is not None, remotebug has to be not None
         """
@@ -283,8 +284,11 @@ class BugAlsoReportInView(GeneralFormView):
         widgets_data = {}
         bugtracker = data.get('bugtracker')
         remotebug = data.get('remotebug')
+        product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
+        if product:
+            valid_upstreamtask(self.context.bug, product)
         if distribution:
             valid_distrotask(self.context.bug, distribution, sourcepackagename)
         if bugtracker is not None and remotebug is None:
