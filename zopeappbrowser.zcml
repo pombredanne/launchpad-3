@@ -4,7 +4,7 @@
    xmlns:i18n="http://namespaces.zope.org/zope"
    i18n_domain="zope">
 
-  <browser:defaultView name="index.html" />
+  <!-- <browser:defaultView name="index.html" /> -->
   <!-- <browser:defaultSkin name="zope.app.rotterdam.Rotterdam" /> -->
 
   <!-- <include package="zope.app.exception.browser" /> -->
