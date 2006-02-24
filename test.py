@@ -56,23 +56,24 @@ try:
 except KeyError:
     pass
 
-# Silence spurious warnings or turn them into errors
+# Silence spurious warnings. Note that this does not propagate to subprocesses
+# so this is not always as easy as it seems. Warnings caused by our code that
+# need to be silenced should have an accomponied Bug reference.
 #
 warnings.filterwarnings(
         'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
         )
 warnings.filterwarnings(
-        'ignore', 'publisherhttpserver', DeprecationWarning
+        'ignore', 'twisted.python.plugin', DeprecationWarning, 'buildbot'
         )
-# Our Z3 is still using whrandom
-#warnings.filterwarnings(
-#        "ignore",
-#        "the whrandom module is deprecated; please use the random module"
-#        )
-# Some stuff got deprecated in 2.4 that we can clean up
-#warnings.filterwarnings(
-#        "error", category=DeprecationWarning, module="email"
-#        )
+warnings.filterwarnings(
+        'ignore', 'The concrete concept of a view has been deprecated.',
+        DeprecationWarning
+        )
+
+# Any warnings not explicitly silenced are errors
+warnings.filterwarnings('error', append=True)
+
 
 from canonical.ftests import pgsql
 # If this is removed, make sure canonical.ftests.pgsql is updated
