@@ -45,47 +45,47 @@ import zope.app.tests.setup
 from zope.app.component.hooks import setSite, getSite
 from zope.component import getUtility
 import zope.security.management
+from zope.publisher.interfaces.http import IHeaderOutput
 
 from canonical.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp import LaunchpadBrowserRequest
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 import canonical.launchpad.layers
-
-
 from canonical.launchpad.webapp import LaunchpadBrowserRequest
 
-# XXX: When we've upgraded Zope 3 to a newer version, we'll just import
-#      IHeaderOutput from zope.publisher.interfaces.http.
-try:
-    # old zope3
-    from zope.server.interfaces import IHeaderOutput
-except ImportError:
-    # new zope3
-    from zope.publisher.interfaces.http import IHeaderOutput
-
-HTTPTaskStub = StringIO
 
 class ResponseWrapper(object):
     """A wrapper that adds several introspective methods to a response."""
 
-    def __init__(self, response, outstream, path):
+    def __init__(self, response, path, omit=()):
         self._response = response
-        self._outstream = outstream
         self._path = path
+        self.omit = omit
+        self._body = None
 
     def getOutput(self):
         """Returns the full HTTP output (headers + body)"""
-        return self._outstream.getvalue()
+        body = self.getBody()
+        omit = self.omit
+        headers = [x
+                   for x in self._response.getHeaders()
+                   if x[0].lower() not in omit]
+        headers.sort()
+        headers = '\n'.join([("%s: %s" % (n, v)) for (n, v) in headers])
+        statusline = '%s %s' % (self._response._request['SERVER_PROTOCOL'],
+                                self._response.getStatusString())
+        if body:
+            return '%s\n%s\n\n%s' %(statusline, headers, body)
+        else:
+            return '%s\n%s\n' % (statusline, headers)
 
     def getBody(self):
         """Returns the response body"""
-        output = self._outstream.getvalue()
-        idx = output.find('\r\n\r\n')
-        if idx == -1:
-            return None
-        else:
-            return output[idx+4:]
+        if self._body is None:
+            self._body = ''.join(self._response.consumeBody())
+
+        return self._body
 
     def getPath(self):
         """Returns the path of the request"""
@@ -93,6 +93,8 @@ class ResponseWrapper(object):
 
     def __getattr__(self, attr):
         return getattr(self._response, attr)
+
+    __str__ = getOutput
 
 
 class FunctionalTestSetup(object):
@@ -217,8 +219,7 @@ class BrowserTestCase(FunctionalTestCase):
         """Returns the site which is used to look up local services"""
         return getSite()
 
-    def makeRequest(self, path='', basic=None, form=None, env={},
-                    outstream=None):
+    def makeRequest(self, path='', basic=None, form=None, env={}):
         """Creates a new request object.
 
         Arguments:
@@ -230,16 +231,13 @@ class BrowserTestCase(FunctionalTestCase):
                     (You can emulate HTTP request header
                        X-Header: foo
                      by adding 'HTTP_X_HEADER': 'foo' to env)
-          outstream -- a stream where the HTTP response will be written
         """
-        if outstream is None:
-            outstream = HTTPTaskStub()
         environment = {"HTTP_HOST": 'localhost',
                        "HTTP_REFERER": 'localhost',
                        "HTTP_COOKIE": self.__http_cookie(path)}
         environment.update(env)
         app = FunctionalTestSetup().getApplication()
-        request = app._request(path, '', outstream,
+        request = app._request(path, '',
                                environment=environment,
                                basic=basic, form=form,
                                request=LaunchpadBrowserRequest)
@@ -265,7 +263,6 @@ class BrowserTestCase(FunctionalTestCase):
           getBody()      -- returns the full response body as a string
           getPath()      -- returns the path used in the request
         """
-        outstream = HTTPTaskStub()
         old_site = self.getSite()
         self.setSite(None)
         # A cookie header has been sent - ensure that future requests
@@ -276,9 +273,8 @@ class BrowserTestCase(FunctionalTestCase):
             self.cookies.load(env['HTTP_COOKIE'])
             del env['HTTP_COOKIE'] # Added again in makeRequest
 
-        request = self.makeRequest(path, basic=basic, form=form, env=env,
-                                   outstream=outstream)
-        response = ResponseWrapper(request.response, outstream, path)
+        request = self.makeRequest(path, basic=basic, form=form, env=env)
+        response = ResponseWrapper(request.response, path)
         if env.has_key('HTTP_COOKIE'):
             self.cookies.load(env['HTTP_COOKIE'])
         publish(request, handle_errors=handle_errors)
@@ -360,7 +356,7 @@ class HTTPTestCase(FunctionalTestCase):
     """Functional test case for HTTP requests."""
 
     def makeRequest(self, path='', basic=None, form=None, env={},
-                    instream=None, outstream=None):
+                    instream=None):
         """Creates a new request object.
 
         Arguments:
@@ -373,20 +369,16 @@ class HTTPTestCase(FunctionalTestCase):
                        X-Header: foo
                      by adding 'HTTP_X_HEADER': 'foo' to env)
           instream  -- a stream from where the HTTP request will be read
-          outstream -- a stream where the HTTP response will be written
         """
-        if outstream is None:
-            outstream = HTTPTaskStub()
         if instream is None:
             instream = ''
         environment = {"HTTP_HOST": 'localhost',
                        "HTTP_REFERER": 'localhost'}
         environment.update(env)
         app = FunctionalTestSetup().getApplication()
-        request = app._request(path, instream, outstream,
-                               environment=environment,
-                               basic=basic, form=form,
-                               request=HTTPRequest, publication=HTTPPublication)
+        request = app._request(path, instream, environment=environment,
+                               basic=basic, form=form, request=HTTPRequest,
+                               publication=HTTPPublication)
         return request
 
     def publish(self, path, basic=None, form=None, env={},
@@ -403,10 +395,9 @@ class HTTPTestCase(FunctionalTestCase):
           getBody()      -- returns the full response body as a string
           getPath()      -- returns the path used in the request
         """
-        outstream = HTTPTaskStub()
         request = self.makeRequest(path, basic=basic, form=form, env=env,
-                                   instream=request_body, outstream=outstream)
-        response = ResponseWrapper(request.response, outstream, path)
+                                   instream=request_body)
+        response = ResponseWrapper(request.response, path)
         publish(request, handle_errors=handle_errors)
         return response
 
@@ -450,18 +441,19 @@ class DocResponseWrapper(ResponseWrapper):
     """Response Wrapper for use in doc tests
     """
 
-    def __init__(self, response, outstream, path, header_output):
-        ResponseWrapper.__init__(self, response, outstream, path)
-        self.header_output = header_output
+    def __init__(self, response, path):
+        ResponseWrapper.__init__(self, response, path)
 
     def __str__(self):
-        body = self.getOutput()
-        if body:
-            return "%s\n\n%s" % (self.header_output, body)
-        return "%s\n" % (self.header_output)
-
-    def getBody(self):
         return self.getOutput()
+        #body = self.getOutput()
+        #if body:
+        #    return "%s\n\n%s" % (self.header_output, body)
+        #return "%s\n" % (self.header_output)
+
+    #def getBody(self):
+    #    return self.getOutput()
+
 
 def http(request_string, port=9000, handle_errors=True, debug=False):
     """Execute an HTTP request string via the publisher
@@ -481,7 +473,6 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
     method, path, protocol = command_line.split()
     path = urllib.unquote(path)
 
-
     instream = StringIO(request_string)
     environment = {"HTTP_HOST": 'localhost:%s' % port,
                    "HTTP_REFERER": 'localhost',
@@ -497,14 +488,11 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
             name = 'HTTP_' + name
         environment[name] = value.rstrip()
 
-    outstream = HTTPTaskStub()
-
-
     old_site = getSite()
     setSite(None)
     app = FunctionalTestSetup().getApplication()
-    header_output = HTTPHeaderOutput(
-        protocol, ('x-content-type-warning', 'x-powered-by'))
+    #header_output = HTTPHeaderOutput(
+    #    protocol, ('x-content-type-warning', 'x-powered-by'))
 
     if method not in ('GET', 'POST', 'HEAD'):
         raise RuntimeError("Request method was not GET, POST or HEAD.")
@@ -512,14 +500,12 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
     request_cls = LaunchpadBrowserRequest
     publication_cls = LaunchpadBrowserPublication
 
-    request = app._request(path, instream, outstream,
-                           environment=environment,
+    request = app._request(path, instream, environment=environment,
                            request=request_cls, publication=publication_cls)
-    request.response.setHeaderOutput(header_output)
+    #request.response.setHeaderOutput(header_output)
     canonical.launchpad.layers.setFirstLayer(
         request, canonical.launchpad.layers.PageTestLayer)
-    response = DocResponseWrapper(request.response, outstream, path,
-                                  header_output)
+    response = DocResponseWrapper(request.response, path)
     if debug:
         import pdb;pdb.set_trace()
     publish(request, handle_errors=handle_errors)
