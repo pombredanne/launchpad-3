@@ -293,7 +293,7 @@ def test_count_lines():
 
 def test_request_languages():
     '''
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.testing.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
     >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
