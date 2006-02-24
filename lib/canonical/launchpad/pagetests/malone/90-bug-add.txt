@@ -119,6 +119,6 @@ description has a special comment appended to it.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/gentoo/+bug/10
+  Location: http://localhost:9000/distros/gentoo/+bug/11
   ...
 
