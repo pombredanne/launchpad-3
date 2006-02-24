@@ -832,17 +832,26 @@ class POFile(SQLBase, RosettaStats):
         if self.validExportCache() and included_obsolete:
             # Only use the cache if the request includes obsolete messages,
             # without them, we always do a full export.
-            return self.fetchExportCache()
-        else:
-            contents = self.uncachedExport()
+            try:
+                return self.fetchExportCache()
+            except LookupError:
+                # XXX: Carlos Perello Marin 20060224 Workaround for bug #1887
+                # Something produces the LookupError exception and we don't
+                # know why. This will allow us to provide an export.
+                pass
 
-            if len(contents) == 0:
-                raise ZeroLengthPOExportError
+        contents = self.uncachedExport()
 
-            if included_obsolete:
-                # Update the cache if the request includes obsolete messages.
-                self.updateExportCache(contents)
-            return contents
+        if len(contents) == 0:
+            # The export is empty, this is completely broken, raised the
+            # exception.
+            raise ZeroLengthPOExportError, "Exporting %s" % self.title
+
+        if included_obsolete:
+            # Update the cache if the request includes obsolete messages.
+            self.updateExportCache(contents)
+
+        return contents
 
     def exportToFileHandle(self, filehandle, included_obsolete=True):
         """See IPOFile."""
