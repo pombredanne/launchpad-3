@@ -8,7 +8,7 @@ Checks that the '+pots/' page redirects always to the '+translations' one.
   Content-Length: 16
   Content-Type: text/plain;charset=utf-8
   Location: ../+translations
-  <BLANKLINE>
+  ...
   ../+translations
 
 

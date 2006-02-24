@@ -129,9 +129,9 @@ telling the user they are unauthorised to view the bug):
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: ...
-  Content-Type: text/plain;charset=utf-8
+  Content-Type: text/plain
   Location: .../malone/bugs/1
-  <BLANKLINE>
+  ...
 
 
 
