@@ -1087,6 +1087,7 @@ class PersonSet:
         emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
         if emailaddress is None:
             return default
+        assert emailaddress.person is not None
         return emailaddress.person
 
     def getUbunteros(self, orderBy=None):
