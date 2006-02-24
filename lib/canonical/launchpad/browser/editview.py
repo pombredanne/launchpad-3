@@ -128,9 +128,10 @@ class SQLObjectEditView(EditView):
                 self.changed()
                 formatter = self.request.locale.dates.getFormatter(
                     'dateTime', 'medium')
-                self.update_status = _("Updated on ${date_time}")
-                self.update_status.mapping = {'date_time': formatter.format(
-                    datetime.utcnow())}
+                self.update_status = _(
+                        "Updated on ${date_time}", mapping={
+                        'date_time': formatter.format(datetime.utcnow())
+                        })
 
             return self.update_status
 
