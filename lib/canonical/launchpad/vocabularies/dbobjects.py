@@ -71,7 +71,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet)
 
-class IHugeVocabulary(IVocabulary):
+class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
 
     Items in an IHugeVocabulary should have human readable tokens or the
