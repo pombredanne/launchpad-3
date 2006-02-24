@@ -67,7 +67,7 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName)
 from canonical.launchpad.interfaces import (
-    IDistribution, IEmailAddressSet, ILaunchBag, IPerson, IPersonSet, ITeam)
+    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -503,15 +503,7 @@ class ValidPersonOrTeamVocabulary(
     extra_clause = ""
 
     def __contains__(self, obj):
-        if not (IPerson.providedBy(obj) or ITeam.providedBy(obj)):
-            return False
-        # All teams are valid.
-        if ITeam.providedBy(obj):
-            return True
-        has_preferred_email = obj.preferredemail is not None
-        has_password = obj.password is not None
-        is_merged = obj.merged is not None
-        return has_preferred_email and has_preferred_email and not is_merged
+        return obj in self._doSearch()
 
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
@@ -587,13 +579,6 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
                 ) AND Person.id != %d
             """ % (self.team.id, self.team.id)
 
-    def __contains__(self, obj):
-        if not ValidPersonOrTeamVocabulary.__contains__(self, obj):
-            return False
-        if self.team == obj:
-            return False
-        return not self.team.inTeam(obj)
-
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
     """The set of Persons/Teams that can be owner of a team.
@@ -612,16 +597,6 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
         self.extra_clause = """
             (person.teamowner != %d OR person.teamowner IS NULL) AND
             person.id != %d""" % (context.id, context.id)
-
-    def __contains__(self, obj):
-        if not ValidPersonOrTeamVocabulary.__contains__(self, obj):
-            return False
-        if self.context == obj:
-            return False
-        if obj.teamowner is not None:
-            return not self.context.inTeam(obj.teamowner)
-        else:
-            return True
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
