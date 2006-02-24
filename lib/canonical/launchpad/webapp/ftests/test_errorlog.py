@@ -18,7 +18,7 @@ UTC = pytz.timezone('UTC')
 class TestErrorReport(unittest.TestCase):
     def test_import(self):
         from canonical.launchpad.webapp.errorlog import (
-            ErrorReport, ErrorReportingService)
+            ErrorReport, ErrorReportingUtility)
 
     def test___init__(self):
         """Test ErrorReport.__init__()"""
@@ -119,7 +119,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.db_statements[1], (5, 10, 'SELECT 2'))
 
 
-class TestErrorReportingService(unittest.TestCase):
+class TestErrorReportingUtility(unittest.TestCase):
     def setUp(self):
         shutil.rmtree(config.launchpad.errorreports.errordir,
                       ignore_errors=True)
@@ -129,46 +129,46 @@ class TestErrorReportingService(unittest.TestCase):
                       ignore_errors=True)
 
     def test_newOopsId(self):
-        """Test ErrorReportingService.newOopsId()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingService
-        service = ErrorReportingService()
+        """Test ErrorReportingUtility.newOopsId()"""
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
 
         # first oops of the day
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-        oopsid, filename = service.newOopsId(now)
+        oopsid, filename = utility.newOopsId(now)
         self.assertEqual(oopsid, 'OOPS-91T1')
         self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-01/01800.T1')
-        self.assertEqual(service.lastid, 1)
-        self.assertEqual(service.lasterrordate, '2006-04-01')
+        self.assertEqual(utility.lastid, 1)
+        self.assertEqual(utility.lasterrordate, '2006-04-01')
 
         # second oops of the day
         now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
-        oopsid, filename = service.newOopsId(now)
+        oopsid, filename = utility.newOopsId(now)
         self.assertEqual(oopsid, 'OOPS-91T2')
         self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-01/43200.T2')
-        self.assertEqual(service.lastid, 2)
-        self.assertEqual(service.lasterrordate, '2006-04-01')
+        self.assertEqual(utility.lastid, 2)
+        self.assertEqual(utility.lasterrordate, '2006-04-01')
 
         # first oops of following day
         now = datetime.datetime(2006, 04, 02, 00, 30, 00, tzinfo=UTC)
-        oopsid, filename = service.newOopsId(now)
+        oopsid, filename = utility.newOopsId(now)
         self.assertEqual(oopsid, 'OOPS-92T1')
         self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-02/01800.T1')
-        self.assertEqual(service.lastid, 1)
-        self.assertEqual(service.lasterrordate, '2006-04-02')
+        self.assertEqual(utility.lastid, 1)
+        self.assertEqual(utility.lasterrordate, '2006-04-02')
 
         # another oops with a naiive datetime
         now = datetime.datetime(2006, 04, 02, 00, 30, 00)
-        self.assertRaises(ValueError, service.newOopsId, now)
+        self.assertRaises(ValueError, utility.newOopsId, now)
 
     def test_findLastOopsId(self):
-        """Test ErrorReportingService._findLastOopsId()"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingService
-        service = ErrorReportingService()
+        """Test ErrorReportingUtility._findLastOopsId()"""
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
 
         self.assertEqual(config.launchpad.errorreports.oops_prefix, 'T')
 
-        errordir = service.errordir()
+        errordir = utility.errordir()
         # write some files
         open(os.path.join(errordir, '12343.T1'), 'w').close()
         open(os.path.join(errordir, '12342.T2'), 'w').close()
@@ -177,20 +177,20 @@ class TestErrorReportingService(unittest.TestCase):
         open(os.path.join(errordir, '12346.A42'), 'w').close()
         open(os.path.join(errordir, '12346.B100'), 'w').close()
 
-        self.assertEqual(service._findLastOopsId(errordir), 10)
+        self.assertEqual(utility._findLastOopsId(errordir), 10)
 
     def test_raising(self):
-        """Test ErrorReportingService.raising() with no request"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingService
-        service = ErrorReportingService()
+        """Test ErrorReportingUtility.raising() with no request"""
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         try:
             raise Exception('xyz')
         except:
-            service.raising(sys.exc_info(), now=now)
+            utility.raising(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(service.errordir(now), '01800.T1')
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -216,9 +216,9 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[12], 'Exception: xyz\n')
 
     def test_raising_with_request(self):
-        """Test ErrorReportingService.raising() with a request"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingService
-        service = ErrorReportingService()
+        """Test ErrorReportingUtility.raising() with a request"""
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         class FakeRequest:
@@ -245,9 +245,9 @@ class TestErrorReportingService(unittest.TestCase):
         try:
             raise Exception('xyz\nabc')
         except:
-            service.raising(sys.exc_info(), request, now=now)
+            utility.raising(sys.exc_info(), request, now=now)
 
-        errorfile = os.path.join(service.errordir(now), '01800.T1')
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -280,9 +280,9 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(request.oopsid, 'OOPS-91T1')
 
     def test_raising_with_unprintable_exception(self):
-        """Test ErrorReportingService.raising() with an unprintable exception"""
-        from canonical.launchpad.webapp.errorlog import ErrorReportingService
-        service = ErrorReportingService()
+        """Test ErrorReportingUtility.raising() with an unprintable exception"""
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 01, 01, 00, 30, 00, tzinfo=UTC)
 
         class UnprintableException(Exception):
@@ -292,9 +292,9 @@ class TestErrorReportingService(unittest.TestCase):
         try:
             raise UnprintableException()
         except:
-            service.raising(sys.exc_info(), now=now)
+            utility.raising(sys.exc_info(), now=now)
 
-        errorfile = os.path.join(service.errordir(now), '01800.T1')
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
 
@@ -323,7 +323,7 @@ class TestErrorReportingService(unittest.TestCase):
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestErrorReport))
-    suite.addTest(unittest.makeSuite(TestErrorReportingService))
+    suite.addTest(unittest.makeSuite(TestErrorReportingUtility))
     return suite
 
 if __name__ == '__main__':
