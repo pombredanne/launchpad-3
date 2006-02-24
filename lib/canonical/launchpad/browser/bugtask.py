@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -366,9 +366,11 @@ class BugTaskBackportView:
                 continue
             # A target value looks like 'warty.mozilla-firefox'. If
             # there was no specific sourcepackage targeted, it would
-            # look like 'warty.'
+            # look like 'warty.'. 
             if "." in target:
-                releasename, spname = target.split(".")
+                # We need to ensure we split into two parts, because 
+                # some packages names contains dots.
+                releasename, spname = target.split(".", 1)
                 spname = getUtility(ISourcePackageNameSet).queryByName(spname)
             else:
                 releasename = target
@@ -430,10 +432,6 @@ class BugTaskEditView(GeneralFormView):
                 # Pass the comment_on_change_error as a list here, because
                 # WidgetsError expects a list of errors.
                 raise WidgetsError([self.comment_on_change_error])
-        distro = bugtask.distribution
-        sourcename = bugtask.sourcepackagename
-        if distro is not None and sourcename != data['sourcepackagename']:
-            valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
 
         return data
 
@@ -979,7 +977,7 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
 
     def getExtraSearchParams(self):
         """Return the extra parameters for a search that used the advanced form.
-        
+
         This method can also be used to get the extra parameters when a simple
         form is submitted. This allows us to hide the advanced form in some
         pages and still use this method to get the extra params of the
