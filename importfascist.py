@@ -246,5 +246,8 @@ def report_naughty_imports():
                     print "   ", import_into
 
 def install_import_fascist():
+    # XXX: Import fascist currently disabled as it appears to stop
+    # the ZCML engine from importing modules. Open a bug on this.
+    return
     __builtin__.__import__ = import_fascist
     atexit.register(report_naughty_imports)
