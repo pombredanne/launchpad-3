@@ -49,7 +49,8 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
+    valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -434,8 +435,11 @@ class BugTaskEditView(GeneralFormView):
                 raise WidgetsError([self.comment_on_change_error])
         distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
+        product = bugtask.product
         if distro is not None and sourcename != data['sourcepackagename']:
             valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+        if product is not None and product != data['product']:
+            valid_upstreamtask(bugtask.bug, data['product'])
 
         return data
 
