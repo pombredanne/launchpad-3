@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistribution, IProduct)
+    ILaunchBag, IDistribution, IProduct, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 class FileBugView(SQLObjectAddView):
@@ -19,6 +19,8 @@ class FileBugView(SQLObjectAddView):
     This class handles bugs filed on an IBugTarget, and the 'generic' bug
     filing, where a distribution argument is passed with the form.
     """
+
+    notification = "Thank you for your bug report."
 
     def create(self, title=None, comment=None, private=False,
                packagename=None, distribution=None):
@@ -33,13 +35,31 @@ class FileBugView(SQLObjectAddView):
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
-            sourcepackagename, binarypackagename = (
-                context.getPackageNames(str(packagename)))
-
-            bugtarget = context.getSourcePackage(sourcepackagename.name)
-            bug = bugtarget.createBug(
-                title=title, comment=comment, private=private, owner=current_user,
-                binarypackagename=binarypackagename)
+            packagename = str(packagename)
+            try:
+                sourcepackagename, binarypackagename = (
+                    context.getPackageNames(packagename))
+            except NotFoundError:
+                # getPackageNames may raise NotFoundError. It would be
+                # nicer to allow people to indicate a package even if
+                # never published, but the quick fix for now is to note
+                # the issue and move on.
+                self.notification += ("<br /><br />Note that the package %r "
+                                      "is not published in %s; the bug "
+                                      "has therefore been targeted to the "
+                                      "distribution only."
+                                      % (packagename, context.displayname))
+                comment += ("\r\n\r\nNote: the original reporter indicated "
+                            "the bug was in package %r; however, that package "
+                            "was not published in %s."
+                            % (packagename, context.displayname))
+                bug = context.createBug(
+                    title=title, comment=comment, private=private, owner=current_user)
+            else:
+                bugtarget = context.getSourcePackage(sourcepackagename.name)
+                bug = bugtarget.createBug(
+                    title=title, comment=comment, private=private, owner=current_user,
+                    binarypackagename=binarypackagename)
         else:
             bug = context.createBug(
                 title=title, comment=comment, private=private, owner=current_user)
@@ -49,7 +69,8 @@ class FileBugView(SQLObjectAddView):
 
     def nextURL(self):
         # Give the user some feedback on the bug just opened.
-        self.request.response.addNotification("Thank you for your bug report.")
+        self.request.response.addNotification(self.notification)
 
         task = self.addedBug.bugtasks[0]
         return canonical_url(task)
+

@@ -306,3 +306,12 @@ While Debian uses neither:
     >>> debian.official_rosetta
     False
 
+Gentoo only uses Malone
+
+    >>> print gentoo.official_malone
+    True
+    >>> print gentoo.official_rosetta
+    False
+
+
+
