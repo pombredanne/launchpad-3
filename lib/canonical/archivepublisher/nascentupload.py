@@ -1873,6 +1873,12 @@ class NascentUpload:
             queue_root.addSource(self.policy.sourcepackagerelease)
         # If we're binaryful, add the build
         if self.binaryful:
+            # XXX cprov 20060224: don't rely on policy pockets for binary
+            # uploads, they always are traget to distrorelease 'autobuild',
+            # which means pocket RELEASE. It target any non-RELEASE pocket
+            # build to RELEASE pocket. The right pocket is that stored in
+            # build record anyway.
+            queue_root.pocket = self.policy.build.pocket
             queue_root.addBuild(self.policy.build)
         # Finally, add any custom files.
         for uploaded_file in self.files:
