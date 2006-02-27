@@ -440,7 +440,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         if self.slave.buildstatus in (BuildStatus.OK, BuildStatus.PACKAGEFAIL,
                                       BuildStatus.DEPFAIL):
             return (self.slave.buildstatus, self.buildid,
-                    self.slave.waitingfiles)
+                    self.slave.waitingfiles, self.slave.builddependencies)
         return (self.slave.buildstatus, self.buildid)
 
     def status_ABORTED(self):
