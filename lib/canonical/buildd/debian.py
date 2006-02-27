@@ -1,5 +1,6 @@
 # Copyright Canonical Limited
-# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+# Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
+#      and Adam Conrad <adam.conrad@canonical.com>
 
 # Buildd Slave sbuild manager implementation
 
@@ -29,7 +30,9 @@ class SBuildExitCodes:
     """SBUILD process result codes."""
     OK = 0
     DEPFAIL = 1
-    BUILDERFAIL = 2
+    GIVENBACK = 2
+    BUILDFAIL = 3
+    BUILDERFAIL = 4
 
 
 class DebianBuildManager(BuildManager):
@@ -206,6 +209,8 @@ class DebianBuildManager(BuildManager):
         if success != SBuildExitCodes.OK:
             if success == SBuildExitCodes.DEPFAIL:
                 self._slave.depFail()
+            elif success == SBuildExitCodes.GIVENBACK:
+                self._slave.giveBack()
             elif success == SBuildExitCodes.BUILDERFAIL:
                 self._slave.builderFail()
             else:

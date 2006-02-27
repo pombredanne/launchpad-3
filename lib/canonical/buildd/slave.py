@@ -1,5 +1,6 @@
 # Copyright Canonical Limited
-# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+# Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
+#      and Adam Conrad <adam.conrad@canonical.com>
 
 # Buildd Slave implementation
 
@@ -352,6 +353,13 @@ class BuildDSlave(object):
             raise ValueError("Slave is not BUILDING when set to DEPFAIL")
         self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.DEPFAIL
+
+    def giveBack(self):
+        """Give-back package due to a transient buildd/archive issue."""
+        if self.builderstatus != BuilderStatus.BUILDING:
+            raise ValueError("Slave is not BUILDING when set to GIVENBACK")
+        self.builderstatus = BuilderStatus.WAITING
+        self.buildstatus = BuildStatus.GIVENBACK
 
     def buildComplete(self):
         """Mark the build as complete and waiting interaction from the build

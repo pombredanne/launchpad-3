@@ -1,3 +1,10 @@
+launchpad-buildd (26) unstable; urgency=low
+
+  * Update buildd-slave code to allow for GIVENBACK status returns,
+    matching the states under which sbuild used to do --auto-give-back.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Mon, 27 Feb 2006 14:00:08 +1100
+
 launchpad-buildd (25) unstable; urgency=low
 
   * Update sbuild.conf to current yumminess.
