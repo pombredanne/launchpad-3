@@ -22,6 +22,7 @@ from bzrlib.builtins import cmd_push
 
 from twisted.python.util import sibpath
 
+import canonical
 from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
@@ -44,8 +45,10 @@ class AuthserverTacTestSetup(TacTestSetup):
 
     @property
     def tacfile(self):
-        # XXX: use standard LP authserver tac here instead, if possible
-        return sibpath(__file__, 'authserver.tac')
+        return os.path.abspath(os.path.join(
+            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
+            'daemons/authserver.tac'
+            ))
 
     @property
     def pidfile(self):
@@ -58,13 +61,22 @@ class AuthserverTacTestSetup(TacTestSetup):
 
 class SFTPSetup(TacTestSetup):
     root = '/tmp/sftp-test'
-    tacfile = '/home/andrew/warthogs/supermirrorsftp/devel/supermirrorsftp/tests/test.tac'
-    pidfile = root + '/twistd.pid'
-    logfile = root + '/twistd.log'
+    pidfile = os.path.join(root, 'twistd.pid')
+    logfile = os.path.join(root, 'twistd.log')
     def setUpRoot(self):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
         os.makedirs(self.root, 0700)
+        shutil.copytree(sibpath(__file__, 'keys'), 
+                        os.path.join(self.root, 'keys'))
+
+    @property
+    def tacfile(self):
+        return os.path.abspath(os.path.join(
+            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
+            'daemons/sftp.tac'
+            ))
+
 
 
 class AcceptanceTests(BzrTestCase):

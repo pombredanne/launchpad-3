@@ -11,9 +11,10 @@ from twisted.conch.ssh import keys
 from twisted.application import service, strports
 
 from canonical.config import config
+from canonical.launchpad.daemons import tachandler
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 
-from supermirrorsftp import sftponly
+from canonical.supermirrorsftp import sftponly
 
 # mkdir keys; cd keys; ssh-keygen -t rsa -f ssh_host_key_rsa
 keydir = config.supermirrorsftp.host_key_pair_path
@@ -25,7 +26,7 @@ hostPrivateKey = keys.getPrivateKeyObject(
 )
 
 # Configure the authentication
-homedirs = config.branches_root
+homedirs = config.supermirrorsftp.branches_root
 authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
 portal = portal.Portal(sftponly.Realm(homedirs, authserver))
 portal.registerChecker(sftponly.PublicKeyFromLaunchpadChecker(authserver))
@@ -34,6 +35,8 @@ sftpfactory.portal = portal
 
 # Configure it to listen on a port
 application = service.Application('sftponly')
-service = strports.service(config.supermirrorsftp.port, sftpfactory)
-service.setServiceParent(application)
+svc = strports.service(config.supermirrorsftp.port, sftpfactory)
+svc.setServiceParent(application)
 
+# Service that announces when the daemon is ready
+tachandler.ReadyService().setServiceParent(application)
