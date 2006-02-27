@@ -579,7 +579,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-class BugTaskSearchListingView(GeneralFormView):
+class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
 
     Subclasses should define getExtraSearchParams() to filter the
@@ -617,7 +617,7 @@ class BugTaskSearchListingView(GeneralFormView):
         else:
             self.schema = IBugTaskSearch
 
-        GeneralFormView.initialize(self)
+        setUpWidgets(self, self.schema, IInputWidget)
 
     def showTableView(self):
         """Should the search results be displayed as a table?"""
@@ -650,7 +650,7 @@ class BugTaskSearchListingView(GeneralFormView):
                     self, self.schema,
                     names=[
                         "searchtext", "status", "assignee", "severity",
-                        "priority", "owner", "omit_dupes"]))
+                        "priority", "owner", "omit_dupes", "has_patch"]))
 
             searchtext = data.get("searchtext")
             if searchtext and searchtext.isdigit():
@@ -676,6 +676,10 @@ class BugTaskSearchListingView(GeneralFormView):
             # The "omit dupes" parameter wasn't provided, so default to omitting
             # dupes from reports, of course.
             data["omit_dupes"] = True
+
+        has_patch = data.pop("has_patch", False)
+        if has_patch:
+            data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
 
         # "Normalize" the form data into search arguments.
         form_values = {}

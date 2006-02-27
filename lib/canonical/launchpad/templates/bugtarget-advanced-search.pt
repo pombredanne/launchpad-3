@@ -210,12 +210,18 @@
                       Omit duplicate bugs from search results
                     </small>
                   </td>
+                  <td>
+                    <small>
+                      <span tal:content="structure view/has_patch_widget" />
+                      Show only bugs with patches available
+                    </small>
+                  </td>
                 </tr>
               </table>
             </td>
           </tr>
           <tr>
-            <th class="section-header">
+            <th class="section-header" style="font-weight: normal">
               <input type="submit"
                      name="search"
                      value="Search bugs in mozilla-firefox in ubuntu"

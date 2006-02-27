@@ -679,7 +679,7 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
-        return "Search bugs reported %s" % self.context.displayname
+        return "Search bugs reported by %s" % self.context.displayname
 
     def getAdvancedSearchActionURL(self):
         """Return a URL to be used as the action for the advanced search."""

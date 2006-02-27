@@ -46,7 +46,10 @@ unassigned bug tasks.
 But the advanced search allows us to query only the bug tasks that aren't
 assigned.
 
-    >>> form = {'orderby': u'-priority', 'field.unassigned': u'on'}
+    >>> form = {
+    ...     'orderby': u'-priority', 'assignee_option': 'none',
+    ...     'field.assignee': '', 'advanced': 1,
+    ...     'search': 'Search'}
     >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', form)
     >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name,

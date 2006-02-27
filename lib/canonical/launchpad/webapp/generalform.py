@@ -102,6 +102,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         return {}
 
     # internal methods, should not be overridden
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+
+        self.errors = {}
+        self.process_status = None
+
+        self._setUpWidgets()
+
     def _setUpWidgets(self):
         setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames,
                      initial=self.initial_values)
@@ -190,12 +198,6 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         self.initialize()
 
         return NoRenderingOnRedirect.__call__(self)
-
-    def initialize(self):
-        self.errors = {}
-        self.process_status = None
-
-        self._setUpWidgets()
 
 
 def GeneralFormViewFactory(name, schema, label, permission, layer,
