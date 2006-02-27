@@ -240,7 +240,7 @@ class SignedCodeOfConductSet:
         if not gpg:
             return ('The key you used, which has the fingerprint <code>%s'
                     '</code>, is not registered in Launchpad. Please '
-                    '<a href="%s/+editgpgkeys">follow the '
+                    '<a href="%s/+editpgpkeys">follow the '
                     'instructions</a> and try again.'
                     % (sig.fingerprint, canonical_url(user)))
 
@@ -252,7 +252,7 @@ class SignedCodeOfConductSet:
         if not gpg.active:
             return ('The OpenPGP key used (<code>%s</code>) has been '
                     'deactivated. '
-                    'Please <a href="%s/+editgpgkeys">reactivate</a> it and '
+                    'Please <a href="%s/+editpgpkeys">reactivate</a> it and '
                     'try again.'
                     % (gpg.displayname, canonical_url(user)))
 

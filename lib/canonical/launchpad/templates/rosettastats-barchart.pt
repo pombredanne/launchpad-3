@@ -1,7 +1,7 @@
 <span style="display: none" tal:content="view/sortable_untranslated" />
 <img
   tal:condition="not: context/messageCount"
-  src="/++resource++red-bar.png"
+  src="/@@/red-bar.png"
   width="100"
   style="height: 1em;"
   >
@@ -12,7 +12,7 @@
     title string:Unchanged: ${context/nonUpdatesPercentage} %;
     width context/nonUpdatesPercentage;
   "
-  src="/++resource++green-bar.png"
+  src="/@@/green-bar.png"
   style="height: 1em;"
 /><img
   tal:condition="context/updatesCount"
@@ -21,7 +21,7 @@
     width context/updatesPercentage;
     title string: Changed: ${context/updatesPercentage} %
   "
-  src="/++resource++blue-bar.png"
+  src="/@@/blue-bar.png"
   style="height: 1em;"
 /><img
   tal:condition="context/rosettaCount"
@@ -30,7 +30,7 @@
     width context/rosettaPercentage;
     title string: New: ${context/rosettaPercentage} %
   "
-  src="/++resource++purple-bar.png"
+  src="/@@/purple-bar.png"
   style="height: 1em;"
 /><img
   tal:condition="context/untranslatedCount"
@@ -39,6 +39,6 @@
     width context/untranslatedPercentage;
     title string: Untranslated: ${context/untranslatedPercentage} %
   "
-  src="/++resource++red-bar.png"
+  src="/@@/red-bar.png"
   style="height: 1em;"
 />

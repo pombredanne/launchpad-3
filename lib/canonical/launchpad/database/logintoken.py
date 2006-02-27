@@ -67,7 +67,7 @@ class LoginToken(SQLBase):
                                   LoginTokenType.VALIDATESIGNONLYGPG)
 
         template = get_email_template('validate-gpg.txt')
-        fromaddress = "Launchpad OpenGPG Key Confirmation <noreply@launchpad.net>"
+        fromaddress = "Launchpad OpenPGP Key Confirmation <noreply@launchpad.net>"
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,

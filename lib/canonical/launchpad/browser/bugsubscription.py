@@ -25,4 +25,3 @@ class BugSubscriptionAddView(SQLObjectAddView):
 
     def nextURL(self):
         return self._next_url
-

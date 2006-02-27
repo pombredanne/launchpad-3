@@ -74,7 +74,6 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution', notNull=True)
-    bugtasks = MultipleJoin('BugTask', joinColumn='distrorelease')
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
@@ -548,7 +547,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishing', 'DistroArchRelease'],
             distinct=True)
-        if len(bprs) == 0:
+        if bprs.count() == 0:
             return
 
         # find or create the cache entry
