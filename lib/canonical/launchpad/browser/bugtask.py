@@ -38,13 +38,13 @@ from canonical.launchpad.webapp import (
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch, IBugSet,
-    IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
-    IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
-    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
-    NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask)
+    ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
+    IBugTaskSet, IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch,
+    BugTaskSearchParams, IUpstreamBugTask, IDistroBugTask,
+    IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
+    IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
+    ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
+    valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -361,9 +361,11 @@ class BugTaskBackportView:
                 continue
             # A target value looks like 'warty.mozilla-firefox'. If
             # there was no specific sourcepackage targeted, it would
-            # look like 'warty.'
+            # look like 'warty.'. 
             if "." in target:
-                releasename, spname = target.split(".")
+                # We need to ensure we split into two parts, because 
+                # some packages names contains dots.
+                releasename, spname = target.split(".", 1)
                 spname = getUtility(ISourcePackageNameSet).queryByName(spname)
             else:
                 releasename = target
@@ -427,8 +429,11 @@ class BugTaskEditView(GeneralFormView):
                 raise WidgetsError([self.comment_on_change_error])
         distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
+        product = bugtask.product
         if distro is not None and sourcename != data['sourcepackagename']:
             valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+        if product is not None and product != data['product']:
+            valid_upstreamtask(bugtask.bug, data['product'])
 
         return data
 
@@ -603,17 +608,10 @@ class BugTaskSearchListingView(LaunchpadView):
         #     the search form. Sub classes, like
         #     AdvancedBugTaskSearchView should use a seperate schema if
         #     they need to. -- Bjorn Tillenius, 2005-09-29
-        if self._upstreamContext():
-            self.search_form_schema = IUpstreamBugTaskSearch
-        elif (self._distributionContext()
-              or self._distroReleaseContext()
-              or self._sourcePackageContext()
-              or self._distroSourcePackageContext()):
-            self.search_form_schema = IDistroBugTaskSearch
-        elif self._personContext():
+        if self._personContext():
             self.search_form_schema = IPersonBugTaskSearch
         else:
-            raise TypeError("Unknown context: %s" % repr(self.context))
+            self.search_form_schema = IBugTaskSearch
 
         setUpWidgets(self, self.search_form_schema, IInputWidget)
 

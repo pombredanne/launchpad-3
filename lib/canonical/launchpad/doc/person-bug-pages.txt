@@ -41,7 +41,20 @@ unassigned bug tasks.
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), (7, 'UNCONFIRMED', u'name16')]
+    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), (7, 'UNCONFIRMED', u'name16'), (9, 'UNCONFIRMED', None)]
+
+But the advanced search allows us to query only the bug tasks that aren't
+assigned.
+
+    >>> form = {'orderby': u'-priority', 'field.unassigned': u'on'}
+    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', form)
+    >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name,
+    ...          getattr(bugtask.assignee, 'name', None))
+    ...         for bugtask in reported_bugtasks])
+    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), 
+     (9, 'UNCONFIRMED', None)]
+
 
 Subscribed bugs
 ---------------

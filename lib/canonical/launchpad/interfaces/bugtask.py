@@ -8,9 +8,7 @@ __all__ = [
     'IBugTask',
     'INullBugTask',
     'IBugTaskSearch',
-    'IUpstreamBugTaskSearch',
     'IAddBugTaskForm',
-    'IDistroBugTaskSearch',
     'IPersonBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
@@ -201,19 +199,10 @@ class IBugTaskSearch(Interface):
         title=_('Attachment:'),
         value_type=IBugAttachment['type'],
         required=False)
-
-
-class IUpstreamBugTaskSearch(IBugTaskSearch):
-    """The schema used by the bug task search form of a product."""
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
         title=_('Target:'), value_type=IBugTask['milestone'], required=False)
-
-
-class IDistroBugTaskSearch(IBugTaskSearch):
-    """The schema used by the bug task search form of a distribution or
-    distribution release."""
 
 
 class IPersonBugTaskSearch(IBugTaskSearch):

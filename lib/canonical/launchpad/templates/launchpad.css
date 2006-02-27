@@ -1157,6 +1157,10 @@ dl.faq dd {
     margin: 0.5em 1em;
 }
 
+dl.faq ol {
+    margin: 0.5em 3em;
+}
+
 /* New bug listing table view. */
 .buglisting {
     margin: 10px 0px 10px 0px;
