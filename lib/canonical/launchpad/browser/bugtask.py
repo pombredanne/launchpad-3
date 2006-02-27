@@ -31,9 +31,10 @@ import urllib
 from zope.event import notify
 from zope.interface import providedBy
 from zope.component import getUtility, getView
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import (
     setUpWidgets, getWidgetsData, applyWidgetsChanges)
-from zope.app.form.interfaces import IInputWidget, WidgetsError
+from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 
 from canonical.config import config
@@ -50,7 +51,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    IPersonBugTaskSearch, IRemoteBugTask, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -58,6 +59,8 @@ from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.widgets.bugtask import (
+    AssigneeDisplayWidget, DBItemDisplayWidget)
 
 
 
@@ -389,6 +392,7 @@ class BugTaskReleaseTargetingView:
 
 class BugTaskEditView(GeneralFormView):
     """The view class used for the task +editstatus page."""
+
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
@@ -396,6 +400,33 @@ class BugTaskEditView(GeneralFormView):
         # complexity, to provide the user a useful error message if they make a
         # change comment but don't change anything.
         self.comment_on_change_error = ""
+
+    def _setUpWidgets(self):
+        if IRemoteBugTask.providedBy(self.context):
+            edit_field_names = ['bugwatch']
+            display_field_names = [
+                field_name for field_name in self.fieldNames
+                if field_name not in edit_field_names + ['milestone']
+                ]
+            self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
+            self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.milestone_widget = None
+        else:
+            self.fieldNames = list(self.fieldNames)
+            self.fieldNames.remove('bugwatch')
+            self.bugwatch_widget = None
+            display_field_names = []
+            edit_field_names = self.fieldNames
+
+
+        self.fieldNames = edit_field_names
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=edit_field_names,
+            initial = self.initial_values)
+        setUpWidgets(
+            self, self.schema, IDisplayWidget, names=display_field_names)
 
     @property
     def initial_values(self):
