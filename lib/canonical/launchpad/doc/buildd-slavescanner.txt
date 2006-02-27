@@ -222,10 +222,13 @@ slave has the requested file in cache.
   >>> builder10 = MockBuilder('Package Successfully Built',
   ...                         WaitingSlave('BuildStatus.OK'))
 
+  >>> builder11 = MockBuilder('I am giving this job back',
+  ...		               WaitingSlave('BuildStatus.GIVENBACK'))
+
 
   >>> buildergroup.builders = [builder1, builder2, builder3, builder4,
   ...                          builder5, builder6, builder7, builder8,
-  ...                          builder9, builder10]
+  ...                          builder9, builder10, builder11]
 
   >>> assert buildergroup.firstAvailable() is builder2
 
@@ -387,6 +390,15 @@ Let's check the procedures to verify/collect running build process:
   >>> buildergroup.updateBuild(bqItem9, librarian)
   >>> bqItem9.logtail
   'Waiting for slave process to be terminated'
+
+
+  WAITING -> GIVENBACK - slave requested build record to be
+  reschedulled.
+
+  >>> bqItem11 = MockBuildQueue(9, builder11, MockBuild(9))
+  >>> buildergroup.updateBuild(bqItem11, librarian)
+  WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
+
 
   WAITING - OK -> builder has finished the job and is waiting for
   master to collect its results
