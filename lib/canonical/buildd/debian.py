@@ -62,7 +62,7 @@ class DebianBuildManager(BuildManager):
         self._sbuildargs = slave._config.get("debianmanager",
                                              "sbuildargs").split(" ")
         self._ogrepath = slave._config.get("debianmanager", "ogrepath")
-        self._cachepath = self._config.get("slave","filecache")
+        self._cachepath = slave._config.get("slave","filecache")
         self._state = DebianBuildState.UNPACK
         slave.emptyLog()
         self.alreadyfailed = False
