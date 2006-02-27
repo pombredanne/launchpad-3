@@ -279,13 +279,17 @@ class Job:
 
         :rtype: str
         """
-        return "%s/%s--%s--%s" % (
-            self.archivename, self.category, self.branchto, self.archversion)
+        return "%s/%s" % (self.archivename, self.bazNonarchVersion())
+
+    def bazNonarchVersion(self):
+        """Non-archive part of the Arch version."""
+        return "%s--%s--%s" % (self.category, self.branchto, self.archversion)
 
     def getWorkingDir(self, dir):
         """create / reuse a working dir for the job to run in"""
-        version = arch.Version(self.bazFullPackageVersion())
-        path = os.path.join(dir, version.archive.name, version.nonarch)
+        archive = self.archivename
+        nonarch = self.bazNonarchVersion()
+        path = os.path.join(dir, archive, nonarch)
         if not os.access(path, os.F_OK):
             os.makedirs(path)
         return os.path.abspath(path)

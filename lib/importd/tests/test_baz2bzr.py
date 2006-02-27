@@ -14,9 +14,39 @@ import unittest
 import pybaz
 import bzrlib.branch
 
+import transaction
+from canonical.launchpad.database import ProductSet
+
 from importd import baz2bzr
 from importd.tests import TestUtil
-from importd.tests.helpers import SandboxHelper
+from importd.tests.helpers import SandboxHelper, ZopelessHelper
+
+class ProductSeriesHelper(object):
+    """Helper for tests that use the testing ProductSeries."""
+
+    def setUp(self):
+        self.zopeless_helper = ZopelessHelper()
+        self.zopeless_helper.setUp()
+        self.version = pybaz.Version('importd@example.com/test--branch--0')
+        self.setUpTestSeries()
+
+    def tearDown(self):
+        self.zopeless_helper.tearDown()
+        self.series_id = None
+        self.series = None
+
+    def setUpTestSeries(self):
+        product = ProductSet()['gnome-terminal']
+        series = product.newSeries('importd-test', displayname='', summary='')
+        self.series = series
+        self.series_id = series.id
+        parser = pybaz.NameParser(self.version.fullname)
+        series.targetarcharchive = self.version.archive.name
+        series.targetarchcategory = self.version.category.nonarch
+        series.targetarchbranch = parser.get_branch()
+        series.targetarchversion = parser.get_version()
+        transaction.commit()
+
 
 class Baz2bzrTestCase(unittest.TestCase):
     """Base class for baz2bzr test cases."""
@@ -24,12 +54,17 @@ class Baz2bzrTestCase(unittest.TestCase):
     def setUp(self):
         self.sandbox_helper = SandboxHelper()
         self.sandbox_helper.setUp()
+        self.series_helper = ProductSeriesHelper()
+        self.series_helper.setUp()
+        self.version = self.series_helper.version
+        self.series_id = self.series_helper.series_id
         self.sandbox_helper.mkdir('archives')
         self.bzrworking = self.sandbox_helper.path('bzrworking')
-        self.version = pybaz.Version('importd@example.com/test--branch--0')
 
     def tearDown(self):
         self.sandbox_helper.tearDown()
+        self.series_helper.tearDown()
+        self.series_id = None
 
     def extractCannedArchive(self, number):
         """Extract the canned archive with the given sequence number.
@@ -63,6 +98,13 @@ class Baz2bzrTestCase(unittest.TestCase):
         # Use the saved cwd to turn __file__ into an absolute path
         return os.path.join(self.sandbox_helper.here, baz2bzr.__file__)
 
+    def baz2bzrEnv(self):
+        """Build the baz2bzr environment dictionnary."""
+        environ = dict(os.environ)
+        environ['LP_DBNAME'] = 'launchpad_ftest'
+        environ['LP_DBUSER'] = 'importd'
+        return environ
+
     def callBaz2bzr(self, args):
         """Execute baz2bzr with the provided argument list.
 
@@ -70,21 +112,24 @@ class Baz2bzrTestCase(unittest.TestCase):
 
         :raise AssertionError: if the exit code is non-zero.
         """
-        retcode = call([sys.executable, self.baz2bzrPath()] + args)
+        retcode = call(
+            [sys.executable, self.baz2bzrPath()] + args, env=self.baz2bzrEnv())
         assert retcode == 0, 'baz2bzr failed (status %d)' % retcode
 
-    def pipeBaz2bzr(self, args):
+    def pipeBaz2bzr(self, args, status=0):
         """Execute baz2bzr on pipes with the provided argument list.
 
-        :return: stdout and stderr read from a single pipe
+        :return: stderr and stdout combined in a single string.
         :raise AssertionError: if the exit code is non-zero.
         """
-        process = Popen([sys.executable, self.baz2bzrPath()] + args,
-                        stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        process = Popen(
+            [sys.executable, self.baz2bzrPath()] + args,
+            stdin=PIPE, stdout=PIPE, stderr=STDOUT, env=self.baz2bzrEnv())
         output, error = process.communicate()
         unused = error
         retcode = process.returncode
-        assert retcode == 0, 'baz2bzr failed (status %d)\s%s' % (retcode, output)
+        assert retcode == status, (
+            'baz2bzr failed (status %d)\n%s' % (retcode, output))
         return output
 
     def ptyBaz2bzr(self, args):
@@ -105,6 +150,11 @@ class Baz2bzrTestCase(unittest.TestCase):
                 except OSError:
                     pass
             args = [sys.executable, self.baz2bzrPath()] + args
+            new_env = self.baz2bzrEnv()
+            for key in os.environ.keys():
+                del os.environ[key]
+            for key, value in new_env.items():
+                os.environ[key] = value
             try:
                 os.execvp(sys.executable, args)
             finally:
@@ -142,8 +192,7 @@ class TestBaz2bzrFeatures(Baz2bzrTestCase):
         # test the initial import
         self.extractCannedArchive(1)
         self.registerCannedArchive()
-        self.callBaz2bzr(
-            ['-q', self.version.fullname, self.bzrworking, '/dev/null'])
+        self.callBaz2bzr(['-q', str(self.series_id), '/dev/null'])
         branch = self.bzrBranch()
         history = branch.revision_history()
         self.assertEqual(len(history), 2)
@@ -151,8 +200,7 @@ class TestBaz2bzrFeatures(Baz2bzrTestCase):
         self.assertRevisionMatchesExpected(branch, 1)
         # test updating the bzr branch
         self.extractCannedArchive(2)
-        self.callBaz2bzr(
-            ['-q', self.version.fullname, self.bzrworking, '/dev/null'])
+        self.callBaz2bzr(['-q', str(self.series_id), '/dev/null'])
         history = branch.revision_history()
         self.assertEqual(len(history), 3)
         self.assertRevisionMatchesExpected(branch, 0)
@@ -191,15 +239,13 @@ class TestBaz2bzrFeatures(Baz2bzrTestCase):
     def test_pipe_output(self):
         self.extractCannedArchive(1)
         self.registerCannedArchive()
-        output = self.pipeBaz2bzr(
-            [self.version.fullname, self.bzrworking, '/dev/null'])
+        output = self.pipeBaz2bzr([str(self.series_id), '/dev/null'])
         self.assertEqual(output, '\n'.join(self.expected_lines))
 
     def test_pty_output(self):
         self.extractCannedArchive(1)
         self.registerCannedArchive()
-        output = self.ptyBaz2bzr(
-            [self.version.fullname, self.bzrworking, '/dev/null'])
+        output = self.ptyBaz2bzr([str(self.series_id), '/dev/null'])
         self.assertEqual(output, '\r\n'.join(self.expected_lines))
 
     # expected_lines should be a reasonable amount of progress output. Enough
@@ -222,7 +268,7 @@ class TestBaz2bzrFeatures(Baz2bzrTestCase):
         print >> blacklist_file, self.version.fullname
         blacklist_file.close()
         output = self.pipeBaz2bzr(
-            [self.version.fullname, self.bzrworking, blacklist_path])
+            [str(self.series_id), blacklist_path])
         expected = "blacklisted: %s\nNot exporting to bzr\n" % (
             self.version.fullname)
         self.assertEqual(output, expected)
@@ -251,5 +297,23 @@ class TestBlacklistParser(unittest.TestCase):
         self.assertBlacklistParses('foo\nbar\n', ['foo', 'bar'])
         self.assertBlacklistParses('foo\nbar', ['foo', 'bar'])
         self.assertBlacklistParses('foo\n\nbar\n', ['foo', 'bar'])
+
+
+class TestProductSeries(unittest.TestCase):
+
+    def setUp(self):
+        self.series_helper = ProductSeriesHelper()
+        self.series_helper.setUp()
+        self.series = self.series_helper.series
+        self.version = self.series_helper.version
+
+    def tearDown(self):
+        self.series_helper.tearDown()
+        self.series = None
+
+    def testArchFromSeries(self):
+        arch_version = baz2bzr.archFromSeries(self.series)        
+        self.assertEqual(arch_version, self.version.fullname)
+
 
 TestUtil.register(__name__)

@@ -14,6 +14,11 @@ from bzrlib.plugins.bzrtools import baz_import
 from bzrlib.progress import DummyProgress
 import pybaz
 
+from canonical.lp import initZopeless
+from canonical.database.sqlbase import begin, rollback
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.database import ProductSeries
+
 
 def stdout_printer(msg):
     print msg
@@ -29,12 +34,18 @@ class BatchProgress(DummyProgress):
         print '%d/%d %s' % (current, total, msg)
 
 
-def main(quiet, from_branch, to_location, blacklist_path):
+
+def main(quiet, series_id, blacklist_path):
+    to_location = 'bzrworking'
+    begin()
+    series = ProductSeries.get(series_id)
+    from_branch = archFromSeries(series)
+    rollback()
+
     if isInBlacklist(from_branch, blacklist_path):
         print 'blacklisted:', from_branch
         print "Not exporting to bzr"
         return 0
-    to_location = os.path.realpath(str(to_location))
     from_branch = pybaz.Version(from_branch)
     if quiet:
         progress_bar = DummyProgress()
@@ -48,15 +59,31 @@ def main(quiet, from_branch, to_location, blacklist_path):
         progress_bar=progress_bar)
     return 0
 
+
+def archFromSeries(series):
+    archive = pybaz.Archive(series.targetarcharchive)
+    category = archive[series.targetarchcategory]
+    branch = category[series.targetarchbranch]
+    version = branch[series.targetarchversion]
+    return version.fullname
+
+
 def isInBlacklist(from_branch, blacklist_path):
     blacklist = open(blacklist_path)
     return from_branch in parseBlacklist(blacklist)
+
 
 def parseBlacklist(blacklist):
     for line in blacklist:
         line = line.strip()
         if line:
             yield line
+
+
+def initialize_zopeless():
+    initZopeless()
+    execute_zcml_for_scripts()
+
 
 if __name__ == '__main__':
     args = sys.argv[1:]
@@ -65,5 +92,6 @@ if __name__ == '__main__':
         del args[0]
     else:
         quiet = False
+    initialize_zopeless()
     status = main(quiet, *args)
     sys.exit(status)
