@@ -176,6 +176,29 @@ class BugView:
             # special row styling.
             return ''
 
+    def getDBItemTitleAndCSS(self, bugtask, dbitem_name):
+        dbitem = getattr(bugtask, dbitem_name)
+        if dbitem is None:
+            return '&mdash;', ''
+        else:
+            return dbitem.title, '%s%s' % (dbitem_name, dbitem.title)
+
+    def getBugTasksInfo(self):
+        for bugtask in self.context.bugtasks:
+            bug_task_info = dict()
+            bug_task_info['task_link'] = self.taskLink(bugtask)
+            bug_task_info['row_css'] = self.getFixRequestRowCSSClassForBugTask(
+                bugtask)
+            bug_task_info['targetname'] = bugtask.targetname
+            bug_task_info['statusexplanation'] = bugtask.statusexplanation
+            bug_task_info['bugwatch'] = bugtask.bugwatch
+            bug_task_info['assignee'] = bugtask.assignee
+            for dbitem_name in ['status', 'severity']:
+                title, css = self.getDBItemTitleAndCSS(bugtask, dbitem_name)
+                bug_task_info[dbitem_name + '_title'] = title
+                bug_task_info[dbitem_name + '_css'] = css
+            yield bug_task_info
+
     @property
     def subscription(self):
         """Return whether the current user is subscribed."""
