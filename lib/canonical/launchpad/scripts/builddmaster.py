@@ -1236,14 +1236,19 @@ class BuilddMaster:
                            % candidates.count())
 
         for build in candidates:
-            dep_score, remaining_deps = self._scoreAndCheckDependencies(
-                build.dependencies, build.distroarchrelease)
-            # store new missing dependencies
-            build.dependencies = remaining_deps
-            if not build.dependencies:
-                # retry build if missing dependencies is empty
-                self._logger.debug('RETRY: "%s"' % build.title)
-                build.buildstate = dbschema.BuildStatus.NEEDSBUILD
+            if build.dependencies is not None:
+                dep_score, remaining_deps = self._scoreAndCheckDependencies(
+                    build.dependencies, build.distroarchrelease)
+                # store new missing dependencies
+                build.dependencies = remaining_deps
+                if build.dependencies in not None:
+                    continue
+
+            # retry build if missing dependencies is empty
+            self._logger.debug('RETRY: "%s"' % build.title)
+            build.buildstate = dbschema.BuildStatus.NEEDSBUILD
+
+        self.commit()
 
     def sanitiseAndScoreCandidates(self):
         """Iter over the buildqueue entries sanitising it."""
