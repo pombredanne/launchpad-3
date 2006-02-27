@@ -2,6 +2,7 @@ Source: launchpad-buildd
 Section: misc
 Priority: extra
 Maintainer: Daniel Silverstone <daniel.silverstone@canonical.com>
+Uploaders: Adam Conrad <adconrad@ubuntu.com>
 Standards-Version: 3.5.9
 Build-Depends-Indep: debhelper (>= 4)
 
