@@ -491,8 +491,6 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
     old_site = getSite()
     setSite(None)
     app = FunctionalTestSetup().getApplication()
-    #header_output = HTTPHeaderOutput(
-    #    protocol, ('x-content-type-warning', 'x-powered-by'))
 
     if method not in ('GET', 'POST', 'HEAD'):
         raise RuntimeError("Request method was not GET, POST or HEAD.")
@@ -502,10 +500,10 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
 
     request = app._request(path, instream, environment=environment,
                            request=request_cls, publication=publication_cls)
-    #request.response.setHeaderOutput(header_output)
     canonical.launchpad.layers.setFirstLayer(
         request, canonical.launchpad.layers.PageTestLayer)
     response = DocResponseWrapper(request.response, path)
+
     if debug:
         import pdb;pdb.set_trace()
     publish(request, handle_errors=handle_errors)
