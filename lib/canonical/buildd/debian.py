@@ -238,7 +238,7 @@ class DebianBuildManager(BuildManager):
                             else:
                                 success = SBuildExitCodes.PACKAGEFAIL
 
-            if success == SBuildExitCodes.PACKAGEFAIL
+            if success == SBuildExitCodes.PACKAGEFAIL:
                 for rx in BuildLogRegexes.GIVENBACK:
                     mo=re.search(rx, self._log, re.M)
                     if mo:
