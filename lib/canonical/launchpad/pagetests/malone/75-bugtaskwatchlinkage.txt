@@ -96,11 +96,9 @@ form.
   ... -----------------------------6732896103366711491579814469--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://.../products/firefox/+bug/1
-  <BLANKLINE>
+  Content-Length: 0
   ...
+  Location: http://.../products/firefox/+bug/1
 
 
 

@@ -13,7 +13,6 @@ __all__ = [
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'AssignedBugTasksView',
-    'BugTasksOldView',
     'OpenBugTasksView',
     'CriticalBugTasksView',
     'UntriagedBugTasksView',
@@ -22,7 +21,7 @@ __all__ = [
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
-    'BugTaskReleaseTargetingView',
+    'BugTaskBackportView',
     'get_sortorder_from_request',
     'BugTargetTextView']
 
@@ -271,7 +270,7 @@ class BugTaskView:
             IDistroReleaseBugTask.providedBy(self.context))
 
 
-class BugTaskReleaseTargetingView:
+class BugTaskBackportView:
     """View class for targeting bugs to IDistroReleases."""
 
     @property
@@ -311,6 +310,11 @@ class BugTaskReleaseTargetingView:
         release_target_details = []
         sourcepackagename = bugtask.sourcepackagename
         for possible_target in distribution.releases:
+            # Exclude the current release from this list, because it doesn't
+            # make sense to "backport a fix" to the current release.
+            if possible_target == distribution.currentrelease:
+                continue
+
             if sourcepackagename is not None:
                 sourcepackage = possible_target.getSourcePackage(
                     sourcepackagename)
@@ -332,7 +336,7 @@ class BugTaskReleaseTargetingView:
 
         return release_target_details
 
-    def createTargetedTasks(self):
+    def createBackportTasks(self):
         """Create distrorelease-targeted tasks for this bug."""
         form = self.request.form
 
@@ -362,9 +366,11 @@ class BugTaskReleaseTargetingView:
                 continue
             # A target value looks like 'warty.mozilla-firefox'. If
             # there was no specific sourcepackage targeted, it would
-            # look like 'warty.'
+            # look like 'warty.'. 
             if "." in target:
-                releasename, spname = target.split(".")
+                # We need to ensure we split into two parts, because 
+                # some packages names contains dots.
+                releasename, spname = target.split(".", 1)
                 spname = getUtility(ISourcePackageNameSet).queryByName(spname)
             else:
                 releasename = target
@@ -970,7 +976,7 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
 
     def getExtraSearchParams(self):
         """Return the extra parameters for a search that used the advanced form.
-        
+
         This method can also be used to get the extra parameters when a simple
         form is submitted. This allows us to hide the advanced form in some
         pages and still use this method to get the extra params of the
@@ -1032,17 +1038,6 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         We need to know this in order to provide a button to switch to that
         mode when we are in the advanced mode.
         """
-        return False
-
-
-class BugTasksOldView(AdvancedBugTaskSearchView):
-    """The old +bugs view has to be an AdvancedBugTaskSearchView but shouldn't
-    display the advanced widgets.
-
-    We keep this view around to not break existing bookmars.
-    """
-
-    def shouldShowAdvancedSearchWidgets(self):
         return False
 
 
