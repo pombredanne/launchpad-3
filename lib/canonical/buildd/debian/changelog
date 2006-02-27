@@ -2,6 +2,10 @@ launchpad-buildd (26) unstable; urgency=low
 
   * Update buildd-slave code to allow for GIVENBACK status returns,
     matching the states under which sbuild used to do --auto-give-back.
+  * Port over sanae's build log regex parsing to allow us to do:
+    - Automatic dep-wait handling, based on sbuild's logs of apt-get.
+    - Automatic give-backs for a few corner cases (like kernel bugs).
+  * Clear up confusion in build states with 's/BUILDFAIL/PACKAGEFAIL/'
 
  -- Adam Conrad <adconrad@ubuntu.com>  Mon, 27 Feb 2006 14:00:08 +1100
 

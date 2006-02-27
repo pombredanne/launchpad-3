@@ -7,6 +7,7 @@
 __metaclass__ = type
 
 import os
+import re
 
 from canonical.buildd.slave import (
     BuildManager, RunCapture
@@ -31,8 +32,23 @@ class SBuildExitCodes:
     OK = 0
     DEPFAIL = 1
     GIVENBACK = 2
-    BUILDFAIL = 3
+    PACKAGEFAIL = 3
     BUILDERFAIL = 4
+
+
+class BuildLogRegexes:
+    """Build log regexes for performing actions based on regexes, and extracting dependencies for auto dep-waits"""
+    GIVENBACK=[
+      (" terminated by signal 4"),
+      ("^E: There are problems and -y was used without --force-yes"),
+      ("^make.* Illegal instruction"),
+    ]
+    DEPFAIL=[
+      ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >> wanted (?P<v>[\-.+\w:]+)\)","\g<pk> (>>\g<v>)"),
+      ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >?= wanted (?P<v>[\-.+\w:]+)\)","\g<pk> (>=\g<v>)"),
+      ("^E: Couldn't find package (?P<pk>[\-+.\w]+)","\g<pk>"),
+      ("^E: Package (?P<pk>[\-+.\w]+) has no installation candidate","\g<pk>"),
+    ]
 
 
 class DebianBuildManager(BuildManager):
@@ -46,6 +62,7 @@ class DebianBuildManager(BuildManager):
         self._sbuildargs = slave._config.get("debianmanager",
                                              "sbuildargs").split(" ")
         self._ogrepath = slave._config.get("debianmanager", "ogrepath")
+        self._cachepath = self._config.get("slave","filecache")
         self._state = DebianBuildState.UNPACK
         slave.emptyLog()
         self.alreadyfailed = False
@@ -207,16 +224,34 @@ class DebianBuildManager(BuildManager):
     def iterate_SBUILD(self, success):
         """Finished the sbuild run."""
         if success != SBuildExitCodes.OK:
+            self._log = open(os.path.join(self._cachepath, "buildlog")).read()
             if success == SBuildExitCodes.DEPFAIL:
-                self._slave.depFail()
-            elif success == SBuildExitCodes.GIVENBACK:
+                for rx in BuildLogRegexes.GIVENBACK:
+                    mo=re.search(rx, self._log, re.M)
+                    if mo:
+                        success = SBuildExitCodes.GIVENBACK
+                    else:
+                        for rx, dep in BuildLogRegexes.DEPFAIL:
+                            mo=re.search(rx, self._log, re.M)
+                            if mo:
+                                self._slave.depFail(mo.expand(dep))
+                            else:
+                                success = SBuildExitCodes.PACKAGEFAIL
+
+            if success == SBuildExitCodes.PACKAGEFAIL
+                for rx in BuildLogRegexes.GIVENBACK:
+                    mo=re.search(rx, self._log, re.M)
+                    if mo:
+                        success = SBuildExitCodes.GIVENBACK
+                    else:
+                        if not self.alreadyfailed:
+                            self._slave.buildFail()
+
+            if success == SBuildExitCodes.GIVENBACK:
                 self._slave.giveBack()
-            elif success == SBuildExitCodes.BUILDERFAIL:
-                self._slave.builderFail()
             else:
-                # anything else is a buildfail
-                if not self.alreadyfailed:
-                    self._slave.buildFail()
+		# anything else is assumed to be a buildd failure
+                self._slave.builderFail()
             self.alreadyfailed = True
             self._state = DebianBuildState.REAP
             self.doReapProcesses()

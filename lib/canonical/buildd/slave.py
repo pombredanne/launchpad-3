@@ -343,16 +343,17 @@ class BuildDSlave(object):
     def buildFail(self):
         """Cease building because the package failed to build."""
         if self.builderstatus != BuilderStatus.BUILDING:
-            raise ValueError("Slave is not BUILDING when set to BUILDFAIL")
+            raise ValueError("Slave is not BUILDING when set to PACKAGEFAIL")
         self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.PACKAGEFAIL
 
-    def depFail(self):
+    def depFail(self, dependencies):
         """Cease building due to a dependency issue."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to DEPFAIL")
         self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.DEPFAIL
+        self.builddependencies = dependencies
 
     def giveBack(self):
         """Give-back package due to a transient buildd/archive issue."""
