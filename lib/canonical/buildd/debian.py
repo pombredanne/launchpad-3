@@ -249,8 +249,8 @@ class DebianBuildManager(BuildManager):
 
             if success == SBuildExitCodes.GIVENBACK:
                 self._slave.giveBack()
-            else:
-		# anything else is assumed to be a buildd failure
+            elif success >= SBuildExitCodes.BUILDERFAIL:
+                # anything else is assumed to be a buildd failure
                 self._slave.builderFail()
             self.alreadyfailed = True
             self._state = DebianBuildState.REAP
