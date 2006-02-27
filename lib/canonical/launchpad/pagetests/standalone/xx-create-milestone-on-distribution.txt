@@ -151,10 +151,9 @@ database ID for the milestone, so we find the ID:
   ... -----------------------------3354718323763093901439946724--
   ... """ % milestone.id)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/1
+  Content-Length: 0
   ...
+  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/1
 
 
 Verify that the bug now has the milestone set on the view page:

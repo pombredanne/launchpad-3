@@ -21,12 +21,22 @@
     <span tal:replace="context/displayname">Ubuntu</span>.
   </p>
 
-  <tal:per_item repeat="cache context/source_package_caches">
-    <tal:pkg define="package cache/distributionsourcepackage">
+  <tal:navigation
+    replace="structure view/batchnav/@@+navigation-links"
+    tal:condition="view/batch"/>
+
+  <p>
+  <tal:per_item repeat="result view/batch">
+    <tal:pkg define="package result/distributionsourcepackage">
       <a tal:content="package/name"
          tal:attributes="href package/fmt:url">apache2</a>
     </tal:pkg>
   </tal:per_item>
+  </p>
+
+  <tal:navigation
+    replace="structure view/batchnav/@@+navigation-links"
+    tal:condition="view/batch"/>
 
 </div>
 </body>

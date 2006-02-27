@@ -13,7 +13,6 @@ __all__ = [
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'AssignedBugTasksView',
-    'BugTasksOldView',
     'OpenBugTasksView',
     'CriticalBugTasksView',
     'UntriagedBugTasksView',
@@ -22,7 +21,7 @@ __all__ = [
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
-    'BugTaskReleaseTargetingView',
+    'BugTaskBackportView',
     'get_sortorder_from_request',
     'BugTargetTextView']
 
@@ -50,12 +49,12 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
+from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
@@ -271,7 +270,7 @@ class BugTaskView:
             IDistroReleaseBugTask.providedBy(self.context))
 
 
-class BugTaskReleaseTargetingView:
+class BugTaskBackportView:
     """View class for targeting bugs to IDistroReleases."""
 
     @property
@@ -311,6 +310,11 @@ class BugTaskReleaseTargetingView:
         release_target_details = []
         sourcepackagename = bugtask.sourcepackagename
         for possible_target in distribution.releases:
+            # Exclude the current release from this list, because it doesn't
+            # make sense to "backport a fix" to the current release.
+            if possible_target == distribution.currentrelease:
+                continue
+
             if sourcepackagename is not None:
                 sourcepackage = possible_target.getSourcePackage(
                     sourcepackagename)
@@ -332,7 +336,7 @@ class BugTaskReleaseTargetingView:
 
         return release_target_details
 
-    def createTargetedTasks(self):
+    def createBackportTasks(self):
         """Create distrorelease-targeted tasks for this bug."""
         form = self.request.form
 
@@ -426,6 +430,10 @@ class BugTaskEditView(GeneralFormView):
                 # Pass the comment_on_change_error as a list here, because
                 # WidgetsError expects a list of errors.
                 raise WidgetsError([self.comment_on_change_error])
+        distro = bugtask.distribution
+        sourcename = bugtask.sourcepackagename
+        if distro is not None and sourcename != data['sourcepackagename']:
+            valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
 
         return data
 
@@ -1032,17 +1040,6 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         We need to know this in order to provide a button to switch to that
         mode when we are in the advanced mode.
         """
-        return False
-
-
-class BugTasksOldView(AdvancedBugTaskSearchView):
-    """The old +bugs view has to be an AdvancedBugTaskSearchView but shouldn't
-    display the advanced widgets.
-
-    We keep this view around to not break existing bookmars.
-    """
-
-    def shouldShowAdvancedSearchWidgets(self):
         return False
 
 
