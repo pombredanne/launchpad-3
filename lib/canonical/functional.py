@@ -441,8 +441,8 @@ class DocResponseWrapper(ResponseWrapper):
     """Response Wrapper for use in doc tests
     """
 
-    def __init__(self, response, path):
-        ResponseWrapper.__init__(self, response, path)
+    def __init__(self, response, path, omit=()):
+        ResponseWrapper.__init__(self, response, path, omit)
 
     def __str__(self):
         return self.getOutput()
@@ -502,7 +502,10 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
                            request=request_cls, publication=publication_cls)
     canonical.launchpad.layers.setFirstLayer(
         request, canonical.launchpad.layers.PageTestLayer)
-    response = DocResponseWrapper(request.response, path)
+    response = DocResponseWrapper(
+            request.response, path,
+            omit=['x-content-type-warning','x-powered-by']
+            )
 
     if debug:
         import pdb;pdb.set_trace()
