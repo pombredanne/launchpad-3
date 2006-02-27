@@ -14,10 +14,13 @@ from bzrlib.plugins.bzrtools import baz_import
 from bzrlib.progress import DummyProgress
 import pybaz
 
+from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import begin, rollback
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.database import ProductSeries
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IBranchSet)
 
 
 def stdout_printer(msg):
@@ -67,6 +70,20 @@ def archFromSeries(series):
     version = branch[series.targetarchversion]
     return version.fullname
 
+
+def branchFromSeries(series):
+    if series.branch is None:
+        series.branch = createBranchForSeries(series)
+    return series.branch
+
+
+def createBranchForSeries(series):
+    name = series.name
+    vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    product = series.product
+    branch = getUtility(IBranchSet).new(name, vcs_imports, product, url=None)
+    return branch
+        
 
 def isInBlacklist(from_branch, blacklist_path):
     blacklist = open(blacklist_path)

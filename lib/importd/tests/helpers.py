@@ -19,14 +19,26 @@ import CVS
 import cscvs.cmds.cache
 import cscvs.cmds.totla
 
+# Boilerplate to get getUtility working.
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IPersonSet, IBranchSet, IProductSet)
+from canonical.launchpad.utilities import LaunchpadCelebrities
+from canonical.launchpad.database import PersonSet, BranchSet, ProductSet
+from zope.app.tests.placelesssetup import setUp as zopePlacelessSetUp
+from zope.app.tests.placelesssetup import tearDown as zopePlacelessTearDown
+from zope.app.tests import ztapi
+
+
 from importd import archivemanager
 from importd import Job
+
 
 __all__ = [
     'SandboxHelper',
     'ArchiveManagerHelper',
     'BazTreeHelper',
     'ZopelessHelper',
+    'ZopelessUtilitiesHelper',
     'ZopelessTestCase',
     'ArchiveManagerTestCase',
     'BazTreeTestCase',
@@ -267,6 +279,23 @@ class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
         pgsql.uninstallFakeConnect()
 
 
+class ZopelessUtilitiesHelper(object):
+
+    def setUp(self):
+        self.zopeless_helper = ZopelessHelper()
+        self.zopeless_helper.setUp()
+        # Boilerplate to get getUtility working
+        zopePlacelessSetUp()
+        ztapi.provideUtility(ILaunchpadCelebrities, LaunchpadCelebrities())
+        ztapi.provideUtility(IPersonSet, PersonSet())
+        ztapi.provideUtility(IBranchSet, BranchSet())
+        ztapi.provideUtility(IProductSet, ProductSet())
+
+    def tearDown(self):
+        zopePlacelessTearDown()
+        self.zopeless_helper.tearDown()
+
+
 class SandboxTestCase(unittest.TestCase):
     """Base class for test cases that need a SandboxHelper."""
 
@@ -465,23 +494,4 @@ class WebserverHelper(SandboxHelper):
             os.environ["http_proxy"] = self._http_proxy
         SandboxHelper.tearDown(self)
 
-
-class WebserverTestCase(unittest.TestCase):
-    """Base class for test cases that need a WebserverHelper."""
-
-    def setUp(self):
-        self.zopeless_helper = ZopelessHelper()
-        self.zopeless_helper.setUp()
-        self.webserver_helper = WebserverHelper()
-        self.webserver_helper.setUp()
-
-    def tearDown(self):
-        self.webserver_helper.tearDown()
-        self.zopeless_helper.tearDown()
-
-    def path(self, name):
-        return self.webserver_helper.path(name)
-
-    def url(self, name):
-        return self.webserver_helper.get_remote_url(name)
 

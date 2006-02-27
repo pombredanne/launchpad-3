@@ -15,28 +15,36 @@ import pybaz
 import bzrlib.branch
 
 import transaction
-from canonical.launchpad.database import ProductSet
+from zope.component import getUtility
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IProductSet)
 
 from importd import baz2bzr
 from importd.tests import TestUtil
-from importd.tests.helpers import SandboxHelper, ZopelessHelper
+from importd.tests.helpers import SandboxHelper, ZopelessUtilitiesHelper
+
 
 class ProductSeriesHelper(object):
     """Helper for tests that use the testing ProductSeries."""
 
-    def setUp(self):
-        self.zopeless_helper = ZopelessHelper()
-        self.zopeless_helper.setUp()
+    def setUp(self, setup_zopeless=True):
+        if setup_zopeless:
+            self.zopeless_helper = ZopelessHelper()
+            self.zopeless_helper.setUp()
+        else:
+            self.zopeless_helper = None
         self.version = pybaz.Version('importd@example.com/test--branch--0')
         self.setUpTestSeries()
 
     def tearDown(self):
-        self.zopeless_helper.tearDown()
+        if self.zopeless_helper is not None:
+            self.zopeless_helper.tearDown()
         self.series_id = None
         self.series = None
 
     def setUpTestSeries(self):
-        product = ProductSet()['gnome-terminal']
+        """Create a sample ProductSeries with targetarch* details."""
+        product = getUtility(IProductSet)['gnome-terminal']
         series = product.newSeries('importd-test', displayname='', summary='')
         self.series = series
         self.series_id = series.id
@@ -46,6 +54,16 @@ class ProductSeriesHelper(object):
         series.targetarchbranch = parser.get_branch()
         series.targetarchversion = parser.get_version()
         transaction.commit()
+
+    def getTestSeries(self):
+        """Retrieve the sample ProductSeries created by setUpTestSeries.
+
+        That is useful to test that changes to the ProductSeries reached the
+        database.
+        """
+        product = getUtility(IProductSet)['gnome-terminal']
+        series = product.getSeries('importd-test')
+        return series
 
 
 class Baz2bzrTestCase(unittest.TestCase):
@@ -314,6 +332,42 @@ class TestProductSeries(unittest.TestCase):
     def testArchFromSeries(self):
         arch_version = baz2bzr.archFromSeries(self.series)        
         self.assertEqual(arch_version, self.version.fullname)
+
+
+class TestBranch(unittest.TestCase):
+
+    def setUp(self):
+        self.utilities_helper = ZopelessUtilitiesHelper()
+        self.utilities_helper.setUp()
+        self.series_helper = ProductSeriesHelper()
+        self.series_helper.setUp(setup_zopeless=False)
+        self.series = self.series_helper.series
+
+    def tearDown(self):
+        self.series_helper.tearDown()
+        self.utilities_helper.tearDown()
+        self.series = None
+
+    def getTestSeries(self):
+        return self.series_helper.getTestSeries()
+
+    def testBranchFromSeries(self):
+        self.assertEqual(self.getTestSeries().branch, None)
+        branch = baz2bzr.branchFromSeries(self.series)
+        self.assertEqual(self.getTestSeries().branch, branch)
+        branch2 = baz2bzr.branchFromSeries(self.series)
+        self.assertEqual(branch2, branch)
+        self.assertEqual(branch2, self.getTestSeries().branch)
+
+    def testCreateBranchForSeries(self):
+        branch = baz2bzr.createBranchForSeries(self.series)
+        self.assertEqual(branch.title, None)
+        self.assertEqual(branch.summary, None)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        self.assertEqual(branch.owner, vcs_imports)
+        self.assertEqual(branch.product, self.series.product)
+        self.assertEqual(branch.name, self.series.name)
+        self.assertEqual(branch.url, None)
 
 
 TestUtil.register(__name__)
