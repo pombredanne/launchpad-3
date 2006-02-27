@@ -69,6 +69,9 @@ class IUserWidget(Interface):
 
 class HiddenUserWidget(RequestWidget):
     implements(IUserWidget)
+    def __init__(self, context, vocabulary, request):
+        RequestWidget.__init__(self, context, request)
+
     def getInputValue(self):
         return getUtility(ILaunchBag).user
 
