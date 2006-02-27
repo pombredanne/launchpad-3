@@ -48,6 +48,7 @@ class Build(SQLBase):
     changes = StringCol(dbName='changes', default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
                      notNull=True)
+    dependencies = StringCol(dbName='dependencies', default=None)
 
     @property
     def buildqueue_record(self):
@@ -129,6 +130,7 @@ class Build(SQLBase):
         self.gpgsigningkey = None
         self.changes = None
         self.buildlog = None
+        self.dependencies = None
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)

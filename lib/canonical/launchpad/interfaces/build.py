@@ -32,6 +32,7 @@ class IBuild(Interface):
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     pocket = Attribute("Target pocket of this build")
+    dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
     distrorelease = Attribute("Direct parent needed by CanonicalURL")
     buildqueue_record = Attribute("Corespondent BuildQueue record")
 
