@@ -134,6 +134,7 @@ class AcceptanceTests(BzrTestCase):
         # connections to it.  This bug has been fixed in upstream paramiko, so
         # soon this will be unnecessary.
         gc.collect()
+        obj = None
         for obj in gc.garbage:
             if getattr(obj, 'auth_handler', None) is not None:
                 obj.auth_handler = None

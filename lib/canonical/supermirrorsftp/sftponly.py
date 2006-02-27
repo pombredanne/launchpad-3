@@ -48,6 +48,11 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         #      by bad user input).  The asserts cause the auth to fail anyway,
         #      but it's ugly.
         #  - Andrew Bennetts, 2005-01-21
+        #      Although, given that avatars are only created upon successful
+        #      authentication, avatarId must be a valid launchpad name, thus
+        #      these issues cannot arise.  This is less obvious for the Bazaar
+        #      1.x case, so I'll leave them in for now.
+        #  - Andrew Bennetts, 2006-02-28
         assert '/' not in avatarId
         assert avatarId not in ('.', '..')
 
@@ -124,9 +129,6 @@ class SFTPOnlyAvatar(avatar.ConchUser):
             kw = len(i)>2 and i[2] or {}
             r = func(*args, **kw)
         return r
-
-    def getHomeDir(self):
-        return os.path.join(self.homeDirsRoot, self.avatarId)
 
 
 components.registerAdapter(sftp.AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
@@ -206,6 +208,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     def __init__(self, authserver):
         self.authserver = authserver
 
+    @staticmethod
     def _unmungeUsername(username):
         """Unmunge usernames, because baz doesn't work with @ in usernames.
 
@@ -248,7 +251,6 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         # Replace the final underscore with an at sign.
         unmunged = username[:underscore] + '@' + username[underscore+1:]
         return unmunged
-    _unmungeUsername = staticmethod(_unmungeUsername)
 
     def checkKey(self, credentials):
         # Query the authserver with an unmunged username
@@ -260,7 +262,17 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         return authorizedKeys
                 
     def _cb_hasAuthorisedKey(self, keys, credentials):
+        if credentials.algName == 'ssh-dss':
+            wantKeyType = 'DSA'
+        elif credentials.algName == 'ssh-rsa':
+            wantKeyType = 'RSA'
+        else:
+            # unknown key type
+            return False
+
         for keytype, keytext in keys:
+            if keytype != wantKeyType:
+                continue
             try:
                 if keytext.decode('base64') == credentials.blob:
                     return True
