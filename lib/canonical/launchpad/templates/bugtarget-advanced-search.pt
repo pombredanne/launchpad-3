@@ -7,23 +7,21 @@
 <body>
 
   <div metal:fill-slot="head_epilogue">
-    <style>
-      <!--
-          .section-header {
+    <style type="text/css">
+        .section-header {
           padding-left: 3px;
           color: #828282;
           border: 1px solid #cfcfcf;
           background-color: #E0E0E0;
           text-align: left;
-          }
+        }
 
-          .section {
+        .section {
           padding-top: 4px;
           border-style: solid;
           border-color: #cfcfcf;
           border-width: 0px 1px 0px 1px;
-          }
-        -->
+        }
     </style>
   </div>
 

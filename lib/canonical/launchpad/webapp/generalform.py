@@ -102,14 +102,6 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         return {}
 
     # internal methods, should not be overridden
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-
-        self.errors = {}
-        self.process_status = None
-
-        self._setUpWidgets()
-
     def _setUpWidgets(self):
         setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames,
                      initial=self.initial_values)
@@ -192,7 +184,18 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         #     define this method and call it explicitly. It's probably
         #     due to some ZCML magic which should be removed.
         #     -- Bjorn Tillenius, 2006-02-22
+
+        # We call initialize explicitly here (it's normally called by
+        # GeneralFormView.__call__), because of the hack Bjorn mentions above.
+        self.initialize()
+
         return NoRenderingOnRedirect.__call__(self)
+
+    def initialize(self):
+        self.errors = {}
+        self.process_status = None
+
+        self._setUpWidgets()
 
 
 def GeneralFormViewFactory(name, schema, label, permission, layer,

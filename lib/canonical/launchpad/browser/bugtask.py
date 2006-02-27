@@ -579,7 +579,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-class BugTaskSearchListingView(LaunchpadView):
+class BugTaskSearchListingView(GeneralFormView):
     """Base class for bug listings.
 
     Subclasses should define getExtraSearchParams() to filter the
@@ -591,14 +591,18 @@ class BugTaskSearchListingView(LaunchpadView):
         upstream_context = self._upstreamContext()
         distribution_context = self._distributionContext()
         distrorelease_context = self._distroReleaseContext()
+        distrosourcepackage_context = self._distroSourcePackageContext()
+        sourcepackage_context = self._sourcePackageContext()
 
         assert (
             upstream_context or distribution_context or
-            distrorelease_context), (
+            distrorelease_context or distrosourcepackage_context or
+            sourcepackage_context), (
             "Unrecognized context; don't know which report "
             "columns to show.")
 
-        if upstream_context:
+        if (upstream_context or distrosourcepackage_context or
+            sourcepackage_context):
             return ["id", "summary", "importance", "status"]
         elif distribution_context or distrorelease_context:
             return ["id", "summary", "packagename", "importance", "status"]
@@ -609,11 +613,11 @@ class BugTaskSearchListingView(LaunchpadView):
         #     AdvancedBugTaskSearchView should use a seperate schema if
         #     they need to. -- Bjorn Tillenius, 2005-09-29
         if self._personContext():
-            self.search_form_schema = IPersonBugTaskSearch
+            self.schema = IPersonBugTaskSearch
         else:
-            self.search_form_schema = IBugTaskSearch
+            self.schema = IBugTaskSearch
 
-        setUpWidgets(self, self.search_form_schema, IInputWidget)
+        GeneralFormView.initialize(self)
 
     def showTableView(self):
         """Should the search results be displayed as a table?"""
@@ -643,7 +647,7 @@ class BugTaskSearchListingView(LaunchpadView):
             # be converted to an OR search, using the any() function.
             data.update(
                 getWidgetsData(
-                    self, self.search_form_schema,
+                    self, self.schema,
                     names=[
                         "searchtext", "status", "assignee", "severity",
                         "priority", "owner", "omit_dupes"]))
@@ -700,25 +704,18 @@ class BugTaskSearchListingView(LaunchpadView):
             batch=batch, request=self.request,
             columns_to_show=self.columns_to_show)
 
-    def getWidgetValues(self, vocabulary_name, default_values=None):
+    def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""
         widget_values = []
-        if not default_values:
-            default_values = []
 
         vocabulary_registry = getVocabularyRegistry()
         for term in vocabulary_registry.get(None, vocabulary_name):
-            values = {}
-            values["value"] = term.token
-            values["title"] = term.token
-            if term.value in default_values:
-                values["checked"] = True
-            else:
-                values["checked"] = False
+            widget_values.append(
+                dict(
+                    value=term.token, title=term.token,
+                    checked=term.value in default_values))
 
-            widget_values.append(values)
-
-        return widget_values
+        return helpers.shortlist(widget_values, longest_expected=10)
 
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
@@ -782,7 +779,7 @@ class BugTaskSearchListingView(LaunchpadView):
                     self.user.inTeam(self.context.owner)), \
                     ("You must be logged in to mass-assign bugs to milestones")
 
-        form_params = getWidgetsData(self, self.search_form_schema)
+        form_params = getWidgetsData(self, self.schema)
         milestone_assignment = form_params.get('milestone_assignment')
         if milestone_assignment is not None:
             taskids = self.request.form.get('task')
@@ -830,10 +827,11 @@ class BugTaskSearchListingView(LaunchpadView):
 
         release_buglistings = []
         for release in releases:
-            release_buglistings.append({
-                'title': release.displayname,
-                'url': canonical_url(release) + "/+bugs",
-                'count': release.open_bugtasks.count()})
+            release_buglistings.append(
+                dict(
+                    title=release.displayname,
+                    url=canonical_url(release) + "/+bugs",
+                    count=release.open_bugtasks.count()))
 
         return release_buglistings
 
