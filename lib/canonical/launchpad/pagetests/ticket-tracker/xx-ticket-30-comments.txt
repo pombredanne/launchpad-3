@@ -32,9 +32,9 @@ If we POST that form, we should be redirected back to the ticket page.
   ... 
   ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../distros/ubuntu/+ticket/3
-  ...
 
 And we should see the comment.
 
@@ -58,9 +58,9 @@ comment, we don't have to mark the ticket as answered.
   ... 
   ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+ticket/2
-  ...
 
   >>> print http(r"""
   ... GET /products/firefox/+ticket/2 HTTP/1.1
@@ -80,9 +80,9 @@ Answered.
   ... 
   ... field.subject=Use+a+new+computer&field.content=Yes.&field.resolved=on&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+ticket/2
-  ...
 
   >>> print http(r"""
   ... GET /products/firefox/+ticket/2 HTTP/1.1

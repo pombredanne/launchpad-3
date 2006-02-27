@@ -528,6 +528,9 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 " Please, correct them before continuing." %
                     len(self.pomsgset_views_with_errors))
 
+        # update the statistis for this po file
+        self.context.updateStatistics()
+
     def lang_selector(self):
         second_lang_code = self.second_lang_code
         langset = getUtility(ILanguageSet)

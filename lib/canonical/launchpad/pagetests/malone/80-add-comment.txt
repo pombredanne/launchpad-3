@@ -21,8 +21,7 @@ email.
   ...
   ... field.subject=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
-  ...
-          <h1>Add a comment</h1>
+  Content-Length: 0
   ...
 
 

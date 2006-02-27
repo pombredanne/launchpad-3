@@ -46,9 +46,9 @@ specification home page.
   ... -----------------------------4909183112093242802120323616--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/extension-manager-upgrades
-  ...
 
 Also, we would like to assign these to someone other than Carlos, and we
 would also like to have a drafter associated with it.
@@ -82,9 +82,9 @@ would also like to have a drafter associated with it.
   ... -----------------------------400484823711033878810891529--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Location: http://.../products/firefox/+spec/extension-manager-upgrades
+  Content-Length: 0
   ...
+  Location: http://.../products/firefox/+spec/extension-manager-upgrades
 
 Finally, we should be able to change the status metadata (priority, status
 etc) of the specification.
@@ -122,8 +122,8 @@ etc) of the specification.
   ... -----------------------------39919133514734389772038868621--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/extension-manager-upgrades
-  ...
 
 

@@ -40,10 +40,9 @@ page:
   ... -----------------------------20502162275088454961693046098--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: ../..
+  Content-Length: 0
   ...
+  Location: ../..
 
 And there we should see the new milestone in the portlet:
 
@@ -84,8 +83,7 @@ OK, we're done. But let's clean up and reset the name to 1.0:
   ... -----------------------------7601431282379837061156833891--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: ../..
+  Content-Length: 0
   ...
+  Location: ../..
 

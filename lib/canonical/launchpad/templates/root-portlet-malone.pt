@@ -3,7 +3,7 @@
 
   <div class="portletBody portletContent" i18n:translate="malone-blurb">
     <p>
-    <img alt="" src="/++resource++bug" />
+    <img alt="" src="/@@/bug" />
     <a i18n:attributes="title" title="Malone"
        href="malone" i18n:translate="">Malone</a> is a
     <strong>Web-based global bug tracker</strong>.

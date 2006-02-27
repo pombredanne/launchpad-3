@@ -18,6 +18,4 @@ listing to show just those bugs.
       (2)
   ...href="http://localhost:9000/distros/debian/+bugs-all">All bugs ever reported</a>
       (4)
-  ...href="http://localhost:9000/distros/debian/+bugs-advanced">Advanced search</a>
-      (3)
   ...

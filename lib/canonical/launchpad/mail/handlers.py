@@ -176,7 +176,7 @@ class MaloneHandler:
                         error_message = get_error_message('not-signed.txt')
                     else:
                         import_url = canonical_url(
-                            getUtility(ILaunchBag).user) + '/+editgpgkeys'
+                            getUtility(ILaunchBag).user) + '/+editpgpkeys'
                         error_message = get_error_message(
                             'key-not-registered.txt', import_url=import_url)
                     raise IncomingEmailError(error_message)

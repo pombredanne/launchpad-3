@@ -49,7 +49,7 @@ class ISignedCodeOfConduct(Interface):
                       Code of Conduct version (use: `gpg --clearsign`).""")
                       )
 
-    signingkey = Choice(title=_('Signing GPG Key'),
+    signingkey = Choice(title=_('Signing OpenPGP Key'),
                         description=_("""OpenPGP key ID used to sign the
                         document. It must be valid inside the Launchpad
                         context."""),

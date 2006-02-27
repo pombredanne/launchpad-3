@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugtask import *
+from canonical.launchpad.interfaces.bugtarget import *
 from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *

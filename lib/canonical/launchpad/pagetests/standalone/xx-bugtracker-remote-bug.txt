@@ -80,9 +80,9 @@ Mark bug 1 as private:
   ... -----------------------------725100396418665196485883924--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Location: .../products/firefox/+bug/1
+  Content-Length: 0
   ...
+  Location: .../products/firefox/+bug/1
 
 
 List Launchpad bugs watching Mozilla bug 42:
@@ -154,6 +154,6 @@ Set the bug back to public:
   ... -----------------------------725100396418665196485883924--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Location: .../products/firefox/+bug/1
+  Content-Length: 0
   ...
+  Location: .../products/firefox/+bug/1

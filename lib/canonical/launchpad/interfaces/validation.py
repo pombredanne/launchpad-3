@@ -13,6 +13,8 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
+    'valid_distrotask',
+    'valid_upstreamtask'
     ]
 
 import urllib
@@ -23,7 +25,9 @@ from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
+from canonical.launchpad.searchbuilder import NULL
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.lp.dbschema import MirrorPulseType
@@ -236,3 +240,55 @@ def validate_distribution_mirror_schema(form_values):
 
     if errors:
         raise WidgetsError(errors)
+
+
+def valid_distrotask(bug, distribution, sourcepackagename=None):
+    """Check if a distribution bugtask already exists for a given bug.
+    
+    If it exists, WidgetsError will be raised.
+    """
+    from canonical.launchpad.helpers import shortlist
+    errors = []
+    if sourcepackagename is not None:
+        msg = LaunchpadValidationError(_(
+            'A fix for this bug has already been requested for %s (%s)' %
+            (sourcepackagename.name, distribution.displayname)))
+    else:
+        msg = LaunchpadValidationError(_(
+            'A fix for this bug has already been requested for %s' % 
+            distribution.displayname))
+        sourcepackagename = NULL
+    user = getUtility(ILaunchBag).user
+    params = BugTaskSearchParams(
+        user, bug=bug, sourcepackagename=sourcepackagename)
+    bugtasks = shortlist(distribution.searchTasks(params), longest_expected=1)
+    if bugtasks: 
+        # We have to raise WidgetsError if a bugtask is found, the only case we
+        # should skip it is when we're removing a sourcepackagename from a
+        # existing bugtask
+        assert len(bugtasks) == 1
+        if bugtasks[0].sourcepackagename is not None and (
+            sourcepackagename is None):
+            return
+        errors.append(msg)
+            
+    if errors:
+        raise WidgetsError(errors)
+
+
+def valid_upstreamtask(bug, product):
+    """Check if a product bugtask already exists for a given bug.
+
+    If it exists, WidgetsError will be raised.
+    """
+    errors = []
+    user = getUtility(ILaunchBag).user
+    params = BugTaskSearchParams(user, bug=bug)
+    if product.searchTasks(params):
+        errors.append(LaunchpadValidationError(_(
+            'A fix for this bug has already been requested for %s' % 
+            product.displayname)))
+
+    if errors:
+        raise WidgetsError(errors)
+

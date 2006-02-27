@@ -407,6 +407,3 @@ class POMsgSetView(LaunchpadView):
             # Save the error message gettext gave us to show it to the
             # user.
             self.error = str(e)
-
-        # update the statistis for this po file
-        self.pofile.updateStatistics()
