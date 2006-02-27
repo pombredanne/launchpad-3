@@ -219,8 +219,8 @@ class Bugzilla(ExternalSystem):
             bug_watch = bug_watches_by_remote_bug[bug_id]
             if bug_watch.remotestatus != status:
                 log.debug('Updating status for remote bug #%s' % bug_id)
-                bug_watch.remotestatus = status
-                bug_watch.lastchanged = UTC_NOW
+                malone_status = self.convertRemoteStatus(status)
+                bug_watch.updateStatus(status, malone_status)
 
             bug_watch.lastchecked = UTC_NOW
 

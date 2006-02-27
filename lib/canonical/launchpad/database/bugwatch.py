@@ -97,6 +97,17 @@ class BugWatch(SQLBase):
         """See canonical.launchpad.interfaces.IBugWatch."""
         return True
 
+    def updateStatus(self, remote_status, malone_status):
+        """See IBugWatch."""
+        self.remotestatus = remote_status
+        self.lastchanged = UTC_NOW
+        for linked_bugtask in self.bugtasks:
+            linked_bugtask.status = malone_status
+            linked_bugtask.priority = None
+            linked_bugtask.severity = None
+            linked_bugtask.assignee = None
+
+
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
 

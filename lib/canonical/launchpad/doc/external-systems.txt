@@ -109,3 +109,33 @@ now no bug watches are in need of updating:
     >>> flush_database_updates()
     >>> gnome_bugzilla.getBugWatchesNeedingUpdate(23).count()
     0
+
+Now let's take a look at what happens when a bug watch is linked to
+from a bug task.
+
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> thunderbird_task = bug_nine.bugtasks[0]
+    >>> print thunderbird_task.status.title
+    Unconfirmed
+    >>> thunderbird_task.bugwatch.remotestatus is None
+    True
+
+We need to create a new ExternalSystem for the Mozilla tracker:
+
+    >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
+    ...     'mozilla.org')
+    >>> external_bugzilla = ExternalSystem(mozilla_bugzilla, version)
+    >>> test_remote_bugzilla = TestBugzilla(mozilla_bugzilla.baseurl)
+    >>> external_bugzilla.remotesystem = test_remote_bugzilla
+    >>> test_remote_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
+
+Let's update the bug watch, and see that the linked bug watch got
+synced:
+
+    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> print thunderbird_task.status.title
+    Confirmed
+    >>> print thunderbird_task.bugwatch.remotestatus
+    ASSIGNED
+
+XXX: Here we should check that a notification was sent.
