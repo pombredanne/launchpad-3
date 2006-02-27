@@ -28,7 +28,7 @@ __all__ = [
 from warnings import warn
 
 import zope.security.interfaces
-from zope.component import getUtility
+from zope.component import getUtility, getView
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent 
@@ -328,6 +328,9 @@ class ProductView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(request)
         self.status_message = None
+        self.branches = [
+            getView(branch, '+index', request)
+            for branch in self.context.branches]
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
