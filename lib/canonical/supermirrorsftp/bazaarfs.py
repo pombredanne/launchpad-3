@@ -98,15 +98,10 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         deferred = self.avatar.fetchProductID(childName)
         def cb(productID):
             if productID is None:
-                msg = ( 
+                raise PermissionError( 
                     "Directories directly under a user directory must be named "
                     "after a product name registered in Launchpad "
-                    "<https://launchpad.net/>")
-                if self.junkAllowed:
-                    msg += ", or named '+junk'."
-                else:
-                    msg += "."
-                return defer.fail(PermissionError(msg))
+                    "<https://launchpad.net/>.")
             productID = str(productID)
             productDir = SFTPServerProductDir(self.avatar, self.userID,
                                               productID, childName, [],
