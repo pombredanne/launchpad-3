@@ -6,6 +6,5 @@ SET client_min_messages=ERROR;
 ALTER TABLE Branch ALTER COLUMN title DROP NOT NULL;
 ALTER TABLE Branch ALTER COLUMN summary DROP NOT NULL;
 
--- FIXME: get a real database patch number. -- DavidAllouche 2005-11-30
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 55, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 24, 0);
 
