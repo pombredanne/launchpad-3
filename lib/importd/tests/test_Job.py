@@ -169,7 +169,10 @@ class TestGetJob(helpers.ZopelessTestCase):
                                        "archive_mirror_dir",
                                        autotest = False)
         self.assertEqual(len(jobs), 1)
-        builders = importd.util.jobsBuilders(jobs, ["slavename"], autotest=False)
+        importd_path = '/dummy/path/to/importd/package'
+        push_prefix = '/dummy/prefix/to/push/branches/'
+        builders = importd.util.jobsBuilders(
+            jobs, ["slavename"], importd_path, push_prefix, autotest=False)
         self.assertEqual(len(builders), 1)
 
     def testGetPackageJob(self):

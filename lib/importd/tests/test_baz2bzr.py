@@ -23,24 +23,20 @@ from canonical.launchpad.interfaces import (
 from importd import baz2bzr
 from importd.tests import TestUtil
 from importd.tests.helpers import (
-    SandboxHelper, ZopelessHelper, ZopelessUtilitiesHelper)
+    SandboxHelper, ZopelessUtilitiesHelper)
 
 
 class ProductSeriesHelper(object):
     """Helper for tests that use the testing ProductSeries."""
 
-    def setUp(self, setup_zopeless=True):
-        if setup_zopeless:
-            self.zopeless_helper = ZopelessHelper()
-            self.zopeless_helper.setUp()
-        else:
-            self.zopeless_helper = None
+    def setUp(self):
+        self.utilities_helper = ZopelessUtilitiesHelper()
+        self.utilities_helper.setUp()
         self.version = pybaz.Version('importd@example.com/test--branch--0')
         self.setUpTestSeries()
 
     def tearDown(self):
-        if self.zopeless_helper is not None:
-            self.zopeless_helper.tearDown()
+        self.utilities_helper.tearDown()
         self.series_id = None
         self.series = None
 
@@ -71,11 +67,11 @@ class ProductSeriesHelper(object):
 class Baz2bzrTestCase(unittest.TestCase):
     """Base class for baz2bzr test cases."""
 
-    def setUp(self, setup_zopeless=True):
+    def setUp(self):
         self.sandbox_helper = SandboxHelper()
         self.sandbox_helper.setUp()
         self.series_helper = ProductSeriesHelper()
-        self.series_helper.setUp(setup_zopeless)
+        self.series_helper.setUp()
         self.version = self.series_helper.version
         self.series_id = self.series_helper.series_id
         self.sandbox_helper.mkdir('archives')
@@ -311,6 +307,7 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
         'Import complete.',
         ''] # empty item denotes final newline
 
+
     def test_blacklist(self):
         self.extractCannedArchive(1)
         self.registerCannedArchive()
@@ -329,15 +326,9 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
 class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
 
     def setUp(self):
-        self.utilities_helper = ZopelessUtilitiesHelper()
-        self.utilities_helper.setUp()
-        Baz2bzrTestCase.setUp(self, setup_zopeless=False)
+        Baz2bzrTestCase.setUp(self)
         self.mirror_prefix = self.sandbox_helper.path('bzr_mirrors') + '/'
         os.mkdir(self.mirror_prefix)
-
-    def tearDown(self):
-        Baz2bzrTestCase.tearDown(self)
-        self.utilities_helper.tearDown()
 
     def getTestSeries(self):
         return self.series_helper.getTestSeries()
@@ -432,15 +423,12 @@ class TestProductSeries(unittest.TestCase):
 class TestBranch(unittest.TestCase):
 
     def setUp(self):
-        self.utilities_helper = ZopelessUtilitiesHelper()
-        self.utilities_helper.setUp()
         self.series_helper = ProductSeriesHelper()
-        self.series_helper.setUp(setup_zopeless=False)
+        self.series_helper.setUp()
         self.series = self.series_helper.series
 
     def tearDown(self):
         self.series_helper.tearDown()
-        self.utilities_helper.tearDown()
         self.series = None
 
     def getTestSeries(self):
