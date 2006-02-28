@@ -36,7 +36,7 @@ kbd {
   border: 1px solid;
   border-color: white gray gray white;
   color: black;
-  background-color: #ccc;
+  background-color: #ddd;
   min-width: 1em;
 }
 label {
@@ -1157,3 +1157,6 @@ dl.faq dd {
     margin: 0.5em 1em;
 }
 
+dl.faq ol {
+    margin: 0.5em 3em;
+}

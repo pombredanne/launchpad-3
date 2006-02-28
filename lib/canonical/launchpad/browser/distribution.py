@@ -7,6 +7,8 @@ __all__ = [
     'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
+    'DistributionAllPackagesView',
+    'DistributionEditView',
     'DistributionSetView',
     'DistributionSetAddView',
     'DistributionBugContactEditView'
@@ -27,8 +29,9 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepthrough, stepto, canonical_url, redirection)
+    StandardLaunchpadFacets, Link, ApplicationMenu, LaunchpadView,
+    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
+    canonical_url, redirection)
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -109,7 +112,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
              'editbugcontact', 'reassign', 'addrelease', 'builds',
-             'officialmirrors', 'allmirrors', 'newmirror']
+             'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
 
     def edit(self):
         text = 'Edit Details'
@@ -160,6 +163,11 @@ class DistributionOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'View Builds'
         return Link('+builds', text, icon='info')
+
+    def launchpad_usage(self):
+        text = 'Define Launchpad Usage'
+        return Link('+launchpad', text, icon='edit')
+
 
 class DistributionBugsMenu(ApplicationMenu):
 
@@ -286,6 +294,25 @@ class DistributionView(BuildRecordsView):
         the given text.
         """
         return self.context.searchSourcePackages(self.text)
+
+
+class DistributionAllPackagesView(LaunchpadView):
+    def initialize(self):
+        results = self.context.source_package_caches
+        start = int(self.request.get('batch_start', 0))
+        self.batch = Batch(results, start, size=50)
+        self.batchnav = BatchNavigator(self.batch, self.request)
+
+
+class DistributionEditView(SQLObjectEditView):
+    """View class that lets you edit a Distribution object.
+
+    It redirects to the main distribution page after a successful edit.
+    """
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class DistributionSetView:
 

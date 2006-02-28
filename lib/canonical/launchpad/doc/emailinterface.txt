@@ -379,10 +379,9 @@ wrong.
     To: test@canonical.com
     <BLANKLINE>
     ...
-    The email you sent included commands to edit the bug, but your
-    GPG key isn't imported into Launchpad. Please go to
-    http://localhost:8086/people/name12/+editgpgkeys to import your
-    key.
+    The message you sent included commands to modify the bug report, but
+    your OpenPGP key isn't imported into Launchpad. Please go to
+    http://localhost:8086/people/name12/+editpgpkeys to import your key.
     ...
 
 The same will happen if we send the same email without signing it:
@@ -412,8 +411,8 @@ A different error message is sent, though:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    The email you sent included commands to edit the bug, but you
-    didn't sign the email with your GPG key.
+    The message you sent included commands to modify the bug report, but you
+    didn't sign the message with your OpenPGP key.
     ...
 
 
@@ -1033,8 +1032,8 @@ signing the mail:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    In order to submit bugs via email you have to sign the message with a
-    GPG key that is registered in Launchpad.
+    To report bugs by e-mail, you need to sign the message with an OpenPGP key
+    that is registered in Launchpad.
     ...
 
 A submit without specifying on what we want to file the bug on:

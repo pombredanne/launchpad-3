@@ -8,8 +8,7 @@ __all__ = [
     'IBugTask',
     'INullBugTask',
     'IBugTaskSearch',
-    'IUpstreamBugTaskSearch',
-    'IDistroBugTaskSearch',
+    'IAddBugTaskForm',
     'IPersonBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
@@ -30,6 +29,7 @@ from sqlos.interfaces import ISelectResults
 from canonical.lp import dbschema
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
+from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
@@ -182,29 +182,26 @@ class IBugTaskSearch(Interface):
         title=_('Severity:'),
         value_type=IBugTask['severity'],
         required=False)
+    priority = List(
+        title=_('Priority:'),
+        value_type=IBugTask['priority'],
+        required=False)
     assignee = Choice(
         title=_('Assignee:'), vocabulary='ValidAssignee', required=False)
-    unassigned = Bool(title=_('Unassigned bugs only'), required=False)
-    include_dupes = Bool(title=_('Include duplicate bugs'), required=False)
+    owner = Choice(
+        title=_('Reporter:'), vocabulary='ValidAssignee', required=False)
+    omit_dupes = Bool(
+        title=_('Omit duplicate bugs'), required=False,
+        default=True)
     statusexplanation = TextLine(
         title=_("Status notes:"), required=False)
-    attachmenttype = List(
-        title=_('Attachment:'),
-        value_type=IBugAttachment['type'],
-        required=False)
-
-
-class IUpstreamBugTaskSearch(IBugTaskSearch):
-    """The schema used by the bug task search form of a product."""
+    has_patch = Bool(
+        title=_('Show only bugs with patches available'), required=False,
+        default=False)
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
         title=_('Target:'), value_type=IBugTask['milestone'], required=False)
-
-
-class IDistroBugTaskSearch(IBugTaskSearch):
-    """The schema used by the bug task search form of a distribution or
-    distribution release."""
 
 
 class IPersonBugTaskSearch(IBugTaskSearch):
@@ -485,4 +482,20 @@ class IBugTaskSet(Interface):
         bugtask of a private bug for which the user is not subscribed. If
         <user> is None, no private bugtasks will be returned.
         """
+
+
+class IAddBugTaskForm(Interface):
+    """Form for adding an upstream bugtask."""
+    product = IUpstreamBugTask['product']
+    distribution = IDistroBugTask['distribution']
+    sourcepackagename = IDistroBugTask['sourcepackagename']
+    bugtracker = Choice(
+        title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
+        description=_("The bug tracker in which the remote bug is found. "
+            "Choose from the list. You can register additional bug trackers "
+            "from the Malone home page."))
+    remotebug = TextLine(
+        title=_('Remote Bug'), required=False, description=_(
+            "The bug number of this bug in the remote bug tracker."))
+
 
