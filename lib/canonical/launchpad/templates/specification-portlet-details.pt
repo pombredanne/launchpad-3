@@ -21,16 +21,22 @@
       <a  tal:condition="context/distrorelease"
           tal:attributes="href context/distrorelease/fmt:url"
           tal:content="context/distrorelease/name">hoary</a>
-      (<span tal:replace="context/delivery/title">Probable</span>)
+      (<span tal:content="context/delivery/title"
+             tal:attributes="class string:specdelivery${context/delivery/name}"
+           >Slow</span>)
       <br />
     </tal:goal>
 
     <b>Priority:</b>
-    <span tal:replace="context/priority/title">High</span>
+    <span tal:content="context/priority/title"
+          tal:attributes="class string:specpriority${context/priority/name}"
+        >High</span>
     <br />
 
     <b>Status:</b>
-    <span tal:replace="context/status/title">Approved</span>
+    <span tal:content="context/status/title"
+          tal:attributes="class string:specstatus${context/status/name}"
+        >Approved</span>
     <br />
     <i tal:condition="context/needs_discussion">Needs discussion<br /></i>
     <i tal:condition="not: context/direction_approved">Needs guidance<br /></i>
@@ -40,6 +46,7 @@
     <img src="/@@/user.gif" />
     <a tal:content="context/owner/browsername"
        tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />
+
     <b>Assignee:</b><br />
     <img src="/@@/user.gif" />
     <a tal:condition="context/assignee"
@@ -57,12 +64,14 @@
        tal:content="context/drafter/browsername"
        tal:attributes="href context/drafter/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/drafter">No drafter</i><br />
+
     <b>Approver:</b><br />
     <img src="/@@/user.gif" />
     <a tal:condition="context/approver"
        tal:content="context/approver/browsername"
        tal:attributes="href context/approver/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/approver">No approver</i><br />
+
     <b>Registered:</b>
     <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
     <tal:has_sprints define="sprint_links context/sprint_links"
@@ -76,6 +85,7 @@
             >Approved</a>)<br />
       </tal:sprint>
 	</tal:has_sprints>
+
   </div>
 
 </div>

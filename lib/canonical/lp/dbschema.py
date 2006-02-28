@@ -1175,7 +1175,7 @@ class SpecificationDelivery(DBSchema):
         whether or not this work will be completed for the targeted release.
         """)
 
-    SLOWPROGRESS = Item(65, """
+    SLOW = Item(65, """
         Slow progress
 
         Work has been slow on this item and it has a high risk of not being
@@ -1183,7 +1183,7 @@ class SpecificationDelivery(DBSchema):
         needed with the implementation of the feature.
         """)
 
-    GOODPROGRESS = Item(70, """
+    GOOD = Item(70, """
         Good progress
 
         This functionality is making good progress and is considered on 
