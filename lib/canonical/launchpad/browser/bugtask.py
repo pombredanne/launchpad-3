@@ -667,9 +667,10 @@ class BugTaskSearchListingView(LaunchpadView):
             if has_patch:
                 data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
         else:
-            # The user came in at the default +bugs URL, so inject default
-            # search parameters.
-            data['status'] = UNRESOLVED_BUGTASK_STATUSES
+            if not self.request.form.get("search"):
+                # The user came in at the default +bugs URL, so inject default
+                # search parameters.
+                data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         if data.get("omit_dupes") is None:
             # The "omit dupes" parameter wasn't provided, so default to omitting
