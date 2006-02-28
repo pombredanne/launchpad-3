@@ -25,7 +25,7 @@
                  tal:content="task/targetname"
                  style="text-decoration: underline">Firefox</a>
                  <br />
-                 [<span tal:replace="task/status/title">Pending</span>]
+                 [<span tal:replace="structure task/status/title|string:&mdash;">Pending</span>]
 
           </li>
         </ul>

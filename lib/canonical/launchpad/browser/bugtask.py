@@ -10,6 +10,7 @@ __all__ = [
     'BugTaskSetNavigation',
     'BugTaskContextMenu',
     'BugTaskEditView',
+    'BugTaskStatusView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'AssignedBugTasksView',
@@ -498,6 +499,33 @@ class BugTaskEditView(GeneralFormView):
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         return canonical_url(self.context)
+
+
+class BugTaskStatusView(LaunchpadView):
+    """Viewing the status of a bug task."""
+
+    def initialize(self):
+        field_names = [
+            'status', 'priority', 'severity', 'assignee', 'statusexplanation']
+        if IRemoteBugTask.providedBy(self.context):
+            field_names += ['bugwatch']
+            self.milestone_widget = None
+        else:
+            field_names += ['milestone']
+            self.bugwatch_widget = None
+
+        if IUpstreamBugTask.providedBy(self.context):
+            self.label = 'Product fix request'
+        else:
+            field_names += ['sourcepackagename', 'binarypackagename']
+            self.label = 'Source package fix request'
+
+        self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
+        self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+        self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+        self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+
+        setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
 
 
 class BugListing:

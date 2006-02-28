@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+from xml.sax.saxutils import escape
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -207,9 +209,11 @@ class AssigneeDisplayWidget(BrowserWidget):
         else:
             assignee = assignee_field.get(bugtask)
         if assignee:
+            person_img = renderElement(
+                'img', style="padding-bottom: 2px", src="/@@/user.gif", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
-                contents=assignee.browsername)
+                contents="%s %s" % (person_img, escape(assignee.browsername)))
         else:
             if IRemoteBugTask.providedBy(bugtask):
                 return renderElement('i', contents='unknown')

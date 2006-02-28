@@ -221,6 +221,12 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             priority_value = 'None'
 
+        # Calculate an appropriate display value for the status.
+        if self.status:
+            status_value = self.status.title
+        else:
+            status_value = 'None'
+
         # Calculate an appropriate display value for the sourcepackage.
         if self.sourcepackagename:
             sourcepackagename_value = self.sourcepackagename.name
@@ -266,7 +272,7 @@ class BugTask(SQLBase, BugTaskMixin):
         header_value += ((
             ' status=%(status)s; priority=%(priority)s; '
             'assignee=%(assignee)s;') %
-            {'status': self.status.title,
+            {'status': status_value,
              'priority': priority_value,
              'assignee': assignee_value})
 
