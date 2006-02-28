@@ -113,8 +113,12 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
                 'Failed to tearDown Zopeless correctly'
         super(LaunchpadZopelessTestSetup, self).tearDown()
 
+from canonical.functional import ZCMLLayer, ftesting_path
+
+LaunchpadFunctional = ZCMLLayer(ftesting_path, __name__, 'LaunchpadFunctional')
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
+    layer = LaunchpadFunctional
     def setUp(self, dbuser=None):
         if dbuser is not None:
             self.dbuser = dbuser
