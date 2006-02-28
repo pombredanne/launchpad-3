@@ -34,9 +34,9 @@ Now we can post a ticket.
   ... -----------------------------61384852414771898941330942548--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/products/firefox/+ticket/8
-  ...
 
 
 After posting the ticket, it should redirect to the posted ticket page.

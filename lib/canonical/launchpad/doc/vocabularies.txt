@@ -97,6 +97,49 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
     >> [term.token for term in distrorelease_vocabulary.search('')]
     []
 
+o DistributionUsingMaloneVocabulary - all the distributions that use
+  Malone as their main bug tracker.
+
+    >>> using_malone_vocabulary = vocabulary_registry.get(
+    ...     None, 'DistributionUsingMalone')
+    >>> len(using_malone_vocabulary)
+    2
+    >>> for term in using_malone_vocabulary:
+    ...     print term.token, term.value.displayname, term.title
+    gentoo Gentoo Gentoo
+    ubuntu Ubuntu Ubuntu
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ubuntu in using_malone_vocabulary
+    True
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian in using_malone_vocabulary
+    False
+
+    >>> using_malone_vocabulary.getQuery() is None
+    True
+
+    >>> term = using_malone_vocabulary.getTerm(ubuntu)
+    >>> print term.token, term.value.displayname, term.title
+    ubuntu Ubuntu Ubuntu
+
+    >>> term = using_malone_vocabulary.getTerm(debian)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> term = using_malone_vocabulary.getTermByToken('ubuntu')
+    >>> print term.token, term.value.displayname, term.title
+    ubuntu Ubuntu Ubuntu
+
+    >>> term = using_malone_vocabulary.getTermByToken('debian')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+
+
 Non-Enumerable Vocabularies
 ===========================
 

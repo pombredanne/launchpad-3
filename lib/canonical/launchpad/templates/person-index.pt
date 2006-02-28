@@ -75,7 +75,7 @@
     </tr> 
 
     <tr tal:condition="view/gpgkeysCount">
-      <th>OpenGPG keys:</th>
+      <th>OpenPGP keys:</th>
       <td>
         <tal:block repeat="key context/gpgkeys">
           <a tal:attributes="href key/keyserverURL">

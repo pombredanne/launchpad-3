@@ -30,11 +30,6 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+malone-index" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProject"
         layer="canonical.launchpad.layers.RosettaLayer"
         name="+rosetta-index" />
 
@@ -48,11 +43,6 @@
             facet="overview"
             template="../templates/project.pt"
             lp:url="/projects/$Project.name/" />
-        <browser:page
-            name="+malone-index"
-            facet="bugs"
-            template="../templates/project-bugs.pt"
-            lp:url="malone/projects/$Project.name/" />
         <browser:page
             name="+branches"
             facet="overview"
@@ -150,7 +140,7 @@
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
     </browser:addform>
 
     <browser:editform
@@ -210,19 +200,19 @@
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="screenshotsurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="wikiurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="downloadurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
     </browser:addform>
 
     <browser:addform

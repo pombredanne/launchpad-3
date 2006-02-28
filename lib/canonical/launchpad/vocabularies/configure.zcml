@@ -96,6 +96,11 @@
     />
 
   <vocabulary
+    name="DistributionUsingMalone"
+    factory="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
+    />
+
+  <vocabulary
     name="DistroRelease"
     factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
     />
