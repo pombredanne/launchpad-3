@@ -3,19 +3,12 @@
 __metaclass__ = type
 
 import unittest, doctest
-from canonical.functional import FunctionalTestSetup
-
-def setUp(test):
-    FunctionalTestSetup().setUp()
-
-def tearDown(test):
-    FunctionalTestSetup().tearDown()
+from canonical.functional import Functional
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(doctest.DocTestSuite(
-        'canonical.widgets.password', setUp=setUp, tearDown=tearDown
-        ))
+    suite.addTest(doctest.DocTestSuite('canonical.widgets.password'))
+    suite.layer = Functional
     return suite
 
 if __name__ == '__main__':
