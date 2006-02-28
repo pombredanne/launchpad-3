@@ -639,19 +639,17 @@ class BugTaskSearchListingView(LaunchpadView):
         precedence over request params.
         """
         data = {}
-        if self.request.form.get("search"):
-            # It looks like the user clicked the "Search" button, so extract the
-            # form parameters.
+        data.update(
+            getWidgetsData(
+                self, self.schema,
+                names=[
+                    "searchtext", "status", "assignee", "severity",
+                    "priority", "owner", "omit_dupes", "has_patch"]))
 
-            # Normalize the form_values as search params. Every list argument will
-            # be converted to an OR search, using the any() function.
-            data.update(
-                getWidgetsData(
-                    self, self.schema,
-                    names=[
-                        "searchtext", "status", "assignee", "severity",
-                        "priority", "owner", "omit_dupes", "has_patch"]))
+        if extra_params:
+            data.update(extra_params)
 
+        if data:
             searchtext = data.get("searchtext")
             if searchtext and searchtext.isdigit():
                 try:
@@ -664,22 +662,19 @@ class BugTaskSearchListingView(LaunchpadView):
             assignee_option = self.request.form.get("assignee_option")
             if assignee_option == "none":
                 data['assignee'] = NULL
-        else:
-            # The user didn't click the "Search" button, e.g., they came in at
-            # the default +bugs URL, so we'll inject default search parameters.
-            data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
-        if extra_params:
-            data.update(extra_params)
+            has_patch = data.pop("has_patch", False)
+            if has_patch:
+                data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
+        else:
+            # The user came in at the default +bugs URL, so inject default
+            # search parameters.
+            data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         if data.get("omit_dupes") is None:
             # The "omit dupes" parameter wasn't provided, so default to omitting
             # dupes from reports, of course.
             data["omit_dupes"] = True
-
-        has_patch = data.pop("has_patch", False)
-        if has_patch:
-            data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
 
         # "Normalize" the form data into search arguments.
         form_values = {}
