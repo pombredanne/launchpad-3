@@ -175,7 +175,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual('gnome-terminal', gnomeTermName)
         self.assertEqual(
             [(15, 'main'), (16, '2.6'), (17, '2.4'), (18, 'klingon'), 
-             (19, 'slowness')],
+             (19, 'slowness'), (25, 'pushed')],
             sorted(gnomeTermBranches)
         )
     
