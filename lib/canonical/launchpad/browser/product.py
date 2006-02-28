@@ -14,7 +14,6 @@ __all__ = [
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
     'ProductTranslationsMenu',
-    'ProductCodeMenu',
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
@@ -95,9 +94,9 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar', 'code']
+                   'translations', 'calendar']
 
-    links = StandardLaunchpadFacets.links + ['code']
+    links = StandardLaunchpadFacets.links
 
     def overview(self):
         target = ''
@@ -136,12 +135,6 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
 
-    def code(self):
-        target = '+branches'
-        text = 'Code'
-        summary = 'Bazaar Branches for %s' % self.context.displayname
-        return Link(target, text, summary)
-
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
@@ -155,18 +148,16 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'editbugcontact', 'reassign', 'distributions', 'packages',
-        'series_add', 'branch_add', 'milestone_add', 'launchpad_usage', 'rdf',
+        'edit', 'rdf', 'distributions', 'packages', 'branches', 'branch_add',
+        'series_add', 'reassign', 'milestone_add', 'launchpad_usage',
         'administer']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
 
-    def editbugcontact(self):
-        text = 'Edit Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
-
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
@@ -179,18 +170,25 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Packages'
         return Link('+packages', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
 
+    def branches(self):
+        summary = 'Bazaar Branches for %s' % self.context.displayname
+        return Link('+branches', 'Branches', icon='info', summary=summary)
+
     def branch_add(self):
-        text = 'Add Branch'
+        text = 'Register Branch'
         return Link('+addbranch', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def milestone_add(self):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
         return Link('+launchpad', text, icon='edit')
@@ -211,11 +209,16 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug']
+    links = ['filebug', 'editbugcontact']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editbugcontact(self):
+        text = 'Change Bug Contact'
+        return Link('+editbugcontact', text, icon='edit')
 
 
 class ProductSupportMenu(ApplicationMenu):
@@ -281,17 +284,6 @@ class ProductTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Edit Template Names'
         return Link('+potemplatenames', text, icon='edit')
-
-
-class ProductCodeMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'code'
-    links = ['new']
-
-    def new(self):
-        text = 'Add Bazaar Branch'
-        return Link('+addbranch', text, icon='add')
 
 
 def _sort_distros(a, b):

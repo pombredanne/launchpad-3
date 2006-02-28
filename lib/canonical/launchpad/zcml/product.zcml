@@ -30,8 +30,7 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductSupportMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu ProductCodeMenu
-            ProductSetContextMenu
+            ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
             "
             />
 
