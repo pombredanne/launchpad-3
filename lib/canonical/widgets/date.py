@@ -1,3 +1,12 @@
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+
+"""Date and time widgets.
+
+XXX: There is apparently a nice datetime widget in the Z3 SVN repository
+that we should investigate -- StuartBishop 20060228
+"""
+
+__metaclass__ = type
 from datetime import date
 from zope.app import zapi
 from zope.interface import implements, Interface
@@ -13,7 +22,12 @@ from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import Int
+from zope.app.form.browser.widget import DisplayWidget
+from zope.app.form.browser.textwidgets import escape
+from zope.component import getUtility
+
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import ILaunchBag
 
 # TODO: Abstract out common functionality to simplify widget definition
 
@@ -155,4 +169,18 @@ class DateWidget(BrowserWidget):
 
         """
         return {'year':'','month':'','day':''}
+
+
+class DatetimeDisplayWidget(DisplayWidget):
+    """Display timestamps in the users preferred timezone"""
+    def __call__(self):
+        timezone = getUtility(ILaunchBag).timezone
+        if self._renderedValueSet():
+            value = self._data
+        else:
+            value = self.context.default
+        if value == self.context.missing_value:
+            return u""
+        value = value.astimezone(timezone)
+        return escape(value.strftime("%Y-%m-%d %H:%M:%S %Z"))
 
