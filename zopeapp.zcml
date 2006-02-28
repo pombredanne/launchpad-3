@@ -32,9 +32,14 @@
   <include package="zope.app.container" />
 
   <include package="zope.app.publisher" />
+
+  <include package="zope.app.publication" file="meta.zcml" />
+  <include package="zope.app.publication" />
+
   <include package="zope.app.traversing" />
   <include package="zope.app.pagetemplate" />
   <include package="zope.app.generations" />
+  <include package="zope.app.zapi" />
 
   <!-- Views -->
   <include package="zope.app.http" />
@@ -63,11 +68,6 @@
     -->
   <!-- Utilities -->
 
-  <!-- XXX removed as these aren't present in the beta release.
-  <include package="zope.app.schema" />
-  <include package="zope.app.uniqueid" />
-    -->
-
   <!-- Misc. Service Manager objects -->
   <!-- We don't want service managers.
   <include package="zope.app.module" />
@@ -88,6 +88,9 @@
 
   <include package="zope.app.applicationcontrol" />
   <include package="zope.app.dublincore" />
+  <!-- Don't know what this is
+  <include package="zope.app.introspector" /> -->
+  <include package="zope.app.wsgi" />
 
   <!-- Content types -->
   <!--  Not using folders

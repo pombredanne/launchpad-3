@@ -353,6 +353,12 @@
             />
     </content>
 
+    <utility
+        factory="canonical.launchpad.webapp.servers.LaunchpadBrowserRequestFactory"
+        provides="zope.app.publication.interfaces.IBrowserRequestFactory"
+        permission="zope.Public"
+        />
+
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
         for="canonical.launchpad.webapp.LaunchpadBrowserResponse"

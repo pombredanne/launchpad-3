@@ -10,6 +10,7 @@ warnings.filterwarnings(
         )
 
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
+from zope.app.publication.interfaces import IBrowserRequestFactory
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
 from zope.app.publication.interfaces import IPublicationRequestFactory
@@ -105,6 +106,12 @@ class StepsToGo:
 
     def __nonzero__(self):
         return bool(self._stack)
+
+
+class LaunchpadBrowserRequestFactory:
+    implements(IBrowserRequestFactory)
+    def __call__(self, body_instream, environ):
+        return LaunchpadBrowserRequest(body_instream, environ)
 
 
 class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
