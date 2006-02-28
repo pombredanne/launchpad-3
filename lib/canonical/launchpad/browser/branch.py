@@ -137,6 +137,16 @@ class BranchView(LaunchpadView):
 
 
 class BranchEditView(SQLObjectEditView):
+    def __init__(self, context, request):
+        # If the context URL is none, Make a copy of the field names list and
+        # remove 'url' from it. This is to prevent users from converting
+        # push/import branches to pull branches.
+
+        if context.url is None:
+            self.fieldNames = list(self.fieldNames)
+            self.fieldNames.remove('url')
+
+        SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))

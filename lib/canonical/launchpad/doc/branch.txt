@@ -306,3 +306,26 @@ True
 >>> view.missing_title_or_summary_text()
 '(this branch has neither title nor summary)'
 
+== The Branch Edit View ==
+
+When a branch has a URL, the user is allowed to modify it. Check that the
+'url' field is present in the edit form.
+
+>>> gterm_dev.url is not None
+True
+>>> view = getView(gterm_dev, '+edit', TestRequest())
+>>> view.fieldNames
+[u'url', u'title', u'summary', u'home_page', u'author', u'whiteboard']
+
+When a branch's URL is null, the user is not allowed to set it.
+
+>>> no_url = branchset.new('no_url', ddaa, gterm_product, None)
+>>> no_url.url is None
+True
+>>> view = getView(no_url, '+edit', TestRequest())
+>>> view.fieldNames
+[u'title', u'summary', u'home_page', u'author', u'whiteboard']
+
+Thus, a branch cannot change between being a pull branch and a push branch
+through the web interface.
+
