@@ -307,7 +307,6 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
         'Import complete.',
         ''] # empty item denotes final newline
 
-
     def test_blacklist(self):
         self.extractCannedArchive(1)
         self.registerCannedArchive()
@@ -383,7 +382,7 @@ class TestBlacklistParser(unittest.TestCase):
 
     def assertBlacklistParses(self, blacklist, expected):
         stringio = StringIO(blacklist)
-        result = baz2bzr.parseBlacklist(stringio)
+        result = baz2bzr.parse_blacklist(stringio)
         self.assertEqual(list(result), expected)
 
     def test_one(self):
@@ -416,7 +415,7 @@ class TestProductSeries(unittest.TestCase):
         self.series = None
 
     def testArchFromSeries(self):
-        arch_version = baz2bzr.archFromSeries(self.series)        
+        arch_version = baz2bzr.arch_from_series(self.series)        
         self.assertEqual(arch_version, self.version.fullname)
 
 
@@ -436,14 +435,14 @@ class TestBranch(unittest.TestCase):
 
     def testBranchFromSeries(self):
         self.assertEqual(self.getTestSeries().branch, None)
-        branch = baz2bzr.branchFromSeries(self.series)
+        branch = baz2bzr.branch_from_series(self.series)
         self.assertEqual(self.getTestSeries().branch, branch)
-        branch2 = baz2bzr.branchFromSeries(self.series)
+        branch2 = baz2bzr.branch_from_series(self.series)
         self.assertEqual(branch2, branch)
         self.assertEqual(branch2, self.getTestSeries().branch)
 
     def testCreateBranchForSeries(self):
-        branch = baz2bzr.createBranchForSeries(self.series)
+        branch = baz2bzr.create_branch_for_series(self.series)
         self.assertEqual(branch.title, None)
         self.assertEqual(branch.summary, None)
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports

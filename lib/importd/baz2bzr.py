@@ -62,10 +62,10 @@ def main(quiet, series_id, blacklist_path, push_prefix=None):
     to_location = 'bzrworking'
     begin()
     series = ProductSeries.get(series_id)
-    from_branch = archFromSeries(series)
+    from_branch = arch_from_series(series)
     rollback()
 
-    if isInBlacklist(from_branch, blacklist_path):
+    if is_in_blacklist(from_branch, blacklist_path):
         print 'blacklisted:', from_branch
         print "Not exporting to bzr"
         return 0
@@ -79,7 +79,7 @@ def main(quiet, series_id, blacklist_path, push_prefix=None):
     if push_prefix is None:
         return 0
     begin()
-    branch = branchFromSeries(series)
+    branch = branch_from_series(series)
     commit()
     push_to = push_prefix + ('%08x' % branch.id)
     bzr_push(to_location, push_to)
@@ -116,7 +116,7 @@ def bzr_push(from_location, to_location):
         br_from.unlock()
 
 
-def archFromSeries(series):
+def arch_from_series(series):
     archive = pybaz.Archive(series.targetarcharchive)
     category = archive[series.targetarchcategory]
     branch = category[series.targetarchbranch]
@@ -124,13 +124,13 @@ def archFromSeries(series):
     return version.fullname
 
 
-def branchFromSeries(series):
+def branch_from_series(series):
     if series.branch is None:
-        series.branch = createBranchForSeries(series)
+        series.branch = create_branch_for_series(series)
     return series.branch
 
 
-def createBranchForSeries(series):
+def create_branch_for_series(series):
     name = series.name
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     product = series.product
@@ -138,12 +138,12 @@ def createBranchForSeries(series):
     return branch
         
 
-def isInBlacklist(from_branch, blacklist_path):
+def is_in_blacklist(from_branch, blacklist_path):
     blacklist = open(blacklist_path)
-    return from_branch in parseBlacklist(blacklist)
+    return from_branch in parse_blacklist(blacklist)
 
 
-def parseBlacklist(blacklist):
+def parse_blacklist(blacklist):
     for line in blacklist:
         line = line.strip()
         if line:
