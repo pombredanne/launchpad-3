@@ -296,35 +296,33 @@ class TeamBugsMenu(PersonBugsMenu):
 class PersonSpecsMenu(ApplicationMenu):
 
     usedfor = IPerson
-
     facet = 'specifications'
-
     links = ['created', 'assigned', 'drafted', 'review', 'approver',
              'subscribed']
 
     def created(self):
-        text = 'Specifications Created'
-        return Link('+createdspecs', text, icon='spec')
+        text = 'Registrant'
+        return Link('+specs?role=created', text, icon='spec')
 
     def approver(self):
-        text = 'Specifications for Approval'
-        return Link('+approverspecs', text, icon='spec')
+        text = 'Approver'
+        return Link('+specs?role=approver', text, icon='spec')
 
     def assigned(self):
-        text = 'Specifications Assigned'
-        return Link('+assignedspecs', text, icon='spec')
+        text = 'Assignee'
+        return Link('+specs?role=assigned', text, icon='spec')
 
     def drafted(self):
-        text = 'Specifications Drafted'
-        return Link('+draftedspecs', text, icon='spec')
+        text = 'Drafter'
+        return Link('+specs?role=drafted', text, icon='spec')
 
     def review(self):
-        text = 'Feedback Requests'
-        return Link('+reviewspecs', text, icon='spec')
+        text = 'Feedback requested'
+        return Link('+specs?role=feedback', text, icon='spec')
 
     def subscribed(self):
-        text = 'Specifications Subscribed'
-        return Link('+subscribedspecs', text, icon='spec')
+        text = 'Subscribed'
+        return Link('+specs?role=subscribed', text, icon='spec')
 
 
 class PersonSupportMenu(ApplicationMenu):

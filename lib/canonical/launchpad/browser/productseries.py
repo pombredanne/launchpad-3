@@ -3,7 +3,9 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
-           'ProductSeriesContextMenu',
+           'ProductSeriesOverviewMenu',
+           'ProductSeriesFacets',
+           'ProductSeriesSpecificationsMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesRdfView',
@@ -34,21 +36,10 @@ from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    stepto, canonical_url, LaunchpadView)
+    ApplicationMenu, stepto, canonical_url, LaunchpadView,
+    StandardLaunchpadFacets)
 
 from canonical.launchpad import _
-
-class ProductSeriesReviewView(SQLObjectEditView):
-    def changed(self):
-        """Redirect to the productseries page.
-
-        We need this because people can now change productseries'
-        product and name, and this will make their canonical_url to
-        change too.
-        """
-        self.request.response.addInfoNotification( 
-            _('This Serie has been changed'))
-        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesNavigation(Navigation):
@@ -64,20 +55,19 @@ class ProductSeriesNavigation(Navigation):
         return self.context.getRelease(name)
 
 
-class ProductSeriesContextMenu(ContextMenu):
+class ProductSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSeries
-    links = ['overview', 'specs', 'edit', 'editsource', 'ubuntupkg',
+    enable_only = ['overview', 'specifications', 'translations']
+
+
+class ProductSeriesOverviewMenu(ApplicationMenu):
+
+    usedfor = IProductSeries
+    facet = 'overview'
+    links = ['edit', 'editsource', 'ubuntupkg',
              'addpackage', 'addrelease', 'download', 'translationupload',
              'addpotemplate', 'review']
-
-    def overview(self):
-        text = 'Series Overview'
-        return Link('', text, icon='info')
-
-    def specs(self):
-        text = 'Specifications'
-        return Link('+specs', text, icon='info')
 
     def edit(self):
         text = 'Edit Series Details'
@@ -116,6 +106,30 @@ class ProductSeriesContextMenu(ContextMenu):
     def review(self):
         text = 'Review Series Details'
         return Link('+review', text, icon='edit')
+
+
+class ProductSeriesSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProductSeries
+    facet = 'specifications'
+    links = ['listall', 'roadmap', 'table']
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
+
+    def new(self):
+        text = 'Register a Specification'
+        return Link('+addspec', text, icon='add')
+
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+assignments', text, icon='info')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+roadmap', text, icon='info')
+
 
 
 def validate_cvs_root(cvsroot, cvsmodule):
@@ -590,6 +604,19 @@ class ProductSeriesEditView(SQLObjectEditView):
 
     def changed(self):
         # If the name changed then the URL changed, so redirect
+        self.request.response.redirect(canonical_url(self.context))
+
+
+class ProductSeriesReviewView(SQLObjectEditView):
+    def changed(self):
+        """Redirect to the productseries page.
+
+        We need this because people can now change productseries'
+        product and name, and this will make their canonical_url to
+        change too.
+        """
+        self.request.response.addInfoNotification( 
+            _('This Serie has been changed'))
         self.request.response.redirect(canonical_url(self.context))
 
 

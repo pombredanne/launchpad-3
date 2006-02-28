@@ -21,9 +21,7 @@
       <a  tal:condition="context/distrorelease"
           tal:attributes="href context/distrorelease/fmt:url"
           tal:content="context/distrorelease/name">hoary</a>
-      (<span tal:content="context/delivery/title"
-             tal:attributes="class string:specdelivery${context/delivery/name}"
-           >Slow</span>)
+      (<i tal:content="context/targetstatus/title">Approved</i>)
       <br />
     </tal:goal>
 
@@ -33,7 +31,7 @@
         >High</span>
     <br />
 
-    <b>Status:</b>
+    <b>Definition:</b>
     <span tal:content="context/status/title"
           tal:attributes="class string:specstatus${context/status/name}"
         >Approved</span>
@@ -41,6 +39,12 @@
     <i tal:condition="context/needs_discussion">Needs discussion<br /></i>
     <i tal:condition="not: context/direction_approved">Needs guidance<br /></i>
     <i tal:condition="context/is_blocked">Blocked<br /></i>
+
+    <b>Implementation:</b>
+    <span tal:content="context/delivery/title"
+          tal:attributes="class string:specdelivery${context/delivery/name}"
+           >Slow</span>
+    <br />
 
     <b>Registrant:</b><br />
     <img src="/@@/user.gif" />

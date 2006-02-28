@@ -8,7 +8,7 @@ __all__ = [
     'SpecificationTargetView',
     ]
 
-from canonical.lp.dbschema import SpecificationSort
+from canonical.lp.dbschema import SpecificationSort, SpecificationStatus
 
 from canonical.launchpad.interfaces import IPerson
 
@@ -26,53 +26,69 @@ class SpecificationTargetView:
         self.listing_detailed = True
         self.listing_compact = False
         url = self.request.getURL()
-        if '+createdspecs' in url:
+        if 'created' in url:
             self.view_title = 'Created by %s' % self.context.title
-        elif '+approverspecs' in url:
+        elif 'approver' in url:
             self.view_title = 'For approval by %s' % self.context.title
-        elif '+assignedspecs' in url:
+        elif 'assigned' in url:
             self.view_title = 'Assigned to %s' % self.context.title
-        elif '+reviewspecs' in url:
-            self.view_title = 'For review by %s' % self.context.title
-        elif '+draftedspecs' in url:
+        elif 'feedback' in url:
+            self.view_title = 'Need feedback from %s' % self.context.title
+        elif 'drafted' in url:
             self.view_title = 'Drafted by %s' % self.context.title
-        elif '+subscribedspecs' in url:
+        elif 'subscribed' in url:
             self.view_title = 'Subscribed by %s' % self.context.title
         else:
             self.view_title = ''
 
     @property
     def specs(self):
+        """The list of specs that are going to be displayed in
+        this view. The method can review the URL and decide what will be
+        included, and what will not.
+
+        The typical URL is of the form:
+        
+           ".../name1/+specs?role=creator&show=all"
+
+        This method will interpret the show= part based on the kind of
+        object that the ISpecificationTarget happens to be.
+        """
+
         if self._specs is not None:
             return self._specs
-        if not IPerson.providedBy(self.context):
-            specs = self.context.specifications()
-        else:
+        url = self.request.getURL()
+        show = self.request.form.get('show', None)
+        role = self.request.form.get('role', None)
+        if IPerson.providedBy(self.context):
             # for a person, we need to figure out which set of specs to be
-            # showing.
-
-            # XXX sabdfl 07/09/05 we need to discuss this in UBZ
-            url = self.request.getURL()
-            if '+createdspecs' in url:
+            # showing, mostly based on the relationship of the person to the
+            # specs.
+            if role == 'created':
                 specs = self.context.created_specs
-            elif '+approverspecs' in url:
+            elif role == 'approver':
                 specs = self.context.approver_specs
-            elif '+assignedspecs' in url:
+            elif role == 'assigned':
                 specs = self.context.assigned_specs
-            elif '+reviewspecs' in url:
+            elif role == 'feedback':
                 specs = self.context.feedback_specs
-            elif '+draftedspecs' in url:
+            elif role == 'drafter':
                 specs = self.context.drafted_specs
-            elif '+subscribedspecs' in url:
+            elif role == 'subscribed':
                 specs = self.context.subscribed_specs
             else:
-                specs = self.context.specifications()
+                specs = list(self.context.specifications())
+        else:
+            # This is not an IPerson's specs
+            specs = list(self.context.specifications())
+
+        # now we want to filter the list based on whether or not we are
+        # showing all of them or just the ones that are not complete
+        if show != 'all':
+            specs = [spec for spec in specs if not spec.is_complete]
+
         self._specs = specs
-        # update listing style
-        self._count = specs.count()
-        if self._count > 5:
-            self.listing_detailed = False
-            self.listing_compact = True
+        self._count = len(specs)
         return self._specs
 
     @property

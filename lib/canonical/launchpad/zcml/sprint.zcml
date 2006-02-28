@@ -35,9 +35,6 @@
       name="+index"
       template="../templates/sprint-index.pt" />
     <browser:page
-      name="+specstable"
-      template="../templates/sprint-table.pt" />
-    <browser:page
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
     <browser:page

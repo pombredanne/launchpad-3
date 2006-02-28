@@ -54,8 +54,8 @@ class SprintContextMenu(ContextMenu):
         return Link('+workload', text, icon='info')
 
     def table(self):
-        text = 'Assignments Table'
-        return Link('+specstable', text, icon='info')
+        text = 'Assignments'
+        return Link('+specroles', text, icon='info')
 
     def edit(self):
         text = 'Edit Details'

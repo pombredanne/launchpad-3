@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 
 from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationDelivery)
+    SpecificationStatus, SpecificationPriority, SpecificationDelivery,
+    SpecificationTargetStatus)
 
 
 class SpecNameField(ContentNameField):
@@ -60,7 +61,7 @@ class ISpecification(IHasOwner):
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
     status = Choice(
-        title=_('Specification Status'), vocabulary='SpecificationStatus',
+        title=_('Definition Status'), vocabulary='SpecificationStatus',
         default=SpecificationStatus.BRAINDUMP, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
@@ -94,6 +95,11 @@ class ISpecification(IHasOwner):
         vocabulary='FilteredDistroRelease',
         description=_(
             "The distribution release to which this feature is targeted."))
+    targetstatus = Choice(
+        title=_('Targeting'), vocabulary='SpecificationTargetStatus',
+        default=SpecificationTargetStatus.PROPOSED, description=_(
+            "Whether or not the drivers have accepted this feature as "
+            "a goal for the targeted release or series."))
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_(
             "Any notes on the status of this spec you would like to make. "

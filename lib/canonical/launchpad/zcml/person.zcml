@@ -334,25 +334,7 @@
     with.-->
     <browser:page
         name="+specs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+createdspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+approverspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+assignedspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+draftedspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+reviewspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+subscribedspecs"
-        template="../templates/specificationtarget-specs.pt" />
+        template="../templates/specificationtarget-index.pt" />
   </browser:pages>
 
   <browser:pages

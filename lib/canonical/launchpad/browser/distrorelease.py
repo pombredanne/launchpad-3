@@ -135,7 +135,11 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'specifications'
-    links = ['roadmap', 'table', 'new']
+    links = ['listall', 'roadmap', 'table']
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
 
     def new(self):
         text = 'Register a Specification'
@@ -143,11 +147,11 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     def table(self):
         text = 'Assignments Table'
-        return Link('+specstable', text, icon='info')
+        return Link('+assignments', text, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
-        return Link('+specplan', text, icon='info')
+        return Link('+roadmap', text, icon='info')
 
 
 class DistroReleaseView(BuildRecordsView):

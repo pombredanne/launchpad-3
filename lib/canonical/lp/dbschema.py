@@ -1232,7 +1232,7 @@ class SpecificationPriority(DBSchema):
     """
 
     NOTFORUS = Item(0, """
-        Not for us
+        Not
 
         This feature has been proposed but the project leaders have decided
         that it is not appropriate for inclusion in the mainline codebase.
@@ -1365,13 +1365,6 @@ class SpecificationStatus(DBSchema):
         presentation/UI issues.
         """)
 
-    IMPLEMENTED = Item(50, """
-        Implemented
-
-        The specification has been implemented, and has landed in the
-        codebase to which it was targeted.
-        """)
-
     INFORMATIONAL = Item(55, """
         Informational
 
@@ -1395,6 +1388,37 @@ class SpecificationStatus(DBSchema):
         This specification has been obsoleted. Probably, we decided not to
         implement it for some reason. It should not be displayed, and people
         should not put any effort into implementing it.
+        """)
+
+
+class SpecificationTargetStatus(DBSchema):
+    """The target status for this specification
+    
+    This enum allows us to show whether or not the specification has been
+    approved or declined as a target for the given product series or distro
+    release.
+    """
+
+    ACCEPTED = Item(10, """
+        Accepted
+
+        The drivers have confirmed that this specification is targeted to
+        the stated distribution release or product series.
+        """)
+
+    DECLINED = Item(20, """
+        Declined
+
+        The drivers have decided not to accept this specification as a goal
+        for the stated distribution release or product series.
+        """)
+
+    PROPOSED = Item(30, """
+        Proposed
+
+        This spec has been submitted as a potential goal for the stated
+        product series or distribution release, but the drivers have not yet
+        accepted or declined that goal.
         """)
 
 

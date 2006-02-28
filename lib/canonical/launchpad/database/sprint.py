@@ -65,7 +65,6 @@ class Sprint(SQLBase):
         return Specification.select(AND(
             Specification.q.id == SprintSpecification.q.specificationID,
             NOT(IN(Specification.q.status, [
-                SpecificationStatus.IMPLEMENTED,
                 SpecificationStatus.INFORMATIONAL,
                 SpecificationStatus.OBSOLETE,
                 SpecificationStatus.SUPERSEDED,

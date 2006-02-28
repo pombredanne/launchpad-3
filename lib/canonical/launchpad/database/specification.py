@@ -31,7 +31,7 @@ from canonical.launchpad.components.specification import SpecificationDelta
 
 from canonical.lp.dbschema import (
     EnumCol, SpecificationStatus, SpecificationPriority,
-    SpecificationDelivery)
+    SpecificationDelivery, SpecificationTargetStatus)
 
 
 class Specification(SQLBase):
@@ -65,6 +65,8 @@ class Specification(SQLBase):
         foreignKey='Distribution', notNull=False, default=None)
     distrorelease = ForeignKey(dbName='distrorelease',
         foreignKey='DistroRelease', notNull=False, default=None)
+    targetstatus = EnumCol(schema=SpecificationTargetStatus, notNull=True,
+        default=SpecificationTargetStatus.PROPOSED)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
@@ -156,10 +158,12 @@ class Specification(SQLBase):
     def is_complete(self):
         """See ISpecification."""
         return self.status in [
-            SpecificationStatus.IMPLEMENTED,
             SpecificationStatus.INFORMATIONAL,
             SpecificationStatus.OBSOLETE,
             SpecificationStatus.SUPERSEDED,
+            ] or self.delivery in [
+            SpecificationDelivery.IMPLEMENTED,
+            SpecificationDelivery.DEPLOYED
             ]
 
     @property

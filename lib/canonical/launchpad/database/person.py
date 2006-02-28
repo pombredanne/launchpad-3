@@ -141,39 +141,39 @@ class Person(SQLBase):
     # specification-related joins
     @property
     def approver_specs(self):
-        return Specification.selectBy(approverID=self.id,
-                                      orderBy=['-datecreated'])
+        return list(Specification.selectBy(approverID=self.id,
+                                      orderBy=['-datecreated']))
 
     @property
     def assigned_specs(self):
-        return Specification.selectBy(assigneeID=self.id,
-                                      orderBy=['-datecreated'])
+        return list(Specification.selectBy(assigneeID=self.id,
+                                      orderBy=['-datecreated']))
 
     @property
     def created_specs(self):
-        return Specification.selectBy(ownerID=self.id,
-                                      orderBy=['-datecreated'])
+        return list(Specification.selectBy(ownerID=self.id,
+                                      orderBy=['-datecreated']))
 
     @property
     def drafted_specs(self):
-        return Specification.selectBy(drafterID=self.id,
-                                      orderBy=['-datecreated'])
+        return list(Specification.selectBy(drafterID=self.id,
+                                      orderBy=['-datecreated']))
 
     @property
     def feedback_specs(self):
-        return Specification.select(
+        return list(Specification.select(
             AND(Specification.q.id == SpecificationFeedback.q.specificationID,
                 SpecificationFeedback.q.reviewerID == self.id),
             clauseTables=['SpecificationFeedback'],
-            orderBy=['-datecreated'])
+            orderBy=['-datecreated']))
 
     @property
     def subscribed_specs(self):
-        return Specification.select(
+        return list(Specification.select(
             AND(Specification.q.id == SpecificationSubscription.q.specificationID,
                 SpecificationSubscription.q.personID == self.id),
             clauseTables=['SpecificationSubscription'],
-            orderBy=['-datecreated'])
+            orderBy=['-datecreated']))
 
     # ticket related joins
     answered_tickets = MultipleJoin('Ticket', joinColumn='answerer',
@@ -310,7 +310,8 @@ class Person(SQLBase):
         else:
             raise AssertionError('Unknown sort %s' % sort)
 
-        return Specification.select(query, orderBy=order, limit=quantity)
+        return list(Specification.select(
+                    query, orderBy=order, limit=quantity))
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
