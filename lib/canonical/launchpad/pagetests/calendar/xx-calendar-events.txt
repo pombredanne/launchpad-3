@@ -35,9 +35,6 @@ The event display page, when not logged in:
   ... GET /people/name12/+calendar/events/1/+display HTTP/1.1
   ... """)))
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
   ...
       <title>Event \u201cEvent 1\u201d</title>
   ...
@@ -46,17 +43,23 @@ The event display page, when not logged in:
   ...<q>Event 1</q>
   ...</h1>
   ...
-  ...<label...>Name</label>
+                <label...>Name</label>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                <div>Event 1</div>
   ...
-  ...<div>Event 1</div>
+                <label...>Description</label>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                <div>Desc 1</div>
   ...
-  ...<label...>Description</label>
-  ...
-  ...<div>Desc 1</div>
-  ...
-  ...<label...>Starting date and time</label>
-  ...
-  ...<div>2005-01-03 08:00:00 UTC</div>
+                <label for="field.dtstart">Starting date and time</label>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                <div>2005-01-03 08:00:00 UTC</div>
   ...
 
 
@@ -69,15 +72,14 @@ been adjusted to the user's local time zone):
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)))
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
   ...
       <title>Event \u201cEvent 1\u201d</title>
   ...
-              <label...>Starting date and time</label>
-  ...
-                  <div>2005-01-03 16:00:00 WST</div>
+                <label for="field.dtstart">Starting date and time</label>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                <div>2005-01-03 16:00:00 WST</div>
   ...
 
 
