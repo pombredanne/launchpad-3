@@ -60,8 +60,10 @@ class ISpecification(IHasOwner):
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
     status = Choice(
-        title=_('Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.BRAINDUMP)
+        title=_('Specification Status'), vocabulary='SpecificationStatus',
+        default=SpecificationStatus.BRAINDUMP, description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
         default=SpecificationPriority.PROPOSED, required=True)
@@ -110,11 +112,11 @@ class ISpecification(IHasOwner):
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    delivery = Choice(title=_("Expectation of Delivery"),
+    delivery = Choice(title=_("Implementation Status"),
         required=True, default=SpecificationDelivery.UNKNOWN,
-        vocabulary='SpecificationDelivery', description=_("An estimate "
-        "of the likelyhood that this feature will be delivered in the "
-        "targeted release or series."))
+        vocabulary='SpecificationDelivery', description=_("The state of "
+        "progress being made on the actual implementation or delivery "
+        "of this feature."))
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "

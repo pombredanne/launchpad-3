@@ -173,7 +173,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a distribution release"
-    fields="distrorelease delivery whiteboard"
+    fields="distrorelease whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-distrorelease.pt">
     <browser:widget
@@ -187,7 +187,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a series"
-    fields="productseries delivery whiteboard"
+    fields="productseries whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-productseries.pt">
     <browser:widget
@@ -215,7 +215,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change status"
-    fields="status needs_discussion man_days whiteboard"
+    fields="status needs_discussion man_days delivery whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget

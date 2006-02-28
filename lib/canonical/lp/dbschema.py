@@ -1128,14 +1128,18 @@ class SourcePackageUrgency(DBSchema):
 
 
 class SpecificationDelivery(DBSchema):
-    """The estimated likelyhood that a feature is actually delivered in the
-    targeted release or series.
+    """Specification Delivery Status
+    
+    This tracks the implementation or delivery of the feature being
+    specified. The status values indicate the progress that is being made in
+    the actual coding or configuration that is needed to realise the
+    feature.
     """
 
     UNKNOWN = Item(0, """
         Unknown
 
-        There is no estimate of the likelyhood of delivery for this feature.
+        We have no information on the implementation of this feature.
         """)
 
     DEFERRED = Item(10, """
@@ -1146,31 +1150,78 @@ class SpecificationDelivery(DBSchema):
         deferred to a later date of implementation.
         """)
 
-    UNLIKELY = Item(40, """
-        Unlikely
+    NEEDSINFRASTRUCTURE = Item(40, """
+        Needs Infrastructure
 
-        This feature is unlikely to be delivered in the targeted release. It
-        has a high risk of failure.
+        Work cannot proceed on this feature, because it depends on
+        infrastructure (servers, databases, connectivity, system
+        administration work) which has not been done.
         """)
 
-    PROBABLE = Item(60, """
-        Probable
+    BLOCKED = Item(50, """
+        Blocked
 
-        This specification is considered likely to be implemented in the
-        targeted release, but has not yet been delivered.
+        Work cannot proceed on this specification because it depends on
+        another feature in a different specification which has not yet been
+        done. Note: the other specification should be listed as a blocker of
+        this one.
         """)
 
-    CERTAIN = Item(70, """
-        Certain
+    STARTED = Item(60, """
+        Started
 
-        This functionality is considered a certainty for the targeted
-        release, but has not yet been delivered.
+        Work has begun on this feature, but has not yet been published
+        except as informal branches or patches. No indication is given as to
+        whether or not this work will be completed for the targeted release.
         """)
 
-    DONE = Item(90, """
-        Done
+    SLOWPROGRESS = Item(65, """
+        Slow progress
 
-        This functionality has been delivered for the targeted release.
+        Work has been slow on this item and it has a high risk of not being
+        delivered on time. Help is wanted on direction or assistance is
+        needed with the implementation of the feature.
+        """)
+
+    GOODPROGRESS = Item(70, """
+        Good progress
+
+        This functionality is making good progress and is considered on 
+        track for delivery in the targeted release.
+        """)
+
+    BETA = Item(75, """
+        Beta Available
+
+        The code for this feature has reached the point where a beta version
+        that implements substantially all of the required functionality
+        is being published for widespread testing, in personal package
+        archives or a personal release, but the code is not yet in the
+        main archive or mainline branch. Testing and feedback are solicited.
+        """)
+
+    NEEDSREVIEW = Item(80, """
+        Needs Code Review
+
+        The developer is satisfied that the feature has been well
+        implemented, and is now ready for review and final sign-off on the
+        feature, after which it will be marked implemented or deployed.
+        """)
+
+    IMPLEMENTED = Item(90, """
+        Implemented
+
+        This functionality has been delivered for the targeted release, the
+        code has been uploaded to the main archives or committed to the
+        targeted product series, and no further work is necessary.
+        """)
+
+    DEPLOYED = Item(100, """
+        Deployed
+
+        The work contemplated in this specification has been done, and
+        deployed in the production environment, but ongoing maintainance and
+        additional work is anticipated.
         """)
 
 
