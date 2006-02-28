@@ -225,33 +225,31 @@ class DebianBuildManager(BuildManager):
         """Finished the sbuild run."""
         if success != SBuildExitCodes.OK:
             self._log = open(os.path.join(self._cachepath, "buildlog")).read()
-            if success == SBuildExitCodes.DEPFAIL:
+            if success == SBuildExitCodes.DEPFAIL or success == SBuildExitCodes.PACKAGEFAIL:
                 for rx in BuildLogRegexes.GIVENBACK:
                     mo=re.search(rx, self._log, re.M)
                     if mo:
                         success = SBuildExitCodes.GIVENBACK
-                    else:
-                        for rx, dep in BuildLogRegexes.DEPFAIL:
-                            mo=re.search(rx, self._log, re.M)
-                            if mo:
-                                self._slave.depFail(mo.expand(dep))
-                            else:
-                                success = SBuildExitCodes.PACKAGEFAIL
 
-            if success == SBuildExitCodes.PACKAGEFAIL:
-                for rx in BuildLogRegexes.GIVENBACK:
+            if success == SBuildExitCodes.DEPFAIL:
+                for rx, dep in BuildLogRegexes.DEPFAIL:
                     mo=re.search(rx, self._log, re.M)
                     if mo:
-                        success = SBuildExitCodes.GIVENBACK
-                    else:
                         if not self.alreadyfailed:
-                            self._slave.buildFail()
+                            self._slave.depFail(mo.expand(dep))
+                    else:
+                        success = SBuildExitCodes.PACKAGEFAIL
 
             if success == SBuildExitCodes.GIVENBACK:
-                self._slave.giveBack()
+                if not self.alreadyfailed:
+                    self._slave.giveBack()
+            elif success == SBuildExitCodes.PACKAGEFAIL:
+                if not self.alreadyfailed:
+                    self._slave.buildFail()
             elif success >= SBuildExitCodes.BUILDERFAIL:
                 # anything else is assumed to be a buildd failure
-                self._slave.builderFail()
+                if not self.alreadyfailed:
+                    self._slave.builderFail()
             self.alreadyfailed = True
             self._state = DebianBuildState.REAP
             self.doReapProcesses()

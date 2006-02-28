@@ -195,6 +195,7 @@ class BuildDSlave(object):
         self._cachepath = self._config.get("slave","filecache")
         self.buildstatus = BuildStatus.OK
         self.waitingfiles = {}
+        self.builddependencies = ""
         self._log = None
         
         if not os.path.isdir(self._cachepath):
