@@ -1164,7 +1164,7 @@ class BuilddMaster:
             # uploader component will be in charge of this. In
             # short I'm confident this piece of code is never
             # going to be executed
-            return 0, ''
+            return 0, dependencies_line
 
         missing_deps = []
         score = 0
@@ -1182,7 +1182,7 @@ class BuilddMaster:
                 # short I'm confident this piece of code is never
                 # going to be executed
                 self._logger.critical("DEP FORMAT ERROR: '%s'" % token[0])
-                return 0, ''
+                return 0, dependencies_line
 
             dep_candidate = archrelease.findDepCandidateByName(name)
 
@@ -1211,7 +1211,11 @@ class BuilddMaster:
         remaining_deps = []
         for token in missing_deps:
             name, version, relation = token[0]
-            remaining_deps.append('%s (%s %s)' % (name, relation, version))
+            if relation and version:
+                token_str = '%s (%s %s)' % (name, relation, version)
+            else:
+                token_str = '%s' % name
+            remaining_deps.append(token_str)
 
         return score, ", ".join(remaining_deps)
 
@@ -1241,7 +1245,9 @@ class BuilddMaster:
                     build.dependencies, build.distroarchrelease)
                 # store new missing dependencies
                 build.dependencies = remaining_deps
-                if build.dependencies is not None:
+                if len(build.dependencies):
+                    self._logger.debug(
+                        '%s WAITING: "%s"' % (build.title, build.dependencies))
                     continue
 
             # retry build if missing dependencies is empty
