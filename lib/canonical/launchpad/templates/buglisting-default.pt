@@ -12,7 +12,7 @@
 
       <div tal:define="batch_navigator view/search">
         <form method="GET" name="search" action="">
-          <input type="text" name="field.searchtext" size="40"
+          <input type="text" name="field.searchtext" size="20"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
           <a href="#"
