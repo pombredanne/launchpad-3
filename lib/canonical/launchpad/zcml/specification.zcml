@@ -245,7 +245,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Administer specification"
-    fields="name priority"
+    fields="name targetstatus"
     permission="launchpad.Admin"
     template="../templates/specification-edit.pt"
   />

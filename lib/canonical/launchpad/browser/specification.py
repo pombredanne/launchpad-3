@@ -73,17 +73,17 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+supersede', text, icon='edit')
 
     def setseries(self):
-        text = 'Target to Series'
+        text = 'Set Series Goal'
         enabled = self.context.product is not None
         return Link('+setseries', text, icon='edit', enabled=enabled)
 
     def setrelease(self):
-        text = 'Target to Release'
+        text = 'Set Release Goal'
         enabled = self.context.distribution is not None
         return Link('+setrelease', text, icon='edit', enabled=enabled)
 
     def milestone(self):
-        text = 'Target to Milestone'
+        text = 'Set Milestone'
         return Link('+milestone', text, icon='edit')
 
     def requestfeedback(self):

@@ -56,6 +56,10 @@
     No specifications to list.
   </p>
 
+  <p tal:condition="view/count" class="discreet">
+    <span tal:replace="view/count">7</span> specification(s) listed.
+  </p>
+
 </div>
 </body>
 </html>

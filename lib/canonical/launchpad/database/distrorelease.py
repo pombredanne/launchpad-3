@@ -239,6 +239,16 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See ISpecificationTarget."""
         return self.distribution.getSpecification(name)
 
+    def acceptSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.distrorelease = self
+        spec.targetstatus = SpecificationTargetStatus.ACCEPTED
+
+    def declineSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.distrorelease = self
+        spec.targetstatus = SpecificationTargetStatus.DECLINED
+
     @property
     def open_cve_bugtasks(self):
         """See IDistroRelease."""

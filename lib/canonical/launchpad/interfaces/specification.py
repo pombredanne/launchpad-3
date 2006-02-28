@@ -87,16 +87,16 @@ class ISpecification(IHasOwner):
         title=_('Milestone'), required=False, vocabulary='Milestone',
         description=_(
             "The milestone in which we would like this feature to be delivered."))
-    productseries = Choice(title=_('Targeted Product Series'), required=False,
+    productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
             "The release series to which this feature is targeted."))
-    distrorelease = Choice(title=_('Targeted Release'), required=False,
+    distrorelease = Choice(title=_('Release Goal'), required=False,
         vocabulary='FilteredDistroRelease',
         description=_(
             "The distribution release to which this feature is targeted."))
     targetstatus = Choice(
-        title=_('Targeting'), vocabulary='SpecificationTargetStatus',
+        title=_('Goal Acceptance'), vocabulary='SpecificationTargetStatus',
         default=SpecificationTargetStatus.PROPOSED, description=_(
             "Whether or not the drivers have accepted this feature as "
             "a goal for the targeted release or series."))

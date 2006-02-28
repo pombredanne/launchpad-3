@@ -135,15 +135,28 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table']
+    links = ['listall', 'listapproved', 'listproposed', 'listdeclined',
+             'setgoals', 'roadmap', 'table']
 
     def listall(self):
-        text = 'List All'
+        text = 'Show All'
         return Link('+specs?show=all', text, icon='info')
 
-    def new(self):
-        text = 'Register a Specification'
-        return Link('+addspec', text, icon='add')
+    def listapproved(self):
+        text = 'Show Approved'
+        return Link('+specs?show=accepted', text, icon='info')
+
+    def listproposed(self):
+        text = 'Show Proposed'
+        return Link('+specs?show=proposed', text, icon='info')
+
+    def listdeclined(self):
+        text = 'Show Declined'
+        return Link('+specs?show=declined', text, icon='info')
+
+    def setgoals(self):
+        text = 'Set Goals'
+        return Link('+setgoals', text, icon='info')
 
     def table(self):
         text = 'Assignments Table'

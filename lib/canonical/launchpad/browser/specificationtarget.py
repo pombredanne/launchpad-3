@@ -8,9 +8,14 @@ __all__ = [
     'SpecificationTargetView',
     ]
 
-from canonical.lp.dbschema import SpecificationSort, SpecificationStatus
+from canonical.lp.dbschema import (
+    SpecificationSort, SpecificationStatus, SpecificationTargetStatus)
 
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import (
+    IPerson, IProductSeries, IDistroRelease)
+
+from canonical.launchpad.webapp import GeneralFormView
+
 
 class SpecificationTargetView:
 
@@ -78,14 +83,43 @@ class SpecificationTargetView:
                 specs = self.context.subscribed_specs
             else:
                 specs = list(self.context.specifications())
-        else:
-            # This is not an IPerson's specs
+
+            # now we want to filter the list based on whether or not we are
+            # showing all of them or just the ones that are not complete
+            if show != 'all':
+                specs = [spec for spec in specs if not spec.is_complete]
+
+        elif IProductSeries.providedBy(self.context) or \
+             IDistroRelease.providedBy(self.context):
+            # produce a listing for a product series or distrorelease
+
             specs = list(self.context.specifications())
 
-        # now we want to filter the list based on whether or not we are
-        # showing all of them or just the ones that are not complete
-        if show != 'all':
-            specs = [spec for spec in specs if not spec.is_complete]
+            # filtering here is based on whether or not the spec has been
+            # approved or declined for this target
+            if show == 'all':
+                # we won't filter it if they ask for all specs
+                pass
+            elif show == 'declined':
+                specs = [spec for spec in specs
+                    if spec.targetstatus == SpecificationTargetStatus.DECLINED]
+            elif show == 'proposed':
+                specs = [spec for spec in specs
+                    if spec.targetstatus == SpecificationTargetStatus.PROPOSED]
+            else:
+                # the default is to show only accepted specs
+                specs = [spec for spec in specs
+                    if spec.targetstatus == SpecificationTargetStatus.ACCEPTED]
+
+        else:
+            # This is neither a person, nor a distrorelease, nor a product
+            # series spec listing
+            specs = list(self.context.specifications())
+
+            # now we want to filter the list based on whether or not we are
+            # showing all of them or just the ones that are not complete
+            if show != 'all':
+                specs = [spec for spec in specs if not spec.is_complete]
 
         self._specs = specs
         self._count = len(specs)

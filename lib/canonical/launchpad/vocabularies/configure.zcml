@@ -261,6 +261,11 @@
     />
 
   <vocabulary
+    name="SpecificationTargetStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationTargetStatusVocabulary"
+    />
+
+  <vocabulary
     name="Sprint"
     factory="canonical.launchpad.vocabularies.SprintVocabulary"
     />
