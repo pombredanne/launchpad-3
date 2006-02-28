@@ -27,6 +27,8 @@ in to call this method:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sample_person = getUtility(IPersonSet).get(12)
+    >>> print sample_person.displayname
+    Sample Person
 
     >>> debian_firefox.addBugContact(sample_person)
     Traceback (most recent call last):
@@ -118,7 +120,10 @@ pmount is currently not subscribed to bug 1.
     [u'Sample Person', u'Steve Alexander']
 
 Changing the package for bug_one_in_ubuntu_firefox to pmount will
-subscribe Foo Bar to the bug:
+subscribe Foo Bar to the bug. In demonstrating this, we'll also make
+Sample Person a bug contact for ubuntu pmount, to show that the
+subscription changes behave correctly when a bug contact for the new
+package is already subscribed to the bug:
 
     >>> from zope.event import notify
 
@@ -129,6 +134,8 @@ subscribe Foo Bar to the bug:
     >>> from canonical.launchpad.components.bugtask import mark_task
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.launchpad.mail import stub
+
+    >>> ubuntu_pmount.addBugContact(sample_person)
 
     >>> old_state = capture_state(
     ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
@@ -181,6 +188,11 @@ priority, etc.
     >>> print msg.get_payload(decode=True)
     Public bug reported:
     http://.../malone/bugs/...
+    ...
+    Affects: pmount (Ubuntu)
+    ...
+
+    >>> stub.test_emails = []
 
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package. So, if Mark Shuttleworth
@@ -210,6 +222,8 @@ and then the bug gets reassigned to mozilla firefox:
     ...     ["id", "title", "sourcepackagename"])
 
     >>> notify(source_package_changed)
+    >>> transaction.commit()
+    >>> stub.test_emails = []
 
 the bug contacts remain unchanged:
 
@@ -217,3 +231,80 @@ the bug contacts remain unchanged:
     ...     [subscription.person.displayname for subscription in
     ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
     [u'Foo Bar', u'Sample Person', u'Steve Alexander']
+
+Product Bug Contacts and Bug Tasks
+----------------------------------
+
+Like reassigning a bug task to another package, reassigning a bug task
+to another product will subscribe any new product bug contacts to the
+bug that aren't already subscribed.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> mozilla_firefox = getUtility(IProductSet).get(4)
+
+Let's make Foo Bar a bug contact for upstream firefox:
+
+    >>> mozilla_firefox.bugcontact = foobar
+
+Then we'll reassign bug #2 in Ubuntu to be in Firefox, noting that Foo
+Bar gets subscribed to the bug in the process:
+
+    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+
+    >>> bug_two_in_ubuntu = getUtility(IBugTaskSet).get(3)
+    >>> print bug_two_in_ubuntu.bug.id
+    2
+    >>> print bug_two_in_ubuntu.product.name
+    ubuntu
+
+    >>> sorted(
+    ...     [subscription.person.displayname for subscription in
+    ...      bug_two_in_ubuntu.bug.subscriptions])
+    [u'Steve Alexander']
+
+    >>> old_state = capture_state(
+    ...     bug_two_in_ubuntu, "id", "status", "severity", "product",
+    ...     "binarypackagename", "sourcepackagename", "priority",
+    ...     "assignee", "bugwatch", "milestone", "distribution")
+
+    >>> mark_task(old_state, IUpstreamBugTask)
+
+    >>> bug_two_in_ubuntu.product = mozilla_firefox
+
+    >>> product_changed = SQLObjectModifiedEvent(
+    ...     bug_two_in_ubuntu, old_state, ["id", "title", "product"])
+
+    >>> notify(product_changed)
+    >>> transaction.commit()
+
+With the product changed, we can see that Foo Bar is now subscribed:
+
+    >>> sorted(
+    ...     [subscription.person.displayname for subscription in
+    ...      bug_two_in_ubuntu.bug.subscriptions])
+    [u'Foo Bar', u'Steve Alexander']
+
+And Foo Bar gets an email containing complete information about the bug
+report:
+
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+
+    >>> len(test_emails)
+    3
+    >>> from_addr, to_addr, raw_message = test_emails.pop(1)
+    >>> print from_addr
+    bounces@canonical.com
+    >>> print to_addr
+    ['foo.bar@canonical.com']
+
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['Subject']
+    '[Bug 2] Blackhole Trash folder'
+    >>> print msg.get_payload(decode=True)
+    Public bug reported:
+    http://.../malone/bugs/...
+    <BLANKLINE>
+    Affects: firefox (upstream)
+    ...
