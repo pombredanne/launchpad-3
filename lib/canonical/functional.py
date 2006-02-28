@@ -1,181 +1,46 @@
-# Hacked up version of zope.app.tests.functional which doesn't depend on the
-# server it's testing having a ZODB.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 
-##############################################################################
-#
-# Copyright (c) 2003 Zope Corporation and Contributors.
-# All Rights Reserved.
-#
-# This software is subject to the provisions of the Zope Public License,
-# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
-# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
-# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
-# FOR A PARTICULAR PURPOSE.
-#
-##############################################################################
-"""Functional testing framework for Zope 3.
+"""Alter the standard functional testing environment for Launchpad."""
 
-There should be a file 'ftesting.zcml' in the current directory.
+__metaclass__ = type
 
-$Id: functional.py 27483 2004-09-09 19:03:03Z fdrake $
-"""
-import logging
-import re
-import rfc822
-import sys
-import traceback
-import unittest
-import urllib
-from StringIO import StringIO
-from Cookie import SimpleCookie
+# Import everything so we can override
+import zope.app.testing.functional
+from zope.app.testing.functional import *
 
-from transaction import abort, commit
-from ZODB.DB import DB
-from ZODB.DemoStorage import DemoStorage
-import zope.interface
-from zope.publisher.http import HTTPRequest
-from zope.publisher.publish import publish
-from zope.security.interfaces import Forbidden, Unauthorized
-import zope.server.interfaces
-from zope.testing import doctest
-from zope.app.debug import Debugger
-from zope.app.publication.http import HTTPPublication
-import zope.app.tests.setup
+from canonical.launchpad.webapp import LaunchpadBrowserRequest
+
+import os.path
+
 from zope.app.component.hooks import setSite, getSite
 from zope.component import getUtility
 import zope.security.management
 from zope.publisher.interfaces.http import IHeaderOutput
 
 from canonical.publication import LaunchpadBrowserPublication
-from canonical.launchpad.webapp import LaunchpadBrowserRequest
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 import canonical.launchpad.layers
-from canonical.launchpad.webapp import LaunchpadBrowserRequest
 
 
-class ResponseWrapper(object):
-    """A wrapper that adds several introspective methods to a response."""
+ftesting_path = os.path.abspath(os.path.join(config.root, 'ftesting.zcml'))
 
-    def __init__(self, response, path, omit=()):
-        self._response = response
-        self._path = path
-        self.omit = omit
-        self._body = None
+Functional = ZCMLLayer(ftesting_path, __name__, 'Functional')
 
-    def getOutput(self):
-        """Returns the full HTTP output (headers + body)"""
-        body = self.getBody()
-        omit = self.omit
-        headers = [x
-                   for x in self._response.getHeaders()
-                   if x[0].lower() not in omit]
-        headers.sort()
-        headers = '\n'.join([("%s: %s" % (n, v)) for (n, v) in headers])
-        statusline = '%s %s' % (self._response._request['SERVER_PROTOCOL'],
-                                self._response.getStatusString())
-        if body:
-            return '%s\n%s\n\n%s' %(statusline, headers, body)
-        else:
-            return '%s\n%s\n' % (statusline, headers)
-
-    def getBody(self):
-        """Returns the response body"""
-        if self._body is None:
-            self._body = ''.join(self._response.consumeBody())
-
-        return self._body
-
-    def getPath(self):
-        """Returns the path of the request"""
-        return self._path
-
-    def __getattr__(self, attr):
-        return getattr(self._response, attr)
-
-    __str__ = getOutput
-
-
-class FunctionalTestSetup(object):
-    """Keeps shared state across several functional test cases."""
-
-    __shared_state = { '_init': False }
-
+class FunctionalTestSetup(zope.app.testing.functional.FunctionalTestSetup):
     def __init__(self, config_file=None):
-        """Initializes Zope 3 framework.
+        """As per zope.app.testing.functional.FunctionalTestSetup.
 
-        Creates a volatile memory storage.  Parses Zope3 configuration files.
+        Overridden to ensure a consistant ftesting.zcml is used.
         """
-        self.__dict__ = self.__shared_state
-
-        if not self._init:
-
-            # Make sure unit tests are cleaned up
-            zope.app.tests.setup.placefulSetUp()
-            zope.app.tests.setup.placefulTearDown()
-
-            if not config_file:
-                config_file = 'ftesting.zcml'
-
-            self.log = StringIO()
-            # silence most SiteError log messages (e.g. NotFound exceptions)
-            logging.getLogger('SiteError').setLevel(logging.CRITICAL)
-
-            self.base_storage = DemoStorage("Memory Storage")
-            self.db = DB(self.base_storage)
-            self.app = Debugger(self.db, config_file)
-            ##self.app = Debugger(None, config_file)
-            self.connection = None
-            self._config_file = config_file
-            self._init = True
-
-            #FunctionalTestSetup().connection = None
-
-        elif config_file and config_file != self._config_file:
-            # Running different tests with different configurations is not
-            # supported at the moment
-            raise NotImplementedError(
-                'Already configured with a different config file')
-
-    def setUp(self):
-        """Prepares for a functional test case."""
-        # Tear down the old demo storage (if any) and create a fresh one
-        abort()
-        self.db.close()
-        storage = DemoStorage("Demo Storage", self.base_storage)
-        self.db = self.app.db = DB(storage)
-        self.connection = None
-
-        # Make it silent but keep the log available for debugging
-        for hdlr in logging.root.handlers[:]:
-            logging.root.removeHandler(hdlr)
-            hdlr.flush()
-            hdlr.close()
-        logging.basicConfig(stream=self.log, level=logging.WARNING)
-
-    def tearDown(self):
-        """Cleans up after a functional test case."""
-        abort()
-        self.db.removeVersionPool('')
-        self.db.close()
-        for hdlr in logging.root.handlers[:]:
-            logging.root.removeHandler(hdlr)
-            hdlr.flush()
-            hdlr.close()
-
-    def getRootFolder(self):
-        """Returns the Zope root folder."""
-        raise NotImplementedError
-
-    def getApplication(self):
-        """Returns the Zope application instance."""
-        return self.app
+        if config_file is None:
+            config_file = ftesting_path
+        super(FunctionalTestSetup, self).__init__(config_file)
 
 
 class FunctionalTestCase(unittest.TestCase):
     """Functional test case."""
-
+    layer = Functional
     def setUp(self):
         """Prepares for a functional test case."""
         super(FunctionalTestCase, self).setUp()
@@ -183,7 +48,6 @@ class FunctionalTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Cleans up after a functional test case."""
-
         FunctionalTestSetup().tearDown()
         super(FunctionalTestCase, self).tearDown()
 
@@ -197,270 +61,20 @@ class FunctionalTestCase(unittest.TestCase):
     def abort(self):
         abort()
 
-class BrowserTestCase(FunctionalTestCase):
-    """Functional test case for Browser requests."""
-
-    def setUp(self):
-        super(BrowserTestCase, self).setUp()
-        # Somewhere to store cookies between consecutive requests
-        self.cookies = SimpleCookie()
-
-    def tearDown(self):
-        del self.cookies
-
-        self.setSite(None)
-        super(BrowserTestCase, self).tearDown()
-
-    def setSite(self, site):
-        """Set the site which will be used to look up local services"""
-        setSite(site)
-
-    def getSite(self):
-        """Returns the site which is used to look up local services"""
-        return getSite()
-
-    def makeRequest(self, path='', basic=None, form=None, env={}):
-        """Creates a new request object.
-
-        Arguments:
-          path   -- the path to be traversed (e.g. "/folder1/index.html")
-          basic  -- basic HTTP authentication credentials ("user:password")
-          form   -- a dictionary emulating a form submission
-                    (Note that field values should be Unicode strings)
-          env    -- a dictionary of additional environment variables
-                    (You can emulate HTTP request header
-                       X-Header: foo
-                     by adding 'HTTP_X_HEADER': 'foo' to env)
-        """
-        environment = {"HTTP_HOST": 'localhost',
-                       "HTTP_REFERER": 'localhost',
-                       "HTTP_COOKIE": self.__http_cookie(path)}
-        environment.update(env)
-        app = FunctionalTestSetup().getApplication()
-        request = app._request(path, '',
-                               environment=environment,
-                               basic=basic, form=form,
-                               request=LaunchpadBrowserRequest)
-        return request
-
-    def __http_cookie(self, path):
-        '''Return self.cookies as an HTTP_COOKIE environment format string'''
-        l = [m.OutputString() for m in self.cookies.values()
-                if path.startswith(m['path'])]
-        return '; '.join(l)
-
-    def publish(self, path, basic=None, form=None, env={},
-                handle_errors=False):
-        """Renders an object at a given location.
-
-        Arguments are the same as in makeRequest with the following exception:
-          handle_errors  -- if False (default), exceptions will not be caught
-                            if True, exceptions will return a formatted error
-                            page.
-
-        Returns the response object enhanced with the following methods:
-          getOutput()    -- returns the full HTTP output as a string
-          getBody()      -- returns the full response body as a string
-          getPath()      -- returns the path used in the request
-        """
-        old_site = self.getSite()
-        self.setSite(None)
-        # A cookie header has been sent - ensure that future requests
-        # in this test also send the cookie, as this is what browsers do.
-        # We pull it apart and reassemble the header to block cookies
-        # with invalid paths going through, which may or may not be correct
-        if env.has_key('HTTP_COOKIE'):
-            self.cookies.load(env['HTTP_COOKIE'])
-            del env['HTTP_COOKIE'] # Added again in makeRequest
-
-        request = self.makeRequest(path, basic=basic, form=form, env=env)
-        response = ResponseWrapper(request.response, path)
-        if env.has_key('HTTP_COOKIE'):
-            self.cookies.load(env['HTTP_COOKIE'])
-        publish(request, handle_errors=handle_errors)
-        # Urgh - need to play with the response's privates to extract
-        # cookies that have been set
-        for k, v in response._cookies.items():
-            k = k.encode('utf8')
-            self.cookies[k] = v['value'].encode('utf8')
-            if self.cookies[k].has_key('Path'):
-                self.cookies[k]['Path'] = v['Path']
-        self.setSite(old_site)
-        return response
-
-    def checkForBrokenLinks(self, body, path, basic=None):
-        """Looks for broken links in a page by trying to traverse relative
-        URIs.
-        """
-        if not body: return
-
-        old_site = self.getSite()
-        self.setSite(None)
-
-        from htmllib import HTMLParser
-        from formatter import NullFormatter
-        class SimpleHTMLParser(HTMLParser):
-            def __init__(self, fmt, base):
-                HTMLParser.__init__(self, fmt)
-                self.base = base
-            def do_base(self, attrs):
-                self.base = dict(attrs).get('href', self.base)
-
-        parser = SimpleHTMLParser(NullFormatter(), path)
-        parser.feed(body)
-        parser.close()
-        base = parser.base
-        while not base.endswith('/'):
-            base = base[:-1]
-        if base.startswith('http://localhost/'):
-            base = base[len('http://localhost/') - 1:]
-
-        errors = []
-        for a in parser.anchorlist:
-            if a.startswith('http://localhost/'):
-                a = a[len('http://localhost/') - 1:]
-            elif a.find(':') != -1:
-                # Assume it is an external link
-                continue
-            elif not a.startswith('/'):
-                a = base + a
-            if a.find('#') != -1:
-                a = a[:a.index('#') - 1]
-            # XXX what about queries (/path/to/foo?bar=baz&etc)?
-            request = None
-            try:
-                try:
-                    request = self.makeRequest(a, basic=basic)
-                    publication = request.publication
-                    request.processInputs()
-                    publication.beforeTraversal(request)
-                    object = publication.getApplication(request)
-                    object = request.traverse(object)
-                    publication.afterTraversal(request, object)
-                except (KeyError, NameError, AttributeError, Unauthorized, Forbidden):
-                    e = traceback.format_exception_only(*sys.exc_info()[:2])[-1]
-                    errors.append((a, e.strip()))
-            finally:
-                publication.endRequest(request, object)
-                self.setSite(old_site)
-                # Bad Things(TM) related to garbage collection and special
-                # __del__ methods happen if request.close() is not called here
-                if request:
-                    request.close()
-        if errors:
-            self.fail("%s contains broken links:\n" % path
-                      + "\n".join(["  %s:\t%s" % (a, e) for a, e in errors]))
-
-
-class HTTPTestCase(FunctionalTestCase):
-    """Functional test case for HTTP requests."""
-
-    def makeRequest(self, path='', basic=None, form=None, env={},
-                    instream=None):
-        """Creates a new request object.
-
-        Arguments:
-          path   -- the path to be traversed (e.g. "/folder1/index.html")
-          basic  -- basic HTTP authentication credentials ("user:password")
-          form   -- a dictionary emulating a form submission
-                    (Note that field values should be Unicode strings)
-          env    -- a dictionary of additional environment variables
-                    (You can emulate HTTP request header
-                       X-Header: foo
-                     by adding 'HTTP_X_HEADER': 'foo' to env)
-          instream  -- a stream from where the HTTP request will be read
-        """
-        if instream is None:
-            instream = ''
-        environment = {"HTTP_HOST": 'localhost',
-                       "HTTP_REFERER": 'localhost'}
-        environment.update(env)
-        app = FunctionalTestSetup().getApplication()
-        request = app._request(path, instream, environment=environment,
-                               basic=basic, form=form, request=HTTPRequest,
-                               publication=HTTPPublication)
-        return request
-
-    def publish(self, path, basic=None, form=None, env={},
-                handle_errors=False, request_body=''):
-        """Renders an object at a given location.
-
-        Arguments are the same as in makeRequest with the following exception:
-          handle_errors  -- if False (default), exceptions will not be caught
-                            if True, exceptions will return a formatted error
-                            page.
-
-        Returns the response object enhanced with the following methods:
-          getOutput()    -- returns the full HTTP output as a string
-          getBody()      -- returns the full response body as a string
-          getPath()      -- returns the path used in the request
-        """
-        request = self.makeRequest(path, basic=basic, form=form, env=env,
-                                   instream=request_body)
-        response = ResponseWrapper(request.response, path)
-        publish(request, handle_errors=handle_errors)
-        return response
-
-
-class HTTPHeaderOutput:
-
-    zope.interface.implements(IHeaderOutput)
-
-    def __init__(self, protocol, omit):
-        self.headers = {}
-        self.headersl = []
-        self.protocol = protocol
-        self.omit = omit
-
-    def setResponseStatus(self, status, reason):
-        self.status, self.reason = status, reason
-
-    def setResponseHeaders(self, mapping):
-        self.headers.update(dict(
-            [('-'.join([s.capitalize() for s in name.split('-')]), v)
-             for name, v in mapping.items()
-             if name.lower() not in self.omit]
-        ))
-
-    def appendResponseHeaders(self, lst):
-        headers = [split_header(header) for header in lst]
-        self.headersl.extend(
-            [('-'.join([s.capitalize() for s in name.split('-')]), v)
-             for name, v in headers
-             if name.lower() not in self.omit]
-        )
-
-    def __str__(self):
-        out = ["%s: %s" % header for header in self.headers.items()]
-        out.extend(["%s: %s" % header for header in self.headersl])
-        out.sort()
-        out.insert(0, "%s %s %s" % (self.protocol, self.status, self.reason))
-        return '\n'.join(out)
-
-class DocResponseWrapper(ResponseWrapper):
-    """Response Wrapper for use in doc tests
-    """
-
-    def __init__(self, response, path, omit=()):
-        ResponseWrapper.__init__(self, response, path, omit)
-
-    def __str__(self):
-        return self.getOutput()
-        #body = self.getOutput()
-        #if body:
-        #    return "%s\n\n%s" % (self.header_output, body)
-        #return "%s\n" % (self.header_output)
-
-    #def getBody(self):
-    #    return self.getOutput()
-
 
 def http(request_string, port=9000, handle_errors=True, debug=False):
     """Execute an HTTP request string via the publisher
 
     This is used for HTTP doc tests.
+
+    XXX: This method should be removed, and the override in
+    FunctionalDocFileSuite removed, once we have removed the ZODB
+    dependancy from zope.app.testing.functional.HTTPCaller
+    -- StuartBishop 20060228
     """
     # Commit work done by previous python code.
+    # XXX: This will cause needless database resetting I think :-(
+    # -- StuartBishop 20060228
     commit()
 
     # Discard leading white space to make call layout simpler
@@ -502,7 +116,7 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
                            request=request_cls, publication=publication_cls)
     canonical.launchpad.layers.setFirstLayer(
         request, canonical.launchpad.layers.PageTestLayer)
-    response = DocResponseWrapper(
+    response = ResponseWrapper(
             request.response, path,
             omit=['x-content-type-warning','x-powered-by']
             )
@@ -514,44 +128,6 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
 
     return response
 
-headerre = re.compile('(\S+): (.+)$')
-def split_header(header):
-    return headerre.match(header).group(1, 2)
-
-def getRootFolder():
-    return FunctionalTestSetup().getRootFolder()
-
-def sync():
-    getRootFolder()._p_jar.sync()
-
-#
-# Sample functional test case
-#
-
-class SampleFunctionalTest(BrowserTestCase):
-
-    def testRootPage(self):
-        response = self.publish('/')
-        self.assertEquals(response.getStatus(), 200)
-
-    def testRootPage_preferred_languages(self):
-        response = self.publish('/', env={'HTTP_ACCEPT_LANGUAGE': 'en'})
-        self.assertEquals(response.getStatus(), 200)
-
-    def testNotExisting(self):
-        response = self.publish('/nosuchthing', handle_errors=True)
-        self.assertEquals(response.getStatus(), 404)
-
-    def testLinks(self):
-        response = self.publish('/')
-        self.assertEquals(response.getStatus(), 200)
-        self.checkForBrokenLinks(response.getBody(), response.getPath())
-
-
-def sample_test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(SampleFunctionalTest))
-    return suite
 
 class SpecialOutputChecker(doctest.OutputChecker):
     def output_difference(self, example, got, optionflags):
@@ -588,43 +164,23 @@ class StdoutWrapper:
 
 
 def FunctionalDocFileSuite(*paths, **kw):
-    globs = kw.setdefault('globs', {})
-    globs['http'] = http
-    globs['getRootFolder'] = getRootFolder
-    globs['sync'] = sync
-
-    kw['package'] = doctest._normalize_module(kw.get('package'))
-
+    if not kw.has_key('checker'):
+        kw['checker'] = SpecialOutputChecker()
     kwsetUp = kw.get('setUp')
     def setUp(test):
-        FunctionalTestSetup().setUp()
-
         # for doctests, direct log messages to stdout, so that they
         # must be processed along with other command output.
         logging.root.handlers[0].close()
         logging.root.removeHandler(logging.root.handlers[0])
         logging.basicConfig(stream=StdoutWrapper(), level=logging.WARNING)
-
         if kwsetUp is not None:
             kwsetUp(test)
+        # XXX: Override the standard method, which has hard coded ZODB
+        # dependancies. -- StuartBishop 20060228
+        test.globs['http'] = http
     kw['setUp'] = setUp
+    return zope.app.testing.functional.FunctionalDocFileSuite(*paths, **kw)
 
-    kwtearDown = kw.get('tearDown')
-    def tearDown(test):
-        if zope.security.management.queryInteraction():
-            # clean up the leftover interaction
-            zope.security.management.endInteraction()
-
-        if kwtearDown is not None:
-            kwtearDown(test)
-
-        FunctionalTestSetup().tearDown()
-    kw['tearDown'] = tearDown
-
-    kw['optionflags'] = (doctest.ELLIPSIS | doctest.REPORT_NDIFF |
-                         doctest.NORMALIZE_WHITESPACE)
-    kw['checker'] = SpecialOutputChecker()
-    return doctest.DocFileSuite(*paths, **kw)
 
 if __name__ == '__main__':
     unittest.main()

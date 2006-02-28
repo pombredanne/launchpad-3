@@ -97,6 +97,9 @@ def supportTrackerTearDown(test):
 
 
 # Files that have special needs can construct their own suite
+# XXX: Note the wierd path differences between specifying a DocFileSuite
+# and a FunctionalDocFileSuite. No idea why there are differences between
+# the relative paths, or how to fix this -- StuartBishop 20060228
 special = {
 
     # No setup or teardown at all, since it is demonstrating these features.
@@ -112,34 +115,34 @@ special = {
     # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
     'poexport.txt': FunctionalDocFileSuite(
-            '../doc/poexport.txt',
+            'launchpad/doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
     'poexport-template-tarball.txt': FunctionalDocFileSuite(
-            '../doc/poexport-template-tarball.txt',
+            'launchpad/doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
     'librarian.txt': FunctionalDocFileSuite(
-            '../doc/librarian.txt',
+            'launchpad/doc/librarian.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
     'message.txt': FunctionalDocFileSuite(
-            '../doc/message.txt',
+            'launchpad/doc/message.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
     'cve-update.txt': FunctionalDocFileSuite(
-            '../doc/cve-update.txt',
+            'launchpad/doc/cve-update.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
     'nascentupload.txt': FunctionalDocFileSuite(
-            '../doc/nascentupload.txt',
+            'launchpad/doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown
             ),
     'revision.txt': FunctionalDocFileSuite(
-            '../doc/revision.txt',
+            'launchpad/doc/revision.txt',
             setUp=importdSetUp, tearDown=importdTearDown),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
-            '../doc/support-tracker-emailinterface.txt',
+            'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown)
     }
 
@@ -171,7 +174,7 @@ def test_suite():
     #   -- Andrew Bennetts, 2005-03-01.
     filenames.sort()
     for filename in filenames:
-        path = os.path.join('../doc/', filename)
+        path = os.path.join('launchpad/doc/', filename)
         suite.addTest(FunctionalDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             optionflags=default_optionflags
