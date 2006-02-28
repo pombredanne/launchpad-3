@@ -79,7 +79,7 @@ Let's instantiate the view for +edit:
 
 Build an special request containing the fields we want to change:
 
-  >>> request = TestRequest(form={'field.processor': builder.processor.id,
+  >>> request = TestRequest(form={'field.processor': builder.processor.name,
   ...                             'field.url': builder.url,
   ...                             'field.name': u'biscoito',
   ...                             'field.title': builder.title,

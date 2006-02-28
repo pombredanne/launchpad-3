@@ -26,19 +26,16 @@ class IBuild(Interface):
     buildduration = Attribute("Build Duration Interval")
     buildlog = Attribute("The Build LOG Referency")
     builder = Attribute("The Builder")
-    gpgsigningkey = Attribute("OpenPGP Signing Key")
-    changes = Attribute("The Build Changes")
-    component = Attribute("The BinaryPackage Component")
-    section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
-    distrorelease = Attribute("Direct parent needed by CanonicalURL")
-    buildqueue_record = Attribute("Corespondent BuildQueue record")
-
-    title = Attribute("Build Title")
 
     # useful properties
+    title = Attribute("Build Title")
+    changesfile = Attribute("The Build Changesfile object, returns None if "
+                            "it is a gina-inserted record.")
+    distrorelease = Attribute("Direct parent needed by CanonicalURL")
+    buildqueue_record = Attribute("Corespondent BuildQueue record")
     was_built = Attribute("Whether or not modified by the builddfarm.")
     build_icon = Attribute("Return the icon url correspondent to buildstate.")
     distribution = Attribute("Shortcut for its distribution.")

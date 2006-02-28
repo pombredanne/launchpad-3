@@ -13,8 +13,9 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectModifiedEvent
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.webapp.generalform import NoRenderingOnRedirect
 
-class SQLObjectAddView(AddView):
+class SQLObjectAddView(AddView, NoRenderingOnRedirect):
     """An AddView for SQLObjects."""
 
     def add(self, content):
@@ -94,3 +95,11 @@ class SQLObjectAddView(AddView):
             raise WidgetsError(*errors)
 
         return content
+
+    def __call__(self):
+        #XXX: SQLObjectAddView doesn't define __call__(), but somehow
+        #     NoRenderingOnRedirect.__call__() won't be called unless we
+        #     define this method and call it explicitly. It's probably
+        #     due to some ZCML magic which should be removed.
+        #     -- Bjorn Tillenius, 2006-02-22
+        return NoRenderingOnRedirect.__call__(self)

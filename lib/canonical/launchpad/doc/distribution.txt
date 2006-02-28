@@ -29,6 +29,10 @@ To retrieve a specific distribution, use IDistributionSet.get:
     >>> print ubuntu.name
     ubuntu
 
+Or, to grab one by name, use:
+
+    >>> gentoo = distroset.getByName("gentoo")
+
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
 
@@ -113,6 +117,13 @@ Raises NotFoundError for following conditions:
     Traceback (most recent call last):
     ...
     NotFoundError: 'Unknown package: 1234'
+
+It also raises NotFoundError on distributions with no releases:
+
+    >>> source_name, bin_name = gentoo.getPackageNames('pmount')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: "Distribution has no releases; 'pmount' was never published in it"
 
 
 CVE BugTasks on a Distribution
@@ -277,4 +288,34 @@ they're accessible and actually contain the whatever they should.
     >>> [(mirror.name, mirror.country.name) 
     ...  for mirror in ubuntu.enabled_mirrors]
     [(u'random-mirror', u'Afghanistan'), (u'another-random-mirror', u'British Indian Ocean Territory')]
+
+Launchpad Usage
+---------------
+
+A distribution can specify if it uses Malone or Rosetta officially.
+Ubuntu uses both Malone and Rosetta:
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ubuntu.official_malone
+    True
+    >>> ubuntu.official_rosetta
+    True
+
+While Debian uses neither:
+
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian.official_malone
+    False
+    >>> debian.official_rosetta
+    False
+
+Gentoo only uses Malone
+
+    >>> print gentoo.official_malone
+    True
+    >>> print gentoo.official_rosetta
+    False
+
+
 

@@ -10,7 +10,7 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-<div tal:replace="structure context/@@+portlet-binaries" 
+<div tal:replace="structure context/@@+portlet-binaries"
      tal:condition="context/binarypackages"/>
 </metal:rightportlets>
 
@@ -79,19 +79,20 @@
             <th>Processor:</th>
             <td tal:content="context/processor/name" />
           </tr>
+          <tr>
+            <th>Changesfile:</th>
+            <td>
+              <i tal:condition="not:context/changesfile">not available</i>
+              <a tal:condition="context/changesfile"
+                 tal:attributes="href context/changesfile/url"
+                 tal:content="context/changesfile/filename">CHANGESFILE</a>
+            </td>
+          </tr>
+
         </tbody>
       </table>
-
-    <fieldset tal:condition="context/changes" class="collapsible collapsed">
-      <legend>Changes file</legend>
-      <div>
-            <div>
-	      <pre tal:content="context/changes" />
-            </div>
-     </div>
-    </fieldset>
 
     </div>
   </body>
 </html>
- 
+

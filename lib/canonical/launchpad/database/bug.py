@@ -76,7 +76,8 @@ class Bug(SQLBase):
             'BugProductInfestation', joinColumn='bug', orderBy='id')
     packageinfestations = MultipleJoin(
             'BugPackageInfestation', joinColumn='bug', orderBy='id')
-    watches = MultipleJoin('BugWatch', joinColumn='bug')
+    watches = MultipleJoin(
+        'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     externalrefs = MultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
     cves = RelatedJoin('Cve', intermediateTable='BugCve',
