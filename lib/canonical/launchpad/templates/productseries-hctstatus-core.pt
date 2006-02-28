@@ -61,12 +61,7 @@
           <td><b>Bazaar Publishing:</b></td>
           <td tal:content="context/importstatus/title">Publishing</td>
         </tr>
-        <tal:block condition="context/branch">
-          <tr>
-            <td><b>Bazaar Branch:</b></td>
-            <td tal:content="context/branch/getPackageName">foo bar</td>
-          </tr>
-        </tal:block>
+        <tal:block condition="context/branch" replace="structure context/branch/@@+series-reference" />
     </tbody>
   </table>
 </tal:block>
