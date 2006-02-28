@@ -34,7 +34,7 @@ the list page and redirect the user directly to that bug's page:
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: ...
-  Content-Type: text/plain;charset=utf-8
+  Content-Type: text/plain
   Location: .../malone/bugs/1
   <BLANKLINE>
 
@@ -128,11 +128,10 @@ telling the user they are unauthorised to view the bug):
   ... GET /malone/bugtrackers/mozilla.org/2000 HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
+  Content-Length: 0
   Content-Type: text/plain
   Location: .../malone/bugs/1
-  ...
-
+  <BLANKLINE>
 
 
 Set the bug back to public:
