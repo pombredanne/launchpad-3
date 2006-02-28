@@ -166,9 +166,8 @@ class BranchSet:
         supermirror_root = config.launchpad.supermirror_root
         assert quote(supermirror_root) == quote_like(supermirror_root)
         return Branch.select("(last_mirror_attempt is NULL "
-                             " OR (%s - last_mirror_attempt > '1 day')) "
-                             "AND NOT (url ILIKE '%s%%')"
-                             % (UTC_NOW, supermirror_root))
+                             " OR (%s - last_mirror_attempt > '1 day'))"
+                             % UTC_NOW)
 
 
 class BranchRelationship(SQLBase):
