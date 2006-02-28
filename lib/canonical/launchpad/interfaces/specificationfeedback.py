@@ -22,8 +22,8 @@ class ISpecificationFeedback(Interface):
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("Select the person who you would like to give you "
         "some feedback on this specification."))
-    requester = Int(title=_("The person who requested this feedback."),
-        required=True)
+    requester = Choice(title=_("The person who requested this feedback."),
+            vocabulary='ValidPersonOrTeam', required=True)
     specification = Int(title=_('Specification ID'), required=True,
         readonly=True)
     queuemsg = Text(title=_("Message"), required=False,
