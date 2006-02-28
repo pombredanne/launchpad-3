@@ -224,16 +224,16 @@ class DebianBuildManager(BuildManager):
     def iterate_SBUILD(self, success):
         """Finished the sbuild run."""
         if success != SBuildExitCodes.OK:
-            self._log = open(os.path.join(self._cachepath, "buildlog")).read()
+            tmpLog = open(os.path.join(self._cachepath, "buildlog")).read()
             if success == SBuildExitCodes.DEPFAIL or success == SBuildExitCodes.PACKAGEFAIL:
                 for rx in BuildLogRegexes.GIVENBACK:
-                    mo=re.search(rx, self._log, re.M)
+                    mo=re.search(rx, tmpLog, re.M)
                     if mo:
                         success = SBuildExitCodes.GIVENBACK
 
             if success == SBuildExitCodes.DEPFAIL:
                 for rx, dep in BuildLogRegexes.DEPFAIL:
-                    mo=re.search(rx, self._log, re.M)
+                    mo=re.search(rx, tmpLog, re.M)
                     if mo:
                         if not self.alreadyfailed:
                             self._slave.depFail(mo.expand(dep))
@@ -250,6 +250,7 @@ class DebianBuildManager(BuildManager):
                 # anything else is assumed to be a buildd failure
                 if not self.alreadyfailed:
                     self._slave.builderFail()
+            tmpLog = ""
             self.alreadyfailed = True
             self._state = DebianBuildState.REAP
             self.doReapProcesses()
