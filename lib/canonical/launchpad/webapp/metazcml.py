@@ -260,6 +260,9 @@ class GeneralFormDirective(
     view = GeneralFormView
     default_template = '../templates/template-generalform.pt'
 
+    # This makes 'facet' a valid attribute for the directive:
+    facet = None
+
     # default form information
     description = None
     arguments = None
@@ -302,6 +305,11 @@ class GeneralFormDirective(
             leftover = [n for n in leftover if n not in keyword_arguments]
 
     def __call__(self):
+        facet = self.facet or getattr(self._context, 'facet', None)
+        if facet is not None:
+            cdict = {'__launchpad_facetname__': facet}
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+            self.bases += (new_class, )
         self._processWidgets()
         #self._handle_menu()
         self._handle_arguments()
