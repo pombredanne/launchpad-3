@@ -174,6 +174,8 @@ def bugs_assigned(context, view):
     else:
         return 'No-one to display bugs for'
 
+bugtarget_advanced_search = ContextTitle("Search bugs in %s")
+
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtask_backport_fixing = BugTaskBackportingTitle()

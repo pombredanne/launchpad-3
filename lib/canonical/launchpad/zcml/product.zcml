@@ -30,8 +30,7 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductSupportMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu ProductCodeMenu
-            ProductSetContextMenu
+            ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
             "
             />
 
@@ -130,7 +129,7 @@
         permission="zope.Public">
         <browser:page
             name="+branches"
-            facet="code"
+            facet="overview"
             template="../templates/branchtarget-branches.pt" />
     </browser:pages>
 
@@ -359,7 +358,7 @@
         schema="canonical.launchpad.interfaces.IBranch"
         fields="product name owner lifecycle_status url title summary home_page author"
         class="canonical.launchpad.browser.BranchAddView"
-        facet="code"
+        facet="overview"
         keyword_arguments="product name owner lifecycle_status url title summary home_page author"
         permission="launchpad.AnyPerson"
         template="../templates/product-branch-add.pt">
