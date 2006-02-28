@@ -27,7 +27,7 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     name = TextLine(
-        title=_('Name'), required=True, description=_("Keep this name very "
+        title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
         constraint=name_validator)
@@ -44,9 +44,7 @@ class IBranch(IHasOwner):
         description=_("The URL of the branch. This is usually the URL used to"
                       " checkout the branch."), constraint=valid_webref)
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
-        description=_('Any notes on the status of this branch you would '
-        'like to make. This field is a general whiteboard, your changes '
-        'will override the previous version.'))
+        description=_('Notes on the current status of the branch.'))
     started_at = Int(title=_('Started At'), required=False,
         description=_("The number of the first revision"
                       " to display on that branch."))
@@ -55,18 +53,16 @@ class IBranch(IHasOwner):
     """Product owner, it can either a valid Person or Team
             inside Launchpad context."""
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("Branch owner, it can be either a valid Person or Team"
-                      " inside Launchpad context."))
+        description=_("Branch owner, either a valid Person or Team."))
     author = Choice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The Launchpad user which is the author of the branch. "
-                      "It may be none since the branch author might not have "
-                      "a Launchpad account."))
+        description=_("The author of the branch. Leave blank if the author "
+                      "does not have a Launchpad account."))
 
     # Product attributes
     product = Choice(
         title=_('Product'), required=False, vocabulary='Product',
-        description=_("The product to which this branch belongs."))
+        description=_("The product this branch belongs to."))
     product_name = Attribute("The name of the product, or '+junk'.")
     branch_product_name = Attribute(
         "The product name specified within the branch.")
@@ -77,9 +73,9 @@ class IBranch(IHasOwner):
 
     # Home page attributes
     home_page = TextLine(
-        title=_('Home Page URL'), required=False,
-        description=_("The URL of the branch home page, describing the "
-                      "purpose of the branch."), constraint=valid_webref)
+        title=_('Web Page'), required=False,
+        description=_("The URL of the Web page describing the branch, "
+                      "if there is such a page."), constraint=valid_webref)
     branch_home_page = Attribute(
         "The home page URL specified within the branch.")
     home_page_locked = Bool(
@@ -104,7 +100,7 @@ class IBranch(IHasOwner):
     current_diff_deletes = Attribute(
         "Count of lines deleted in the merge delta.")
     current_conflicts_url = Attribute(
-        "URL of a pag showing the conflicts produced "
+        "URL of a page showing the conflicts produced "
         "by merging this branch into the landing branch.")
     current_activity = Attribute("Current branch activity.")
     stats_updated = Attribute("Last time the branch stats were updated.")
