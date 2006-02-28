@@ -1241,7 +1241,7 @@ class BuilddMaster:
                     build.dependencies, build.distroarchrelease)
                 # store new missing dependencies
                 build.dependencies = remaining_deps
-                if build.dependencies in not None:
+                if build.dependencies is not None:
                     continue
 
             # retry build if missing dependencies is empty

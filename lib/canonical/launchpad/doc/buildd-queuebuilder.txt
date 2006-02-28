@@ -121,7 +121,7 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
 Verify how many Build entries we have from sampledata:
 
   >>> Build.select().count()
-  6
+  7
 
 Create missing builds (packages w/o build entry) for those distroreleases.
 As we just insert a new sourcepackagerelease in run-time we expect to
@@ -135,7 +135,7 @@ absence of nominatedarchindep field for Woody:
 Check if we create a new Build entry for just added sourcepackagerelease:
 
   >>> Build.select().count()
-  7
+  8
 
   >>> b = Build.selectOneBy(sourcepackagereleaseID=srcpkgrel.id)
   >>> (b.sourcepackagerelease.name, b.distroarchrelease.distrorelease.name)
