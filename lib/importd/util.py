@@ -118,12 +118,13 @@ def jobsFromSeries(jobseries, slave_home, archive_mirror_dir):
         job.archive_mirror_dir = archive_mirror_dir
         yield job
 
-def jobsBuilders(jobs, slavenames, importd_path=None,
+def jobsBuilders(jobs, slavenames, importd_path, push_prefix,
                  blacklist_path='/dev/null', autotest=False):
     builders = []
     for job in jobs:
         factory = ImportDShellBuildFactory(
-            job, job.slave_home, importd_path, blacklist_path, autotest)
+            job, job.slave_home, importd_path, push_prefix,
+            blacklist_path, autotest)
         builders.append({
             'name': job.name, 
             'slavename': slavenames[hash(job.name) % len(slavenames)],
@@ -314,11 +315,13 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
 
 class ImportDShellBuildFactory(ImportDBuildFactory):
 
-    def __init__(self, job, jobfile, importd_path, blacklist_path, autotest):
+    def __init__(self, job, jobfile, importd_path, push_prefix,
+                 blacklist_path, autotest):
         if importd_path is None:
             importd_path = os.path.dirname(__file__)
         self.runner_path = os.path.join(importd_path, 'CommandLineRunner.py')
         self.baz2bzr_path = os.path.join(importd_path, 'baz2bzr.py')
+        self.push_prefix = push_prefix
         self.blacklist_path = blacklist_path
         ImportDBuildFactory.__init__(self, job, jobfile, autotest)
 
@@ -345,7 +348,8 @@ class ImportDShellBuildFactory(ImportDBuildFactory):
             'timeout': 1200,
             'workdir': workdir,
             'command': [sys.executable, self.baz2bzr_path,
-                        str(self.job.seriesID), self.blacklist_path],}))
+                        str(self.job.seriesID), self.blacklist_path,
+                        self.push_prefix],}))
 
 class ImportDShellCommand(ShellCommand):
 
