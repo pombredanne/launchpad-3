@@ -1208,20 +1208,21 @@ class SpecificationDelivery(DBSchema):
         feature, after which it will be marked implemented or deployed.
         """)
 
+    AWAITINGDEPLOYMENT = Item(85, """
+        Awaiting Deployment
+
+        The work contemplated in this specification has been done, and can
+        be deployed in the production environment, but the system
+        administrators have not yet attended to that. Note: the status
+        whiteboard should include an RT ticket for the deployment.
+        """)
+
     IMPLEMENTED = Item(90, """
         Implemented
 
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
-        """)
-
-    DEPLOYED = Item(100, """
-        Deployed
-
-        The work contemplated in this specification has been done, and
-        deployed in the production environment, but ongoing maintainance and
-        additional work is anticipated.
         """)
 
 
