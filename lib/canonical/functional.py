@@ -73,8 +73,6 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
     -- StuartBishop 20060228
     """
     # Commit work done by previous python code.
-    # XXX: This will cause needless database resetting I think :-(
-    # -- StuartBishop 20060228
     commit()
 
     # Discard leading white space to make call layout simpler
