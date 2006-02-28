@@ -236,19 +236,26 @@ class DebianBuildManager(BuildManager):
                     mo=re.search(rx, tmpLog, re.M)
                     if mo:
                         if not self.alreadyfailed:
+                            print("Returning build status: DEPFAIL")
+                            print("Dependencies: " + mo.expand(dep))
                             self._slave.depFail(mo.expand(dep))
+                            success = SBuildExitCodes.DEPFAIL
+                            break
                     else:
                         success = SBuildExitCodes.PACKAGEFAIL
 
             if success == SBuildExitCodes.GIVENBACK:
                 if not self.alreadyfailed:
+                    print("Returning build status: GIVENBACK")
                     self._slave.giveBack()
             elif success == SBuildExitCodes.PACKAGEFAIL:
                 if not self.alreadyfailed:
+                    print("Returning build status: PACKAGEFAIL")
                     self._slave.buildFail()
             elif success >= SBuildExitCodes.BUILDERFAIL:
                 # anything else is assumed to be a buildd failure
                 if not self.alreadyfailed:
+                    print("Returning build status: BUILDERFAIL")
                     self._slave.builderFail()
             tmpLog = ""
             self.alreadyfailed = True
