@@ -148,9 +148,9 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'rdf', 'distributions', 'packages', 'branches', 'branch_add',
-        'series_add', 'reassign', 'milestone_add', 'launchpad_usage',
-        'administer']
+        'edit', 'reassign', 'distributions', 'packages',
+        'branches', 'branch_add', 'series_add', 'milestone_add',
+        'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
