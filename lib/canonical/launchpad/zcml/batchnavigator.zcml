@@ -6,7 +6,12 @@
       for="canonical.lp.interfaces.IBatchNavigator"
       name="+navigation-links"
       template="../templates/batchnavigator-navigation-links.pt"
-      permission="zope.Public"
-      />
+      permission="zope.Public" />
+
+  <browser:page
+      for="canonical.lp.interfaces.ITableBatchNavigator"
+      name="+table-view"
+      template="../templates/batchnavigator-table-view.pt"
+      permission="zope.Public" />
 
 </configure>

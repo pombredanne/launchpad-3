@@ -193,6 +193,17 @@
       template="../templates/person-assignedbugs.pt"
       lp:url="/people/$Person.name/+assignedbugs" />
 
+  <browser:generalform
+      name="+assignedbugs-advanced-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBugTaskSearch"
+      class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
+      fields="status severity priority assignee owner omit_dupes
+              searchtext"
+      permission="zope.Public"
+      template="../templates/bugtarget-advanced-search.pt"
+      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
+
   <browser:page
       name="+packagebugs-search"
       for="canonical.launchpad.interfaces.IPerson"
@@ -218,6 +229,17 @@
       template="../templates/person-reportedbugs.pt"
       lp:url="/people/$Person.name/+reportedbugs" />
 
+  <browser:generalform
+      name="+reportedbugs-advanced-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBugTaskSearch"
+      class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
+      fields="status severity priority assignee owner omit_dupes
+              searchtext"
+      permission="zope.Public"
+      template="../templates/bugtarget-advanced-search.pt"
+      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
+
   <browser:page
       name="+subscribedbugs"
       for="canonical.launchpad.interfaces.IPerson"
@@ -226,6 +248,17 @@
       permission="zope.Public"
       template="../templates/person-subscribedbugs.pt"
       lp:url="/people/$Person.name/+subscribedbugs" />
+
+  <browser:generalform
+      name="+subscribedbugs-advanced-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBugTaskSearch"
+      class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+      fields="status severity priority assignee owner omit_dupes
+              searchtext"
+      permission="zope.Public"
+      template="../templates/bugtarget-advanced-search.pt"
+      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
 
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
