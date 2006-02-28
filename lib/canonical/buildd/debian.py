@@ -44,10 +44,10 @@ class BuildLogRegexes:
       ("^make.* Illegal instruction"),
     ]
     DEPFAIL=[
-      ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >> wanted (?P<v>[\-.+\w:]+)\)","\g<pk> (>>\g<v>)"),
-      ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >?= wanted (?P<v>[\-.+\w:]+)\)","\g<pk> (>=\g<v>)"),
-      ("^E: Couldn't find package (?P<pk>[\-+.\w]+)","\g<pk>"),
-      ("^E: Package (?P<pk>[\-+.\w]+) has no installation candidate","\g<pk>"),
+      ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >> wanted (?P<v>[\-.+\w:]+)\)","\g<pk> (>> \g<v>)"),
+      ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >?= wanted (?P<v>[\-.+\w:]+)\)","\g<pk> (>= \g<v>)"),
+      ("(?s)^E: Couldn't find package (?P<pk>[\-+.\w]+)(?!.*^E: Couldn't find package)","\g<pk>"),
+      ("(?s)^E: Package (?P<pk>[\-+.\w]+) has no installation candidate(?!.*^E: Package)","\g<pk>"),
     ]
 
 
