@@ -358,9 +358,6 @@
         schema="canonical.launchpad.interfaces.IBranch"
         fields="product name owner lifecycle_status url title summary home_page author"
         class="canonical.launchpad.browser.BranchAddView"
-<<<<<<< TREE
-        facet="code"
-        keyword_arguments="product name owner lifecycle_status url title summary home_page author"
         facet="overview"
         keyword_arguments="name owner author product title url home_page lifecycle_status summary"
         permission="launchpad.AnyPerson"
