@@ -28,4 +28,6 @@ NicknameGenerationError: foop@example@com is not a valid email address
 'i-tv'
 >>> generate_nick("foo+bar@example.com")
 'foo+bar'
+>>> generate_nick("--foo@example.com")
+'foo'
 
