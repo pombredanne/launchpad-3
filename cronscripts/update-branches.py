@@ -117,5 +117,4 @@ def branch_warehouse_url(branch):
 
 
 if __name__ == '__main__':
-    pass
-    #sys.exit(main(sys.argv))
+    sys.exit(main(sys.argv))
