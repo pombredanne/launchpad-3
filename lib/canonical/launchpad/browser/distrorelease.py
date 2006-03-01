@@ -85,9 +85,9 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change Drivers'
         return Link('+reassign', text, icon='edit')
 
     def packaging(self):

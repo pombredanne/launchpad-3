@@ -10,16 +10,16 @@ SET client_min_messages=ERROR;
 UPDATE Specification SET delivery=90, status=10 WHERE status=50;
 
 /* Improve the targeting of specifications to distroreleases and product
- * series by allowing for a targetstatus flag which can only be set to
+ * series by allowing for a goalstatus flag which can only be set to
  * "approved" by the people who control that distrorelease or product
  * series. The default will be PROPOSED (30), and the drivers of the distro
  * release or product series can then ACCEPT or DECLINE the specification.
  */
 
-ALTER TABLE Specification ADD COLUMN targetstatus integer;
-ALTER TABLE Specification ALTER COLUMN targetstatus SET DEFAULT 30;
-UPDATE Specification SET targetstatus = 30;
-ALTER TABLE Specification ALTER COLUMN targetstatus SET NOT NULL;
+ALTER TABLE Specification ADD COLUMN goalstatus integer;
+ALTER TABLE Specification ALTER COLUMN goalstatus SET DEFAULT 30;
+UPDATE Specification SET goalstatus = 30;
+ALTER TABLE Specification ALTER COLUMN goalstatus SET NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 87, 0);
 

@@ -24,7 +24,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort)
+    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
+    SpecificationGoalStatus)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
@@ -242,12 +243,12 @@ class DistroRelease(SQLBase, BugTargetBase):
     def acceptSpecificationGoal(self, spec):
         """See ISpecificationGoal."""
         spec.distrorelease = self
-        spec.targetstatus = SpecificationTargetStatus.ACCEPTED
+        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
 
     def declineSpecificationGoal(self, spec):
         """See ISpecificationGoal."""
         spec.distrorelease = self
-        spec.targetstatus = SpecificationTargetStatus.DECLINED
+        spec.goalstatus = SpecificationGoalStatus.DECLINED
 
     @property
     def open_cve_bugtasks(self):

@@ -29,10 +29,10 @@
      tal:content="status" />
 
   <p tal:condition="not: view/count">
-    There are no specifications currently proposed as goals for
+    <i>There are no specifications currently proposed as goals for
     <span tal:replace="context/displayname">1.0</span>. You can check the
     list of specifications accepted or declined using the links to the right
-    of this page.
+    of this page.</i>
   </p>
 
   <form tal:attributes="action request/URL" method="POST">

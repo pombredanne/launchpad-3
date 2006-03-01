@@ -79,6 +79,7 @@ __all__ = (
 'SourcePackageRelationships',
 'SourcePackageUrgency',
 'SpecificationDelivery',
+'SpecificationGoalStatus',
 'SpecificationPriority',
 'SpecificationSort',
 'SpecificationStatus',
@@ -1392,7 +1393,7 @@ class SpecificationStatus(DBSchema):
         """)
 
 
-class SpecificationTargetStatus(DBSchema):
+class SpecificationGoalStatus(DBSchema):
     """The target status for this specification
     
     This enum allows us to show whether or not the specification has been

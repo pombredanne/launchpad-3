@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
 
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort, SpecificationTargetStatus)
+    SpecificationSort, SpecificationGoalStatus)
 
 
 class ProductSeries(SQLBase):
@@ -207,12 +207,12 @@ class ProductSeries(SQLBase):
     def acceptSpecificationGoal(self, spec):
         """See ISpecificationGoal."""
         spec.productseries = self
-        spec.targetstatus = SpecificationTargetStatus.ACCEPTED
+        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
 
     def declineSpecificationGoal(self, spec):
         """See ISpecificationGoal."""
         spec.productseries = self
-        spec.targetstatus = SpecificationTargetStatus.DECLINED
+        spec.goalstatus = SpecificationGoalStatus.DECLINED
 
 
 # XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet

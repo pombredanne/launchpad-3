@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ISpecificationGoal
 
-from canonical.lp.dbschema import SpecificationTargetStatus
+from canonical.lp.dbschema import SpecificationGoalStatus
 
 from canonical.launchpad.webapp import canonical_url
 
@@ -42,7 +42,7 @@ class GoalSetView:
             return self._specs
         _specs = list(self.context.specifications())
         self._specs = [spec for spec in _specs
-            if spec.targetstatus == SpecificationTargetStatus.PROPOSED]
+            if spec.goalstatus == SpecificationGoalStatus.PROPOSED]
         return self._specs
 
     @property

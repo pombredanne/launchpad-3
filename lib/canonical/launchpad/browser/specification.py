@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, GeneralFormView)
 
 from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationTargetStatus)
+    SpecificationStatus, SpecificationGoalStatus)
 
 
 class SpecificationNavigation(Navigation):
@@ -246,7 +246,7 @@ class SpecificationReleaseView(GeneralFormView):
     def process(self, distrorelease=None, whiteboard=None):
         if distrorelease != self.context.distrorelease:
             self.context.distrorelease = distrorelease
-            self.context.targetstatus = SpecificationTargetStatus.PROPOSED
+            self.context.goalstatus = SpecificationGoalStatus.PROPOSED
         self.whiteboard = whiteboard
         self._nextURL = canonical_url(self.context)
         return 'Done!'
@@ -257,7 +257,7 @@ class SpecificationSeriesView(GeneralFormView):
     def process(self, productseries=None, whiteboard=None):
         if productseries != self.context.productseries:
             self.context.productseries = productseries
-            self.context.targetstatus = SpecificationTargetStatus.PROPOSED
+            self.context.goalstatus = SpecificationGoalStatus.PROPOSED
         self.whiteboard = whiteboard
         self._nextURL = canonical_url(self.context)
         return 'Done!'

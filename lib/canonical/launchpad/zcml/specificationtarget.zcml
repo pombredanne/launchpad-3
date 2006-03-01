@@ -41,7 +41,7 @@
     for="canonical.launchpad.interfaces.ISpecificationGoal"
     name="+setgoals"
     class="canonical.launchpad.browser.specificationgoal.GoalSetView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Edit"
     template="../templates/specificationgoal-index.pt"
     />
 

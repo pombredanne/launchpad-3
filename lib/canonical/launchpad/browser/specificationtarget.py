@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from canonical.lp.dbschema import (
-    SpecificationSort, SpecificationStatus, SpecificationTargetStatus)
+    SpecificationSort, SpecificationStatus, SpecificationGoalStatus)
 
 from canonical.launchpad.interfaces import (
     IPerson, IProductSeries, IDistroRelease)
@@ -102,14 +102,14 @@ class SpecificationTargetView:
                 pass
             elif show == 'declined':
                 specs = [spec for spec in specs
-                    if spec.targetstatus == SpecificationTargetStatus.DECLINED]
+                    if spec.goalstatus == SpecificationGoalStatus.DECLINED]
             elif show == 'proposed':
                 specs = [spec for spec in specs
-                    if spec.targetstatus == SpecificationTargetStatus.PROPOSED]
+                    if spec.goalstatus == SpecificationGoalStatus.PROPOSED]
             else:
                 # the default is to show only accepted specs
                 specs = [spec for spec in specs
-                    if spec.targetstatus == SpecificationTargetStatus.ACCEPTED]
+                    if spec.goalstatus == SpecificationGoalStatus.ACCEPTED]
 
         else:
             # This is neither a person, nor a distrorelease, nor a product

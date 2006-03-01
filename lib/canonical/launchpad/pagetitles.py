@@ -327,6 +327,8 @@ distrorelease_bugs = ContextTitle('Bugs in %s')
 
 distrorelease_cvereport = ContextDisplayName('CVE report for %s')
 
+distrorelease_edit = ContextTitle('Edit details of %s')
+
 def distrorelease_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 

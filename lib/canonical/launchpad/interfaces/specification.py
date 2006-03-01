@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.validation import valid_webref
 
 from canonical.lp.dbschema import (
     SpecificationStatus, SpecificationPriority, SpecificationDelivery,
-    SpecificationTargetStatus)
+    SpecificationGoalStatus)
 
 
 class SpecNameField(ContentNameField):
@@ -86,18 +86,22 @@ class ISpecification(IHasOwner):
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone',
         description=_(
-            "The milestone in which we would like this feature to be delivered."))
+            "The milestone in which we would like this feature to be "
+            "delivered."))
     productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-            "The release series to which this feature is targeted."))
+            "The release series for which this feature is a goal."))
     distrorelease = Choice(title=_('Release Goal'), required=False,
         vocabulary='FilteredDistroRelease',
         description=_(
-            "The distribution release to which this feature is targeted."))
-    targetstatus = Choice(
-        title=_('Goal Acceptance'), vocabulary='SpecificationTargetStatus',
-        default=SpecificationTargetStatus.PROPOSED, description=_(
+            "The distribution release for which this feature is a goal."))
+    goal = Attribute(
+        "The product series or distro release for which this feature "
+        "is a goal.")
+    goalstatus = Choice(
+        title=_('Goal Acceptance'), vocabulary='SpecificationGoalStatus',
+        default=SpecificationGoalStatus.PROPOSED, description=_(
             "Whether or not the drivers have accepted this feature as "
             "a goal for the targeted release or series."))
     whiteboard = Text(title=_('Status Whiteboard'), required=False,

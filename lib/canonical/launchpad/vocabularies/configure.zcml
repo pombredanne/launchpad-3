@@ -261,8 +261,8 @@
     />
 
   <vocabulary
-    name="SpecificationTargetStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationTargetStatusVocabulary"
+    name="SpecificationGoalStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationGoalStatusVocabulary"
     />
 
   <vocabulary

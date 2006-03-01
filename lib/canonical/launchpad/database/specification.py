@@ -31,7 +31,7 @@ from canonical.launchpad.components.specification import SpecificationDelta
 
 from canonical.lp.dbschema import (
     EnumCol, SpecificationStatus, SpecificationPriority,
-    SpecificationDelivery, SpecificationTargetStatus)
+    SpecificationDelivery, SpecificationGoalStatus)
 
 
 class Specification(SQLBase):
@@ -65,8 +65,8 @@ class Specification(SQLBase):
         foreignKey='Distribution', notNull=False, default=None)
     distrorelease = ForeignKey(dbName='distrorelease',
         foreignKey='DistroRelease', notNull=False, default=None)
-    targetstatus = EnumCol(schema=SpecificationTargetStatus, notNull=True,
-        default=SpecificationTargetStatus.PROPOSED)
+    goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
+        default=SpecificationGoalStatus.PROPOSED)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
@@ -132,6 +132,13 @@ class Specification(SQLBase):
         self.product = product
         self.distribution = distribution
         self.delivery = SpecificationDelivery.UNKNOWN
+
+    @property
+    def goal(self):
+        """See ISpecification."""
+        if self.productseries:
+            return self.productseries
+        return self.distrorelease
 
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""
