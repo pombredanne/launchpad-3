@@ -5,6 +5,47 @@ This file tests the Librarian server's upload protocol, and how it responds to
 various possible upload requests.  (Note that this isn't testing the storage
 backend at all, just the protocol logic).
 
+Database check
+--------------
+
+The Database-Name header is now mandatory.  If it isn't present, an otherwise
+well-formed request will be rejected:
+
+    >>> upload_request("""STORE 14 hello.txt
+    ... Content-Type: text/plain
+    ... File-Content-ID: 123
+    ... File-Alias-ID: 456
+    ...
+    ... Cats and dogs.""")
+    reply: '400 Database-Name header is required'
+    connection closed
+
+If Database-Name is specified by the client, and doesn't match the database name
+of the server, the upload is rejected.
+
+    >>> upload_request("""STORE 14 hello.txt
+    ... Content-Type: text/plain
+    ... File-Content-ID: 123
+    ... File-Alias-ID: 456
+    ... Database-Name: wrong_database
+    ...
+    ... Cats and dogs.""")
+    reply: "400 Wrong database 'wrong_database', should be 'right_database'"
+    connection closed
+
+If the database name matches, it's accepted as usual.
+
+    >>> upload_request("""STORE 14 hello.txt
+    ... Content-Type: text/plain
+    ... File-Content-ID: 123
+    ... File-Alias-ID: 456
+    ... Database-Name: right_database
+    ...
+    ... Cats and dogs.""")
+    reply: '200'
+    file u'hello.txt' stored as text/plain, contents: 'Cats and dogs.'
+
+
 Error conditions
 ----------------
 
@@ -47,6 +88,7 @@ Empty files work, rather than hang the connection.
     ... Content-Type: text/plain
     ... File-Content-ID: 123
     ... File-Alias-ID: 456
+    ... Database-Name: right_database
     ...
     ... """)
     reply: '200'
@@ -58,6 +100,7 @@ Filename with spaces work.
     ... Content-Type: text/plain
     ... File-Content-ID: 123
     ... File-Alias-ID: 456
+    ... Database-Name: right_database
     ...
     ... Cats and dogs.""")
     reply: '200'
@@ -70,38 +113,10 @@ Unicode filenames work, but must be encoded as UTF-8 on the socket.
     ... Content-Type: text/plain
     ... File-Content-ID: 123
     ... File-Alias-ID: 456
+    ... Database-Name: right_database
     ...
     ... Cats and dogs.""" % filename)
     reply: '200'
     file u'Yow\u203d' stored as text/plain, contents: 'Cats and dogs.'
-
-
-Database check
---------------
-
-If Database-Name is specified by the client, and doesn't match the database name
-of the server, the upload is rejected.
-
-    >>> upload_request("""STORE 14 hello.txt
-    ... Content-Type: text/plain
-    ... File-Content-ID: 123
-    ... File-Alias-ID: 456
-    ... Database-Name: wrong_database
-    ...
-    ... Cats and dogs.""")
-    reply: "400 Wrong database 'wrong_database', should be 'right_database'"
-    connection closed
-
-If the database name matches, it's accepted as usual.
-
-    >>> upload_request("""STORE 14 hello.txt
-    ... Content-Type: text/plain
-    ... File-Content-ID: 123
-    ... File-Alias-ID: 456
-    ... Database-Name: right_database
-    ...
-    ... Cats and dogs.""")
-    reply: '200'
-    file u'hello.txt' stored as text/plain, contents: 'Cats and dogs.'
 
 

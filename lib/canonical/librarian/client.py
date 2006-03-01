@@ -53,7 +53,8 @@ class FileUploadClient:
     def _sendHeader(self, name, value):
         self._sendLine('%s: %s' % (name, value))
 
-    def addFile(self, name, size, file, contentType, expires=None):
+    def addFile(self, name, size, file, contentType, expires=None, 
+                debugID=None):
         """Add a file to the librarian.
 
         :param name: Name to store the file as
@@ -62,6 +63,8 @@ class FileUploadClient:
         :param contentType: mime-type, e.g. text/plain
         :param expires: Expiry time of file. See LibrarianGarbageCollection.
             Set to None to only expire when it is no longer referenced.
+        :param debugID: Optional.  If set, causes extra logging for this request
+            on the server, which will be marked with the value given.
 
         :returns: aliasID as an integer
         
@@ -102,6 +105,9 @@ class FileUploadClient:
             self._sendHeader('Database-Name', databaseName)
             self._sendHeader('File-Content-ID', contentID)
             self._sendHeader('File-Alias-ID', aliasID)
+
+            if debugID is not None:
+                self._sendHeader('Debug-ID', debugID)
 
             # Send blank line
             self._sendLine('')
@@ -159,6 +165,7 @@ class FileUploadClient:
             self._sendLine('STORE %d %s' % (size, name))
             self._sendLine('Content-type: %s' % contentType)
 
+            self._sendHeader('Database-Name', config.dbname)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
                 epoch = time.mktime(expires.utctimetuple())

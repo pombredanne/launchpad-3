@@ -41,7 +41,7 @@ class Milestone(SQLBase):
     @property
     def displayname(self):
         """See IMilestone."""
-        return 'Milestone %s' % self.name
+        return "%s: %s" % (self.target.displayname, self.name)
 
     @property
     def title(self):
@@ -57,7 +57,8 @@ class MilestoneSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""
-        raise NotImplementedError
+        for ms in Milestone.select():
+            yield ms
 
     def get(self, milestoneid):
         """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""

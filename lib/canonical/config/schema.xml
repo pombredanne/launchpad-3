@@ -80,6 +80,17 @@
 	</key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
+	<key name="supermirror_root" datatype="string" required="no"
+            default="http://bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the public area of the Supermirror.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+		This should end with a slash.
+	    </description>
+	    <example>http://bazaar.launchpad.net/</example>
+        </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
