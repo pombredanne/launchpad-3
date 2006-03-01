@@ -10,6 +10,7 @@ from zope.testing.doctest import DocFileSuite, DocTestSuite
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import browser as browser
+from canonical.launchpad.database import Branch
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
 
@@ -71,7 +72,6 @@ class TestBranchPullWithBranches(unittest.TestCase):
 class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
 
     def test_get_branches_to_pull(self):
-        from canonical.launchpad.database import Branch
         self.login()
         mock_request = MockRequest()
         mock_request.response = MockResponse()
@@ -92,7 +92,6 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
         # in the database, if we could rollback that might be nice for clarity.
 
     def test_branch_pull_render(self):
-        from canonical.launchpad.database import Branch
         self.login()
         mock_request = MockRequest()
         mock_request.response = MockResponse()
