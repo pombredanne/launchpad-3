@@ -32,17 +32,20 @@ class IBranch(IHasOwner):
         "Examples: main, devel, release-1.0, gnome-vfs."),
         constraint=name_validator)
     title = TextLine(
-        title=_('Title'), required=True, description=_("Describe the "
+        title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
         "title is displayed in every branch list or report."))
     summary = Text(
-        title=_('Summary'), required=True, description=_("A "
+        title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will also be "
         "displayed in most branch listings."))
     url = TextLine(
-        title=_('Branch URL'), required=True,
-        description=_("The URL of the branch. This is usually the URL used to"
-                      " checkout the branch."), constraint=valid_webref)
+        title=_('Branch URL'), required=False,
+        description=_("The URL where the branch is hosted. This is usually"
+            " the URL used to checkout the branch. Leave that empty if the"
+            " branch is hosted on bazaar.launchpad.net."),
+        constraint=valid_webref)
+
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     started_at = Int(title=_('Started At'), required=False,
@@ -120,6 +123,10 @@ class IBranch(IHasOwner):
                       "URL. Use this if the branch is no longer available."))
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
+    pull_url = Attribute("URL to pull from.  Same as url, unless this is a "
+                         "push branch (url is None).  This url may be a "
+                         "Canonical-internal path, so we don't display this "
+                         "on the main website.")
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
