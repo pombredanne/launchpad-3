@@ -8,4 +8,52 @@ Product Reassignment and Milestones
 -----------------------------------
 
 Because milestones are associated with products, reassigning a bugtask
-to a different product will 
+to a different product will clear the milestone value, if there is
+one. This ensures that a bugtask for product Foo cannot be assigned to a
+milestone for product Bar.
+
+To demonstrate, let's assign a Firefox task to a Firefox milestone from
+the sample data, then reassign the task to the Ubuntu product and verify
+that the milestone was correctly unset.
+
+    >>> from zope.component import getUtility, getView
+    >>> from canonical.launchpad.interfaces import IBugTaskSet, IMilestoneSet
+    >>> from canonical.launchpad.ftests import login
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> bug_one_in_firefox = getUtility(IBugTaskSet).get(2)
+    >>> firefox_1_0_milestone = getUtility(IMilestoneSet).get(1)
+
+    >>> bug_one_in_firefox.milestone is None
+    True
+
+    >>> bug_one_in_firefox.milestone = firefox_1_0_milestone
+
+    >>> print bug_one_in_firefox.milestone.name
+    1.0
+
+Now let's change the product, through the bugtask editing browser view,
+to show that the milestone value is cleared.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> form_values = {
+    ...     'FORM_SUBMIT': 'Save Changes',
+    ...     'field.product': 'ubuntu',
+    ...     'field.status': bug_one_in_firefox.status.title,
+    ...     'field.severity': bug_one_in_firefox.severity.title,
+    ...     'field.priority': bug_one_in_firefox.priority.title}
+
+
+    >>> request = LaunchpadTestRequest(form=form_values)
+
+    >>> bugtask_edit_view = getView(
+    ...     bug_one_in_firefox, "+editstatus-page", request)
+
+    >>> bugtask_edit_view.update()
+
+    >>> print bug_one_in_firefox.product.name
+    ubuntu
+    >>> bug_one_in_firefox.milestone is None
+    True
