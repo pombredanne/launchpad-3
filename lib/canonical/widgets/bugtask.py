@@ -195,7 +195,6 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assigned_to
 
 
-#XXX: needs tests
 class AssigneeDisplayWidget(BrowserWidget):
     """A widget for displaying an assignee."""
 
@@ -221,7 +220,6 @@ class AssigneeDisplayWidget(BrowserWidget):
                 return renderElement('i', contents='not assigned')
 
 
-#XXX: needs tests
 class DBItemDisplayWidget(BrowserWidget):
     """A widget for displaying a bugtask dbitem."""
 
