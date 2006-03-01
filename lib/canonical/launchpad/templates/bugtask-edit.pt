@@ -164,8 +164,29 @@
               <td nowrap tal:content="structure view/bugwatch_widget"
                   colspan="2" />
             </tr>
+            <tr>
+              <td class="formHelp" colspan="2">
+              The information about this bug in Launchpad is
+              automatically pulled daily from the remote bug.
+              <tal:has_bugwatch tal:condition="context/bugwatch">
+                <tal:has_been_pulled 
+                    tal:condition="context/bugwatch/lastchecked">
+                  This information was last pulled 
+                  <b tal:content="context/bugwatch/lastchecked/fmt:datetime">
+                    2006-03-01 23:15 UTC
+                  </b>.
+                </tal:has_been_pulled>
+                <tal:has_not_been_pulled 
+                    tal:condition="not:context/bugwatch/lastchecked">
+                  This information hasn't been pulled yet.
+                </tal:has_not_been_pulled>
+              </tal:has_bugwatch>
+
+              </td>
+            </tr>
             </table>
-          </div>
+
+          <div>
 
           <div class="field" style="margin-left: 4px">
             <div>
