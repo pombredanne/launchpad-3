@@ -18,9 +18,6 @@
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
     <browser:page
-      name="+workload"
-      template="../templates/specificationtarget-workload.pt" />
-    <browser:page
       name="+roadmap"
       template="../templates/specificationtarget-roadmap.pt" />
     <browser:page
@@ -40,6 +37,7 @@
   <browser:page
     for="canonical.launchpad.interfaces.ISpecificationGoal"
     name="+setgoals"
+    facet="specifications"
     class="canonical.launchpad.browser.specificationgoal.GoalSetView"
     permission="launchpad.Edit"
     template="../templates/specificationgoal-index.pt"

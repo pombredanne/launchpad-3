@@ -21,5 +21,5 @@ ALTER TABLE Specification ALTER COLUMN goalstatus SET DEFAULT 30;
 UPDATE Specification SET goalstatus = 30;
 ALTER TABLE Specification ALTER COLUMN goalstatus SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 87, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 25, 0);
 

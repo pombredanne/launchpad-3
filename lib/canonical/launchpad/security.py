@@ -85,11 +85,11 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         assert self.obj.target
         admins = getUtility(ILaunchpadCelebrities).admin
-        goalowner = None
-        if self.obj.goal:
-            goalowner = self.obj.goal.owner
+        distroreleaseowner = None
+        if self.obj.distrorelease:
+            distroreleaseowner = self.obj.distrorelease.owner
         return (user.inTeam(self.obj.target.owner) or 
-                user.inTeam(goalowner) or 
+                user.inTeam(distroreleaseowner) or 
                 user.inTeam(self.obj.owner) or 
                 user.inTeam(self.obj.drafter) or 
                 user.inTeam(self.obj.assignee) or 

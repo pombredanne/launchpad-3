@@ -19,6 +19,7 @@ __all__ = [
     'TeamListView',
     'UbunteroListView',
     'FOAFSearchView',
+    'PersonSpecWorkLoadView',
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
@@ -298,27 +299,40 @@ class PersonSpecsMenu(ApplicationMenu):
     usedfor = IPerson
     facet = 'specifications'
     links = ['created', 'assigned', 'drafted', 'review', 'approver',
-             'subscribed']
+             'workload', 'subscribed']
 
     def created(self):
         text = 'Registrant'
-        return Link('+specs?role=created', text, icon='spec')
+        summary = 'List specs registered by %s' % self.context.browsername
+        return Link('+specs?role=created', text, summary, icon='spec')
 
     def approver(self):
         text = 'Approver'
-        return Link('+specs?role=approver', text, icon='spec')
+        summary = 'List specs with %s is supposed to approve' % (
+            self.context.browsername)
+        return Link('+specs?role=approver', text, summary, icon='spec')
 
     def assigned(self):
         text = 'Assignee'
-        return Link('+specs?role=assigned', text, icon='spec')
+        summary = 'List specs for which %s is the assignee' % (
+            self.context.browsername)
+        return Link('+specs?role=assigned', text, summary, icon='spec')
 
     def drafted(self):
         text = 'Drafter'
-        return Link('+specs?role=drafted', text, icon='spec')
+        summary = 'List specs drafted by %s' % self.context.browsername
+        return Link('+specs?role=drafted', text, summary, icon='spec')
 
     def review(self):
         text = 'Feedback requested'
-        return Link('+specs?role=feedback', text, icon='spec')
+        summary = 'List specs where feedback has been requested from %s' % (
+            self.context.browsername)
+        return Link('+specs?role=feedback', text, summary, icon='spec')
+
+    def workload(self):
+        text = 'Workload'
+        summary = 'Show all specification work assigned'
+        return Link('+specworkload', text, summary, icon='spec')
 
     def subscribed(self):
         text = 'Subscribed'
@@ -657,6 +671,47 @@ def userIsActiveTeamMember(team):
     if user is None:
         return False
     return user in team.activemembers
+
+
+class PersonSpecWorkLoadView:
+    """This view is used to render the specification workload for a
+    particular person. It shows the set of specifications with which this
+    person has a role.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self._workload = None
+        # this should only be used on an IPerson
+        assert IPerson.providedBy(self.context)
+
+    def workload(self):
+        """This code is copied in large part from browser/sprint.py. It may
+        be worthwhile refactoring this to use a common code base.
+        
+        Return a structure that lists the specs for which this person is the
+        approver, the assignee or the drafter."""
+
+        if self._workload is not None:
+            return self._workload
+
+        class PersonSpec:
+            def __init__(self, spec, person):
+                self.spec = spec
+                self.assignee = False
+                self.drafter = False
+                self.approver = False
+                if spec.assignee == person:
+                    self.assignee = True
+                if spec.drafter == person:
+                    self.drafter = True
+                if spec.approver == person:
+                    self.approver = True
+
+        self._workload = [PersonSpec(spec, self.context) for spec in
+                            self.context.specifications()]
+        return self._workload
 
 
 class ReportedBugTaskSearchListingView(BugTaskSearchListingView):

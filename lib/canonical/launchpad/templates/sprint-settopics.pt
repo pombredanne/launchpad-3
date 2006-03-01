@@ -16,11 +16,11 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Set goals</h1>
+  <h1>Set topics for discussion</h1>
 
   <p class="documentDescription">
-    This page allows you to accept or decline specifications as goals for
-    <span tal:replace="context/displayname">Mozilla Firefox 1.0</span>.
+    This page allows you to accept or defer topics for discussion at
+    <span tal:replace="context/title">Ubuntu Below Zero</span>.
   </p>
 
   <p class="portalMessage"
@@ -29,30 +29,31 @@
      tal:content="status" />
 
   <p tal:condition="not: view/count">
-    <i>There are no specifications currently proposed as goals for
-    <span tal:replace="context/displayname">1.0</span>. You can check the
-    list of specifications previously declined using the links to the right
-    of this page.</i>
+    <i>There are no specifications currently proposed as topics for
+    discussion at
+    <span tal:replace="context/title">Ubuntu Below Zero</span>. You can
+    check the list of specifications previously declined using the links
+    to the right of this page.</i>
   </p>
 
   <form tal:attributes="action request/URL" method="POST">
 
     <table tal:condition="view/count">
       <tbody>
-        <tr tal:repeat="spec view/specs">
+        <tr tal:repeat="speclink view/speclinks">
           <td>
-            <input type="checkbox" name="specification"
+            <input type="checkbox" name="speclink"
                    tal:attributes="
-                     value spec/name;
-                     id string:spec_${spec/name}" />
+                     value speclink/id;
+                     id string:speclink_${speclink/id}" />
           </td>
           <td class="lesser">
-            <label tal:attributes="for string:spec_${spec/name}">
+            <label tal:attributes="for string:speclink_${speclink/id}">
               <img src="/@@/spec" />
-              <span tal:replace="spec/title">fix-it</span>
+              <span tal:replace="speclink/specification/title">fix-it</span>
             </label>
             
-            <div tal:content="spec/summary"
+            <div tal:content="speclink/specification/summary"
                  class="lesser discreet" />
           </td>
         </tr>

@@ -73,6 +73,13 @@ class ISprint(IHasOwner, IHasSpecifications):
         priority, highest first.
         """
 
+    def getSpecificationLink(id):
+        """Return the specification link for this sprint that has the given
+        ID. We use the naked ID because there is no unique name for a spec
+        outside of a single product or distro, and a sprint can cover
+        multiple products and distros.
+        """
+
     # subscription-related methods
     def attend(person, time_starts, time_ends):
         """Record that this person will be attending the Sprint."""

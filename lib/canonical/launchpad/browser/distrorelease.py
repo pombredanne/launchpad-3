@@ -160,7 +160,7 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
         return Link('+setgoals', text, icon='info')
 
     def table(self):
-        text = 'Assignments Table'
+        text = 'Assignments'
         summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, icon='info')
 

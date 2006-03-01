@@ -513,6 +513,8 @@ person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
 person_review = ContextDisplayName("Review %s")
 
+person_specworkload = ContextDisplayName('Specification workload for %s')
+
 person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
 person_translations = ContextDisplayName('Translations made by %s')
@@ -810,6 +812,8 @@ sprint_index = ContextTitle('%s (sprint or meeting)')
 sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
+
+sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 

@@ -798,6 +798,7 @@ COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is s
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
 COMMENT ON COLUMN Specification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
 COMMENT ON COLUMN Specification.delivery IS 'The implementation status of this specification. This field is used to track the actual delivery of the feature, as opposed to the definition of expected behaviour.';
+COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';

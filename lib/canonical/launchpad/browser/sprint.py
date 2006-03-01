@@ -5,12 +5,14 @@
 __metaclass__ = type
 __all__ = [
     'SprintFacets',
-    'SprintContextMenu',
+    'SprintOverviewMenu',
+    'SprintSpecificationsMenu',
     'SprintSetContextMenu',
     'SprintSetNavigation',
     'SprintView',
     'SprintAddView',
     'SprintEditView',
+    'SprintTopicSetView',
     ]
 
 from zope.component import getUtility
@@ -24,58 +26,64 @@ from canonical.lp.dbschema import SprintSpecificationStatus
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
-    StandardLaunchpadFacets)
+    ApplicationMenu, StandardLaunchpadFacets)
 
 
 class SprintFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an ISprint."""
 
     usedfor = ISprint
-    enable_only = ['overview']
+    enable_only = ['overview', 'specifications']
+
+    def specifications(self):
+        target = '+specs'
+        text = 'Specifications'
+        summary = 'Topics for discussion at %s' % self.context.title
+        return Link(target, text, summary)
 
 
-class SprintContextMenu(ContextMenu):
+class SprintOverviewMenu(ApplicationMenu):
 
     usedfor = ISprint
-    links = ['attendance', 'registration',
-             'all', 'confirmed', 'deferred', 'submitted',
-             'workload', 'table', 'edit']
+    facet = 'overview'
+    links = ['attendance', 'registration', 'edit']
 
     def attendance(self):
         text = 'Register Yourself'
-        return Link('+attend', text, icon='add')
+        summary = 'Register as an attendee of the meeting'
+        return Link('+attend', text, summary, icon='add')
 
     def registration(self):
         text = 'Register Someone'
-        return Link('+register', text, icon='add')
-
-    def workload(self):
-        text = 'Workload'
-        return Link('+workload', text, icon='info')
-
-    def table(self):
-        text = 'Assignments'
-        return Link('+specroles', text, icon='info')
+        summary = 'Register someone else to attend the meeting'
+        return Link('+register', text, summary, icon='add')
 
     def edit(self):
         text = 'Edit Details'
-        return Link('+edit', text, icon='edit')
+        summary = 'Modify the meeting description, dates or title'
+        return Link('+edit', text, summary, icon='edit')
 
-    def confirmed(self):
-        text = 'Confirmed Topics'
-        return Link('.', text, icon='info')
 
-    def all(self):
-        text = 'All Topics'
-        return Link('./?show=all', text, icon='info')
+class SprintSpecificationsMenu(ApplicationMenu):
+
+    usedfor = ISprint
+    facet = 'specifications'
+    links = ['assignments', 'deferred', 'settopics']
+
+    def assignments(self):
+        text = 'Assignments'
+        summary = 'View the specification assignments'
+        return Link('+assignments', text, summary, icon='info')
 
     def deferred(self):
         text = 'Deferred Topics'
-        return Link('./?show=deferred', text, icon='info')
+        summary = 'Show topics that were not accepted for discussion'
+        return Link('+specs?show=deferred', text, summary, icon='info')
 
-    def submitted(self):
-        text = 'New Topics'
-        return Link('./?show=submitted', text, icon='info')
+    def settopics(self):
+        text = 'Set Topics'
+        summary = 'Approve or defer topics for discussion'
+        return Link('+settopics', text, summary, icon='edit')
 
 
 class SprintSetNavigation(GetitemNavigation):
@@ -183,4 +191,95 @@ class SprintEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class SprintTopicSetView:
+
+    def __init__(self, context, request):
+        """A custom little view class to process the results of this unusual
+        page. It is unusual because we want to display multiple objects with
+        checkboxes, then process the selected items, which is not the usual
+        add/edit metaphor."""
+        self.context = context
+        self.request = request
+        self.process_status = None
+        self._count = None
+        self._speclinks = None
+
+    @property
+    def speclinks(self):
+        """Return the specification links with SUBMITTED status this sprint.
+
+        For the moment, we just filter the list in Python.
+        """
+        if self._speclinks is not None:
+            return self._speclinks
+        speclinks = list(self.context.specificationLinks())
+        self._speclinks = [speclink for speclink in speclinks
+            if speclink.status == SprintSpecificationStatus.SUBMITTED]
+        return self._speclinks
+
+    @property
+    def count(self):
+        """Return the number of specifications to be listed."""
+        if self._count is not None:
+            return self._count
+        self._count = len(self.speclinks)
+        return self._count
+
+    def process_form(self):
+        """Largely copied from webapp/generalform.py, without the
+        schema processing bits because we are not rendering the form in the
+        usual way. Instead, we are creating our own form in the page
+        template and interpreting it here.
+        """
+
+        if self.process_status is not None:
+            # We've been called before. Just return the status we previously
+            # computed.
+            return self.process_status
+
+        if 'cancel' in self.request:
+            self.process_status = 'Cancelled'
+            self.request.response.redirect(canonical_url(self.context)+'/+specs')
+            return self.process_status
+
+        if "FORM_SUBMIT" not in self.request:
+            self.process_status = ''
+            return self.process_status
+
+        if self.request.method == 'POST':
+            if 'speclink' not in self.request:
+                self.process_status = ('Please select specifications '
+                                       'to accept or decline.')
+                return self.process_status
+            # determine if we are accepting or declining
+            if self.request.form.get('FORM_SUBMIT', None) == 'Accept':
+                action = 'Accepted'
+            else:
+                action = 'Declined'
+
+        selected_specs = self.request['speclink']
+        if isinstance(selected_specs, unicode):
+            # only a single item was selected, but we want to deal with a
+            # list for the general case, so convert it to a list
+            selected_specs = [selected_specs,]
+        
+        number_done = 0
+        import pdb; pdb.set_trace()
+        for sprintspec_id in selected_specs:
+            sprintspec = self.context.getSpecificationLink(sprintspec_id)
+            if action == 'Accepted':
+                sprintspec.status = SprintSpecificationStatus.CONFIRMED
+            else:
+                sprintspec.status = SprintSpecificationStatus.DEFERRED
+            number_done += 1
+
+        self.process_status = '%s %d specification(s).' % (action, number_done)
+
+        if self.count == 0:
+            # they are all done, so redirect back to the spec listing page
+            self.request.response.redirect(canonical_url(self.context)+'/+specs')
+
+        return self.process_status
 

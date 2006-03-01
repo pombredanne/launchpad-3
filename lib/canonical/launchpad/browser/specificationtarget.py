@@ -9,10 +9,11 @@ __all__ = [
     ]
 
 from canonical.lp.dbschema import (
-    SpecificationSort, SpecificationStatus, SpecificationGoalStatus)
+    SpecificationSort, SpecificationStatus, SprintSpecificationStatus,
+    SpecificationGoalStatus)
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProductSeries, IDistroRelease)
+    ISprint, IPerson, IProductSeries, IDistroRelease)
 
 from canonical.launchpad.webapp import GeneralFormView
 
@@ -24,7 +25,6 @@ class SpecificationTargetView:
         self.request = request
         self._plan = None
         self._dangling = None
-        self._workload = None
         self._categories = None
         self._count = None
         self._specs = None
@@ -111,9 +111,22 @@ class SpecificationTargetView:
                 specs = [spec for spec in specs
                     if spec.goalstatus == SpecificationGoalStatus.ACCEPTED]
 
+        elif ISprint.providedBy(self.context):
+            # process this as if it were a sprint
+
+            spec_links = list(self.context.specificationLinks())
+
+            # filter based on whether the topics were deferred or accepted
+            if show == 'deferred':
+                specs = [spec_link.specification for spec_link in spec_links
+                    if spec_link.status == SprintSpecificationStatus.DEFERRED]
+            else:
+                specs = [spec_link.specification for spec_link in spec_links
+                    if spec_link.is_confirmed is True]
+
         else:
             # This is neither a person, nor a distrorelease, nor a product
-            # series spec listing
+            # series spec listing, nor a sprint
             specs = list(self.context.specifications())
 
             # now we want to filter the list based on whether or not we are
@@ -126,12 +139,18 @@ class SpecificationTargetView:
         return self._specs
 
     @property
+    def count(self):
+        """Return the number of specs in this view."""
+        if self._count is None:
+            self._count = len(self.specs)
+        return self._count
+
+    @property
     def categories(self):
         """This organises the specifications related to this target by
         "category", where a category corresponds to a particular spec
         status. It also determines the order of those categories, and the
-        order of the specs inside each category. This is used for the +specs
-        view.
+        order of the specs inside each category.
 
         It is also used in IPerson, which is not an ISpecificationTarget but
         which does have a IPerson.specifications. In this case, it will also
@@ -161,15 +180,6 @@ class SpecificationTargetView:
         categories = categories.values()
         self._categories = sorted(categories, key=lambda a: a['status'].value)
         return self._categories
-
-    @property
-    def count(self):
-        """Return the number of specs in this view."""
-        if self._count is None:
-            # specs is a property; generating the spec list will as a
-            # side-effect set self._count.
-            speclist = self.specs
-        return self._count
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This
@@ -236,81 +246,5 @@ class SpecificationTargetView:
                 dangling.append(spec)
         self._plan = plan
         self._dangling = dangling
-
-    def workload(self):
-        """This code is copied in large part from browser/sprint.py. It may
-        be worthwhile refactoring this to use a common code base.
-        
-        Return a structure that lists people, and for each person, the
-        specs at on this target that for which they are the approver, the
-        assignee or the drafter."""
-
-        if self._workload is not None:
-            return self._workload
-
-        class MySpec:
-            def __init__(self, spec, user):
-                self.spec = spec
-                self.assignee = False
-                self.drafter = False
-                self.approver = False
-                if spec.assignee == user:
-                    self.assignee = True
-                if spec.drafter == user:
-                    self.drafter = True
-                if spec.approver == user:
-                    self.approver = True
-
-        class Group:
-            def __init__(self, person):
-                self.person = person
-                self.specs = set()
-
-            def by_priority(self):
-                return sorted(self.specs, key=lambda a: a.spec.priority,
-                    reverse=True)
-
-            def add_spec(self, spec):
-                for curr_spec in self.specs:
-                    if curr_spec.spec == spec:
-                        return
-                self.specs.add(MySpec(spec, self.person))
-
-        class Report:
-            def __init__(self):
-                self.contents = {}
-
-            def _getGroup(self, person):
-                group = self.contents.get(person.browsername, None)
-                if group is not None:
-                    return group
-                group = Group(person)
-                self.contents[person.browsername] = group
-                return group
-
-            def process(self, spec):
-                """Make sure that this Report.contents has a Group for each
-                person related to the spec, and that Group has the spec in
-                the relevant list.
-                """
-                if spec.assignee is not None:
-                    group = self._getGroup(spec.assignee)
-                    group.add_spec(spec)
-                if spec.drafter is not None:
-                    self._getGroup(spec.drafter).add_spec(spec)
-                if spec.approver is not None:
-                    self._getGroup(spec.approver).add_spec(spec)
-
-            def results(self):
-                return [self.contents[key]
-                    for key in sorted(self.contents.keys())]
-
-        report = Report()
-        for spec in self.specs:
-            report.process(spec)
-
-        self._workload = report.results()
-        return self._workload
-
 
 
