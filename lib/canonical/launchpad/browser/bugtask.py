@@ -488,6 +488,17 @@ class BugTaskEditView(GeneralFormView):
         changed = applyWidgetsChanges(
             self, self.schema, target=bugtask, names=self.fieldNames)
 
+        if bugtask_before_modification.bugwatch != bugtask.bugwatch:
+            #XXX: Reset the bug task's status information. The right
+            #     thing would be to convert the bug watch's status to a
+            #     Malone status, but it's not trivial to do at the
+            #     moment. I will fix this later.
+            #     -- Bjorn Tillenius, 2006-03-01
+            bugtask.status = None
+            bugtask.priority = None
+            bugtask.severity = None
+            bugtask.assignee = None
+
         comment_on_change = self.request.form.get("comment_on_change")
 
         # The statusexplanation field is being display as a "Comment on most
