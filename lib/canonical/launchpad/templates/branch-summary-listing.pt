@@ -1,9 +1,6 @@
 <p>
 <img src="/@@/lock_icon.gif" />
 <b><a tal:attributes="href context/fmt:url" tal:content="view/display_name">Mozilla Thunderbird 0.9.1</a></b>
-    <span tal:condition="not: context/title" tal:content="view/url"
-        tal:omit-tag="">http://example.url/blah/blah</span>
-</a></b>
 - <img src="/@@/user.gif" />
   <a tal:condition="not: context/author"
      tal:attributes="href context/owner/fmt:url"
