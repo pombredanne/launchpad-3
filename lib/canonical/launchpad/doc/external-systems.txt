@@ -115,8 +115,8 @@ from a bug task.
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
-    >>> print thunderbird_task.status.title
-    Unconfirmed
+    >>> print thunderbird_task.status is None
+    True
     >>> thunderbird_task.bugwatch.remotestatus is None
     True
 
@@ -137,5 +137,3 @@ synced:
     Confirmed
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
-
-XXX: Here we should check that a notification was sent.

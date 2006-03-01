@@ -81,7 +81,7 @@
                   Priority
                 </label>
               </td>
-              <td tal:condition="view/milestone_widget">
+              <td tal:condition="context/milestone">
                 <label tal:attributes="for view/milestone_widget/name"
                        tal:content="view/milestone_widget/label">
                   Target
@@ -92,8 +92,9 @@
               <td tal:content="structure view/status_widget" />
               <td tal:content="structure view/severity_widget" />
               <td tal:content="structure view/priority_widget" />
-              <td tal:condition="view/milestone_widget" 
-                  tal:content="structure view/milestone_widget" />
+              <td tal:condition="context/milestone"
+                  tal:content="context/milestone/name">
+              </td>
             </tr>
             <tr tal:condition="python:context.distribution or
                                       context.distrorelease">
@@ -107,7 +108,7 @@
             <tr tal:condition="python:context.distribution or
                                       context.distrorelease">
               <td colspan="0"
-                  tal:content="structure view/sourcepackagename_widget" nowrap />
+                  tal:content="context/sourcepackagename/name|nothing" nowrap />
             </tr>
             <tr>
               <td colspan="2">

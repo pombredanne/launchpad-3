@@ -194,25 +194,25 @@ generate_bug_edit_email handles generating the email when a new task
 is added to a bug. To demonstrate what this email looks like, let's
 pretend we had just added task five:
 
-    >>> task_five = getUtility(IBugTaskSet).get(5)
+    >>> ubuntu_mozilla_task = getUtility(IBugTaskSet).get(17)
+    >>> bug_one = getUtility(IBugSet).get(1)
 
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     bug = bug_one,
+    ...     bugurl = "http://www.example.com/bugs/1",
     ...     user = sample_person,
-    ...     added_bugtasks = task_five)
+    ...     added_bugtasks = ubuntu_mozilla_task)
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
-    u'[Bug 2] the new title'
-    >>> print body
+    u'[Bug 1] Firefox does not support SVG'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://.../bugs/2
+    http://.../bugs/1
     <BLANKLINE>
-    Also affects: mozilla-firefox (debian)
-           Severity: Minor
-           Priority: High
-           Assignee: name12 <test@canonical.com>
-             Status: Confirmed
+    Also affects: mozilla-firefox (ubuntu)
+           Severity: Normal
+           Priority: Medium
+             Status: Unconfirmed
 
 Editing a bug task
 ------------------

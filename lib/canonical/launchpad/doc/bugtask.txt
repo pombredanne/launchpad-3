@@ -641,7 +641,7 @@ if we query logged in as a user who can't see that bug).
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=foobar)
     >>> sorted([bugtask.bug.id for bugtask in foobar_maintained_tasks])
-    [1, 4, 5, 7, 9]
+    [1, 4, 5, 7]
 
 Privacy and Launchpad Admins
 ----------------------------

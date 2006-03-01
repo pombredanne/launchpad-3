@@ -1562,10 +1562,10 @@ INSERT INTO karma (id, datecreated, person, "action") VALUES (18, '2030-10-28 09
 INSERT INTO karma (id, datecreated, person, "action") VALUES (19, '2030-10-28 09:11:07.93721', 16, 8);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (20, '2030-11-02 15:14:22.177596', 12, 22);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (21, '2030-11-02 15:14:22.177596', 12, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (22, '2006-02-23 16:42:14.080227', 16, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (23, '2006-02-23 16:42:40.288553', 12, 17);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (24, '2006-02-23 16:43:25.744534', 12, 21);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (25, '2006-02-23 16:43:25.744534', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (22, '2030-02-23 16:42:14.080227', 16, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (23, '2030-02-23 16:42:40.288553', 12, 17);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (24, '2030-02-23 16:43:25.744534', 12, 21);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (25, '2030-02-23 16:43:25.744534', 12, 9);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;

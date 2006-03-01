@@ -369,7 +369,7 @@ def generate_bug_edit_email(bug_delta):
             added_bugtasks = [bug_delta.added_bugtasks]
 
         for added_bugtask in added_bugtasks:
-            body += u"Also affects: %s" % added_bugtask.targetname
+            body += u"Also affects: %s\n" % added_bugtask.targetname
             if IRemoteBugTask.providedBy(added_bugtask):
                 continue
             body += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)

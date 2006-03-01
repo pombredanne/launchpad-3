@@ -708,7 +708,6 @@ A notification was sent to all the bug's subscribers, and to dilys:
     Public bug report changed:
     ...
     Also affects: Debian
-    ...
 
 
 Submitting the same thing again doesn't do anything, since the task

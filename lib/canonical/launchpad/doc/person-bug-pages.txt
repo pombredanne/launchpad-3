@@ -87,7 +87,7 @@ with any severity.
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
      (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL'),
-     (9, 'CONFIRMED', 'NORMAL'), (9, 'UNCONFIRMED', 'NORMAL')]
+     (9, 'CONFIRMED', 'NORMAL')]
 
 The advanced search allows us to query only the bug tasks with severity
 Normal, Major and Critical.
@@ -99,7 +99,7 @@ Normal, Major and Critical.
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL'),
-     (9, 'CONFIRMED', 'NORMAL'), (9, 'UNCONFIRMED', 'NORMAL')]
+     (9, 'CONFIRMED', 'NORMAL')]
 
 Bugs for Bug Contact
 --------------------
