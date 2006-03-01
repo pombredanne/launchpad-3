@@ -281,6 +281,10 @@ which the bug has not yet been reported.
 >>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
 >>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
+Viewing a distrorelease bugtask that is assigned to a milestone:
+
+>>> check("/distros/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus")
+
 The bug filing pages.
 
 >>> check("/products/firefox/+filebug", auth=True)
