@@ -135,53 +135,6 @@ class BranchView(LaunchpadView):
             else:
                 return '(this branch has neither title nor summary)'
 
-    def _unique_name(self):
-        """Unique name of the branch, including the owner and product names."""
-        return u'~%s/%s/%s' % (
-            self.context.owner.name,
-            self.context.product_name,
-            self.context.name)
-
-    def supermirror_url(self):
-        """Public URL of the branch on the Supermirror."""
-        return config.launchpad.supermirror_root + self._unique_name()
-
-    def display_name(self):
-        """The branch title if provided, or the unique_name."""
-        if self.context.title:
-            return self.context.title
-        else:
-            return self._unique_name()
-
-    def edit_link_url(self):
-        """Target URL of the Edit link used in the actions portlet."""
-        # XXX: that should go away when bug #5313 is fixed.
-        #  -- DavidAllouche 2005-12-02
-        linkdata = BranchContextMenu(self.context).edit()
-        return '%s/%s' % (canonical_url(self.context), linkdata.target)
-
-    def url(self):
-        """URL where the branch can be checked out.
-
-        This is the URL set in the database, or the Supermirror URL.
-        """
-        if self.context.url:
-            return self.context.url
-        else:
-            return self.supermirror_url()
-
-    def missing_title_or_summary_text(self):
-        if self.context.title:
-            if self.context.summary:
-                return None
-            else:
-                return '(this branch has no summary)'
-        else:
-            if self.context.summary:
-                return '(this branch has no title)'
-            else:
-                return '(this branch has neither title nor summary)'
-
 
 class BranchEditView(SQLObjectEditView):
     def __init__(self, context, request):

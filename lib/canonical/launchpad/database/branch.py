@@ -12,7 +12,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.config import config
 from canonical.launchpad.interfaces import IBranch, IBranchSet
 from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
