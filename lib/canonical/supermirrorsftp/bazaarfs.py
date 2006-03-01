@@ -140,6 +140,10 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         # XXX AndrewBennetts 2006-02-06: Same comment as
         # SFTPServerUserDir.createDirectory (see
         # http://twistedmatrix.com/bugs/issue1223)
+        # XXX AndrewBennetts 2006-03-01: We should ensure that if createBranch
+        # fails for some reason (e.g. invalid name), that we report a useful
+        # error to the client.  See
+        # https://launchpad.net/products/launchpad/+bug/33223
         deferred = self.avatar.createBranch(self.userID, self.productID,
                                             childName)
         def cb(branchID):
