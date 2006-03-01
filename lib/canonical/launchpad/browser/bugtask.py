@@ -412,6 +412,14 @@ class BugTaskEditView(GeneralFormView):
         """
         if IRemoteBugTask.providedBy(self.context):
             edit_field_names = ['bugwatch']
+            if not IUpstreamBugTask.providedBy(self.context):
+                #XXX: Should be possible to edit the product as well,
+                #     but that's harder due to complications with bug
+                #     watches. The new product might use Malone
+                #     officially, thus we need to handle that case.
+                #     Let's deal with that later.
+                #     -- Bjorn Tillenius, 2006-03-01
+                edit_field_names += ['sourcepackagename', 'binarypackagename']
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
