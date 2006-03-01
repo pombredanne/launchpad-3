@@ -30,8 +30,7 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductSupportMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu ProductCodeMenu
-            ProductSetContextMenu
+            ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
             "
             />
 
@@ -130,7 +129,7 @@
         permission="zope.Public">
         <browser:page
             name="+branches"
-            facet="code"
+            facet="overview"
             template="../templates/branchtarget-branches.pt" />
     </browser:pages>
 
@@ -191,19 +190,19 @@
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="screenshotsurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="wikiurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="downloadurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
     </browser:editform>
 
     <browser:editform
@@ -264,12 +263,12 @@
         arguments=""
         keyword_arguments="title comment private"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-add.pt"
+        template="../templates/bugtarget-filebug.pt"
         lp:url="/products/$Product.name/+filebug">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="50"
+           displayWidth="30"
            extra="tabindex=1" />
         <browser:widget
            field="comment"
@@ -349,7 +348,7 @@
         <browser:widget
            field="summary"
            class="zope.app.form.browser.TextAreaWidget"
-           displayWidth="40"
+           displayWidth="30"
            extra="tabindex=3" />
     </browser:addform>
 
@@ -357,24 +356,24 @@
         name="+addbranch"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBranch"
-        fields="name owner author product title url home_page lifecycle_status summary"
+        fields="product name owner lifecycle_status url title summary home_page author"
         class="canonical.launchpad.browser.BranchAddView"
-        facet="code"
+        facet="overview"
         keyword_arguments="name owner author product title url home_page lifecycle_status summary"
         permission="launchpad.AnyPerson"
         template="../templates/product-branch-add.pt">
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"
-            displayWidth="65" />
+            displayWidth="30" />
         <browser:widget
             field="home_page"
             class="zope.app.form.browser.TextWidget"
-            displayWidth="65" />
+            displayWidth="30" />
         <browser:widget
             field="title"
             class="zope.app.form.browser.TextWidget"
-            displayWidth="65" />
+            displayWidth="30" />
         <browser:widget
             field="summary"
             class="zope.app.form.browser.TextAreaWidget"
@@ -457,19 +456,19 @@
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="screenshotsurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="wikiurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
         <browser:widget
            field="downloadurl"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="60" />
+           displayWidth="30" />
     </browser:addform>
 
 </configure>

@@ -2,18 +2,18 @@
   <tbody>
     <tr>
       <td class="icon left">
-        <img alt="" src="/++resource++spec" />
+        <img alt="" src="/@@/spec" />
       </td>
       <td>
         <strong><a tal:attributes="href context/fmt:url"
         tal:content="context/title">Spec Title Here</a></strong>
 <tal:block condition="context/milestone">
-  <img src="/++resource++target" />&nbsp;<a
+  <img src="/@@/target" />&nbsp;<a
      tal:attributes="href context/milestone/fmt:url"
      tal:content="context/milestone/name">colony3</a>
 </tal:block>
 <tal:block condition="context/assignee">
-  (<img src="/++resource++user.gif" />&nbsp;<a
+  (<img src="/@@/user.gif" />&nbsp;<a
       tal:attributes="href context/assignee/fmt:url"
       tal:content="context/assignee/browsername">Foo Bar</a>)
 </tal:block>
@@ -36,7 +36,7 @@
     summary here
   </span>
   <tal:block condition="context/specurl">
-    <img src="/++resource++link" />
+    <img src="/@@/link" />
     <a tal:attributes="href context/specurl">Web Page</a>.
   </tal:block>
   <i tal:condition="context/whiteboard"

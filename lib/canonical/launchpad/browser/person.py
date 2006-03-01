@@ -72,8 +72,7 @@ from canonical.launchpad.interfaces import (
     IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
     UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
 
-from canonical.launchpad.browser.bugtask import (
-    BugTaskSearchListingView, AdvancedBugTaskSearchView)
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
@@ -395,7 +394,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editwikinames', 'editircnicknames', 'editjabberids',
-             'editpassword', 'edithackergotchi', 'editsshkeys', 'editgpgkeys',
+             'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
@@ -452,8 +451,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def editgpgkeys(self):
-        target = '+editgpgkeys'
+    def editpgpkeys(self):
+        target = '+editpgpkeys'
         text = 'Edit OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
@@ -614,12 +613,12 @@ class FOAFSearchView:
         if not name:
             return None
 
-        if searchfor == "all":
-            results = getUtility(IPersonSet).find(name)
-        elif searchfor == "peopleonly":
+        if searchfor == "peopleonly":
             results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
             results = getUtility(IPersonSet).findTeam(name)
+        else:
+            results = getUtility(IPersonSet).find(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
@@ -653,6 +652,7 @@ class PersonRdfView:
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
 
+
 def userIsActiveTeamMember(team):
     """Return True if the user is an active member of this team."""
     user = getUtility(ILaunchBag).user
@@ -661,46 +661,39 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
-    """A Base view class to be used by all bug listings on a person page.
-    
-    All bug listings on a person page are in some way related to that person.
-    This means that this person (our context) has to be in the
-    BugTaskSearchParams that will be given to the searchTasks() method. To do
-    this, subclasses must define an context_parameter class variable whose 
-    value should be either 'owner', 'subscriber' or 'assignee'.
-
-    Please note this is a base class that is not meant to be used as a view
-    class. Instead, you should derive from it and use the derived class.
-    """
-
-    context_parameter = None
-
-    def getExtraSearchParams(self):
-        assert self.context_parameter is not None
-        params = AdvancedBugTaskSearchView.getExtraSearchParams(self)
-        params[self.context_parameter] = self.context
-        return params
-
-    def hasSimpleMode(self):
-        return True
-
-    def shouldShowAdvancedSearchWidgets(self):
-        """Return True if this view's advanced form should be shown."""
-        form = self.request.form
-        if form.get('advanced') and not form.get('simple'):
-            return True
-        return False
-
-
-class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
+class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
-    context_parameter = 'owner'
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'owner': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Reported by %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs reported by %s" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+reportedbugs"
+
+    def shouldShowReporterWidget(self):
+        """Should the reporter widget be shown on the advanced search page?"""
+        return False
 
 
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug contact."""
+
+    columns_to_show = ["id", "summary", "importance", "status"]
 
     @property
     def current_package(self):
@@ -767,7 +760,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return search_params
 
     def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
-                                      extra_params=None):
+                                      advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
 
         Optional filter parameters can be specified as a dict with the
@@ -793,7 +786,15 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         person_url = canonical_url(self.context)
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
-        return person_url + '/+packagebugs-search?%s' % query_string
+        if advanced:
+            return person_url + '/+packagebugs-advanced?%s' % query_string
+        else:
+            return person_url + '/+packagebugs-search?%s' % query_string
+
+    def getBugContactPackageAdvancedSearchURL(self,
+                                              distributionsourcepackage=None):
+        """Construct the advanced search URL for a distributionsourcepackage."""
+        return self.getBugContactPackageSearchURL(advanced=True)
 
     def getOpenBugsURL(self, distributionsourcepackage):
         """Return the URL for open bugs on distributionsourcepackage."""
@@ -845,21 +846,61 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return False
 
 
-class PersonAssignedBugTaskSearchListingView(
-        BasePersonBugTaskSearchListingView):
+class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
     context_parameter = 'assignee'
 
-    def shouldShowAssignee(self):
-        """Should we show the assignee in the list of results?"""
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        """Return the open bugs assigned to a person."""
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'assignee': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def shouldShowAssigneeWidget(self):
+        """Should the assignee widget be shown on the advanced search page?"""
         return False
 
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Assigned to %s: Advanced Search" % (
+            self.context.displayname)
 
-class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs assigned to %s" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+assignedbugs"
+
+
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
-    context_parameter = 'subscriber'
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'subscriber': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs %s is Cc'd to: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs %s is Cc'd to" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+subscribedbugs"
 
 
 class PersonView:
