@@ -8,13 +8,12 @@ __all__ = [
     'ISourcePackage',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
+from zope.interface import Attribute
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.tickettarget import ITicketTarget
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 
-_ = MessageIDFactory('launchpad')
 
 class ISourcePackage(IBugTarget, ITicketTarget):
     """A SourcePackage. See the MagicSourcePackage specification. This
