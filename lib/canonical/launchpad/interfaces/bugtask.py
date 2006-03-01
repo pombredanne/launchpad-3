@@ -8,9 +8,7 @@ __all__ = [
     'IBugTask',
     'INullBugTask',
     'IBugTaskSearch',
-    'IUpstreamBugTaskSearch',
     'IAddBugTaskForm',
-    'IDistroBugTaskSearch',
     'IPersonBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
@@ -184,29 +182,26 @@ class IBugTaskSearch(Interface):
         title=_('Severity:'),
         value_type=IBugTask['severity'],
         required=False)
+    priority = List(
+        title=_('Priority:'),
+        value_type=IBugTask['priority'],
+        required=False)
     assignee = Choice(
         title=_('Assignee:'), vocabulary='ValidAssignee', required=False)
-    unassigned = Bool(title=_('Unassigned bugs only'), required=False)
-    include_dupes = Bool(title=_('Include duplicate bugs'), required=False)
+    owner = Choice(
+        title=_('Reporter:'), vocabulary='ValidAssignee', required=False)
+    omit_dupes = Bool(
+        title=_('Omit duplicate bugs'), required=False,
+        default=True)
     statusexplanation = TextLine(
         title=_("Status notes:"), required=False)
-    attachmenttype = List(
-        title=_('Attachment:'),
-        value_type=IBugAttachment['type'],
-        required=False)
-
-
-class IUpstreamBugTaskSearch(IBugTaskSearch):
-    """The schema used by the bug task search form of a product."""
+    has_patch = Bool(
+        title=_('Show only bugs with patches available'), required=False,
+        default=False)
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
         title=_('Target:'), value_type=IBugTask['milestone'], required=False)
-
-
-class IDistroBugTaskSearch(IBugTaskSearch):
-    """The schema used by the bug task search form of a distribution or
-    distribution release."""
 
 
 class IPersonBugTaskSearch(IBugTaskSearch):

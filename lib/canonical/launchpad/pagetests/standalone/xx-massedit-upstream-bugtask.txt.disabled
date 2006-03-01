@@ -1,3 +1,6 @@
+XXX: Brad Bollenbach, 2006-02-27: Reenable this test after the dust has settled
+on the new bug list formatting.
+
 Check so that a Foo Bar which is the member of the maintainer team
 sees the checkboxes.
 

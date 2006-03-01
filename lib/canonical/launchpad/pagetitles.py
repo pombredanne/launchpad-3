@@ -174,6 +174,8 @@ def bugs_assigned(context, view):
     else:
         return 'No-one to display bugs for'
 
+bugtarget_advanced_search = ContextTitle("Search bugs in %s")
+
 bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
@@ -353,6 +355,8 @@ errorservice_index = 'Error log report'
 
 errorservice_tbentry = 'Traceback entry'
 
+faq = 'Launchpad Frequently Asked Questions'
+
 foaf_adminrequestmerge = 'Merge Launchpad accounts'
 
 foaf_mergerequest_sent = 'Merge request sent'
@@ -400,11 +404,7 @@ launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Error: Page not found'
 
-launchpad_oops = 'Error: Oops'
-
 launchpad_requestexpired = 'Error: Timeout'
-
-launchpad_faq = 'Launchpad Frequently Asked Questions'
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -455,6 +455,8 @@ milestone_edit = ContextTitle('Edit %s')
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
+
+oops = 'Oops!'
 
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
