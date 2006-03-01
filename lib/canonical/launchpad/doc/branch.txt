@@ -280,17 +280,22 @@ True
 >>> from zope.publisher.browser import TestRequest
 
 The branch view generates an appropriate notice when a branch is missing a
-title or summary.
+title or summary. When the title is missing, an appropriate unique display
+name is generated.
 
 >>> new = branchset.new('ok', ddaa, gterm_product, None,
 ...     title='something', summary='something')
 >>> view = getView(new, '+index', TestRequest())
+>>> view.display_name()
+u'something'
 >>> view.missing_title_or_summary_text() is None
 True
 
 >>> new = branchset.new('no_title', ddaa, gterm_product, None,
 ...     title=None, summary='something')
 >>> view = getView(new, '+index', TestRequest())
+>>> view.display_name()
+u'~ddaa/gnome-terminal/no_title'
 >>> view.missing_title_or_summary_text()
 '(this branch has no title)'
 
