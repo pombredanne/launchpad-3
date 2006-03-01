@@ -266,7 +266,6 @@ class SprintTopicSetView:
             selected_specs = [selected_specs,]
         
         number_done = 0
-        import pdb; pdb.set_trace()
         for sprintspec_id in selected_specs:
             sprintspec = self.context.getSpecificationLink(sprintspec_id)
             if action == 'Accepted':
