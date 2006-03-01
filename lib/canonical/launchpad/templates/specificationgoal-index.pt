@@ -47,9 +47,11 @@
                      id string:spec_${spec/name}" />
           </td>
           <td class="lesser">
-            <label tal:content="spec/title"
-                   tal:attributes="
-                     for string:spec_${spec/name}">fix-it</label>
+            <label tal:attributes="for string:spec_${spec/name}">
+              <img src="/@@/spec" />
+              <span tal:replace="spec/title">fix-it</span>
+            </label>
+            
             <div tal:content="spec/summary"
                  class="lesser discreet" />
           </td>

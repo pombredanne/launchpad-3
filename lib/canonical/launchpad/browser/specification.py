@@ -244,7 +244,11 @@ class SpecificationEditView(SQLObjectEditView):
 class SpecificationReleaseView(GeneralFormView):
 
     def process(self, distrorelease=None, whiteboard=None):
-        import pdb; pdb.set_trace()
+        if distrorelease != self.context.distrorelease:
+            self.context.distrorelease = distrorelease
+            self.context.targetstatus = SpecificationTargetStatus.PROPOSED
+        self.whiteboard = whiteboard
+        self._nextURL = canonical_url(self.context)
         return 'Done!'
 
 
