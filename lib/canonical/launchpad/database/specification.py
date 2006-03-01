@@ -163,7 +163,7 @@ class Specification(SQLBase):
             SpecificationStatus.SUPERSEDED,
             ] or self.delivery in [
             SpecificationDelivery.IMPLEMENTED,
-            SpecificationDelivery.DEPLOYED
+            SpecificationDelivery.AWAITINGDEPLOYMENT
             ]
 
     @property

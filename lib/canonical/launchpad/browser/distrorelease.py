@@ -135,8 +135,7 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'specifications'
-    links = ['listall', 'listapproved', 'listproposed', 'listdeclined',
-             'setgoals', 'roadmap', 'table']
+    links = ['roadmap', 'table', 'setgoals', 'listdeclined',]
 
     def listall(self):
         text = 'Show All'
@@ -152,18 +151,22 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     def listdeclined(self):
         text = 'Show Declined'
+        summary = 'Show the goals which have been declined'
         return Link('+specs?show=declined', text, icon='info')
 
     def setgoals(self):
         text = 'Set Goals'
+        summary = 'Approve or decline feature goals that have been proposed'
         return Link('+setgoals', text, icon='info')
 
     def table(self):
         text = 'Assignments Table'
+        summary = 'Show the assignee, drafter and approver of these specs'
         return Link('+assignments', text, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
+        summary = 'Show the sequence in which specs should be implemented'
         return Link('+roadmap', text, icon='info')
 
 

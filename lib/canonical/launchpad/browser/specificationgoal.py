@@ -66,7 +66,7 @@ class GoalSetView:
 
         if 'cancel' in self.request:
             self.process_status = 'Cancelled'
-            self.request.response.redirect(canonical_url(self.context))
+            self.request.response.redirect(canonical_url(self.context)+'/+specs')
             return self.process_status
 
         if "FORM_SUBMIT" not in self.request:
@@ -102,8 +102,8 @@ class GoalSetView:
         self.process_status = '%s %d specification(s).' % (action, number_done)
 
         if self.count == 0:
-            # they are all done, so redirect back to the spec
-            self.request.response.redirect(canonical_url(self.context))
+            # they are all done, so redirect back to the spec listing page
+            self.request.response.redirect(canonical_url(self.context)+'/+specs')
 
         return self.process_status
 

@@ -726,8 +726,8 @@ tr.highlight {
 .specdeliveryGOOD               {color: Blue; }
 .specdeliveryBETA               {color: Orange; }
 .specdeliveryNEEDSREVIEW        {color: Purple; }
+.specdeliveryAWAITINGDEPLOYMENT {color: Red; }
 .specdeliveryIMPLEMENTED        {color: Green; }
-.specdeliveryDEPLOYED           {color: Green; }
 
 /* Board-like comment CSS */
 

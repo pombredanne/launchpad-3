@@ -28,9 +28,16 @@
      tal:condition="status"
      tal:content="status" />
 
+  <p tal:condition="not: view/count">
+    There are no specifications currently proposed as goals for
+    <span tal:replace="context/displayname">1.0</span>. You can check the
+    list of specifications accepted or declined using the links to the right
+    of this page.
+  </p>
+
   <form tal:attributes="action request/URL" method="POST">
 
-    <table>
+    <table tal:condition="view/count">
       <tbody>
         <tr tal:repeat="spec view/specs">
           <td>
@@ -39,18 +46,18 @@
                      value spec/name;
                      id string:spec_${spec/name}" />
           </td>
-          <td>
+          <td class="lesser">
             <label tal:content="spec/title"
                    tal:attributes="
                      for string:spec_${spec/name}">fix-it</label>
             <div tal:content="spec/summary"
-                 class="lesser" />
+                 class="lesser discreet" />
           </td>
         </tr>
       </tbody>
     </table>
 
-    <div class="discreet">
+    <div tal:condition="view/count" class="discreet">
       Select the specifications that you wish to accept or decline.
     </div>
 

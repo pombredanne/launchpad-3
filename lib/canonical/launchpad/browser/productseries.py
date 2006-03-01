@@ -109,11 +109,15 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
 
 class ProductSeriesSpecificationsMenu(ApplicationMenu):
+    """This menu needs to keep track of whether we are showing all the
+    specs, or just those that are approved/declined/proposed. It should
+    allow you to change the set your are showing while keeping the basic
+    view intact.
+    """
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'listapproved', 'listproposed', 'listdeclined',
-             'setgoals', 'roadmap', 'table']
+    links = ['roadmap', 'table', 'setgoals', 'listdeclined']
 
     def listall(self):
         text = 'Show All'
@@ -129,19 +133,23 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     def listdeclined(self):
         text = 'Show Declined'
-        return Link('+specs?show=declined', text, icon='info')
+        summary = 'Show the goals which have been declined'
+        return Link('+specs?show=declined', text, summary, icon='info')
 
     def setgoals(self):
         text = 'Set Goals'
-        return Link('+setgoals', text, icon='edit')
+        summary = 'Approve or decline feature goals that have been proposed'
+        return Link('+setgoals', text, summary, icon='edit')
 
     def table(self):
-        text = 'Assignments Table'
-        return Link('+assignments', text, icon='info')
+        text = 'Assignments'
+        summary = 'Show the assignee, drafter and approver of these specs'
+        return Link('+assignments', text, summary, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
+        summary = 'Show the sequence in which specs should be implemented'
+        return Link('+roadmap', text, summary, icon='info')
 
 
 
