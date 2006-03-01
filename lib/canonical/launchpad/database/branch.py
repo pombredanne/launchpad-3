@@ -16,6 +16,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import IBranch, IBranchSet
 from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
@@ -126,6 +127,16 @@ class Branch(SQLBase):
         subscription = BranchSubscription.selectOneBy(
             personID=person.id, branchID=self.id)
         return subscription is not None
+
+    @property
+    def pull_url(self):
+        if self.url is None:
+            # XXX spiv 20060120: Perhaps the path prefix should be configurable
+            # rather than hardcoded, but it doesn't vary and only occurs once in
+            # the code.
+            return '/srv/sm-ng/pushsftp-hosted/' + split_branch_id(self.id)
+        else:
+            return self.url
 
 
 class BranchSet:
