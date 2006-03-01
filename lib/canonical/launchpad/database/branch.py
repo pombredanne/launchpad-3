@@ -175,8 +175,6 @@ class BranchSet:
 
     def get_supermirror_pull_queue(self):
         """See IBranchSet.get_supermirror_pull_queue."""
-        supermirror_root = config.launchpad.supermirror_root
-        assert quote(supermirror_root) == quote_like(supermirror_root)
         return Branch.select("(last_mirror_attempt is NULL "
                              " OR (%s - last_mirror_attempt > '1 day'))"
                              % UTC_NOW)
