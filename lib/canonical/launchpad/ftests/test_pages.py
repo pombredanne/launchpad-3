@@ -11,7 +11,7 @@ import sets
 from harness import LaunchpadFunctionalTestSetup
 import sqlos.connection
 
-from canonical.functional import FunctionalDocFileSuite
+from canonical.functional import FunctionalDocFileSuite, SpecialOutputChecker
 from canonical.launchpad.ftests.harness import _disconnect_sqlos
 from canonical.launchpad.ftests.harness import _reconnect_sqlos
 from canonical.librarian.ftests.harness import LibrarianTestSetup
@@ -152,13 +152,16 @@ class PageTest(unittest.TestCase):
         while len(segments) > 0 and segments[:len(modules)] != modules:
             segments.pop(0)
         if not len(segments):
-            raise PageTestError('Test script dir %s not in packages %s' % 
-                                (storydir_or_single_test, self._package))
+            raise PageTestError('Test script dir %s not in packages %s' % (
+                storydir_or_single_test, self._package
+                ))
         relative_dir = '/'.join(segments[len(modules):])
+        checker = SpecialOutputChecker()
         for leaf_filename in test_scripts:
             filename = os.path.join(relative_dir, leaf_filename)
             self._suite.addTest(FunctionalDocFileSuite(
-                filename, setUp=setUp, tearDown=tearDown, package=self._package
+                filename, setUp=setUp, tearDown=tearDown,
+                package=self._package, checker=checker
                 ))
         self._suite.addTest(unittest.makeSuite(EndStory))
 
