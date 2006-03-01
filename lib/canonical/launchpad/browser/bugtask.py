@@ -403,6 +403,13 @@ class BugTaskEditView(GeneralFormView):
         self.comment_on_change_error = ""
 
     def _setUpWidgets(self):
+        """Set up a combination of display and edit widgets.
+
+        Set up the widgets depending on if it's a remote bug task, where
+        only the bug watch should be editable, or if it's a normal
+        bug task, where everything should be editable except for the bug
+        watch.
+        """
         if IRemoteBugTask.providedBy(self.context):
             edit_field_names = ['bugwatch']
             display_field_names = [
@@ -415,12 +422,14 @@ class BugTaskEditView(GeneralFormView):
             self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.milestone_widget = None
         else:
+            # Don't edit self.fieldNames directly. ZCML magic causes
+            # self.fieldNames to be shared by all BugTaskEditView
+            # instances.
             self.fieldNames = list(self.fieldNames)
             self.fieldNames.remove('bugwatch')
             self.bugwatch_widget = None
             display_field_names = []
             edit_field_names = self.fieldNames
-
 
         self.fieldNames = edit_field_names
         setUpWidgets(

@@ -21,7 +21,7 @@ LP_USER_AGENT = "Launchpad Bugscraper/0.1 (http://launchpad.net/malone)"
 
 
 class UnknownBugTrackerTypeError(Exception):
-    """ Exception class to catch systems we don't have a class for yet."""
+    """Exception class to catch systems we don't have a class for yet."""
 
     def __init__(self, bugtrackertypename, bugtrackername):
         self.bugtrackertypename = bugtrackertypename
