@@ -91,12 +91,6 @@
             lp:url="/distros/$Distribution.name/+search"
             />
         <browser:page
-            name="+allpackages"
-            facet="overview"
-            template="../templates/distribution-allpackages.pt"
-            lp:url="/distros/$Distribution.name/+allpackages"
-            />
-        <browser:page
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
@@ -131,7 +125,17 @@
             lp:url="/distros/$distribution/+builds-list"
             />
     </browser:pages>
-    
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionAllPackagesView"
+        permission="zope.Public"
+        name="+allpackages"
+        facet="overview"
+        template="../templates/distribution-allpackages.pt"
+        lp:url="/distros/$Distribution.name/+allpackages"
+        />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         permission="zope.Public" >

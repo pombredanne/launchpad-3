@@ -337,7 +337,8 @@ Maintainer.
 ...            sprelease.version)
 (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
-(u'libstdc++', u'Ubuntu Hoary', u'9.9-1')
+(u'libstdc++', u'Ubuntu Hoary', u'b8p')
+(u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
 
 
 Bug contact packages

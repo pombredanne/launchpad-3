@@ -5,13 +5,15 @@ __all__ = [
     'SourcePackage',
     ]
 
+import apt_pkg
+# apt_pkg requires this sillyness
+apt_pkg.InitSystem()
+
 from warnings import warn
 
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
-
-from sourcerer.deb.version import Version
 
 from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates)
@@ -37,6 +39,11 @@ from canonical.launchpad.database.distributionsourcepackagerelease import \
 from canonical.launchpad.database.distroreleasesourcepackagerelease import \
     DistroReleaseSourcePackageRelease
 from canonical.launchpad.database.build import Build
+
+
+def compare_version(a, b):
+    """Safely compares the version of two source packages"""
+    return apt_pkg.VersionCompare(a.version, b.version)
 
 
 class SourcePackage(BugTargetBase):
@@ -176,7 +183,7 @@ class SourcePackage(BugTargetBase):
 
         # sort by version number
         releases = sorted(shortlist(ret, longest_expected=15),
-            key=lambda item: Version(item.version))
+                          cmp=compare_version)
         return [DistributionSourcePackageRelease(
             distribution=self.distribution,
             sourcepackagerelease=release) for release in releases]
@@ -195,7 +202,7 @@ class SourcePackage(BugTargetBase):
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
 
         # sort by debian version number
-        return sorted(list(ret), key=lambda item: Version(item.version))
+        return sorted(list(ret), cmp=compare_version)
 
     @property
     def name(self):

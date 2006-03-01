@@ -97,7 +97,6 @@ Then we edit the information about the release series.
   HTTP/1.1 303 See Other
   ...
   Location: http://.../products/firefox/+series/unstable
-  ...
 
 
 Finally we test if the edited product release is there

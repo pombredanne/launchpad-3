@@ -1161,3 +1161,7 @@ dl.faq dd {
     margin: 0.5em 1em;
 }
 
+dl.faq ol {
+    margin: 0.5em 3em;
+}
+

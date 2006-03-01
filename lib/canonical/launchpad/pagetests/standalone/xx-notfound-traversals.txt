@@ -128,6 +128,8 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+addspec", auth=True)
 >>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
 >>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
+>>> check("/distros/ubuntu/hoary/+source/pmount")
+>>> check("/distros/ubuntu/hoary/+source/libstdc++")
 >>> check("/distros/ubuntu/hoary/i386/pmount/0.1-1")
 
 >>> check("/distros/ubuntu/+source/evolution/+bugs")

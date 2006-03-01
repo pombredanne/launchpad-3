@@ -219,13 +219,15 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
 
         Raises NotFoundError if it fails to find the named file.
         """
-        
+
     def getPackageNames(pkgname):
         """Find the actual source and binary package names to use when all
         we have is a name, that could be either a source or a binary package
         name. Returns a tuple of (sourcepackagename, binarypackagename)
         based on the current publishing status of these binary / source
-        packages.
+        packages. Raises NotFoundError if it fails to find a package
+        published in the distribution, which can happen for different
+        reasons.
         """
 
 
