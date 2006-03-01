@@ -1,8 +1,7 @@
 <div>
   <small tal:content="structure context/@@+navigation-links" />
 </div>
-<small>
-  <table class="buglisting">
+  <table class="listing sortable" id="buglisting">
     <thead>
       <tr>
         <th tal:condition="context/show_column/id|nothing">ID</th>
@@ -18,8 +17,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="bugtask context/batch"
-          tal:attributes="class python:(repeat['bugtask'].odd() and 'odd') or 'even'">
+      <tr tal:repeat="bugtask context/batch">
         <td tal:content="bugtask/bug/id"
             tal:condition="context/show_column/id|nothing">42</td>
         <td>
@@ -43,7 +41,6 @@
       </tr>
     </tbody>
   </table>
-</small>
-<div style="margin-bottom: 5px">
+<div>
   <small tal:content="structure context/@@+navigation-links" />
 </div>
