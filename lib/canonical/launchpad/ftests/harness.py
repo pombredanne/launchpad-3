@@ -3,9 +3,6 @@
 __metaclass__ = type
 
 import unittest
-from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
-from canonical.functional import FunctionalTestSetup, FunctionalDocFileSuite
-
 from zope.component import getUtility
 from zope.component.exceptions import ComponentLookupError
 from zope.component.servicenames import Utilities
@@ -13,6 +10,11 @@ from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
+from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
+from canonical.functional import (
+        FunctionalTestSetup, FunctionalDocFileSuite,
+        FunctionalLayer, ZopelessLayer
+        )
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 from canonical.lp import initZopeless
@@ -113,12 +115,8 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
                 'Failed to tearDown Zopeless correctly'
         super(LaunchpadZopelessTestSetup, self).tearDown()
 
-from canonical.functional import ZCMLLayer, ftesting_path
-
-LaunchpadFunctional = ZCMLLayer(ftesting_path, __name__, 'LaunchpadFunctional')
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
-    layer = LaunchpadFunctional
     def setUp(self, dbuser=None):
         if dbuser is not None:
             self.dbuser = dbuser
@@ -154,7 +152,8 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
-
+    layer = FunctionalLayer
+    dbuser = None
     def login(self, user=None):
         """Login the current zope request as user.
         
@@ -169,7 +168,6 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         self.dbuser = dbuser
         unittest.TestCase.setUp(self)
         LaunchpadFunctionalTestSetup(dbuser=self.dbuser).setUp()
-        self.zodb_db = FunctionalTestSetup().db
         self.__logged_in = False
 
     def tearDown(self):
@@ -183,3 +181,9 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         return LaunchpadFunctionalTestSetup(dbuser=self.dbuser).connect()
 
 
+class LaunchpadZopelessTestCase(unittest.TestCase):
+    layer = ZopelessLayer
+    def setUp(self):
+        LaunchpadZopelessTestSetup().setUp()
+    def tearDown(self):
+        LaunchpadZopelessTestSetup().tearDown()

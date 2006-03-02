@@ -2,45 +2,84 @@
 
 """Alter the standard functional testing environment for Launchpad."""
 
-__metaclass__ = type
-
 # Import everything so we can override
 import zope.app.testing.functional
 from zope.app.testing.functional import *
 
-from canonical.launchpad.webapp import LaunchpadBrowserRequest
-
-import os.path
-
+import logging
+from zope.testing.loggingsupport import Handler, InstalledHandler
 from zope.app.component.hooks import setSite, getSite
 from zope.component import getUtility
 import zope.security.management
 from zope.publisher.interfaces.http import IHeaderOutput
 
+from canonical.launchpad.webapp import LaunchpadBrowserRequest
 from canonical.publication import LaunchpadBrowserPublication
-from canonical.chunkydiff import elided_source
 from canonical.config import config
 import canonical.launchpad.layers
+from canonical.chunkydiff import elided_source
+from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 
-ftesting_path = os.path.abspath(os.path.join(config.root, 'ftesting.zcml'))
+class FunctionalLayer:
+    def setUp(cls):
+        FunctionalTestSetup()
+    setUp = classmethod(setUp)
 
-Functional = ZCMLLayer(ftesting_path, __name__, 'Functional')
+    def tearDown(cls):
+        raise NotImplementedError
+    tearDown = classmethod(tearDown)
 
-class FunctionalTestSetup(zope.app.testing.functional.FunctionalTestSetup):
-    def __init__(self, config_file=None):
-        """As per zope.app.testing.functional.FunctionalTestSetup.
+class  ZopelessLayer:
+    def setUp(cls):
+        execute_zcml_for_scripts()
+    setUp = classmethod(setUp)
 
-        Overridden to ensure a consistant ftesting.zcml is used.
-        """
-        if config_file is None:
-            config_file = ftesting_path
-        super(FunctionalTestSetup, self).__init__(config_file)
+    def tearDown(cls):
+        raise NotImplementedError
+    tearDown = classmethod(tearDown)
+
+
+class PageTestLayer:
+    '''A Layer for page tests to ensure pagetests are run batched together
+    and to allow easy selection of pagetests by telling the test runner to
+    just run this layer.
+
+    Note that we currently don't inherit from other layers to ensure that
+    the page tests are run in a fresh environment. Once we can ensure
+    that page tests will no longer be vicimized by other tests, we can
+    change this and save a few seconds on a full test suite run.
+    '''
+    def setUp(cls):
+        FunctionalTestSetup()
+    setUp = classmethod(setUp)
+
+    def tearDown(cls):
+        raise NotImplementedError('tearDown not supported to enforce isolation')
+    tearDown = classmethod(tearDown)
+
+
+class SystemDoctestLayer:
+    '''A layer for the system doc tests to enure they are run batched together
+    and to allow easy select of just the system documentation tests by telling
+    the test runner to just run this layer.
+    '''
+    def setUp(cls):
+        pass
+    setUp = classmethod(setUp)
+
+    def tearDown(cls):
+        raise NotImplementedError('tearDown not supported to enforce isolation')
+    tearDown = classmethod(tearDown)
+
+
+Functional = FunctionalLayer # Backwards compatibility with Z3.2
 
 
 class FunctionalTestCase(unittest.TestCase):
     """Functional test case."""
-    layer = Functional
+    layer = FunctionalLayer
     def setUp(self):
         """Prepares for a functional test case."""
         super(FunctionalTestCase, self).setUp()
@@ -53,7 +92,8 @@ class FunctionalTestCase(unittest.TestCase):
 
     def getRootFolder(self):
         """Returns the Zope root folder."""
-        return FunctionalTestSetup().getRootFolder()
+        raise NotImplementedError('getRootFolder')
+        #return FunctionalTestSetup().getRootFolder()
 
     def commit(self):
         commit()
@@ -62,69 +102,105 @@ class FunctionalTestCase(unittest.TestCase):
         abort()
 
 
-def http(request_string, port=9000, handle_errors=True, debug=False):
-    """Execute an HTTP request string via the publisher
+class StdoutWrapper:
+    """A wrapper for sys.stdout.  Writes to this file like object will
+    write to whatever sys.stdout is pointing to at the time.
 
-    This is used for HTTP doc tests.
-
-    XXX: This method should be removed, and the override in
-    FunctionalDocFileSuite removed, once we have removed the ZODB
-    dependancy from zope.app.testing.functional.HTTPCaller
-    -- StuartBishop 20060228
+    The purpose of this class is to allow doctest to capture log
+    messages.  Since doctest replaces sys.stdout, configuring the
+    logging module to send messages to sys.stdout before running the
+    tests will not result in the output being captured.  Using an
+    instance of this class solves the problem.
     """
-    # Commit work done by previous python code.
-    commit()
+    def __getattr__(self, attr):
+        return getattr(sys.stdout, attr)
 
-    # Discard leading white space to make call layout simpler
-    request_string = request_string.lstrip()
 
-    # split off and parse the command line
-    l = request_string.find('\n')
-    command_line = request_string[:l].rstrip()
-    request_string = request_string[l+1:]
-    method, path, protocol = command_line.split()
-    path = urllib.unquote(path)
+class StdoutHandler(Handler):
+    def emit(self, record):
+        Handler.emit(self, record)
+        print >> StdoutWrapper(), '%s:%s:%s' % (
+                    record.levelname, record.name, record.getMessage()
+                    )
 
-    instream = StringIO(request_string)
-    environment = {"HTTP_HOST": 'localhost:%s' % port,
-                   "HTTP_REFERER": 'localhost',
-                   "REQUEST_METHOD": method,
-                   "SERVER_PROTOCOL": protocol,
-                   }
+class MockRootFolder:
+    """Implement the minimum functionality required by Z3 ZODB dependancies
+   
+    Installed as part of the FunctionalDocFileSuite to allow the http()
+    method (zope.app.testing.functional.HTTPCaller) to work.
+    """
+    @property
+    def _p_jar(self):
+        return self
+    def sync(self):
+        pass
 
-    headers = [split_header(header)
-               for header in rfc822.Message(instream).headers]
-    for name, value in headers:
-        name = ('_'.join(name.upper().split('-')))
-        if name not in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
-            name = 'HTTP_' + name
-        environment[name] = value.rstrip()
 
-    old_site = getSite()
-    setSite(None)
-    app = FunctionalTestSetup().getApplication()
+class UnstickyCookieHTTPCaller(HTTPCaller):
+    """HTTPCaller propogates cookies between subsequent requests.
+    This is a nice feature, except it triggers a bug in Launchpad where
+    sending both Basic Auth and cookie credentials raises an exception.
+    XXX: Open a bug on this
+    """
+    def __call__(self, *args, **kw):
+        try:
+            return HTTPCaller.__call__(self, *args, **kw)
+        finally:
+            self.resetCookies()
 
-    if method not in ('GET', 'POST', 'HEAD'):
-        raise RuntimeError("Request method was not GET, POST or HEAD.")
+    def resetCookies(self):
+        self.cookies = SimpleCookie()
 
-    request_cls = LaunchpadBrowserRequest
-    publication_cls = LaunchpadBrowserPublication
 
-    request = app._request(path, instream, environment=environment,
-                           request=request_cls, publication=publication_cls)
-    canonical.launchpad.layers.setFirstLayer(
-        request, canonical.launchpad.layers.PageTestLayer)
-    response = ResponseWrapper(
-            request.response, path,
-            omit=['x-content-type-warning','x-powered-by']
-            )
 
-    if debug:
-        import pdb;pdb.set_trace()
-    publish(request, handle_errors=handle_errors)
-    setSite(old_site)
+def FunctionalDocFileSuite(*paths, **kw):
+    kwsetUp = kw.get('setUp')
 
-    return response
+    # Set stdout_logging keyword argument to True to make
+    # logging output be sent to stdout, forcing doctests to deal with it.
+    if kw.has_key('stdout_logging'):
+        stdout_logging = kw.get('stdout_logging')
+        del kw['stdout_logging']
+    else:
+        stdout_logging = True
+
+    def setUp(test):
+        if kwsetUp is not None:
+            kwsetUp(test)
+        # Fake a root folder to keep Z3 ZODB dependancies happy
+        fs = FunctionalTestSetup()
+        if not fs.connection:
+            fs.connection = fs.db.open()
+        root = fs.connection.root()
+        root[ZopePublication.root_name] = MockRootFolder()
+        # Out tests report being on a different port
+        test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+        if stdout_logging:
+            log = StdoutHandler('')
+            log.setLoggerLevel(logging.INFO)
+            log.install()
+            test.globs['log'] = log
+    kw['setUp'] = setUp
+
+    kwtearDown = kw.get('tearDown')
+    def tearDown(test):
+        if kwtearDown is not None:
+            kwtearDown(test)
+        if stdout_logging:
+            test.globs['log'].uninstall()
+    kw['tearDown'] = tearDown
+
+    suite = zope.app.testing.functional.FunctionalDocFileSuite(*paths, **kw)
+    suite.layer = FunctionalLayer
+    return suite
+
+
+def PageTestDocFileSuite(*paths, **kw):
+    if not kw.get('stdout_logging'):
+        kw['stdout_logging'] = False
+    suite = FunctionalDocFileSuite(*paths, **kw)
+    suite.layer = PageTestLayer
+    return suite
 
 
 class SpecialOutputChecker(doctest.OutputChecker):
@@ -145,39 +221,6 @@ class SpecialOutputChecker(doctest.OutputChecker):
             newgot = got
         return doctest.OutputChecker.output_difference(
             self, example, newgot, optionflags)
-
-
-class StdoutWrapper:
-    """A wrapper for sys.stdout.  Writes to this file like object will
-    write to whatever sys.stdout is pointing to at the time.
-
-    The purpose of this class is to allow doctest to capture log
-    messages.  Since doctest replaces sys.stdout, configuring the
-    logging module to send messages to sys.stdout before running the
-    tests will not result in the output being captured.  Using an
-    instance of this class solves the problem.
-    """
-    def __getattr__(self, attr):
-        return getattr(sys.stdout, attr)
-
-
-def FunctionalDocFileSuite(*paths, **kw):
-    if not kw.has_key('checker'):
-        kw['checker'] = SpecialOutputChecker()
-    kwsetUp = kw.get('setUp')
-    def setUp(test):
-        # for doctests, direct log messages to stdout, so that they
-        # must be processed along with other command output.
-        logging.root.handlers[0].close()
-        logging.root.removeHandler(logging.root.handlers[0])
-        logging.basicConfig(stream=StdoutWrapper(), level=logging.WARNING)
-        if kwsetUp is not None:
-            kwsetUp(test)
-        # XXX: Override the standard method, which has hard coded ZODB
-        # dependancies. -- StuartBishop 20060228
-        test.globs['http'] = http
-    kw['setUp'] = setUp
-    return zope.app.testing.functional.FunctionalDocFileSuite(*paths, **kw)
 
 
 if __name__ == '__main__':
