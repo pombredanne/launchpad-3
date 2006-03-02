@@ -3,7 +3,7 @@ import re
 from canonical.launchpad.validators.email import valid_email
 
 MIN_NICK_LENGTH = 2
-name_sanity_pattern = re.compile(r"^[^a-z0-9]|[^a-z0-9\\+\\.\\-]+")
+name_sanity_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9\\+\\.\\-]+")
 
 
 class NicknameGenerationError(Exception):
