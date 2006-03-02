@@ -16,7 +16,7 @@
 
 $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
-import sys, os, psycopg, time, logging, warnings
+import sys, os, psycopg, time, logging, warnings, re
 
 os.setpgrp() # So test_on_merge.py can reap its children
 
@@ -69,6 +69,15 @@ warnings.filterwarnings(
 warnings.filterwarnings(
         'ignore', 'The concrete concept of a view has been deprecated.',
         DeprecationWarning
+        )
+
+# This warning will be triggered if the beforeTraversal hook fails. We
+# want to ensure it is not raised as an error, as this will mask the real
+# problem.
+warnings.filterwarnings(
+        'always',
+        re.escape('clear_request_started() called outside of a request'),
+        UserWarning
         )
 
 # Any warnings not explicitly silenced are errors
