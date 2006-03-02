@@ -550,6 +550,11 @@ class BugTaskStatusView(LaunchpadView):
     """Viewing the status of a bug task."""
 
     def initialize(self):
+        """Set up the appropriate widgets.
+
+        Different widgets are shown depending on if it's a remote bug
+        task or not.
+        """
         field_names = [
             'status', 'priority', 'severity', 'assignee', 'statusexplanation']
         if IRemoteBugTask.providedBy(self.context):

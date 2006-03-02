@@ -228,7 +228,7 @@ class DBItemDisplayWidget(BrowserWidget):
     def __call__(self):
         dbitem_field = self.context
         bugtask = dbitem_field.context
-        if self._renderedValueSet(): 
+        if self._renderedValueSet():
             dbitem = self._data
         else:
             dbitem = dbitem_field.get(bugtask)
