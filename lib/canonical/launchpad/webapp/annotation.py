@@ -3,13 +3,17 @@
 
 __metaclass__ = type
 
+raise ImportError(
+        "This module will not work without ZEO to share state and is WHUI."
+        )
+
 from zope.interface import Interface, implements
 from zope.proxy import removeAllProxies
 from BTrees.OOBTree import OOBTree
 from persistent.dict import PersistentDict
 from canonical.launchpad.webapp.zodb import zodbconnection
 from canonical.launchpad.interfaces import IZODBAnnotation
-
+ 
 class SQLObjectAnnotation:
     implements(IZODBAnnotation)
 

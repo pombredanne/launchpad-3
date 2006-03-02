@@ -10,6 +10,11 @@ To use:
 """
 __metaclass__ = type
 
+raise ImportError(
+        "This module is WHUI and cannot be used until we have ZEO running to"
+        " share state"
+        )
+
 import zope.thread
 from persistent.dict import PersistentDict
 from zope.security.checker import ProxyFactory
