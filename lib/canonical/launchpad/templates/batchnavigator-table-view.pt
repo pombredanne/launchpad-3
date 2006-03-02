@@ -1,7 +1,7 @@
 <div>
   <small tal:content="structure context/@@+navigation-links" />
 </div>
-  <table class="listing">
+  <table class="listing sortable" id="buglisting">
     <thead>
       <tr>
         <th tal:condition="context/show_column/id|nothing">ID</th>
