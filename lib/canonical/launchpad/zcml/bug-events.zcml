@@ -33,26 +33,6 @@
    handler="canonical.launchpad.subscribers.karma.bug_modified" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugTask
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bugtask_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugTask
-        zope.app.event.interfaces.IObjectCreatedEvent"
-   handler="canonical.launchpad.subscribers.karma.bugtask_created" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugTask
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bugtask_edited" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugTask
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.subscribers.karma.bugtask_modified" />
-
-<subscriber
    for="canonical.launchpad.interfaces.IBugMessage
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.mailnotification.notify_bug_comment_added" />
@@ -61,37 +41,6 @@
    for="canonical.launchpad.interfaces.IBugMessage
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.bug_comment_added" />
-
-<!-- XXX: Brad Bollenbach, 2005-04-12:
-
-    Disabling infestation notifications for now because realistically,
-    nobody should be seriously counting on much useful behaviour from these
-    yet, because we haven't yet nailed down exactly what the semantics
-    behind these things are. I'd rather not maintain infestation related
-    code until we are clear on such semantics.
-
-<subscriber
-    for="canonical.launchpad.interfaces.IBugProductInfestation
-    zope.app.event.interfaces.IObjectCreatedEvent"
-    handler="canonical.launchpad.mailnotification.notify_bug_product_infestation_added"
-    />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugProductInfestation
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_product_infestation_modified" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugPackageInfestation
-        zope.app.event.interfaces.IObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_package_infestation_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugPackageInfestation
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.notify_bug_package_infestation_modified" />
-
--->
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef

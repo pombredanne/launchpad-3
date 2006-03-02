@@ -80,6 +80,32 @@
 	</key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
+	<key name="supermirror_root" datatype="string" required="no"
+            default="http://bazaar.launchpad.net/">
+            <description>
+                The prefix of the URL for the public area of the Supermirror.
+                This value is usually not meaningful to change, so it should
+                generally not be set explicitly so the default value is used.
+
+		This should end with a slash.
+	    </description>
+	    <example>http://bazaar.launchpad.net/</example>
+        </key>
+        <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
+            required="no" default="http://escudero:8000/">
+            <description>
+                The URL prefix for importd's bzr branches that it imports from
+                other RCSes like CVS.  Used to generate URLs for the branch
+                puller to use, not for public URLs.
+            </description>
+        </key>
+        <key name="bzr_push_root_url" datatype="canonical.config.urlbase"
+            required="no" default="file:///srv/sm-ng/pushsftp-hosted/">
+            <description>
+                The URL prefix for bzr push branches.  Used to generate URLs for
+                the branch puller to use, not for public URLs.
+            </description>
+        </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"

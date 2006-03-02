@@ -52,7 +52,7 @@ class ILaunchpadCelebrities(Interface):
 
     Celebrities are SQLBase instances that have a well known name.
     """
-    buttsource = Attribute("The 'buttsource' team.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
     admin = Attribute("The 'admins' team.")
     ubuntu = Attribute("The ubuntu Distribution.")
     debian = Attribute("The debian Distribution.")

@@ -22,11 +22,10 @@ from zope.app.form.interfaces import WidgetsError
 from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.pagetemplate.simpleviewclass import SimpleViewClass
-from zope.app.publisher.browser import BrowserView
-
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
 class NoRenderingOnRedirect:
     """Mix-in for not rendering the page on redirects."""
@@ -47,7 +46,7 @@ class NoRenderingOnRedirect:
             return output()
 
 
-class GeneralFormView(BrowserView, NoRenderingOnRedirect):
+class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
     """Simple Generalised Form Base Class
 
     Subclasses should provide a `schema` attribute defining the schema
@@ -103,7 +102,7 @@ class GeneralFormView(BrowserView, NoRenderingOnRedirect):
 
     # internal methods, should not be overridden
     def __init__(self, context, request):
-        BrowserView.__init__(self, context, request)
+        LaunchpadView.__init__(self, context, request)
 
         self.errors = {}
         self.process_status = None
@@ -192,6 +191,11 @@ class GeneralFormView(BrowserView, NoRenderingOnRedirect):
         #     define this method and call it explicitly. It's probably
         #     due to some ZCML magic which should be removed.
         #     -- Bjorn Tillenius, 2006-02-22
+
+        # We call initialize explicitly here (it's normally called by
+        # GeneralFormView.__call__), because of the hack Bjorn mentions above.
+        self.initialize()
+
         return NoRenderingOnRedirect.__call__(self)
 
 
