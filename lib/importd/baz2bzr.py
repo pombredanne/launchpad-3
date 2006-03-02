@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-# Copyright (c) 2006 Canonical Ltd.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 # Author: David Allouche <david@allouche.net>
 
-"""Script for Importd that converts baz branches to bzr and publish them.
+"""Script for Importd that converts baz branches to bzr and publishes them.
 
 Usage: baz2bzr.py arch_version bzr_branch blacklist_file
 """
+
+__metaclass__ = type
 
 import sys
 
@@ -25,6 +27,7 @@ from canonical.launchpad.interfaces import (
 
 def stdout_printer(msg):
     print msg
+
 
 def silent_printer(msg):
     pass

@@ -1,6 +1,10 @@
 #!/usr/bin/env python
-# Copyright (c) 2006 Canonical Ltd.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 # Author: David Allouche <david@allouche.net>
+
+"""Test cases for baz2bzr, bzr import and publishing."""
+
+__metaclass__ = type
 
 import sys
 import os
@@ -26,7 +30,7 @@ from importd.tests.helpers import (
     SandboxHelper, ZopelessUtilitiesHelper)
 
 
-class ProductSeriesHelper(object):
+class ProductSeriesHelper:
     """Helper for tests that use the testing ProductSeries."""
 
     def setUp(self):
