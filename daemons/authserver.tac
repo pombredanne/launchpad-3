@@ -11,10 +11,11 @@ from twisted.application import service, internet
 from twisted.web import server, resource
 from twisted.enterprise.adbapi import ConnectionPool
 
-from canonical.authserver.xmlrpc import UserDetailsResource
-from canonical.authserver.database import DatabaseUserDetailsStorage
-from canonical.authserver.xmlrpc import UserDetailsResourceV2
-from canonical.authserver.database import DatabaseUserDetailsStorageV2
+from canonical.authserver.xmlrpc import (
+    UserDetailsResource, UserDetailsResourceV2, BranchDetailsResource)
+from canonical.authserver.database import (
+    DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
+    DatabaseBranchDetailsStorage)
 
 
 application = service.Application("authserver_test")
@@ -23,8 +24,10 @@ storage = DatabaseUserDetailsStorage(dbpool)
 root = resource.Resource()
 versionOneAPI = UserDetailsResource(DatabaseUserDetailsStorage(dbpool))
 versionTwoAPI = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool), debug=True)
+branchAPI = BranchDetailsResource(DatabaseBranchDetailsStorage(dbpool))
 root.putChild('', versionOneAPI)
 root.putChild('v2', versionTwoAPI)
+root.putChild('branch', branchAPI)
 site = server.Site(root)
 internet.TCPServer(8999, site).setServiceParent(application)
 

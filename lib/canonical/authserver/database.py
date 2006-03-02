@@ -1,5 +1,13 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
+
+__all__ = [
+    'DatabaseUserDetailsStorage',
+    'DatabaseUserDetailsStorageV2',
+    'DatabaseBranchDetailsStorage',
+    ]
+
 import psycopg
 
 from zope.interface import implements
@@ -28,7 +36,7 @@ def utf8(x):
     return x
 
 
-class UserDetailsStorageMixin(object):
+class UserDetailsStorageMixin:
     """Functions that are shared between DatabaseUserDetailsStorage and
     DatabaseUserDetailsStorageV2"""
 
@@ -648,4 +656,61 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
                         branchName))
         )
         return branchID
+
+class DatabaseBranchDetailsStorage:
+    """Launchpad-database backed implementation of IUserDetailsStorage"""
+
+    implements(IBranchDetailsStorage)
+    
+    def __init__(self, connectionPool):
+        """Constructor.
+        
+        :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
+        """
+        self.connectionPool = connectionPool
+
+    def startMirroring(self, branchID):
+        """See IBranchDetailsStorage"""
+        ri = self.connectionPool.runInteraction
+        return ri(self._startMirroringInteraction, branchID)
+
+    def _startMirroringInteraction(self, transaction, branchID):
+        transaction.execute("""
+            UPDATE Branch
+              SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+              WHERE id = %d""" % (branchID,))
+        # how many rows were updated?
+        assert transaction.rowcount in [0, 1]
+        return transaction.rowcount == 1
+
+    def mirrorComplete(self, branchID):
+        """See IBranchDetailsStorage"""
+        ri = self.connectionPool.runInteraction
+        return ri(self._mirrorCompleteInteraction, branchID)
+    
+    def _mirrorCompleteInteraction(self, transaction, branchID):
+        transaction.execute("""
+            UPDATE Branch
+              SET last_mirrored = last_mirror_attempt, mirror_failures = 0
+              WHERE id = %d""" % (branchID,))
+        # how many rows were updated?
+        assert transaction.rowcount in [0, 1]
+        return transaction.rowcount == 1
+
+    def mirrorFailed(self, branchID, reason):
+        """See IBranchDetailsStorage"""
+        ri = self.connectionPool.runInteraction
+        return ri(self._mirrorFailedInteraction, branchID, reason)
+    
+    def _mirrorFailedInteraction(self, transaction, branchID, reason):
+        # XXX: 20060217 jamesh
+        # Where should the failure reason be stored?  The whiteboard is
+        # almost right, but appears to be for use by the user.
+        transaction.execute("""
+            UPDATE Branch
+              SET mirror_failures = mirror_failures + 1
+              WHERE id = %d""" % (branchID,))
+        # how many rows were updated?
+        assert transaction.rowcount in [0, 1]
+        return transaction.rowcount == 1
 
