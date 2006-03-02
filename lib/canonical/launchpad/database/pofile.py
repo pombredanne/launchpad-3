@@ -806,7 +806,7 @@ class POFile(SQLBase, RosettaStats):
         # fails.
         self.exportfile = alias_set.create(
             filename, size, file, 'application/x-po',
-            debugID='%s' % self.title)
+            debugID='pofile-id-%d' % self.id)
 
         # Note that UTC_NOW is resolved to the time at the beginning of the
         # transaction. This is significant because translations could be added
