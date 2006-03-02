@@ -9,13 +9,13 @@ __metaclass__ = type
 import unittest
 from canonical.config import config
 
-class TestChunkydiffIsOn(unittest.TestCase):
+class TestChunkydiffSetting(unittest.TestCase):
 
     def test(self):
         self.failUnless(
-                config.chunkydiff is True,
+                config.chunkydiff is False,
                 'This test is failing to ensure that the chunkydiff '
-                'config setting cannot be committed in "off" mode.'
+                'config setting cannot be committed in "on" mode.'
                 )
 
 def test_suite():
