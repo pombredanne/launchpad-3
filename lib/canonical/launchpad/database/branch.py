@@ -3,6 +3,8 @@
 __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
+from urlparse import urljoin
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -141,12 +143,12 @@ class Branch(SQLBase):
             # This is an import branch, imported into bzr from another RCS
             # system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
-            return prefix + ('%08x' % (self.id,))
+            return urljoin(prefix, '%08x' % (self.id,))
         else:
             # This is a push branch, hosted on the supermirror (pushed there by
             # users via SFTP).
             prefix = config.launchpad.bzr_push_root_url
-            return prefix + split_branch_id(self.id)
+            return urljoin(prefix, split_branch_id(self.id))
 
 
 class BranchSet:
