@@ -3,6 +3,9 @@
 __metaclass__ = type
 __all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
 
+from datetime import datetime, timedelta
+import pytz
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -80,7 +83,8 @@ class LibraryFileAlias(SQLBase):
         """
         # Update last_accessed no more than once every 6 hours.
         precision = timedelta(hours=6)
-        now = datetime.utcnow().replace(tzinfo=utc)
+        UTC = pytz.timezone('UTC')
+        now = datetime.now(UTC)
         if self.last_accessed + precision < now:
             self.last_accessed = UTC_NOW
 
