@@ -40,9 +40,9 @@ Next, we will POST to that form, setting the spec which supersedes this one:
   ... -----------------------------4541881241115323056567717597--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/extension-manager-upgrades
-  ...
 
 
 Now, on the spec page we should see an alert that the spec has been
@@ -83,9 +83,9 @@ then it should automatically do this:
   ... -----------------------------995565308452305105620340155--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/extension-manager-upgrades
-  ...
 
 
 Let's confirm the status change:

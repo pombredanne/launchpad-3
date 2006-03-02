@@ -42,12 +42,8 @@ the bug to be watched in that system.
   ... ------------0xKhTmLbOuNdArY--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
-  <BLANKLINE>
-  ...
-          <h1>Add watch</h1>
-  ...
-
 
   >>> print http(r"""
   ... GET /distros/debian/+source/mozilla-firefox/+bug/2/watches/ HTTP/1.1
@@ -106,6 +102,6 @@ watch can be edited.
   ... ------------0xKhTmLbOuNdArY--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/distros/debian/+source/mozilla-firefox/+bug/2
-  ...

@@ -23,16 +23,15 @@ the view.template().
 
     >>> def get_and_setup_view(context, name, request):
     ...     view = getView(context, name, request)
-    ...     view.template = lambda: ''
+    ...     view.index = lambda: ''
     ...     view()
     ...     return view
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
 
-We haven't posted the form, so if we call process_form(), nothing will
-happen.
+We haven't posted the form, so process_status will be empty.
 
-    >>> add_task_view.process_form()
+    >>> add_task_view.process_status
     ''
 
 If we POST the form without entering any information, it will complain
@@ -41,7 +40,7 @@ that product is required:
     >>> request = LaunchpadTestRequest(form={'FORM_SUBMIT': ''})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
-    >>> add_task_view.process_form()
+    >>> add_task_view.process_status
     u'Please fix the problems below and try again.'
     >>> add_task_view.errors
     MissingInputError: ('product', 'Product', 'the field is required')
@@ -65,9 +64,7 @@ be created:
     ...     form={'FORM_SUBMIT': '', 'field.product': 'thunderbird'})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
-    >>> add_task_view.process_form()
     SQLObjectCreatedEvent: <BugTask at ...>
-    ''
 
 The Thunderbird bug task was added to the bug:
 
@@ -98,7 +95,7 @@ tracker, but omit the remote bug number, an error message is given:
     ...           'field.bugtracker': '2'})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
-    >>> add_task_view.process_form()
+    >>> add_task_view.process_status
     u'Please fix the problems below and try again.'
     >>> add_task_view.top_of_page_errors
     LaunchpadValidationError:
@@ -119,10 +116,8 @@ watch will be added:
     ...           'field.remotebug': '42'})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
-    >>> add_task_view.process_form()
     SQLObjectCreatedEvent: <BugWatch at ...>
     SQLObjectCreatedEvent: <BugTask at ...>
-    ''
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
@@ -152,10 +147,8 @@ will use the watch to keep track of its status:
     ...           'field.remotebug': '84'})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
-    >>> add_task_view.process_form()
     SQLObjectCreatedEvent: <BugWatch at ...>
     SQLObjectCreatedEvent: <BugTask at ...>
-    ''
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname

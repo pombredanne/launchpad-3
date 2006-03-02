@@ -27,7 +27,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
-    NotFoundError, UnexpectedFormData)
+    NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -67,7 +67,7 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
              'addsubscriber', 'addattachment', 'linktocve', 'unlinkcve',
-             'addwatch', 'filebug', 'activitylog', 'targetfix']
+             'addwatch', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -132,12 +132,12 @@ class BugContextMenu(ContextMenu):
         text = 'Activity Log'
         return Link('+activity', text, icon='list')
 
-    def targetfix(self):
+    def backportfix(self):
         enabled = (
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
-        text = 'Target Fix to Releases'
-        return Link('+target', text, icon='milestone', enabled=enabled)
+        text = 'Backport Fix to Releases'
+        return Link('+backport', text, icon='bug', enabled=enabled)
 
 
 class BugView:
@@ -244,14 +244,23 @@ class BugAlsoReportInView(GeneralFormView):
 
     schema = IAddBugTaskForm
     fieldNames = None
-    template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
+    index = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
     process_status = None
+    saved_process_form = GeneralFormView.process_form
 
     def __init__(self, context, request):
         """Override GeneralFormView.__init__() not to set up widgets."""
         self.context = context
         self.request = request
         self.errors = {}
+
+    def process_form(self):
+        """Simply return the current status.
+
+        We override it, since we need to do some setup before processing
+        the form.
+        """
+        return self.process_status
 
     @property
     def _keyword_arguments(self):
@@ -262,14 +271,16 @@ class BugAlsoReportInView(GeneralFormView):
         self.label = "Request fix in a product"
         self.fieldNames = ['product', 'bugtracker', 'remotebug']
         self._setUpWidgets()
-        return self.template()
+        self.saved_process_form()
+        return self.index()
 
     def render_distrotask(self):
         self.label = "Request fix in a distribution"
         self.fieldNames = [
             'distribution', 'sourcepackagename', 'bugtracker', 'remotebug']
         self._setUpWidgets()
-        return self.template()
+        self.saved_process_form()
+        return self.index()
 
     def widgets(self):
         """Return the widgets that should be rendered by the main macro.
@@ -288,13 +299,21 @@ class BugAlsoReportInView(GeneralFormView):
         """Validate the form.
 
         Check that:
-
+            * We have a unique upstream task
+            * We have a unique distribution task
             * If bugtracker is not None, remotebug has to be not None
         """
         errors = []
         widgets_data = {}
         bugtracker = data.get('bugtracker')
         remotebug = data.get('remotebug')
+        product = data.get('product')
+        distribution = data.get('distribution')
+        sourcepackagename = data.get('sourcepackagename')
+        if product:
+            valid_upstreamtask(self.context.bug, product)
+        if distribution:
+            valid_distrotask(self.context.bug, distribution, sourcepackagename)
         if bugtracker is not None and remotebug is None:
             errors.append(LaunchpadValidationError(
                 "Please specify the remote bug number in the remote "
@@ -310,7 +329,7 @@ class BugAlsoReportInView(GeneralFormView):
         """Create new bug task.
 
         Only one of product and distribution may be not None, and
-        if product is None, sourcepackagename has to be None.
+        if distribution is None, sourcepackagename has to be None.
         """
         taskadded = getUtility(IBugTaskSet).createTask(
             self.context.bug,

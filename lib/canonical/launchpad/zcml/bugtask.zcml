@@ -349,11 +349,11 @@
     </browser:editform>
 
     <browser:page
-        name="+target"
+        name="+backport"
         for="canonical.launchpad.interfaces.IDistroBugTask"
-        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+        class="canonical.launchpad.browser.BugTaskBackportView"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-release-targeting.pt"
+        template="../templates/bugtask-backport-fixing.pt"
         />
 
     <browser:defaultView
@@ -381,11 +381,11 @@
     </browser:editform>
 
     <browser:page
-      name="+target"
+      name="+backport"
       for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
-      class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+      class="canonical.launchpad.browser.BugTaskBackportView"
       permission="launchpad.AnyPerson"
-      template="../templates/bugtask-release-targeting.pt"
+      template="../templates/bugtask-backport-fixing.pt"
       />
 
     <browser:page

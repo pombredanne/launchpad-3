@@ -83,17 +83,29 @@ Next, we need to grab some values to provide for priority, severity and status.
   release. This primary use case for distro release bug tasks is for backporting
   fixes (e.g. for security bugs or bugs causing critical data loss.)
 
-    >>> hoary = distoreleaseset.get(3)
+    >>> warty = distoreleaseset.get(1)
     >>> distro_release_task = bugtaskset.createTask(
-    ...     bug=bug_one, distrorelease=hoary, owner=sabdfl,
+    ...     bug=bug_one, distrorelease=warty, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
     ...     severity=SEVERITY_NORMAL)
-    >>> distro_release_task.distrorelease == hoary
+    >>> distro_release_task.distrorelease == warty
     True
 
     >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
     >>> IDistroReleaseBugTask.providedBy(distro_release_task)
     True
+
+You cannot open a distro release task on the current release, because it doesn't
+make sense to "backport a fix" to the current release:
+
+    >>> hoary = distoreleaseset.get(3)
+    >>> distro_release_task = bugtaskset.createTask(
+    ...     bug=bug_one, distrorelease=hoary, owner=sabdfl,
+    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
+    ...     severity=SEVERITY_NORMAL)
+    Traceback (most recent call last):
+      ...
+    AssertionError: Bugtasks cannot be opened on the current release.
 
 XXX: Brad Bollenbach, 2005-02-24: See the bottom of this file for a chunk of
 test documentation that is missing from here, due to problems with resetting
@@ -140,7 +152,7 @@ The "target" of an IBugTask is one of the following things:
 
   * a distrorelease
 
-    >>> distro_release_task.target == hoary
+    >>> distro_release_task.target == warty
     True
 
   * a distribution sourcepackage
@@ -330,6 +342,7 @@ For a person:
     >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
     [u'evolution (Ubuntu)',
      u'evolution (upstream)',
+     u'linux-source-2.6.15 (Ubuntu)',
      u'mozilla-firefox (debian)',
      u'mozilla-firefox (ubuntu)',
      u'thunderbird (Ubuntu)']
@@ -338,7 +351,7 @@ It's also possible to search bugs that a person is subscribed to:
 
     >>> params = BugTaskSearchParams(user=None, subscriber=foobar)
     >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
-    [7, 9, 9]
+    [7, 9, 9, 10]
 
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
@@ -378,7 +391,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    21
+    22
 
 Editing Bug Tasks
 -----------------
@@ -498,8 +511,8 @@ two more examples:
     >>> IDistroBugTask.providedBy(ubuntu_null_bugtask)
     True
 
-    >>> hoary_null_bugtask = NullBugTask(bug=bug_one, distrorelease=hoary)
-    >>> IDistroReleaseBugTask.providedBy(hoary_null_bugtask)
+    >>> warty_null_bugtask = NullBugTask(bug=bug_one, distrorelease=warty)
+    >>> IDistroReleaseBugTask.providedBy(warty_null_bugtask)
     True
 
 Bug Privacy
@@ -527,6 +540,8 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
+    >>> from canonical.launchpad.helpers import capture_state
+
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
     >>> ubuntu_team = personset.get(17)
@@ -535,12 +550,6 @@ entitled _Privacy and Team Awareness_):
     >>> notify(SQLObjectToBeModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
 
-    >>> def capture_state(obj, *fields):
-    ...     class State: pass
-    ...     state = State()
-    ...     for field in fields:
-    ...         setattr(state, field, getattr(obj, field))
-    ...     return state
     >>> old_state = capture_state(
     ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
     ...     "summary", "description", "private", "name",
@@ -706,7 +715,7 @@ Let's just make sure that the tasks on bug_one sort correctly.
     Ubuntu
     evolution (Ubuntu)
     mozilla-firefox (ubuntu)
-    Ubuntu Hoary
+    Ubuntu Warty
     mozilla-firefox (debian)
 
 BugTask Adaptation
@@ -839,7 +848,7 @@ ProgrammingError
     >>> from psycopg import DatabaseError
     >>> import sys
     >>> try: bad_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, distrorelease=hoary,
+    ...     bug=bug_one, distribution=ubuntu, distrorelease=warty,
     ...     owner=sabdfl, status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
     ...     severity=SEVERITY_NORMAL)
     ... except DatabaseError: print sys.exc_value

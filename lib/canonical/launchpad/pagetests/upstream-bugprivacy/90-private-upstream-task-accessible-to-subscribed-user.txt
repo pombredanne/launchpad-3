@@ -3,8 +3,7 @@ allowed to view the task page because he is explicitly subscribed to
 the bug.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bug/10/+editstatus HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... GET /products/firefox/+bug/11/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

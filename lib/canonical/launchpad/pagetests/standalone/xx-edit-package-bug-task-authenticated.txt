@@ -3,7 +3,7 @@ needs to be fixed.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -14,7 +14,7 @@ Any authenticated user can edit a source package bug task.
 
   >>> print http(r"""
   ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1316
   ... Content-Type: multipart/form-data; boundary=---------------------------89019536856698512711194452
   ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
@@ -62,23 +62,21 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------89019536856698512711194452--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
-  <BLANKLINE>
+  Content-Length: 0
   ...
+  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
 
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...<option selected="selected" value="Medium">Medium</option>...
 
   >>> print http(r"""
   ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1346
   ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
   ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
@@ -126,15 +124,13 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------16131040782095479517127443199--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
-  <BLANKLINE>
+  Content-Length: 0
   ...
+  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...<option selected="selected" value="Low">Low</option>...

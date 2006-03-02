@@ -18,7 +18,7 @@ source package blank.
   ... -----------------------------1447716409915377146573672
   ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------1447716409915377146573672--
   ... """)
   HTTP/1.1 303 See Other
@@ -37,86 +37,119 @@ Now we test if the ubuntu distribution is on the request list.
   ...>Ubuntu</a>...
   ...
 
-
-Now we test if we can get the Target fix to Release page
+It should not be possible to add the same distrotask again.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+bug/6/+target HTTP/1.1
+  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
+  ... Content-Length: 424
+  ...
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="field.distribution"
+  ... 
+  ... ubuntu
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... 
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------1447716409915377146573672--
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...<h1>Target fix to releases</h1>...
-  ...hoary...
-  ...warty...
+  ...Please fix the problems below and try again...
+  ...
+  ...A fix for this bug has already been requested for Ubuntu...
   ...
 
-Now we check the warty checkbox and try to Target Fix to Selected
-Release
-  
+It's perfectly valid to have another distrotask with a different
+sourcepackagename
+
   >>> print http(r"""
-  ... POST /distros/ubuntu/+bug/6/+target HTTP/1.1
+  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
+  ... Content-Length: 424
+  ...
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="field.distribution"
   ... 
-  ... target=warty&savetargets=Target+Fix+to+Selected+Releases""")
+  ... ubuntu
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------1447716409915377146573672--
+  ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../distros/ubuntu/+bug/6
+  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/6
   ...
 
-
-Now we check if the target is on the Bugtask 
+But it's not possible to change a bugtask to a existing one.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+bug/6 HTTP/1.1
+  ... POST /distros/ubuntu/+bug/6/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Ubuntu Warty...
-  ...
-
-Now from the Distro release context we test if it's possible to target a fix
-to a release.
-
-First we get the distro release page
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/warty/+bug/6/+target HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Target fix to releases...
-  ...hoary...
-  ...warty...
-  ...
-
-And now we check the hoary checkbox and click on the Target Fix to Selected Release
-  
-  >>> print http(r"""
-  ... POST /distros/ubuntu/warty/+bug/6/+target HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 1346
+  ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
   ... 
-  ... target=hoary&savetargets=Target+Fix+to+Selected+Releases""")
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://.../distros/ubuntu/warty/+bug/6
-  ...
-
-And check if the Hoary Distro Release is there on the Bug Task
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/warty/+bug/6 HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.binarypackagename"
+  ... 
+  ... 
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Unconfirmed
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... Low
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Normal
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------16131040782095479517127443199--
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...Ubuntu Hoary...
+  ...Please fix the problems below and try again...
   ...
-
+  ...A fix for this bug has already been requested for mozilla-firefox (Ubuntu)...
+  ...
 
 At the same time we add a distribution task we can add a bug watch.
 

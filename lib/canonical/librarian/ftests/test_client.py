@@ -35,12 +35,12 @@ class LibrarianClientTestCase(unittest.TestCase):
             "Database-Name header not sent by addFile")
 
     def test_remoteAddFileDoesntSendDatabaseName(self):
-        # remoteAddFile shouldn't send the Database-Name header.
+        # remoteAddFile should send the Database-Name header as well.
         client = InstrumentedLibrarianClient()
         id1 = client.remoteAddFile('sample.txt', 6, StringIO('sample'),
                                    'text/plain')
-        self.failIf(client.sentDatabaseName, 
-            "Database-Name header was sent by remoteAddFile")
+        self.failUnless(client.sentDatabaseName, 
+            "Database-Name header not sent by remoteAddFile")
 
     def test_clientWrongDatabase(self):
         # If the client is using the wrong database, the server should refuse

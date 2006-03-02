@@ -60,10 +60,9 @@ form.
   ... -----------------------------6732896103366711491579814469--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
+  Content-Length: 0
   ...
   Location: http://.../products/thunderbird/+bug/9
-  ...
 
 
 
