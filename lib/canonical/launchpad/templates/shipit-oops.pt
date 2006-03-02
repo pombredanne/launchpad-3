@@ -7,19 +7,21 @@
     <div metal:fill-slot="body">
       <p>
         Sorry, something just went wrong in ShipIt.
+        We&#8217;ve recorded what happened,
+        and we&#8217;ll fix it as soon as possible.
       </p>
       <p>
-        Please <a href="https://launchpad.net/products/shipit/+bugs"
-        >report this as a bug</a>, after checking that it isn&#8217;t 
-        reported already.
+        If your ShipIt request is an urgent one, e-mail
+        <a href="mailto:system-error@launchpad.net"
+        ><code>system-error@launchpad.net</code></a>,
+        including the error <abbr>ID</abbr>
+        <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
+        and details of your problem.
+        Otherwise, try again in a few days.
       </p>
-
-      <tal:oopsmessage tal:replace="structure request/@@+oopsmessage" />
-
       <p>
-        Thanks for helping improve ShipIt, and sorry for the inconvenience.
+        Thanks for using ShipIt, and sorry for the inconvenience.
       </p>
-
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>
   </body>

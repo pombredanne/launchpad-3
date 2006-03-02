@@ -396,7 +396,7 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename status priority severity
-                assignee bugwatch statusexplanation"
+                assignee bugwatch statusexplanation milestone"
         label="Source package fix request"
         permission="zope.Public"
         template="../templates/bugtask-view.pt"

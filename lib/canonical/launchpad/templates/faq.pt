@@ -30,34 +30,6 @@
     -->
 
     <dl class="faq">
-        <dt>How can I get in touch with the Launchpad team?</dt>
-
-            <dd>
-            The Launchpad team can be found on IRC on
-            <code>irc.freenode.net</code>, on the <code>#launchpad</code>
-            channel. The <a href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">launchpad-users</a>
-            mailing list is used for discussions.
-            </dd>
-
-        <dt>I visited a page and it crashed, giving me an OOPS code.
-        What should I do?</dt>
-
-            <dd>
-            <p>
-            OOPS codes are automatically registered and reported daily
-            to the Launchpad developers; this class of bug is os highest
-            priority to our team. There is no need to file a bug for an
-            OOPS; our QA team ensures that all OOPSes have bugs
-            registered for them (and you can <a href="https://launchpad.net/products/launchpad/+bugs-advanced?field.searchtext=&orderby=-priority%2C-severity&advanced=1&field.assignee=&field.unassigned.used=&field.include_dupes.used=&field.status%3Alist=Unconfirmed&field.status%3Alist=Needs+Info&field.status%3Alist=Confirmed&field.status%3Alist=In+Progress&field.status-empty-marker=1&field.severity-empty-marker=1&field.attachmenttype-empty-marker=1&field.milestone%3Alist=84&field.milestone-empty-marker=1&search=Search&field.milestone_assignment=&field.milestone_assignment-empty-marker=1">easily list them</a>).
-            </p>
-            <p>
-            If you are unable to perform a certain task because of this
-            crash, you are welcome to contact us through the means
-            above; you may also <a
-            href="https://launchpad.net/products/launchpad/+addticket">file
-            a support request</a>.
-            </p>
-            </dd>
 
         <dt>Why do I need to have an account to report or comment on a bug?</dt>
 
@@ -299,7 +271,7 @@
         send me CDs for free?</dt>
             <dd>
             You should be looking at the <a
-            href="http://www.ubuntu.com/support/faq?action=show&redirect=support%2Fdocumentation%2Ffaq%2Fshipit#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Shipit FAQ</a>.
+            href="http://www.ubuntu.com/support/faq?action=show&amp;redirect=support%2Fdocumentation%2Ffaq%2Fshipit#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Shipit FAQ</a>.
             </dd>
 
         <dt>What are the copyright terms for contributing to Rosetta?</dt>

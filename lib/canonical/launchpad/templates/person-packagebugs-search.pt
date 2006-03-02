@@ -5,25 +5,19 @@
       i18n:domain="malone"
 >
   <body>
-
   <div metal:fill-slot="main">
-    <div id="portal-column-content" style="margin-left: 0; width: 74%;">
+    <div style="margin-left: 0; width: 74%; float: left">
       <h1>Bug reports by package</h1>
       <strong>
         <small tal:content="view/current_package/displayname">
           mozilla-firefox (Ubuntu)
         </small>
       </strong>
-      <div tal:define="batch_navigator view/search;
-                       prev_page_url batch_navigator/prevBatchURL;
-                       next_page_url batch_navigator/nextBatchURL;
-                       total batch_navigator/batch/total;
-                       start_number batch_navigator/batch/startNumber;
-                       end_number batch_navigator/batch/endNumber">
+      <div tal:define="batch_navigator view/search">
         <form method="GET" name="search" action="">
           <tal:widget content="structure view/distribution_widget/hidden" />
           <tal:widget content="structure view/sourcepackagename_widget/hidden" />
-          <input type="text" name="field.searchtext" size="40"
+          <input type="text" name="field.searchtext" size="20"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
           <span class="discreet">(Advanced search coming soon)</span>
@@ -33,36 +27,7 @@
               document.forms["search"].elements['field.searchtext'].focus();
             -->
         </script>
-        <div>
-          <small tal:content="structure batch_navigator/@@+navigation-links" />
-        </div>
-        <table class="listing">
-          <thead>
-          <tr>
-            <th width="8%">ID</th>
-            <th width="60%">Summary</th>
-            <th widtrh="16%">Importance</th>
-            <th width="16%">Status</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr tal:repeat="bugtask batch_navigator/batch">
-            <td tal:content="bugtask/bug/id">42</td>
-            <td>
-              <a href="#"
-                 tal:content="bugtask/bug/title"
-                 tal:attributes="href bugtask/fmt:url">
-                drop-down list in search bar disappears when using blah blah blah
-              </a>
-            </td>
-            <td tal:content="bugtask/severity/title">Critical</td>
-            <td tal:content="bugtask/status/title">Confirmed</td>
-          </tr>
-          </tbody>
-        </table>
-        <div style="margin-bottom: 5px">
-          <small tal:content="structure batch_navigator/@@+navigation-links" />
-        </div>
+        <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>
     </div>
     <div id="portal-column-two">

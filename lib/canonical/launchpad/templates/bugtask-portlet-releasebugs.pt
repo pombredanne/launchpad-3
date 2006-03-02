@@ -9,7 +9,7 @@
     <ul>
       <li class="bugs" tal:repeat="release_openbugs release_buglistings">
         <a href=""
-           tal:content="release_openbugs/displayname"
+           tal:content="release_openbugs/title"
            tal:attributes="href release_openbugs/url">sid</a>
         (<span tal:replace="release_openbugs/count">2</span>)
       </li>
