@@ -11,7 +11,7 @@ from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 import sqlos.connection
 
 from canonical.config import config
-from canonical.functional import FunctionalDocFileSuite
+from canonical.functional import FunctionalDocFileSuite, SystemDoctestLayer
 from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
         _disconnect_sqlos, _reconnect_sqlos
@@ -114,12 +114,12 @@ special = {
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport.txt': FunctionalDocFileSuite(
-            'launchpad/doc/poexport.txt',
+    'poexport.txt': DocFileSuite(
+            '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
-    'poexport-template-tarball.txt': FunctionalDocFileSuite(
-            'launchpad/doc/poexport-template-tarball.txt',
+    'poexport-template-tarball.txt': DocFileSuite(
+            '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
     'librarian.txt': FunctionalDocFileSuite(
@@ -138,8 +138,8 @@ special = {
             'launchpad/doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown
             ),
-    'revision.txt': FunctionalDocFileSuite(
-            'launchpad/doc/revision.txt',
+    'revision.txt': DocFileSuite(
+            '../doc/revision.txt',
             setUp=importdSetUp, tearDown=importdTearDown),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
@@ -148,12 +148,14 @@ special = {
 
 def test_suite():
     suite = unittest.TestSuite()
+    suite.layer = SystemDoctestLayer
 
     # Add special needs tests
     keys = special.keys()
     keys.sort()
     for key in keys:
         special_suite = special[key]
+        special_suite.layer = SystemDoctestLayer
         suite.addTest(special_suite)
 
     testsdir = os.path.abspath(
@@ -175,10 +177,12 @@ def test_suite():
     filenames.sort()
     for filename in filenames:
         path = os.path.join('launchpad/doc/', filename)
-        suite.addTest(FunctionalDocFileSuite(
+        one_test = FunctionalDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
             optionflags=default_optionflags
-            ))
+            )
+        one_test.layer = SystemDoctestLayer
+        suite.addTest(one_test)
 
     return suite
 

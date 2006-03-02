@@ -10,6 +10,7 @@ import unittest
 import shutil
 import StringIO
 from textwrap import dedent
+from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
 
@@ -289,10 +290,12 @@ class TestErrorReportingUtility(unittest.TestCase):
             def __str__(self):
                 raise RuntimeError('arrgh')
 
+        log = InstalledHandler('SiteError')
         try:
             raise UnprintableException()
         except:
             utility.raising(sys.exc_info(), now=now)
+        log.uninstall()
 
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))

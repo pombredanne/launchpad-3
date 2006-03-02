@@ -8,14 +8,18 @@ __metaclass__ = type
 import os, sys
 import unittest
 import sets
-from harness import LaunchpadFunctionalTestSetup
 import sqlos.connection
+import transaction
 
-from canonical.functional import FunctionalDocFileSuite, SpecialOutputChecker
-from canonical.launchpad.ftests.harness import _disconnect_sqlos
-from canonical.launchpad.ftests.harness import _reconnect_sqlos
-from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.functional import (
+        PageTestDocFileSuite, PageTestLayer, SpecialOutputChecker
+        )
+from canonical.launchpad.ftests.harness import (
+        _disconnect_sqlos, _reconnect_sqlos
+        )
 from canonical.launchpad.ftests import logout
+from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -27,10 +31,11 @@ class PageTestError(Exception):
 
 
 class StartStory(unittest.TestCase):
+    layer = PageTestLayer
     def setUp(self):
         """Setup the database"""
         logout() # Other tests are leaving crud :-(
-        LaunchpadFunctionalTestSetup().setUp()
+        LaunchpadTestSetup().setUp()
         LibrarianTestSetup().setUp()
         global _db_is_setup
         _db_is_setup = True
@@ -46,14 +51,16 @@ class StartStory(unittest.TestCase):
 
 
 class EndStory(unittest.TestCase):
+    layer = PageTestLayer
     def setUp(self):
         """Don't setup the database - it is already"""
         pass
 
     def tearDown(self):
         """Tear down the database"""
+        transaction.abort()
         LibrarianTestSetup().tearDown()
-        LaunchpadFunctionalTestSetup().tearDown()
+        LaunchpadTestSetup().tearDown()
         global _db_is_setup
         _db_is_setup = False
 
@@ -73,7 +80,8 @@ def setUp(test):
     if _db_is_setup:
         _reconnect_sqlos()
     else:
-        LaunchpadFunctionalTestSetup().setUp()
+        LaunchpadTestSetup().setUp()
+        LibrarianTestSetup().setUp()
 
 def tearDown(test):
     """Single page tearDown.
@@ -86,7 +94,8 @@ def tearDown(test):
     if _db_is_setup:
         _disconnect_sqlos()
     else:
-        LaunchpadFunctionalTestSetup().tearDown()
+        LaunchpadTestSetup().tearDown()
+        LibrarianTestSetup().tearDown()
 
 
 class PageTest(unittest.TestCase):
@@ -102,6 +111,7 @@ class PageTest(unittest.TestCase):
     filter tests - they generally ignore test suites and may
     select individual tests - but stories cannot be split up.
     """
+    layer = PageTestLayer
 
     def __init__(self, storydir_or_single_test, package=None):
         """Create a PageTest for storydir_or_single_test.
@@ -159,7 +169,7 @@ class PageTest(unittest.TestCase):
         checker = SpecialOutputChecker()
         for leaf_filename in test_scripts:
             filename = os.path.join(relative_dir, leaf_filename)
-            self._suite.addTest(FunctionalDocFileSuite(
+            self._suite.addTest(PageTestDocFileSuite(
                 filename, setUp=setUp, tearDown=tearDown,
                 package=self._package, checker=checker
                 ))
@@ -201,6 +211,7 @@ class PageTest(unittest.TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
+    suite.layer = PageTestLayer
     pagetestsdir = os.path.abspath(
             os.path.normpath(os.path.join(here, '..', 'pagetests'))
             )
