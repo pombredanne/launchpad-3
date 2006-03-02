@@ -362,6 +362,7 @@ class BugTaskSearchParams:
     """
 
     product = None
+    project = None
     distribution = None
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
@@ -393,6 +394,12 @@ class BugTaskSearchParams:
         """Set the upstream context on which to filter the search."""
         assert not self._has_context
         self.product = product
+        self._has_context = True
+
+    def setProject(self, project):
+        """Set the upstream context on which to filter the search."""
+        assert not self._has_context
+        self.project = project
         self._has_context = True
 
     def setDistribution(self, distribution):

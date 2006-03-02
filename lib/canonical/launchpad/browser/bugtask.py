@@ -38,12 +38,13 @@ from canonical.launchpad.webapp import (
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
-    IBugTaskSet, IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch,
-    BugTaskSearchParams, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
-    IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
-    ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
+    ILaunchBag, IBugSet, IProduct, IProject, IDistribution,
+    IDistroRelease, IBugTask, IBugTaskSet, IDistroReleaseSet,
+    ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
+    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
+    NotFoundError, IDistributionSourcePackage, ISourcePackage,
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
     valid_distrotask, valid_upstreamtask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -597,13 +598,14 @@ class BugTaskSearchListingView(LaunchpadView):
     def columns_to_show(self):
         """Returns a sequence of column names to be shown in the listing."""
         upstream_context = self._upstreamContext()
+        project_context = self._projectContext()
         distribution_context = self._distributionContext()
         distrorelease_context = self._distroReleaseContext()
         distrosourcepackage_context = self._distroSourcePackageContext()
         sourcepackage_context = self._sourcePackageContext()
 
         assert (
-            upstream_context or distribution_context or
+            upstream_context or project_context or distribution_context or
             distrorelease_context or distrosourcepackage_context or
             sourcepackage_context), (
             "Unrecognized context; don't know which report "
@@ -614,6 +616,8 @@ class BugTaskSearchListingView(LaunchpadView):
             return ["id", "summary", "importance", "status"]
         elif distribution_context or distrorelease_context:
             return ["id", "summary", "packagename", "importance", "status"]
+        elif project_context:
+            return ["id", "summary", "targetname", "importance", "status"]
 
     def initialize(self):
         #XXX: The base class should have a simple schema containing only
@@ -929,6 +933,14 @@ class BugTaskSearchListingView(LaunchpadView):
         Return the IProduct if yes, otherwise return None.
         """
         return IProduct(self.context, None)
+
+    def _projectContext(self):
+        """Is this page being viewed in a project context?
+
+        Return the IProject if yes, otherwise return None.
+        """
+        return IProject(self.context, None)
+        
 
     def _personContext(self):
         """Is this page being viewed in a person context?

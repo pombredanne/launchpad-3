@@ -66,7 +66,7 @@ class ProjectFacets(StandardLaunchpadFacets):
     def bugs(self):
         target = '+bugs'
         text = 'Bugs'
-        return Link(target, text, enabled=False)
+        return Link(target, text)
 
     def translations(self):
         target = '+translations'
