@@ -26,11 +26,10 @@ to edit the task.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
   ...
-  <select name="field.bugwatch" size="1" >
+  Content-Type: text/html;charset=utf-8
+  ...
+  <select id="field.bugwatch" name="field.bugwatch" size="1" >
   ...
 
 Right, now let's link the bugwatch with the task, POSTING the results of the
