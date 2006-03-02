@@ -339,6 +339,9 @@ Check the notification email about the success of this import without errors.
     ...
 
 Now, is time to test a .pot import when we don't have any header.
+XXX: doRawImport is emitting log messages, but they were not being tested
+for and it appears that passing in a FakeLogger isn't doing anything
+-- StuartBishop 20060302
 
     >>> potemplate_contents = r'''
     ... msgid "foo"
@@ -347,6 +350,7 @@ Now, is time to test a .pot import when we don't have any header.
     >>> potemplate.attachRawFileData(potemplate_contents, True, person)
     >>> transaction.commit()
     >>> potemplate.doRawImport(FakeLogger())
+    WARNING:root:No header found in this pofile
 
 And the number of activities performed is...
 
