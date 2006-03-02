@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-import canonical.launchpad.webapp.zodb
+## import canonical.launchpad.webapp.zodb
 import canonical.launchpad.webapp.adapter as da
 
 # sqlos
@@ -140,6 +140,8 @@ class LaunchpadBrowserPublication(
         newInteraction(request)
         transaction.begin()
 
+        da.set_request_started()
+
         # Open the ZODB.
         conn = self.db.open('')
         cleanup = Cleanup(conn.close)
@@ -148,12 +150,11 @@ class LaunchpadBrowserPublication(
         self.openedConnection(conn)
 
         root = conn.root()
-        canonical.launchpad.webapp.zodb.handle_before_traversal(root)
+        ## WHUI
+        ## canonical.launchpad.webapp.zodb.handle_before_traversal(root)
 
         self.clearSQLOSCache()
         getUtility(IOpenLaunchBag).clear()
-
-        da.set_request_started()
 
         # Set the default layer.
         adapters = zapi.getGlobalSiteManager().adapters
