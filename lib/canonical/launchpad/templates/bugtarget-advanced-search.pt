@@ -1,0 +1,246 @@
+<tal:layout define="columns1 default">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="head_epilogue">
+    <style type="text/css">
+        .section-header {
+          padding-left: 3px;
+          color: #828282;
+          border: 1px solid #cfcfcf;
+          background-color: #E0E0E0;
+          text-align: left;
+        }
+
+        .section {
+          padding-top: 4px;
+          border-style: solid;
+          border-color: #cfcfcf;
+          border-width: 0px 1px 0px 1px;
+        }
+    </style>
+  </div>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main">
+    <div style="margin-left: 0; width: 74%; float: left">
+      <div style="border-width: 0px 0px 1px 0px; border-style: solid; margin-bottom: 5px">
+        <strong tal:content="view/getAdvancedSearchPageHeading">
+            Bugs in Ubuntu: Advanced Search
+        </strong>
+      </div>
+      <br />
+
+      <form name="search" method="GET" action="#"
+            tal:attributes="action view/getAdvancedSearchActionURL">
+        <input type="hidden" name="advanced" value="1" />
+        <table>
+          <tr>
+            <th class="section-header">
+              Summary and Description
+            </th>
+          </tr>
+          <tr class="section">
+            <td style="padding: 10px">
+              <input type="text" name="field.searchtext" size="40" />
+              <input type="submit"
+                     name="search"
+                     value="Search bugs in mozilla-firefox in ubuntu"
+                     tal:attributes="value view/getAdvancedSearchButtonLabel" />
+              <a href="#"
+                 tal:attributes="href string:${context/fmt:url}/+bugs">
+                <small>Simple</small>
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <th class="section-header">
+              Status and Importance
+            </th>
+          </tr>
+          <tr>
+            <td class="section">
+              <table>
+                <tr>
+                  <td width="25%">
+                    <table>
+                      <tr>
+                        <td><small><strong>Status</strong></small></td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <small>
+                            <span tal:repeat="widget_value view/getStatusWidgetValues">
+                              <input name="field.status:list"
+                                     type="checkbox"
+                                     tal:attributes="value widget_value/value;
+                                                     checked widget_value/checked">
+                              <span tal:content="widget_value/title">Unconfirmed</span>
+                              <br />
+                            </span>
+                          </small>
+                        </td>
+                    </table>
+                  </td>
+                  <td width="20%">
+                    <table>
+                      <tr>
+                        <td>
+                          <small><strong>Severity</strong></small>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <small>
+                            <span tal:repeat="widget_value view/getSeverityWidgetValues">
+                              <input name="field.severity:list"
+                                     type="checkbox"
+                                     tal:attributes="value widget_value/value;
+                                                     checked widget_value/checked">
+                              <span tal:content="widget_value/title">Critical</span>
+                              <br />
+                            </span>
+                          </small>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td width="20%%">
+                    <table>
+                      <tr>
+                        <td>
+                          <small><strong>Priority</strong></small>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <small>
+                            <span tal:repeat="widget_value view/getPriorityWidgetValues">
+                              <input name="field.priority:list"
+                                     type="checkbox"
+                                     tal:attributes="value widget_value/value;
+                                                     checked widget_value/checked">
+                              <span tal:content="widget_value/title">High</span>
+                              <br />
+                            </span>
+                          </small>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td width="15%">
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <th class="section-header">
+              People
+            </th>
+          </tr>
+          <tr>
+            <td class="section">
+              <table>
+                <tr>
+                  <td width="40%" tal:condition="view/shouldShowAssigneeWidget">
+                    <table>
+                      <tr>
+                        <td>
+                          <small><strong>Assignee</strong></small>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <small>
+                            <input type="radio" name="assignee_option" value="any" checked> Doesn't matter<br />
+                            <input type="radio" name="assignee_option" value="none"> Nobody<br />
+                            <input type="radio" name="assignee_option" value="choose">
+                            <span tal:content="structure view/assignee_widget" />
+                          </small>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td width="40%" tal:condition="view/shouldShowReporterWidget">
+                    <table>
+                      <tr>
+                        <td>
+                          <small><strong>Reporter</strong></small>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <small>
+                            <span tal:content="structure view/owner_widget" />
+                          </small>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td>&nbsp;</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr tal:condition="nothing">
+            <th class="section-header">
+              Release-Specific
+            </th>
+          </tr>
+          <tr>
+            <th class="section-header">
+              Other
+            </th>
+          </tr>
+          <tr>
+            <td class="section">
+              <table>
+                <tr>
+                  <td>
+                    <small>
+                      <span tal:content="structure view/omit_dupes_widget" />
+                      Omit duplicate bugs from search results
+                    </small>
+                  </td>
+                  <td>
+                    <small>
+                      <span tal:content="structure view/has_patch_widget" />
+                      Show only bugs with patches available
+                    </small>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <th class="section-header" style="font-weight: normal">
+              <input type="submit"
+                     name="search"
+                     value="Search bugs in mozilla-firefox in ubuntu"
+                     tal:attributes="value view/getAdvancedSearchButtonLabel"/>
+            </th>
+          </tr>
+        </table>
+      </form>
+      <script>
+        <!--
+            document.forms["search"].elements['field.searchtext'].focus();
+          -->
+      </script>
+    </div>
+    <div id="portal-column-two">
+      <metal:macro use-macro="context/@@main_template/action-menu" />
+    </div>
+    <div class="visualClear">&nbsp;</div>
+  </div>
+</body>
+</html>
+</tal:layout>

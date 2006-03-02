@@ -39,9 +39,9 @@ Testing the upload of a 16x16 image.
   ... -----------------------------75081443203208152087282358--
   ... """ % icon)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/people/name12
-  ...
 
 
 

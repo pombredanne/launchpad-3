@@ -6,7 +6,7 @@ import cgi, urllib
 
 from zope.interface import implements
 from canonical.lp.z3batching import Batch
-from canonical.lp.interfaces import IBatchNavigator
+from canonical.lp.interfaces import IBatchNavigator, ITableBatchNavigator
 
 class BatchNavigator:
 
@@ -97,17 +97,23 @@ class BatchNavigator:
         if current != size:
             url = self.generateBatchURL(batches[size-1])
             urls.append({'_last_':url})
-            
 
-        return urls    
-
-##         for page_number in range(len(batches)):
-##             this_batch = batches[page_number]
-##             url = self.generateBatchURL(this_batch)
-##             urls.append({ page_number + 1 : url })
-##         return urls
-
+        return urls
 
     def currentBatch(self):
         return self.batch
+
+
+class TableBatchNavigator(BatchNavigator):
+    """See canonical.launchpad.interfaces.ITableBatchNavigator."""
+    implements(ITableBatchNavigator)
+
+    def __init__(self, batch, request=None, columns_to_show=None):
+        self.batch = batch
+        self.request = request
+        self.show_column = {}
+
+        if columns_to_show:
+            for column_to_show in columns_to_show:
+                self.show_column[column_to_show] = True
 
