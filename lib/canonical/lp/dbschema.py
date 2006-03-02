@@ -1495,7 +1495,7 @@ class ImportStatus(DBSchema):
         This ProductSeries is in Sync mode and SHOULD NOT BE EDITED OR
         CHANGED.  At this point, protection of the data related to the
         upstream revision control system should be extreme, with only
-        launchpad.Special (in this case the buttsource team) able to affect
+        launchpad.Special (in this case the vcs-imports team) able to affect
         these fields. If it is necessary to stop the syncing then the status
         must be changed to STOPPED, and not to DONTSYNC.  """)
 
@@ -1511,7 +1511,7 @@ class ImportStatus(DBSchema):
         if they go back and branch off the previous release tag, we can
         amend the previous ProductSeries.  In theory, a STOPPED
         ProductSeries can be set to Sync again, but this requires serious
-        Bazaar fu, and the buttsource team.  """)
+        Bazaar fu, and the vcs-imports team.  """)
 
 
 class SourcePackageFileType(DBSchema):
