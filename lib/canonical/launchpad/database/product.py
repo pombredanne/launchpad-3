@@ -320,7 +320,7 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(Product.selectBy(active=True))
+        return iter(Product.selectBy(active=True, orderBy="-datecreated"))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -330,7 +330,7 @@ class ProductSet:
         return item
 
     def latest(self, quantity=5):
-        return Product.select(Product.q.active==True,
+        return Product.select(Product.q.active == True, 
                               orderBy='-datecreated',
                               limit=quantity)
 

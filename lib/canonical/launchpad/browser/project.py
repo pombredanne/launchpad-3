@@ -32,7 +32,8 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured, GetitemNavigation, Navigation)
+    structured, GetitemNavigation, Navigation, ContextMenu)
+
 
 _ = MessageIDFactory('launchpad')
 
@@ -49,6 +50,22 @@ class ProjectSetNavigation(GetitemNavigation):
 
     usedfor = IProjectSet
 
+    def breadcrumb(self):
+        return 'Projects'
+
+
+class ProjectSetContextMenu(ContextMenu):
+
+    usedfor = IProjectSet
+    links = ['register', 'listall']
+
+    def register(self):
+        text = 'Register a Project'
+        return Link('+new', text, icon='add')
+
+    def listall(self):
+        text = 'List All Projects'
+        return Link('+all', text, icon='list')
 
 class ProjectFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
