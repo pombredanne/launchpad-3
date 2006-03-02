@@ -421,7 +421,7 @@
             template="../templates/products-index.pt" />
         <browser:page
             name="+all"
-            template="../templates/registry-listall.pt" />
+            template="../templates/products-all.pt" />
         <browser:page
             name="+portlet-details"
             template="../templates/productset-portlet-details.pt" />
