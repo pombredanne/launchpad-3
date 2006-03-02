@@ -111,7 +111,9 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
             u'11 http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/mozilla--release--0.9.1',
             u'12 http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/mozilla--release--0.9',
             u'13 http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/mozilla--release--0.8',
-            u'14 http://bazaar.launchpad.net/gnome@arch.ubuntu.com/evolution--MAIN--0',
+            # XXX: The next line must be changed when merging with
+            # vcs-imports-pull-list -- DavidAllouche 2005-03-01
+            u'14 /srv/sm-ng/pushsftp-hosted/00/00/00/0e',
             u'15 http://example.com/gnome-terminal/main',
             u'16 http://example.com/gnome-terminal/2.6',
             u'17 http://example.com/gnome-terminal/2.4',
