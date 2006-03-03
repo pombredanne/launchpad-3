@@ -76,12 +76,14 @@ spider -- StuartBishop 20050822
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 
 >>> check("/projects")
+>>> check("/projects/+all")
 >>> check("/projects/+syncreview", auth=True)
 >>> check("/projects/+review", auth=True)
 >>> check("/projects/mozilla")
 >>> check("/projects/mozilla/firefox")
 
 >>> check("/products")
+>>> check("/products/+all")
 >>> check("/products/firefox")
 >>> check_not_found("/products/firefox/+series")
 >>> check("/products/firefox/+series/1.0")
