@@ -43,19 +43,6 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         # the meantime let's make sure).
         assert type(avatarId) is str
 
-        # XXX: These two asserts should be raise exceptions that cause proper
-        #      auth failures, not asserts.  (an assert should never be triggered
-        #      by bad user input).  The asserts cause the auth to fail anyway,
-        #      but it's ugly.
-        #  - Andrew Bennetts, 2005-01-21
-        #      Although, given that avatars are only created upon successful
-        #      authentication, avatarId must be a valid launchpad name, thus
-        #      these issues cannot arise.  This is less obvious for the Bazaar
-        #      1.x case, so I'll leave them in for now.
-        #  - Andrew Bennetts, 2006-02-28
-        assert '/' not in avatarId
-        assert avatarId not in ('.', '..')
-
         self.avatarId = avatarId
         self.homeDirsRoot = homeDirsRoot
         self._launchpad = launchpad
@@ -208,54 +195,8 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     def __init__(self, authserver):
         self.authserver = authserver
 
-    @staticmethod
-    def _unmungeUsername(username):
-        """Unmunge usernames, because baz doesn't work with @ in usernames.
-
-        Examples:
-
-        Usernames that aren't munged are unaffected.
-
-            >>> unmunge = PublicKeyFromLaunchpadChecker._unmungeUsername
-            >>> unmunge('foo@bar')
-            'foo@bar'
-            >>> unmunge('foo_bar@baz')
-            'foo_bar@baz'
-
-        Anything without an underscore is also not munged, and so unaffected.
-
-        (Usernames without an underscore aren't valid for the Bazaar 1.x part of
-        the supermirror, but are for the bzr part)
-
-            >>> unmunge('foo-bar')
-            'foo-bar'
-
-        Munged usernames have the last underscore converted.
-
-            >>> unmunge('foo_bar')
-            'foo@bar'
-            >>> unmunge('foo_bar_baz')
-            'foo_bar@baz'
-        """
-        
-        if '@' in username:
-            # Not munged, don't try to unmunge it.
-            return username
-
-        underscore = username.rfind('_')
-        if underscore == -1:
-            # No munging, return as-is.  (Although with an _ or a @, it won't
-            # auth, but let's keep it simple).
-            return username
-
-        # Replace the final underscore with an at sign.
-        unmunged = username[:underscore] + '@' + username[underscore+1:]
-        return unmunged
-
     def checkKey(self, credentials):
-        # Query the authserver with an unmunged username
-        username = self._unmungeUsername(credentials.username)
-        authorizedKeys = self.authserver.getSSHKeys(username)
+        authorizedKeys = self.authserver.getSSHKeys(credentials.username)
 
         # Add callback to try find the authorised key
         authorizedKeys.addCallback(self._cb_hasAuthorisedKey, credentials)
