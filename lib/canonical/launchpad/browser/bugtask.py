@@ -99,7 +99,8 @@ class BugTargetTraversalMixin:
         # because it was filtered out by privacy-aware code.
         for bugtask in helpers.shortlist(bug.bugtasks):
             if bugtask.target == context:
-                return bugtask
+                # Security proxy this object on the way out.
+                return getUtility(IBugTaskSet).get(bugtask.id)
 
         # If we've come this far, it means that no actual task exists in this
         # context, so we'll return a null bug task. This makes it possible to,
