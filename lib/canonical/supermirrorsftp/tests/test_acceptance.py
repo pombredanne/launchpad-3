@@ -23,6 +23,7 @@ from bzrlib.builtins import cmd_push
 from twisted.python.util import sibpath
 
 import canonical
+from canonical.config import config
 from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
@@ -30,18 +31,12 @@ from canonical.database.sqlbase import sqlvalues
 
 
 class AuthserverTacTestSetup(TacTestSetup):
-    
-    def __init__(self, root):
-        self._root = root
+    root = '/tmp/authserver-test'
     
     def setUpRoot(self):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
         os.makedirs(self.root, 0700)
-
-    @property
-    def root(self):
-        return self._root
 
     @property
     def tacfile(self):
@@ -107,7 +102,7 @@ class AcceptanceTests(BzrTestCase):
 
         # Start authserver.
         self.userHome = os.path.abspath(tempfile.mkdtemp())
-        self.authserver = AuthserverTacTestSetup(self.userHome)
+        self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
 
         # Create a local branch with one revision
@@ -313,4 +308,12 @@ class AcceptanceTests(BzrTestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
+
+
+# Kill any daemons left lying around from a previous interrupted run.
+# Be paranoid since we trash directories as part of this.
+assert config.default_section == 'testrunner', \
+        'Imported dangerous test harness outside of the test runner'
+AuthserverTacTestSetup().killTac()
+SFTPSetup().killTac()
 
