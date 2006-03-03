@@ -187,8 +187,7 @@ class Factory(factory.SSHFactory):
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     """Cred checker for getting public keys from launchpad.
 
-    It knows how to get the public keys from the authserver, and how to unmunge
-    usernames for baz.
+    It knows how to get the public keys from the authserver.
     """
     implements(ICredentialsChecker)
 
@@ -222,13 +221,6 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
 
         return False
         
-    def requestAvatarId(self, credentials):
-        # Do everything the super class does, plus unmunge the username if the
-        # key works.
-        d = SSHPublicKeyDatabase.requestAvatarId(self, credentials)
-        d.addCallback(self._unmungeUsername)
-        return d
-
 
 if __name__ == "__main__":
     # Run doctests.
