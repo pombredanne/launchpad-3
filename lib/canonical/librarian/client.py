@@ -53,7 +53,8 @@ class FileUploadClient:
     def _sendHeader(self, name, value):
         self._sendLine('%s: %s' % (name, value))
 
-    def addFile(self, name, size, file, contentType, expires=None):
+    def addFile(self, name, size, file, contentType, expires=None, 
+                debugID=None):
         """Add a file to the librarian.
 
         :param name: Name to store the file as
@@ -62,6 +63,8 @@ class FileUploadClient:
         :param contentType: mime-type, e.g. text/plain
         :param expires: Expiry time of file. See LibrarianGarbageCollection.
             Set to None to only expire when it is no longer referenced.
+        :param debugID: Optional.  If set, causes extra logging for this request
+            on the server, which will be marked with the value given.
 
         :returns: aliasID as an integer
         
@@ -82,9 +85,14 @@ class FileUploadClient:
 
         self._connect()
         try:
+            # Get the name of the database the client is using, so that the
+            # server can check that the client is using the same database as the
+            # server.
+            cur = cursor()
+            databaseName = self._getDatabaseName(cur)
+            
             # Generate new content and alias IDs.
             # (we'll create rows with these IDs later, but not yet)
-            cur = cursor()
             cur.execute("SELECT nextval('libraryfilecontent_id_seq')")
             contentID = cur.fetchone()[0]
             cur.execute("SELECT nextval('libraryfilealias_id_seq')")
@@ -94,8 +102,12 @@ class FileUploadClient:
             self._sendLine('STORE %d %s' % (size, name))
 
             # Send headers
+            self._sendHeader('Database-Name', databaseName)
             self._sendHeader('File-Content-ID', contentID)
             self._sendHeader('File-Alias-ID', aliasID)
+
+            if debugID is not None:
+                self._sendHeader('Debug-ID', debugID)
 
             # Send blank line
             self._sendLine('')
@@ -134,6 +146,11 @@ class FileUploadClient:
         finally:
             self._close()
 
+    def _getDatabaseName(self, cur):
+        cur.execute("SELECT current_database();")
+        databaseName = cur.fetchone()[0]
+        return databaseName
+
     def remoteAddFile(self, name, size, file, contentType, expires=None):
         """See canonical.librarian.interfaces.ILibrarianUploadClient"""
         if file is None:
@@ -148,6 +165,7 @@ class FileUploadClient:
             self._sendLine('STORE %d %s' % (size, name))
             self._sendLine('Content-type: %s' % contentType)
 
+            self._sendHeader('Database-Name', config.dbname)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
                 epoch = time.mktime(expires.utctimetuple())

@@ -60,7 +60,8 @@
       schema="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditView"
       label="Edit personal details"
-      fields="name displayname givenname familyname timezone"
+      fields="name displayname givenname familyname hide_email_addresses
+              timezone"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt"
       lp:url="/people/$person.id/+edit">
@@ -83,7 +84,7 @@
       <browser:widget
           field="homepage_content"
           class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="50"
+          displayWidth="30"
           height="30" />
   </browser:editform>
 
@@ -161,6 +162,14 @@
   </browser:pages>
 
   <browser:page
+     for="canonical.launchpad.interfaces.IPerson"
+     name="+portlet-otherpackages"
+     permission="zope.Public"
+     class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+     template="../templates/person-portlet-otherpackages.pt"
+     lp:url="/people/$Person.name/+portlet-otherpackages" />
+
+  <browser:page
       for="canonical.launchpad.interfaces.IPerson"
       name="+rdf"
       lp:url="/person/$Person.name/+rdf"
@@ -184,14 +193,32 @@
       template="../templates/person-assignedbugs.pt"
       lp:url="/people/$Person.name/+assignedbugs" />
 
+  <browser:generalform
+      name="+assignedbugs-advanced-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBugTaskSearch"
+      class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
+      fields="status severity priority assignee owner omit_dupes
+              searchtext"
+      permission="zope.Public"
+      template="../templates/bugtarget-advanced-search.pt"
+      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
+
+  <browser:page
+      name="+packagebugs-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-packagebugs-search.pt" />
+
   <browser:page
       name="+packagebugs"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
-      class="canonical.launchpad.browser.BugTasksOnMaintainedSoftwareSearchListingView"
+      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
       permission="zope.Public"
-      template="../templates/person-packagebugs.pt"
-      lp:url="/people/$Person.name/+packagebugs" />
+      template="../templates/person-packagebugs-overview.pt" />
 
   <browser:page
       name="+reportedbugs"
@@ -202,6 +229,17 @@
       template="../templates/person-reportedbugs.pt"
       lp:url="/people/$Person.name/+reportedbugs" />
 
+  <browser:generalform
+      name="+reportedbugs-advanced-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBugTaskSearch"
+      class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
+      fields="status severity priority assignee owner omit_dupes
+              searchtext"
+      permission="zope.Public"
+      template="../templates/bugtarget-advanced-search.pt"
+      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
+
   <browser:page
       name="+subscribedbugs"
       for="canonical.launchpad.interfaces.IPerson"
@@ -210,6 +248,17 @@
       permission="zope.Public"
       template="../templates/person-subscribedbugs.pt"
       lp:url="/people/$Person.name/+subscribedbugs" />
+
+  <browser:generalform
+      name="+subscribedbugs-advanced-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBugTaskSearch"
+      class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+      fields="status severity priority assignee owner omit_dupes
+              searchtext"
+      permission="zope.Public"
+      template="../templates/bugtarget-advanced-search.pt"
+      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
 
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
@@ -259,9 +308,9 @@
           template="../templates/person-editjabberids.pt"
           lp:url="/people/$person.id/+editjabberids" />
       <browser:page
-          name="+editgpgkeys"
-          template="../templates/person-editgpgkeys.pt"
-          lp:url="/people/$person.id/+editgpgkeys" />
+          name="+editpgpkeys"
+          template="../templates/person-editpgpkeys.pt"
+          lp:url="/people/$person.id/+editpgpkeys" />
   </browser:pages>
 
   <browser:pages
@@ -469,24 +518,24 @@
       name="+addbranch"
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IBranch"
-      fields="product name owner author title url home_page lifecycle_status summary"
+      fields="product name owner lifecycle_status url title summary home_page author"
       class="canonical.launchpad.browser.BranchAddView"
       facet="code"
-      keyword_arguments="product name owner author title url home_page lifecycle_status summary"
+      keyword_arguments="product name owner lifecycle_status url title summary home_page author"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt">
       <browser:widget
           field="url"
           class="zope.app.form.browser.TextWidget"
-          displayWidth="65" />
+          displayWidth="30" />
       <browser:widget
           field="home_page"
           class="zope.app.form.browser.TextWidget"
-          displayWidth="65" />
+          displayWidth="30" />
       <browser:widget
           field="title"
           class="zope.app.form.browser.TextWidget"
-          displayWidth="65" />
+          displayWidth="30" />
       <browser:widget
           field="summary"
           class="zope.app.form.browser.TextAreaWidget"
@@ -532,7 +581,7 @@
       <browser:widget
           field="teamdescription"
           class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="50"
+          displayWidth="30"
           height="10" />
   </browser:addform>
 

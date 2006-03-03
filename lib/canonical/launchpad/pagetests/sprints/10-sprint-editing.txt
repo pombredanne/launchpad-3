@@ -63,8 +63,8 @@ page.
   ... -----------------------------1049576830677042648151610755--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../sprints/ubz
-  ...Updated on ...
 
 

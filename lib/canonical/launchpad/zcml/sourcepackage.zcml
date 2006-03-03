@@ -88,11 +88,6 @@
             template="../templates/sourcepackage-translations.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+translations" />
         <browser:page
-            name="+buildlog"
-            facet="overview"
-            template="../templates/sourcepackage-buildlog.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+buildlog" />
-        <browser:page
             name="+builds"
             facet="overview"
             template="../templates/sourcepackage-builds.pt"
@@ -137,15 +132,6 @@
             template="../templates/object-potemplatenames.pt"
             lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+potemplatenames" />
     </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        name="+bugs"
-        facet="bugs"
-        class="canonical.launchpad.browser.packages.SourcePackageBugsView"
-        template="../templates/sourcepackage-bugs.pt"
-        permission="zope.Public"
-        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"

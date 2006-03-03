@@ -9,10 +9,6 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.vocabularies import IHugeVocabulary
 
-import logging
-
-from canonical.launchpad import _
-
 
 class ISinglePopupWidget(ISimpleInputWidget):
     # I chose to use onKeyPress because onChange only fires when focus
@@ -33,7 +29,6 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     """Window popup widget for single item choices from a huge vocabulary.
 
     The huge vocabulary must be registered by name in the vocabulary registry.
-
     """
     implements(ISinglePopupWidget)
 
@@ -49,29 +44,11 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     style = None
     cssClass = None
 
-    def _old_getFormValue(self):
-        # Check to see if there is only one possible match. If so, use it.
-        matches = self.matches()
-        if len(matches) == 1:
-            return matches[0].token
-
-        # Otherwise, return the invalid value the user entered
-        return super(SinglePopupWidget, self)._getFormValue()
-
-    def _getFormInput(self):
-        '''See zope.app.form.browser.widget.SimpleWidget'''
-        matches = self.matches()
-        if len(matches) == 1:
-            return matches[0].token
-        else:
-            return super(SinglePopupWidget, self)._getFormInput()
-
     _matches = None
     def matches(self):
-        '''Return a list of matches (as ITokenizedTerm) to whatever the
-           user currently has entered in the form.
-
-        '''
+        """Return a list of matches (as ITokenizedTerm) to whatever the
+        user currently has entered in the form.
+        """
         # Use a cached version if we have it to avoid repeating expensive
         # searches
         if self._matches is not None:
@@ -82,14 +59,15 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         if not formValue:
             return []
 
+        vocab = self.vocabulary
         # Special case - if the entered value is valid, it is an object
         # rather than a string (I think this is a bug somewhere)
         if not isinstance(formValue, basestring):
-            self._matches = [self.vocabulary.getTerm(formValue)]
+            self._matches = [vocab.getTerm(formValue)]
             return self._matches
 
         # Cache and return the search
-        self._matches = list(self.vocabulary.search(formValue))
+        self._matches = [vocab.toTerm(item) for item in vocab.search(formValue)]
         return self._matches
 
     def formToken(self):
@@ -121,43 +99,59 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
 class ISinglePopupView(Interface):
 
+    batch = Attribute('The BatchNavigator of the current results to display')
+
     def title():
-        'Title to use on the popup page'
+        """Title to use on the popup page"""
 
     def vocabulary():
-        'Return the IHugeVocabulary to display in the popup window'
+        """Return the IHugeVocabulary to display in the popup window"""
 
-    def batch():
-        'Return the BatchNavigator of the current results to display'
+    def search():
+        """Return the BatchNavigator of the current results to display"""
+
+    def hasMoreThanOnePage(self):
+        """Return True if there's more than one page with results."""
+
+    def currentTokenizedBatch(self):
+        """Return the ITokenizedTerms for the current batch."""
 
 
 class SinglePopupView(object):
     implements(ISinglePopupView)
 
-    batchsize = 15
+    _batchsize = 15
+    batch = None
 
     def title(self):
-        return _(u'Select %s' % self.request.form['vocabulary'])
+        """See ISinglePopupView"""
+        return self.vocabulary().displayname
 
     def vocabulary(self):
+        """See ISinglePopupView"""
         factory = zapi.getUtility(IVocabularyFactory,
-            self.request.form['vocabulary']
-            )
+            self.request.form['vocabulary'])
         vocabulary = factory(self.context)
-        assert IHugeVocabulary.providedBy(vocabulary), \
-                'Invalid vocabulary %s' % self.request.form['vocabulary']
+        assert IHugeVocabulary.providedBy(vocabulary), (
+            'Invalid vocabulary %s' % self.request.form['vocabulary'])
         return vocabulary
 
-    def batch(self):
-        # TODO: Dead chickens here! batching module needs refactoring.
-        # batch_end seems pointless too
-        # StuartBishop 2004/11/12
+    def search(self):
+        """See ISinglePopupView"""
         start = int(self.request.get('batch_start', 0))
-        #end = int(self.request.get('batch_end', self.batchsize))
-        search = self.request.get('search', None)
+        search_text = self.request.get('search', None)
         batch = Batch(
-                list=list(self.vocabulary().search(search)),
-                start=start, size=self.batchsize
-                )
-        return BatchNavigator(batch=batch, request=self.request)
+            list=self.vocabulary().search(search_text),
+            start=start, size=self._batchsize)
+        self.batch = BatchNavigator(batch=batch, request=self.request)
+        return self.batch
+
+    def hasMoreThanOnePage(self):
+        """See ISinglePopupView"""
+        return len(self.batch.batchPageURLs()) > 1
+
+    def currentTokenizedBatch(self):
+        """See ISinglePopupView"""
+        vocabulary = self.vocabulary()
+        return [vocabulary.toTerm(item) for item in self.batch.currentBatch()]
 

@@ -8,14 +8,16 @@ import warnings
 
 from zope.interface import implements
 from zope.app.rdb import ZopeConnection
+from zope.app.rdb.interfaces import DatabaseException
 
-from psycopgda.adapter import PsycopgAdapter
+from psycopgda.adapter import PsycopgAdapter, PsycopgConnection, PsycopgCursor
 import psycopg
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import connect
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
+import canonical.lp
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -61,17 +63,24 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
         using a thread local.
         """
         if not self.isConnected():
-            self._v_connection = ZopeConnection(
-                self._connection_factory(_dbuser=_dbuser), self)
+            try:
+                self._v_connection = PsycopgConnection(
+                    self._connection_factory(_dbuser=_dbuser), self
+                    )
+            except psycopg.Error, error:
+                raise DatabaseException, str(error)
 
     def _connection_factory(self, _dbuser=None):
         """Override method provided by PsycopgAdapter to pull
         connection settings from the config file
         """
-        self._registerTypes()
-        if _dbuser is None:
-            _dbuser = config.launchpad.dbuser
-        connection = connect(_dbuser, config.dbname)
+        self.setDSN('dbi://%s@%s/%s' % (
+            _dbuser or config.launchpad.dbuser,
+            config.dbhost or '',
+            config.dbname
+            ))
+
+        connection = PsycopgAdapter._connection_factory(self)
 
         if config.launchpad.db_statement_timeout is not None:
             cursor = connection.cursor()

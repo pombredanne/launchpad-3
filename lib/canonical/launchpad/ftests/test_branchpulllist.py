@@ -76,8 +76,7 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
         mock_request = MockRequest()
         mock_request.response = MockResponse()
         view = browser.BranchPullListing(None, mock_request)
-        expected_ids = sorted([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
-                               15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25])
+        expected_ids = range(1, 26)
         got_ids = sorted([branch.id for branch in view.get_branches_to_pull()])
         self.assertEqual(got_ids, expected_ids)
         # now check refresh logic: list any branch with either no last mirrored
@@ -98,21 +97,21 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
         view = browser.BranchPullListing(None, mock_request)
         listing = view.render()
         self.assertEqual(listing[-1], '\n')
-        expected = sorted([
-            u'1 http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0',
-            u'2 http://bazaar.ubuntu.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0',
-            u'3 http://bazaar.ubuntu.com/twisted@arch.ubuntu.com/twisted--trunk--0',
-            u'4 http://bazaar.ubuntu.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0',
-            u'5 http://bazaar.ubuntu.com/arch@arch.ubuntu.com/arch--devel--1.0',
-            u'6 http://bazaar.ubuntu.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0',
-            u'7 http://bazaar.ubuntu.com/plone@arch.ubuntu.com/plone--trunk--0',
-            u'8 http://bazaar.ubuntu.com/gnome@arch.ubuntu.com/gnome--evolution--2.0',
-            u'9 http://bazaar.ubuntu.com/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35',
-            u'10 http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.2',
-            u'11 http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.1',
-            u'12 http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.9',
-            u'13 http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.8',
-            u'14 http://bazaar.ubuntu.com/gnome@arch.ubuntu.com/evolution--MAIN--0',
+        expected = [
+            u'1 http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/mozilla--MAIN--0',
+            u'2 http://bazaar.launchpad.net/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0',
+            u'3 http://bazaar.launchpad.net/twisted@arch.ubuntu.com/twisted--trunk--0',
+            u'4 http://bazaar.launchpad.net/bugzilla@arch.ubuntu.com/bugzila--MAIN--0',
+            u'5 http://bazaar.launchpad.net/arch@arch.ubuntu.com/arch--devel--1.0',
+            u'6 http://bazaar.launchpad.net/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0',
+            u'7 http://bazaar.launchpad.net/plone@arch.ubuntu.com/plone--trunk--0',
+            u'8 http://bazaar.launchpad.net/gnome@arch.ubuntu.com/gnome--evolution--2.0',
+            u'9 http://bazaar.launchpad.net/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35',
+            u'10 http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/mozilla--release--0.9.2',
+            u'11 http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/mozilla--release--0.9.1',
+            u'12 http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/mozilla--release--0.9',
+            u'13 http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/mozilla--release--0.8',
+            u'14 http://escudero:8000/0000000e',
             u'15 http://example.com/gnome-terminal/main',
             u'16 http://example.com/gnome-terminal/2.6',
             u'17 http://example.com/gnome-terminal/2.4',
@@ -123,10 +122,9 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
             u'22 http://not.launchpad.server.com/',
             u'23 http://whynot.launchpad.server.com/',
             u'24 http://users.example.com/gnome-terminal/launchpad',
-            u'25 /srv/sm-ng/pushsftp-hosted/00/00/00/19'])
-            
-        self.assertEqual(sorted(listing.splitlines()), expected)
-        
+            u'25 file:///srv/sm-ng/pushsftp-hosted/00/00/00/19']
+        self.assertEqual(sorted(listing.splitlines()), sorted(expected))
+
     def test_branch_pull_mime_type(self):
         self.login()
         mock_request = MockRequest()

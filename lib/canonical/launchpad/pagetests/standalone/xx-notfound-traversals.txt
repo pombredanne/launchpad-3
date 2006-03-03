@@ -76,12 +76,14 @@ spider -- StuartBishop 20050822
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 
 >>> check("/projects")
+>>> check("/projects/+all")
 >>> check("/projects/+syncreview", auth=True)
 >>> check("/projects/+review", auth=True)
 >>> check("/projects/mozilla")
 >>> check("/projects/mozilla/firefox")
 
 >>> check("/products")
+>>> check("/products/+all")
 >>> check("/products/firefox")
 >>> check_not_found("/products/firefox/+series")
 >>> check("/products/firefox/+series/1.0")
@@ -92,12 +94,6 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox/+series/1.0/+specs")
 >>> check("/products/firefox/+series/1.0/+addrelease", auth=True)
 >>> check("/products/firefox/+bugs")
->>> check("/products/firefox/+bugs-open")
->>> check("/products/firefox/+bugs-assigned-to", auth=True)
->>> check("/products/firefox/+bugs-critical")
->>> check("/products/firefox/+bugs-untriaged")
->>> check("/products/firefox/+bugs-all")
->>> check("/products/firefox/+bugs-advanced")
 
 >>> check_not_found("/products/firefox/+milestone")
 >>> check("/products/firefox/+milestone/1.0")
@@ -109,12 +105,6 @@ spider -- StuartBishop 20050822
 
 >>> check("/distros/ubuntu")
 >>> check("/distros/ubuntu/+bugs")
->>> check("/distros/ubuntu/+bugs-open")
->>> check("/distros/ubuntu/+bugs-assigned-to", auth=True)
->>> check("/distros/ubuntu/+bugs-critical")
->>> check("/distros/ubuntu/+bugs-untriaged")
->>> check("/distros/ubuntu/+bugs-all")
->>> check("/distros/ubuntu/+bugs-advanced")
 >>> check("/distros/ubuntu/+specs")
 >>> check("/distros/ubuntu/+cve")
 >>> check("/distros/ubuntu/+specplan")
@@ -126,7 +116,14 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
+>>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
+>>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
+>>> check("/distros/ubuntu/hoary/+source/pmount")
+>>> check("/distros/ubuntu/hoary/+source/libstdc++")
+>>> check("/distros/ubuntu/hoary/i386/pmount/0.1-1")
+
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
+>>> check("/distros/ubuntu/+source/evolution/+portlet-bugfilters")
 
 >>> check("/distros/kubuntu/+bugs")
 >>> check("/distros/kubuntu/+specs")
@@ -140,12 +137,6 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/hoary/+translations")
 >>> check("/distros/ubuntu/hoary/+packaging")
 >>> check("/distros/ubuntu/hoary/+bugs")
->>> check("/distros/ubuntu/hoary/+bugs-open")
->>> check("/distros/ubuntu/hoary/+bugs-assigned-to", auth=True)
->>> check("/distros/ubuntu/hoary/+bugs-critical")
->>> check("/distros/ubuntu/hoary/+bugs-untriaged")
->>> check("/distros/ubuntu/hoary/+bugs-all")
->>> check("/distros/ubuntu/hoary/+bugs-advanced")
 
 >>> check("/distros/ubuntu/hoary/i386")
 >>> check("/distros/ubuntu/hoary/i386/+search")
@@ -158,13 +149,17 @@ spider -- StuartBishop 20050822
 #>>> check("/distros/ubuntu/hoary/+source/evolution/+hctstatus")
 
 >>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/distros/ubuntu/hoary/+source/evolution/+buildlog")
+>>> check_not_found("/distros/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
 >>> check("/distros/ubuntu/hoary/+source/evolution/+gethelp")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+translate")
 >>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
 ...       auth=True)
+
+
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+portlet-bugfilters")
 
 >>> check("/malone")
 >>> check_redirect("/malone/assigned")
@@ -305,7 +300,7 @@ And this is for a person:
 >>> check("/people/name16/+assignedbugs")
 >>> check("/people/name16/+packagebugs")
 >>> check("/people/name16/+editsshkeys", auth=True)
->>> check("/people/name16/+editgpgkeys", auth=True)
+>>> check("/people/name16/+editpgpkeys", auth=True)
 >>> check("/people/name16/+editwikinames", auth=True)
 >>> check("/people/name16/+editjabberids", auth=True)
 >>> check("/people/name16/+codesofconduct", auth=True)
@@ -337,3 +332,7 @@ And this is for a person:
 >>> check_not_found(
 ...     '/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
 
+
+Soyuz pages
+>>> check("/+builds/+build/7/")
+>>> check("/+builds/+build/7/pmount/")

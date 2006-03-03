@@ -3,9 +3,6 @@
 
 __metaclass__ = type
 
-# XXX: Write doctests for this network protocol in the style of page tests.
-#       - Andrew Bennetts, 2005-03-24.
-
 from datetime import datetime
 from pytz import utc
 
@@ -14,10 +11,13 @@ from twisted.internet.threads import deferToThread
 from twisted.protocols import basic
 from twisted.python import log
 
+from canonical.librarian.storage import WrongDatabaseError
+
 
 class ProtocolViolation(Exception):
     def __init__(self, msg):
         self.msg = msg
+        self.args = (msg,)
 
 
 class FileUploadProtocol(basic.LineReceiver):
@@ -45,15 +45,18 @@ class FileUploadProtocol(basic.LineReceiver):
         not specified, the server will generate one.
       :File-Expires: if specified, the expiry time of this alias in ISO 8601
         format. As per LibrarianGarbageCollection.
+      :Database-Name: if specified, the name of the database the client is
+        connected to.  The server will check that this matches, and reject the
+        request if it doesn't.
 
     The File-Content-ID and File-Alias-ID headers are also described in
     https://wiki.launchpad.canonical.com/LibrarianTransactions.
     
     Unrecognised headers will be ignored.
 
-    If something goes wrong, the server will reply with a 400 (bad request) or
-    500 (internal server error) response codes instead, and an appropriate
-    message.
+    If something goes wrong, the server will reply with a 400 (bad request, i.e.
+    client error) or 500 (internal server error) response codes instead, and an
+    appropriate message.
 
     Once the server has replied, the client may re-use the connection as if it
     were just established to start a new upload.
@@ -66,19 +69,35 @@ class FileUploadProtocol(basic.LineReceiver):
         try:
             getattr(self, 'line_' + self.state, self.badLine)(line)
         except ProtocolViolation, e:
-            self.sendLine('400 ' + e.msg)
-            self.transport.loseConnection()
+            self.sendError(e.msg)
         except:
-            self.error()
+            self.unknownError()
+
+    def sendError(self, msg, code='400'):
+        """Sends a correctly formatted error to the client, and closes the
+        connection."""
+        self.sendLine(code + ' ' + msg)
+        self.transport.loseConnection()
     
-    def error(self, failure=None):
+    def unknownError(self, failure=None):
         log.msg('Uncaught exception in FileUploadProtocol:')
         if failure is not None:
             log.err(failure)
         else:
             log.err()
-        self.sendLine('500 Internal server error')
-        self.transport.loseConnection()
+        self.sendError('Internal server error', '500')
+
+    def translateErrors(self, failure):
+        """Errback to translate storage errors to protocol errors."""
+        failure.trap(WrongDatabaseError)
+        exc = failure.value
+        raise ProtocolViolation(
+            "Wrong database %r, should be %r" 
+            % (exc.clientDatabaseName, exc.serverDatabaseName))
+
+    def protocolErrors(self, failure):
+        failure.trap(ProtocolViolation)
+        self.sendError(failure.value.msg)
     
     def badLine(self, line):
         raise ProtocolViolation('Unexpected message from client: ' + line)
@@ -104,6 +123,10 @@ class FileUploadProtocol(basic.LineReceiver):
                 raise ProtocolViolation(
                     "File-Content-ID and File-Alias-ID must both be specified"
                     )
+
+            # The Database-Name header is always required.
+            if self.newFile.databaseName is None:
+                raise ProtocolViolation("Database-Name header is required")
             
             # If that's ok, we're ready to receive the file.
             self.state = 'file'
@@ -173,6 +196,11 @@ class FileUploadProtocol(basic.LineReceiver):
         self.newFile.expires = datetime.fromtimestamp(
                 epoch).replace(tzinfo=utc)
         
+    def header_database_name(self, value):
+        self.newFile.databaseName = value
+
+    def header_debug_id(self, value):
+        self.newFile.debugID = value
 
     def rawDataReceived(self, data):
         realdata, rest = data[:self.bytesLeft], data[self.bytesLeft:]
@@ -189,12 +217,21 @@ class FileUploadProtocol(basic.LineReceiver):
                     self.sendLine('200 %s/%s' % (fileID, aliasID))
                 else:
                     self.sendLine('200')
+            deferred.addBoth(self.logDebugging)
             deferred.addCallback(_sendID)
-            deferred.addErrback(self.error)
+            deferred.addErrback(self.translateErrors)
+            deferred.addErrback(self.protocolErrors)
+            deferred.addErrback(self.unknownError)
 
             # Treat remaining bytes (if any) as a new command
             self.state = 'command'
             self.setLineMode(rest)
+
+    def logDebugging(self, result_or_failure):
+        if self.newFile.debugID is not None:
+            for msg in self.newFile.debugLog:
+                log.msg('Debug %s: %s' % (self.newFile.debugID, msg))
+        return result_or_failure
 
     def _storeFile(self):
         return deferToThread(self.newFile.store)

@@ -281,7 +281,7 @@ Reason:
         """
         assert self.order is None
         self.orderCreated = True
-        all_fields = (self.shipping_fields + 
+        all_fields = (self.shipping_fields +
                       ['quantityx86', 'quantityamd64', 'quantityppc', 'reason'])
         kw = {}
         for field in all_fields:
@@ -289,6 +289,10 @@ Reason:
 
         kw['recipient'] = self.user
         order = getUtility(IShippingRequestSet).new(**kw)
+        # XXX: This flush_database_updates() call is an attempt to fix 
+        # https://launchpad.net/products/shipit/+bug/32425.
+        # -- Guilherme Salgado, 2006-02-22
+        flush_database_updates()
         self.order = order
         if self._shouldAutomaticallyApprove(order):
             order.approve(
@@ -694,7 +698,8 @@ class ShippingRequestAdminView:
         shipped_requests = self.context.recipient.shippedShipItRequests()
         if not shipped_requests:
             return False
-        elif len(shipped_requests) == 1 and shipped_requests[0] == self.context:
+        elif (shipped_requests.count() == 1 
+              and shipped_requests[0] == self.context):
             return False
         else:
             return True

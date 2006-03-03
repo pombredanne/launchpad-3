@@ -13,7 +13,7 @@ project page and that it has no translation group assigned.
   <BLANKLINE>
   ...
               <b>Translation Group:</b><br />
-              <img src="/++resource++languages.gif">
+              <img src="/@@/languages.gif">
   <BLANKLINE>
   <BLANKLINE>
               <i>Not assigned</i><br />
@@ -92,7 +92,7 @@ the relevant portlet.
   <BLANKLINE>
   ...
               <b>Translation Group:</b><br />
-              <img src="/++resource++languages.gif">
+              <img src="/@@/languages.gif">
   <BLANKLINE>
               <a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a><br />
   <BLANKLINE>

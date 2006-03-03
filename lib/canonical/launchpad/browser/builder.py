@@ -96,7 +96,7 @@ class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
     usedfor = IBuilder
     facet = 'overview'
-    links = ['edit', 'mode', 'cancel']
+    links = ['edit', 'mode', 'cancel', 'admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -112,6 +112,11 @@ class BuilderOverviewMenu(ApplicationMenu):
     def cancel(self):
         text = 'Cancel Current Job'
         return Link('+cancel', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        text = 'Administer Builder'
+        return Link('+admin', text, icon='edit')
 
 
 class CommonBuilderView:
