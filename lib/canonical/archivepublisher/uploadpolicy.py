@@ -107,6 +107,10 @@ class AbstractUploadPolicy:
 
     def policySpecificChecks(self, upload):
         """Implement any policy-specific checks here."""
+        # all policies permit upload of a single custom
+        if upload.single_custom:
+            # refuses any further checks
+            return
         # Currently the only check we make is that if the upload is binaryful
         # we don't allow more than one build.
         # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit

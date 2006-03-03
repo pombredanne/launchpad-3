@@ -55,6 +55,7 @@ from canonical.database.constants import UTC_NOW
 custom_sections = {
     'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
     'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
+    'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
     }
 
 changes_mandatory_fields = set([
@@ -495,6 +496,15 @@ class NascentUpload:
     def archdep(self):
         self._verify_architecture()
         return self._archdep
+
+    @cachedproperty
+    def single_custom(self):
+        """Identify single custom uploads.
+
+        Return True if the current upload is a single custom file.
+        It is necessary to identify dist-upgrade section uploads.
+        """
+        return len(self.files) == 1 and self.files[0].custom
 
     @property
     def archs(self):
@@ -1104,6 +1114,11 @@ class NascentUpload:
                     uploaded_file.priority, uploaded_file.filename))
 
             self.verify_components_and_sections(uploaded_file)
+
+        # Identify single file CustomUpload, refuse further checks
+        if self.single_custom:
+            self.logger.debug("Single Custom Upload detected.")
+            return
 
         # Finally verify that sourceful/binaryful match the policy
         if self.sourceful and not self.policy.can_upload_source:
@@ -1860,7 +1875,7 @@ class NascentUpload:
         """Insert this nascent upload into the database."""
         if self.sourceful:
             self.insert_source_into_db()
-        if self.binaryful:
+        if self.binaryful and not self.single_custom:
             self.insert_binary_into_db()
 
         # create a DRQ entry in new state
@@ -1872,7 +1887,7 @@ class NascentUpload:
         if self.sourceful:
             queue_root.addSource(self.policy.sourcepackagerelease)
         # If we're binaryful, add the build
-        if self.binaryful:
+        if self.binaryful and not self.single_custom:
             # XXX cprov 20060224: don't rely on policy pockets for binary
             # uploads, they always are traget to distrorelease 'autobuild',
             # which means pocket RELEASE. It target any non-RELEASE pocket
