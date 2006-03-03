@@ -26,6 +26,10 @@ class UnknownBugTrackerTypeError(Exception):
         return self.bugtrackertypename
 
 
+class UnsupportedBugTrackerVersion(Exception):
+    """The bug tracker version is not supported."""
+
+
 class BugTrackerConnectError(Exception):
     """
     Exception class to catch misc errors contacting a bugtracker
@@ -77,8 +81,9 @@ class Bugzilla(ExternalSystem):
         else:
             self.version = self._probe_version()
         if not self.version or self.version < '2.16':
-            raise NotImplementedError("Unsupported version %r for %s" 
-                                      % (self.version, baseurl))
+            raise UnsupportedBugTrackerVersion(
+                "Unsupported version %r for %s" % (self.version, baseurl))
+
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
         # For some reason, bugs.kde.org doesn't allow the regular urllib
