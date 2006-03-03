@@ -5,6 +5,10 @@ launchpad-buildd (26) unstable; urgency=low
   * Port over sanae's build log regex parsing to allow us to do:
     - Automatic dep-wait handling, based on sbuild's logs of apt-get.
     - Automatic give-backs for a few corner cases (like kernel bugs).
+  * Make sbuild stop dying if we have no sendmail installed, since we
+    don't really want it sending mail in the launchpad world anyway.
+  * Call sbuild and apt with "LANG=C", so we don't have to worry about
+    locales matching between the base system and the autobuild chroots.
   * Clear up confusion in build states with 's/BUILDFAIL/PACKAGEFAIL/'
 
  -- Adam Conrad <adconrad@ubuntu.com>  Mon, 27 Feb 2006 14:00:08 +1100
