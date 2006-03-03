@@ -96,9 +96,7 @@ class ArchiveManagerJobHelper(object):
     def makeJob(self):
         job = self.jobType()
         job.archivename = "importd@example.com"
-        job.category = "test"
-        job.branchto = "branch"
-        job.archversion = "0"
+        job.nonarchname = "test--branch--0"
         job.slave_home = self.sandbox_helper.sandbox_path
         job.archive_mirror_dir = self.sandbox_helper.path('mirrors')
         return job
@@ -123,8 +121,7 @@ class ArchiveManagerHelper(object):
 
     def makeVersion(self):
         job = self.job_helper.makeJob()
-        version_name = '%s/%s--%s--%s' % (
-            job.archivename, job.category, job.branchto, job.archversion)
+        version_name = '%s/%s' % (job.archivename, job.nonarchname)
         return arch.Version(version_name)
 
 
