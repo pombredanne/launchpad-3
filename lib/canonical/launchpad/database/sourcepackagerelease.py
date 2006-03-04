@@ -77,6 +77,20 @@ class SourcePackageRelease(SQLBase):
         return None
 
     @property
+    def failed_builds(self):
+        return [build for build in self.builds
+                if build.buildstate == BuildStatus.FAILEDTOBUILD]
+
+    @property
+    def needs_building(self):
+        for build in self.builds:
+            if build.buildstate in [BuildStatus.NEEDSBUILD,
+                                    BuildStatus.MANUALDEPWAIT,
+                                    BuildStatus.CHROOTWAIT]:
+                return True
+        return False
+
+    @property
     def name(self):
         return self.sourcepackagename.name
 
