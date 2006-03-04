@@ -6,7 +6,20 @@ __all__ = ['LaunchpadCelebrities']
 from zope.interface import implements
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
-    IPersonSet, IDistributionSet, IBugTrackerSet)
+    IPersonSet, IDistributionSet, IBugTrackerSet, NotFoundError)
+
+class MutatedCelebrityError(Exception):
+    """A celebrity has had its id or name changed in the database.
+    
+    This would indicate a major prodution screwup.
+    """
+
+
+class MissingCelebrityError(Exception):
+    """A celebrity cannot be found in the database.
+
+    Usually this means it has not yet been created.
+    """
 
 class CelebrityDescriptor:
     """An attribute of LaunchpadCelebrities
@@ -45,12 +58,20 @@ class CelebrityDescriptor:
 
         utility = getUtility(self.interface)
         if self.id is None:
-            celebrity = utility.getByName(self.name)
+            try:
+                celebrity = utility.getByName(self.name)
+                if celebrity is None:
+                    raise MissingCelebrityError(self.name)
+            except NotFoundError:
+                raise MissingCelebrityError(self.name)
             self.id = celebrity.id
         else:
-            celebrity = utility.get(self.id)
-            assert celebrity is not None, 'Celebrity id has changed'
-            assert celebrity.name == self.name, 'Celebrity name has changed'
+            try:
+                celebrity = utility.get(self.id)
+                if celebrity is None or celebrity.name != self.name:
+                    raise MutatedCelebrityError(self.name)
+            except NotFoundError:
+                raise MutatedCelebrityError(self.name)
         return celebrity
 
 
