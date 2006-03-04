@@ -9,19 +9,19 @@ at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
   >>> from zope.interface.verify import verifyObject
-  >>> from canonical.launchpad.database import Build, BuildSet, DistributionSet
-  >>> from canonical.launchpad.database import DistroRelease
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, IBuildSet)
   >>> from canonical.lp.dbschema import BuildStatus
 
-  >>> ubuntu = DistributionSet()['ubuntu']
-  >>> warty = DistroRelease.get(6)
-  >>> hoary = DistroRelease.get(3)
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> warty = ubuntu['warty']
+  >>> hoary = ubuntu['hoary']
 
 
 First up, can we get the builds out of the sample data?
 
-  >>> firefox_build = Build.get(2)
-  >>> pmount_build = Build.get(7)
+  >>> firefox_build = getUtility(IBuildSet).getByBuildID(2)
+  >>> pmount_build = getUtility(IBuildSet).getByBuildID(7)
 
 Let's check the complex properties of a build object.
 
@@ -41,12 +41,15 @@ Let's check the complex properties of a build object.
   >>> firefox_build.buildlog.url
   'http://localhost:58000/34/evolution-2.2-test.pot'
 
+  >>> firefox_build.changesfile
+  <LibraryFileAlias ...>
+
 Test "reset" functionality:
 
   >>> firefox_build.can_be_reset
   False
 
-  >>> resetable_build = Build.get(9)
+  >>> resetable_build = getUtility(IBuildSet).getByBuildID(9)
 
   >>> resetable_build.title
   u'i386 build of pmount 0.1-1 in ubuntu warty'
@@ -62,7 +65,6 @@ Test "reset" functionality:
 
 Save previous state:
 
-  >>> changes = resetable_build.changes
   >>> datebuilt = resetable_build.datebuilt
   >>> builder = resetable_build.builder
   >>> buildduration = resetable_build.buildduration
@@ -76,16 +78,12 @@ Build record has no history and is NEEDSBUILD:
   >>> resetable_build.builder is None
   True
 
-  >>> resetable_build.changes is None
-  True
-
   >>> resetable_build.buildstate.value is 0
   True
 
 Restore Build(9) to previous state to avoid mess with other tests.
 
   >>> resetable_build.buildstate = BuildStatus.FAILEDTOBUILD
-  >>> resetable_build.changes = changes
   >>> resetable_build.datebuilt = datebuilt
   >>> resetable_build.builder = builder
   >>> resetable_build.buildduration = buildduration
@@ -200,7 +198,7 @@ Rollback transaction to no disturb the other tests:
 The BuildSet class gives us some useful ways to consider the
 collection of builds.
 
-  >>> bs = BuildSet()
+  >>> bs = getUtility(IBuildSet)
 
 We can find builds given a source package release and architecture tag.
 
@@ -210,7 +208,7 @@ We can find builds given a source package release and architecture tag.
 We can find recent and pending builds for a given distrorelease.
 
   >>> hoary.getBuildRecords().count()
-  3
+  4
 
 Or for a given distroarchrelease.
 
@@ -219,12 +217,12 @@ Or for a given distroarchrelease.
   u'The Hoary Hedgehog Release for i386 (x86)'
 
   >>> hoaryi386.getBuildRecords().count()
-  3
+  4
 
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  5
+  6
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
@@ -275,6 +273,8 @@ Now we can see an extra PENDING build record:
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
   3
+
+Note that they are ordered by DESC lastscore, as expected:
 
   >>> for b in builds:
   ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore

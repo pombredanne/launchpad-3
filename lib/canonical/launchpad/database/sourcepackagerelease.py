@@ -227,8 +227,7 @@ class SourcePackageRelease(SQLBase):
                      datecreated=datecreated,
                      pocket=pocket)
 
-    def getBuildByArch(self, distroarchrelease,
-                       pocket=PackagePublishingPocket.RELEASE):
+    def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
         query = """
         build.id = binarypackagerelease.build AND
@@ -236,18 +235,16 @@ class SourcePackageRelease(SQLBase):
             binarypackagepublishing.binarypackagerelease AND
         binarypackagepublishing.distroarchrelease = %s AND
         build.sourcepackagerelease = %s AND
-        binarypackagerelease.architecturespecific = true AND
-        build.pocket = %s
-        """  % sqlvalues(distroarchrelease, self, pocket)
+        binarypackagerelease.architecturespecific = true
+        """  % sqlvalues(distroarchrelease.id, self.id)
 
         tables = ['binarypackagerelease', 'binarypackagepublishing']
 
         builds = Build.select(query, clauseTables=tables)
 
         if builds.count() == 0:
-            builds = Build.selectBy(distroarchrelease=distroarchrelease,
-                                    sourcepackagerelease=self,
-                                    pocket=pocket)
+            builds = Build.selectBy(distroarchreleaseID=distroarchrelease.id,
+                                    sourcepackagereleaseID=self.id)
             if builds.count() == 0:
                 return None
 

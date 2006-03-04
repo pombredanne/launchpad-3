@@ -172,10 +172,10 @@ class DistroArchRelease(SQLBase):
 
     def findDepCandidateByName(self, name):
         """See IPublishedSet."""
-        return PublishedPackage.selectOneBy(
+        return PublishedPackage.selectFirstBy(
             binarypackagename=name, distroarchreleaseID=self.id,
-            packagepublishingstatus=dbschema.PackagePublishingStatus.PUBLISHED
-            )
+            packagepublishingstatus=dbschema.PackagePublishingStatus.PUBLISHED,
+            orderBy=['-id'])
 
     def getAllReleasesByStatus(self, status):
         """See IDistroArchRelease."""

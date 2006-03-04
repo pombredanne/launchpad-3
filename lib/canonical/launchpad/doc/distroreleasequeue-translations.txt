@@ -9,6 +9,7 @@ First, we do some needed imports.
   ...     SecureSourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
 
   >>> from canonical.archivepublisher.nascentupload import NascentUpload
   >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
@@ -87,7 +88,8 @@ Do the upload into the system.
   >>> pmount_upload.changes_filename == datadir("pmount_0.9.7-2ubuntu2_amd64.changes")
   True
 
-  >>> build = source_package_release.createBuild(dapper_amd64)
+  >>> build = source_package_release.createBuild(
+  ...      dapper_amd64, pocket=PackagePublishingPocket.RELEASE)
   >>> mock_options = MockOptions()
   >>> mock_options.buildid = build.id
   >>> pmount_upload.policy.setOptions(mock_options)

@@ -17,7 +17,6 @@ from email import message_from_string
 from optparse import OptionParser
 from zope.component import getUtility
 
-from canonical.encoding import guess
 from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -33,7 +32,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.launchpad.mail import sendmail
 
-from canonical.encoding import ascii_smash
+from canonical.encoding import ascii_smash, guess as guess_encoding
 
 from canonical.archivepublisher.template_messages import (
     announce_template, rejection_template)
@@ -41,7 +40,7 @@ from canonical.archivepublisher.template_messages import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.archivepublisher.utils import (
-    fix_maintainer, ParseMaintError)
+    safe_fix_maintainer, ParseMaintError)
 
 from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
@@ -342,12 +341,12 @@ class QueueAction:
         else:
             os.remove(temp_name)
 
-            (rfc822, rfc2047, name, email) = fix_maintainer(
-                ascii_smash(changes['maintainer']), 'maintainer')
+            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+                changes['maintainer'], 'maintainer')
             full_set.add(email)
 
-            (rfc822, rfc2047, name, email) = fix_maintainer(
-                ascii_smash(changes['changed-by']), 'changed-by')
+            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+                changes['changed-by'], 'changed-by')
             full_set.add(email)
 
             # Finally, filter the set of recipients based on the whitelist
@@ -499,7 +498,10 @@ class QueueActionReject(QueueAction):
                         queue_item.changesfile)
 
                     queue_item.changesfile.open()
-                    changescontent = queue_item.changesfile.read()
+                    # XXX cprov 20060221: guess_encoding breaks the
+                    # GPG signature.
+                    changescontent = guess_encoding(
+                        queue_item.changesfile.read())
                     queue_item.changesfile.close()
 
                     replacements = {
@@ -512,7 +514,7 @@ class QueueActionReject(QueueAction):
 
                     # append an email describing this action.
                     message = rejection_template % replacements
-                    self.send_email(message.decode('ascii'))
+                    self.send_email(message)
 
         self.printRule()
         self.printBottom()
@@ -552,22 +554,25 @@ class QueueActionAccept(QueueAction):
                         recipients.append(self.announcelist)
 
                     queue_item.changesfile.open()
-                    changescontent = queue_item.changesfile.read()
+                    # XXX cprov 20060221: guess_encoding breaks the
+                    # GPG signature.
+                    changescontent = guess_encoding(
+                        queue_item.changesfile.read())
                     queue_item.changesfile.close()
 
                     replacements = {
                         "MAINTAINERFROM": sender,
-                        "RECIPIENT": ", ".join(recipients),
                         "SOURCE": src_rel.name,
                         "VERSION": src_rel.version,
                         "ARCH": 'source',
                         "CHANGESFILE": changescontent,
                         "SUMMARY": summary,
+                        "ANNOUNCE": ", ".join(recipients),
                         }
 
                     # append an email describing this action.
                     message = announce_template % replacements
-                    self.send_email(message.decode('ascii'))
+                    self.send_email(message)
 
         self.printRule()
         self.printBottom()

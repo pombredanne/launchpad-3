@@ -843,12 +843,10 @@ class BinaryPackageHandler:
             build = Build(processor=processor.id,
                           distroarchrelease=distroarchrelease.id,
                           buildstate=BuildStatus.FULLYBUILT,
-                          gpgsigningkey=key,
                           sourcepackagerelease=srcpkg.id,
                           buildduration=None,
                           buildlog=None,
                           builder=None,
-                          changes=None,
                           datebuilt=None,
                           pocket=self.pocket)
         return build

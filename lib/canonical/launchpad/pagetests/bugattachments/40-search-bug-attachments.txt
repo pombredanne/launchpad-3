@@ -31,9 +31,9 @@ First we add some more attachments.
   ... ------------P7v4Oj3X8teE7hHMyHGM69--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/products/firefox/+bug/1
-  ...
 
   >>> print http(r"""
   ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+addattachment HTTP/1.1
@@ -70,9 +70,9 @@ First we add some more attachments.
   ... ------------vvmutbqRtMHDsEUHOtf3gM--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/distros/debian/+source/mozilla-firefox/+bug/2
-  ...
 
   >>> print http(r"""
   ... POST /products/firefox/+bug/4/+addattachment HTTP/1.1
@@ -109,9 +109,9 @@ First we add some more attachments.
   ... ------------KNGhOUqXp3rG7Nr29s6MiJ--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/products/firefox/+bug/4
-  ...
 
 And now we search for patches for firefox bugs.
 

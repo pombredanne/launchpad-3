@@ -82,7 +82,7 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
 
   >>> for item in accepted_queue:
   ...     for source in item.sources:
-  ...         print source.sourcepackagerelease.sourcepackagename.name
+  ...         print source.sourcepackagerelease.name
   ...     item.realiseUpload(MockLogger(False))
   ed
   DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary

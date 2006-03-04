@@ -66,9 +66,9 @@
   ... -----------------------------1686168710640211894599015137--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://localhost:9000/people/name16
-  ...
 
 
   Now we check to make sure the displayname was changed and the email

@@ -511,6 +511,8 @@ COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically subscribed to every bug targeted to this distribution.';
+COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
+COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
 
 /* DistroRelease */
 
@@ -957,6 +959,20 @@ COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
+
+-- Build
+COMMENT ON TABLE Builder IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchrelease.';
+COMMENT ON COLUMN Build.datecreated IS 'When the build record was created.';
+COMMENT ON COLUMN Build.datebuilt IS 'When the build record was processed.';
+COMMENT ON COLUMN Build.buildduration IS 'How long this build took to be processed.';
+COMMENT ON COLUMN Build.distroarchrelease IS 'Points the target Distroarchrelease for this build.';
+COMMENT ON COLUMN Build.processor IS 'Points to the Distroarchrelease available processor target for this build.';
+COMMENT ON COLUMN Build.sourcepackagerelease IS 'Sourcepackagerelease which originated this build.';
+COMMENT ON COLUMN Build.buildstate IS 'Stores the current build procedure state.';
+COMMENT ON COLUMN Build.buildlog IS 'Points to the buildlog file stored in librarian.';
+COMMENT ON COLUMN Build.builder IS 'Points to the builder which has once processed it.';
+COMMENT ON COLUMN Build.pocket IS 'Stores the target pocket identifier for this build.';
+COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
