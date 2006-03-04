@@ -1,7 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POFile', 'DummyPOFile', 'POFileSet']
+__all__ = [
+    'POFile',
+    'DummyPOFile',
+    'POFileSet'
+    ]
 
 import StringIO
 import pytz
@@ -22,16 +26,15 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    EnumCol, RosettaImportStatus, TranslationPermission,
-    TranslationValidationStatus)
+    RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
 
 import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    IPOFileSet, IPOFile, IRawFileData, IPOTemplateExporter,
-    ZeroLengthPOExportError, ILibraryFileAliasSet, ILaunchpadCelebrities,
-    NotFoundError, RawFileBusy)
+    IPOFileSet, IPOFile, IPOTemplateExporter, ILibraryFileAliasSet,
+    ILaunchpadCelebrities, ITranslationImportQueue, ZeroLengthPOExportError,
+    NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -39,11 +42,10 @@ from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
-from canonical.launchpad.components.poexport import FilePOFileOutput
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-
+from canonical.librarian.interfaces import ILibrarianClient
 
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
@@ -131,7 +133,7 @@ def _can_edit_translations(pofile, person):
 
 
 class POFile(SQLBase, RosettaStats):
-    implements(IPOFile, IRawFileData)
+    implements(IPOFile)
 
     _table = 'POFile'
 
@@ -607,72 +609,35 @@ class POFile(SQLBase, RosettaStats):
         elif old_date > new_date:
             return True
 
-    # ICanAttachRawFileData implementation
-    def attachRawFileData(self, contents, published, importer=None,
-        date_imported=UTC_NOW):
-        """See ICanAttachRawFileData."""
-        rawfile = IRawFileData(self)
+    def importFromQueue(self, logger=None):
+        """See IPOFile."""
+        translation_import_queue = getUtility(ITranslationImportQueue)
+        librarian_client = getUtility(ILibrarianClient)
 
-        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
-            raise RawFileBusy
+        entry_to_import = translation_import_queue.getNextToImport(self)
 
-        if self.variant:
-            filename = '%s@%s.po' % (
-                self.language.code, self.variant.encode('utf8'))
-        else:
-            filename = '%s.po' % self.language.code
+        if entry_to_import is None:
+            # There is no new import waiting for being imported.
+            return
 
-        helpers.attachRawFileData(
-            self, filename, contents, importer, date_imported)
+        file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
-        rawfile.rawfilepublished = published
-
-    def attachRawFileDataAsFileAlias(self, alias, published, importer=None,
-        date_imported=UTC_NOW):
-        """See ICanAttachRawFileData."""
-        rawfile = IRawFileData(self)
-
-        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
-            raise RawFileBusy
-
-        helpers.attachRawFileDataByFileAlias(
-            self, alias, importer, date_imported)
-
-        rawfile.rawfilepublished = published
-
-    # IRawFileData implementation
-
-    # Any use of this interface should adapt this object as an IRawFileData.
-
-    rawfile = ForeignKey(foreignKey='LibraryFileAlias', dbName='rawfile',
-                         notNull=False, default=None)
-    rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
-                             notNull=False, default=None)
-    daterawimport = UtcDateTimeCol(dbName='daterawimport', notNull=False,
-                                   default=None)
-    rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
-        schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
-
-    rawfilepublished = BoolCol(notNull=False, default=None)
-
-    def doRawImport(self, logger=None):
-        """See IRawFileData."""
-        rawdata = helpers.getRawFileData(self)
-
-        file = StringIO.StringIO(rawdata)
-
-        # Store the object status before the changes.
-        object_before_modification = helpers.Snapshot(
+        # Store the object status before the changes to raise
+        # change notifications later.
+        pofile_before_modification = helpers.Snapshot(
             self, providing=providedBy(self))
+        entry_before_modification = helpers.Snapshot(
+            entry_to_import, providing=providedBy(entry_to_import))
 
         try:
-            errors = import_po(self, file, self.rawfilepublished)
+            errors = import_po(self, file, entry_to_import.importer,
+                               entry_to_import.is_published)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
             # kind of error with the new TranslationValidation feature.
-            self.rawimportstatus = RosettaImportStatus.FAILED
+            entry_to_import.status = RosettaImportStatus.FAILED
             if logger:
                 logger.warning(
                     'Error importing %s' % self.title, exc_info=1)
@@ -680,7 +645,9 @@ class POFile(SQLBase, RosettaStats):
         except OldPOImported:
             # The attached file is older than the last imported one, we ignore
             # it.
-            self.rawimportstatus = RosettaImportStatus.IGNORE
+            # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
+            # kind of error with the new TranslationValidation feature.
+            entry_to_import.status = RosettaImportStatus.FAILED
             if logger:
                 logger.warning('Got an old version for %s' % self.title)
             return
@@ -697,7 +664,8 @@ class POFile(SQLBase, RosettaStats):
         # XXX: Carlos Perello Marin 2005-06-29 This code should be using the
         # solution defined by PresentingLengthsOfTime spec when it's
         # implemented.
-        elapsedtime = datetime.datetime.now(UTC) - self.daterawimport
+        elapsedtime = (
+            datetime.datetime.now(UTC) - entry_to_import.dateimported)
         elapsedtime_text = ''
         hours = elapsedtime.seconds / 3600
         minutes = (elapsedtime.seconds % 3600) / 60
@@ -714,8 +682,8 @@ class POFile(SQLBase, RosettaStats):
             elapsedtime_text = 'just requested'
 
         replacements = {
-            'importer': self.rawimporter.displayname,
-            'dateimport': self.daterawimport.strftime('%F %R%z'),
+            'importer': entry_to_import.importer.displayname,
+            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': elapsedtime_text,
             'numberofmessages': msgsets_imported,
             'language': self.language.displayname,
@@ -756,23 +724,29 @@ class POFile(SQLBase, RosettaStats):
         message = template % replacements
 
         fromaddress = 'Rosetta SWAT Team <rosetta@ubuntu.com>'
-        toaddress = helpers.contactEmailAddresses(self.rawimporter)
+        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)
 
         # The import has been done, we mark it that way.
-        self.rawimportstatus = RosettaImportStatus.IMPORTED
+        entry_to_import.status = RosettaImportStatus.IMPORTED
 
         # Now we update the statistics after this new import
         self.updateStatistics()
 
         # List of fields that would be updated.
-        fields = ['header', 'topcomment', 'fuzzyheader', 'pluralforms',
-                  'rawimportstatus', 'currentcount', 'updatescount',
-                  'rosettacount']
+        pofile_fields = [
+            'header', 'topcomment', 'fuzzyheader', 'pluralforms',
+            'currentcount', 'updatescount', 'rosettacount'
+            ]
+
+        import_queue_entry_fields = ['status']
 
         # And finally, emit the modified event.
-        notify(SQLObjectModifiedEvent(self, object_before_modification, fields))
+        notify(SQLObjectModifiedEvent(
+            self, pofile_before_modification, pofile_fields))
+        notify(SQLObjectModifiedEvent(
+            entry_to_import, entry_before_modification, import_queue_entry_fields))
 
     def validExportCache(self):
         """See IPOFile."""

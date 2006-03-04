@@ -51,8 +51,7 @@ Create a PO template and put a single message set in it.
     >>> ptn = POTemplateName(name='test', translationdomain='test', title='test')
     >>> template = POTemplate(
     ...     potemplatename=ptn, distrorelease=release, sourcepackagename=spn,
-    ...     rawfile=file_alias, owner=person, rawimporter=person,
-    ...     languagepack=True)
+    ...     owner=person, languagepack=True, path='po/test.pot')
     >>> potmsgset = template.createMessageSetFromText(u'blah')
     >>> potmsgset.sequence = 1
 

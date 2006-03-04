@@ -2516,36 +2516,48 @@ class RosettaTranslationOrigin(DBSchema):
 class RosettaImportStatus(DBSchema):
     """Rosetta Import Status
 
-    After a raw file is added into Rosetta it could have a set of
-    states like ignore, pending, imported or failed.
+    Defines the status of an import on the Import queue. It could have a set
+    of states like approved, imported, deleted, failed, needs_review or
+    blocked.
     This schema documents those options.
     """
 
-    IGNORE = Item(1, """
-        Ignore
+    APPROVED = Item(1, """
+        Approved
 
-        There are not any rawfile attached and we don't need to do
-        anything with that field.
+        The entry has been approved by a Rosetta Expert or was able to be
+        approved by our automatic system and is waiting to be imported.
         """)
 
-    PENDING = Item(2, """
-        Pending
-
-        There are a rawfile pending of review to be finally imported into
-        the system.
-        """)
-
-    IMPORTED = Item(3, """
+    IMPORTED = Item(2, """
         Imported
 
-        The attached rawfile has been already imported so it does not needs
-        any extra process.
+        The entry has been imported.
+        """)
+
+    DELETED = Item(3, """
+        Deleted
+
+        The entry has been removed before being imported.
         """)
 
     FAILED = Item(4, """
         Failed
 
-        The attached rawfile import failed.
+        The entry import failed.
+        """)
+
+    NEEDS_REVIEW = Item(5, """
+        Needs Review
+
+        A Rosetta Expert needs to review this entry to decide whether it will
+        be imported and where it should be imported.
+        """)
+
+    BLOCKED = Item(6, """
+        Blocked
+
+        The entry has been blocked to be imported by a Rosetta Expert.
         """)
 
 

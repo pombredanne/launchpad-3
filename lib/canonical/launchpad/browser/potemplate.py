@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
-    'POTemplateAdminView', 'POTemplateAddView', 'POTemplateExportView',
+    'POTemplateAdminView', 'POTemplateExportView',
     'POTemplateSubsetURL', 'POTemplateURL', 'POTemplateSetNavigation',
     'POTemplateSubsetNavigation', 'POTemplateNavigation'
     ]
@@ -22,9 +22,9 @@ from zope.app.form.browser.add import AddView
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
-    IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
-    ILaunchBag, IPOFileSet, IPOTemplateSubset, ITranslationImportQueue)
+    IPOTemplate, IPOTemplateSet, IPOExportRequestSet, IPersonSet,
+    ICanonicalUrlData, ILaunchpadCelebrities, ILaunchBag, IPOFileSet,
+    IPOTemplateSubset, ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -40,7 +40,7 @@ class POTemplateNavigation(Navigation):
     def traverse(self, name):
         user = getUtility(ILaunchBag).user
         if self.request.method in ['GET', 'HEAD']:
-            # IF it's just a query, get a real IPOFile or use a fake one so we
+            # If it's just a query, get a real IPOFile or use a fake one so we
             # don't create new IPOFiles just because someone is browsing the
             # web.
             return self.context.getPOFileOrDummy(name, owner=user)
@@ -198,13 +198,14 @@ class POTemplateView(LaunchpadView):
 
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot'):
+        if filename.endswith('.pot') or filename.endswith('.po'):
             # Add it to the queue.
             translation_import_queue.addOrUpdateEntry(
                 self.context.path, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
-                productseries=self.context.productseries)
+                productseries=self.context.productseries,
+                potemplate=self.context)
 
             self.request.response.addInfoNotification(
                 "Your upload worked. The template's content will appear in"
@@ -216,7 +217,8 @@ class POTemplateView(LaunchpadView):
                 content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
-                productseries=self.context.productseries)
+                productseries=self.context.productseries,
+                potemplate=self.context)
 
             if num > 0:
                 self.request.response.addInfoNotification(
@@ -268,40 +270,6 @@ class POTemplateEditView(POTemplateView, SQLObjectEditView):
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""
 
-
-class POTemplateAddView(AddView):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # retrieve submitted values from the form
-        potemplatename = data.get('potemplatename')
-        description = data.get('description')
-        iscurrent = data.get('iscurrent')
-        owner = data.get('owner')
-        path = data.get('path')
-        content = data.get('content')
-
-        potemplateset = getUtility(IPOTemplateSet)
-        potemplatesubset = potemplateset.getSubset(
-            productseries=self.context)
-        # Create the new POTemplate
-        potemplate = potemplatesubset.new(
-            potemplatename=potemplatename, contents=content,
-            owner=owner)
-
-        # Update the other fields
-        potemplate.description = description
-        potemplate.iscurrent = iscurrent
-        potemplate.path = path
-
-        self._nextURL = canonical_url(potemplate)
-
-    def nextURL(self):
-        return self._nextURL
 
 class POTemplateExportView(BaseExportView):
     def __init__(self, context, request):

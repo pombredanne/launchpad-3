@@ -19,12 +19,6 @@ got just now.
     >>> template.potemplatename == ptn
     True
 
-Check that the import status of the PO template. It should be marked as
-already imported.
-
-    >>> template.rawimportstatus
-    <Item IMPORTED (3) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
-
 Check that the PO template has a certain message ID.
 
     >>> from canonical.launchpad.database import POMsgID
@@ -32,12 +26,9 @@ Check that the PO template has a certain message ID.
     >>> template.hasMessageID(pomsgid)
     True
 
-Get a Spanish PO file for this PO template, and check its import status. It
-should be marked as awaiting import.
+Get a Spanish PO file for this PO template
 
     >>> pofile = template.getPOFileByLang('es')
-    >>> pofile.rawimportstatus
-    <Item IGNORE (1) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
 
 Get a PO message set for a particular message and check it has a translation.
 

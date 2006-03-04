@@ -1,7 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from canonical.launchpad.interfaces.rawfiledata import ICanAttachRawFileData
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
@@ -13,7 +12,7 @@ class ZeroLengthPOExportError(Exception):
     """An exception raised when a PO file export generated an empty file."""
 
 
-class IPOFile(IRosettaStats, ICanAttachRawFileData):
+class IPOFile(IRosettaStats):
     """A PO File."""
 
     id = Attribute("This PO file's id.")
@@ -229,6 +228,13 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
     def isPORevisionDateOlder(header):
         """Return if the given header has a less current field
         'PORevisionDate' than IPOFile.header.
+        """
+
+    def importFromQueue(logger=None):
+        """Execute the import of the next entry on the queue, if needed.
+
+        If a logger argument is given, any problem found with the
+        import will be logged there.
         """
 
 

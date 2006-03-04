@@ -23,7 +23,7 @@ from zope.exceptions import NotFoundError
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    RawFileAttachFailed, ITranslationImportQueue, UnexpectedFormData)
+    ITranslationImportQueue, UnexpectedFormData)
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
@@ -470,7 +470,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             path, content, published, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distrorelease=self.context.potemplate.distrorelease,
-            productseries=self.context.potemplate.productseries)
+            productseries=self.context.potemplate.productseries,
+            potemplate=self.context.potemplate)
 
         self.request.response.addInfoNotification(
             "Your upload worked. The translation content will appear in"

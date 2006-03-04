@@ -19,10 +19,11 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
     ILaunchpadCelebrities, IEditTranslationImportQueueEntry, IPOTemplateSet,
-    IRawFileData, RawFileBusy, NotFoundError, UnexpectedFormData)
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.lp.dbschema import RosettaImportStatus
 
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
@@ -110,13 +111,13 @@ class TranslationImportQueueEntryView(GeneralFormView):
             # template.
             potemplate = potemplate_subset.new(
                 potemplatename,
-                self.context.getFileContent(),
+                self.context.path,
                 self.context.importer)
 
             # Point to the right path.
             potemplate.path = self.context.path
             # Set the real import date.
-            IRawFileData(potemplate).daterawimport = self.context.dateimported
+            #IRawFileData(potemplate).daterawimport = self.context.dateimported
 
             if language is None:
                 # We can remove the element from the queue as it was a direct
@@ -125,22 +126,14 @@ class TranslationImportQueueEntryView(GeneralFormView):
                 return 'You associated the queue item with a PO Template.'
 
         if language is None:
-            try:
-                self.context.attachToPOFileOrPOTemplate(potemplate)
-            except RawFileBusy:
-                # There is already one file waiting for being imported, we add
-                # a link to the IPOTemplate and wait for it.
-                self.context.potemplate = potemplate
+            self.context.potemplate = potemplate
         else:
             # We are hadling an IPOFile import.
             pofile = potemplate.getOrCreatePOFile(language.code, variant,
                 self.context.importer)
-            try:
-                self.context.attachToPOFileOrPOTemplate(pofile)
-            except RawFileBusy:
-                # There is already one file waiting for being imported, we add
-                # a link to the IPOFile and wait for it.
-                self.context.pofile = pofile
+            self.context.pofile = pofile
+
+        self.context.status = RosettaImportStatus.APPROVED
 
         return 'You associated the queue item with a PO File.'
 
@@ -157,15 +150,11 @@ class TranslationImportQueueNavigation(GetitemNavigation):
 
 class TranslationImportQueueContextMenu(ContextMenu):
     usedfor = ITranslationImportQueue
-    links = ['overview', 'blocked']
+    links = ['overview']
 
     def overview(self):
         text = 'Import queue'
         return Link('', text)
-
-    def blocked(self):
-        text = 'Blocked items'
-        return Link('+blocked', text)
 
 
 class TranslationImportQueueView(LaunchpadView):
@@ -179,30 +168,9 @@ class TranslationImportQueueView(LaunchpadView):
         self.processForm()
 
     @property
-    def has_things_to_import(self):
-        """Return whether there are things ready to import or not."""
-        for entry in self.iterReadyToImport():
-            return True
-        return False
-
-    @property
-    def has_pending_reviews(self):
-        """Return whether there are things pending to review or not."""
-        for entry in self.iterPendingReview():
-            return True
-        return False
-
-    def iterReadyToImport(self):
-        """Iterate the entries that can be imported directly."""
-        for entry in self.context.iterEntries():
-            if entry.import_into is not None:
-                yield entry
-
-    def iterPendingReview(self):
-        """Iterate the entries that need manually review."""
-        for entry in self.context.iterEntries():
-            if entry.import_into is None:
-                yield entry
+    def has_entries(self):
+        """Return whether there are things on the queue."""
+        return len(self.context) > 0
 
     def processForm(self):
         """Block or remove entries from the queue based on the selection of
@@ -212,45 +180,21 @@ class TranslationImportQueueView(LaunchpadView):
             # The form was not submitted or the user is not logged in.
             return
 
-        self.form_entries = []
-
-        for item in self.form:
-            if item.startswith('entry-'):
-                # It's an item to remove
-                try:
-                    common, id_string = item.split('-')
-                    # The id is an integer
-                    id = int(id_string)
-                except ValueError:
-                    # We got an item with more than one '-' char or with an id
-                    # that is not a number, that means that someone is playing
-                    # badly with our system so it's safe to just ignore the
-                    # request.
-                    raise UnexpectedFormData(
-                        'Ignored your request because it is broken.')
-                self.form_entries.append(id)
-
         dispatch_table = {
-            'remove_import': (self._remove, 'Removed %d items.'),
-            'block_import': (self._block, 'Blocked %d items.'),
-            'remove_review': (self._remove, 'Removed %d items.'),
-            'block_review': (self._block, 'Blocked %d items.'),
-            'remove_blocked': (self._remove, 'Removed %d items.'),
-            'unblock': (self._unblock, 'Unblocked %d items.')
+            'handle_queue': self._handle_queue,
             }
-        dispatch_to = [(key, callback_arguments)
-                        for key,callback_arguments in dispatch_table.items()
+        dispatch_to = [(key, method)
+                        for key,method in dispatch_table.items()
                         if key in self.form
                       ]
         if len(dispatch_to) != 1:
             raise UnexpectedFormData(
                 "There should be only one command in the form",
                 dispatch_to)
-        key, callback_arguments = dispatch_to[0]
-        method, message = callback_arguments
-        self.do_stuff_across_form_entries(method, message)
+        key, method = dispatch_to[0]
+        method()
 
-    def do_stuff_across_form_entries(self, action, message_notification):
+    def _handle_queue(self):
         """Handle a form submission and executes the given 'action' with every
         entry.
 
@@ -263,74 +207,57 @@ class TranslationImportQueueView(LaunchpadView):
         # The user must be logged in.
         assert self.user is not None
 
-        num_actions_executed = 0
-        for id in self.form_entries:
+        for form_item in self.form:
+            if not form_item.startswith('status-'):
+                # We are not interested on this form_item.
+                continue
+
+            # It's an form_item to handle.
+            try:
+                common, id_string = form_item.split('-')
+                # The id is an integer
+                id = int(id_string)
+            except ValueError:
+                # We got an form_item with more than one '-' char or with an
+                # id that is not a number, that means that someone is playing
+                # badly with our system so it's safe to just ignore the
+                # request.
+                raise UnexpectedFormData(
+                    'Ignored your request because it is broken.')
+            # Get the entry we are working on.
             entry = self.context.get(id)
-            action(entry)
-            num_actions_executed += 1
+            value = self.form.get(form_item)
+            if value == entry.status.name:
+                # The entry's status didn't change we can jump to the next
+                # entry.
+                continue
 
-        # Notifications.
-        if num_actions_executed > 0:
-            self.request.response.addInfoNotification(message_notification %
-                num_actions_executed)
+            # The status changed.
 
-    def _remove(self, item):
-        """Remove the given item from the queue."""
-        # XXX Carlos Perello Marin 20051124: We should not check the
-        # permissions here but use the standard security system. Please, look
-        # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
-        # details.
-        celebrities = getUtility(ILaunchpadCelebrities)
-        # Only the importer, launchpad admins or Rosetta experts can remove
-        # the entries.
-        if (self.user.inTeam(celebrities.admin) or
-            self.user.inTeam(celebrities.rosetta_expert) or
-            self.user.inTeam(item.importer)):
-            # Do the removal.
-            self.context.remove(item)
-        else:
-            # The user was not the importer and that means that it's a
-            # broken request.
-            raise UnexpectedFormData(
-                'Ignored your request to remove some items, because'
-                ' they are not yours.')
+            # XXX Carlos Perello Marin 20051124: We should not check the
+            # permissions here but use the standard security system. Please, look
+            # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
+            # details.
+            celebrities = getUtility(ILaunchpadCelebrities)
+            is_admin = (self.user.inTeam(celebrities.admin) or
+                        self.user.inTeam(celebrities.rosetta_expert))
+            is_owner = self.user.inTeam(entry.importer)
 
-    def _block(self, item):
-        """Block the given item."""
-        # XXX Carlos Perello Marin 20051124: We should not check the
-        # permissions here but use the standard security system. Please, look
-        # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
-        # details.
-        celebrities = getUtility(ILaunchpadCelebrities)
-        # Only admins or Rosetta experts will be able to block
-        # imports:
-        if (self.user.inTeam(celebrities.admin) or
-            self.user.inTeam(celebrities.rosetta_expert)):
-            # Block it.
-            item.setBlocked()
-        else:
-            # The user does not have the needed permissions to do
-            # this.
-            raise UnexpectedFormData(
-                'Ignored your request to block some items, because'
-                ' they are not yours.')
-
-    def _unblock(self, item):
-        """Unblock the given item."""
-        # XXX Carlos Perello Marin 20051124: We should not check the
-        # permissions here but use the standard security system. Please, look
-        # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
-        # details.
-        celebrities = getUtility(ILaunchpadCelebrities)
-        # Only admins or Rosetta experts will be able to unblock
-        # imports:
-        if (self.user.inTeam(celebrities.admin) or
-            self.user.inTeam(celebrities.rosetta_expert)):
-            # Unblock it.
-            item.setBlocked(False)
-        else:
-            # The user does not have the needed permissions to do
-            # this.
-            raise UnexpectedFormData(
-                'Ignored your request to block some items, because'
-                ' they are not yours.')
+            # Only the importer, launchpad admins or Rosetta experts have
+            # special permissions to change status.
+            if value == 'deleted' and (is_admin or is_owner):
+                entry.status = RosettaImportStatus.DELETED
+            elif value == 'blocked' and is_admin:
+                entry.status = RosettaImportStatus.BLOCKED
+            elif (value == 'approved' and is_admin and
+                  entry.import_into is not None):
+                entry.status = RosettaImportStatus.APPROVED
+            elif value == 'needs_review' and is_admin:
+                entry.status = RosettaImportStatus.NEEDS_REVIEW
+            else:
+                # The user was not the importer or we are trying to set a
+                # status that must not be set from this form. That means that
+                # it's a broken request.
+                raise UnexpectedFormData(
+                    'Ignored the request to change the status from %s to %s.'
+                        % (entry.status.name, value))
