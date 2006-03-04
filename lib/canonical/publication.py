@@ -215,7 +215,7 @@ class LaunchpadBrowserPublication(
         #           of our customisations?
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':
-            request.response.setBody('')
+            request.response.setResult('')
 
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication
