@@ -9,7 +9,7 @@
 
   <h1>Translation files pending to be imported</h1>
 
-  <tal:block condition="view/has_entries">
+  <tal:block condition="view/batch">
   <div class="documentDescription">
     These are all the translation resources that are waiting to be imported
     into Rosetta. <tal:loggedin condition="not:request/lp:person">
@@ -17,10 +17,12 @@
     list.</tal:loggedin>
   </div>
 
+  <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+
   <form name="entries_to_import" action="" method="POST">
 
     <table class="listing" width="100%">
-        <tal:loop repeat="entry view/context">
+        <tal:loop repeat="entry view/batch">
         <tr>
           <td tal:condition="entry/import_into" rowspan="3">
             <img alt="" src="/@@/download.png" />
@@ -123,6 +125,9 @@
            value="Change Status" />
     <br />
   </form>
+
+  <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+
   </tal:block>
 
   <tal:block condition="not:view/has_entries">

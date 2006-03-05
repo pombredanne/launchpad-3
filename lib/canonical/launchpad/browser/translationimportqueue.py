@@ -24,7 +24,8 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.lp.dbschema import RosettaImportStatus
-
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -163,6 +164,11 @@ class TranslationImportQueueView(LaunchpadView):
     def initialize(self):
         """Useful initialization for this view class."""
         self.form = self.request.form
+
+        # Setup the batching for this page.
+        start = int(self.request.get('batch_start', 0))
+        self.batch = Batch(self.context, start, size=1)
+        self.batchnav = BatchNavigator(self.batch, self.request)
 
         # Process the form.
         self.processForm()
