@@ -282,6 +282,9 @@ class SourcePackageRelease(SQLBase):
         for filename in filenames:
             # Fetch the file
             content = tarball.extractfile(filename).read()
+            if len(content) == 0:
+                # The file is empty, we ignore it.
+                continue
             if filename.startswith('source/'):
                 # Remove the special 'source/' prefix for the path.
                 filename = filename[len('source/'):]
