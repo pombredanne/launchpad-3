@@ -413,7 +413,9 @@ class BugTaskEditView(GeneralFormView):
         # Set up the milestone widget as an input widget only if the has
         # launchpad.Edit permissions on the distribution, for distro tasks, or
         # launchpad.Edit permissions on the product, for upstream tasks.
-        milestone_context = self.context.product or self.context.distribution
+        milestone_context = (
+            self.context.product or self.context.distribution or
+            self.context.distrorelease.distribution)
 
         if ((helpers.check_permission("launchpad.Edit", milestone_context)) or
             ("milestone" not in self.fieldNames)):
