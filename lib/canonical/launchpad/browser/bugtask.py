@@ -417,21 +417,17 @@ class BugTaskEditView(GeneralFormView):
             self.context.product or self.context.distribution or
             self.context.distrorelease.distribution)
 
-        if ((helpers.check_permission("launchpad.Edit", milestone_context)) or
-            ("milestone" not in self.fieldNames)):
-            # No need to render a read-only milestone widget.
-            setUpWidgets(
-                self, self.schema, IInputWidget, names=self.fieldNames,
-                initial=self.initial_values)
-        else:
+        field_names = list(self.fieldNames)
+        if (("milestone" in field_names) and not
+            helpers.check_permission("launchpad.Edit", milestone_context)):
             # The user doesn't have permission to edit the milestone, so render
             # a read-only milestone widget.
-            field_names = list(self.fieldNames)
             field_names.remove("milestone")
-            setUpWidgets(
-                self, self.schema, IInputWidget, names=field_names,
-                initial=self.initial_values)
             setUpDisplayWidgets(self, self.schema, names=["milestone"])
+
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=field_names,
+            initial=self.initial_values)
 
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
