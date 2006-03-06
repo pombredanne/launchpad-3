@@ -337,7 +337,7 @@ class ImportDShellBuildFactory(ImportDBuildFactory):
 
     def addImportDStep(self, method):
         self.steps.append((ImportDShellCommand, {
-            'timeout': 1200,
+            'timeout': 14400,
             'workdir': self.jobfile,
             'command': [sys.executable, self.runner_path,
                         self.job.name, method, '.'],}))
@@ -345,7 +345,7 @@ class ImportDShellBuildFactory(ImportDBuildFactory):
     def addBaz2bzrStep(self):
         workdir = self.job.getWorkingDir(self.jobfile)
         self.steps.append((Baz2bzrShellCommand, {
-            'timeout': 1200,
+            'timeout': 14400,
             'workdir': workdir,
             'command': [sys.executable, self.baz2bzr_path,
                         str(self.job.seriesID), self.blacklist_path,
