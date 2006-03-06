@@ -226,7 +226,7 @@ def export_rows(rows, pofile_output):
     potsequence = None
     posequence = None
 
-    pofile = None
+    exported_file = None
     msgset = None
 
     for row in rows:
@@ -281,7 +281,7 @@ def export_rows(rows, pofile_output):
         if new_msgset:
             # Output the current message set.
 
-            if msgset:
+            if msgset is not None:
                 # validate the translation
                 if 'fuzzy' not in msgset.flags and len(msgset.msgstrs) > 0:
                     # The validation is done only if the msgset is not fuzzy
@@ -297,7 +297,7 @@ def export_rows(rows, pofile_output):
                         # export a broken value, we set it as fuzzy.
                         msgset.flags.append('fuzzy')
 
-                pofile.append(msgset)
+                exported_file.append(msgset)
 
         if new_pofile:
             # If the PO file has changed, flush the old one and print the
@@ -305,27 +305,27 @@ def export_rows(rows, pofile_output):
 
             # Output the current PO file.
 
-            if pofile:
+            if exported_file is not None:
                 pofile_output(potemplate, language, variant,
-                    pofile.export_string())
+                    exported_file.export_string())
 
-            # Generate the header of the new PO file.
+            # Get the pot header
+            pot_header = POHeader(
+                msgstr=row.potheader)
+            # PO templates have always the fuzzy flag set on headers.
+            pot_header.flags.add('fuzzy')
+            pot_header.updateDict()
 
-            header = POHeader(
-                commentText=row.potopcomment,
-                msgstr=row.poheader)
+            if row.pofile is not None:
+                # Generate the header of the new PO file.
+                header = POHeader(
+                    commentText=row.potopcomment,
+                    msgstr=row.poheader)
 
-            if row.pofuzzyheader:
-                header.flags.add('fuzzy')
+                if row.pofuzzyheader:
+                    header.flags.add('fuzzy')
 
-            header.updateDict()
-
-            # Update header fields.
-
-            if row.potheader is not None:
-                pot_header = POHeader(
-                    msgstr=row.potheader)
-                pot_header.updateDict()
+                header.updateDict()
 
                 if 'Domain' in pot_header:
                     header['Domain'] = pot_header['Domain']
@@ -336,6 +336,9 @@ def export_rows(rows, pofile_output):
                     # indicates when was the .pot file created.
                     header['POT-Creation-Date'] = (
                         pot_header['POT-Creation-Date'])
+            else:
+                # We are exporting an IPOTemplate.
+                header = pot_header
 
             # This part is conditional on the PO file being present in order
             # to make it easier to fake data for testing.
@@ -362,13 +365,19 @@ def export_rows(rows, pofile_output):
 
             # Create the new PO file.
 
-            pofile = OutputPOFile(header)
+            exported_file = OutputPOFile(header)
 
         if new_msgset:
             # Create new message set
 
-            msgset = OutputMsgSet(pofile)
-            msgset.fuzzy = row.isfuzzy
+            if row.posequence is None and row.potsequence == 0:
+                # It's an obsolete entry while exporting an IPOTemplate.
+                # Ignore it.
+                continue
+
+            msgset = OutputMsgSet(exported_file)
+            if row.isfuzzy is not None:
+                msgset.fuzzy = row.isfuzzy
 
             if row.potsequence > 0:
                 msgset.sequence = row.potsequence
@@ -445,10 +454,11 @@ def export_rows(rows, pofile_output):
                     msgset.msgids, new_translations, msgset.flags)
             except gettextpo.error:
                 msgset.flags.append('fuzzy')
-        pofile.append(msgset)
+        exported_file.append(msgset)
 
-    if pofile:
-        pofile_output(potemplate, language, variant, pofile.export_string())
+    if exported_file is not None:
+        pofile_output(potemplate, language, variant,
+            exported_file.export_string())
 
 class FilePOFileOutput:
     """Output PO files from an export to a single file handle."""
@@ -458,9 +468,9 @@ class FilePOFileOutput:
     def __init__(self, filehandle):
         self.filehandle = filehandle
 
-    def __call__(self, potemplate, language, variant, pofile):
+    def __call__(self, potemplate, language, variant, contents):
         """See IPOFileOutput."""
-        self.filehandle.write(pofile)
+        self.filehandle.write(contents)
 
 class TemplateTarballPOFileOutput:
     """Add exported PO files to a tarball."""
@@ -474,15 +484,20 @@ class TemplateTarballPOFileOutput:
     def __call__(self, potemplate, language, variant, contents):
         """See IPOFileOutput."""
 
-        language_code = language.code.encode('ascii')
-
-        if variant is not None:
-            code = '%s@%s' % (language_code, variant.encode('UTF-8'))
+        if language is None:
+            # We are exporting an IPOTemplate.
+            name = '%s.pot' % potemplate.potemplatename.translationdomain
         else:
-            code = language_code
+            # We are exporting an IPOFile
+            language_code = language.code.encode('ascii')
 
-        code = language.code.encode('ascii')
-        name = '%s.po' % code
+            if variant is not None:
+                code = '%s@%s' % (language_code, variant.encode('UTF-8'))
+            else:
+                code = language_code
+
+            code = language.code.encode('ascii')
+            name = '%s.po' % code
 
         # Put it in the archive.
         fileinfo = tarfile.TarInfo("%s/%s" % (self.directory, name))
@@ -586,6 +601,18 @@ class POTemplateExporter:
             self.potemplate, language, variant, included_obsolete)
         pofile_output = FilePOFileOutput(filehandle)
         export_rows(rows, pofile_output)
+
+    def export_potemplate(self):
+        """See IPOTemplateExporter."""
+        outputbuffer = StringIO()
+        self.export_potemplate_to_file(outputbuffer)
+        return outputbuffer.getvalue()
+
+    def export_potemplate_to_file(self, filehandle):
+        """See IPOTemplateExporter."""
+        rows = getUtility(IVPOExportSet).get_potemplate_rows(self.potemplate)
+        pofile_output = FilePOFileOutput(filehandle)
+        export_rows(rows, potemplate_output)
 
     def export_tarball(self):
         """See IPOTemplateExporter."""

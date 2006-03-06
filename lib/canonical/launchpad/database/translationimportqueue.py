@@ -171,11 +171,8 @@ class TranslationImportQueue:
 
     def __iter__(self):
         """See ITranslationImportQueue."""
-        res = TranslationImportQueueEntry.select(
-            orderBy=['status', 'dateimported'])
-
-        for entry in res:
-            yield entry
+        return iter(TranslationImportQueueEntry.select(
+            orderBy=['status', 'dateimported']))
 
     def __getitem__(self, id):
         """See ITranslationImportQueue."""

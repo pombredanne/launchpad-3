@@ -25,8 +25,8 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPersonSet,
-    ITranslationImportQueue, LanguageNotFound, TranslationConstants,
-    NotFoundError, NameNotAvailable)
+    ITranslationImportQueue, IPOTemplateExporter, LanguageNotFound,
+    TranslationConstants, NotFoundError, NameNotAvailable)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.database.language import Language
@@ -379,7 +379,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def export(self):
         """See IPOTemplate."""
-        raise NotImplementedError
+        exporter = IPOTemplateExporter(self)
+        return exporter.export_potemplate()
 
     def expireAllMessages(self):
         """See IPOTemplate."""
