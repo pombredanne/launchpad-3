@@ -1642,8 +1642,8 @@ class NascentUpload:
             return
 
         # check rights for OLD packages, the NEW ones goes straight to queue
+        self.process_signer_acl()
         if not self.is_new():
-            self.process_signer_acl()
             self.verify_acl()
 
         # And finally, check that the policy is happy overall
