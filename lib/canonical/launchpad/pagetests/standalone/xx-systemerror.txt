@@ -5,18 +5,27 @@ Register a test page that generates HTTP 500 errors.
   >>> class ErrorView(object):
   ...     """A broken view"""
   ...     def __call__(self, *args, **kw):
-  ...         oops
+  ...         raise Exception('Oops')
   ...
   >>> ztapi.browserView(None, "error-test", ErrorView)
 
-Ensure exceptions generate the desired output.
+Ensure exceptions generate normal output.
 
   >>> print http(r"""
   ... GET /error-test HTTP/1.1
   ... """)
   HTTP/1.1 500 Internal Server Error
   ...
-  Traceback (innermost last):
+  A server error occurred.
   ...
-  TypeError: default __new__ takes no parameters
+
+If you want to see tracebacks rather than error pages, use the
+handle_error argument
+
+  >>> print http(r"""
+  ... GET /whatever HTTP/1.1
+  ... """, handle_errors=False)
+  Traceback (most recent call last):
+  ...
+  NotFound: ...
 
