@@ -16,6 +16,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
@@ -31,7 +32,7 @@ from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
-    IGPGKeySet, IGPGHandler, GPGVerificationError)
+    IGPGKeySet, IGPGHandler, EmailAddressAlreadyTaken, GPGVerificationError)
 
 UTC = pytz.timezone('UTC')
 
@@ -509,19 +510,24 @@ class NewAccountView(AddView, BaseLoginTokenView):
         self.request = request
         AddView.__init__(self, context, request)
         self._nextURL = '.'
+        self.top_of_page_errors = []
 
     def nextURL(self):
         return self._nextURL
 
     def createAndAdd(self, data):
         """Check if both passwords match and then create a new Person.
-        When everything went ok, we delete the LoginToken (self.context) from
+        If everything went ok, we delete the LoginToken (self.context) from
         the database, so nobody can use it again.
         """
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-                self.context.email, displayname=data['displayname'], 
-                givenname=data['givenname'], familyname=data['familyname'],
-                password=data['password'], passwordEncrypted=True)
+        try:
+            person, email = getUtility(IPersonSet).createPersonAndEmail(
+                    self.context.email, displayname=data['displayname'], 
+                    givenname=data['givenname'], familyname=data['familyname'],
+                    password=data['password'], passwordEncrypted=True)
+        except EmailAddressAlreadyTaken, e:
+            self.top_of_page_errors.append(str(e))
+            raise WidgetsError(self.top_of_page_errors) 
 
         notify(ObjectCreatedEvent(person))
         notify(ObjectCreatedEvent(email))

@@ -99,7 +99,8 @@ class BugTargetTraversalMixin:
         # because it was filtered out by privacy-aware code.
         for bugtask in helpers.shortlist(bug.bugtasks):
             if bugtask.target == context:
-                return bugtask
+                # Security proxy this object on the way out.
+                return getUtility(IBugTaskSet).get(bugtask.id)
 
         # If we've come this far, it means that no actual task exists in this
         # context, so we'll return a null bug task. This makes it possible to,
@@ -440,12 +441,38 @@ class BugTaskEditView(GeneralFormView):
     def process(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        new_values = getWidgetsData(self, self.schema, self.fieldNames)
+        # Save the field names we extract from the form in a separate list,
+        # because we modify this list of names later if the bugtask is
+        # reassigned to a different product.
+        field_names = list(self.fieldNames)
+        new_values = getWidgetsData(self, self.schema, field_names)
 
         bugtask_before_modification = helpers.Snapshot(
             bugtask, providing=providedBy(bugtask))
+
+        # If the user is reassigning an upstream task to a different product,
+        # we'll clear out the milestone value, to avoid violating DB constraints
+        # that ensure an upstream task can't be assigned to a milestone on a
+        # different product.
+        milestone_cleared = None
+        if (IUpstreamBugTask.providedBy(bugtask) and
+            (bugtask.product != new_values.get("product")) and
+             bugtask.milestone):
+            milestone_cleared = bugtask.milestone
+            bugtask.milestone = None
+            # Remove the "milestone" field from the list of fields whose changes
+            # we want to apply, because we don't want the form machinery to try
+            # and set this value back to what it was!
+            field_names.remove("milestone")
+
         changed = applyWidgetsChanges(
-            self, self.schema, target=bugtask, names=self.fieldNames)
+            self, self.schema, target=bugtask, names=field_names)
+
+        if milestone_cleared:
+            self.request.response.addWarningNotification(
+                "The bug report for %s was removed from the %s milestone "
+                "because it was reassigned to a new product" % (
+                    bugtask.targetname, milestone_cleared.displayname))
 
         comment_on_change = self.request.form.get("comment_on_change")
 
@@ -469,8 +496,16 @@ class BugTaskEditView(GeneralFormView):
                 SQLObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
-                    edited_fields=self.fieldNames,
+                    edited_fields=field_names,
                     comment_on_change=comment_on_change))
+
+        if (bugtask_before_modification.sourcepackagename !=
+            bugtask.sourcepackagename):
+            # The source package was changed, so tell the user that we've
+            # subscribed the new bug contacts.
+            self.request.response.addNotification(
+                "The bug contacts for %s have been subscribed to this bug." % (
+                    bugtask.targetname))
 
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""

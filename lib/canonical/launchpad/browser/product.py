@@ -27,15 +27,15 @@ __all__ = [
 from warnings import warn
 
 import zope.security.interfaces
-from zope.component import getUtility
+from zope.component import getUtility, getView
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    IPerson, IPersonSet, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, ICalendarOwner, NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries, 
+    ISourcePackage, ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
@@ -320,6 +320,9 @@ class ProductView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(request)
         self.status_message = None
+        self.branches = [
+            getView(branch, '+index', request)
+            for branch in self.context.branches]
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
@@ -576,8 +579,8 @@ class ProductAddView(AddView):
                   "downloadurl",
                   "programminglang"]
         owner = IPerson(request.principal, None)
-        if self.isButtSource(owner):
-            # Buttsource members get it easy and are able to change this
+        if self.isVCSImport(owner):
+            # vcs-imports members get it easy and are able to change this
             # stuff during the edit process; this saves time wasted on
             # getting to product/+admin.
             fields.insert(1, "owner")
@@ -588,12 +591,11 @@ class ProductAddView(AddView):
         self._nextURL = '.'
         AddView.__init__(self, context, request)
 
-    def isButtSource(self, owner):
+    def isVCSImport(self, owner):
         if owner is None:
             return False
-        personset = getUtility(IPersonSet)
-        buttsource = personset.getByName('buttsource')
-        return owner.inTeam(buttsource)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return owner.inTeam(vcs_imports)
 
     def createAndAdd(self, data):
         # add the owner information for the product
@@ -601,7 +603,7 @@ class ProductAddView(AddView):
         if owner is None:
             raise zope.security.interfaces.Unauthorized(
                 "Need an authenticated Launchpad owner")
-        if self.isButtSource(owner):
+        if self.isVCSImport(owner):
             owner = data["owner"]
             reviewed = data["reviewed"]
         else:
