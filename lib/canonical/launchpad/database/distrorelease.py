@@ -77,7 +77,6 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution', notNull=True)
-    bugtasks = MultipleJoin('BugTask', joinColumn='distrorelease')
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
@@ -396,8 +395,22 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     def getAllReleasesByStatus(self, status):
         """See IDistroRelease."""
-        return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
-                                                status=status)
+        queries = ['distrorelease=%s AND status=%s'
+                   % sqlvalues(self.id, status)]
+
+        unstable_states = [
+            DistributionReleaseStatus.FROZEN,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.EXPERIMENTAL,
+            ]
+
+        if self.releasestatus not in unstable_states:
+            # do not consider publication to RELEASE pocket in
+            # CURRENT/SUPPORTED distrorelease. They must not change.
+            queries.append(
+                'pocket!=%s' % sqlvalues(PackagePublishingPocket.RELEASE))
+
+        return SourcePackagePublishing.select(" AND ".join(queries))
 
     def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
                                    sourcename=None, orderBy=None):
@@ -582,7 +595,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishing', 'DistroArchRelease'],
             distinct=True)
-        if len(bprs) == 0:
+        if bprs.count() == 0:
             return
 
         # find or create the cache entry
@@ -639,7 +652,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # deal with broken encodings in these files; this will allow us
         # to regenerate these files as necessary.
         #
-        # The use of StringIO here should be safe: we do no encoding of
+        # The use of StringIO here should be safe: we do not encoding of
         # the content in the changes file (as doing so would be guessing
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
@@ -655,7 +668,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
         return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                           status=status, orderBy=['id'])
+                                           status=status)
 
     def getFancyQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
                             name=None, version=None, exact_match=False):

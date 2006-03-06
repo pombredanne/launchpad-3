@@ -49,6 +49,9 @@ def rebuildQueue(log):
     for distrorelease in distroreleases:
         buildMaster.createMissingBuilds(distrorelease)
 
+    # inspect depwaiting and look retry those which seems possible
+    buildMaster.retryDepWaiting()
+
     # For each build record in NEEDSBUILD, ensure it has a
     # buildqueue entry
     buildMaster.addMissingBuildQueueEntries()

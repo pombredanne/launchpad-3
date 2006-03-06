@@ -39,6 +39,13 @@
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.OpenBugTasksView"
         permission="zope.Public"
+        name="+bugs"
+        template="../templates/buglisting-default.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.OpenBugTasksView"
+        permission="zope.Public"
         name="+bugs-open"
         template="../templates/buglisting-default.pt" />
 
@@ -83,15 +90,6 @@
         permission="zope.Public"
         name="+bugs-text"
         attribute="__call__" />
-
-    <!-- +bugs uses AdvancedBugTaskSearchView in order to keep old
-         bookmarks working. -->
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.BugTasksOldView"
-        permission="zope.Public"
-        name="+bugs"
-        template="../templates/buglisting-default.pt" />
 
   </facet>
 

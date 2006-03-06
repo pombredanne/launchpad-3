@@ -14,8 +14,8 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EnumCol, BugTrackerType
-from canonical.database.sqlbase import (SQLBase, flush_database_updates,
-    quote)
+from canonical.database.sqlbase import (
+    SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (
@@ -30,7 +30,9 @@ class BugTracker(SQLBase):
     bugzilla.gnome.org are each distinct BugTracker's.
     """
     implements(IBugTracker)
+
     _table = 'BugTracker'
+
     bugtrackertype = EnumCol(dbName='bugtrackertype',
         schema=BugTrackerType, notNull=True)
     name = StringCol(notNull=True, unique=True)
@@ -64,6 +66,15 @@ class BugTracker(SQLBase):
                                     distinct=True,
                                     orderBy=['datecreated']))
 
+    def getBugWatchesNeedingUpdate(self, hours_since_last_check):
+        """See IBugTracker."""
+        query = (
+            """bugtracker = %s AND
+               (lastchecked < (now() at time zone 'UTC' - interval '%s hours')
+                OR lastchecked IS NULL)""" % sqlvalues(
+                    self.id, hours_since_last_check))
+        return BugWatch.select(query, orderBy="remotebug")
+
 
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTracker's,
@@ -96,7 +107,7 @@ class BugTrackerSet:
             return item
 
     def __iter__(self):
-        for row in self.table.select():
+        for row in self.table.select(orderBy="title"):
             yield row
 
     def normalise_baseurl(self, baseurl):

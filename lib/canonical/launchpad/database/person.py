@@ -930,7 +930,7 @@ class PersonSet:
             except nickname.NicknameGenerationError:
                 return None, None
         else:
-            if self.getByName(name) is not None:
+            if self.getByName(name, ignore_merged=False) is not None:
                 return None, None
 
         if not passwordEncrypted and password is not None:
@@ -950,6 +950,7 @@ class PersonSet:
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
+        assert self.getByName(name, ignore_merged=False) is None
         person = Person(name=name, displayname=displayname, givenname=givenname,
                         familyname=familyname, password=password)
         wikinameset = getUtility(IWikiNameSet)
@@ -1087,6 +1088,7 @@ class PersonSet:
         emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
         if emailaddress is None:
             return default
+        assert emailaddress.person is not None
         return emailaddress.person
 
     def getUbunteros(self, orderBy=None):

@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import os
+import shutil
 import tempfile
 import pytz
 from datetime import datetime
@@ -414,17 +415,9 @@ class DistroReleaseQueueCustom(SQLBase):
             raise NotFoundError("Unable to find a publisher method for %s" % (
                 self.customformat.name))
 
-    def publish_DEBIAN_INSTALLER(self, logger=None):
+    @property
+    def temp_filename(self):
         """See IDistroReleaseQueueCustom."""
-        # To process a DI tarball we need write the tarball out to a
-        # temporary file, locate the archive, process the tarball, and
-        # remove the temp file.
-
-        # These imports are local to prevent loops in the importing
-        from canonical.archivepublisher.debian_installer import (
-            process_debian_installer)
-        from canonical.archivepublisher.config import Config as ArchiveConfig
-
         temp_dir = tempfile.mkdtemp()
         temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
 
@@ -435,17 +428,45 @@ class DistroReleaseQueueCustom(SQLBase):
             temp_file.write(chunk)
         temp_file.close()
         self.libraryfilealias.close()
+        return temp_file_name
 
-        # Find the archive root...
-        dr = self.distroreleasequeue.distrorelease
-        config = ArchiveConfig(dr.distribution, dr.distribution.releases)
+    @property
+    def archive_config(self):
+        """See IDistroReleaseQueueCustom."""
+        # XXX cprov 20050303: use the Zope Component Lookup to instantiate
+        # the object in question and avoid circular imports
+        from canonical.archivepublisher.config import Config as ArchiveConfig
+        distrorelease = self.distroreleasequeue.distrorelease
+        return ArchiveConfig(distrorelease.distribution,
+                             distrorelease.distribution.releases)
+
+    def publish_DEBIAN_INSTALLER(self, logger=None):
+        """See IDistroReleaseQueueCustom."""
+        # XXX cprov 20050303: We need to use the Zope Component Lookup
+        # to instantiate the object in question and avoid circular imports
+        from canonical.archivepublisher.debian_installer import (
+            process_debian_installer)
         try:
-            process_debian_installer(config.archiveroot,
-                                     temp_file_name,
-                                     dr.name)
+            process_debian_installer(
+                self.archive_config.archiveroot,
+                self.temp_filename,
+                self.distroreleasequeue.distrorelease.name)
         finally:
-            os.remove(temp_file_name)
-            os.rmdir(temp_dir)
+            shutil.rmtree(os.path.dirname(self.temp_filename))
+
+    def publish_DIST_UPGRADER(self, logger=None):
+        """See IDistroReleaseQueueCustom."""
+        # XXX cprov 20050303: We need to use the Zope Component Lookup
+        # to instantiate the object in question and avoid circular imports
+        from canonical.archivepublisher.dist_upgrader import (
+            process_dist_upgrader)
+        try:
+            process_dist_upgrader(
+                self.archive_config.archiveroot,
+                self.temp_filename,
+                self.distroreleasequeue.distrorelease.name)
+        finally:
+            shutil.rmtree(os.path.dirname(self.temp_filename))
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""

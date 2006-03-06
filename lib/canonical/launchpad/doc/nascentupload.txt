@@ -247,7 +247,8 @@ Finally we can ask the upload to process itself.
   DEBUG: Done
   DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
   DEBUG: Finding and applying overrides.
-  DEBUG: getPublishedReleases() returned 0 possible source(s)
+  DEBUG: getPublishedReleases()
+  DEBUG: 0 possible source(s)
   DEBUG: ed: (source) NEW
   DEBUG: Checking against i386 for ed
   DEBUG: getReleasedPackages() returned 0 possibilit{y,ies}
@@ -261,6 +262,7 @@ Finally we can ask the upload to process itself.
   DEBUG: Building recipients list.
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
+  DEBUG: Build 13 created
   DEBUG: Creating a New queue entry
   >>> print success
   True

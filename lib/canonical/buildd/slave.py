@@ -1,5 +1,6 @@
 # Copyright Canonical Limited
-# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+# Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
+#      and Adam Conrad <adam.conrad@canonical.com>
 
 # Buildd Slave implementation
 
@@ -168,7 +169,7 @@ class BuilderStatus:
     WAITING = "BuilderStatus.WAITING"
     ABORTING = "BuilderStatus.ABORTING"
     ABORTED = "BuilderStatus.ABORTED"
-
+    
     UNKNOWNSUM = "BuilderStatus.UNKNOWNSUM"
     UNKNOWNBUILDER = "BuilderStatus.UNKNOWNBUILDER"
     
@@ -181,7 +182,8 @@ class BuildStatus:
     PACKAGEFAIL = "BuildStatus.PACKAGEFAIL"
     CHROOTFAIL = "BuildStatus.CHROOTFAIL"
     BUILDERFAIL = "BuildStatus.BUILDERFAIL"
-    
+    GIVENBACK = "BuildStatus.GIVENBACK"
+
 class BuildDSlave(object):
     """Build Daemon slave. Implementation of most needed functions
     for a Build-Slave device.
@@ -194,6 +196,7 @@ class BuildDSlave(object):
         self._cachepath = self._config.get("slave","filecache")
         self.buildstatus = BuildStatus.OK
         self.waitingfiles = {}
+        self.builddependencies = ""
         self._log = None
         
         if not os.path.isdir(self._cachepath):
@@ -342,16 +345,24 @@ class BuildDSlave(object):
     def buildFail(self):
         """Cease building because the package failed to build."""
         if self.builderstatus != BuilderStatus.BUILDING:
-            raise ValueError("Slave is not BUILDING when set to BUILDFAIL")
+            raise ValueError("Slave is not BUILDING when set to PACKAGEFAIL")
         self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.PACKAGEFAIL
 
-    def depFail(self):
+    def depFail(self, dependencies):
         """Cease building due to a dependency issue."""
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when set to DEPFAIL")
         self.builderstatus = BuilderStatus.WAITING
         self.buildstatus = BuildStatus.DEPFAIL
+        self.builddependencies = dependencies
+
+    def giveBack(self):
+        """Give-back package due to a transient buildd/archive issue."""
+        if self.builderstatus != BuilderStatus.BUILDING:
+            raise ValueError("Slave is not BUILDING when set to GIVENBACK")
+        self.builderstatus = BuilderStatus.WAITING
+        self.buildstatus = BuildStatus.GIVENBACK
 
     def buildComplete(self):
         """Mark the build as complete and waiting interaction from the build
@@ -431,7 +442,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         if self.slave.buildstatus in (BuildStatus.OK, BuildStatus.PACKAGEFAIL,
                                       BuildStatus.DEPFAIL):
             return (self.slave.buildstatus, self.buildid,
-                    self.slave.waitingfiles)
+                    self.slave.waitingfiles, self.slave.builddependencies)
         return (self.slave.buildstatus, self.buildid)
 
     def status_ABORTED(self):

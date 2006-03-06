@@ -177,10 +177,12 @@ slave has the requested file in cache.
   ...         pass
 
   >>> class WaitingSlave:
-  ...     def __init__(self, state):
+  ...     def __init__(self, state, dependencies=None):
   ...         self.state = state
+  ...         self.dependencies = dependencies
   ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', self.state, '1-1', {})
+  ...         return ('BuilderStatus.WAITING', self.state, '1-1', {},
+  ...                 self.dependencies )
   ...     def fetchlogtail(self, amount=None):
   ...         return 'BOGUS'
   ...     def clean(self):
@@ -204,7 +206,8 @@ slave has the requested file in cache.
   ...                        WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
   >>> builder4 = MockBuilder('Missing Dependency build',
-  ...                        WaitingSlave('BuildStatus.DEPFAIL'))
+  ...                        WaitingSlave('BuildStatus.DEPFAIL',
+  ...                                     'baz (>= 1.0.1)'))
 
   >>> builder5 = MockBuilder('Bad Chroot',
   ...                        WaitingSlave('BuildStatus.CHROOTFAIL'))
@@ -222,10 +225,13 @@ slave has the requested file in cache.
   >>> builder10 = MockBuilder('Package Successfully Built',
   ...                         WaitingSlave('BuildStatus.OK'))
 
+  >>> builder11 = MockBuilder('I am giving this job back',
+  ...		               WaitingSlave('BuildStatus.GIVENBACK'))
+
 
   >>> buildergroup.builders = [builder1, builder2, builder3, builder4,
   ...                          builder5, builder6, builder7, builder8,
-  ...                          builder9, builder10]
+  ...                          builder9, builder10, builder11]
 
   >>> assert buildergroup.firstAvailable() is builder2
 
@@ -243,6 +249,7 @@ slave has the requested file in cache.
   ...         self.datebuilt = None
   ...         self.buildduration = None
   ...         self.buildlog = None
+  ...         self.dependencies = None
   ...         tmp_build = getUtility(IBuildSet).getByBuildID(7)
   ...         self.distribution = tmp_build.distribution
   ...         self.distrorelease = tmp_build.distrorelease
@@ -330,6 +337,8 @@ Let's check the procedures to verify/collect running build process:
   >>> assert bqItem4.build.datebuilt is not None
   >>> assert bqItem4.build.buildduration is not None
   >>> assert bqItem4.build.buildlog is not None
+  >>> bqItem4.build.dependencies
+  'baz (>= 1.0.1)'
   >>> bqItem4.build.buildstate.title
   'Dependency wait'
 
@@ -387,6 +396,15 @@ Let's check the procedures to verify/collect running build process:
   >>> buildergroup.updateBuild(bqItem9, librarian)
   >>> bqItem9.logtail
   'Waiting for slave process to be terminated'
+
+
+  WAITING -> GIVENBACK - slave requested build record to be
+  reschedulled.
+
+  >>> bqItem11 = MockBuildQueue(9, builder11, MockBuild(9))
+  >>> buildergroup.updateBuild(bqItem11, librarian)
+  WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
+
 
   WAITING - OK -> builder has finished the job and is waiting for
   master to collect its results
@@ -501,28 +519,9 @@ is able to build stuff properly for that one
   ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Release'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for warty (i386) 'Backports'
   Unable to setup builder for ubuntu/warty/i386.
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for hoary (i386) 'Backports'
   WARNING:root.builders.x86:No builders are available
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Release'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for woody (i386) 'Backports'
   Unable to setup builder for debian/woody/i386.
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Release'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Security'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Updates'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Proposed'
-  WARNING:root:Disabling: No CHROOT for breezy-autotest (i386) 'Backports'
   Unable to setup builder for ubuntu/breezy-autotest/i386.
 
 

@@ -22,7 +22,7 @@ import apt_inst
 import shutil
 import time
 
-from canonical.encoding import guess as guess_encoding, ascii_smash
+from canonical.encoding import guess as guess_encoding
 from canonical.cachedproperty import cachedproperty
 
 from canonical.archivepublisher.template_messages import (
@@ -32,12 +32,12 @@ from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
 
 from canonical.archivepublisher.utils import (
-    fix_maintainer, ParseMaintError, prefix_multi_line_string)
+    safe_fix_maintainer, ParseMaintError, prefix_multi_line_string)
 
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, PackagePublishingPocket, DistroReleaseQueueStatus)
+    BuildStatus, DistroReleaseQueueStatus)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -55,6 +55,7 @@ from canonical.database.constants import UTC_NOW
 custom_sections = {
     'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
     'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
+    'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
     }
 
 changes_mandatory_fields = set([
@@ -496,6 +497,15 @@ class NascentUpload:
         self._verify_architecture()
         return self._archdep
 
+    @cachedproperty
+    def single_custom(self):
+        """Identify single custom uploads.
+
+        Return True if the current upload is a single custom file.
+        It is necessary to identify dist-upgrade section uploads.
+        """
+        return len(self.files) == 1 and self.files[0].custom
+
     @property
     def archs(self):
         """Return the architecture tag set.
@@ -631,16 +641,9 @@ class NascentUpload:
         the address, the person's name, email address and person record within
         the launchpad database.
         """
-
-        if type(addr) != unicode:
-            # XXX: dsilvers: 20060203: For some reason, we don't always get
-            # given a unicode object, so if we don't, we turn it into one
-            # so that ascii_smash will do the right thing.
-            addr = guess_encoding(addr)
-
         try:
-            (rfc822, rfc2047, name, email) = fix_maintainer(
-                ascii_smash(addr), fieldname)
+            (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+                addr, fieldname)
         except ParseMaintError, e:
             raise UploadError(str(e))
 
@@ -926,8 +929,8 @@ class NascentUpload:
             # Try and find the source in the distrorelease.
             dr = self.policy.distrorelease
             spn = getUtility(ISourcePackageNameSet).getOrCreateByName(source)
-            releases = dr.getPublishedReleases(spn, self.policy.pocket,
-                                               include_pending=True)
+            # Check published source in any pocket
+            releases = dr.getPublishedReleases(spn, include_pending=True)
             for spr in releases:
                 if spr.sourcepackagerelease.version == source_version:
                     self.policy.sourcepackagerelease = spr.sourcepackagerelease
@@ -1096,8 +1099,7 @@ class NascentUpload:
             # in the entire file, reusing it is mandatory for first release
             spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                 uploaded_file.package)
-            old = self.distrorelease.getPublishedReleases(
-                spn, self.policy.pocket)
+            old = self.distrorelease.getPublishedReleases(spn)
 
             if uploaded_file.priority in priority_map:
                 # map priority tag to dbschema
@@ -1112,6 +1114,11 @@ class NascentUpload:
                     uploaded_file.priority, uploaded_file.filename))
 
             self.verify_components_and_sections(uploaded_file)
+
+        # Identify single file CustomUpload, refuse further checks
+        if self.single_custom:
+            self.logger.debug("Single Custom Upload detected.")
+            return
 
         # Finally verify that sourceful/binaryful match the policy
         if self.sourceful and not self.policy.can_upload_source:
@@ -1273,8 +1280,7 @@ class NascentUpload:
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                 dsc['source'])
         self.spn = spn
-        releases = self.distrorelease.getPublishedReleases(
-                spn, self.policy.pocket)
+        releases = self.distrorelease.getPublishedReleases(spn)
         apt_pkg.InitSystem()
 
         for pub_record in releases:
@@ -1496,16 +1502,14 @@ class NascentUpload:
                 continue
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease
+                # (any pocket would be enough)
+                self.logger.debug("getPublishedReleases()")
                 spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                     uploaded_file.package)
                 possible = self.distrorelease.getPublishedReleases(
-                    spn, self.policy.pocket)
-                if not possible:
-                    # Try the RELEASE pocket too, just in case
-                    possible = self.distrorelease.getPublishedReleases(
-                        spn, PackagePublishingPocket.RELEASE)
-                self.logger.debug("getPublishedReleases() returned %d "
-                                  "possible source(s)" % len(possible))
+                    spn, include_pending=True)
+                self.logger.debug("%d possible source(s)" % len(possible))
+
                 if possible:
                     self.logger.debug("%s: (source) exists" % (
                         uploaded_file.package))
@@ -1543,20 +1547,11 @@ class NascentUpload:
                     self.logger.debug("Checking against %s for %s" %(
                         archtag, uploaded_file.package))
                     dar = self.distrorelease[archtag]
-                    possible = dar.getReleasedPackages(bpn, self.policy.pocket)
-                    if not possible:
-                        # Try the RELEASE pocket
-                        possible = dar.getReleasedPackages(
-                            bpn, PackagePublishingPocket.RELEASE)
+                    possible = dar.getReleasedPackages(bpn)
                     if not possible:
                         # Try the other architectures...
                         for dar in self.distrorelease.architectures:
-                            possible = dar.getReleasedPackages(
-                                bpn, self.policy.pocket)
-                            if not possible:
-                                # and in the RELEASE pocket?
-                                possible = dar.getReleasedPackages(
-                                    bpn, PackagePublishingPocket.RELEASE)
+                            possible = dar.getReleasedPackages(bpn)
                             if possible:
                                 break
 
@@ -1814,8 +1809,10 @@ class NascentUpload:
                                     status=BuildStatus.FULLYBUILT,
                                     pocket=self.pocket)
             self.policy.build = build
+            self.logger.debug("Build %s created" % build.id)
         else:
             self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)
+            self.logger.debug("Build %s found" % self.policy.build.id)
 
         return self.policy.build
 
@@ -1878,7 +1875,7 @@ class NascentUpload:
         """Insert this nascent upload into the database."""
         if self.sourceful:
             self.insert_source_into_db()
-        if self.binaryful:
+        if self.binaryful and not self.single_custom:
             self.insert_binary_into_db()
 
         # create a DRQ entry in new state
@@ -1890,7 +1887,13 @@ class NascentUpload:
         if self.sourceful:
             queue_root.addSource(self.policy.sourcepackagerelease)
         # If we're binaryful, add the build
-        if self.binaryful:
+        if self.binaryful and not self.single_custom:
+            # XXX cprov 20060224: don't rely on policy pockets for binary
+            # uploads, they always are traget to distrorelease 'autobuild',
+            # which means pocket RELEASE. It target any non-RELEASE pocket
+            # build to RELEASE pocket. The right pocket is that stored in
+            # build record anyway.
+            queue_root.pocket = self.policy.build.pocket
             queue_root.addBuild(self.policy.build)
         # Finally, add any custom files.
         for uploaded_file in self.files:
@@ -1930,6 +1933,7 @@ class NascentUpload:
             return False, self.do_reject()
         try:
             interpolations = {
+                "MAINTAINERFROM": self.sender,
                 "SENDER": self.sender,
                 "CHANGES": self.changes_basename,
                 "SUMMARY": self.build_summary(),

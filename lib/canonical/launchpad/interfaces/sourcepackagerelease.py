@@ -91,17 +91,14 @@ class ISourcePackageRelease(Interface):
         If the status isn't given, use NEEDSBUILD. 'pocket' is required
         """
 
-    def getBuildByArch(distroarchrelease,
-                       pocket=PackagePublishingPocket.RELEASE):
+    def getBuildByArch(distroarchrelease):
         """Return build for the given distroarchrelease.
 
         This will look only for published architecture-specific binary
         package releases in the given distroarchrelease. It uses the publishing
         tables to return a build, even if the build is from another
         distroarchrelease, so long as the binaries are published in the
-        distroarchrelease given. By default the argument pocket is RELEASE,
-        but it can be modified according the callsite and will return only
-        build in this distroarchrelease and this pocket.
+        distroarchrelease given.
 
         Return None if not found.
         """

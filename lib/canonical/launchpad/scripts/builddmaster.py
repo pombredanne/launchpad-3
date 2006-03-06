@@ -22,7 +22,6 @@ import tempfile
 import os
 import apt_pkg
 import subprocess
-import shutil
 import time
 
 from zope.component import getUtility
@@ -41,7 +40,6 @@ from canonical import encoding
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.scripts import log
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
@@ -52,6 +50,30 @@ SCORE_SATISFIEDDEP = 5
 SCORE_UNSATISFIEDDEP = 10
 
 KBYTE = 1024
+
+
+# this dict maps the package version relationship syntax in lambda
+# functions which returns boolean according the results of
+# apt_pkg.VersionCompare function (see the order above).
+# For further information about pkg relationship syntax see:
+#
+# http://www.debian.org/doc/debian-policy/ch-relationships.html
+#
+version_relation_map = {
+    # any version is acceptable if no relationship is given
+    '': lambda x: True,
+    # stricly later
+    '>>': lambda x: x == 1,
+    # later or equal
+    '>=': lambda x: x >= 0,
+    # stricly equal
+    '=': lambda x: x == 0,
+    # earlier or equal
+    '<=': lambda x: x <= 0,
+    # strictly ealier
+    '<<': lambda x: x == -1
+}
+
 
 def file_chunks(from_file, chunk_size=256*KBYTE):
     """Using the special two-arg form of iter() iterate a file's chunks."""
@@ -72,7 +94,7 @@ class BuildDaemonPackagesArchSpecific:
             fd = open(self.pas_file, "r")
         except IOError:
             return
-        
+
         all_archs = set([a.architecturetag for a in
                          self.distrorelease.architectures])
         for line in fd:
@@ -81,7 +103,6 @@ class BuildDaemonPackagesArchSpecific:
             line = line.strip()
             if line == "":
                 continue
-            log.debug("PAS:in: " + line)
             is_source = False
             if line.startswith("%"):
                 is_source = True
@@ -111,10 +132,9 @@ class BuildDaemonPackagesArchSpecific:
                 if is_source:
                     # But if it's a src pkg then we can still use the
                     # information
-                    log.debug("PAS: %s no archs" % pkgname)
                     self.permit[pkgname] = set()
                 continue
-            
+
             if not is_source:
                 # We need to find a sourcepackagename
                 # If the sourcepackagename changes across arch then
@@ -133,11 +153,10 @@ class BuildDaemonPackagesArchSpecific:
                 pkg = pkgs[0].binarypackagerelease
                 src_pkg = pkg.build.sourcepackagerelease
                 pkgname = src_pkg.sourcepackagename.name
-            log.debug("PAS: %s %s" % (pkgname, " ".join(archs)))
             self.permit[pkgname] = archs
 
         fd.close()
-                
+
 
 # XXX cprov 20050628
 # I couldn't found something similar in hct.utils, but probably there is.
@@ -530,7 +549,7 @@ class BuilderGroup:
         slave.clean()
 
     def updateBuild_WAITING(self, queueItem, slave, librarian, buildstatus,
-                            buildid, filemap=None):
+                            buildid, filemap=None, dependencies=None):
         """Perform the actions needed for a slave in a WAITING state
 
         Buildslave can be WAITING in five situations:
@@ -554,12 +573,13 @@ class BuilderGroup:
                                  % (buildstatus, queueItem.builder.url))
             return
 
-        method(queueItem, slave, librarian, buildid, filemap)
+        method(queueItem, slave, librarian, buildid, filemap, dependencies)
 
-    def storeBuildInfo(self, queueItem, slave, librarian, buildid):
+    def storeBuildInfo(self, queueItem, slave, librarian, buildid,
+                       dependencies):
         """Store available information for build jobs.
 
-        Store Buildlog, datebuilt, duration and builder signature.
+        Store Buildlog, datebuilt, duration, dependencies.
         """
         queueItem.build.buildlog = self.getLogFromSlave(slave, queueItem,
                                                         librarian)
@@ -569,10 +589,10 @@ class BuilderGroup:
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         queueItem.build.buildduration = RIGHT_NOW - queueItem.buildstart
         queueItem.build.builder = queueItem.builder
-
+        queueItem.build.dependencies = dependencies
 
     def buildStatus_OK(self, queueItem, slave, librarian, buildid,
-                       filemap=None):
+                       filemap=None, dependencies=None):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -629,14 +649,17 @@ class BuilderGroup:
         uploader_argv.extend(extra_args)
 
         self.logger.debug("Invoking uploader on %s" % root)
+        self.logger.debug("%s" % uploader_argv)
         uploader_process = subprocess.Popen(uploader_argv,
                                             stdout=subprocess.PIPE)
         result_code = uploader_process.wait()
 
         if os.path.exists(upload_dir):
             self.logger.debug("The upload directory did not get moved.")
-            os.rename(upload_dir, os.path.join(upload_dir, "..",
-                                               "failed-to-move",
+            failed_dir = os.path.join(root, "failed-to-move")
+            if not os.path.exists(failed_dir):
+                os.mkdir(failed_dir)
+            os.rename(upload_dir, os.path.join(failed_dir,
                                                upload_leaf))
 
         self.logger.debug("Uploader returned %d" % result_code)
@@ -645,7 +668,7 @@ class BuilderGroup:
                           % queueItem.name)
         # store build info
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
+        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         queueItem.destroySelf()
 
         # release the builder
@@ -656,7 +679,7 @@ class BuilderGroup:
         self.commit()
 
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
-                                filemap=None):
+                                filemap=None, dependencies=None):
         """Handle a package that had failed to build.
 
         Build has failed when trying the work with the target package,
@@ -664,12 +687,12 @@ class BuilderGroup:
         remove Buildqueue entry.
         """
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
+        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         slave.clean()
         queueItem.destroySelf()
 
     def buildStatus_DEPFAIL(self, queueItem, slave, librarian, buildid,
-                            filemap=None):
+                            filemap=None, dependencies=None):
         """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
@@ -677,14 +700,14 @@ class BuilderGroup:
         entry and release builder slave for another job.
         """
         queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
+        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         self.logger.critical("***** %s is MANUALDEPWAIT *****"
                              % queueItem.builder.name)
         slave.clean()
         queueItem.destroySelf()
 
     def buildStatus_CHROOTFAIL(self, queueItem, slave, librarian, buildid,
-                               filemap=None):
+                               filemap=None, dependencies=None):
         """Handle a package that had failed when unpacking the CHROOT.
 
         Build has failed when installing the current CHROOT, mark the
@@ -692,14 +715,14 @@ class BuilderGroup:
         and release the builder.
         """
         queueItem.build.buildstate = dbschema.BuildStatus.CHROOTWAIT
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
+        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
         slave.clean()
         queueItem.destroySelf()
 
     def buildStatus_BUILDERFAIL(self, queueItem, slave, librarian, buildid,
-                                filemap=None):
+                                filemap=None, dependencies=None):
         """Handle builder failures.
 
         Build has been failed when trying to build the target package,
@@ -718,6 +741,20 @@ class BuilderGroup:
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
         queueItem.builder = None
         queueItem.buildstart = None
+
+    def buildStatus_GIVENBACK(self, queueItem, slave, librarian, buildid,
+                              filemap=None, dependencies=None):
+        """Handle automatic retry requested by builder.OA
+
+        GIVENBACK pseudo-state represents and request for automatic retry
+        on next queuebuilder cycle, which is done by reseting the the current
+        Build record.
+        """
+        self.logger.warning("***** %s is GIVENBACK by %s *****"
+                            % (buildid, queueItem.builder.name))
+        queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
+        slave.clean()
+        queueItem.destroySelf()
 
     def countAvailable(self):
         """Return the number of available builder slaves.
@@ -770,7 +807,7 @@ class BuilderGroup:
                     continue
                 if slavestatus[0] == BuilderStatus.IDLE:
                     return builder
-        return
+        return None
 
 
 class BuilddMaster:
@@ -797,6 +834,8 @@ class BuilddMaster:
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
         self._archreleases = {}
+        # apt_pkg requires InitSystem to get VersionCompare working properly
+        apt_pkg.InitSystem()
         self._logger.info("Buildd Master has been initialised")
 
     def commit(self):
@@ -812,16 +851,11 @@ class BuilddMaster:
                              distroarchrelease.distrorelease.name,
                              distroarchrelease.architecturetag))
 
-        # check ARCHRELEASE accross available pockets
+        # check ARCHRELEASE across available pockets
         for pocket in dbschema.PackagePublishingPocket.items:
             if distroarchrelease.getChroot(pocket):
                 # Fill out the contents
                 self._archreleases.setdefault(distroarchrelease, {})
-            else:
-                self._logger.warn(
-                    "Disabling: No CHROOT for %s (%s) '%s'"
-                    % (distroarchrelease.distrorelease.name,
-                       distroarchrelease.architecturetag, pocket.title))
 
     def setupBuilders(self, archrelease):
         """Setting up a group of builder slaves for a given DistroArchRelease.
@@ -895,8 +929,18 @@ class BuilddMaster:
 
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
-        archs = set(arch for arch in distrorelease.architectures
-                    if arch in self._archreleases)
+        # XXX cprov 20060221: this approach is used several times in this code,
+        # it retrieves all the information available from the DB and handle it
+        # within the python domain, which is really slow and confusing.
+        archs = set()
+        initialized_arch_ids = [arch.id for arch in self._archreleases]
+
+        for wanted_arch in distrorelease.architectures:
+            if wanted_arch.id in initialized_arch_ids:
+                archs.add(wanted_arch)
+
+        self._logger.info("Supported %s"
+                          % " ".join([a.architecturetag for a in archs]))
 
         # XXX cprov 20050831
         # Avoid entering in the huge loop if we don't find at least
@@ -935,7 +979,7 @@ class BuilddMaster:
                     # self._logger.debug(header + "SKIPPING ALL")
                     continue
 
-                # packages with an architecture hint of "all" or "any" are
+                # packages with an architecture hint of "all" are
                 # architecture independent.  Therefore we only need
                 # to build on one architecture, the distrorelease.
                 # nominatedarchindep
@@ -944,7 +988,8 @@ class BuilddMaster:
                     distroarchrelease=distrorelease.nominatedarchindep,
                     processor=processor,
                     pocket=pubrec.pocket)
-                self._logger.debug(header + "CREATING ALL")
+                self._logger.debug(header + "CREATING ALL (%s)"
+                                   % pubrec.pocket.name)
                 continue
 
             # the sourcepackage release builds in a specific list of
@@ -970,8 +1015,7 @@ class BuilddMaster:
                     continue
 
                 # verify is isn't already present for this distroarchrelease
-                if not pubrec.sourcepackagerelease.getBuildByArchAndPocket(
-                    arch, pubrec.pocket):
+                if not pubrec.sourcepackagerelease.getBuildByArch(arch):
                     # XXX cprov 20050831
                     # I could possibily be better designed, let's think about
                     # it in the future. Pick the first processor we found for
@@ -984,8 +1028,9 @@ class BuilddMaster:
                         distroarchrelease=arch,
                         processor=arch.default_processor,
                         pocket=pubrec.pocket)
-                    self._logger.debug(header + "CREATING %s" %
-                                       arch.architecturetag)
+                    self._logger.debug(header + "CREATING %s (%s)"
+                                       % (arch.architecturetag,
+                                          pubrec.pocket.name))
 
         self.commit()
 
@@ -1088,44 +1133,45 @@ class BuilddMaster:
                 msg += "%d " % score
                 break
 
-        # apt_pkg requires InitSystem to get VersionCompare working properly
-        apt_pkg.InitSystem()
-
         # Score the package down if it has unsatisfiable build-depends
         # in the hope that doing so will allow the depended on package
         # to be built first.
+        dep_score, missing_deps = self._scoreAndCheckDependencies(
+            job.builddependsindep, job.archrelease)
+        # sum dependency score
+        score += dep_score
 
+        # store current score value
+        job.lastscore = score
+        self._logger.debug(msg + " = %d" % job.lastscore)
+
+    def _scoreAndCheckDependencies(self, dependencies_line, archrelease):
+        """Check dependencis line within a distroarchrelease.
+
+        Return tuple containing the designed score points related to
+        satisfied/unsatisfied dependencies and a line contaning the
+        missing dependencies in the default dependency format.
+        """
         # parse package build dependencies using apt_pkg
         try:
-            parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
+            parsed_deps = apt_pkg.ParseDepends(dependencies_line)
         except ValueError:
             self._logger.warn("COULD NOT PARSE DEP: %s" %
-                              job.builddependsindep)
-            parsed_deps = []
+                              dependencies_line)
+            # XXX cprov 20051018:
+            # We should remove the job if we could not parse its
+            # dependency, but AFAICS, the integrity checks in
+            # uploader component will be in charge of this. In
+            # short I'm confident this piece of code is never
+            # going to be executed
+            return 0, dependencies_line
 
-        # this dict maps the package version relationship syntax in lambda
-        # functions which returns boolean according the results of
-        # apt_pkg.VersionCompare function (see the order above).
-        # For further information about pkg relationship syntax see:
-        #
-        # http://www.debian.org/doc/debian-policy/ch-relationships.html
-        #
-        relation_map = {
-            # any version is acceptable if no relationship is given
-            '': lambda x: True,
-            # stricly later
-            '>>': lambda x: x == 1,
-            # later or equal
-            '>=': lambda x: x >= 0,
-            # stricly equal
-            '=': lambda x: x == 0,
-            # earlier or equal
-            '<=': lambda x: x <= 0,
-            # strictly ealier
-            '<<': lambda x: x == -1
-            }
+        missing_deps = []
+        score = 0
 
         for token in parsed_deps:
+            # XXX cprov 20060227: it may not work for and'd and or'd
+            # syntaxes.
             try:
                 name, version, relation = token[0]
             except ValueError:
@@ -1136,9 +1182,9 @@ class BuilddMaster:
                 # short I'm confident this piece of code is never
                 # going to be executed
                 self._logger.critical("DEP FORMAT ERROR: '%s'" % token[0])
-                continue
+                return 0, dependencies_line
 
-            dep_candidate = job.archrelease.findDepCandidateByName(name)
+            dep_candidate = archrelease.findDepCandidateByName(name)
 
             if dep_candidate:
                 # use apt_pkg function to compare versions
@@ -1147,25 +1193,68 @@ class BuilddMaster:
                 # positive if first > second
                 dep_result = apt_pkg.VersionCompare(
                     dep_candidate.binarypackageversion, version)
-
                 # use the previously mapped result to identify whether
                 # or not the dependency was satisfied or not
-                if relation_map[relation](dep_result):
-                    # decrement score of 5 point for each dependency
-                    # it postpones the handling of packages with huge
-                    # list of dependencies.
+                if version_relation_map[relation](dep_result):
+                    # continue for satisfied dependency
                     score -= SCORE_SATISFIEDDEP
                     continue
 
-            # reduce score in 10 point for each unsatisfied dependency
-            score -= SCORE_UNSATISFIEDDEP
+            # append missing token
             self._logger.warn("MISSING DEP: %r in %s %s"
-                              % (token, job.archrelease.distrorelease.name,
-                                 job.archrelease.architecturetag))
+                              % (token, archrelease.distrorelease.name,
+                                 archrelease.architecturetag))
+            missing_deps.append(token)
+            score -= SCORE_UNSATISFIEDDEP
 
-        # store current score value
-        job.lastscore = score
-        self._logger.debug(msg + " = %d" % job.lastscore)
+        # rebuild dependencies line
+        remaining_deps = []
+        for token in missing_deps:
+            name, version, relation = token[0]
+            if relation and version:
+                token_str = '%s (%s %s)' % (name, relation, version)
+            else:
+                token_str = '%s' % name
+            remaining_deps.append(token_str)
+
+        return score, ", ".join(remaining_deps)
+
+    def retryDepWaiting(self):
+        """Check 'dependency waiting' builds and see if we can retry them.
+
+        Check 'dependencies' field and update its contents. Retry those with
+        empty dependencies.
+        """
+        # Get the missing dependency fields
+        arch_ids = [arch.id for arch in self._archreleases]
+        status = dbschema.BuildStatus.MANUALDEPWAIT
+        bqset = getUtility(IBuildSet)
+        candidates = bqset.getBuildsByArchIds(arch_ids, status=status)
+        # XXX cprov 20060227: IBuildSet.getBuildsByArch API is evil,
+        # we should always return an SelectResult, even for empty results
+        if candidates is None:
+            self._logger.debug("No MANUALDEPWAIT record found")
+            return
+
+        self._logger.debug("Found %d MANUALDEPWAIT records"
+                           % candidates.count())
+
+        for build in candidates:
+            if build.dependencies is not None:
+                dep_score, remaining_deps = self._scoreAndCheckDependencies(
+                    build.dependencies, build.distroarchrelease)
+                # store new missing dependencies
+                build.dependencies = remaining_deps
+                if len(build.dependencies):
+                    self._logger.debug(
+                        '%s WAITING: "%s"' % (build.title, build.dependencies))
+                    continue
+
+            # retry build if missing dependencies is empty
+            self._logger.debug('RETRY: "%s"' % build.title)
+            build.reset()
+
+        self.commit()
 
     def sanitiseAndScoreCandidates(self):
         """Iter over the buildqueue entries sanitising it."""

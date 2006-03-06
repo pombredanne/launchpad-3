@@ -226,6 +226,11 @@ class IDistroReleaseQueueCustom(Interface):
             title=_("The file"), required=True, readonly=False,
             )
 
+    # useful properties
+    temp_filename = Attribute("Pump the target LibraryFile to a temporary "
+                              "directory and return the path.")
+    archive_config = Attribute("Build and return an ArchiveConfig object.")
+
     def publish(logger=None):
         """Publish this custom item directly into the filesystem.
 
@@ -240,6 +245,16 @@ class IDistroReleaseQueueCustom(Interface):
         """Publish this custom item as a raw installer tarball.
 
         This will write the installer tarball out to the right part of
+        the archive.
+
+        If a logger is provided, information pertaining to the publishing
+        process will be logged to it.
+        """
+
+    def publish_DIST_UPGRADER(logger=None):
+        """Publish this custom item as a raw dist-upgrader tarball.
+
+        This will write the dist-upgrader tarball out to the right part of
         the archive.
 
         If a logger is provided, information pertaining to the publishing

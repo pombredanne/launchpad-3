@@ -1715,6 +1715,13 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         import queue to be incorporated into that package's translations.
         """)
 
+    DIST_UPGRADER = Item(0, """
+        raw-dist-upgrader
+
+        A raw-dist-upgrader file is a tarball. It is simply published into
+        the archive.
+        """)
+
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
 
