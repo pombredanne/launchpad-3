@@ -65,8 +65,10 @@
   <table class="listing sortable" tal:attributes="id table_id">
   <thead>
     <tr>
-      <th>Distribution Release</th>
+      <th>Uploaded to</th>
       <th>Version</th>
+      <th>Date</th>
+      <th>Failures</th>
       <th>Bugs</th>
       <th>Tickets</th>
     </tr>
@@ -81,13 +83,30 @@
         </a>
       </td>
       <td>
-        <a tal:attributes="href string:${distrorelease/fmt:url}/+source/${spr/name}"
+        <a tal:attributes="href string:${distrorelease/fmt:url}/+source/${spr/name}/${spr/version}"
            tal:content="spr/version">
         </a>
       </td>
+      <td>
+        <span tal:replace="spr/dateuploaded/fmt:datetime" />
+      </td>
+      <td>
+        <tal:block condition="spr/needs_building">
+            Not yet built
+        </tal:block>
+        <tal:block condition="not: spr/needs_building">
+            <tal:block repeat="build spr/failed_builds">
+               <a tal:attributes="href build/fmt:url"
+                  tal:content="build/distroarchrelease/architecturetag" />
+            </tal:block>
+            <tal:block condition="not: spr/failed_builds">
+               None
+            </tal:block>
+        </tal:block>
+      </td>
       <td style="text-align: right">
         <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+bugs"
-           tal:content="python: view.sourcepackagerelease_open_bugs_count(spr)">
+           tal:content="python: view.sourcepackage_open_bugs_count(spr)">
         </a>
       </td>
       <td style="text-align: right">
