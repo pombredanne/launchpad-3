@@ -28,8 +28,10 @@ class SpecificationTargetView(LaunchpadView):
         self.listing_detailed = True
         self.listing_compact = False
 
-        # XXX: SteveA.
         url = self.request.getURL()
+        # XXX: SteveAlexander, 2006-03-06.  This url-sniffing view_title
+        #      setting code is not tested.  It doesn't appear to be used
+        #      either.
         if 'created' in url:
             self.view_title = 'Created by %s' % self.context.title
         elif 'approver' in url:
