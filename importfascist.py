@@ -172,7 +172,13 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             # "from foo import bar" is naughty if bar isn't in foo.__all__ (and
             # foo actually has an __all__).  Unless foo is within a tests
             # or ftests module.
-            for attrname in fromlist:
+            if name == 'canonical.lp':
+                attrnames = [attrname
+                             for attrname in fromlist
+                             if attrname != 'dbschema']
+            else:
+                attrnames = fromlist
+            for attrname in attrnames:
                 if attrname not in module.__all__:
                     error = NotInModuleAllPolicyViolation(
                         import_into, name, attrname)
