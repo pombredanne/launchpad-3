@@ -7,4 +7,3 @@ ALTER TABLE Branch ALTER COLUMN title DROP NOT NULL;
 ALTER TABLE Branch ALTER COLUMN summary DROP NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 24, 0);
-

@@ -63,6 +63,9 @@
         <browser:page
             name="+portlet-subscribers"
             template="../templates/branch-portlet-subscribers.pt" />
+        <browser:page
+            name="+series-reference"
+            template="../templates/branch-series-reference.pt" />
     </browser:pages>
 
   <browser:pages

@@ -58,7 +58,7 @@ class LaunchpadCelebrities:
     """See ILaunchpadCelebrities"""
     implements(ILaunchpadCelebrities)
 
-    buttsource = CelebrityDescriptor(IPersonSet, 'buttsource')
+    vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     admin = CelebrityDescriptor(IPersonSet, 'admins')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
     debian = CelebrityDescriptor(IDistributionSet, 'debian')

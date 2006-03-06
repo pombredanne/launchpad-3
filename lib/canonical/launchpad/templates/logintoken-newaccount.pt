@@ -16,6 +16,11 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
+        <div class="portalError" metal:fill-slot="extra_top" 
+             tal:repeat="top_of_page_error view/top_of_page_errors" 
+             tal:content="structure top_of_page_error">
+        </div>
+
   </div>
 
   </div>

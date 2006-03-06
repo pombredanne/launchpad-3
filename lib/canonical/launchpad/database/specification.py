@@ -346,11 +346,18 @@ class SpecificationSet:
         for row in Specification.select():
             yield row
 
-    def getByName(self, name, default=None):
+    def getByName(self, name):
         """See ISpecificationSet."""
         specification = Specification.selectOneBy(name=name)
         if specification is None:
-            return default
+            return None 
+        return specification
+
+    def getByURL(self, url):
+        """See ISpecificationSet."""
+        specification = Specification.selectOneBy(specurl=url)
+        if specification is None:
+            return None 
         return specification
 
     @property

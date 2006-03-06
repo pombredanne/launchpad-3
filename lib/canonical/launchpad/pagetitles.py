@@ -645,8 +645,9 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Product and group registration in Launchpad'
 
-def registry_listall(context, view):
-    return view.header
+products_all = 'Upstream products registered in Launchpad'
+
+projects_all = 'Projects registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
