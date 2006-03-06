@@ -177,7 +177,6 @@ class OutputMsgSet:
 
         Raises a ValueError if there are errors in the message set.
         """
-
         return self.export_unicode_string().encode(self.pofile.header.charset)
 
 def last_translator_text(person):
@@ -610,7 +609,8 @@ class POTemplateExporter:
 
     def export_potemplate_to_file(self, filehandle):
         """See IPOTemplateExporter."""
-        rows = getUtility(IVPOExportSet).get_potemplate_rows(self.potemplate)
+        rows = getUtility(IVPOExportSet).get_potemplate_rows(
+            self.potemplate, include_translations=False)
         pofile_output = FilePOFileOutput(filehandle)
         export_rows(rows, potemplate_output)
 

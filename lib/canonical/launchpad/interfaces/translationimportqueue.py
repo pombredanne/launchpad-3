@@ -171,6 +171,9 @@ class ITranslationImportQueue(Interface):
         """Return the ITranslationImportQueueEntry with the given id or None.
         """
 
+    def getAllEntries(id):
+        """Return all entries this import queue has."""
+
     def getNextToImport(pofile_or_potemplate):
         """Return the next entry on the queue to be imported into
         pofile_or_potemplate.

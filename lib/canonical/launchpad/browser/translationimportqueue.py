@@ -167,7 +167,7 @@ class TranslationImportQueueView(LaunchpadView):
 
         # Setup the batching for this page.
         start = int(self.request.get('batch_start', 0))
-        self.batch = Batch(self.context, start, size=1)
+        self.batch = Batch(self.context.getAllEntries(), start, size=50)
         self.batchnav = BatchNavigator(self.batch, self.request)
 
         # Process the form.

@@ -171,8 +171,7 @@ class TranslationImportQueue:
 
     def __iter__(self):
         """See ITranslationImportQueue."""
-        return iter(TranslationImportQueueEntry.select(
-            orderBy=['status', 'dateimported']))
+        return iter(self.getAllEntries())
 
     def __getitem__(self, id):
         """See ITranslationImportQueue."""
@@ -304,6 +303,11 @@ class TranslationImportQueue:
             return TranslationImportQueueEntry.get(id)
         except SQLObjectNotFound:
             return None
+
+    def getAllEntries(self):
+        """See ITranslationImportQueue."""
+        return TranslationImportQueueEntry.select(
+            orderBy=['status', 'dateimported'])
 
     def getNextToImport(self, pofile_or_potemplate):
         """See ITranslationImportQueue."""

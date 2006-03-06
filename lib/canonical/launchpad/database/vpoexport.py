@@ -22,6 +22,7 @@ class VPOExportSet:
 
     column_names = [
         'potemplate',
+        'pofile',
         'language',
         'variant',
         'potsequence',
@@ -94,10 +95,14 @@ class VPOExportSet:
 
         return self._select(where=where)
 
-    def get_potemplate_rows(self, potemplate):
+    def get_potemplate_rows(self, potemplate, include_translations=True):
         """See IVPOExportSet."""
-        where = 'potemplate = %s AND language IS NULL' % sqlvalues(
-            potemplate.id)
+        where = 'potemplate = %s' % sqlvalues(potemplate.id)
+
+        if not include_translations:
+            # Filter out translations and leave only the template export.
+            where = '%s AND language IS NULL' % where
+
         return self._select(where=where)
 
     def _get_distrorelease_pofiles(self, release, date=None, component=None,
@@ -245,6 +250,7 @@ class VPOExport:
 
     def __init__(self, *args):
         (potemplate,
+         pofile,
          language,
          self.variant,
          self.potsequence,
@@ -266,9 +272,9 @@ class VPOExport:
          self.popluralforms) = args
 
         self.language = Language.get(language)
-        self.pofile = POFile.selectOneBy(
-            potemplateID=potemplate,
-            languageID=language,
-            variant=self.variant)
+        if pofile is None:
+            self.pofile = None
+        else:
+            self.pofile = POFile.get(pofile)
         self.potemplate = POTemplate.get(potemplate)
 
