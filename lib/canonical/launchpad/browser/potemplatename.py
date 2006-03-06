@@ -97,10 +97,10 @@ class POTemplateNameEditView(POTemplateNameView, SQLObjectEditView):
     def changed(self):
         formatter = self.request.locale.dates.getFormatter(
             'dateTime', 'medium')
-        status = _("Updated on ${date_time}")
-        status.mapping = {'date_time': formatter.format(
-            datetime.utcnow())}
-        self.update_status = status
+        self.update_status = _(
+                "Updated on ${date_time}",
+                mapping={'date_time': formatter.format(datetime.utcnow())}
+                )
 
 class POTemplateNameAddView(AddView):
 
