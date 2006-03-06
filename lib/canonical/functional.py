@@ -142,7 +142,16 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
     sending both Basic Auth and cookie credentials raises an exception.
     XXX: Open a bug on this
     """
+    def __init__(self, *args, **kw):
+        if kw.get('debug'):
+            self._debug = True
+            del kw['debug']
+        else:
+            self._debug = False
+        HTTPCaller.__init__(self, *args, **kw)
     def __call__(self, *args, **kw):
+        if self._debug:
+            import pdb; pdb.set_trace()
         try:
             return HTTPCaller.__call__(self, *args, **kw)
         finally:
@@ -175,6 +184,9 @@ def FunctionalDocFileSuite(*paths, **kw):
         root[ZopePublication.root_name] = MockRootFolder()
         # Out tests report being on a different port
         test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+        test.globs['debug_http'] = UnstickyCookieHTTPCaller(
+                port=9000,debug=True
+                )
         if stdout_logging:
             log = StdoutHandler('')
             log.setLoggerLevel(logging.INFO)
