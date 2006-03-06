@@ -182,7 +182,7 @@ class Bugzilla(ExternalSystem):
             document = minidom.parseString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
             log.error('Failed to parse XML description for %s bugs %s: %s' %
-                      (self.baseurl, bug_ids, e))
+                      (self.baseurl, bug_ids_to_update, e))
             return None
         result = None
         bug_nodes = document.getElementsByTagName('bz:bug')
