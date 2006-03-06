@@ -309,8 +309,12 @@ def export_rows(rows, pofile_output):
                     exported_file.export_string())
 
             # Get the pot header
+            if row.potheader is None:
+                pot_header_value = ''
+            else:
+                pot_header_value = row.potheader
             pot_header = POHeader(
-                msgstr=row.potheader)
+                msgstr=pot_header_value)
             # PO templates have always the fuzzy flag set on headers.
             pot_header.flags.add('fuzzy')
             pot_header.updateDict()
@@ -347,7 +351,6 @@ def export_rows(rows, pofile_output):
                 # Update the last translator field.
 
                 submission = row.pofile.latestsubmission
-                assert not submission.person.isTeam(), submission.person.name
                 header['Last-Translator'] = (
                     last_translator_text(submission.person))
 
@@ -612,7 +615,7 @@ class POTemplateExporter:
         rows = getUtility(IVPOExportSet).get_potemplate_rows(
             self.potemplate, include_translations=False)
         pofile_output = FilePOFileOutput(filehandle)
-        export_rows(rows, potemplate_output)
+        export_rows(rows, pofile_output)
 
     def export_tarball(self):
         """See IPOTemplateExporter."""

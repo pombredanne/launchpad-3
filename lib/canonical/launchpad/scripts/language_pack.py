@@ -115,30 +115,18 @@ def export(distribution_name, release_name, component, update, logger):
         flush_database_updates()
         transaction.commit()
 
-    # XXX CarlosPerelloMarin 20060304: Disabled the .pot export as we added it
-    # for debugging purposes and with the new import queue handling it needs a
-    # bunch of changes to add it. I have my own language pack branch from
-    # where we get the language packs so I will fix this there. We disable it
-    # in the mean time.
-    #potemplates = export_set.get_distrorelease_potemplates(release, component,
-    #    languagepack=True)
-    #logger.info("Exporting POTemplates")
-    #
-    #for index, potemplate in enumerate(potemplates):
-    #    logger.debug("Exporting %s (%d)" %
-    #        (potemplate.displayname, index + 1))
-    #
-    #    try:
-    #        contents = potemplate.export()
-    #    except (LookupError, HTTPError):
-    #        # We catch the HTTPError exception because the test fail due the
-    #        # lack of sampledata for librarian files.
-    #        logger.exception(
-    #            "We had an error getting this file from librarian.")
-    #        continue
-    #
-    #    archive.add_file('rosetta-%s/templates/%s.pot' % (release.name,
-    #        potemplate.potemplatename.translationdomain), contents)
+    potemplates = export_set.get_distrorelease_potemplates(release, component,
+        languagepack=True)
+    logger.info("Exporting POTemplates")
+
+    for index, potemplate in enumerate(potemplates):
+        logger.debug("Exporting %s (%d)" %
+            (potemplate.displayname, index + 1))
+
+        contents = potemplate.export()
+
+        archive.add_file('rosetta-%s/templates/%s.pot' % (release.name,
+            potemplate.potemplatename.translationdomain), contents)
 
     logger.debug("Adding timestamp file")
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')

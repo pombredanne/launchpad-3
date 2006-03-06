@@ -105,7 +105,22 @@ And the queue should have a new entry.
    >>> len(translation_import_queue)
    1
 
-Now, the final import should work.
+Now, we need to do the final import. It's done as a two steps procedure.
+
+The first one, approves the import.
+
+    >>> import subprocess, sys
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-poimport.py'
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    The automatic approval system approved some entries.
+    <BLANKLINE>
+
+The second one, executes the import.
 
     >>> import subprocess, sys
     >>> process = subprocess.Popen([
