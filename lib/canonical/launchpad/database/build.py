@@ -21,9 +21,10 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
-
+from canonical.launchpad.database.queue import DistroReleaseQueueBuild
 from canonical.lp.dbschema import (
     EnumCol, BuildStatus, PackagePublishingPocket)
+
 
 class Build(SQLBase):
     implements(IBuild)
@@ -43,11 +44,9 @@ class Build(SQLBase):
         default=None)
     builder = ForeignKey(dbName='builder', foreignKey='Builder',
         default=None)
-    gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey',
-        default=None)
-    changes = StringCol(dbName='changes', default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
                      notNull=True)
+    dependencies = StringCol(dbName='dependencies', default=None)
 
     @property
     def buildqueue_record(self):
@@ -56,6 +55,14 @@ class Build(SQLBase):
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
         # instead, see bug # 3424
         return BuildQueue.selectOneBy(buildID=self.id)
+
+    @property
+    def changesfile(self):
+        """See IBuild"""
+        queue_item = DistroReleaseQueueBuild.selectOneBy(buildID=self.id)
+        if queue_item is None:
+            return None
+        return queue_item.distroreleasequeue.changesfile
 
     @property
     def distrorelease(self):
@@ -126,9 +133,8 @@ class Build(SQLBase):
         self.datebuilt = None
         self.buildduration = None
         self.builder = None
-        self.gpgsigningkey = None
-        self.changes = None
         self.buildlog = None
+        self.dependencies = None
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)

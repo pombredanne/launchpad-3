@@ -10,7 +10,7 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-<div tal:replace="structure context/@@+portlet-binaries" 
+<div tal:replace="structure context/@@+portlet-binaries"
      tal:condition="context/binarypackages"/>
 </metal:rightportlets>
 
@@ -24,9 +24,17 @@
             <th>Status:</th>
             <td tal:content="context/buildstate/title" />
           </tr>
+          <tr tal:condition="context/dependencies">
+            <th>Dependencies:</th>
+            <td tal:content="context/dependencies" />
+          </tr>
           <tr>
             <th>Date requested:</th>
             <td tal:content="context/datecreated/fmt:datetime" />
+          </tr>
+          <tr>
+            <th>Pocket:</th>
+            <td tal:content="context/pocket/name" />
           </tr>
           <tr>
             <th>Date built:</th>
@@ -62,28 +70,29 @@
             <td tal:condition="not:context/builder">
               <i>unknown</i>
             </td>
-            <td
-              tal:condition="context/builder" 
-              tal:content="context/builder/title"
-            />
+            <td tal:condition="context/builder">
+	    <a tal:content="context/builder/title"
+               tal:attributes="href context/builder/fmt:url">BUILDER</a>
+            </td>
           </tr>
           <tr>
             <th>Processor:</th>
             <td tal:content="context/processor/name" />
           </tr>
+          <tr>
+            <th>Changesfile:</th>
+            <td>
+              <i tal:condition="not:context/changesfile">not available</i>
+              <a tal:condition="context/changesfile"
+                 tal:attributes="href context/changesfile/url"
+                 tal:content="context/changesfile/filename">CHANGESFILE</a>
+            </td>
+          </tr>
+
         </tbody>
       </table>
-
-    <fieldset tal:condition="context/changes" class="collapsible collapsed">
-      <legend>Changes file</legend>
-      <div>
-            <div>
-	      <pre tal:content="context/changes" />
-            </div>
-     </div>
-    </fieldset>
 
     </div>
   </body>
 </html>
- 
+

@@ -21,6 +21,7 @@ __all__ = [
     'BugWatchVocabulary',
     'CountryNameVocabulary',
     'DistributionVocabulary',
+    'DistributionUsingMaloneVocabulary',
     'DistroReleaseVocabulary',
     'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
@@ -56,6 +57,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import AND, OR, CONTAINSSTRING
 
+from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
@@ -66,9 +68,10 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ITeam, IPersonSet, IEmailAddressSet)
+    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
+    IMilestoneSet)
 
-class IHugeVocabulary(IVocabulary):
+class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
 
     Items in an IHugeVocabulary should have human readable tokens or the
@@ -337,13 +340,13 @@ class BugVocabulary(SQLObjectVocabularyBase):
 class BountyVocabulary(SQLObjectVocabularyBase):
 
     _table = Bounty
+    # XXX: no _orderBy?
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
-    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
-    # no test data for me to check yet. This'll be fixed by the end
-    # of the week (2004/10/08) as we get Malone into usable shape.
+
     _table = BugTracker
+    _orderBy = 'title'
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
@@ -781,13 +784,14 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
 
 class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
-    _orderBy = 'name'
+    _orderBy = None
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
+        return SimpleTerm(obj, obj.id, obj.displayname)
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
+        target = None
         product = launchbag.product
         if product is not None:
             target = product
@@ -796,9 +800,23 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         if distribution is not None:
             target = distribution
 
+        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is evil, but
+        # we need to sort the milestones by a non-database value, for the user
+        # to find the milestone they're looking for (particularly when showing
+        # *all* milestones on the person pages.)
+        #
+        # This fixes an urgent bug though, so I think this problem should be
+        # revisited after we've unblocked users.
         if target is not None:
-            for ms in target.milestones:
-                yield self.toTerm(ms)
+            milestones = shortlist(target.milestones, longest_expected=40)
+        else:
+            # We can't use context to reasonably filter the milestones, so let's
+            # just grab all of them.
+            milestones = shortlist(
+                getUtility(IMilestoneSet), longest_expected=40)
+
+        for ms in sorted(milestones, key=lambda m: m.displayname):
+            yield self.toTerm(ms)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
@@ -934,6 +952,52 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
         if self._orderBy:
             kw['orderBy'] = self._orderBy
         return self._table.select("name LIKE %s" % like_query, **kw)
+
+
+class DistributionUsingMaloneVocabulary:
+    """All the distributions that uses Malone officially."""
+
+    implements(IVocabulary, IVocabularyTokenized)
+
+    _orderBy = 'displayname'
+
+    def __init__(self, context=None):
+        self.context = context
+
+    def getTermByToken(self, token):
+        obj = Distribution.selectOne(
+            "official_malone is True AND name=%s" % sqlvalues(token))
+        if obj is None:
+            raise LookupError(token)
+        else:
+            return self.getTerm(obj)
+
+    def __iter__(self):
+        """Return an iterator which provides the terms from the vocabulary."""
+        distributions_using_malone = Distribution.selectBy(
+            official_malone=True, orderBy=self._orderBy)
+        for distribution in distributions_using_malone:
+            yield self.getTerm(distribution)
+
+    def __len__(self):
+        return Distribution.selectBy(official_malone=True).count()
+
+    def __contains__(self, obj):
+        return IDistribution.providedBy(obj) and obj.official_malone
+
+    def getQuery(self):
+        return None
+
+    def getTerm(self, obj):
+        if obj not in self:
+            raise LookupError(obj)
+        return SimpleTerm(obj, obj.name, obj.displayname)
+
+    def getTermByToken(self, token):
+        found_dist = Distribution.selectOneBy(name=token, official_malone=True)
+        if found_dist is None:
+            raise LookupError(token)
+        return self.getTerm(found_dist)
 
 
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):

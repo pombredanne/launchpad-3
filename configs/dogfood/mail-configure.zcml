@@ -5,7 +5,7 @@
 
     <mail:queuedDelivery
         permission="zope.SendMail"
-        queuePath="/srv/launchpad.ubuntu.com/launchpad-mailqueue"
+        queuePath="/srv/launchpad.net/launchpad-mailqueue"
         mailer="smtp"
         />
 

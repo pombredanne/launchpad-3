@@ -77,7 +77,6 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution', notNull=True)
-    bugtasks = MultipleJoin('BugTask', joinColumn='distrorelease')
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)

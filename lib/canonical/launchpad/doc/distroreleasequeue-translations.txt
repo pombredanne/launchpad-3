@@ -118,6 +118,7 @@ It was not rejected.
   >>> success, msgs = pmount_upload.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, skipping mails
+  DEBUG: Build 13 found
   DEBUG: Creating a New queue entry
 
 And all things worked.

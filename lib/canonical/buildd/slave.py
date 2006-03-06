@@ -169,7 +169,7 @@ class BuilderStatus:
     WAITING = "BuilderStatus.WAITING"
     ABORTING = "BuilderStatus.ABORTING"
     ABORTED = "BuilderStatus.ABORTED"
-
+    
     UNKNOWNSUM = "BuilderStatus.UNKNOWNSUM"
     UNKNOWNBUILDER = "BuilderStatus.UNKNOWNBUILDER"
     
@@ -183,7 +183,8 @@ class BuildStatus:
     PACKAGEFAIL = "BuildStatus.PACKAGEFAIL"
     CHROOTFAIL = "BuildStatus.CHROOTFAIL"
     BUILDERFAIL = "BuildStatus.BUILDERFAIL"
-    
+    GIVENBACK = "BuildStatus.GIVENBACK"
+
 class BuildDSlave(object):
     """Build Daemon slave. Implementation of most needed functions
     for a Build-Slave device.
