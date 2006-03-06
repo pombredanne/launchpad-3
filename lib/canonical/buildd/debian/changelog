@@ -1,3 +1,11 @@
+launchpad-buildd (28) unstable; urgency=low
+
+  * Modify the protocol method ensurepresent to return additional
+    information about the target files lookup procedure. It helps to
+    debug intermittent Librarian errors.
+
+ -- Celso Providelo <celso.providelo@canonical.com>  Mon, 06 Mar 2006 16:42:00 -0300
+
 launchpad-buildd (27) unstable; urgency=low
 
   * Update the slave chroot tool to use getent so it works on the production

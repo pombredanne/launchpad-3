@@ -154,10 +154,13 @@ slave has the requested file in cache.
   ...     def status(self):
   ...         return ('BuilderStatus.IDLE',)
   ...     def ensurepresent(self, sha1, url):
-  ...         print 'OkSlave has everything'
-  ...         return True
+  ...         info = 'OkSlave has everything'
+  ...         print info
+  ...         return (True, info)
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         print 'OkSlaves BUILDING'
+  ...         info = 'OkSlaves BUILDING'
+  ...         print info
+  ...         return ('BuildStatus.Building', info)
 
   >>> class BuildingSlave:
   ...     def status(self):

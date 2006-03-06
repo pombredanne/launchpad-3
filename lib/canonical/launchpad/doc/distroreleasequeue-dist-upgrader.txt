@@ -60,6 +60,7 @@ Do the upload into the system.
   DEBUG: Performing overall file verification checks.
   DEBUG: Single Custom Upload detected.
   DEBUG: Finding and applying overrides.
+  DEBUG: Foo Bar (16) is in main's uploaders.
   DEBUG: Finished checking upload.
 
 It was not rejected.
