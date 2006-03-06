@@ -5,9 +5,9 @@ Get text page for a single bug.
   ... GET /bugs/1/+text HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/plain;charset=utf-8
   ...
+  Content-Type: text/plain;charset=utf-8
+  <BLANKLINE>
   bug: 1
   title: Firefox does not support SVG
   reporter: Sample Person (name12)
@@ -62,9 +62,10 @@ Get bug text page for a product.
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/plain;charset=utf-8
-  ...
+  <BLANKLINE>
   1
   4
   5
   6
+  <BLANKLINE>
 
