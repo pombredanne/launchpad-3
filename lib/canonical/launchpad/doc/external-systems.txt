@@ -2,9 +2,18 @@ External Systems
 ================
 
 An ExternalSystem is used to talk to remote bug trackers and update bug
-watches. This document describes how they work. Since we don't want to
-depend on a working network connection, we use a slightly modified
-implementation.
+watches. This document describes how they work. They work differently
+depending on which version of the bugtracker they talk to. If it's an
+unknown version, UnsupportedBugTrackerVersion is raised:
+
+    >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
+    >>> Bugzilla('http://foo.com/', version='2.15')
+    Traceback (most recent call last):
+      ...
+    UnsupportedBugTrackerVersion: Unsupported version '2.15' for http://foo.com
+
+Since we don't want to depend on a working network connection, we use a
+slightly modified implementation.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestBugzilla
     >>> from canonical.launchpad.components.externalbugtracker import (
@@ -137,3 +146,11 @@ synced:
     Confirmed
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
+
+If updateBugWatches() can't parse the XML file returned from the remote
+bug tracker, an error is logged.
+
+    >>> external_bugzilla.remotesystem._postPage = (
+    ...     lambda self, data: '<invalid xml>')
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    ERROR:...:Failed to parse XML description...

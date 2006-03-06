@@ -16,6 +16,7 @@ import logging
 import re
 import sha
 import sys
+import traceback
 import time
 from optparse import OptionParser
 from cStringIO import StringIO
@@ -240,6 +241,15 @@ class _LogWrapper:
             return value
         else:
             return setattr(self._log, key, value)
+
+    def shortException(self, msg, *args):
+        """Like Logger.exception, but does not print a traceback."""
+        exctype, value = sys.exc_info()[:2]
+        report = ''.join(traceback.format_exception_only(exctype, value))
+        # _log.error interpolates msg, so we need to escape % chars
+        msg += '\n' + report.rstrip('\n').replace('%', '%%')
+        self._log.error(msg, *args)
+
 
 log = _LogWrapper(logging.getLogger())
 

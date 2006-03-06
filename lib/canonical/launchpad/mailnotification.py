@@ -105,8 +105,9 @@ def update_bug_contact_subscriptions(modified_bugtask, event):
     if IUpstreamBugTask.providedBy(modified_bugtask):
         if (bugtask_before_modification.product !=
             bugtask_after_modification.product):
-            new_bugcontacts.append(
-                bugtask_after_modification.product.bugcontact)
+            if bugtask_after_modification.product.bugcontact:
+                new_bugcontacts.append(
+                    bugtask_after_modification.product.bugcontact)
     elif (IDistroBugTask.providedBy(modified_bugtask) or
           IDistroReleaseBugTask.providedBy(modified_bugtask)):
         if (bugtask_before_modification.sourcepackagename !=

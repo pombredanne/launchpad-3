@@ -282,10 +282,6 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            # The statuses REJECTED, FIXCOMMITTED, and CONFIRMED will
-            # display with the assignee information as well. Showing
-            # assignees with other status would just be confusing
-            # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
                 '<img src="/@@/user.gif" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
@@ -295,18 +291,10 @@ class BugTask(SQLBase, BugTaskMixin):
             if status in (dbschema.BugTaskStatus.REJECTED, 
                           dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
-            elif  status == dbschema.BugTaskStatus.CONFIRMED:
+            else:
                 return '%s, assigned to %s' % (status.title.lower(), assignee_html)
-
-        # The status is something other than REJECTED, FIXCOMMITTED or
-        # CONFIRMED (whether assigned to someone or not), so we'll
-        # show only the status.
-        if status in (dbschema.BugTaskStatus.REJECTED, 
-                      dbschema.BugTaskStatus.UNCONFIRMED,
-                      dbschema.BugTaskStatus.FIXRELEASED):
-            return status.title.lower()
-
-        return status.title.lower() + ' (unassigned)'
+        else:
+            return status.title.lower() + ' (unassigned)'
 
 
 class BugTaskSet:
