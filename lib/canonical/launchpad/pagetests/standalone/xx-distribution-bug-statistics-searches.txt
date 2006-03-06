@@ -13,7 +13,7 @@ Viewing critical bugs as Sample Person:
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
-  ...No matching results...
+  ...0 results...
 
 Viewing bugs "assigned to me", as Sample Person:
 
@@ -38,7 +38,7 @@ Viewing untriaged bugs as Sample Person:
 Viewing unassigned bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&field.unassigned.used=&field.unassigned=on&search=Search&advanced=1 HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&assignee_option=none&search=Search&advanced=1 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
@@ -53,4 +53,4 @@ Viewing all reported bugs as Sample Person:
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
-  ...3 results...
+  ...4 results...

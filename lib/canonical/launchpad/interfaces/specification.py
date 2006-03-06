@@ -18,6 +18,7 @@ from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Summary, Title 
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -37,7 +38,23 @@ class SpecNameField(ContentNameField):
     def _getByName(self, name):
         return getUtility(ISpecificationSet).getByName(name)
 
-        
+
+class SpecURLField(TextLine):
+
+    errormessage = _("%s is already registered by another specification.")
+
+    def _validate(self, specurl):
+        TextLine._validate(self, specurl)
+        if (ISpecification.providedBy(self.context) and
+            specurl == getattr(self.context, 'specurl')):
+            # The specurl wasn't changed
+            return
+
+        specification = getUtility(ISpecificationSet).getByURL(specurl)
+        if specification is not None:
+            raise LaunchpadValidationError(self.errormessage % specurl)
+
+
 class ISpecification(IHasOwner):
     """A Specification."""
 
@@ -50,7 +67,7 @@ class ISpecification(IHasOwner):
         title=_('Title'), required=True, description=_(
             "Describe the feature as clearly as possible in up to 70 characters. "
             "This title is displayed in every feature list or report."))
-    specurl = TextLine(
+    specurl = SpecURLField(
         title=_('Specification URL'), required=False,
         description=_(
             "The URL of the specification. This is usually a wiki page."),
@@ -237,11 +254,11 @@ class ISpecificationSet(Interface):
     def __iter__():
         """Iterate over all specifications."""
 
-    def getByName(name, default=None):
-        """Return the specification with the given name.
+    def getByName(name):
+        """Return the specification with the given name."""
 
-        Return the default value if there is no such specification.
-        """
+    def getByURL(url):
+        """Return the specification with the given url."""
 
     def new(name, title, specurl, summary, priority, status, owner,
         assignee=None, drafter=None, approver=None, product=None,
