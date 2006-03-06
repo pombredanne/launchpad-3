@@ -7,7 +7,7 @@
 #
 # e.g. http://localhost:8999/v2/ is the path the version 2 API.
 
-from twisted.application import service, internet
+from twisted.application import service, strports
 from twisted.web import server, resource
 from twisted.enterprise.adbapi import ConnectionPool
 
@@ -16,11 +16,12 @@ from canonical.authserver.xmlrpc import (
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
-
+from canonical.launchpad.daemons.tachandler import ReadyService
+from canonical.config import config
 
 application = service.Application("authserver_test")
-dbpool = ConnectionPool('psycopg', 'dbname=launchpad_dev')
-storage = DatabaseUserDetailsStorage(dbpool)
+dbpool = ConnectionPool('psycopg', 'dbname=%s user=%s' 
+                                    % (config.dbname, config.authserver.dbuser))
 root = resource.Resource()
 versionOneAPI = UserDetailsResource(DatabaseUserDetailsStorage(dbpool))
 versionTwoAPI = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool), debug=True)
@@ -29,5 +30,8 @@ root.putChild('', versionOneAPI)
 root.putChild('v2', versionTwoAPI)
 root.putChild('branch', branchAPI)
 site = server.Site(root)
-internet.TCPServer(8999, site).setServiceParent(application)
+svc = strports.service(config.authserver.port, site)
+svc.setServiceParent(application)
+
+ReadyService().setServiceParent(application)
 
