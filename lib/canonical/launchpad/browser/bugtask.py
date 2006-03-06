@@ -426,7 +426,7 @@ class BugTaskEditView(GeneralFormView):
         else:
             # The user doesn't have permission to edit the milestone, so render
             # a read-only milestone widget.
-            field_names = self.fieldNames
+            field_names = list(self.fieldNames)
             field_names.remove("milestone")
             setUpWidgets(
                 self, self.schema, IInputWidget, names=field_names,
