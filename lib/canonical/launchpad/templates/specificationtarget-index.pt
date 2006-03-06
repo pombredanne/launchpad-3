@@ -19,7 +19,7 @@
   </p>
 
   <table class="listing sortable" id="speclisting"
-        tal:condition="view/count">
+        tal:condition="view/specs">
     <thead>
       <tr>
         <th>
@@ -52,12 +52,12 @@
     </tbody>
   </table>
 
-  <p tal:condition="not: view/count">
+  <p tal:condition="not: view/specs">
     No specifications to list.
   </p>
 
-  <p tal:condition="view/count" class="discreet">
-    <span tal:replace="view/count">7</span> specification(s) listed.
+  <p tal:condition="view/specs" class="discreet">
+    <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
   </p>
 
 </div>

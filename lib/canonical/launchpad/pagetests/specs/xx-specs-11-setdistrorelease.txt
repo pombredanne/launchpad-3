@@ -142,10 +142,16 @@ a "proposed" goal.
   ...hoary...Proposed...
 
 
-The spec will not show up immediately as a Hoary goal, however (we don't
-easily have a way to test for something NOT being there :-)) since it must
-first be approved. So we look for it and expect to find it on the approvals
-page:
+The spec will not show up immediately as a Hoary goal since it must
+first be approved.
+
+  >>> result = unicode(http(r"""
+  ... GET /distros/ubuntu/hoary/+specs HTTP/1.1
+  ... """))
+  >>> 'CD Media Integrity Check' not in result
+  True
+
+However, we can expect to find it on the approvals page.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+setgoals HTTP/1.1
@@ -163,7 +169,7 @@ We will accept it:
   ... Content-Length: 54
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... specification=media-integrity-check&FORM_SUBMIT=Accept""")
+  ... specification=media-integrity-check&SUBMIT_ACCEPT=Accept""")
   HTTP/1.1 303 See Other
   ...
   Location: http://.../distros/ubuntu/hoary/+specs

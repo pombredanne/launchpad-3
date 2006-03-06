@@ -1,8 +1,8 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+"""Interfaces for a Sprint (a meeting, conference or hack session).
 
-"""Interfaces for a Sprint (a meeting, conference or hack session). A Sprint
-basically consists of a bunch of people getting together to discuss some
-specific issues.
+A Sprint basically consists of a bunch of people getting together to discuss
+some specific issues.
 """
 
 __metaclass__ = type

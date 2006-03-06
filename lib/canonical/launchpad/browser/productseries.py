@@ -109,7 +109,9 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
 
 class ProductSeriesSpecificationsMenu(ApplicationMenu):
-    """This menu needs to keep track of whether we are showing all the
+    """Specs menu for ProductSeries.
+
+    This menu needs to keep track of whether we are showing all the
     specs, or just those that are approved/declined/proposed. It should
     allow you to change the set your are showing while keeping the basic
     view intact.
@@ -629,15 +631,15 @@ class ProductSeriesEditView(SQLObjectEditView):
 
 
 class ProductSeriesReviewView(SQLObjectEditView):
+
     def changed(self):
         """Redirect to the productseries page.
 
         We need this because people can now change productseries'
-        product and name, and this will make their canonical_url to
-        change too.
+        product and name, and this will make the canonical_url change too.
         """
-        self.request.response.addInfoNotification( 
-            _('This Serie has been changed'))
+        self.request.response.addInfoNotification(
+            _('This Series has been changed'))
         self.request.response.redirect(canonical_url(self.context))
 
 

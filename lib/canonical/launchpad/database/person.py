@@ -141,27 +141,27 @@ class Person(SQLBase):
     # specification-related joins
     @property
     def approver_specs(self):
-        return list(Specification.selectBy(approverID=self.id,
+        return shortlist(Specification.selectBy(approverID=self.id,
                                       orderBy=['-datecreated']))
 
     @property
     def assigned_specs(self):
-        return list(Specification.selectBy(assigneeID=self.id,
+        return shortlist(Specification.selectBy(assigneeID=self.id,
                                       orderBy=['-datecreated']))
 
     @property
     def created_specs(self):
-        return list(Specification.selectBy(ownerID=self.id,
+        return shortlist(Specification.selectBy(ownerID=self.id,
                                       orderBy=['-datecreated']))
 
     @property
     def drafted_specs(self):
-        return list(Specification.selectBy(drafterID=self.id,
+        return shortlist(Specification.selectBy(drafterID=self.id,
                                       orderBy=['-datecreated']))
 
     @property
     def feedback_specs(self):
-        return list(Specification.select(
+        return shortlist(Specification.select(
             AND(Specification.q.id == SpecificationFeedback.q.specificationID,
                 SpecificationFeedback.q.reviewerID == self.id),
             clauseTables=['SpecificationFeedback'],
@@ -169,7 +169,7 @@ class Person(SQLBase):
 
     @property
     def subscribed_specs(self):
-        return list(Specification.select(
+        return shortlist(Specification.select(
             AND(Specification.q.id == SpecificationSubscription.q.specificationID,
                 SpecificationSubscription.q.personID == self.id),
             clauseTables=['SpecificationSubscription'],
@@ -302,7 +302,7 @@ class Person(SQLBase):
                 WHERE SpecificationSubscription.person = %(my_id)d
                 )
             """ % {'my_id': self.id}
-                    
+
         if sort is None or sort == SpecificationSort.DATE:
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
@@ -310,7 +310,7 @@ class Person(SQLBase):
         else:
             raise AssertionError('Unknown sort %s' % sort)
 
-        return list(Specification.select(
+        return shortlist(Specification.select(
                     query, orderBy=order, limit=quantity))
 
     def tickets(self, quantity=None):
@@ -773,7 +773,7 @@ class Person(SQLBase):
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.
-        emails = list(emails)
+        emails = shortlist(emails)
         length = len(emails)
         assert length <= 1
         if length:
@@ -1134,7 +1134,7 @@ class PersonSet:
         # Get a database cursor.
         cur = cursor()
 
-        references = list(postgresql.listReferences(cur, 'person', 'id'))
+        references = shortlist(postgresql.listReferences(cur, 'person', 'id'))
 
         # These table.columns will be skipped by the 'catch all'
         # update performed later

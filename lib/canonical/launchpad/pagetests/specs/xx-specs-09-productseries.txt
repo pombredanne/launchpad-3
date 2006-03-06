@@ -115,7 +115,7 @@ that 1 was accepted.
   ... Content-Length: 44
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... specification=svg-support&FORM_SUBMIT=Accept""")
+  ... specification=svg-support&SUBMIT_ACCEPT=Accept""")
   HTTP/1.1 200 Ok
   ...Accepted 1 specification(s)...
 
@@ -129,7 +129,7 @@ there are none left in the queue.
   ... Content-Length: 37
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... specification=e4x&FORM_SUBMIT=Decline""")
+  ... specification=e4x&SUBMIT_DECLINE=Decline""")
   HTTP/1.1 303 See Other
   ...
   Location: http://.../products/firefox/+series/1.0/+specs

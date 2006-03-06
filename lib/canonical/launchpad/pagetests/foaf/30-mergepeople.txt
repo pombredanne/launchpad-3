@@ -224,6 +224,10 @@
   Now we make sure that the team we just created and was owned by 'foo' is now
   owned by 'no-priv'.
 
+  XXX: SteveAlexander.  This code is error-prone because it may be running outside
+       the context of a transaction.  It is possible that the sqlobject
+       caches and connections are not as clean as they should be.
+
   >>> from canonical.launchpad.database import PersonSet
   >>> team = PersonSet().getByName('myemail')
   >>> team.teamowner.name

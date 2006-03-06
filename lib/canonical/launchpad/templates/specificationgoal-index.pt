@@ -24,11 +24,10 @@
   </p>
 
   <p class="portalMessage"
-     tal:define="status view/process_form"
-     tal:condition="status"
-     tal:content="status" />
+     tal:condition="view/status_message"
+     tal:content="view/status_message" />
 
-  <p tal:condition="not: view/count">
+  <p tal:condition="not: view/specs">
     <i>There are no specifications currently proposed as goals for
     <span tal:replace="context/displayname">1.0</span>. You can check the
     list of specifications previously declined using the links to the right
@@ -37,7 +36,7 @@
 
   <form tal:attributes="action request/URL" method="POST">
 
-    <table tal:condition="view/count">
+    <table tal:condition="view/specs">
       <tbody>
         <tr tal:repeat="spec view/specs">
           <td>
@@ -59,22 +58,22 @@
       </tbody>
     </table>
 
-    <div tal:condition="view/count" class="discreet">
+    <div tal:condition="view/specs" class="discreet">
       Select the specifications that you wish to accept or decline.
     </div>
 
     <div class="actions">
       <input type="submit"
-             name="cancel"
-             value="Cancel" />
-      <input tal:condition="view/count"
+             name="SUBMIT_CANCEL"
+             value="Cancelxxx" />
+      <input tal:condition="view/specs"
              type="submit"
-             name="FORM_SUBMIT"
-             value="Accept" />
-      <input tal:condition="view/count"
+             name="SUBMIT_ACCEPT"
+             value="Acceptxxx" />
+      <input tal:condition="view/specs"
              type="submit"
-             name="FORM_SUBMIT"
-             value="Decline" />
+             name="SUBMIT_DECLINE"
+             value="Declinexxx" />
     </div>
 
   </form>

@@ -64,6 +64,8 @@ from canonical.lp.dbschema import (
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
@@ -673,45 +675,35 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class PersonSpecWorkLoadView:
-    """This view is used to render the specification workload for a
-    particular person. It shows the set of specifications with which this
-    person has a role.
+class PersonSpecWorkLoadView(LaunchpadView):
+    """View used to render the specification workload for a particular person.
+
+    It shows the set of specifications with which this person has a role.
     """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._workload = None
-        # this should only be used on an IPerson
-        assert IPerson.providedBy(self.context)
+    def initialize(self):
+        assert IPerson.providedBy(self.context), (
+            'PersonSpecWorkLoadView should be used only on an IPerson.')
 
+    class PersonSpec:
+        """One record from the workload list."""
+
+        def __init__(self, spec, person):
+            self.spec = spec
+            self.assignee = spec.assignee == person
+            self.drafter = spec.drafter == person
+            self.approver = spec.approver == person
+
+    @cachedproperty
     def workload(self):
         """This code is copied in large part from browser/sprint.py. It may
         be worthwhile refactoring this to use a common code base.
-        
+
         Return a structure that lists the specs for which this person is the
-        approver, the assignee or the drafter."""
-
-        if self._workload is not None:
-            return self._workload
-
-        class PersonSpec:
-            def __init__(self, spec, person):
-                self.spec = spec
-                self.assignee = False
-                self.drafter = False
-                self.approver = False
-                if spec.assignee == person:
-                    self.assignee = True
-                if spec.drafter == person:
-                    self.drafter = True
-                if spec.approver == person:
-                    self.approver = True
-
-        self._workload = [PersonSpec(spec, self.context) for spec in
-                            self.context.specifications()]
-        return self._workload
+        approver, the assignee or the drafter.
+        """
+        return [PersonSpecWorkLoadView.PersonSpec(spec, self.context)
+                for spec in self.context.specifications()]
 
 
 class ReportedBugTaskSearchListingView(BugTaskSearchListingView):

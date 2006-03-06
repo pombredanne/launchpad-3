@@ -26,7 +26,10 @@ from canonical.lp.dbschema import SprintSpecificationStatus
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
-    ApplicationMenu, StandardLaunchpadFacets)
+    ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
+
+from canonical.launchpad.helpers import shortlist
+from canonical.cachedproperty import cachedproperty
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -36,10 +39,9 @@ class SprintFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'specifications']
 
     def specifications(self):
-        target = '+specs'
         text = 'Specifications'
         summary = 'Topics for discussion at %s' % self.context.title
-        return Link(target, text, summary)
+        return Link('+specs', text, summary)
 
 
 class SprintOverviewMenu(ApplicationMenu):
@@ -101,22 +103,20 @@ class SprintSetContextMenu(ContextMenu):
         return Link('+new', text, icon='add')
 
 
-class SprintView:
+class SprintView(LaunchpadView):
 
     __used_for__ = ISprint
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         self._sprint_spec_links = None
         self._count = None
-        self.show = request.form.get('show', None)
-        self.listing_detailed = True
-        self.listing_compact = False
-        self.notices = []
+        self.show = self.request.form.get('show', None)
 
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
+        # XXX: These appear not to be used.  SteveAlexander 2006-03-06.
+        self.use_detailed_listing = True
+        self.use_compact_listing = False
+
+        self.notices = []
 
     def attendance(self):
         """establish if this user is attending"""
@@ -127,11 +127,9 @@ class SprintView:
                 return subscription
         return None
 
+    @cachedproperty
     def spec_links(self):
-        """list all of the SprintSpecifications appropriate for this
-        view."""
-        if self._sprint_spec_links is not None:
-            return self._sprint_spec_links
+        """List all of the SprintSpecifications appropriate for this view."""
         if self.show is None:
             spec_links = self.context.specificationLinks(
                 status=SprintSpecificationStatus.CONFIRMED)
@@ -143,25 +141,25 @@ class SprintView:
         elif self.show == 'submitted':
             spec_links = self.context.specificationLinks(
                 status=SprintSpecificationStatus.SUBMITTED)
-        self._sprint_spec_links = [
+        sprint_spec_links = [
             link for link in spec_links if link.specification.is_incomplete]
-        self._count = len(self._sprint_spec_links)
+        self._count = len(sprint_spec_links)
         if self._count > 5:
-            self.listing_detailed = False
-            self.listing_compact = True
-        return self._sprint_spec_links
+            # XXX: These appear not to be used.  SteveAlexander 2006-03-06.
+            self.use_detailed_listing = False
+            self.use_compact_listing = True
+        return sprint_spec_links
 
     @property
     def count(self):
         if self._count is None:
-            # creating list of spec links will set self._count as a
-            # sideeffect
-            spec_links = self.spec_links()
+            # creating list of spec links will set self._count as a side-effect
+            dummy = self.spec_links
         return self._count
 
     @property
     def specs(self):
-        return [sl.specification for sl in self.spec_links()]
+        return [speclink.specification for speclink in self.spec_links()]
 
 
 class SprintAddView(SQLObjectAddView):
@@ -193,39 +191,28 @@ class SprintEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class SprintTopicSetView:
+class SprintTopicSetView(LaunchpadView):
+    """Custom view class to process the results of this unusual page.
 
-    def __init__(self, context, request):
-        """A custom little view class to process the results of this unusual
-        page. It is unusual because we want to display multiple objects with
-        checkboxes, then process the selected items, which is not the usual
-        add/edit metaphor."""
-        self.context = context
-        self.request = request
-        self.process_status = None
-        self._count = None
-        self._speclinks = None
+    It is unusual because we want to display multiple objects with
+    checkboxes, then process the selected items, which is not the usual
+    add/edit metaphor."""
+    # XXX: SteveAlexander, 2006-03-06, this class and its
+    #      associated templates are not tested.
 
-    @property
+    def initialize(self):
+        self.status_message = None
+        self.process_form()
+
+    @cachedproperty
     def speclinks(self):
         """Return the specification links with SUBMITTED status this sprint.
 
         For the moment, we just filter the list in Python.
         """
-        if self._speclinks is not None:
-            return self._speclinks
-        speclinks = list(self.context.specificationLinks())
-        self._speclinks = [speclink for speclink in speclinks
-            if speclink.status == SprintSpecificationStatus.SUBMITTED]
-        return self._speclinks
-
-    @property
-    def count(self):
-        """Return the number of specifications to be listed."""
-        if self._count is not None:
-            return self._count
-        self._count = len(self.speclinks)
-        return self._count
+        speclinks = shortlist(self.context.specificationLinks())
+        return [speclink for speclink in speclinks
+                if speclink.status == SprintSpecificationStatus.SUBMITTED]
 
     def process_form(self):
         """Largely copied from webapp/generalform.py, without the
@@ -233,52 +220,52 @@ class SprintTopicSetView:
         usual way. Instead, we are creating our own form in the page
         template and interpreting it here.
         """
+        form = self.request.form
 
-        if self.process_status is not None:
-            # We've been called before. Just return the status we previously
-            # computed.
-            return self.process_status
+        if 'SUBMIT_CANCEL' in form:
+            self.status_message = 'Cancelled'
+            self.request.response.redirect(
+                canonical_url(self.context)+'/+specs')
+            return
 
-        if 'cancel' in self.request:
-            self.process_status = 'Cancelled'
-            self.request.response.redirect(canonical_url(self.context)+'/+specs')
-            return self.process_status
-
-        if "FORM_SUBMIT" not in self.request:
-            self.process_status = ''
-            return self.process_status
+        if 'SUBMIT_ACCEPT' not in form and 'SUBMIT_DECLINE' not in form:
+            self.status_message = ''
+            return
 
         if self.request.method == 'POST':
-            if 'speclink' not in self.request:
-                self.process_status = ('Please select specifications '
-                                       'to accept or decline.')
-                return self.process_status
+            if 'speclink' not in form:
+                self.status_message = (
+                    'Please select specifications to accept or decline.')
+                return
             # determine if we are accepting or declining
-            if self.request.form.get('FORM_SUBMIT', None) == 'Accept':
+            if 'SUBMIT_ACCEPT' in form:
+                assert 'SUBMIT_DECLINE' not in form
                 action = 'Accepted'
             else:
+                assert 'SUBMIT_DECLINE' in form
                 action = 'Declined'
 
-        selected_specs = self.request['speclink']
+        selected_specs = form['speclink']
         if isinstance(selected_specs, unicode):
             # only a single item was selected, but we want to deal with a
             # list for the general case, so convert it to a list
-            selected_specs = [selected_specs,]
-        
-        number_done = 0
+            selected_specs = [selected_specs]
+
+        if action == 'Accepted':
+            new_status = SprintSpecificationStatus.CONFIRMED
+        else:
+            new_status = SprintSpecificationStatus.DEFERRED
+
         for sprintspec_id in selected_specs:
             sprintspec = self.context.getSpecificationLink(sprintspec_id)
-            if action == 'Accepted':
-                sprintspec.status = SprintSpecificationStatus.CONFIRMED
-            else:
-                sprintspec.status = SprintSpecificationStatus.DEFERRED
-            number_done += 1
+            sprintspec.status = new_status
 
-        self.process_status = '%s %d specification(s).' % (action, number_done)
+        # Status message like: "Accepted 27 specification(s)."
+        self.status_message = '%s %d specification(s).' % (
+            action, len(selected_specs))
 
-        if self.count == 0:
+        if not selected_specs:
             # they are all done, so redirect back to the spec listing page
-            self.request.response.redirect(canonical_url(self.context)+'/+specs')
-
-        return self.process_status
+            self.request.response.redirect(
+                canonical_url(self.context)+'/+specs')
 

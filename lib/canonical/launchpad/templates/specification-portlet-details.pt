@@ -88,7 +88,7 @@
             tal:attributes="href string:${sprint_link/fmt:url}/+edit"
             >Approved</a>)<br />
       </tal:sprint>
-	</tal:has_sprints>
+    </tal:has_sprints>
 
   </div>
 

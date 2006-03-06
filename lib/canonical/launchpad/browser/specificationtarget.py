@@ -1,5 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
-
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 """ISpecificationTarget browser views."""
 
 __metaclass__ = type
@@ -15,21 +14,21 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     ISprint, IPerson, IProductSeries, IDistroRelease)
 
-from canonical.launchpad.webapp import GeneralFormView
+from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.helpers import shortlist
+from canonical.cachedproperty import cachedproperty
 
 
-class SpecificationTargetView:
+class SpecificationTargetView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         self._plan = None
         self._dangling = None
         self._categories = None
-        self._count = None
-        self._specs = None
         self.listing_detailed = True
         self.listing_compact = False
+
+        # XXX: SteveA.
         url = self.request.getURL()
         if 'created' in url:
             self.view_title = 'Created by %s' % self.context.title
@@ -46,22 +45,20 @@ class SpecificationTargetView:
         else:
             self.view_title = ''
 
-    @property
+    @cachedproperty
     def specs(self):
-        """The list of specs that are going to be displayed in
-        this view. The method can review the URL and decide what will be
-        included, and what will not.
+        """The list of specs that are going to be displayed in this view.
+
+        The method can review the URL and decide what will be included,
+        and what will not.
 
         The typical URL is of the form:
-        
+
            ".../name1/+specs?role=creator&show=all"
 
         This method will interpret the show= part based on the kind of
         object that the ISpecificationTarget happens to be.
         """
-
-        if self._specs is not None:
-            return self._specs
         url = self.request.getURL()
         show = self.request.form.get('show', None)
         role = self.request.form.get('role', None)
@@ -82,7 +79,7 @@ class SpecificationTargetView:
             elif role == 'subscribed':
                 specs = self.context.subscribed_specs
             else:
-                specs = list(self.context.specifications())
+                specs = shortlist(self.context.specifications())
 
             # now we want to filter the list based on whether or not we are
             # showing all of them or just the ones that are not complete
@@ -93,7 +90,7 @@ class SpecificationTargetView:
              IDistroRelease.providedBy(self.context):
             # produce a listing for a product series or distrorelease
 
-            specs = list(self.context.specifications())
+            specs = shortlist(self.context.specifications())
 
             # filtering here is based on whether or not the spec has been
             # approved or declined for this target
@@ -101,49 +98,50 @@ class SpecificationTargetView:
                 # we won't filter it if they ask for all specs
                 pass
             elif show == 'declined':
-                specs = [spec for spec in specs
+                specs = [
+                    spec
+                    for spec in specs
                     if spec.goalstatus == SpecificationGoalStatus.DECLINED]
             elif show == 'proposed':
-                specs = [spec for spec in specs
+                specs = [
+                    spec
+                    for spec in specs
                     if spec.goalstatus == SpecificationGoalStatus.PROPOSED]
             else:
                 # the default is to show only accepted specs
-                specs = [spec for spec in specs
+                specs = [
+                    spec
+                    for spec in specs
                     if spec.goalstatus == SpecificationGoalStatus.ACCEPTED]
 
         elif ISprint.providedBy(self.context):
             # process this as if it were a sprint
 
-            spec_links = list(self.context.specificationLinks())
+            spec_links = shortlist(self.context.specificationLinks())
 
             # filter based on whether the topics were deferred or accepted
             if show == 'deferred':
-                specs = [spec_link.specification for spec_link in spec_links
+                specs = [
+                    spec_link.specification
+                    for spec_link in spec_links
                     if spec_link.status == SprintSpecificationStatus.DEFERRED]
             else:
-                specs = [spec_link.specification for spec_link in spec_links
+                specs = [
+                    spec_link.specification
+                    for spec_link in spec_links
                     if spec_link.is_confirmed is True]
 
         else:
             # This is neither a person, nor a distrorelease, nor a product
             # series spec listing, nor a sprint
-            specs = list(self.context.specifications())
+            specs = shortlist(self.context.specifications())
 
             # now we want to filter the list based on whether or not we are
             # showing all of them or just the ones that are not complete
             if show != 'all':
                 specs = [spec for spec in specs if not spec.is_complete]
 
-        self._specs = specs
-        self._count = len(specs)
-        return self._specs
-
-    @property
-    def count(self):
-        """Return the number of specs in this view."""
-        if self._count is None:
-            self._count = len(self.specs)
-        return self._count
+        return specs
 
     @property
     def categories(self):

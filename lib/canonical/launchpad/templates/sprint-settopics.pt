@@ -24,11 +24,10 @@
   </p>
 
   <p class="portalMessage"
-     tal:define="status view/process_form"
-     tal:condition="status"
-     tal:content="status" />
+     tal:condition="view/status_message"
+     tal:content="view/status_message" />
 
-  <p tal:condition="not: view/count">
+  <p tal:condition="not: view/specs">
     <i>There are no specifications currently proposed as topics for
     discussion at
     <span tal:replace="context/title">Ubuntu Below Zero</span>. You can
@@ -38,7 +37,7 @@
 
   <form tal:attributes="action request/URL" method="POST">
 
-    <table tal:condition="view/count">
+    <table tal:condition="view/specs">
       <tbody>
         <tr tal:repeat="speclink view/speclinks">
           <td>
@@ -60,21 +59,21 @@
       </tbody>
     </table>
 
-    <div tal:condition="view/count" class="discreet">
+    <div tal:condition="view/specs" class="discreet">
       Select the specifications that you wish to accept or decline.
     </div>
 
     <div class="actions">
       <input type="submit"
-             name="cancel"
+             name="SUBMIT_CANCEL"
              value="Cancel" />
-      <input tal:condition="view/count"
+      <input tal:condition="view/specs"
              type="submit"
-             name="FORM_SUBMIT"
+             name="SUBMIT_ACCEPT"
              value="Accept" />
-      <input tal:condition="view/count"
+      <input tal:condition="view/specs"
              type="submit"
-             name="FORM_SUBMIT"
+             name="SUBMIT_DECLINE"
              value="Decline" />
     </div>
 

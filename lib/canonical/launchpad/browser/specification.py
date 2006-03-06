@@ -249,7 +249,7 @@ class SpecificationReleaseView(GeneralFormView):
             self.context.goalstatus = SpecificationGoalStatus.PROPOSED
         self.whiteboard = whiteboard
         self._nextURL = canonical_url(self.context)
-        return 'Done!'
+        return 'Done.'
 
 
 class SpecificationSeriesView(GeneralFormView):
@@ -260,7 +260,7 @@ class SpecificationSeriesView(GeneralFormView):
             self.context.goalstatus = SpecificationGoalStatus.PROPOSED
         self.whiteboard = whiteboard
         self._nextURL = canonical_url(self.context)
-        return 'Done!'
+        return 'Done.'
 
 
 class SpecificationRetargetingView(GeneralFormView):
