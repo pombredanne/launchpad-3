@@ -41,7 +41,9 @@ unassigned bug tasks.
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), (7, 'UNCONFIRMED', u'name16'), (9, 'UNCONFIRMED', None)]
+    [(1, 'UNCONFIRMED', None), (2, 'UNCONFIRMED', None),
+     (3, 'UNCONFIRMED', None), (7, 'UNCONFIRMED', u'name16'),
+     (9, 'UNCONFIRMED', None)]
 
 But the advanced search allows us to query only the bug tasks that aren't
 assigned.
@@ -55,8 +57,8 @@ assigned.
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), 
-     (9, 'UNCONFIRMED', None)]
+    [(1, 'UNCONFIRMED', None), (2, 'UNCONFIRMED', None),
+     (3, 'UNCONFIRMED', None), (9, 'UNCONFIRMED', None)]
 
 
 Subscribed bugs
