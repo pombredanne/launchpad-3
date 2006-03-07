@@ -65,15 +65,15 @@
     <div class="actions">
       <input type="submit"
              name="SUBMIT_CANCEL"
-             value="Cancelxxx" />
+             value="Cancel" />
       <input tal:condition="view/specs"
              type="submit"
              name="SUBMIT_ACCEPT"
-             value="Acceptxxx" />
+             value="Accept" />
       <input tal:condition="view/specs"
              type="submit"
              name="SUBMIT_DECLINE"
-             value="Declinexxx" />
+             value="Decline" />
     </div>
 
   </form>
