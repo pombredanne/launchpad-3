@@ -77,13 +77,15 @@ class IPOTMsgSet(Interface):
         """
 
     def applySanityFixes(unicode_text):
-        """Return 'unicode_text' after doing some sanity checks and fixes
-        against the msgid improving its value in case the user made any mistake.
+        """Return 'unicode_text' after doing some sanity checks and fixes.
 
-        :arg unicode_text: A unicode or string that needs to be checked.
+        The text is checked against the msgid using the following filters:
 
-        This method calls self.convertDotToSpace, self.normalizeWhitespaces
-        and self.normalizeNewLines to do the fixes.
+          self.convertDotToSpace
+          self.normalizeWhitespaces
+          self.normalizeNewLines
+
+        :arg unicode_text: A unicode text that needs to be checked.
         """
 
     def convertDotToSpace(unicode_text):
