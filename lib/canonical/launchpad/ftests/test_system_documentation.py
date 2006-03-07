@@ -145,11 +145,6 @@ special = {
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
-    'incomingmail.txt': FunctionalDocFileSuite(
-            'launchpad/doc/incomingmail.txt',
-            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
-            stdout_logging_level=logging.WARNING
-            ),
     }
 
 def test_suite():
@@ -185,7 +180,8 @@ def test_suite():
         path = os.path.join('launchpad/doc/', filename)
         one_test = FunctionalDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
-            optionflags=default_optionflags
+            optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
             )
         one_test.layer = SystemDoctestLayer
         suite.addTest(one_test)
