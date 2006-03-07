@@ -64,7 +64,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
@@ -926,16 +926,16 @@ class PersonView:
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
-    def sourcepackagerelease_open_bugs_count(self, sourcepackagerelease):
+    def sourcepackage_open_bugs_count(self, sourcepackagerelease):
         """Return the number of open bugs targeted to the sourcepackagename
-        and distrorelease of the given sourcepackagerelease.
+        and distribution to which the given sourcepackagerelease was uploaded.
         """
+        upload_distro = sourcepackagerelease.uploaddistrorelease.distribution
         params = BugTaskSearchParams(
             user=self.user,
             sourcepackagename=sourcepackagerelease.sourcepackagename,
             status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        params.setDistributionRelease(sourcepackagerelease.uploaddistrorelease)
-        return getUtility(IBugTaskSet).search(params).count()
+        return upload_distro.searchTasks(params).count()
 
     def maintainedPackagesByPackageName(self):
         return self._groupSourcePackageReleasesByName(
@@ -957,7 +957,7 @@ class PersonView:
     def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
         """Return a list of SourcePackageReleasesByName objects ordered by
         SourcePackageReleasesByName.name.
-        
+
         Each SourcePackageReleasesByName object contains a name, which is the
         sourcepackagename and a list containing all sourcepackagereleases of
         that sourcepackagename.
