@@ -12,7 +12,7 @@ import pytz
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin
+from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -65,11 +65,11 @@ class SourcePackageRelease(SQLBase):
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
 
-    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease',
+    builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
         orderBy=['-datecreated'])
-    files = MultipleJoin('SourcePackageReleaseFile',
+    files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease')
-    publishings = MultipleJoin('SourcePackagePublishing',
+    publishings = SQLMultipleJoin('SourcePackagePublishing',
         joinColumn='sourcepackagerelease')
 
     @property
@@ -78,6 +78,20 @@ class SourcePackageRelease(SQLBase):
         if len(builds) > 0:
             return builds[0]
         return None
+
+    @property
+    def failed_builds(self):
+        return [build for build in self.builds
+                if build.buildstate == BuildStatus.FAILEDTOBUILD]
+
+    @property
+    def needs_building(self):
+        for build in self.builds:
+            if build.buildstate in [BuildStatus.NEEDSBUILD,
+                                    BuildStatus.MANUALDEPWAIT,
+                                    BuildStatus.CHROOTWAIT]:
+                return True
+        return False
 
     @property
     def name(self):

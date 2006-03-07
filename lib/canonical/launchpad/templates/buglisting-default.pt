@@ -1,34 +1,45 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
+  <div metal:fill-slot="main">
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:content="structure context/@@+portlet-details" />
-  <div tal:content="structure context/distribution/@@+portlet-details|nothing" />
-</metal:leftportlets>
+    <div style="margin-left: 0; width: 74%; float: left">
+      <h1>Bugs in <span tal:replace="context/displayname" /></h1>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
-    <tal:releasebugs
-        tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
-        tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
-<metal:page
-    use-macro="context/@@+bugtask-macros-buglisting/page"
-    tal:define="listing_columns view/task_columns;
-                task_batch_navigator view/search">
-
-</metal:page>
-
-</div>
-
+      <div tal:define="batch_navigator view/search">
+        <form method="GET" name="search" action="">
+          <input type="text" name="field.searchtext" size="20"
+                 tal:attributes="value python:request.form.get('field.searchtext', '')" />
+          <input type="submit" name="search" value="Search" />
+          <a href="#"
+             tal:attributes="href string:${context/fmt:url}/+bugs-advanced-search">
+            <small>Advanced</small>
+          </a>
+        </form>
+        <script>
+          <!--
+              document.forms["search"].elements['field.searchtext'].focus();
+            -->
+        </script>
+        <br />
+        <tal:buglisting content="structure batch_navigator/@@+table-view" />
+      </div>
+    </div>
+    <div id="portal-column-two">
+      <metal:macro use-macro="context/@@main_template/action-menu" />
+      <tal:block content="structure context/@@+portlet-bugfilters" />
+      <tal:releasebugs
+         tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
+         tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
+    </div>
+    <div class="visualClear">&nbsp;</div>
+  </div>
 
 </body>
 
 </html>
+</tal:layout>

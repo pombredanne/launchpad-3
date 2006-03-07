@@ -133,15 +133,6 @@
             lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+potemplatenames" />
     </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        name="+bugs"
-        facet="bugs"
-        class="canonical.launchpad.browser.packages.SourcePackageBugsView"
-        template="../templates/sourcepackage-bugs.pt"
-        permission="zope.Public"
-        />
-
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"
         permission="launchpad.AnyPerson"
