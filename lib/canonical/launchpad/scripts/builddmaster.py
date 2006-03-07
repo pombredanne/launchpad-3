@@ -314,7 +314,7 @@ class BuilderGroup:
     def giveToBuilder(self, builder, libraryfilealias, librarian):
         """Request Slave to download a given file from Librarian.
 
-        Check id builder is working properly, build the librarian URL
+        Check if builder is working properly, build the librarian URL
         for the given file and use the slave XMLRPC 'doyouhave' method
         to request the download of the file directly by the slave.
         if the slave returns False, which means it wasn't able to
@@ -336,10 +336,18 @@ class BuilderGroup:
 
         # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
         slave = removeSecurityProxy(builder.slave)
+        present, info = slave.ensurepresent(
+            libraryfilealias.content.sha1, url)
 
-        if not slave.ensurepresent(libraryfilealias.content.sha1, url):
-            raise BuildDaemonError(
-                "Build slave was unable to fetch from %s" % url)
+        if not present:
+            message = """Slave '%s' (%s) was unable to fetch file.
+            ****** URL ********
+            %s
+            ****** INFO *******
+            %s
+            *******************
+            """ % (builder.name, builder.url, url, info)
+            raise BuildDaemonError(message)
 
     def findChrootFor(self, build_candidate, pocket):
         """Return the CHROOT librarian identifier for (buildCandidate, pocket).
@@ -353,22 +361,27 @@ class BuilderGroup:
             return chroot.content.sha1
 
     def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
+        """Request a build procedure accroding given parameters."""
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
         self.logger.debug("Initiating build %s on %s"
                           % (buildid, builder.url))
-
+        # refuse builds for missing CHROOTs
         chroot = self.findChrootFor(queueItem, pocket)
         if not chroot:
             self.logger.critical("OOPS! Could not find CHROOT")
             return
-
+        # store DB information
         queueItem.builder = builder
         queueItem.buildstart = UTC_NOW
-
         # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
         slave = removeSecurityProxy(builder.slave)
-
-        slave.build(buildid, buildtype, chroot, filemap, args)
+        status, info = slave.build(buildid, buildtype, chroot, filemap, args)
+        message = """%s (%s):
+        ***** RESULT *****
+        %s: %s
+        ******************
+        """ % (builder.name, builder.url, status, info)
+        self.logger.debug(message)
 
     def getLogFromSlave(self, slave, queueItem, librarian):
         """Get last buildlog from slave.

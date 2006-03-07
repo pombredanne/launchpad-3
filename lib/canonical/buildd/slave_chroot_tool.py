@@ -111,14 +111,13 @@ class SlaveChrootBuilder:
             self.config['buildd']['group'])
 
         def xfer_element(what, filename):
-            execute("sudo grep %s /etc/%s | "
+            execute("sudo getent %s %s | "
                     "sudo sh -c 'cat >> %s/chroot-autobuild/etc/%s'"
-                    %(what, filename, self.treeroot, filename))
+                    %(filename, what, self.treeroot, filename))
 
         xfer_element(self.config['buildd']['user'], 'passwd')
         xfer_element(self.config['buildd']['user'], 'shadow')
         xfer_element(self.config['buildd']['group'], 'group')
-        xfer_element(self.config['buildd']['group'], 'gshadow')
 
         print "Making paths..."
         for path in self.config['buildd']['paths'].split():

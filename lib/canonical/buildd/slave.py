@@ -216,14 +216,18 @@ class BuildDSlave(object):
 
         Optionally you can provide the librarian URL and
         the build slave will fetch the file if it doesn't have it.
+        Return a tuple containing: (<present>, <info>)
         """
+        extra_info = 'No URL'
         if url is not None:
+            extra_info = 'Cache'
             if not os.path.exists(self.cachePath(sha1sum)):
                 self.log('Fetching %s by url %s' % (sha1sum, url))
                 try:
                     f = urllib2.urlopen(url)
-                except Exception, e:
-                    self.log('Error accessing Librarian: %s' % e)
+                except Exception, info:
+                    extra_info = 'Error accessing Librarian: %s' % info
+                    self.log(extra_info, exc_info=True)
                 else:
                     of = open(self.cachePath(sha1sum), "w")
                     # Upped for great justice to 256k
@@ -233,15 +237,18 @@ class BuildDSlave(object):
                         check_sum.update(chunk)
                     of.close()
                     f.close()
+                    extra_info = 'Download'
                     if check_sum.hexdigest() != sha1sum:
                         os.remove(self.cachePath(sha1sum))
-                        self.log("Digests did not match, removing again!")
-        return os.path.exists(self.cachePath(sha1sum))
+                        extra_info = "Digests did not match, removing again!"
+                    self.log(extra_info)
+        return (os.path.exists(self.cachePath(sha1sum)), extra_info)
 
     def storeFile(self, content):
         """Take the provided content and store it in the file cache."""
         sha1sum = sha.sha(content).hexdigest()
-        if self.ensurePresent(sha1sum):
+        present, info = self.ensurePresent(sha1sum)
+        if present:
             return sha1sum
         f = open(self.cachePath(sha1sum), "w")
         f.write(content)
@@ -250,7 +257,8 @@ class BuildDSlave(object):
 
     def fetchFile(self, sha1sum):
         """Fetch the file of the given sha1sum."""
-        if not self.ensurePresent(sha1sum):
+        present, info = self.ensurePresent(sha1sum)
+        if not present:
             raise ValueError("Unknown SHA1sum %s" % sha1sum)
         f = open(self.cachePath(sha1sum), "r")
         c = f.read()
@@ -478,21 +486,40 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         return BuilderStatus.IDLE
 
     def xmlrpc_build(self, buildid, builder, chrootsum, filemap, args):
+        """Check if requested arguments are sane and initiate build procedure
+
+        return a tuple containing: (<builder_status>, <info>)
+
+        """
+        # check requested builder
         if not builder in self._builders:
-            return BuilderStatus.UNKNOWNBUILDER
-        if not self.slave.ensurePresent(chrootsum):
-            return BuilderStatus.UNKNOWNSUM, chrootsum
-        for checksum in filemap.itervalues():
-            if not self.slave.ensurePresent(checksum):
-                return BuilderStatus.UNKNOWNSUM, checksum
+            return (BuilderStatus.UNKNOWNBUILDER, None)
+        # check requested chroot availability
+        chroot_present, info = self.slave.ensurePresent(chrootsum)
+        if not chroot_present:
+            extra_info = """CHROOTSUM -> %s
+            ***** INFO *****
+            %s
+            ****************
+            """ % (chrootsum, info)
+            return (BuilderStatus.UNKNOWNSUM, extra_info)
+        # check requested files availability
+        for filesum in filemap.itervalues():
+            file_present, info = self.slave.ensurePresent(filesum)
+            if not file_present:
+                extra_info = """FILESUM -> %s
+                ***** INFO *****
+                %s
+                ****************
+                """ % (filesum, info)
+                return (BuilderStatus.UNKNOWNSUM, extra_info)
+        # check buildid sanity
         if buildid is None or buildid == "" or buildid == 0:
             raise ValueError(buildid)
+
         # builder is available, buildd is non empty,
         # filelist is consistent, chrootsum is available, let's initiate...
-
         self.buildid = buildid
-        
         self.slave.startBuild(self._builders[builder](self.slave, buildid))
         self.slave.manager.initiate(filemap, chrootsum, args)
-        return BuilderStatus.BUILDING
-    
+        return (BuilderStatus.BUILDING, buildid)

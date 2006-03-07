@@ -1498,7 +1498,9 @@ class NascentUpload:
         for uploaded_file in self.files:
             if uploaded_file.custom or uploaded_file.section == "byhand":
                 # handled specially in insert_into_queue -- it goes
-                # into a custom queue, no overrides apply
+                # into a custom queue, no overrides applied.
+                # They are always NEW.
+                uploaded_file.new = True
                 continue
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease
@@ -1642,8 +1644,8 @@ class NascentUpload:
             return
 
         # check rights for OLD packages, the NEW ones goes straight to queue
+        self.process_signer_acl()
         if not self.is_new():
-            self.process_signer_acl()
             self.verify_acl()
 
         # And finally, check that the policy is happy overall

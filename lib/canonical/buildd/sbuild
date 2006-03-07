@@ -497,7 +497,7 @@ die "apt-cache binary $conf::apt_cache does not exist or isn't executable\n"
 	if !-x $conf::apt_cache;
 die "dpkg-source binary $conf::dpkg_source does not exist or isn't executable\n"
 	if !-x $conf::dpkg_source;
-die "$conf::log_dir is not a directory\n" if ! -d $conf::log_dir;
+#die "$conf::log_dir is not a directory\n" if ! -d $conf::log_dir;
 die "$conf::srcdep_lock_dir is not a directory\n" if ! -d $conf::srcdep_lock_dir;
 die "conf::mailto not set\n" if !$conf::mailto;
 package main;

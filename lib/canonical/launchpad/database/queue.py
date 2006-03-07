@@ -85,17 +85,15 @@ class DistroReleaseQueue(SQLBase):
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
     sources = MultipleJoin('DistroReleaseQueueSource',
-                           joinColumn='distroreleasequeue',
-                           orderBy='distroreleasequeuesource.id')
+                           joinColumn='distroreleasequeue')
 
     builds = MultipleJoin('DistroReleaseQueueBuild',
-                          joinColumn='distroreleasequeue',
-                          orderBy='distroreleasequeuebuild.id')
+                          joinColumn='distroreleasequeue')
 
     # Also the custom files associated with the build.
     customfiles = MultipleJoin('DistroReleaseQueueCustom',
-                               joinColumn='distroreleasequeue',
-                               orderBy='distroreleasequeuecustom.id')
+                               joinColumn='distroreleasequeue')
+
 
     def _set_status(self, value):
         """Directly write on 'status' is forbidden.
@@ -223,7 +221,6 @@ class DistroReleaseQueue(SQLBase):
             return queue_source.sourcepackagerelease
         for queue_build in self.builds:
             return queue_build.build.sourcepackagerelease
-        
 
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
@@ -385,6 +382,8 @@ class DistroReleaseQueueSource(SQLBase):
 class DistroReleaseQueueCustom(SQLBase):
     """A Queue item's related custom format uploads."""
     implements(IDistroReleaseQueueCustom)
+
+    _defaultOrder = ['id']
 
     distroreleasequeue = ForeignKey(
         dbName='distroreleasequeue',

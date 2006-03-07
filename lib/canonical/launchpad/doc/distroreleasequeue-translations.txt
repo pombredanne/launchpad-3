@@ -108,6 +108,7 @@ Do the upload into the system.
   DEBUG: Checking against amd64 for pmount
   DEBUG: getReleasedPackages() returned 0 possibilit{y,ies}
   DEBUG: pmount: (binary) NEW
+  DEBUG: No signer, therefore ACL not processed
   DEBUG: Finished checking upload.
 
 It was not rejected.
