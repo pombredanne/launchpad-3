@@ -926,7 +926,11 @@ class PersonView:
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
-    def sourcepackage_open_bugs_count(self, sourcepackagerelease):
+    #
+    #
+    #
+
+    def sourcepackage_open_bug_count_in_distro(self, sourcepackagerelease):
         """Return the number of open bugs targeted to the sourcepackagename
         and distribution to which the given sourcepackagerelease was uploaded.
         """
@@ -937,37 +941,9 @@ class PersonView:
             status=any(*UNRESOLVED_BUGTASK_STATUSES))
         return upload_distro.searchTasks(params).count()
 
-    def maintainedPackagesByPackageName(self):
-        return self._groupSourcePackageReleasesByName(
-            self.context.maintainedPackages())
-
-    def uploadedButNotMaintainedPackagesByPackageName(self):
-        return self._groupSourcePackageReleasesByName(
-            self.context.uploadedButNotMaintainedPackages())
-
-    class SourcePackageReleasesByName:
-        """A class to hold a sourcepackagename and a list of
-        sourcepackagereleases of that sourcepackagename.
-        """
-
-        def __init__(self, name, releases):
-            self.name = name
-            self.releases = releases
-
-    def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
-        """Return a list of SourcePackageReleasesByName objects ordered by
-        SourcePackageReleasesByName.name.
-
-        Each SourcePackageReleasesByName object contains a name, which is the
-        sourcepackagename and a list containing all sourcepackagereleases of
-        that sourcepackagename.
-        """
-        allreleasesbyallnames = []
-        keyfunc = lambda sprelease: sprelease.name
-        for key, group in itertools.groupby(sourcepackagereleases, keyfunc):
-            allreleasesbyallnames.append(
-                PersonView.SourcePackageReleasesByName(key, list(group)))
-        return sorted(allreleasesbyallnames, key=lambda s: s.name)
+    #
+    #
+    #
 
     def no_bounties(self):
         return not (self.context.ownedBounties or
