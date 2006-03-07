@@ -10,6 +10,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.database import POMsgSet
+from canonical.launchpad.helpers import TranslationConstants
 
 def parse_options(args):
     """Parse a set of command line options.
@@ -33,7 +34,7 @@ def parse_options(args):
 def check_newlines(pomsgsets, logger_object):
     """Check the pomsgsets' translations newlines to match the msgid's ones.
 
-    :arg pomsgsets: A set of IPOMsgSets to check.
+    :arg pomsgsets: A set of IPOMsgSet to check.
     """
     processed_translations = []
     for pomsgset in pomsgsets:
@@ -56,7 +57,8 @@ def check_newlines(pomsgsets, logger_object):
                 translations[plural_form] = potranslation.translation
                 processed_translations.append(potranslation.id)
 
-        pomsgid = pomsgset.potmsgset.getPOMsgIDs()[0]
+        pomsgid = (
+            pomsgset.potmsgset.getPOMsgIDs()[TranslationConstants.SINGULAR])
         if u'\r' in pomsgid.msgid:
             # The msgid contains the u'\r' char.
             for translation in translations.itervalues():
@@ -81,7 +83,7 @@ def check_newlines(pomsgsets, logger_object):
 def fix_newlines(pomsgsets, ztm, assert_if_carriage_return_present=False):
     """Fix the pomsgsets' translations newlines, if needed.
 
-    :arg pomsgsets: A set of IPOMsgSets to fix.
+    :arg pomsgsets: A set of IPOMsgSet to fix.
     :arg ztm: A transaction manager object.
     :arg assert_if_carriage_return_present: Check if there are u'\r' chars as
         part of the msgid.
@@ -166,15 +168,33 @@ def main(argv):
         len(msgid_ids))
 
     # Let's review first the entries that have the u'\r' char as part of
-    # the msgid. We are assuming here that the msgid_singular and
-    # msgid_plural have the same kind of new lines so we only check the
-    # singular ones.
+    # the msgid.
     for id in msgid_ids:
+        # Get all potmsgsets that use the given msgid.
+        potmsgsets = POTMsgSet.select("""
+            POMsgIDSighting.pomsgid = %s AND
+            POMsgIDSighting.inlastrevision = TRUE AND
+            POMsgIDSighting.potmsgset = POTMsgSet.id
+            """ % sqlvalues(id), clauseTables=['POMsgIDSighting'])
+
+        for potmsgset in potmsgsets:
+            # Sanity check for the input we got from the applications.
+            singular = potmsgsets.getPOMsgIDs()[TranslationConstants.SINGULAR]
+            plural = potmsgsets.getPOMsgIDs()[TranslationConstants.PLURAL]
+
+            if (('\r' in singular.msgid and '\r' not in plural.msgid) or
+                ('\r' not in singular.msgid and '\r' in plural.msgid)):
+                logger_object.warning(
+                    "The singular and plural forms don't have the same"
+                    " newline style.\nsingular: %r\n plural: %r\nWe found"
+                    " this on %s" % (singular.msgid, plural.msgid,
+                        potmsgset.potemplate.title))
+
         # Get all pomsgsets that use the given msgid.
         pomsgsets = POMsgSet.select("""
             POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %d
-            """ % id, clauseTables=['POTMsgSet'])
+            POTMsgset.primemsgid = %s
+            """ % sqlvalues(id), clauseTables=['POTMsgSet'])
 
         if options.check:
             # Only check for broken entries

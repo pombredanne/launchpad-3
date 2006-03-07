@@ -78,17 +78,21 @@ class IPOTMsgSet(Interface):
 
     def applySanityFixes(unicode_text):
         """Return 'unicode_text' after doing some sanity checks and fixes
-        against the msgid improving its value in case the user did any mistake.
+        against the msgid improving its value in case the user made any mistake.
 
-        :arg unicode_text: An unicode or string that needs to be checked.
+        :arg unicode_text: A unicode or string that needs to be checked.
+
+        This method calls self.convertDotToSpace, self.normalizeWhitespaces
+        and self.normalizeNewLines to do the fixes.
         """
 
     def convertDotToSpace(unicode_text):
-        """Return 'unicode_text' with the u'\u2022' char changed with a normal
-        space.
+        """Return 'unicode_text' with the u'\u2022' char exchanged with a
+        normal space.
 
         If the self.primemsgid contains that character, 'unicode_text' is
-        returned without changes.
+        returned without changes as it's a valid char instead of our way to
+        represent a normal space to the user.
         """
 
     def normalizeWhitespaces(unicode_text):
@@ -96,7 +100,8 @@ class IPOTMsgSet(Interface):
         that self.primemsgid has.
 
         If 'unicode_text' has only whitespaces but self.primemsgid has other
-        characters, the empty string (u'') is returned.
+        characters, the empty string (u'') is returned to note it as an
+        untranslated string.
         """
 
     def normalizeNewLines(unicode_text):
