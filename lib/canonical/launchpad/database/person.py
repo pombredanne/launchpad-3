@@ -1134,7 +1134,7 @@ class PersonSet:
         # Get a database cursor.
         cur = cursor()
 
-        references = shortlist(postgresql.listReferences(cur, 'person', 'id'))
+        references = list(postgresql.listReferences(cur, 'person', 'id'))
 
         # These table.columns will be skipped by the 'catch all'
         # update performed later
