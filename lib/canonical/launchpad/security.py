@@ -121,13 +121,13 @@ class EditSprintSpecification(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class AdminSeriesSourceByButtSource(AuthorizationBase):
+class AdminSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IProductSeriesSourceAdmin
 
     def checkAuthenticated(self, user):
-        buttsource = getUtility(ILaunchpadCelebrities).buttsource
-        return user.inTeam(buttsource)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return user.inTeam(vcs_imports)
 
 
 class EditRequestedCDsByRecipientOrShipItAdmins(AuthorizationBase):
@@ -181,13 +181,13 @@ class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
     usedfor = IShippingRequestSet
 
 
-class EditSeriesSourceByButtSource(AuthorizationBase):
+class EditSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProductSeriesSource
 
     def checkAuthenticated(self, user):
-        buttsource = getUtility(ILaunchpadCelebrities).buttsource
-        if user.inTeam(buttsource):
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        if user.inTeam(vcs_imports):
             return True
         elif not self.obj.syncCertified():
             return True

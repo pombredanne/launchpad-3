@@ -649,7 +649,9 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Product and group registration in Launchpad'
 
-registry_listall = 'Launchpad: Complete list' # bug 3508
+products_all = 'All Upstream Products registered in Launchpad'
+
+projects_all = 'All Projects registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
