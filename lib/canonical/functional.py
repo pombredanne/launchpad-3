@@ -177,7 +177,7 @@ def FunctionalDocFileSuite(*paths, **kw):
         stdout_logging_level = kw.get('stdout_logging_level')
         del kw['stdout_logging_level']
     else:
-        stdout_logging_level = logging.WARNING
+        stdout_logging_level = logging.INFO
 
     def setUp(test):
         if kwsetUp is not None:
