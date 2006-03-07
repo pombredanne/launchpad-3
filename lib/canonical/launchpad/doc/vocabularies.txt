@@ -103,9 +103,10 @@ o DistributionUsingMaloneVocabulary - all the distributions that use
     >>> using_malone_vocabulary = vocabulary_registry.get(
     ...     None, 'DistributionUsingMalone')
     >>> len(using_malone_vocabulary)
-    1
+    2
     >>> for term in using_malone_vocabulary:
     ...     print term.token, term.value.displayname, term.title
+    gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities

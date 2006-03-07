@@ -64,3 +64,7 @@ getByNameInDistroRelease
   >>> print len(list(result))
   0
   >>>
+
+XXX: bug 5947, still lacking tests for getByNameVersion, getByArchTag,
+     getDistroReleasePackages and getBySourceName -- kiko, 2006-02-22
+

@@ -5,8 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
-    'DistributionSourcePackageView',
-    'DistributionSourcePackageBugsView',
+    'DistributionSourcePackageView'
     ]
 
 from zope.component import getUtility
@@ -14,8 +13,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
-from canonical.launchpad.browser.bugtask import (
-    BugTargetTraversalMixin, AdvancedBugTaskSearchView)
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
@@ -75,32 +73,6 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
 
     def addticket(self):
         return Link('+addticket', 'Request Support', icon='add')
-
-
-class DistributionSourcePackageBugsView(AdvancedBugTaskSearchView):
-    """View class for the buglist for an IDistributionSourcePackage."""
-
-    def _distributionContext(self):
-        """Return the source package's distribution."""
-        return self.context.distribution
-
-    def showBatchedListing(self):
-        """Is the listing batched?"""
-        return False
-
-    @property
-    def task_columns(self):
-        """Return the columns that should be displayed in the bug listing."""
-        return ["assignedto", "id", "priority", "severity", "status", "title"]
-
-    def hasSimpleMode(self):
-        return True
-
-    def shouldShowAdvancedSearchWidgets(self):
-        """Return True if this view's advanced form should be shown."""
-        if self.request.get('advanced') and not self.request.get('simple'):
-            return True
-        return False
 
 
 class DistributionSourcePackageView:

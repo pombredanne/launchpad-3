@@ -29,6 +29,10 @@ To retrieve a specific distribution, use IDistributionSet.get:
     >>> print ubuntu.name
     ubuntu
 
+Or, to grab one by name, use:
+
+    >>> gentoo = distroset.getByName("gentoo")
+
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
 
@@ -114,6 +118,13 @@ Raises NotFoundError for following conditions:
     ...
     NotFoundError: 'Unknown package: 1234'
 
+It also raises NotFoundError on distributions with no releases:
+
+    >>> source_name, bin_name = gentoo.getPackageNames('pmount')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: "Distribution has no releases; 'pmount' was never published in it"
+
 
 CVE BugTasks on a Distribution
 ------------------------------
@@ -126,6 +137,7 @@ using this API. Based on the sample data we know the following about Ubuntu:
     >>> for task in tasks:
     ...     print task.id
     17
+    24
 
 There should be NO resolved CVE tasks:
 
@@ -294,4 +306,13 @@ While Debian uses neither:
     False
     >>> debian.official_rosetta
     False
+
+Gentoo only uses Malone
+
+    >>> print gentoo.official_malone
+    True
+    >>> print gentoo.official_rosetta
+    False
+
+
 

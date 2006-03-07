@@ -8,7 +8,7 @@
   <browser:page
       for="zope.interface.common.interfaces.IException"
       name="index.html"
-      template="../templates/launchpad-oops.pt"
+      template="../templates/oops.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
@@ -39,15 +39,6 @@
       template="../templates/launchpad-requestexpired.pt"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
-
-  <!-- OOPS -->
-  <browser:page
-      for="zope.publisher.interfaces.http.IHTTPRequest"
-      name="+oopsmessage"
-      permission="zope.Public"
-      template="../templates/request-oopsmessage.pt"
-      />
-
 
 <facet facet="overview">
 

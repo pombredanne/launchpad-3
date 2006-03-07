@@ -57,6 +57,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import AND, OR, CONTAINSSTRING
 
+from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
@@ -67,9 +68,10 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     BinaryAndSourcePackageName)
 from canonical.launchpad.interfaces import (
-    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam)
+    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
+    IMilestoneSet)
 
-class IHugeVocabulary(IVocabulary):
+class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
 
     Items in an IHugeVocabulary should have human readable tokens or the
@@ -782,13 +784,14 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
 
 class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
-    _orderBy = 'name'
+    _orderBy = None
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
+        return SimpleTerm(obj, obj.id, obj.displayname)
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
+        target = None
         product = launchbag.product
         if product is not None:
             target = product
@@ -797,9 +800,23 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         if distribution is not None:
             target = distribution
 
+        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is evil, but
+        # we need to sort the milestones by a non-database value, for the user
+        # to find the milestone they're looking for (particularly when showing
+        # *all* milestones on the person pages.)
+        #
+        # This fixes an urgent bug though, so I think this problem should be
+        # revisited after we've unblocked users.
         if target is not None:
-            for ms in target.milestones:
-                yield self.toTerm(ms)
+            milestones = shortlist(target.milestones, longest_expected=40)
+        else:
+            # We can't use context to reasonably filter the milestones, so let's
+            # just grab all of them.
+            milestones = shortlist(
+                getUtility(IMilestoneSet), longest_expected=40)
+
+        for ms in sorted(milestones, key=lambda m: m.displayname):
+            yield self.toTerm(ms)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
