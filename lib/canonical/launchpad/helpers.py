@@ -454,7 +454,7 @@ def shortlist(sequence, longest_expected=15):
     if len(L) > longest_expected:
         warnings.warn("shortlist() should not be used here. It's meant to "
               "listify sequences with no more than %d items." %
-              longest_expected)
+              longest_expected, stacklevel=2)
     return L
 
 
