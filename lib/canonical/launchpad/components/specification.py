@@ -20,13 +20,13 @@ class SpecificationDelta:
         self.title = title
         self.summary = summary
         self.specurl = specurl
-        productseries = productseries
-        distrorelease = distrorelease
-        milestone = milestone
+        self.productseries = productseries
+        self.distrorelease = distrorelease
+        self.milestone = milestone
         self.name = name
-        priority = priority
-        status = status
-        target = target
-        bugs_linked = bugs_linked
-        bugs_unlinked = bugs_unlinked
+        self.priority = priority
+        self.status = status
+        self.target = target
+        self.bugs_linked = bugs_linked
+        self.bugs_unlinked = bugs_unlinked
 

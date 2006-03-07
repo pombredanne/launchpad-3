@@ -183,9 +183,9 @@ class ISpecification(IHasOwner):
         """
 
     # event-related methods
-    def getDelta(new_spec, user):
+    def getDelta(old_spec, user):
         """Return a dictionary of things that changed between this spec and
-        the new_spec.
+        the old_spec.
 
         This method is primarily used by event subscription code, to
         determine what has changed during an SQLObjectModifiedEvent.

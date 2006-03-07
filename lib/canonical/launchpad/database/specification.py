@@ -193,23 +193,23 @@ class Specification(SQLBase):
 
         for field_name in ("name", "priority", "status", "target"):
             # fields for which we show old => new when their values change
-            old_val = getattr(self, field_name)
-            new_val = getattr(old_spec, field_name)
+            old_val = getattr(old_spec, field_name)
+            new_val = getattr(self, field_name)
             if old_val != new_val:
                 changes[field_name] = {}
                 changes[field_name]["old"] = old_val
                 changes[field_name]["new"] = new_val
 
-        old_bugs = self.bugs
-        new_bugs = old_spec.bugs
+        old_bugs = old_spec.bugs
+        new_bugs = self.bugs
         for bug in old_bugs:
             if bug not in new_bugs:
-                if not changes.has_attr('bugs_unlinked'):
+                if not changes.has_key('bugs_unlinked'):
                     changes['bugs_unlinked'] = []
                 changes['bugs_unlinked'].append(bug)
         for bug in new_bugs:
             if bug not in old_bugs:
-                if not changes.has_attr('bugs_linked'):
+                if not changes.has_key('bugs_linked'):
                     changes['bugs_linked'] = []
                 changes['bugs_linked'].append(bug)
 
