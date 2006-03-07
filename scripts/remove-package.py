@@ -368,30 +368,19 @@ def what_to_remove(packages):
 ################################################################################
 
 def do_removal(removal):
+    """Perform published package removal.
+
+    Mark provided publishing record as SUPERSEDED, such that the Domination
+    procedure will sort out its eventual removal appropriately; obeying the
+    rules for archive consistency.
+    """
     current = removal["publishing"]
     if removal["type"] == "binary":
-        SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=current.binarypackagerelease,
-            distroarchrelease=current.distroarchrelease,
-            component=current.component,
-            section=current.section,
-            priority=current.priority,
-            status=PackagePublishingStatus.SUPERSEDED,
-            datecreated=UTC_NOW,
-            pocket=current.pocket,
-            embargo=False,
-            )
+        real_current = SecureBinaryPackagePublishingHistory.get(current.id)
     else:
-        SecureSourcePackagePublishingHistory(
-            distrorelease=current.distrorelease,
-            sourcepackagerelease=current.sourcepackagerelease,
-            component=current.component,
-            section=current.section,
-            status=PackagePublishingStatus.SUPERSEDED,
-            datecreated=UTC_NOW,
-            pocket=current.pocket,
-            embargo=False,
-            )
+        real_current = SecureSourcePackagePublishingHistory.get(current.id)
+    real_current.status = PackagePublishingStatus.SUPERSEDED
+    real_current.datesuperseded = UTC_NOW
 
 ################################################################################
 
