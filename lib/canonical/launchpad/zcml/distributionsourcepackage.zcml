@@ -13,7 +13,8 @@
                   releases publishing_history binary_package_names
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   tickets getTicket searchTasks isBugContact open_bugtasks
-                  critical_bugtasks inprogress_bugtasks unassigned_bugtasks" />
+                  critical_bugtasks inprogress_bugtasks unassigned_bugtasks
+                  unconfirmed_bugtasks all_bugtasks" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact newTicket subscribe
@@ -69,23 +70,8 @@
       template="../templates/distributionsourcepackage-portlet-releases.pt"
       />
     <browser:page
-      name="+portlet-bugs"
-      template="../templates/distributionsourcepackage-portlet-bugs.pt"
-      />
-    <browser:page
       name="+portlet-tickets"
       template="../templates/distributionsourcepackage-portlet-tickets.pt"
-      />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageBugsView">
-    <browser:page
-      name="+bugs"
-      facet="bugs"
-      template="../templates/distributionsourcepackage-bugs.pt"
       />
   </browser:pages>
 

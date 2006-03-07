@@ -49,11 +49,6 @@ from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser)
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
-# XXX, Brad Bollenbach, 2006-01-12: These cause circular imports. Moved to
-# create_bug_message for now.
-#from canonical.launchpad.database.message import Message, MessageChunk
-#from canonical.launchpad.database.bugmessage import BugMessage
-
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
@@ -1001,3 +996,12 @@ def is_ascii_only(string):
         return False
     else:
         return True
+
+
+def capture_state(obj, *fields):
+    class State: pass
+    state = State()
+    for field in fields:
+        setattr(state, field, getattr(obj, field))
+
+    return state

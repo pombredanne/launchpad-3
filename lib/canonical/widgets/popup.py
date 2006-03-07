@@ -44,23 +44,6 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     style = None
     cssClass = None
 
-    def _old_getFormValue(self):
-        # Check to see if there is only one possible match. If so, use it.
-        matches = self.matches()
-        if len(matches) == 1:
-            return matches[0].token
-
-        # Otherwise, return the invalid value the user entered
-        return super(SinglePopupWidget, self)._getFormValue()
-
-    def _getFormInput(self):
-        """See zope.app.form.browser.widget.SimpleWidget"""
-        matches = self.matches()
-        if len(matches) == 1:
-            return matches[0].token
-        else:
-            return super(SinglePopupWidget, self)._getFormInput()
-
     _matches = None
     def matches(self):
         """Return a list of matches (as ITokenizedTerm) to whatever the

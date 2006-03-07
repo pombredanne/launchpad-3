@@ -90,6 +90,47 @@ class MailWrapper:
         return '\n'.join(wrapped_lines)
 
 
+def update_bug_contact_subscriptions(modified_bugtask, event):
+    """Modify the bug Cc list when a bugtask is retargeted."""
+    bugtask_before_modification = event.object_before_modification
+    bugtask_after_modification = event.object
+
+    # We don't make any changes to subscriber lists on private bugs.
+    if bugtask_after_modification.bug.private:
+        return
+
+    # Calculate the list of new bug contacts, if any.
+    new_bugcontacts = []
+    if IUpstreamBugTask.providedBy(modified_bugtask):
+        if (bugtask_before_modification.product !=
+            bugtask_after_modification.product):
+            if bugtask_after_modification.product.bugcontact:
+                new_bugcontacts.append(
+                    bugtask_after_modification.product.bugcontact)
+    elif (IDistroBugTask.providedBy(modified_bugtask) or
+          IDistroReleaseBugTask.providedBy(modified_bugtask)):
+        if (bugtask_before_modification.sourcepackagename !=
+            bugtask_after_modification.sourcepackagename):
+            new_sourcepackage = (
+                bugtask_after_modification.distribution.getSourcePackage(
+                bugtask_after_modification.sourcepackagename.name))
+            for package_bug_contact in new_sourcepackage.bugcontacts:
+                new_bugcontacts.append(package_bug_contact.bugcontact)
+
+    # Subscribe all the new bug contacts for the new package or product if they
+    # aren't already subscribed to this bug.
+    bug = bugtask_after_modification.bug
+    subject, body = generate_bug_add_email(bug)
+    for bugcontact in new_bugcontacts:
+        if not bug.isSubscribed(bugcontact):
+            bug.subscribe(bugcontact)
+            # Send a notification to the new bug contact that looks identical to
+            # a new bug report.
+            send_bug_notification(
+                bug=bug, user=bug.owner, subject=subject, body=body,
+                to_addrs=str(bugcontact.preferredemail.email))
+
+
 def get_bugmail_replyto_address(bug):
     """Return an appropriate bugmail Reply-To address.
 
@@ -744,6 +785,8 @@ def notify_bugtask_edited(modified_bugtask, event):
         comment_on_change=event.comment_on_change)
 
     send_bug_edit_notification(bug_delta)
+
+    update_bug_contact_subscriptions(modified_bugtask, event)
 
 
 def notify_bug_comment_added(bugmessage, event):

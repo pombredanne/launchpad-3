@@ -289,6 +289,10 @@ Reason:
 
         kw['recipient'] = self.user
         order = getUtility(IShippingRequestSet).new(**kw)
+        # XXX: This flush_database_updates() call is an attempt to fix 
+        # https://launchpad.net/products/shipit/+bug/32425.
+        # -- Guilherme Salgado, 2006-02-22
+        flush_database_updates()
         self.order = order
         if self._shouldAutomaticallyApprove(order):
             order.approve(

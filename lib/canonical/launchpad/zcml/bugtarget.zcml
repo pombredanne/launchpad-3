@@ -24,58 +24,9 @@
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugListingPortletView"
         permission="zope.Public"
-        name="+portlet-bugtasklist-mybugs"
-        template="../templates/bugtasklist-portlet-mybugs.pt"
+        name="+portlet-bugfilters"
+        template="../templates/bugtarget-portlet-bugfilters.pt"
         />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.AssignedBugTasksView"
-        permission="launchpad.AnyPerson"
-        name="+bugs-assigned-to"
-        template="../templates/buglisting-default.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.OpenBugTasksView"
-        permission="zope.Public"
-        name="+bugs-open"
-        template="../templates/buglisting-default.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.CriticalBugTasksView"
-        permission="zope.Public"
-        name="+bugs-critical"
-        template="../templates/buglisting-default.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.UntriagedBugTasksView"
-        permission="zope.Public"
-        name="+bugs-untriaged"
-        template="../templates/buglisting-default.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.UnassignedBugTasksView"
-        permission="zope.Public"
-        name="+bugs-unassigned"
-        template="../templates/buglisting-default.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.AllBugTasksView"
-        permission="zope.Public"
-        name="+bugs-all"
-        template="../templates/buglisting-default.pt" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.AdvancedBugTaskSearchView"
-        permission="zope.Public"
-        name="+bugs-advanced"
-        template="../templates/buglisting-default.pt" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
@@ -84,14 +35,19 @@
         name="+bugs-text"
         attribute="__call__" />
 
-    <!-- +bugs uses AdvancedBugTaskSearchView in order to keep old
-         bookmarks working. -->
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.BugTasksOldView"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
         permission="zope.Public"
         name="+bugs"
-        template="../templates/buglisting-default.pt" />
+        template="../templates/buglisting-default.pt"/>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        name="+bugs-advanced-search"
+        template="../templates/bugtarget-advanced-search.pt" />
 
   </facet>
 

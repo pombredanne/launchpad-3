@@ -22,16 +22,12 @@
 
     <browser:menus
         module="canonical.launchpad.browser.project"
-        classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu" />
+        classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
+                 ProjectSetContextMenu" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+index" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProject"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+malone-index" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -49,11 +45,6 @@
             template="../templates/project.pt"
             lp:url="/projects/$Project.name/" />
         <browser:page
-            name="+malone-index"
-            facet="bugs"
-            template="../templates/project-bugs.pt"
-            lp:url="malone/projects/$Project.name/" />
-        <browser:page
             name="+branches"
             facet="overview"
             template="../templates/project-branches.pt"
@@ -68,6 +59,10 @@
             facet="translations"
             template="../templates/project-rosetta-index.pt"
             lp:url="Rosetta/projects/$Project.name/+index" />
+        <browser:page
+            name="+listing-detailed"
+            template="../templates/project-listing-detailed.pt"
+            />
 
        <!-- Projects portlets -->
        <browser:page
@@ -112,8 +107,6 @@
               template="../templates/object-reassignment.pt"
               lp:url="/project/$project.id/+reassign" />
     </browser:pages>
-
-
 
     <browser:addform
         name="+newbugtracker"
@@ -287,7 +280,7 @@
         lp:url="/projects/">
         <browser:page
             name="+all" 
-            template="../templates/registry-listall.pt"
+            template="../templates/projects-all.pt"
             lp:url="/projects/+all" />
         <browser:page
             name="+index" 

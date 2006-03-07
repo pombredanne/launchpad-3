@@ -52,9 +52,9 @@ class BugTaskPageTitle:
             context.bug.id, context.targetname, context.bug.title)
 
 
-class BugTaskTargetingTitle:
+class BugTaskBackportingTitle:
     def __call__(self, context, view):
-        return "Bug #%d in %s - Target fix to releases" % (
+        return "Bug #%d in %s - Backport fix to releases" % (
             context.bug.id, context.targetname)
 
 
@@ -126,21 +126,6 @@ branchtarget_branches = ContextTitle('Branches for %s')
 
 bug_activity = ContextId('Bug #%s - Activity log')
 
-def bug_add(context, view):
-    # XXX, Brad Bollenbach, 2005-07-15: This is a hack until our fancy
-    # new page title machinery allows for two different pages that use
-    # the same template to have different titles (the way ZCML does.)
-    # See https://launchpad.ubuntu.com/malone/bugs/1376
-    product_context = IProduct(context, None)
-    distro_context = IDistribution(context, None)
-    distrorelease_context = IDistroRelease(context, None)
-
-    if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Report a bug about %s')
-        return context_title(context, view)
-    else:
-        return "Report a bug"
-
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
 bug_attachment_add = LaunchbagBugID('Bug #%d - Add an attachment')
@@ -189,13 +174,19 @@ def bugs_assigned(context, view):
     else:
         return 'No-one to display bugs for'
 
-bugtask_index = BugTaskPageTitle()
+bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
-bugtask_release_targeting = BugTaskTargetingTitle()
+bugtarget_filebug = ContextTitle('Report a bug about %s')
 
-bugtask_view = BugTaskPageTitle()
+bugtask_backport_fixing = BugTaskBackportingTitle()
 
 bugtask_edit = BugTaskPageTitle()
+
+bugtask_index = BugTaskPageTitle()
+
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request fix in a product')
+
+bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
@@ -285,6 +276,8 @@ distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
+distribution_edit = ContextTitle('Edit %s')
+
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle(
@@ -362,6 +355,8 @@ errorservice_index = 'Error log report'
 
 errorservice_tbentry = 'Traceback entry'
 
+faq = 'Launchpad Frequently Asked Questions'
+
 foaf_adminrequestmerge = 'Merge Launchpad accounts'
 
 foaf_mergerequest_sent = 'Merge request sent'
@@ -409,11 +404,7 @@ launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Error: Page not found'
 
-launchpad_oops = 'Error: Oops'
-
 launchpad_requestexpired = 'Error: Timeout'
-
-launchpad_faq = 'Launchpad Frequently Asked Questions'
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -441,6 +432,8 @@ malone_distros_index = 'Report a bug about a distribution'
 
 malone_index = 'Malone: the Launchpad bug tracker'
 
+malone_filebug = "Report a bug"
+
 # malone_people_index is a redirect
 
 # malone_template is a means to include the mainmaster template
@@ -462,6 +455,8 @@ milestone_edit = ContextTitle('Edit %s')
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
+
+oops = 'Oops!'
 
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
@@ -650,7 +645,9 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Product and group registration in Launchpad'
 
-registry_listall = 'Launchpad: Complete list' # bug 3508
+products_all = 'All Upstream Products registered in Launchpad'
+
+projects_all = 'All Projects registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
