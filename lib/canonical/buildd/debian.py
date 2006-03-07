@@ -263,6 +263,7 @@ class DebianBuildManager(BuildManager):
             self._state = DebianBuildState.REAP
             self.doReapProcesses()
         else:
+            print("Returning build status: OK")
             self.gatherResults()
             self._state = DebianBuildState.REAP
             self.doReapProcesses()

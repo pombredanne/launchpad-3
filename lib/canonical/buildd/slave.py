@@ -179,6 +179,7 @@ class BuildStatus:
 
     OK = "BuildStatus.OK"
     DEPFAIL = "BuildStatus.DEPFAIL"
+    GIVENBACK = "BuildStatus.GIVENBACK"
     PACKAGEFAIL = "BuildStatus.PACKAGEFAIL"
     CHROOTFAIL = "BuildStatus.CHROOTFAIL"
     BUILDERFAIL = "BuildStatus.BUILDERFAIL"

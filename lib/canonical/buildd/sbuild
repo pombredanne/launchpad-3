@@ -487,8 +487,8 @@ $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6
 require "/etc/sbuild.conf" if -r "/etc/sbuild.conf";
 require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 # some checks
-die "mailprog binary $conf::mailprog does not exist or isn't executable\n"
-	if !-x $conf::mailprog;
+#die "mailprog binary $conf::mailprog does not exist or isn't executable\n"
+#	if !-x $conf::mailprog;
 die "sudo binary $conf::sudo does not exist or isn't executable\n"
 	if !-x $conf::sudo;
 die "apt-get binary $conf::apt_get does not exist or isn't executable\n"
@@ -497,7 +497,7 @@ die "apt-cache binary $conf::apt_cache does not exist or isn't executable\n"
 	if !-x $conf::apt_cache;
 die "dpkg-source binary $conf::dpkg_source does not exist or isn't executable\n"
 	if !-x $conf::dpkg_source;
-die "$conf::log_dir is not a directory\n" if ! -d $conf::log_dir;
+#die "$conf::log_dir is not a directory\n" if ! -d $conf::log_dir;
 die "$conf::srcdep_lock_dir is not a directory\n" if ! -d $conf::srcdep_lock_dir;
 die "conf::mailto not set\n" if !$conf::mailto;
 package main;
