@@ -120,7 +120,7 @@ class StdoutHandler(Handler):
     def emit(self, record):
         Handler.emit(self, record)
         print >> StdoutWrapper(), '%s:%s:%s' % (
-                    record.levelname, record.name, record.getMessage()
+                    record.levelname, record.name, self.format(record)
                     )
 
 class MockRootFolder:
@@ -173,6 +173,12 @@ def FunctionalDocFileSuite(*paths, **kw):
     else:
         stdout_logging = True
 
+    if kw.has_key('stdout_logging_level'):
+        stdout_logging_level = kw.get('stdout_logging_level')
+        del kw['stdout_logging_level']
+    else:
+        stdout_logging_level = logging.INFO
+
     def setUp(test):
         if kwsetUp is not None:
             kwsetUp(test)
@@ -189,7 +195,7 @@ def FunctionalDocFileSuite(*paths, **kw):
                 )
         if stdout_logging:
             log = StdoutHandler('')
-            log.setLoggerLevel(logging.INFO)
+            log.setLoggerLevel(stdout_logging_level)
             log.install()
             test.globs['log'] = log
     kw['setUp'] = setUp

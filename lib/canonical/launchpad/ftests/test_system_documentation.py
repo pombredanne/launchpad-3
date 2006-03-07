@@ -5,6 +5,7 @@ lib/canonical/launchpad/doc.
 """
 
 import unittest
+import logging
 import os
 
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
@@ -143,7 +144,12 @@ special = {
             setUp=importdSetUp, tearDown=importdTearDown),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
-            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown)
+            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
+    'incomingmail.txt': FunctionalDocFileSuite(
+            'launchpad/doc/incomingmail.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
+            ),
     }
 
 def test_suite():

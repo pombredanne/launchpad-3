@@ -139,7 +139,7 @@ def handleMail(trans=transaction):
                     # that it's not running, but not necessarily. Log
                     # the error and skip the message, but don't delete
                     # it.
-                    log.error('Upload to Librarian failed', exc_info=True)
+                    log.exception('Upload to Librarian failed')
                     continue
 
                 # Let's save the url of the file alias, otherwise we might not
