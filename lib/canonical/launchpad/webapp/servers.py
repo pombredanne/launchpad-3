@@ -209,7 +209,7 @@ class LaunchpadTestRequest(TestRequest):
         return LaunchpadTestResponse()
 
 
-class LaunchpadTestResponse(NotificationResponse, BrowserResponse):
+class LaunchpadTestResponse(LaunchpadBrowserResponse):
     """Mock response for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest()
