@@ -101,12 +101,12 @@
       </td>
       <td style="text-align: right">
         <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+bugs"
-           tal:content="python: spr.open_bug_count_in_distro(view.user)">
+           tal:content="python: spr.countOpenBugsInUploadedDistro(view.user)">
         </a>
       </td>
       <td style="text-align: right">
         <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+tickets"
-           tal:content="spr/open_tickets_count">
+           tal:content="spr/open_ticket_count">
         </a>
       </td>
     </tal:block>

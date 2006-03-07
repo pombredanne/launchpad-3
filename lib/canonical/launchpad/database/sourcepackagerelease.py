@@ -147,7 +147,7 @@ class SourcePackageRelease(SQLBase):
             return None
 
     @property
-    def open_tickets_count(self):
+    def open_ticket_count(self):
         """See ISourcePackageRelease."""
         results = Ticket.select("""
             status = %s AND
@@ -158,11 +158,8 @@ class SourcePackageRelease(SQLBase):
                             self.sourcepackagename.id))
         return results.count()
 
-    def open_bug_count_in_distro(self, user):
+    def countOpenBugsInUploadedDistro(self, user):
         """See ISourcePackageRelease."""
-        """Return the number of open bugs targeted to the sourcepackagename
-        and distribution to which the given sourcepackagerelease was uploaded.
-        """
         upload_distro = self.uploaddistrorelease.distribution
         params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
             user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))

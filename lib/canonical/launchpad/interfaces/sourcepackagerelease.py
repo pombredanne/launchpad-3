@@ -58,12 +58,9 @@ class ISourcePackageRelease(Interface):
     needs_building = Attribute("A boolean that indicates whether this package "
         "still needs to be built (on any architecture)")
 
-    open_tickets_count = Attribute(
+    open_ticket_count = Attribute(
         "The number of open support tickets on the distrorelease and "
         "sourcepackagename of this SourcePackageRelease")
-    open_bug_count_in_distro = Attribute(
-        "Return the number of open bugs targeted to the sourcepackagename "
-        "and distribution to which this release was uploaded.")
 
     sourcepackage = Attribute(
         "The magic SourcePackage for the sourcepackagename and "
@@ -101,6 +98,11 @@ class ISourcePackageRelease(Interface):
         """Return build for the given distroarchrelease.
 
         Return None if not found.
+        """
+
+    def countOpenBugsInUploadedDistro(user):
+        """Return the number of open bugs targeted to the sourcepackagename
+        and distribution to which this release was uploaded.
         """
 
     def attachTranslationFiles(tarball_alias, is_published, importer=None):
