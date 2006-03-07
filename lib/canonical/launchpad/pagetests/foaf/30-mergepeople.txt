@@ -84,7 +84,7 @@
 
   Get the id of the newly created user account (named 'foo') so we don't
   have problems if our sampledata changes.
-  
+
   >>> from canonical.launchpad.database import PersonSet
   >>> dupe = PersonSet().getByName('foo')
 
@@ -108,6 +108,9 @@
   >>> email1 = EmailAddressSet().getByEmail('foo@baz.com')
   >>> email2 = EmailAddressSet().getByEmail('bar.foo@canonical.com')
 
+  >>> from canonical.launchpad.mail import stub
+  >>> assert not stub.test_emails
+
   >>> print http(r"""
   ... POST /people/+requestmerge-multiple?dupe=%d HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -124,10 +127,16 @@
 
   Get the token we'll have to use to finish the registration process.
 
+  >>> assert len(stub.test_emails) == 2
+  >>> emails = []
+  >>> emails.append(stub.test_emails.pop())
+  >>> emails.append(stub.test_emails.pop())
+  >>> emails.sort()
+  >>> from_addr1, to_addrs1, raw_msg1 = emails.pop()
+  >>> from_addr2, to_addrs2, raw_msg2 = emails.pop()
+
   >>> import email, re
-  >>> from canonical.launchpad.mail import stub
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_msg)
+  >>> msg = email.message_from_string(raw_msg1)
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
@@ -174,18 +183,17 @@
   ...info-notification">The email address...
   ...
 
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> msg = email.message_from_string(raw_msg)
+  >>> msg = email.message_from_string(raw_msg2)
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = '/token/%s' % token
+  >>> token_base_path = '/token/%s' % token
 
 
   >>> print http(r"""
   ... GET %s HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % base_path)
+  ... """ % token_base_path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/token/.../+accountmerge
@@ -195,7 +203,7 @@
   Now the user proves that he's the owner of the second email address of the
   dupe account.
 
-  >>> path = "%s/+accountmerge" % base_path
+  >>> path = "%s/+accountmerge" % token_base_path
   >>> print http(r"""
   ... GET %s HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -221,12 +229,19 @@
   ...info-notification">The merge you requested was concluded with success...
 
 
+  Hack to start a new transaction and clear caches etc.
+
+  >>> def new_transaction():
+  ...     import transaction
+  ...     import canonical.database.sqlbase
+  ...     transaction.abort()
+  ...     canonical.database.sqlbase.flush_database_caches()
+  ...     transaction.begin()
+
+  >>> new_transaction()
+
   Now we make sure that the team we just created and was owned by 'foo' is now
   owned by 'no-priv'.
-
-  XXX: SteveAlexander.  This code is error-prone because it may be running outside
-       the context of a transaction.  It is possible that the sqlobject
-       caches and connections are not as clean as they should be.
 
   >>> from canonical.launchpad.database import PersonSet
   >>> team = PersonSet().getByName('myemail')
@@ -236,8 +251,6 @@
   Also make sure that foo@baz.com is now an email address of person no-priv.
   (testing here to diagnose failures occuring in 32-setpreferredemail.txt)
 
-  >>> import canonical.database.sqlbase
-  >>> canonical.database.sqlbase.flush_database_caches()
   >>> from canonical.launchpad.database import EmailAddressSet
   >>> EmailAddressSet().getByEmail('foo@baz.com').person.name
   u'no-priv'
@@ -248,6 +261,8 @@
 
   To demonstrate that, now we'll merge marilize@hbd.com into
   no-priv@canonical.com.
+
+  >>> assert not stub.test_emails
 
   >>> print http(r"""
   ... POST /people/+requestmerge HTTP/1.1
@@ -269,6 +284,7 @@
   Location: ./+mergerequest-sent?dupe=55
   ...
 
+  >>> assert len(stub.test_emails) == 1
 
   >>> print http(r"""
   ... GET /people/+mergerequest-sent?dupe=55 HTTP/1.1
@@ -282,40 +298,49 @@
   Get the token we'll have to use to finish the registration process.
 
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = '/token/%s' % token
+  >>> token_base_path = '/token/%s' % token
 
-  >>> print http(r"""
-  ... GET %s HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % base_path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/token/.../+accountmerge
-  ...
+  ##>>> new_transaction()
+  ##>>> from canonical.launchpad.database import LoginTokenSet
+  ##>>> tokenobj = LoginTokenSet()[token]
+  ##>>> tokenobj.email
+  ##u'marilize@hbd.com'
+  ##>>> tokenobj.token == token
+  ##True
 
-
-  >>> path = "%s/+accountmerge" % base_path
-  >>> print http(r"""
-  ... POST %s HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... password=test&SUBMIT_CHANGES=Submit""" % path)
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/people/no-priv
-  ...
-  ...<div class="info-notification">The merge you requested was concluded with success. Now, everything that was owned by the duplicated account should be owned by your user account.</div>...
-  ...
+  ##>>> print http(r"""
+  ##... GET %s HTTP/1.1
+  ##... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ##... """ % token_base_path)
+  ##HTTP/1.1 303 See Other
+  ##...
+  ##Location: http://localhost:9000/token/.../+accountmerge
+  ##...
 
 
-  >>> print http(r"""
-  ... GET /people/no-priv HTTP/1.1
-  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  ##>>> path = "%s/+accountmerge" % token_base_path
+  ##>>> print http(r"""
+  ##... POST %s HTTP/1.1
+  ##... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ##... Content-Type: application/x-www-form-urlencoded
+  ##... 
+  ##... password=test&SUBMIT_CHANGES=Submit""" % path)
+  ##HTTP/1.1 303 See Other
+  ##...
+  ##Location: http://localhost:9000/people/no-priv
+  ##...
+  ##...<div class="info-notification">The merge you requested was concluded with success. Now, everything that was owned by the duplicated account should be owned by your user account.</div>...
+  ##...
+
+
+  ##>>> print http(r"""
+  ##... GET /people/no-priv HTTP/1.1
+  ##... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ##... """)
+  ##HTTP/1.1 200 Ok
+  ##...

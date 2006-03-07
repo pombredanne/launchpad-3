@@ -1843,6 +1843,11 @@ class RequestPeopleMergeView(AddView):
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
+
+        # XXX: SteveAlexander: an experiment to see if this improves
+        #      problems with merge people tests.  2006-03-07
+        import canonical.database.sqlbase
+        canonical.database.sqlbase.flush_database_updates()
         dupename = dupeaccount.name
         sendMergeRequestEmail(
             token, dupename, self.request.getApplicationURL())
