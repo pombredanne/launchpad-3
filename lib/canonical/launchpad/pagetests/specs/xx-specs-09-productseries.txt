@@ -55,9 +55,9 @@ Now, we POST the form and expect to be redirected to the spec home page.
   ... -----------------------------351566716164150030996771236--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/svg-support
-  ...
 
 
 When we view that page, we see the targeted product series listed in the

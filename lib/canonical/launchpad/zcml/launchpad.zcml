@@ -8,7 +8,7 @@
   <browser:page
       for="zope.interface.common.interfaces.IException"
       name="index.html"
-      template="../templates/launchpad-oops.pt"
+      template="../templates/oops.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
@@ -40,7 +40,6 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
-
 <facet facet="overview">
 
   <utility
@@ -53,6 +52,13 @@
       name="+maintenancemessage"
       template="../templates/launchpad-maintenance.pt"
       class="canonical.launchpad.browser.MaintenanceMessage"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="*"
+      name="+main-template-macros"
+      template="../templates/main-template-macros.pt"
       permission="zope.Public"
       />
 

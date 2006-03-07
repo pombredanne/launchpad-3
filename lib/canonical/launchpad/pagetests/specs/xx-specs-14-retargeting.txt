@@ -41,9 +41,9 @@ administrator:
   ... -----------------------------938091679987142812548021377--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: .../products/evolution/+spec/svg-support
-  ...
 
 
 OK. Now, it follows that we should be able to retarget it immediately from
@@ -70,9 +70,9 @@ evolution, to a distribution. Let's try redhat.
   ... -----------------------------73372874620216216641883523378--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: .../distros/redhat/+spec/svg-support
-  ...
 
 And similarly, this should now be on Red Hat, and we should be able to send
 it straight back to firefox. This means that the data set should finish this
@@ -103,6 +103,5 @@ test in the same state that it was when we started.
   HTTP/1.1 303 See Other
   ...
   Location: .../products/firefox/+spec/svg-support
-  ...
 
 

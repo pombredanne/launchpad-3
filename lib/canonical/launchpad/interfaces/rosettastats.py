@@ -22,7 +22,7 @@ class IRosettaStats(Interface):
     def messageCount():
         """Return the number of current IPOMessageSets inside this object."""
 
-    def publishedCount(language=None):
+    def currentCount(language=None):
         """Return the number of msgsets published and matched to a potemplate.
 
         That's the msgsets for this object that have a complete, non-fuzzy

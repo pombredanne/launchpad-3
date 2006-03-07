@@ -14,7 +14,6 @@ __all__ = [
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
     'ProductTranslationsMenu',
-    'ProductCodeMenu',
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
@@ -28,15 +27,15 @@ __all__ = [
 from warnings import warn
 
 import zope.security.interfaces
-from zope.component import getUtility
+from zope.component import getUtility, getView
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    IPerson, IPersonSet, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, ICalendarOwner, NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries, 
+    ISourcePackage, ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
@@ -95,9 +94,9 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar', 'code']
+                   'translations', 'calendar']
 
-    links = StandardLaunchpadFacets.links + ['code']
+    links = StandardLaunchpadFacets.links
 
     def overview(self):
         target = ''
@@ -136,12 +135,6 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
 
-    def code(self):
-        target = '+branches'
-        text = 'Code'
-        summary = 'Bazaar Branches for %s' % self.context.displayname
-        return Link(target, text, summary)
-
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
@@ -155,18 +148,16 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'editbugcontact', 'reassign', 'distributions', 'packages',
-        'series_add', 'branch_add', 'milestone_add', 'launchpad_usage', 'rdf',
-        'administer']
+        'edit', 'reassign', 'distributions', 'packages',
+        'branches', 'branch_add', 'series_add', 'milestone_add',
+        'launchpad_usage', 'administer', 'rdf']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
 
-    def editbugcontact(self):
-        text = 'Edit Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
-
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
@@ -179,18 +170,25 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Packages'
         return Link('+packages', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
 
+    def branches(self):
+        summary = 'Bazaar Branches for %s' % self.context.displayname
+        return Link('+branches', 'Branches', icon='info', summary=summary)
+
     def branch_add(self):
-        text = 'Add Branch'
+        text = 'Register Branch'
         return Link('+addbranch', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def milestone_add(self):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
         return Link('+launchpad', text, icon='edit')
@@ -211,11 +209,16 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug']
+    links = ['filebug', 'editbugcontact']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editbugcontact(self):
+        text = 'Change Bug Contact'
+        return Link('+editbugcontact', text, icon='edit')
 
 
 class ProductSupportMenu(ApplicationMenu):
@@ -283,17 +286,6 @@ class ProductTranslationsMenu(ApplicationMenu):
         return Link('+potemplatenames', text, icon='edit')
 
 
-class ProductCodeMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'code'
-    links = ['new']
-
-    def new(self):
-        text = 'Add Bazaar Branch'
-        return Link('+addbranch', text, icon='add')
-
-
 def _sort_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
     if a['name'] == 'ubuntu':
@@ -328,6 +320,9 @@ class ProductView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(request)
         self.status_message = None
+        self.branches = [
+            getView(branch, '+index', request)
+            for branch in self.context.branches]
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
@@ -584,8 +579,8 @@ class ProductAddView(AddView):
                   "downloadurl",
                   "programminglang"]
         owner = IPerson(request.principal, None)
-        if self.isButtSource(owner):
-            # Buttsource members get it easy and are able to change this
+        if self.isVCSImport(owner):
+            # vcs-imports members get it easy and are able to change this
             # stuff during the edit process; this saves time wasted on
             # getting to product/+admin.
             fields.insert(1, "owner")
@@ -596,12 +591,11 @@ class ProductAddView(AddView):
         self._nextURL = '.'
         AddView.__init__(self, context, request)
 
-    def isButtSource(self, owner):
+    def isVCSImport(self, owner):
         if owner is None:
             return False
-        personset = getUtility(IPersonSet)
-        buttsource = personset.getByName('buttsource')
-        return owner.inTeam(buttsource)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return owner.inTeam(vcs_imports)
 
     def createAndAdd(self, data):
         # add the owner information for the product
@@ -609,7 +603,7 @@ class ProductAddView(AddView):
         if owner is None:
             raise zope.security.interfaces.Unauthorized(
                 "Need an authenticated Launchpad owner")
-        if self.isButtSource(owner):
+        if self.isVCSImport(owner):
             owner = data["owner"]
             reviewed = data["reviewed"]
         else:
@@ -646,21 +640,28 @@ class ProductBugContactEditView(SQLObjectEditView):
     def changed(self):
         """Redirect to the product page with a success message."""
         product = self.context
-        contact_email = None
 
-        if product.bugcontact:
-            contact_email = product.bugcontact.preferredemail.email
+        bugcontact = product.bugcontact
+        if bugcontact:
+            contact_display_value = None
+            if bugcontact.preferredemail:
+                # The bug contact was set to a new person or team.
+                contact_display_value = bugcontact.preferredemail.email
+            else:
+                # The bug contact doesn't have a preferred email address, so it
+                # must be a team.
+                assert bugcontact.isTeam(), (
+                    "Expected bug contact with no email address to be a team.")
+                contact_display_value = bugcontact.browsername
 
-        if contact_email:
-            # The bug contact was set to a new person or team.
             self.request.response.addNotification(
-                "Successfully changed the bug contact to %s" % contact_email)
+                "Successfully changed the bug contact to %s" %
+                contact_display_value)
         else:
             # The bug contact was set to noone.
             self.request.response.addNotification(
-                "Successfully cleared the bug contact. This means that there "
-                "is no longer a contact address that will receive all bugmail "
-                "for this product. You can, of course, set the bug contact "
-                "again at any time.")
+                "Successfully cleared the bug contact. There is no longer a "
+                "contact address that will receive all bugmail for this "
+                "product. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))

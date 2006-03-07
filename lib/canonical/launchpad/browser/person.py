@@ -24,7 +24,7 @@ __all__ = [
     'PersonHackergotchiView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
-    'BugTasksOnMaintainedSoftwareSearchListingView',
+    'BugContactPackageBugsSearchListingView',
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
@@ -40,21 +40,23 @@ __all__ = [
     ]
 
 import cgi
+import urllib
 import itertools
 import sets
 from StringIO import StringIO
 
 from zope.event import notify
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility
+from zope.component import getUtility, getView
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy)
@@ -62,20 +64,19 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError, 
-    UNRESOLVED_BUGTASK_STATUSES)
+    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
 
-from canonical.launchpad.browser.bugtask import (
-    BugTaskSearchListingView, AdvancedBugTaskSearchView)
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint, shortlist)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -266,22 +267,22 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assignedbugs', 'softwarebugs', 'reportedbugs', 'subscribedbugs']
+    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'softwarebugs']
 
     def assignedbugs(self):
-        text = 'Bugs Assigned'
+        text = 'Assigned'
         return Link('+assignedbugs', text, icon='bugs')
 
     def softwarebugs(self):
-        text = 'Bugs on Maintained Software'
+        text = 'Package Reports'
         return Link('+packagebugs', text, icon='bugs')
 
     def reportedbugs(self):
-        text = 'Bugs Reported'
+        text = 'Reported'
         return Link('+reportedbugs', text, icon='bugs')
 
     def subscribedbugs(self):
-        text = 'Bugs Subscribed'
+        text = 'Subscribed'
         return Link('+subscribedbugs', text, icon='bugs')
 
 
@@ -375,12 +376,6 @@ class PersonCodeMenu(ApplicationMenu):
 class CommonMenuLinks:
 
     @enabled_with_permission('launchpad.Edit')
-    def common_edit(self):
-        target = '+edit'
-        text = 'Edit Personal Details'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
     def common_edithomepage(self):
         target = '+edithomepage'
         text = 'Edit Home Page'
@@ -397,11 +392,16 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['karma', 'common_edit', 'common_edithomepage',
-             'editemailaddresses', 'editwikinames', 'editircnicknames',
-             'editjabberids', 'editpassword', 'edithackergotchi',
-             'editsshkeys', 'editgpgkeys', 'codesofconduct', 'administer',
-             'common_packages']
+    links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
+             'editwikinames', 'editircnicknames', 'editjabberids',
+             'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
+             'codesofconduct', 'administer', 'common_packages']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        target = '+edit'
+        text = 'Edit Personal Details'
+        return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
@@ -451,8 +451,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def editgpgkeys(self):
-        target = '+editgpgkeys'
+    def editpgpkeys(self):
+        target = '+editpgpkeys'
         text = 'Edit OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
@@ -482,9 +482,14 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'editemblem',
-             'members', 'editemail', 'polls', 'joinleave', 'reassign',
-             'common_packages']
+    links = ['edit', 'common_edithomepage', 'editemblem', 'members',
+             'editemail', 'polls', 'joinleave', 'reassign', 'common_packages']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        target = '+edit'
+        text = 'Change Team Details'
+        return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
@@ -608,12 +613,12 @@ class FOAFSearchView:
         if not name:
             return None
 
-        if searchfor == "all":
-            results = getUtility(IPersonSet).find(name)
-        elif searchfor == "peopleonly":
+        if searchfor == "peopleonly":
             results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
             results = getUtility(IPersonSet).findTeam(name)
+        else:
+            results = getUtility(IPersonSet).find(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
@@ -647,6 +652,7 @@ class PersonRdfView:
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
 
+
 def userIsActiveTeamMember(team):
     """Return True if the user is an active member of this team."""
     user = getUtility(ILaunchBag).user
@@ -655,59 +661,183 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
-    """A Base view class to be used by all bug listings on a person page.
-    
-    All bug listings on a person page are in some way related to that person.
-    This means that this person (our context) has to be in the
-    BugTaskSearchParams that will be given to the searchTasks() method. To do
-    this, subclasses must define an context_parameter class variable whose 
-    value should be either 'owner', 'subscriber' or 'assignee'.
+class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs reported by someone."""
 
-    Please note this is a base class that is not meant to be used as a view
-    class. Instead, you should derive from it and use the derived class.
-    """
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
-    context_parameter = None
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'owner': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
 
-    def getExtraSearchParams(self):
-        assert self.context_parameter is not None
-        params = AdvancedBugTaskSearchView.getExtraSearchParams(self)
-        params[self.context_parameter] = self.context
-        return params
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Reported by %s: Advanced Search" % (
+            self.context.displayname)
 
-    def hasSimpleMode(self):
-        return True
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs reported by %s" % self.context.displayname
 
-    def shouldShowAdvancedSearchWidgets(self):
-        """Return True if this view's advanced form should be shown."""
-        form = self.request.form
-        if form.get('advanced') and not form.get('simple'):
-            return True
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+reportedbugs"
+
+    def shouldShowReporterWidget(self):
+        """Should the reporter widget be shown on the advanced search page?"""
         return False
 
 
-class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
-    """All bugs reported by someone."""
+class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
+    """Bugs reported on packages for a bug contact."""
 
-    context_parameter = 'owner'
+    columns_to_show = ["id", "summary", "importance", "status"]
 
-
-class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
-    """All bugs reported on software maintained by someone."""
+    @property
+    def current_package(self):
+        """Get the package whose bugs are currently being searched."""
+        distribution = self.distribution_widget.getInputValue()
+        return distribution.getSourcePackage(
+            self.sourcepackagename_widget.getInputValue())
 
     def search(self, searchtext=None, batch_start=None):
-        # Overwrite the search() method from BugTaskSearchListingView because
-        # to get the list of bugs on software maintained by someone we need to
-        # use the maintainedBugTasks method of BugTask, which is not used in
-        # the original search() method.
-        orderBy = ('-dateassigned', '-priority', '-severity')
-        tasks = getUtility(IBugTaskSet).maintainedBugTasks(
-            self.context, orderBy=orderBy, user=self.user)
-        if batch_start is None:
-            batch_start = int(self.request.get('batch_start', 0))
-        batch = Batch(tasks, batch_start)
-        return BatchNavigator(batch=batch, request=self.request)
+        distrosourcepackage = self.current_package
+        return BugTaskSearchListingView.search(
+            self, searchtext=searchtext, batch_start=batch_start,
+            context=distrosourcepackage)
+
+    def getPackageBugCounts(self):
+        """Return a list of dicts used for rendering the package bug counts."""
+        package_bug_counts = []
+
+        for package in self.context.getBugContactPackages():
+            package_bug_counts.append({
+                'package_name': package.displayname,
+                'package_search_url':
+                    self.getBugContactPackageSearchURL(package),
+                'open_bugs_count': package.open_bugtasks.count(),
+                'open_bugs_url': self.getOpenBugsURL(package),
+                'critical_bugs_count': package.critical_bugtasks.count(),
+                'critical_bugs_url': self.getCriticalBugsURL(package),
+                'unassigned_bugs_count': package.unassigned_bugtasks.count(),
+                'unassigned_bugs_url': self.getUnassignedBugsURL(package),
+                'inprogress_bugs_count': package.inprogress_bugtasks.count(),
+                'inprogress_bugs_url': self.getInProgressBugsURL(package)
+            })
+
+        return package_bug_counts
+
+    def getOtherBugContactPackageLinks(self):
+        """Return a list of the other packages for a bug contact.
+
+        This excludes the current package.
+        """
+        current_package = self.current_package
+
+        other_packages = [
+            package for package in self.context.getBugContactPackages()
+            if package != current_package]
+
+        package_links = []
+        for other_package in other_packages:
+            package_links.append({
+                'title': other_package.displayname,
+                'url': self.getBugContactPackageSearchURL(other_package)})
+
+        return package_links
+
+    def getExtraSearchParams(self):
+        """Overridden from BugTaskSearchListingView, to filter the search."""
+        search_params = {}
+
+        if self.status_widget.hasInput():
+            search_params['status'] = any(*self.status_widget.getInputValue())
+        if self.unassigned_widget.hasInput():
+            search_params['assignee'] = NULL
+
+        return search_params
+
+    def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
+                                      advanced=False, extra_params=None):
+        """Construct a default search URL for a distributionsourcepackage.
+
+        Optional filter parameters can be specified as a dict with the
+        extra_params argument.
+        """
+        if distributionsourcepackage is None:
+            distributionsourcepackage = self.current_package
+
+        params = {
+            "field.distribution": distributionsourcepackage.distribution.name,
+            "field.sourcepackagename": distributionsourcepackage.name,
+            "search": "Search"}
+
+        if extra_params is not None:
+            # We must UTF-8 encode searchtext to play nicely with
+            # urllib.urlencode, because it may contain non-ASCII characters.
+            if extra_params.has_key("field.searchtext"):
+                extra_params["field.searchtext"] = \
+                    extra_params["field.searchtext"].encode("utf8")
+
+            params.update(extra_params)
+
+        person_url = canonical_url(self.context)
+        query_string = urllib.urlencode(sorted(params.items()), doseq=True)
+
+        if advanced:
+            return person_url + '/+packagebugs-advanced?%s' % query_string
+        else:
+            return person_url + '/+packagebugs-search?%s' % query_string
+
+    def getBugContactPackageAdvancedSearchURL(self,
+                                              distributionsourcepackage=None):
+        """Construct the advanced search URL for a distributionsourcepackage."""
+        return self.getBugContactPackageSearchURL(advanced=True)
+
+    def getOpenBugsURL(self, distributionsourcepackage):
+        """Return the URL for open bugs on distributionsourcepackage."""
+        status_params = {'field.status': []}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            status_params['field.status'].append(status.title)
+
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=status_params)
+
+    def getCriticalBugsURL(self, distributionsourcepackage):
+        """Return the URL for critical bugs on distributionsourcepackage."""
+        critical_bugs_params = {
+            'field.status': [], 'field.severity': "Critical"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            critical_bugs_params["field.status"].append(status.title)
+
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=critical_bugs_params)
+
+    def getUnassignedBugsURL(self, distributionsourcepackage):
+        """Return the URL for unassigned bugs on distributionsourcepackage."""
+        unassigned_bugs_params = {
+            "field.status": [], "field.unassigned": "on"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            unassigned_bugs_params["field.status"].append(status.title)
+
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=unassigned_bugs_params)
+
+    def getInProgressBugsURL(self, distributionsourcepackage):
+        """Return the URL for unassigned bugs on distributionsourcepackage."""
+        inprogress_bugs_params = {"field.status": "In Progress"}
+
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=inprogress_bugs_params)
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained
@@ -716,21 +846,61 @@ class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
         return False
 
 
-class PersonAssignedBugTaskSearchListingView(
-        BasePersonBugTaskSearchListingView):
+class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
     context_parameter = 'assignee'
 
-    def shouldShowAssignee(self):
-        """Should we show the assignee in the list of results?"""
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        """Return the open bugs assigned to a person."""
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'assignee': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def shouldShowAssigneeWidget(self):
+        """Should the assignee widget be shown on the advanced search page?"""
         return False
 
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Assigned to %s: Advanced Search" % (
+            self.context.displayname)
 
-class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs assigned to %s" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+assignedbugs"
+
+
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
-    context_parameter = 'subscriber'
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'subscriber': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs %s is Cc'd to: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs %s is Cc'd to" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+subscribedbugs"
 
 
 class PersonView:
@@ -756,16 +926,16 @@ class PersonView:
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
-    def sourcepackagerelease_open_bugs_count(self, sourcepackagerelease):
+    def sourcepackage_open_bugs_count(self, sourcepackagerelease):
         """Return the number of open bugs targeted to the sourcepackagename
-        and distrorelease of the given sourcepackagerelease.
+        and distribution to which the given sourcepackagerelease was uploaded.
         """
+        upload_distro = sourcepackagerelease.uploaddistrorelease.distribution
         params = BugTaskSearchParams(
             user=self.user,
             sourcepackagename=sourcepackagerelease.sourcepackagename,
             status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        params.setDistributionRelease(sourcepackagerelease.uploaddistrorelease)
-        return getUtility(IBugTaskSet).search(params).count()
+        return upload_distro.searchTasks(params).count()
 
     def maintainedPackagesByPackageName(self):
         return self._groupSourcePackageReleasesByName(
@@ -787,7 +957,7 @@ class PersonView:
     def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
         """Return a list of SourcePackageReleasesByName objects ordered by
         SourcePackageReleasesByName.name.
-        
+
         Each SourcePackageReleasesByName object contains a name, which is the
         sourcepackagename and a list containing all sourcepackagereleases of
         that sourcepackagename.
@@ -1587,7 +1757,7 @@ class PersonEditEmailsView:
                  self.context.name, self.context.id, emailaddress.email)
 
         assert emailaddress.status == EmailAddressStatus.VALIDATED
-        self.context.preferredemail = emailaddress
+        self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
 
 
@@ -1601,35 +1771,28 @@ class RequestPeopleMergeView(AddView):
     of those (s)he wants to claim.
     """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
+    _nextURL = '.'
 
     def nextURL(self):
         return self._nextURL
 
     def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
         user = getUtility(ILaunchBag).user
-        dupeaccount = kw['dupeaccount']
+        dupeaccount = data['dupeaccount']
         if dupeaccount == user:
             # Please, don't try to merge you into yourself.
             return
 
-        emails = list(getUtility(IEmailAddressSet).getByPerson(dupeaccount))
-        if len(emails) > 1:
+        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
+        emails_count = emails.count()
+        if emails_count > 1:
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
             # wants to claim.
             self._nextURL = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
             return
 
-        assert len(emails) == 1
+        assert emails_count == 1
         email = emails[0]
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
@@ -1721,7 +1884,7 @@ class FinishedPeopleMergeRequestView:
         """
         dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
         results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
-        assert len(results) == 1
+        assert results.count() == 1
         return results[0].email
 
 

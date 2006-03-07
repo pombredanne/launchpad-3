@@ -98,8 +98,6 @@ class Product(SQLBase, BugTargetBase):
                 revision=0)
         return self.calendar
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='product',
-        orderBy='id')
     branches = MultipleJoin('Branch', joinColumn='product',
         orderBy='id')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product',
@@ -296,33 +294,6 @@ class Product(SQLBase, BugTargetBase):
             )
         return distros
 
-    def bugsummary(self):
-        """Return a matrix of the number of bugs for each status and severity.
-        """
-        # XXX: This needs a comment that gives an example of the structure
-        #      within a typical dict that is returned.
-        #      The code is hard to read when you can't picture exactly
-        #      what it is doing.
-        # - Steve Alexander, Tue Nov 30 16:49:40 UTC 2004
-        bugmatrix = {}
-        for severity in BugTaskSeverity.items:
-            bugmatrix[severity] = {}
-            for status in BugTaskStatus.items:
-                bugmatrix[severity][status] = 0
-        for bugtask in self.bugtasks:
-            bugmatrix[bugtask.severity][bugtask.bugstatus] += 1
-        resultset = [['']]
-        for status in BugTaskStatus.items:
-            resultset[0].append(status.title)
-        severities = BugTaskSeverity.items
-        for severity in severities:
-            statuses = BugTaskStatus.items
-            statusline = [severity.title]
-            for status in statuses:
-                statusline.append(bugmatrix[severity][status])
-            resultset.append(statusline)
-        return resultset
-
     def ensureRelatedBounty(self, bounty):
         """See IProduct."""
         for curr_bounty in self.bounties:
@@ -339,7 +310,6 @@ class Product(SQLBase, BugTargetBase):
             product=self, name=name, title=title, url=url, home_page=home_page,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)
-        
 
 
 class ProductSet:
@@ -350,7 +320,7 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(Product.selectBy(active=True))
+        return iter(Product.selectBy(active=True, orderBy="-datecreated"))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -360,7 +330,7 @@ class ProductSet:
         return item
 
     def latest(self, quantity=5):
-        return Product.select(Product.q.active==True,
+        return Product.select(Product.q.active == True, 
                               orderBy='-datecreated',
                               limit=quantity)
 

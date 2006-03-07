@@ -49,11 +49,6 @@ from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser)
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
-# XXX, Brad Bollenbach, 2006-01-12: These cause circular imports. Moved to
-# create_bug_message for now.
-#from canonical.launchpad.database.message import Message, MessageChunk
-#from canonical.launchpad.database.bugmessage import BugMessage
-
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
@@ -694,59 +689,6 @@ def expand_rosetta_tabs(text):
     return text_replaced(text, {'\t': '[tab]', '[tab]': r'\[tab]'})
 
 
-def parse_translation_form(form):
-    """Parse a form submitted to the translation widget.
-
-    Returns a dictionary keyed on the sequence number of the message set,
-    where each value is a structure of the form
-
-        {
-            'msgid': '...',
-            'translations': ['...', '...'],
-            'fuzzy': False,
-        }
-    """
-
-    messageSets = {}
-
-    # Extract message IDs.
-
-    for key in form:
-        match = re.match('set_(\d+)_msgid$', key)
-
-        if match:
-            id = int(match.group(1))
-            messageSets[id] = {}
-            messageSets[id]['msgid'] = id
-            messageSets[id]['translations'] = {}
-            messageSets[id]['fuzzy'] = False
-
-    # Extract translations.
-    for key in form:
-        match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
-            key)
-
-        if match:
-            id = int(match.group(1))
-            pluralform = int(match.group(3))
-
-            if not id in messageSets:
-                raise AssertionError("Orphaned translation in form.")
-
-            messageSets[id]['translations'][pluralform] = (
-                contract_rosetta_tabs(normalize_newlines(form[key])))
-
-    # Extract fuzzy statuses.
-    for key in form:
-        match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
-
-        if match:
-            id = int(match.group(1))
-            messageSets[id]['fuzzy'] = True
-
-    return messageSets
-
-
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
     """Convert a message ID to a HTML representation."""
@@ -1052,3 +994,12 @@ def is_ascii_only(string):
         return False
     else:
         return True
+
+
+def capture_state(obj, *fields):
+    class State: pass
+    state = State()
+    for field in fields:
+        setattr(state, field, getattr(obj, field))
+
+    return state

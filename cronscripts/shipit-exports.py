@@ -82,12 +82,13 @@ def export_shippingrun(shippingrun):
                    ('Ship to zip', 'postcode'),
                    ('Ship to country', 'countrycode'),
                    ('Ship to phone', 'phone'),
+                   ('Ship to email address', 'recipient_email'),
                    ('ship quantity PC', 'quantityx86approved'),
                    ('ship quantity 64-bit PC', 'quantityamd64approved'),
                    ('ship quantity Mac', 'quantityppcapproved'))
 
     csv_file = StringIO()
-    csv_writer = csv.writer(csv_file)
+    csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
     row = [label for label, attr in file_fields]
     row.extend(['token', 'Ship via', 'display'])
     csv_writer.writerow(row)

@@ -27,7 +27,7 @@ Filing a PUBLIC bug on an upstream will subscribe the bug contact, as well.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: .../products/firefox/+bug/9
+  Location: .../products/firefox/+bug/10
   ...
 
 Now sabdfl, because he's the bug reporter, and lifeless, because he's the
@@ -39,8 +39,8 @@ product bug contact are subscribed to this bug:
 
   >>> login(ANONYMOUS)
   >>> bugset = getUtility(IBugSet)
-  >>> sorted([s.person.name for s in bugset.get(9).subscriptions])
-  [u'lifeless', u'sabdfl']
+  >>> sorted([s.person.name for s in bugset.get(10).subscriptions])
+  [u'guadamen', u'sabdfl']
   >>> logout()
 
 For a PRIVATE bug, only the reporter will be subscribed. There will be
@@ -78,14 +78,14 @@ bugs. See https://wiki.launchpad.canonical.com/SecurityTeams.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: .../products/firefox/+bug/10
+  Location: .../products/firefox/+bug/11
   ...
 
   >>> logout()
 
   >>> login("mark@hbd.com")
 
-  >>> [s.person.name for s in bugset.get(10).subscriptions]
+  >>> [s.person.name for s in bugset.get(11).subscriptions]
   [u'sabdfl']
 
   >>> logout()

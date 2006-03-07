@@ -63,6 +63,9 @@
         <browser:page
             name="+portlet-subscribers"
             template="../templates/branch-portlet-subscribers.pt" />
+        <browser:page
+            name="+series-reference"
+            template="../templates/branch-series-reference.pt" />
     </browser:pages>
 
   <browser:pages
@@ -81,7 +84,7 @@
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
     label="Edit branch details"
-    fields="author title url home_page summary whiteboard"
+    fields="url title summary home_page author whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
     <browser:widget
@@ -91,15 +94,15 @@
     <browser:widget
       field="url"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="65" />
+      displayWidth="30" />
     <browser:widget
       field="home_page"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="65" />
+      displayWidth="30" />
     <browser:widget
       field="title"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="65" />
+      displayWidth="30" />
     <browser:widget
       field="summary"
       class="zope.app.form.browser.TextAreaWidget"

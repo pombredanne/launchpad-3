@@ -30,7 +30,7 @@
         </td>
       </tr>
     </table>
-      
+
     <p class="formHelp">
       Enter any part of the product name, title or
       description.
@@ -51,31 +51,16 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
+        <tr tal:condition="view/matches"
+            tal:repeat="product results">
+          <td tal:content="structure product/@@+listing-detailed" />
+        </tr>
+        <tr tal:condition="not: view/matches">
           <td>
-            <dl condition="view/matches" class="products">
-              <tal:block repeat="product results">
-                <dt>
-                  <a tal:attributes="href product/fmt:url"
-                    ><dfn
-                      tal:content="product/title"
-                      >$Product.title</dfn>
-                    (<span
-                      tal:replace="product/name"
-                    >$Product.name
-                  </span>)</a>
-                </dt>
-                <dd tal:content="product/summary">
-                  $Product.summary
-                </dd>
-              </tal:block>
-            </dl>
-            <p tal:condition="not: view/matches">
-              <img src="/++resource++alert" /> No products matching
-              &#8220;<span tal:replace="view/text">moz</span>&#8221;
-              were found.
-              You can <a href="+new">register a new product</a>.
-            </p>
+            <img src="/@@/alert" /> No products matching
+            &#8220;<span tal:replace="view/text">moz</span>&#8221;
+            were found.
+            You can <a href="+new">register a new product</a>.
           </td>
         </tr>
       </tbody>
@@ -83,7 +68,7 @@
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
-    
+
     <h2>Most recently registered</h2>
 
     <div tal:repeat="product context/latest"

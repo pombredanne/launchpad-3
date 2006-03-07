@@ -9,19 +9,19 @@ at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
   >>> from zope.interface.verify import verifyObject
-  >>> from canonical.launchpad.database import Build, BuildSet, DistributionSet
-  >>> from canonical.launchpad.database import DistroRelease
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, IBuildSet)
   >>> from canonical.lp.dbschema import BuildStatus
 
-  >>> ubuntu = DistributionSet()['ubuntu']
-  >>> warty = DistroRelease.get(6)
-  >>> hoary = DistroRelease.get(3)
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> warty = ubuntu['warty']
+  >>> hoary = ubuntu['hoary']
 
 
 First up, can we get the builds out of the sample data?
 
-  >>> firefox_build = Build.get(2)
-  >>> pmount_build = Build.get(7)
+  >>> firefox_build = getUtility(IBuildSet).getByBuildID(2)
+  >>> pmount_build = getUtility(IBuildSet).getByBuildID(7)
 
 Let's check the complex properties of a build object.
 
@@ -35,18 +35,23 @@ Let's check the complex properties of a build object.
   True
 
   >>> firefox_build.build_icon
-  '/++resource++build-success'
+  '/@@/build-success'
 
   >>> firefox_build.buildlog = 34
   >>> firefox_build.buildlog.url
   'http://localhost:58000/34/evolution-2.2-test.pot'
+
+  >>> firefox_build.changesfile
+  <LibraryFileAlias ...>
+
+  >>> assert pmount_build.changesfile is None
 
 Test "reset" functionality:
 
   >>> firefox_build.can_be_reset
   False
 
-  >>> resetable_build = Build.get(9)
+  >>> resetable_build = getUtility(IBuildSet).getByBuildID(9)
 
   >>> resetable_build.title
   u'i386 build of pmount 0.1-1 in ubuntu warty'
@@ -62,7 +67,6 @@ Test "reset" functionality:
 
 Save previous state:
 
-  >>> changes = resetable_build.changes
   >>> datebuilt = resetable_build.datebuilt
   >>> builder = resetable_build.builder
   >>> buildduration = resetable_build.buildduration
@@ -76,16 +80,12 @@ Build record has no history and is NEEDSBUILD:
   >>> resetable_build.builder is None
   True
 
-  >>> resetable_build.changes is None
-  True
-
   >>> resetable_build.buildstate.value is 0
   True
 
 Restore Build(9) to previous state to avoid mess with other tests.
 
   >>> resetable_build.buildstate = BuildStatus.FAILEDTOBUILD
-  >>> resetable_build.changes = changes
   >>> resetable_build.datebuilt = datebuilt
   >>> resetable_build.builder = builder
   >>> resetable_build.buildduration = buildduration
@@ -119,7 +119,7 @@ given build record entry.
 
 Invoke createBinaryPackageRelease with all required arguments.
 
-  >>> bin = Build.get(7).createBinaryPackageRelease(
+  >>> bin = pmount_build.createBinaryPackageRelease(
   ...                                 binarypackagename, version,
   ...                                 summary, description,
   ...                                 binpackageformat, component,
@@ -136,7 +136,7 @@ Invoke createBinaryPackageRelease with all required arguments.
 The BuildSet class gives us some useful ways to consider the
 collection of builds.
 
-  >>> bs = BuildSet()
+  >>> bs = getUtility(IBuildSet)
 
 We can find builds given a source package release and architecture tag.
 
@@ -146,7 +146,7 @@ We can find builds given a source package release and architecture tag.
 We can find recent and pending builds for a given distrorelease.
 
   >>> hoary.getBuildRecords().count()
-  2
+  3
 
 Or for a given distroarchrelease.
 
@@ -155,29 +155,69 @@ Or for a given distroarchrelease.
   u'The Hoary Hedgehog Release for i386 (x86)'
 
   >>> hoaryi386.getBuildRecords().count()
-  2
+  3
 
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  4
+  5
 
-  >>> L = list(ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT))
-  >>> len(L)
+  >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
+  >>> for l in L:
+  ...     l.datecreated, l.id, l.buildstate.value
+  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 7, 1)
+  (datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>), 2, 1)
+
+Retrive the current PENDING builds
+
+  >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
+  >>> builds.count()
   2
-  >>> L[0].buildstate
-  <Item FULLYBUILT (1) from <class 'canonical.lp.dbschema.BuildStatus'>>
-  >>> L[1].buildstate
-  <Item FULLYBUILT (1) from <class 'canonical.lp.dbschema.BuildStatus'>>
 
+Inspect the FAILED builds:
 
-  >>> ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD).count()
+  >>> failures = ubuntu.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
+  >>> failures.count()
   1
 
-  >>> firefox_build.buildstate = BuildStatus.NEEDSBUILD
-  >>> firefox_build.syncUpdate()
-  >>> L = list(ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD))
-  >>> len(L)
+Retrieve the single entry:
+
+  >>> failed_build = failures[0]
+
+Reset the failed build record:
+
+  >>> failed_build.reset()
+
+Force immediate update of the values:
+
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
+
+Note, by ordering the build by BuildQueue.lastscore, it doesn't notice
+the existence of builds missing buildqueue:
+
+  >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
+  >>> builds.count()
   2
-  >>> L[0].buildstate
-  <Item NEEDSBUILD (0) from <class 'canonical.lp.dbschema.BuildStatus'>>
+
+Create the missing BuildQueue correspondent row and tweak lastscore:
+
+  >>> failed_bq = failed_build.createBuildQueueEntry()
+  >>> failed_bq.lastscore = 100
+  >>> flush_database_updates()
+
+Now we can see an extra PENDING build record:
+
+  >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
+  >>> builds.count()
+  3
+
+Note that they are ordered by DESC lastscore, as expected:
+
+  >>> for b in builds:
+  ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
+  (9, 0, 100)
+  (11, 0, 10)
+  (8, 0, 1)
+
+

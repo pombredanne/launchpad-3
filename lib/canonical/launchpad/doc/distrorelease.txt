@@ -82,21 +82,21 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> from canonical.launchpad.database import DistroRelease
     >>> warty = DistroRelease.get(1)
     >>> bpp = warty.getBinaryPackagePublishing()
-    >>> print len(bpp)
+    >>> print bpp.count()
     1
     >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
     mozilla-firefox
     >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
-    >>> print len(bpp)
+    >>> print bpp.count()
     0
     >>> bpp = warty.getBinaryPackagePublishing(version="nosuchversion")
-    >>> print len(bpp)
+    >>> print bpp.count()
     0
     >>> bpp = warty.getBinaryPackagePublishing(archtag="nosucharch")
-    >>> print len(bpp)
+    >>> print bpp.count()
     0
     >>> bpp = warty.getBinaryPackagePublishing(sourcename="nosuchsource")
-    >>> print len(bpp)
+    >>> print bpp.count()
     0
 
 CVE BugTasks on a Distro Release
@@ -198,3 +198,10 @@ DistroRelease can build meta objects for packages
    >>> pmount_srcrel = hoary.getSourcePackageRelease(pmount_rel)
    >>> IDistroReleaseSourcePackageRelease.providedBy(pmount_srcrel)
    True
+
+
+DistroRelease.updateCompletePackageCache will update the package cache for all
+binary packages names published in this distro release
+
+    >>> warty.updateCompletePackageCache()
+

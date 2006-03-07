@@ -14,6 +14,41 @@ First, we need to load the +edit page.
   HTTP/1.1 200 Ok
   ...
 
+And we test the URL field validator filling a dupe URL. 
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/extension-manager-upgrades/+edit HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 1105
+  ... Content-Type: multipart/form-data; boundary=---------------------------4909183112093242802120323616
+  ... 
+  ... -----------------------------4909183112093242802120323616
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Extension Manager System Upgrades
+  ... -----------------------------4909183112093242802120323616
+  ... Content-Disposition: form-data; name="field.specurl"
+  ... 
+  ... http://wiki.ubuntu.com/NetworkMagic
+  ... -----------------------------4909183112093242802120323616
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.
+  ... -----------------------------4909183112093242802120323616
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... XXX
+  ... -----------------------------4909183112093242802120323616
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------4909183112093242802120323616--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...http://wiki.ubuntu.com/NetworkMagic is already registered by another specification...
+  ...
+
 Now, let's POST the resulting changes. We should be redirected to the
 specification home page.
 
@@ -46,9 +81,9 @@ specification home page.
   ... -----------------------------4909183112093242802120323616--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/extension-manager-upgrades
-  ...
 
 Also, we would like to assign these to someone other than Carlos, and we
 would also like to have a drafter associated with it.
@@ -82,9 +117,9 @@ would also like to have a drafter associated with it.
   ... -----------------------------400484823711033878810891529--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Location: http://.../products/firefox/+spec/extension-manager-upgrades
+  Content-Length: 0
   ...
+  Location: http://.../products/firefox/+spec/extension-manager-upgrades
 
 Finally, we should be able to change the status metadata (priority, status
 etc) of the specification.
@@ -122,8 +157,8 @@ etc) of the specification.
   ... -----------------------------39919133514734389772038868621--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/extension-manager-upgrades
-  ...
 
 

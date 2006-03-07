@@ -5,7 +5,7 @@ __metaclass__ = type
 
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
 from zope.app.session.interfaces import ISession
-from zope.interface import Interface, implements
+from zope.interface import implements
 from zope.app.publication.interfaces import IPublicationRequestFactory
 from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.app.server.servertype import ServerType
@@ -13,16 +13,13 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 
 import canonical.launchpad.layers
-from zope.publisher.browser import BrowserRequest
 #from zope.publisher.http import HTTPRequest
-import zope.publisher.publish
 from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
 from canonical.launchpad.webapp.notifications import (
         NotificationRequest, NotificationResponse, NotificationList
         )
 from canonical.launchpad.webapp.interfaces import (
-        INotificationRequest, INotificationResponse, BrowserNotificationLevel
-        )
+        INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 
 
@@ -186,7 +183,7 @@ class LaunchpadTestRequest(TestRequest):
         return LaunchpadTestResponse(outstream)
 
 
-class LaunchpadTestResponse(NotificationResponse, BrowserResponse):
+class LaunchpadTestResponse(LaunchpadBrowserResponse):
     """Mock response for use in unit and functional tests.
 
     >>> request = LaunchpadTestRequest()

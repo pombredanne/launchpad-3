@@ -3,23 +3,28 @@
 __metaclass__ = type
 
 import psycopg
+import thread
+import warnings
+import time
+from datetime import datetime
+
 from sqlos import SQLOS
 from sqlos.adapter import PostgresAdapter
+from sqlos.interfaces import ISQLObject
+
+from sqlobject import connectionForURI, SQLObjectNotFound
 from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
-from datetime import datetime
-from sqlobject import connectionForURI, SQLObjectNotFound
-import thread, warnings
-import time
 
 from canonical.config import config
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
            'flush_database_updates', 'flush_database_caches', 'cursor',
-           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect'
-           'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
-           'SERIALIZED_ISOLATION', 'DEFAULT_ISOLATION']
+           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
+           'convert_to_sql_id', 'AUTOCOMMIT_ISOLATION',
+           'READ_COMMITTED_ISOLATION', 'SERIALIZED_ISOLATION',
+           'DEFAULT_ISOLATION']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0
@@ -478,6 +483,32 @@ def sqlvalues(*values, **kwvalues):
         return tuple([quote(item) for item in values])
     elif kwvalues:
         return dict([(key, quote(value)) for key, value in kwvalues.items()])
+
+
+def convert_to_sql_id(value):
+    """Returns the correct ID for use in an SQL conditional."""
+    # XXX: a lot of things should be done here, but I need this to
+    # implement a fix for an oops (bug 30957), so bear with me.
+    #
+    #   - We should really use ISQLBase
+    #   - We should really use an interface, not dbschema.Item
+    #   - We should consider moving this code into sqlvalues
+    #
+    #       -- kiko, 2006-02-23
+    from canonical.lp import dbschema
+    from zope.security.proxy import isinstance as zope_isinstance
+
+    is_sqlobject = ISQLObject(value, None)
+    if is_sqlobject:
+        return value.id
+    elif zope_isinstance(value, dbschema.Item):
+        return int(value.value)
+    else:
+        try:
+            return int(value)
+        except ValueError:
+            raise AssertionError("Couldn't convert %r to an integer" % value)
+
 
 def quoteIdentifier(identifier):
     r'''Quote an identifier, such as a table name.

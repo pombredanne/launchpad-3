@@ -88,7 +88,6 @@
     </div>
 
     <div class="visualClear" id="body">
-      <tal:replace tal:replace="structure context/@@+maintenancemessage" />
       <metal:block define-slot="body">
       </metal:block>
     </div>
@@ -101,11 +100,20 @@
             id="portal-column-content"
             rowspan="2"
           >
-                <div id="region-content">
-                    <metal:main define-slot="main" tal:condition="nothing">
-                        <p>Main content area.</p>
-                    </metal:main>
-                </div>
+            <div id="region-content">
+              <tal:maintenance
+                replace="structure context/@@+maintenancemessage" />
+              <tal:notifications
+                define="notifications request/notifications"
+                condition="notifications"
+              >
+                <metal:notifications
+                  use-macro="context/@@+main-template-macros/notifications" />
+              </tal:notifications>
+              <metal:main define-slot="main" tal:condition="nothing">
+                <p>Main content area.</p>
+              </metal:main>
+            </div>
           </td>
 
                 <!-- start of right (by default at least) column -->
@@ -171,6 +179,12 @@
 
     <div class="visualClear">&nbsp;</div>
 
+    <div class="footer" class="inside" style="background-color: #deba73">
+      &copy; 2004-2006 <a href="http://www.canonical.com">Canonical Ltd</a>.
+      Ubuntu, ShipIt and Canonical are registered trademarks of Canonical Ltd.
+      <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607"
+      >Ubuntu ShipIt FAQ</a>
+    </div>
 </body>
 </html>
 </metal:page>
