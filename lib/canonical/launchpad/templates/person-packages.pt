@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
@@ -101,7 +101,7 @@
       </td>
       <td style="text-align: right">
         <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+bugs"
-           tal:content="python: view.sourcepackage_open_bug_count_in_distro(spr)">
+           tal:content="python: spr.open_bug_count_in_distro(view.user)">
         </a>
       </td>
       <td style="text-align: right">

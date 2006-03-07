@@ -14,6 +14,7 @@ from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.searchbuilder import any
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
@@ -21,7 +22,9 @@ from canonical.lp.dbschema import (
     SourcePackageFileType, BuildStatus, TicketStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue)
+    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
+    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    )
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
@@ -154,6 +157,16 @@ class SourcePackageRelease(SQLBase):
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()
+
+    def open_bug_count_in_distro(self, user):
+        """See ISourcePackageRelease."""
+        """Return the number of open bugs targeted to the sourcepackagename
+        and distribution to which the given sourcepackagerelease was uploaded.
+        """
+        upload_distro = self.uploaddistrorelease.distribution
+        params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
+            user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        return upload_distro.searchTasks(params).count()
 
     @property
     def binaries(self):

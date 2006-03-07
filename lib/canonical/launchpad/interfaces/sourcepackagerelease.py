@@ -61,6 +61,10 @@ class ISourcePackageRelease(Interface):
     open_tickets_count = Attribute(
         "The number of open support tickets on the distrorelease and "
         "sourcepackagename of this SourcePackageRelease")
+    open_bug_count_in_distro = Attribute(
+        "Return the number of open bugs targeted to the sourcepackagename "
+        "and distribution to which this release was uploaded.")
+
     sourcepackage = Attribute(
         "The magic SourcePackage for the sourcepackagename and "
         "distrorelease of this object.")
