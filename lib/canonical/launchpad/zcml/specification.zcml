@@ -373,4 +373,9 @@
 
 </facet>
 
+<subscriber
+   for="canonical.launchpad.interfaces.ISpecification
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_specification_modified" />
+
 </configure>

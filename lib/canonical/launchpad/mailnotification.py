@@ -1077,3 +1077,34 @@ def notify_ticket_modified(ticket, event):
         'ticket_url': canonical_url(ticket),
         'body': body}
     send_ticket_notification(event, subject, body)
+
+
+def notify_specification_modified(spec, event):
+    """Notify the related people that a specification has been modifed."""
+    spec_delta = spec.getDelta(event.object_before_modification, event.user)
+
+    subject = '[Spec %s] %s' % (spec.name, spec.title)
+    indent = ' '*4
+    L = ['Specification changed by %s:' % event.user.displayname]
+    L.append(canonical_url(spec))
+    L.append('')
+    if spec_delta.status is not None:
+        old_status = spec_delta.status['old']
+        new_status = spec_delta.status['new']
+        L.append("%sStatus: %s => %s" % (
+            indent, old_status.title, new_status.title))
+
+    body = '\n'.join(L)
+
+    sent_addrs = set()
+    related_people = [
+        person for person in [
+            spec.owner, spec.assignee, spec.approver, spec.drafter]
+        if person is not None]
+    subscribers = [subscription.person for subscription in spec.subscriptions]
+
+    for notified_person in related_people + subscribers:
+        for address in contactEmailAddresses(notified_person):
+            if address not in sent_addrs:
+                simple_sendmail_from_person(event.user, address, subject, body)
+                sent_addrs.add(address)

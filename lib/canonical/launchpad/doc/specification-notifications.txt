@@ -1,0 +1,86 @@
+Email Notifications for Specifications
+======================================
+
+When a specification is edited, an email notification is sent out to
+all the related people. We send out notifications only on certain
+changed, this will change in the future though.
+
+Changing the status:
+
+    >>> from zope.publisher.browser import TestRequest
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+
+    >>> login('foo.bar@canonical.com')
+    >>> svg_support = getUtility(ISpecificationSet).getByName('svg-support')
+    >>> form = {
+    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Drafting',
+    ...     'field.needs_discussion': '1'}
+    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> edit_view.update()
+    u'Updated...'
+
+    >>> import transaction
+    >>> from canonical.launchpad.mail import stub
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    3
+
+The notification was sent to the registrant, Foo Bar, the assignee, Carlos,
+and the drafter, Robert.
+
+    >>> sorted([to_addrs for from_addr, to_addrs, message in stub.test_emails])
+    [['carlos@canonical.com'],
+     ['foo.bar@canonical.com'],
+     ['robertc@robertcollins.net']]
+
+The approver and all subscribers also get notified, but since there
+were no approver, and the only subscriber was Foo Bar, no additional
+notifications were sent. Let's set an approver and add a subscriber.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> sabdfl = getUtility(IPersonSet).getByEmail('mark@hbd.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> svg_support.approver = sabdfl
+    >>> svg_support.subscribe(sample_person)
+    <...>
+
+Now if we edit the status, a notification will be sent to all the
+previous people, and to the approver and the added subscriber:
+
+    >>> stub.test_emails = []
+    >>> form = {
+    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
+    ...     'field.needs_discussion': '1'}
+    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> edit_view.update()
+    u'Updated...'
+    >>> transaction.commit()
+
+    >>> sorted([to_addrs for from_addr, to_addrs, message in stub.test_emails])
+    [['carlos@canonical.com'],
+     ['foo.bar@canonical.com'],
+     ['mark@hbd.com'],
+     ['robertc@robertcollins.net'],
+     ['test@canonical.com']]
+
+Now let's take a look at what the notification looks like:
+
+    >>> import email
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
+    >>> status_notification = notifications[0]
+    >>> status_notification['To']
+    'carlos@canonical.com'
+    >>> status_notification['From']
+    'Foo Bar <foo.bar@canonical.com>'
+    >>> status_notification['Subject']
+    '[Spec svg-support] Support Native SVG Objects'
+    >>> body = status_notification.get_payload(decode=True)
+    >>> print body  #doctest: -NORMALIZE_WHITESPACE
+    Specification changed by Foo Bar:
+    http://.../products/firefox/+spec/svg-support
+    <BLANKLINE>
+        Status: Drafting => Pending Approval
+
