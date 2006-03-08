@@ -37,25 +37,36 @@ class ProductSeriesHelper:
         self.utilities_helper = ZopelessUtilitiesHelper()
         self.utilities_helper.setUp()
         self.version = pybaz.Version('importd@example.com/test--branch--0')
-        self.setUpTestSeries()
+        self.series = None
 
     def tearDown(self):
         self.utilities_helper.tearDown()
-        self.series_id = None
         self.series = None
 
     def setUpTestSeries(self):
         """Create a sample ProductSeries with targetarch* details."""
+        assert self.series is None
         product = getUtility(IProductSet)['gnome-terminal']
         series = product.newSeries('importd-test', displayname='', summary='')
         self.series = series
-        self.series_id = series.id
         parser = pybaz.NameParser(self.version.fullname)
         series.targetarcharchive = self.version.archive.name
         series.targetarchcategory = self.version.category.nonarch
         series.targetarchbranch = parser.get_branch()
         series.targetarchversion = parser.get_version()
         transaction.commit()
+
+    def setUpNonarchSeries(self):
+        """Create a sample ProductSeries without targetarch* details."""
+        assert self.series is None
+        product = getUtility(IProductSet)['gnome-terminal']
+        series = product.newSeries('importd-test', displayname='', summary='')
+        self.series = series
+        series.targetarcharchive = None
+        series.targetarchcategory = None
+        series.targetarchbranch = None
+        series.targetarchversion = None
+        transaction.commit()        
 
     def getTestSeries(self):
         """Retrieve the sample ProductSeries created by setUpTestSeries.
@@ -76,8 +87,9 @@ class Baz2bzrTestCase(unittest.TestCase):
         self.sandbox_helper.setUp()
         self.series_helper = ProductSeriesHelper()
         self.series_helper.setUp()
+        self.series_helper.setUpTestSeries()
         self.version = self.series_helper.version
-        self.series_id = self.series_helper.series_id
+        self.series_id = self.series_helper.series.id
         self.sandbox_helper.mkdir('archives')
         self.bzrworking = self.sandbox_helper.path('bzrworking')
 
@@ -406,21 +418,29 @@ class TestBlacklistParser(unittest.TestCase):
         self.assertBlacklistParses('foo\n\nbar\n', ['foo', 'bar'])
 
 
-class TestProductSeries(unittest.TestCase):
+class TestArchFromSeries(unittest.TestCase):
 
     def setUp(self):
         self.series_helper = ProductSeriesHelper()
         self.series_helper.setUp()
-        self.series = self.series_helper.series
-        self.version = self.series_helper.version
 
     def tearDown(self):
         self.series_helper.tearDown()
-        self.series = None
 
-    def testArchFromSeries(self):
-        arch_version = baz2bzr.arch_from_series(self.series)        
-        self.assertEqual(arch_version, self.version.fullname)
+    def testWithArch(self):
+        self.series_helper.setUpTestSeries()
+        self.series = self.series_helper.series
+        self.version = self.series_helper.version
+        expected = self.version.fullname
+        result = baz2bzr.arch_from_series(self.series)        
+        self.assertEqual(result, expected)
+
+    def testWithoutArch(self):
+        self.series_helper.setUpNonarchSeries()
+        self.series = self.series_helper.series
+        expected = 'unnamed@bazaar.ubuntu.com/series--%d' % self.series.id
+        result = baz2bzr.arch_from_series(self.series)
+        self.assertEqual(result, expected)
 
 
 class TestBranch(unittest.TestCase):
@@ -428,6 +448,7 @@ class TestBranch(unittest.TestCase):
     def setUp(self):
         self.series_helper = ProductSeriesHelper()
         self.series_helper.setUp()
+        self.series_helper.setUpTestSeries()
         self.series = self.series_helper.series
 
     def tearDown(self):

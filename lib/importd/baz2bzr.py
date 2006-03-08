@@ -120,11 +120,17 @@ def bzr_push(from_location, to_location):
 
 
 def arch_from_series(series):
-    archive = pybaz.Archive(series.targetarcharchive)
-    category = archive[series.targetarchcategory]
-    branch = category[series.targetarchbranch]
-    version = branch[series.targetarchversion]
-    return version.fullname
+    if series.targetarcharchive is None:
+        assert series.targetarchcategory is None
+        assert series.targetarchbranch is None
+        assert series.targetarchversion is None
+        return 'unnamed@bazaar.ubuntu.com/series--%d' % series.id
+    else:
+        archive = pybaz.Archive(series.targetarcharchive)
+        category = archive[series.targetarchcategory]
+        branch = category[series.targetarchbranch]
+        version = branch[series.targetarchversion]
+        return version.fullname
 
 
 def branch_from_series(series):
