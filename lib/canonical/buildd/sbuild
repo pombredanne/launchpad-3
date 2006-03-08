@@ -1229,6 +1229,33 @@ EOF
 		print PLOG "FAILED [dpkg-buildpackage died]\n";
 	}
 	else {
+		my $trans_oldfmt="$main::chroot_build_dir${pkg}_${version}_translations.tar.gz";
+		my $trans_newfmt="$main::chroot_build_dir${pkg}_${version}_${main::arch}_translations.tar.gz";
+		my $translations="";
+		if (-r $trans_newfmt) {
+			$translations = $trans_newfmt;
+		} elsif (-r $trans_oldfmt) {
+			$translations = $trans_oldfmt;
+		}
+		if ($translations) {
+			print PLOG "Publishing $translations for rosetta.\n";
+			my $date = strftime '%Y%m%d',gmtime;
+			my $target = "$main::HOME/public_html/translations/$date/";
+			system "mkdir -p $target";
+			if (system "mv",$translations,$target) {
+				print PLOG "ERROR: Could not move $translations to $target\n";
+			} else {
+				open TRANS, ">>$target/translations.txt";
+				print TRANS	"File: " . basename(${translations}) . "\n".
+						"Distribution: ${main::archive}\n".
+						"Release: ${main::distribution}\n".
+						"Component: ${main::component}\n".
+						"Source: ${pkg}\n".
+						"Version: ${version}\n\n";
+				close TRANS;
+			}
+		}
+
 		if (-r "$dir/debian/files") {
 			my @debs;
 			my @files;
@@ -1267,32 +1294,6 @@ EOF
 					system "mv", $_, "."
 						and print PLOG "ERROR: Could not move $_ to .\n";
 				}
-			}
-		}
-		my $trans_oldfmt="$main::chroot_build_dir${pkg}_${version}_translations.tar.gz";
-		my $trans_newfmt="$main::chroot_build_dir${pkg}_${version}_${main::arch}_translations.tar.gz";
-		my $translations="";
-		if (-r $trans_newfmt) {
-			$translations = $trans_newfmt;
-		} elsif (-r $trans_oldfmt) {
-			$translations = $trans_oldfmt;
-		}
-		if ($translations) {
-			print PLOG "Publishing $translations for rosetta.\n";
-			my $date = strftime '%Y%m%d',gmtime;
-			my $target = "$main::HOME/public_html/translations/$date/";
-			system "mkdir -p $target";
-			if (system "mv",$translations,$target) {
-				print PLOG "ERROR: Could not move $translations to $target\n";
-			} else {
-				open TRANS, ">>$target/translations.txt";
-				print TRANS	"File: " . basename(${translations}) . "\n".
-						"Distribution: ${main::archive}\n".
-						"Release: ${main::distribution}\n".
-						"Component: ${main::component}\n".
-						"Source: ${pkg}\n".
-						"Version: ${version}\n\n";
-				close TRANS;
 			}
 		}
 
