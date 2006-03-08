@@ -1086,7 +1086,7 @@ def notify_specification_modified(spec, event):
 
     subject = '[Spec %s] %s' % (spec.name, spec.title)
     indent = ' '*4
-    body_parts = ['Specification changed by %s:' % event.user.displayname]
+    body_lines = ['Specification changed by %s:' % event.user.displayname]
     L = []
     for dbitem_name in ('status', 'priority'):
         title = ISpecification[dbitem_name].title
@@ -1114,8 +1114,8 @@ def notify_specification_modified(spec, event):
             L.append("%s%s: %s => %s" % (indent, title, old_value, new_value))
 
     if L:
-        body_parts.append('')
-        body_parts += L
+        body_lines.append('')
+        body_lines += L
 
     L = []
     mail_wrapper = MailWrapper(width=72)
@@ -1125,20 +1125,20 @@ def notify_specification_modified(spec, event):
         L.append(mail_wrapper.format(spec_delta.whiteboard))
 
     if L:
-        body_parts += L
+        body_lines += L
 
-    if len(body_parts) == 1:
+    if len(body_lines) == 1:
         # The specification was modified, but we don't yet support
         # sending notification for the change.
         return
 
     indent = ' '*2
-    body_parts.append('')
-    body_parts.append('-- ')
-    body_parts.append('Specification Details:')
-    body_parts.append('%s%s' % (indent, spec.title))
-    body_parts.append('%s%s' % (indent, canonical_url(spec)))
-    body = '\n'.join(body_parts)
+    body_lines.append('')
+    body_lines.append('-- ')
+    body_lines.append('Specification Details:')
+    body_lines.append('%s%s' % (indent, spec.title))
+    body_lines.append('%s%s' % (indent, canonical_url(spec)))
+    body = '\n'.join(body_lines)
 
     sent_addrs = set()
     related_people = [
