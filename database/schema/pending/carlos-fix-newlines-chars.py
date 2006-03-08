@@ -10,7 +10,7 @@ from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.database import POMsgSet, POTMsgSet
-from canonical.launchpad.helpers import TranslationConstants
+from canonical.launchpad.interfaces import TranslationConstants
 
 def parse_options(args):
     """Parse a set of command line options.
@@ -58,7 +58,8 @@ def check_newlines(pomsgsets, logger_object):
                 processed_translations.append(potranslation.id)
 
         pomsgid = (
-            pomsgset.potmsgset.getPOMsgIDs()[TranslationConstants.SINGULAR])
+            pomsgset.potmsgset.getPOMsgIDs(
+                )[TranslationConstants.SINGULAR_FORM])
         if u'\r' in pomsgid.msgid:
             # The msgid contains the u'\r' char.
             for translation in translations.itervalues():
@@ -179,8 +180,13 @@ def main(argv):
 
         for potmsgset in potmsgsets:
             # Sanity check for the input we got from the applications.
-            singular = potmsgset.getPOMsgIDs()[TranslationConstants.SINGULAR]
-            plural = potmsgset.getPOMsgIDs()[TranslationConstants.PLURAL]
+            pomsgids = potmsgset.getPOMsgIDs()
+            singular = pomsgids[TranslationConstants.SINGULAR_FORM]
+            if pomsgids.count() > 1:
+                plural = pomsgids[TranslationConstants.PLURAL_FORM]
+            else:
+                # It doesn't have a plural form, ignore this check
+                continue
 
             if (('\r' in singular.msgid and '\r' not in plural.msgid) or
                 ('\r' not in singular.msgid and '\r' in plural.msgid)):
