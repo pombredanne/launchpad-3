@@ -12,8 +12,7 @@ import datetime
 from StringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
-from sqlobject import (
-    SQLObjectNotFound, StringCol, ForeignKey, BoolCol)
+from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,7 +26,7 @@ from canonical.lp.dbschema import RosettaImportStatus, EnumCol
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
 # queue.
-DAYS_TO_DIE = 5
+DAYS_TO_KEEP = 5
 
 class TranslationImportQueueEntry(SQLBase):
     implements(ITranslationImportQueueEntry)
@@ -104,14 +103,12 @@ class TranslationImportQueueEntry(SQLBase):
         # We know the IPOTemplate associated with this entry so we can try to
         # detect the right IPOFile.
         filename = os.path.basename(self.path)
-        L = filename.split(u'.')
-        if len(L) > 2 or L[1] != 'po':
+        guessed_language, file_ext = filename.split(u'.', 1)
+        if file_ext != 'po':
             # The filename does not follows the pattern 'LANGCODE.po'
             # so we cannot guess its language.
             # Fallback to the guessed value based on the path.
             return self._guessed_pofile_from_path
-
-        guessed_language = L[0]
 
         if u'@' in guessed_language:
             # Seems like this entry is using a variant entry.
@@ -143,8 +140,7 @@ class TranslationImportQueueEntry(SQLBase):
 
         # Get or create an IPOFile based on the info we guessed.
         return self.potemplate.getOrCreatePOFile(
-            language_code, variant=language_variant,
-            owner=self.importer)
+            language_code, variant=language_variant, owner=self.importer)
 
     @property
     def import_into(self):
@@ -194,12 +190,9 @@ class TranslationImportQueue:
 
     def iterNeedsReview(self):
         """See ITranslationImportQueue."""
-        res = TranslationImportQueueEntry.selectBy(
+        return iter(TranslationImportQueueEntry.selectBy(
             status=RosettaImportStatus.NEEDS_REVIEW,
-            orderBy=['dateimported'])
-
-        for entry in res:
-            yield entry
+            orderBy=['dateimported']))
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None,
@@ -309,40 +302,11 @@ class TranslationImportQueue:
         return TranslationImportQueueEntry.select(
             orderBy=['status', 'dateimported'])
 
-    def getNextToImport(self, pofile_or_potemplate):
-        """See ITranslationImportQueue."""
-        assert pofile_or_potemplate is not None
-
-        if IPOFile.providedBy(pofile_or_potemplate):
-            # We got an IPOFile.
-            res = TranslationImportQueueEntry.selectBy(
-                pofileID=pofile_or_potemplate.id,
-                status=RosettaImportStatus.APPROVED,
-                orderBy='dateimported')
-        elif IPOTemplate.providedBy(pofile_or_potemplate):
-            # We got an IPOTemplate.
-            res = TranslationImportQueueEntry.selectBy(
-                potemplateID=pofile_or_potemplate.id,
-                status=RosettaImportStatus.APPROVED,
-                orderBy='dateimported')
-
-        if res.count() == 0:
-            # There are no pending entries to import for this IPOFile.
-            return None
-
-        # Return the oldest from the queue.
-        return res[0]
-
     def getFirstEntryToImport(self):
         """See ITranslationImportQueue."""
-        res = TranslationImportQueueEntry.selectBy(
+        return TranslationImportQueueEntry.selectFirstBy(
             status=RosettaImportStatus.APPROVED,
             orderBy=['dateimported'])
-
-        if res.count() > 0:
-            return res[0]
-        else:
-            return None
 
     def executeAutomaticReviews(self, ztm):
         """See ITranslationImportQueue."""
@@ -355,7 +319,9 @@ class TranslationImportQueue:
                     guessed = entry.guessed_pofile
                     if guessed is None:
                         # We were not able to guess a place to import it,
-                        # leave this entry to an admin.
+                        # leave the status of this entry as
+                        # RosettaImportStatus.NEEDS_REVIEW and wait for an
+                        # admin to manually review it.
                         continue
                     # Set the place where it should be imported.
                     entry.pofile = guessed
@@ -365,8 +331,10 @@ class TranslationImportQueue:
                     # Check if we can guess where it should be imported.
                     guessed = entry.guessed_potemplate
                     if guessed is None:
-                        # We were not able to guess a place to import it, leave
-                        # this entry to an admin.
+                        # We were not able to guess a place to import it,
+                        # leave the status of this entry as
+                        # RosettaImportStatus.NEEDS_REVIEW and wait for an
+                        # admin to manually review it.
                         continue
                     # Set the place where it should be imported.
                     entry.potemplate = guessed
@@ -383,7 +351,7 @@ class TranslationImportQueue:
     def cleanUpQueue(self):
         """See ITranslationImportQueue."""
         # Get DELETED and IMPORTED entries.
-        delta = datetime.timedelta(DAYS_TO_DIE)
+        delta = datetime.timedelta(DAYS_TO_KEEP)
         last_date = datetime.datetime.utcnow() - delta
         res = TranslationImportQueueEntry.select(
             "(status = %s OR status = %s) AND date_status_changed < %s" %

@@ -610,12 +610,20 @@ class POFile(SQLBase, RosettaStats):
         elif old_date > new_date:
             return True
 
-    def importFromQueue(self, logger=None):
+    def getNextToImport(self):
         """See IPOFile."""
         translation_import_queue = getUtility(ITranslationImportQueue)
+
+        return TranslationImportQueueEntry.selectFirstBy(
+                pofileID=self.id,
+                status=RosettaImportStatus.APPROVED,
+                orderBy='dateimported')
+
+    def importFromQueue(self, logger=None):
+        """See IPOFile."""
         librarian_client = getUtility(ILibrarianClient)
 
-        entry_to_import = translation_import_queue.getNextToImport(self)
+        entry_to_import = self.getNextToImport()
 
         if entry_to_import is None:
             # There is no new import waiting for being imported.

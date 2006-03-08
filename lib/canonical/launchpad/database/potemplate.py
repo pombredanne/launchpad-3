@@ -535,12 +535,20 @@ class POTemplate(SQLBase, RosettaStats):
         for pofile in self.pofiles:
             pofile.invalidateCache()
 
-    def importFromQueue(self, logger=None):
+    def getNextToImport(self):
         """See IPOTemplate."""
         translation_import_queue = getUtility(ITranslationImportQueue)
+
+        TranslationImportQueueEntry.selectBy(
+                potemplateID=pofile_or_potemplate.id,
+                status=RosettaImportStatus.APPROVED,
+                orderBy='dateimported')
+
+    def importFromQueue(self, logger=None):
+        """See IPOTemplate."""
         librarian_client = getUtility(ILibrarianClient)
 
-        entry_to_import = translation_import_queue.getNextToImport(self)
+        entry_to_import = self.getNextToImport()
 
         if entry_to_import is None:
             # There is no new import waiting for being imported.

@@ -2516,10 +2516,9 @@ class RosettaTranslationOrigin(DBSchema):
 class RosettaImportStatus(DBSchema):
     """Rosetta Import Status
 
-    Defines the status of an import on the Import queue. It could have a set
-    of states like approved, imported, deleted, failed, needs_review or
-    blocked.
-    This schema documents those options.
+    Define the status of an import on the Import queue. It could have one
+    of the following states: approved, imported, deleted, failed, needs_review
+    or blocked.
     """
 
     APPROVED = Item(1, """

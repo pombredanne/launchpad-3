@@ -156,5 +156,5 @@ ALTER TABLE POTemplate DROP COLUMN rawimportstatus;
 ALTER TABLE POTemplate DROP COLUMN rawfile;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 28, 0);
 

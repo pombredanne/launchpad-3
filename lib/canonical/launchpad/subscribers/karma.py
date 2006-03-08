@@ -101,7 +101,7 @@ def translation_import_queue_entry_modified(entry, event):
         else:
             # The imported file is for a new file format that we don't know
             # about.
-            raise NotImplementedError(
+            raise AssertionError(
                 'When adding a new file format you need to update the karma'
                 ' code too.')
 

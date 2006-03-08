@@ -6,7 +6,6 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import ITranslationImportQueue
 from canonical.lp.dbschema import RosettaImportStatus
 
@@ -71,7 +70,6 @@ class ImportProcess:
                 self.ztm.abort()
                 # This prevents us to import again the same failed element.
                 entry_to_import.status = RosettaImportStatus.FAILED
-                flush_database_updates()
                 self.ztm.commit()
                 continue
 

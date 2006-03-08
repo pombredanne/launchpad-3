@@ -373,7 +373,10 @@ def export_rows(rows, pofile_output):
             # Create new message set
 
             if row.posequence is None and row.potsequence == 0:
-                # It's an obsolete entry while exporting an IPOTemplate.
+                # The po sequence is unknown, that means that we don't have
+                # this message as part of IPOFile and the pot sequence is
+                # zero which means that this message is not anymore valid for
+                # the IPOTemplate we are handling and it's an obsolete entry.
                 # Ignore it.
                 continue
 

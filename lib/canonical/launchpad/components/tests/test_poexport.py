@@ -19,7 +19,7 @@ class TestPOTemplate:
         return self.has_plural_message
 
 
-class Mock:
+class FakeSQLObjectClass:
     """Help class to let us create a fake POFile class."""
     def __init__(self, **kw):
         self.__dict__.update(kw)
@@ -29,13 +29,13 @@ class TestPOFile:
     """Pretend to be a pofile for testing purposes."""
 
     def __init__(self):
-        mock_email = Mock(
+        mock_email = FakeSQLObjectClass(
             email='kk@pleasure-dome.com')
-        mock_person = Mock(
+        mock_person = FakeSQLObjectClass(
             browsername='Kubla Kahn',
             preferredemail=mock_email,
             isTeam=lambda: False)
-        self.latestsubmission = Mock(
+        self.latestsubmission = FakeSQLObjectClass(
             person=mock_person,
             datecreated = datetime.fromtimestamp(
                 1000000000, pytz.timezone('UTC')))

@@ -1,7 +1,7 @@
 # Copyright 2005 Canonical Ltd. All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, TextLine, Int
+from zope.schema import Bool, Choice, TextLine, Int, DateTime
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -63,15 +63,16 @@ class ITranslationImportQueueEntry(Interface):
         "An ILibraryFileAlias reference with the file content. Must be not"
         " None.")
 
-    # XXX CarlosPerelloMarin 20060301: We are using Int instead of Attribute
+    # XXX CarlosPerelloMarin 20060301: We are using Choice instead of Attribute
     # due bug #29944
-    status = Int(
-        title=_("The status of the import. See RosettaImportStatus for"
-        " allowable values."),
+    status = Choice(
+        title=_("The status of the import.")
+        values=RosettaImportStatus.items,
         required=True)
 
-    date_status_changed = Attribute(
-        "The timestamp when the status was changed.")
+    date_status_changed = Datetime(
+        title=_("The timestamp when the status was changed."),
+        required=True)
 
     sourcepackage = Attribute("The sourcepackage associated with this entry.")
 
@@ -171,13 +172,8 @@ class ITranslationImportQueue(Interface):
         """Return the ITranslationImportQueueEntry with the given id or None.
         """
 
-    def getAllEntries(id):
+    def getAllEntries():
         """Return all entries this import queue has."""
-
-    def getNextToImport(pofile_or_potemplate):
-        """Return the next entry on the queue to be imported into
-        pofile_or_potemplate.
-        """
 
     def getFirstEntryToImport():
         """Return the first entry of the queue that is ready to be imported.

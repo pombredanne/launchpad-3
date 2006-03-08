@@ -31,15 +31,15 @@
             <img alt="" src="/@@/download.png" />
           </td>
           <td>
-            <a tal:attributes="href string:${entry/content/url}"
+            <a tal:attributes="href entry/content/url"
                tal:content="entry/path">po/foo.pot</a> in
             <a tal:condition="entry/sourcepackage"
                tal:content="entry/sourcepackage/title"
-               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
+               tal:attributes="href entry/sourcepackage/fmt:url"
                >evolution in Ubuntu Hoary</a>
             <a tal:condition="entry/productseries"
                tal:content="entry/productseries/title"
-               tal:attributes="href string:${entry/productseries/fmt:url}"
+               tal:attributes="href entry/productseries/fmt:url"
                >Evolution Series: MAIN</a>
           </td>
           <td>
@@ -95,7 +95,7 @@
           </td>
           <td>
             <tal:block condition="entry/required:launchpad.Admin">
-              [<a tal:attributes="href string:${entry/fmt:url}">Edit</a>]
+              [<a tal:attributes="href entry/fmt:url">Edit</a>]
             </tal:block>
           </td>
         </tr>
@@ -103,7 +103,7 @@
           <td colspan="3">
             Uploaded by 
             <a tal:content="entry/importer/browsername"
-               tal:attributes="href string:${entry/importer/fmt:url}"
+               tal:attributes="href entry/importer/fmt:url"
                >Mark Shuttleworth</a>
             on <span tal:content="entry/dateimported/fmt:datetime">date</span>
           </td>
@@ -113,7 +113,7 @@
             Will be imported into 
             <a tal:condition="entry/import_into"
                tal:content="entry/import_into/title"
-               tal:attributes="href string:${entry/import_into/fmt:url}"
+               tal:attributes="href entry/import_into/fmt:url"
                >Foo</a>
           </td>
         </tr>

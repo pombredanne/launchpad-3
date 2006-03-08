@@ -230,6 +230,9 @@ class IPOFile(IRosettaStats):
         'PORevisionDate' than IPOFile.header.
         """
 
+    def getNextToImport():
+        """Return the next entry on the import queue to be imported."""
+
     def importFromQueue(logger=None):
         """Execute the import of the next entry on the queue, if needed.
 

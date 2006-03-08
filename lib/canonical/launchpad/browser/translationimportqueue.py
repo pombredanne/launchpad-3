@@ -117,8 +117,6 @@ class TranslationImportQueueEntryView(GeneralFormView):
 
             # Point to the right path.
             potemplate.path = self.context.path
-            # Set the real import date.
-            #IRawFileData(potemplate).daterawimport = self.context.dateimported
 
             if language is None:
                 # We can remove the element from the queue as it was a direct
@@ -190,7 +188,7 @@ class TranslationImportQueueView(LaunchpadView):
             'handle_queue': self._handle_queue,
             }
         dispatch_to = [(key, method)
-                        for key,method in dispatch_table.items()
+                        for key, method in dispatch_table.items()
                         if key in self.form
                       ]
         if len(dispatch_to) != 1:
@@ -201,15 +199,7 @@ class TranslationImportQueueView(LaunchpadView):
         method()
 
     def _handle_queue(self):
-        """Handle a form submission and executes the given 'action' with every
-        entry.
-
-        'action' is a callable function that gets an ITranslationImportItem as
-        an argument.
-        'message_notification' is a string that will be showed to the user if
-        the action was successful done. I can have an integer argument to note
-        the amount of items that executed the 'action'.
-        """
+        """Handle a queue submission changing the status of its entries."""
         # The user must be logged in.
         assert self.user is not None
 
@@ -232,8 +222,8 @@ class TranslationImportQueueView(LaunchpadView):
                     'Ignored your request because it is broken.')
             # Get the entry we are working on.
             entry = self.context.get(id)
-            value = self.form.get(form_item)
-            if value == entry.status.name:
+            new_status_name = self.form.get(form_item)
+            if new_status_name == entry.status.name:
                 # The entry's status didn't change we can jump to the next
                 # entry.
                 continue
@@ -251,14 +241,14 @@ class TranslationImportQueueView(LaunchpadView):
 
             # Only the importer, launchpad admins or Rosetta experts have
             # special permissions to change status.
-            if value == 'deleted' and (is_admin or is_owner):
+            if new_status_name == 'deleted' and (is_admin or is_owner):
                 entry.status = RosettaImportStatus.DELETED
-            elif value == 'blocked' and is_admin:
+            elif new_status_name == 'blocked' and is_admin:
                 entry.status = RosettaImportStatus.BLOCKED
-            elif (value == 'approved' and is_admin and
+            elif (new_status_name == 'approved' and is_admin and
                   entry.import_into is not None):
                 entry.status = RosettaImportStatus.APPROVED
-            elif value == 'needs_review' and is_admin:
+            elif new_status_name == 'needs_review' and is_admin:
                 entry.status = RosettaImportStatus.NEEDS_REVIEW
             else:
                 # The user was not the importer or we are trying to set a
@@ -266,4 +256,4 @@ class TranslationImportQueueView(LaunchpadView):
                 # it's a broken request.
                 raise UnexpectedFormData(
                     'Ignored the request to change the status from %s to %s.'
-                        % (entry.status.name, value))
+                        % (entry.status.name, new_status_name))
