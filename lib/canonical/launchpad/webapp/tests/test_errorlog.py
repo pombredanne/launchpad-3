@@ -13,10 +13,14 @@ from textwrap import dedent
 from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
+from canonical.testing import reset_logging
 
 UTC = pytz.timezone('UTC')
 
 class TestErrorReport(unittest.TestCase):
+    def tearDown(self):
+        reset_logging()
+
     def test_import(self):
         from canonical.launchpad.webapp.errorlog import (
             ErrorReport, ErrorReportingUtility)
@@ -128,6 +132,7 @@ class TestErrorReportingUtility(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(config.launchpad.errorreports.errordir,
                       ignore_errors=True)
+        reset_logging()
 
     def test_newOopsId(self):
         """Test ErrorReportingUtility.newOopsId()"""

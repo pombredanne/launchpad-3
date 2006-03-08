@@ -16,6 +16,7 @@ from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.functional import FunctionalTestSetup
+from canonical.testing import reset_logging
 
 import os.path
 
@@ -26,7 +27,7 @@ def setUp(test):
     test.globs.update(globals())
 
 def tearDown(test):
-    pass
+    reset_logging()
 
 def test_suite():
     return doctest.DocFileSuite(
