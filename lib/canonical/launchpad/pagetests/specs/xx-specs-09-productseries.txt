@@ -20,39 +20,32 @@ series candidates, the "milestones" and the "1.0" series.
   <option value="1">firefox milestones</option>
   ...
 
+
 Now, we POST the form and expect to be redirected to the spec home page.
 
   >>> print http(r"""
   ... POST /products/firefox/+spec/svg-support/+setseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 857
-  ... Content-Type: multipart/form-data; boundary=---------------------------351566716164150030996771236
+  ... Content-Length: 611
+  ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ... 
-  ... -----------------------------351566716164150030996771236
+  ... -----------------------------26999413214087432371486976730
   ... Content-Disposition: form-data; name="field.productseries"
   ... 
   ... 2
-  ... -----------------------------351566716164150030996771236
+  ... -----------------------------26999413214087432371486976730
   ... Content-Disposition: form-data; name="field.productseries-empty-marker"
   ... 
   ... 1
-  ... -----------------------------351566716164150030996771236
-  ... Content-Disposition: form-data; name="field.delivery"
-  ... 
-  ... Unlikely
-  ... -----------------------------351566716164150030996771236
-  ... Content-Disposition: form-data; name="field.delivery-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------351566716164150030996771236
+  ... -----------------------------26999413214087432371486976730
   ... Content-Disposition: form-data; name="field.whiteboard"
   ... 
   ... would be great to have, but has high risk
-  ... -----------------------------351566716164150030996771236
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... -----------------------------26999413214087432371486976730
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Change
-  ... -----------------------------351566716164150030996771236--
+  ... Continue
+  ... -----------------------------26999413214087432371486976730--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
@@ -70,12 +63,95 @@ header.
   ...products/firefox/+series/1.0...
 
 
-And now it should show on the "+specs" page for that product series.
+OK, we will also pitch the e4x spec to the same series:
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/e4x/+setseries HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 611
+  ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
+  ... 
+  ... -----------------------------26999413214087432371486976730
+  ... Content-Disposition: form-data; name="field.productseries"
+  ... 
+  ... 2
+  ... -----------------------------26999413214087432371486976730
+  ... Content-Disposition: form-data; name="field.productseries-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------26999413214087432371486976730
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... would be great to have, but has high risk
+  ... -----------------------------26999413214087432371486976730
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------26999413214087432371486976730--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: 0
+  ...
+  Location: http://.../products/firefox/+spec/e4x
+
+
+And now both should show up on the "+setgoals" page for that product series.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/1.0/+setgoals HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Support E4X in EcmaScript...
+  ...Support Native SVG Objects...
+
+
+Now, we will accept one of them, the svg-support one. We expect to be told
+that 1 was accepted.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+series/1.0/+setgoals HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 44
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... specification=svg-support&SUBMIT_ACCEPT=Accept""")
+  HTTP/1.1 200 Ok
+  ...Accepted 1 specification(s)...
+
+
+We will now decline the remaining one. We expect to be redirected, since
+there are none left in the queue.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+series/1.0/+setgoals HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 37
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... specification=e4x&SUBMIT_DECLINE=Decline""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+series/1.0/+specs
+  ...
+
+
+The accepted item should show up in the list of specs for this series:
 
   >>> print http(r"""
   ... GET /products/firefox/+series/1.0/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Support Native SVG Objects...
+
+
+As a final check, we will show that there is that spec in the "Deferred"
+listing.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/1.0/+specs?show=declined HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Support E4X in EcmaScript...
 
 

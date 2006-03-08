@@ -10,6 +10,8 @@ __all__ = [
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
+    'SpecificationReleaseView',
+    'SpecificationSeriesView',
     'SpecificationSupersedingView',
     'SpecificationRetargetingView',
     ]
@@ -27,7 +29,8 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, GeneralFormView)
 
-from canonical.lp.dbschema import SpecificationStatus
+from canonical.lp.dbschema import (
+    SpecificationStatus, SpecificationGoalStatus)
 
 
 class SpecificationNavigation(Navigation):
@@ -42,7 +45,7 @@ class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority', 'setseries',
-             'setdistrorelease',
+             'setrelease',
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
@@ -70,17 +73,17 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+supersede', text, icon='edit')
 
     def setseries(self):
-        text = 'Target to Series'
+        text = 'Set Series Goal'
         enabled = self.context.product is not None
         return Link('+setseries', text, icon='edit', enabled=enabled)
 
-    def setdistrorelease(self):
-        text = 'Target to Release'
+    def setrelease(self):
+        text = 'Set Release Goal'
         enabled = self.context.distribution is not None
-        return Link('+setdistrorelease', text, icon='edit', enabled=enabled)
+        return Link('+setrelease', text, icon='edit', enabled=enabled)
 
     def milestone(self):
-        text = 'Target to Milestone'
+        text = 'Set Milestone'
         return Link('+milestone', text, icon='edit')
 
     def requestfeedback(self):
@@ -236,6 +239,28 @@ class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class SpecificationReleaseView(GeneralFormView):
+
+    def process(self, distrorelease=None, whiteboard=None):
+        if distrorelease != self.context.distrorelease:
+            self.context.distrorelease = distrorelease
+            self.context.goalstatus = SpecificationGoalStatus.PROPOSED
+        self.whiteboard = whiteboard
+        self._nextURL = canonical_url(self.context)
+        return 'Done.'
+
+
+class SpecificationSeriesView(GeneralFormView):
+
+    def process(self, productseries=None, whiteboard=None):
+        if productseries != self.context.productseries:
+            self.context.productseries = productseries
+            self.context.goalstatus = SpecificationGoalStatus.PROPOSED
+        self.whiteboard = whiteboard
+        self._nextURL = canonical_url(self.context)
+        return 'Done.'
 
 
 class SpecificationRetargetingView(GeneralFormView):
