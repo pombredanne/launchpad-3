@@ -103,6 +103,11 @@ class SourcePackageRelease(SQLBase):
         return self.uploaddistrorelease.getSourcePackage(self.name)
 
     @property
+    def distrosourcepackage(self):
+        """See ISourcePackageRelease."""
+        return self.uploaddistrorelease.distribution.getSourcePackage(self.name)
+
+    @property
     def title(self):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
@@ -163,6 +168,11 @@ class SourcePackageRelease(SQLBase):
         upload_distro = self.uploaddistrorelease.distribution
         params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
             user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        # XXX: we need to omit duplicates here or else our bugcounts are
+        # inconsistent. This is a wart, and we need to stop spreading
+        # these things over the code.
+        #   -- kiko, 2006-03-07
+        params.omit_dupes = True
         return upload_distro.searchTasks(params).count()
 
     @property

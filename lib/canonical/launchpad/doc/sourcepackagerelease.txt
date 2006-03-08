@@ -27,6 +27,15 @@ We can use the magic productrelease property to map this to a ProductRelease:
    >>> print pr.version
    0.9
 
+We can use the sourcepackage and distrosourcepackage properties to
+grab magical objects representing that package in the distribution to
+which it was uploaded:
+
+   >>> print spr.sourcepackage.displayname
+   Hoary mozilla-firefox
+   >>> print spr.distrosourcepackage.displayname
+   mozilla-firefox in ubuntu
+
 It should also work when the version has a dash and packaging revision
 after it:
 

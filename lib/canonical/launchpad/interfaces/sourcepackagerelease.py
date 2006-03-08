@@ -65,6 +65,9 @@ class ISourcePackageRelease(Interface):
     sourcepackage = Attribute(
         "The magic SourcePackage for the sourcepackagename and "
         "distrorelease of this object.")
+    distrosourcepackage = Attribute(
+        "The magic DistroSourcePackage for the sourcepackagename and "
+        "distribution of this object.")
     productrelease = Attribute("The best guess we have as to the Launchpad "
         "ProductRelease associated with this SourcePackageRelease.")
 
