@@ -147,7 +147,7 @@ def check_newlines(pomsgsets, logger_object):
             # the check, the user is free to use whatever he wants.
             continue
 
-        return processed_translations
+    return processed_translations
 
 def fix_newlines(pomsgsets, ztm, logger_object,
     assert_if_carriage_return_present=False):
