@@ -24,7 +24,8 @@ from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 
 from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationDelivery)
+    SpecificationStatus, SpecificationPriority, SpecificationDelivery,
+    SpecificationGoalStatus)
 
 
 class SpecNameField(ContentNameField):
@@ -77,8 +78,10 @@ class ISpecification(IHasOwner):
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
     status = Choice(
-        title=_('Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.BRAINDUMP)
+        title=_('Definition Status'), vocabulary='SpecificationStatus',
+        default=SpecificationStatus.BRAINDUMP, description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
         default=SpecificationPriority.PROPOSED, required=True)
@@ -100,15 +103,24 @@ class ISpecification(IHasOwner):
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone',
         description=_(
-            "The milestone in which we would like this feature to be delivered."))
-    productseries = Choice(title=_('Targeted Product Series'), required=False,
+            "The milestone in which we would like this feature to be "
+            "delivered."))
+    productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-            "The release series to which this feature is targeted."))
-    distrorelease = Choice(title=_('Targeted Release'), required=False,
+            "The release series for which this feature is a goal."))
+    distrorelease = Choice(title=_('Release Goal'), required=False,
         vocabulary='FilteredDistroRelease',
         description=_(
-            "The distribution release to which this feature is targeted."))
+            "The distribution release for which this feature is a goal."))
+    goal = Attribute(
+        "The product series or distro release for which this feature "
+        "is a goal.")
+    goalstatus = Choice(
+        title=_('Goal Acceptance'), vocabulary='SpecificationGoalStatus',
+        default=SpecificationGoalStatus.PROPOSED, description=_(
+            "Whether or not the drivers have accepted this feature as "
+            "a goal for the targeted release or series."))
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_(
             "Any notes on the status of this spec you would like to make. "
@@ -127,11 +139,11 @@ class ISpecification(IHasOwner):
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    delivery = Choice(title=_("Expectation of Delivery"),
+    delivery = Choice(title=_("Implementation Status"),
         required=True, default=SpecificationDelivery.UNKNOWN,
-        vocabulary='SpecificationDelivery', description=_("An estimate "
-        "of the likelyhood that this feature will be delivered in the "
-        "targeted release or series."))
+        vocabulary='SpecificationDelivery', description=_("The state of "
+        "progress being made on the actual implementation or delivery "
+        "of this feature."))
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "

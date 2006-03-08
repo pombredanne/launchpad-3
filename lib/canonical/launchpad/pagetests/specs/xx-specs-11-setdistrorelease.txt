@@ -86,62 +86,102 @@ We're redirected to the Specification page
   HTTP/1.1 200 Ok
   ...
 
-Now we try to open the setdistrorelease page, where there is a form to
+Now we try to open the +setrelease page, where there is a form to
 target the newly created spec to a distribution.
 
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+spec/testspec/+setdistrorelease HTTP/1.1
+  ... GET /distros/ubuntu/+spec/testspec/+setrelease HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...<h1>Target to a distribution release</h1>...
   ...
   
-We are able to target a specification to a distrorelease.
+  
+We are able to target a specification to a distrorelease. We expect to be
+redirected back to the spec page when we are done.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+spec/media-integrity-check/+setdistrorelease HTTP/1.1
+  ... POST /distros/ubuntu/+spec/media-integrity-check/+setrelease HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 841
-  ... Content-Type: multipart/form-data; boundary=---------------------------117456295555762087296338191
+  ... Content-Length: 570
+  ... Content-Type: multipart/form-data; boundary=---------------------------20513410904024403932114303780
   ... 
-  ... -----------------------------117456295555762087296338191
+  ... -----------------------------20513410904024403932114303780
   ... Content-Disposition: form-data; name="field.distrorelease"
   ... 
   ... 3
-  ... -----------------------------117456295555762087296338191
+  ... -----------------------------20513410904024403932114303780
   ... Content-Disposition: form-data; name="field.distrorelease-empty-marker"
   ... 
   ... 1
-  ... -----------------------------117456295555762087296338191
-  ... Content-Disposition: form-data; name="field.delivery"
-  ... 
-  ... Certain
-  ... -----------------------------117456295555762087296338191
-  ... Content-Disposition: form-data; name="field.delivery-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------117456295555762087296338191
+  ... -----------------------------20513410904024403932114303780
   ... Content-Disposition: form-data; name="field.whiteboard"
   ... 
-  ... mostly implemented already
-  ... -----------------------------117456295555762087296338191
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
-  ... Change
-  ... -----------------------------117456295555762087296338191--
+  ... -----------------------------20513410904024403932114303780
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------20513410904024403932114303780--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: 0
   ...
   Location: http://.../distros/ubuntu/+spec/media-integrity-check
 
-After the POST we should see the release goal on the specification page.
+
+After the POST we should see the release goal on the specification page, as
+a "proposed" goal.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+spec/media-integrity-check HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Release goal...
-  ...hoary...Certain...
+  ...hoary...Proposed...
+
+
+The spec will not show up immediately as a Hoary goal since it must
+first be approved.
+
+  >>> result = unicode(http(r"""
+  ... GET /distros/ubuntu/hoary/+specs HTTP/1.1
+  ... """))
+  >>> 'CD Media Integrity Check' not in result
+  True
+
+However, we can expect to find it on the approvals page.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+setgoals HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...CD Media Integrity Check...
+
+
+We will accept it:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+setgoals HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 54
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... specification=media-integrity-check&SUBMIT_ACCEPT=Accept""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../distros/ubuntu/hoary/+specs
+  ...
+
+
+And now it should appear on the Hoary specs list:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...CD Media Integrity Check...
+
+
