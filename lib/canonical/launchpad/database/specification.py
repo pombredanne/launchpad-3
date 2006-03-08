@@ -182,8 +182,8 @@ class Specification(SQLBase):
     def getDelta(self, old_spec, user):
         """See ISpecification."""
         changes = {}
-        for field_name in ("title", "summary", "specurl", "productseries",
-            "distrorelease", "milestone"):
+        for field_name in ("title", "summary", "whiteboard", "specurl",
+            "productseries", "distrorelease", "milestone"):
             # fields for which we simply show the new value when they
             # change
             old_val = getattr(old_spec, field_name)

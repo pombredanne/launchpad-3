@@ -275,6 +275,7 @@ class ISpecificationDelta(Interface):
     # fields on the spec itself, we provide just the new changed value
     title = Attribute("The spec title or None.")
     summary = Attribute("The spec summary or None.")
+    whiteboard = Attribute("The spec whiteboard or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
     distrorelease = Attribute("The release to which this is targeted.")
