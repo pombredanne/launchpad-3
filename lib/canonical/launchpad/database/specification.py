@@ -191,7 +191,8 @@ class Specification(SQLBase):
             if old_val != new_val:
                 changes[field_name] = new_val
 
-        for field_name in ("name", "priority", "status", "target"):
+        for field_name in ("name", "priority", "status", "target", "approver",
+                "assignee", "drafter"):
             # fields for which we show old => new when their values change
             old_val = getattr(old_spec, field_name)
             new_val = getattr(self, field_name)

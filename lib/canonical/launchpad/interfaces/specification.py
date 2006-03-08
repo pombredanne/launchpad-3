@@ -288,3 +288,6 @@ class ISpecificationDelta(Interface):
     priority = Attribute("Old and new priorities, or None")
     status = Attribute("Old and new statuses, or None")
     target = Attribute("Old and new target, or None")
+    approver = Attribute("Old and new approver, or None")
+    assignee = Attribute("Old and new assignee, or None")
+    drafter = Attribute("Old and new drafter, or None")
