@@ -1506,6 +1506,7 @@ class NascentUpload:
                 # Single_Custom uploads should be NEW.
                 #if self.single_custom:
                 #    uploaded_file.new = True
+                uploaded_file.new = False
                 continue
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease

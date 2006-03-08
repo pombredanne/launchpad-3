@@ -71,6 +71,7 @@ It was not rejected.
   >>> success, msgs = upload.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Creating a New queue entry
+  DEBUG: Setting it to ACCEPTED
 
 And all things worked.
 
@@ -84,18 +85,14 @@ We need to commit the transaction to be able to use the librarian files.
   >>> import transaction
   >>> transaction.commit()
 
-Inspect the QUEUE looking for a NEW entry corresponding to the
+Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
   >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=DistroReleaseQueueStatus.NEW)[0]
+  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
   u'dist-upgrader_20060302.0120_all.tar.gz'
-
-Accept the NEW entry:
-
-  >>> queue_item.set_accepted()
 
 Do the publish, i.e process the CustomUpload writing the tarball in
 the archive
