@@ -6,10 +6,10 @@ from optparse import OptionParser
 
 from canonical.config import config
 from canonical.lp import initZopeless
-from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.database import POMsgSet
+from canonical.launchpad.database import POMsgSet, POTMsgSet
 from canonical.launchpad.helpers import TranslationConstants
 
 def parse_options(args):
@@ -179,8 +179,8 @@ def main(argv):
 
         for potmsgset in potmsgsets:
             # Sanity check for the input we got from the applications.
-            singular = potmsgsets.getPOMsgIDs()[TranslationConstants.SINGULAR]
-            plural = potmsgsets.getPOMsgIDs()[TranslationConstants.PLURAL]
+            singular = potmsgset.getPOMsgIDs()[TranslationConstants.SINGULAR]
+            plural = potmsgset.getPOMsgIDs()[TranslationConstants.PLURAL]
 
             if (('\r' in singular.msgid and '\r' not in plural.msgid) or
                 ('\r' not in singular.msgid and '\r' in plural.msgid)):
