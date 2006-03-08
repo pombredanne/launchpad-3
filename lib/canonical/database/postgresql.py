@@ -161,8 +161,13 @@ def listUniques(cur, table, column):
     cur.execute(sql, vars())
     for indkey, in cur.fetchall():
         # We have a space seperated list of integer keys into the attribute
-        # mapping
-        keys = [attributes[int(key)] for key in indkey.split()]
+        # mapping. Ignore the 0's, as they indicate a function and we don't
+        # handle them.
+        keys = [
+            attributes[int(key)]
+                for key in indkey.split()
+                    if int(key) > 0
+            ]
         if column in keys:
             rv.append(tuple(keys))
     return rv
