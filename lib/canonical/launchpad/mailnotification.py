@@ -1087,14 +1087,19 @@ def notify_specification_modified(spec, event):
     indent = ' '*4
     L = ['Specification changed by %s:' % event.user.displayname]
     L.append(canonical_url(spec))
-    L.append('')
     if spec_delta.status is not None:
+        L.append('')
         old_status = spec_delta.status['old']
         new_status = spec_delta.status['new']
         L.append("%sStatus: %s => %s" % (
             indent, old_status.title, new_status.title))
+    mail_wrapper = MailWrapper(width=72)
+    if spec_delta.whiteboard is not None:
+        L.append('')
+        L.append('Whiteboard changed to:')
+        L.append(mail_wrapper.format(spec_delta.whiteboard))
 
-    if len(L) == 3:
+    if len(L) == 2:
         # The specification was modified, but we don't yet support
         # sending notification for the change.
         return
