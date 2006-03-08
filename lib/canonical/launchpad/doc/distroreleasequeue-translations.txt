@@ -127,6 +127,13 @@ And all things worked.
   >>> success
   True
 
+Ensure 'deb' is NEW and 'translation' is recognized, i.e., ACCEPTED
+
+  >>> print pmount_upload.build_summary()
+  NEW: pmount_0.9.7-2ubuntu2_amd64.deb
+  OK: pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz
+
+
 Check the import queue content, it should be empty.
 
   >>> from canonical.launchpad.interfaces import ITranslationImportQueue
