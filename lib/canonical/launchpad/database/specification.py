@@ -31,7 +31,7 @@ from canonical.launchpad.components.specification import SpecificationDelta
 
 from canonical.lp.dbschema import (
     EnumCol, SpecificationStatus, SpecificationPriority,
-    SpecificationDelivery)
+    SpecificationDelivery, SpecificationGoalStatus)
 
 
 class Specification(SQLBase):
@@ -65,6 +65,8 @@ class Specification(SQLBase):
         foreignKey='Distribution', notNull=False, default=None)
     distrorelease = ForeignKey(dbName='distrorelease',
         foreignKey='DistroRelease', notNull=False, default=None)
+    goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
+        default=SpecificationGoalStatus.PROPOSED)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
@@ -131,6 +133,13 @@ class Specification(SQLBase):
         self.distribution = distribution
         self.delivery = SpecificationDelivery.UNKNOWN
 
+    @property
+    def goal(self):
+        """See ISpecification."""
+        if self.productseries:
+            return self.productseries
+        return self.distrorelease
+
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""
         for sprintspecification in self.sprint_links:
@@ -156,10 +165,12 @@ class Specification(SQLBase):
     def is_complete(self):
         """See ISpecification."""
         return self.status in [
-            SpecificationStatus.IMPLEMENTED,
             SpecificationStatus.INFORMATIONAL,
             SpecificationStatus.OBSOLETE,
             SpecificationStatus.SUPERSEDED,
+            ] or self.delivery in [
+            SpecificationDelivery.IMPLEMENTED,
+            SpecificationDelivery.AWAITINGDEPLOYMENT
             ]
 
     @property
@@ -346,11 +357,18 @@ class SpecificationSet:
         for row in Specification.select():
             yield row
 
-    def getByName(self, name, default=None):
+    def getByName(self, name):
         """See ISpecificationSet."""
         specification = Specification.selectOneBy(name=name)
         if specification is None:
-            return default
+            return None 
+        return specification
+
+    def getByURL(self, url):
+        """See ISpecificationSet."""
+        specification = Specification.selectOneBy(specurl=url)
+        if specification is None:
+            return None 
         return specification
 
     @property

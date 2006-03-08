@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
 
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort)
+    SpecificationSort, SpecificationGoalStatus)
 
 
 class ProductSeries(SQLBase):
@@ -203,6 +203,17 @@ class ProductSeries(SQLBase):
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
+
+    def acceptSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.productseries = self
+        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
+
+    def declineSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.productseries = self
+        spec.goalstatus = SpecificationGoalStatus.DECLINED
+
 
 # XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
 # https://launchpad.net/products/launchpad/+bug/5247

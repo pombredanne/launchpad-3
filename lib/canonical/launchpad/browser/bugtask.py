@@ -25,7 +25,7 @@ from zope.interface import providedBy
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
 from zope.app.form.utility import (
-    setUpWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -99,7 +99,8 @@ class BugTargetTraversalMixin:
         # because it was filtered out by privacy-aware code.
         for bugtask in helpers.shortlist(bug.bugtasks):
             if bugtask.target == context:
-                return bugtask
+                # Security proxy this object on the way out.
+                return getUtility(IBugTaskSet).get(bugtask.id)
 
         # If we've come this far, it means that no actual task exists in this
         # context, so we'll return a null bug task. This makes it possible to,
@@ -406,6 +407,27 @@ class BugTaskEditView(GeneralFormView):
             field_values[name] = getattr(self.context, name)
 
         return field_values
+
+    def _setUpWidgets(self):
+        """Set up the bug task status edit widgets."""
+        # Set up the milestone widget as an input widget only if the has
+        # launchpad.Edit permissions on the distribution, for distro tasks, or
+        # launchpad.Edit permissions on the product, for upstream tasks.
+        milestone_context = (
+            self.context.product or self.context.distribution or
+            self.context.distrorelease.distribution)
+
+        field_names = list(self.fieldNames)
+        if (("milestone" in field_names) and not
+            helpers.check_permission("launchpad.Edit", milestone_context)):
+            # The user doesn't have permission to edit the milestone, so render
+            # a read-only milestone widget.
+            field_names.remove("milestone")
+            setUpDisplayWidgets(self, self.schema, names=["milestone"])
+
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=field_names,
+            initial=self.initial_values)
 
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""

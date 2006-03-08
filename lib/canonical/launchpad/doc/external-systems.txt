@@ -117,3 +117,11 @@ now no bug watches are in need of updating:
     >>> flush_database_updates()
     >>> gnome_bugzilla.getBugWatchesNeedingUpdate(23).count()
     0
+
+If updateBugWatches() can't parse the XML file returned from the remote
+bug tracker, an error is logged.
+
+    >>> external_bugzilla.remotesystem._postPage = (
+    ...     lambda self, data: '<invalid xml>')
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    ERROR:...:Failed to parse XML description...
