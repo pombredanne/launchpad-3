@@ -731,6 +731,18 @@ tr.highlight {
 .specpriorityHIGH          { color: Red; }
 .specpriorityESSENTIAL     { color: Red; }
 
+.specdeliveryUNKNOWN            {color: Gray; }
+.specdeliveryDEFERRED           {color: Red; }
+.specdeliveryNEEDSINFRASTUCTURE {color: Red; }
+.specdeliveryBLOCKED            {color: Red; }
+.specdeliverySTARTED            {color: Blue; }
+.specdeliverySLOW               {color: Red; }
+.specdeliveryGOOD               {color: Blue; }
+.specdeliveryBETA               {color: Orange; }
+.specdeliveryNEEDSREVIEW        {color: Purple; }
+.specdeliveryAWAITINGDEPLOYMENT {color: Red; }
+.specdeliveryIMPLEMENTED        {color: Green; }
+
 /* Board-like comment CSS */
 
 .boardComment {

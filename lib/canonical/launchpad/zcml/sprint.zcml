@@ -14,8 +14,9 @@
   </content>
 
   <browser:menus
-      module="canonical.launchpad.browser"
-      classes="SprintFacets SprintContextMenu SprintSetContextMenu"
+      module="canonical.launchpad.browser.sprint"
+      classes="SprintFacets SprintOverviewMenu 
+               SprintSpecificationsMenu SprintSetContextMenu"
       />
 
   <browser:defaultView
@@ -33,10 +34,8 @@
     permission="zope.Public">
     <browser:page
       name="+index"
+      facet="overview"
       template="../templates/sprint-index.pt" />
-    <browser:page
-      name="+specstable"
-      template="../templates/sprint-table.pt" />
     <browser:page
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
@@ -50,6 +49,7 @@
 
   <browser:editform
     name="+edit"
+    facet="overview"
     schema="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.SprintEditView"
     label="Edit sprint details"
@@ -95,6 +95,15 @@
                  attendee."
     permission="launchpad.AnyPerson"
     template="../templates/sprint-register.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+settopics"
+    facet="specifications"
+    class="canonical.launchpad.browser.sprint.SprintTopicSetView"
+    permission="launchpad.Edit"
+    template="../templates/sprint-settopics.pt"
     />
 
   <!-- SprintSet -->
