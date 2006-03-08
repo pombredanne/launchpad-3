@@ -62,7 +62,7 @@ def listReferences(cur, table, column, _state=None):
                     ON src_pg_class.oid = src_pg_attribute.attrelid
                 JOIN pg_attribute AS ref_pg_attribute
                     ON ref_pg_class.oid = ref_pg_attribute.attrelid,
-            information_schema._pg_keypositions() pos(n)
+            generate_series(0,10) pos(n)
         WHERE
             contype = 'f'
             AND ref_pg_class.relname = %(table)s
