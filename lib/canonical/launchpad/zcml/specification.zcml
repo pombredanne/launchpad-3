@@ -171,7 +171,7 @@
   <browser:generalform
     name="+setrelease"
     schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationReleaseView"
+    class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a distribution release"
     fields="distrorelease whiteboard"
     keyword_arguments="distrorelease whiteboard"
@@ -186,7 +186,7 @@
   <browser:generalform
     name="+setseries"
     schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationSeriesView"
+    class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a product series"
     fields="productseries whiteboard"
     keyword_arguments="productseries whiteboard"
@@ -374,6 +374,11 @@
   </content>
 
 </facet>
+
+<subscriber
+   for="canonical.launchpad.interfaces.ISpecification
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.subscribers.specification.specification_goalstatus" />
 
 <subscriber
    for="canonical.launchpad.interfaces.ISpecification
