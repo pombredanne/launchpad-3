@@ -80,9 +80,13 @@ Now let's take a look at what the notification looks like:
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
     Specification changed by Foo Bar:
-    http://.../products/firefox/+spec/svg-support
     <BLANKLINE>
         Status: Drafting => Pending Approval
+    <BLANKLINE>
+    -- 
+    Specification Details:
+      Support Native SVG Objects
+      http://.../products/firefox/+spec/svg-support
 
 Whiteboard change:
 
@@ -108,10 +112,15 @@ Whiteboard change:
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
     Specification changed by Foo Bar:
-    http://.../products/firefox/+spec/svg-support
     <BLANKLINE>
     Whiteboard changed to:
     New whiteboard.
+    <BLANKLINE>
+    -- 
+    Specification Details:
+      Support Native SVG Objects
+      http://.../products/firefox/+spec/svg-support
+
 
 Status and whiteboard change:
 
@@ -137,12 +146,16 @@ Status and whiteboard change:
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
     Specification changed by Foo Bar:
-    http://.../products/firefox/+spec/svg-support
     <BLANKLINE>
         Status: Pending Approval => Approved
     <BLANKLINE>
     Whiteboard changed to:
     Excellent work.
+    <BLANKLINE>
+    -- 
+    Specification Details:
+      Support Native SVG Objects
+      http://.../products/firefox/+spec/svg-support
 
 If we do a change, which we don't yet support sending a notification
 about, no notification is sent:
