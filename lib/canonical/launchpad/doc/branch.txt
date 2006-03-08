@@ -163,7 +163,7 @@ Branches can be subscribed to and unsubscribed from by a Person.
 True
 >>> subscription.branch == gterm_dev and subscription.person == sabdfl
 True
->>> gterm_dev.subscriptions == [subscription]
+>>> gterm_dev.subscriptions[0] == subscription
 True
 >>> gterm_dev.subscribers == [sabdfl]
 True

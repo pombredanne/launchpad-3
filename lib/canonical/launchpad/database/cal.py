@@ -122,7 +122,8 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
         except NotFoundError:
             e = CalendarEvent(calendar=self, dtstart=event.dtstart,
                               duration=event.duration, title=event.title,
-                              location=event.location, description=event.description,
+                              location=event.location,
+                              description=event.description,
                               unique_id=event.unique_id)
             return e
         else:

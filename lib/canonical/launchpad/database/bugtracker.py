@@ -47,11 +47,6 @@ class BugTracker(SQLBase):
         orderBy='name')
 
     @property
-    def watches(self):
-        """See IBugTracker"""
-        return BugWatch.selectBy(bugtrackerID=self.id, orderBy="remotebug")
-
-    @property
     def latestwatches(self):
         """See IBugTracker"""
         return BugWatch.selectBy(

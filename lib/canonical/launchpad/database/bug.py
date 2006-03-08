@@ -250,8 +250,9 @@ class BugSet:
         admins = getUtility(ILaunchpadCelebrities).admin
         if user:
             if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users, so that
-                # they can only see the private bugs that they're allowed to see.
+                # Enforce privacy-awareness for logged-in, non-admin users, 
+                # so that they can only see the private bugs that they're 
+                # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
                       Bug.id in (

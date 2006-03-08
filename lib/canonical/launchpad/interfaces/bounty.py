@@ -82,7 +82,8 @@ class IBounty(IHasOwner, IMessageTarget):
     subscriptions = Attribute('The set of subscriptions to this bounty.')
     projects = Attribute('The projects which this bounty is related to.')
     products = Attribute('The products to which this bounty is related.')
-    distributions = Attribute('The distributions to which this bounty is related.')
+    distributions = Attribute(
+        'The distributions to which this bounty is related.')
 
     # subscription-related methods
     def subscribe(person):
