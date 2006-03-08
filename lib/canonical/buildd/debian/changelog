@@ -1,3 +1,10 @@
+launchpad-buildd (30) unstable; urgency=low
+
+  * Move our translation publishing mojo so it happens BEFORE we move
+    all the files from debian/files out of the chroot, instead of after.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Wed,  8 Mar 2006 18:50:49 +1100
+
 launchpad-buildd (29) unstable; urgency=low
 
   * Use dpkg --print-installation-architecture in our postinst instead

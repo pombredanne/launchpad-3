@@ -258,7 +258,7 @@ def init():
 
     Log.debug("Initialising connection.")
     ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
-                       dbhost="emperor")
+                       dbhost="jubany")
 
     execute_zcml_for_scripts()
 
