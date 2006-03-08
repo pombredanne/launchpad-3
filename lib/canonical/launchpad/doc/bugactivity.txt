@@ -56,13 +56,7 @@ are simple little functions.
   ...     BugPackageInfestation, BugProductInfestation)
   >>> from canonical.launchpad.interfaces import (
   ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugSet, IBugTaskSet)
-
-  >>> def capture_state(obj, *fields):
-  ...     class State: pass
-  ...     state = State()
-  ...     for field in fields:
-  ...         setattr(state, field, getattr(obj, field))
-  ...     return state
+  >>> from canonical.launchpad.helpers import capture_state
 
 Here's a list of events that happen, and the resulting activity
 logged:

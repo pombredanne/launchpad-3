@@ -395,7 +395,7 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
-/* Column definitions: */
+/* Column definitions for old layout: */
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
@@ -413,6 +413,20 @@ ul.app>li.current {
   width: 24%; /* = 25% - 1% whitespace */
 }
 #portal-column-one {
+  display: inline;
+  float: left;
+  margin-left: -100%; /* flush with the left edge of the page */
+  width: 24%; /* = 25% - 1% whitespace */
+}
+
+/* Column definitions for 2col layout: */
+#layout2col-main {
+  display: inline;
+  float: left;
+  margin-left: 25%;
+  width: 75%;
+}
+#layout2col-portlets {
   display: inline;
   float: left;
   margin-left: -100%; /* flush with the left edge of the page */
@@ -1160,4 +1174,3 @@ dl.faq dd {
 dl.faq ol {
     margin: 0.5em 3em;
 }
-

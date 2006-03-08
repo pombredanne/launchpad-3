@@ -34,6 +34,14 @@ And if we try to retrieve a non-existent specification we should get None
     >>> print specset.getByName('nonexistentspec')
     None
 
+It's also possible to retrieve a specification by its URL
+    >>> specset.getByURL('http://developer.mozilla.org/en/docs/SVG').specurl
+    u'http://developer.mozilla.org/en/docs/SVG'
+
+And if there's no specification with the given URL we should get None
+    >>> print specset.getByURL('http://no-url.com')
+    None
+
 A specification could be attached to a distribution, or a product. We call
 this the specification target.
 

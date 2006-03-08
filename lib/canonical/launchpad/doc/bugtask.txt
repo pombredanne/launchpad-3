@@ -340,7 +340,9 @@ For a person:
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
     ...                              orderby='targetname')
     >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
-    [u'evolution (Ubuntu)', u'evolution (upstream)', u'linux-source-2.6.15 (Ubuntu)', u'mozilla-firefox (debian)', u'mozilla-firefox (ubuntu)']
+    [u'Ubuntu', u'evolution (Ubuntu)', u'evolution (upstream)',
+     u'linux-source-2.6.15 (Ubuntu)', u'mozilla-firefox (debian)',
+     u'mozilla-firefox (ubuntu)']
 
 It's also possible to search bugs that a person is subscribed to:
 
@@ -386,7 +388,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    20
+    21
 
 Editing Bug Tasks
 -----------------
@@ -535,6 +537,8 @@ going to subscribe the Ubuntu team to the bug report to help demonstrate
 later on the interaction between privacy and teams (see the section
 entitled _Privacy and Team Awareness_):
 
+    >>> from canonical.launchpad.helpers import capture_state
+
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
     >>> ubuntu_team = personset.get(17)
@@ -543,12 +547,6 @@ entitled _Privacy and Team Awareness_):
     >>> notify(SQLObjectToBeModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
 
-    >>> def capture_state(obj, *fields):
-    ...     class State: pass
-    ...     state = State()
-    ...     for field in fields:
-    ...         setattr(state, field, getattr(obj, field))
-    ...     return state
     >>> old_state = capture_state(
     ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
     ...     "summary", "description", "private", "name",

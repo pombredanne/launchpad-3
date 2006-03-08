@@ -13,10 +13,10 @@ which we want to give easy access to in the code.
   >>> celebs = getUtility(ILaunchpadCelebrities)
 
   >>> personset = getUtility(IPersonSet)
-  >>> buttsource = personset.getByName('buttsource')
-  >>> celebs.buttsource.__class__ == buttsource.__class__
+  >>> vcs_imports = personset.getByName('vcs-imports')
+  >>> celebs.vcs_imports.__class__ == vcs_imports.__class__
   True
-  >>> celebs.buttsource.id == buttsource.id
+  >>> celebs.vcs_imports.id == vcs_imports.id
   True
 
 The admins team will be renamed to the 'super' team in due course.  Meanwhile,

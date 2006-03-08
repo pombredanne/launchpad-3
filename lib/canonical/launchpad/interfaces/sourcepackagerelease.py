@@ -54,6 +54,10 @@ class ISourcePackageRelease(Interface):
     title = Attribute('The title of this sourcepackagerelease')
     latest_build = Attribute("The latest build of this source package "
         "release, or None")
+    failed_builds = Attribute("A (potentially empty) list of build "
+        "failures that happened for this source package " "release, or None")
+    needs_building = Attribute("A boolean that indicates whether this package "
+        "still needs to be built (on any architecture)")
 
     open_tickets_count = Attribute(
         "The number of open support tickets on the distrorelease and "

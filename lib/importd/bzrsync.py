@@ -91,7 +91,7 @@ class BzrSync:
         didsomething = False
 
         try:
-            bzr_revision = self.bzr_branch.get_revision(revision_id)
+            bzr_revision = self.bzr_branch.repository.get_revision(revision_id)
         except NoSuchRevision:
             return didsomething
 
