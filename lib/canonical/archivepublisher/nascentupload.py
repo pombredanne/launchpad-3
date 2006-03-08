@@ -1272,23 +1272,8 @@ class NascentUpload:
             self.reject("%s: does not mention any tar.gz or orig.tar.gz." % (
                         dsc_file.filename))
 
-        # XXX cprov 20051207: It was originally using sourcerer
-        # implementation of Debian version comparision which seems
-        # to fail for versions containing letters. Until we fix, let's
-        # use apt_pkg for this task.
-        version = dsc['version']
-        spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
-                dsc['source'])
-        self.spn = spn
-        releases = self.distrorelease.getPublishedReleases(spn)
-        apt_pkg.InitSystem()
-
-        for pub_record in releases:
-            pub_version = pub_record.sourcepackagerelease.version
-            if apt_pkg.VersionCompare(version, pub_version) <= 0:
-                self.reject("%s: Version older than that in the archive. "
-                            "%s <= %s" % (dsc_file.filename,
-                                          version, pub_version))
+        self.spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
+            dsc['source'])
 
         # For any file mentioned in the upload which does not exist in the
         # upload, go ahead and find it from the database.
