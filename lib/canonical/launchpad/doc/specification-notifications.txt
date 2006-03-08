@@ -190,6 +190,42 @@ Change priority:
       Support Native SVG Objects
       http://.../products/firefox/+spec/svg-support
 
+Change approver, assignee and drafter:
+
+    >>> svg_support.assignee = None
+
+    >>> stub.test_emails = []
+    >>> form = {
+    ...     'UPDATE_SUBMIT': 'Change', 'field.assignee': 'sabdfl',
+    ...     'field.approver': '', 'field.drafter': 'foo.bar@canonical.com'}
+    >>> edit_view = getView(svg_support, '+people', TestRequest(form=form))
+    >>> edit_view.update()
+    u'Updated...'
+    >>> transaction.commit()
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
+    >>> status_notification = notifications[0]
+    >>> status_notification['To']
+    'foo.bar@canonical.com'
+    >>> status_notification['From']
+    'Foo Bar <foo.bar@canonical.com>'
+    >>> status_notification['Subject']
+    '[Spec svg-support] Support Native SVG Objects'
+    >>> body = status_notification.get_payload(decode=True)
+    >>> print body  #doctest: -NORMALIZE_WHITESPACE
+    Specification changed by Foo Bar:
+    <BLANKLINE>
+        Approver: Mark Shuttleworth => (none)
+        Assignee: (none) => Mark Shuttleworth
+        Drafter: Robert Collins => Foo Bar
+    <BLANKLINE>
+    -- 
+    Specification Details:
+      Support Native SVG Objects
+      http://.../products/firefox/+spec/svg-support
+
 If we do a change, which we don't yet support sending a notification
 about, no notification is sent:
 

@@ -1086,35 +1086,59 @@ def notify_specification_modified(spec, event):
 
     subject = '[Spec %s] %s' % (spec.name, spec.title)
     indent = ' '*4
-    L = ['Specification changed by %s:' % event.user.displayname]
+    body_parts = ['Specification changed by %s:' % event.user.displayname]
+    L = []
     for dbitem_name in ('status', 'priority'):
         title = ISpecification[dbitem_name].title
         dbitem_delta = getattr(spec_delta, dbitem_name)
         if dbitem_delta is not None:
-            L.append('')
             old_item = dbitem_delta['old']
             new_item = dbitem_delta['new']
             L.append("%s%s: %s => %s" % (
                 indent, title, old_item.title, new_item.title))
 
+    for person_attrname in ('approver', 'assignee', 'drafter'):
+        title = ISpecification[person_attrname].title
+        person_delta = getattr(spec_delta, person_attrname)
+        if person_delta is not None:
+            old_person = person_delta['old']
+            if old_person is None:
+                old_value = "(none)"
+            else:
+                old_value = old_person.displayname
+            new_person = person_delta['new']
+            if new_person is None:
+                new_value = "(none)"
+            else:
+                new_value = new_person.displayname
+            L.append("%s%s: %s => %s" % (indent, title, old_value, new_value))
+
+    if L:
+        body_parts.append('')
+        body_parts += L
+
+    L = []
     mail_wrapper = MailWrapper(width=72)
     if spec_delta.whiteboard is not None:
         L.append('')
         L.append('Whiteboard changed to:')
         L.append(mail_wrapper.format(spec_delta.whiteboard))
 
-    if len(L) == 1:
+    if L:
+        body_parts += L
+
+    if len(body_parts) == 1:
         # The specification was modified, but we don't yet support
         # sending notification for the change.
         return
 
     indent = ' '*2
-    L.append('')
-    L.append('-- ')
-    L.append('Specification Details:')
-    L.append('%s%s' % (indent, spec.title))
-    L.append('%s%s' % (indent, canonical_url(spec)))
-    body = '\n'.join(L)
+    body_parts.append('')
+    body_parts.append('-- ')
+    body_parts.append('Specification Details:')
+    body_parts.append('%s%s' % (indent, spec.title))
+    body_parts.append('%s%s' % (indent, canonical_url(spec)))
+    body = '\n'.join(body_parts)
 
     sent_addrs = set()
     related_people = [
