@@ -1242,7 +1242,7 @@ EOF
 			my $date = strftime '%Y%m%d',gmtime;
 			my $target = "$main::HOME/public_html/translations/$date/";
 			system "mkdir -p $target";
-			if (system "mv",$translations,$target) {
+			if (system "cp -a",$translations,$target) {
 				print PLOG "ERROR: Could not move $translations to $target\n";
 			} else {
 				open TRANS, ">>$target/translations.txt";
