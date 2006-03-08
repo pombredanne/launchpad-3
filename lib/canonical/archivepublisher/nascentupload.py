@@ -1499,8 +1499,13 @@ class NascentUpload:
             if uploaded_file.custom or uploaded_file.section == "byhand":
                 # handled specially in insert_into_queue -- it goes
                 # into a custom queue, no overrides applied.
-                # They are always NEW.
-                uploaded_file.new = True
+
+                # XXX cprov 20060308: since the ftpmaster can't yet verify
+                # the content of custom uploads via the queue tool, moving
+                # them to NEW only makes it more confused. bug # 34070
+                # Single_Custom uploads should be NEW.
+                #if self.single_custom:
+                #    uploaded_file.new = True
                 continue
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease
