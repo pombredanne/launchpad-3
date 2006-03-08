@@ -1083,18 +1083,25 @@ def notify_ticket_modified(ticket, event):
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
     spec_delta = spec.getDelta(event.object_before_modification, event.user)
+    if spec_delta is None:
+        #XXX: Ideally, if an ISQLObjectModifiedEvent event is generated,
+        #     spec_delta shouldn't be None. I'm not confident that we
+        #     have enough test yet to assert this, though.
+        #     -- Bjorn Tillenius, 2006-03-08
+        return
 
     subject = '[Spec %s] %s' % (spec.name, spec.title)
     indent = ' '*4
-    body_lines = ['Specification changed by %s:' % event.user.displayname]
-    L = []
+    info_lines = []
     for dbitem_name in ('status', 'priority'):
         title = ISpecification[dbitem_name].title
+        assert ISpecification[dbitem_name].required, (
+            "The mail notification assumes %s can't be None" % dbitem_name)
         dbitem_delta = getattr(spec_delta, dbitem_name)
         if dbitem_delta is not None:
             old_item = dbitem_delta['old']
             new_item = dbitem_delta['new']
-            L.append("%s%s: %s => %s" % (
+            info_lines.append("%s%s: %s => %s" % (
                 indent, title, old_item.title, new_item.title))
 
     for person_attrname in ('approver', 'assignee', 'drafter'):
@@ -1111,40 +1118,31 @@ def notify_specification_modified(spec, event):
                 new_value = "(none)"
             else:
                 new_value = new_person.displayname
-            L.append("%s%s: %s => %s" % (indent, title, old_value, new_value))
+            info_lines.append(
+                "%s%s: %s => %s" % (indent, title, old_value, new_value))
 
-    if L:
-        body_lines.append('')
-        body_lines += L
-
-    L = []
     mail_wrapper = MailWrapper(width=72)
     if spec_delta.whiteboard is not None:
-        L.append('')
-        L.append('Whiteboard changed to:')
-        L.append(mail_wrapper.format(spec_delta.whiteboard))
+        if info_lines:
+            info_lines.append('')
+        info_lines.append('Whiteboard changed to:')
+        info_lines.append('')
+        info_lines.append(mail_wrapper.format(spec_delta.whiteboard))
 
-    if L:
-        body_lines += L
-
-    if len(body_lines) == 1:
+    if not info_lines:
         # The specification was modified, but we don't yet support
         # sending notification for the change.
         return
-
-    indent = ' '*2
-    body_lines.append('')
-    body_lines.append('-- ')
-    body_lines.append('Specification Details:')
-    body_lines.append('%s%s' % (indent, spec.title))
-    body_lines.append('%s%s' % (indent, canonical_url(spec)))
-    body = '\n'.join(body_lines)
+    body = get_email_template('specification-modified.txt') % {
+        'editor': event.user.displayname,
+        'info_fields': '\n'.join(info_lines),
+        'spec_title': spec.title,
+        'spec_url': canonical_url(spec)}
 
     sent_addrs = set()
+    related_people = [spec.owner, spec.assignee, spec.approver, spec.drafter]
     related_people = [
-        person for person in [
-            spec.owner, spec.assignee, spec.approver, spec.drafter]
-        if person is not None]
+        person for person in related_people if person is not None]
     subscribers = [subscription.person for subscription in spec.subscriptions]
 
     for notified_person in related_people + subscribers:

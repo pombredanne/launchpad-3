@@ -15,6 +15,7 @@ Changing the status:
     >>> svg_support = getUtility(ISpecificationSet).getByName('svg-support')
     >>> form = {
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Drafting',
+    ...     'field.delivery': svg_support.delivery.title,
     ...     'field.needs_discussion': '1'}
     >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
     >>> edit_view.update()
@@ -29,14 +30,34 @@ Changing the status:
 The notification was sent to the registrant, Foo Bar, the assignee, Carlos,
 and the drafter, Robert.
 
-    >>> sorted([to_addrs for from_addr, to_addrs, message in stub.test_emails])
-    [['carlos@canonical.com'],
-     ['foo.bar@canonical.com'],
-     ['robertc@robertcollins.net']]
+    >>> related_people = [
+    ...     svg_support.owner, svg_support.assignee, svg_support.drafter]
+    >>> related_people += [
+    ...     subscription.person for subscription in svg_support.subscriptions]
+    >>> related_people_addresses = [
+    ...     [person.preferredemail.email] for person in set(related_people)]
+    >>> sorted(related_people_addresses)
+    [[u'carlos@canonical.com'],
+     [u'foo.bar@canonical.com'],
+     [u'robertc@robertcollins.net']]
+
+    >>> sent_addresses = sorted(
+    ...     [to_addrs for from_addr, to_addrs, message in stub.test_emails])
+    >>> sent_addresses == sorted(related_people_addresses)
+    True
 
 The approver and all subscribers also get notified, but since there
-were no approver, and the only subscriber was Foo Bar, no additional
-notifications were sent. Let's set an approver and add a subscriber.
+was no approver, and the only subscriber was Foo Bar, no additional
+notifications were sent.
+
+    >>> svg_support.approver is None
+    True
+
+    >>> for subscription in svg_support.subscriptions:
+    ...     print subscription.person.preferredemail.email
+    foo.bar@canonical.com
+
+Let's set an approver and add a subscriber.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sabdfl = getUtility(IPersonSet).getByEmail('mark@hbd.com')
@@ -51,6 +72,7 @@ previous people, and to the approver and the added subscriber:
     >>> stub.test_emails = []
     >>> form = {
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
+    ...     'field.delivery': svg_support.delivery.title,
     ...     'field.needs_discussion': '1'}
     >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
     >>> edit_view.update()
@@ -81,19 +103,26 @@ Now let's take a look at what the notification looks like:
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
     Specification changed by Foo Bar:
     <BLANKLINE>
-        Status: Drafting => Pending Approval
+        Definition Status: Drafting => Pending Approval
     <BLANKLINE>
     -- 
     Specification Details:
       Support Native SVG Objects
       http://.../products/firefox/+spec/svg-support
+    <BLANKLINE>
 
 Whiteboard change:
 
     >>> stub.test_emails = []
+    >>> new_whiteboard = (
+    ...     "This is a long line, which will be wrapped in the email,"
+    ...     " since it's longer than 72 characters.\n"
+    ...     "\n"
+    ...     "Another paragraph")
     >>> form = {
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
-    ...     'field.whiteboard': 'New whiteboard.'}
+    ...     'field.delivery': svg_support.delivery.title,
+    ...     'field.whiteboard': new_whiteboard}
     >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
     >>> edit_view.update()
     u'Updated...'
@@ -114,19 +143,25 @@ Whiteboard change:
     Specification changed by Foo Bar:
     <BLANKLINE>
     Whiteboard changed to:
-    New whiteboard.
+    <BLANKLINE>
+    This is a long line, which will be wrapped in the email, since it's
+    longer than 72 characters.
+    <BLANKLINE>
+    Another paragraph
     <BLANKLINE>
     -- 
     Specification Details:
       Support Native SVG Objects
       http://.../products/firefox/+spec/svg-support
+    <BLANKLINE>
 
 
-Status and whiteboard change:
+Definition status and whiteboard change:
 
     >>> stub.test_emails = []
     >>> form = {
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Approved',
+    ...     'field.delivery': svg_support.delivery.title,
     ...     'field.whiteboard': 'Excellent work.'}
     >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
     >>> edit_view.update()
@@ -147,15 +182,17 @@ Status and whiteboard change:
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
     Specification changed by Foo Bar:
     <BLANKLINE>
-        Status: Pending Approval => Approved
+        Definition Status: Pending Approval => Approved
     <BLANKLINE>
     Whiteboard changed to:
+    <BLANKLINE>
     Excellent work.
     <BLANKLINE>
     -- 
     Specification Details:
       Support Native SVG Objects
       http://.../products/firefox/+spec/svg-support
+    <BLANKLINE>
 
 Change priority:
 
@@ -189,6 +226,7 @@ Change priority:
     Specification Details:
       Support Native SVG Objects
       http://.../products/firefox/+spec/svg-support
+    <BLANKLINE>
 
 Change approver, assignee and drafter:
 
@@ -225,6 +263,7 @@ Change approver, assignee and drafter:
     Specification Details:
       Support Native SVG Objects
       http://.../products/firefox/+spec/svg-support
+    <BLANKLINE>
 
 If we do a change, which we don't yet support sending a notification
 about, no notification is sent:
