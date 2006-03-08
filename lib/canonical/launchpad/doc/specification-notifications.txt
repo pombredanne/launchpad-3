@@ -157,6 +157,39 @@ Status and whiteboard change:
       Support Native SVG Objects
       http://.../products/firefox/+spec/svg-support
 
+Change priority:
+
+    >>> stub.test_emails = []
+    >>> form = {
+    ...     'UPDATE_SUBMIT': 'Change', 'field.priority': 'Essential',
+    ...     'field.direction_approved': 'on',
+    ...     'field.whiteboard': svg_support.whiteboard}
+    >>> edit_view = getView(svg_support, '+priority', TestRequest(form=form))
+    >>> edit_view.update()
+    u'Updated...'
+    >>> transaction.commit()
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
+    >>> status_notification = notifications[0]
+    >>> status_notification['To']
+    'carlos@canonical.com'
+    >>> status_notification['From']
+    'Foo Bar <foo.bar@canonical.com>'
+    >>> status_notification['Subject']
+    '[Spec svg-support] Support Native SVG Objects'
+    >>> body = status_notification.get_payload(decode=True)
+    >>> print body  #doctest: -NORMALIZE_WHITESPACE
+    Specification changed by Foo Bar:
+    <BLANKLINE>
+        Priority: High => Essential
+    <BLANKLINE>
+    -- 
+    Specification Details:
+      Support Native SVG Objects
+      http://.../products/firefox/+spec/svg-support
+
 If we do a change, which we don't yet support sending a notification
 about, no notification is sent:
 

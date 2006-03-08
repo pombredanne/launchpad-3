@@ -12,7 +12,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
+    IUpstreamBugTask, )
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -1086,12 +1087,16 @@ def notify_specification_modified(spec, event):
     subject = '[Spec %s] %s' % (spec.name, spec.title)
     indent = ' '*4
     L = ['Specification changed by %s:' % event.user.displayname]
-    if spec_delta.status is not None:
-        L.append('')
-        old_status = spec_delta.status['old']
-        new_status = spec_delta.status['new']
-        L.append("%sStatus: %s => %s" % (
-            indent, old_status.title, new_status.title))
+    for dbitem_name in ('status', 'priority'):
+        title = ISpecification[dbitem_name].title
+        dbitem_delta = getattr(spec_delta, dbitem_name)
+        if dbitem_delta is not None:
+            L.append('')
+            old_item = dbitem_delta['old']
+            new_item = dbitem_delta['new']
+            L.append("%s%s: %s => %s" % (
+                indent, title, old_item.title, new_item.title))
+
     mail_wrapper = MailWrapper(width=72)
     if spec_delta.whiteboard is not None:
         L.append('')
