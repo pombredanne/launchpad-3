@@ -9,19 +9,18 @@ __all__ = [
     'IBountySet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.fields import Summary, Title, TimeInterval
+from canonical.launchpad import _
+from canonical.launchpad.fields import Summary, Title 
 from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import BountyDifficulty, BountyStatus
 
-_ = MessageIDFactory('launchpad')
 
 class IBounty(IHasOwner, IMessageTarget):
     """The core bounty description."""

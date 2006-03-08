@@ -5,7 +5,7 @@ __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin, AND
+from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -43,9 +43,9 @@ class ProductRelease(SQLBase):
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
                           default=None)
 
-    files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
+    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
-    files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
+    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
     # properties
     @property

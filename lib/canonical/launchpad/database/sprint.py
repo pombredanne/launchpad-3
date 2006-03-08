@@ -6,27 +6,25 @@ __all__ = [
     'SprintSet',
     ]
 
-import datetime
 
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin)
+    ForeignKey, StringCol, RelatedJoin)
 from sqlobject.sqlbuilder import AND, IN, NOT
 
-from canonical.launchpad.interfaces import ISprint, ISprintSet, NotFoundError
+from canonical.launchpad.interfaces import ISprint, ISprintSet
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.validators.name import valid_name
 
 from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
 from canonical.lp.dbschema import (
-    SpecificationSort, SprintSpecificationStatus, SpecificationStatus)
+    SprintSpecificationStatus, SpecificationStatus)
 
 
 class Sprint(SQLBase):

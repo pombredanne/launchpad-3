@@ -17,8 +17,8 @@ from zope.component import getUtility
 
 # SQL imports
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
-    SQLObjectNotFound)
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin, 
+    RelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
@@ -95,9 +95,9 @@ class Person(SQLBase):
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None)
 
-    sshkeys = MultipleJoin('SSHKey', joinColumn='person')
+    sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
-    karma_total_cache = MultipleJoin('KarmaTotalCache', joinColumn='person')
+    karma_total_cache = SQLMultipleJoin('KarmaTotalCache', joinColumn='person')
 
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
@@ -118,25 +118,29 @@ class Person(SQLBase):
                             intermediateTable='PersonLanguage')
 
     # relevant joins
-    authored_branches = MultipleJoin(
+    authored_branches = SQLMultipleJoin(
         'Branch', joinColumn='author',orderBy='-id')
     subscribed_branches = RelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', orderBy='-id')
-    ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
+    ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
-    reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
+    reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
+    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute 
+    # 'claimant' in the Bounty database class or interface, but the column 
+    # exists in the database. 
+    # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = MultipleJoin('KarmaCache', joinColumn='person',
+    karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
         orderBy='category')
-    signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
-    ircnicknames = MultipleJoin('IrcID', joinColumn='person')
-    jabberids = MultipleJoin('JabberID', joinColumn='person')
+    signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
+    ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
+    jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
     # specification-related joins
     @property
@@ -176,11 +180,11 @@ class Person(SQLBase):
             orderBy=['-datecreated'])
 
     # ticket related joins
-    answered_tickets = MultipleJoin('Ticket', joinColumn='answerer',
+    answered_tickets = SQLMultipleJoin('Ticket', joinColumn='answerer',
         orderBy='-datecreated')
-    assigned_tickets = MultipleJoin('Ticket', joinColumn='assignee',
+    assigned_tickets = SQLMultipleJoin('Ticket', joinColumn='assignee',
         orderBy='-datecreated')
-    created_tickets = MultipleJoin('Ticket', joinColumn='owner',
+    created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
         orderBy='-datecreated')
     subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
         otherColumn='ticket', intermediateTable='TicketSubscription',

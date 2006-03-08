@@ -53,7 +53,7 @@ from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility, getView
+from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
@@ -70,13 +70,13 @@ from canonical.launchpad.interfaces import (
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
+    UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint, shortlist)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -975,9 +975,6 @@ class PersonView:
             self.context.subscribedBounties or
             self.context.claimedBounties)
 
-    def activeMembersCount(self):
-        return len(self.context.activemembers)
-
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
         user = getUtility(ILaunchBag).user
@@ -1069,13 +1066,13 @@ class PersonView:
                           for key in self.context.sshkeys])
 
     def sshkeysCount(self):
-        return len(self.context.sshkeys)
+        return self.context.sshkeys.count()
 
     def gpgkeysCount(self):
         return self.context.gpgkeys.count()
 
     def signedcocsCount(self):
-        return len(self.context.signedcocs)
+        return self.context.signedcocs.count()
 
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this

@@ -14,10 +14,9 @@ import re
 import pytz
 
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import IntervalCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin
+from sqlobject import SQLMultipleJoin
 from sqlobject import SQLObjectNotFound
 from sqlobject import AND
 
@@ -92,7 +91,7 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
             # should not be reached
             assert False, "Calendar attached to unknown object"
 
-    _eventsJoin = MultipleJoin('CalendarEvent', joinColumn='calendar')
+    _eventsJoin = SQLMultipleJoin('CalendarEvent', joinColumn='calendar')
 
     def __iter__(self):
         """See ICalendar"""

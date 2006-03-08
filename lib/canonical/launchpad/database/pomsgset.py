@@ -8,7 +8,7 @@ import gettextpo
 from zope.interface import implements, providedBy
 from zope.event import notify
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
-                       MultipleJoin, SQLObjectNotFound)
+                       SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.launchpad.event.sqlobjectevent import (SQLObjectCreatedEvent,
     SQLObjectModifiedEvent)
@@ -83,7 +83,7 @@ class POMsgSet(SQLBase):
         notNull=True)
     obsolete = BoolCol(dbName='obsolete', notNull=True)
 
-    selections = MultipleJoin('POSelection', joinColumn='pomsgset',
+    selections = SQLMultipleJoin('POSelection', joinColumn='pomsgset',
         orderBy='pluralform')
 
     @property

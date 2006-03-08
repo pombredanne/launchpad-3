@@ -37,7 +37,7 @@ Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
 utility.
 
 >>> from zope.component import getUtility
->>> from canonical.launchpad.interfaces import IBranchSet
+>>> from canonical.launchpad.interfaces import IBranchSet, NotFoundError
 >>> branchset = getUtility(IBranchSet)
 
 It must define the IBranchSet interface.
@@ -52,6 +52,18 @@ True
 
 >>> print branchset.get(-1)
 None
+
+A branch is retrievable via BranchSet's __getitem__ 
+
+>>> branchset[24].name
+u'launchpad'
+
+If it doesn't exist an exception NotFoundError is raised
+
+>>> try:
+...     branchset[-1]
+... except NotFoundError:
+...     pass
 
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> personset = getUtility(IPersonSet)

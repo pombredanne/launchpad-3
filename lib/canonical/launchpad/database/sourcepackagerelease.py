@@ -10,7 +10,7 @@ from StringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin
+from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -62,11 +62,11 @@ class SourcePackageRelease(SQLBase):
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
 
-    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease',
+    builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
         orderBy=['-datecreated'])
-    files = MultipleJoin('SourcePackageReleaseFile',
+    files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease')
-    publishings = MultipleJoin('SourcePackagePublishing',
+    publishings = SQLMultipleJoin('SourcePackagePublishing',
         joinColumn='sourcepackagerelease')
 
     @property

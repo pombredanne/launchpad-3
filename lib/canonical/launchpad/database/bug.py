@@ -14,10 +14,9 @@ from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -25,7 +24,6 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugcve import BugCve
-from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
@@ -67,26 +65,27 @@ class Bug(SQLBase):
     private = BoolCol(notNull=True, default=False)
 
     # useful Joins
-    activity = MultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
+    activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
     messages = RelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            orderBy='datecreated')
-    productinfestations = MultipleJoin(
+    productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
-    packageinfestations = MultipleJoin(
+    packageinfestations = SQLMultipleJoin(
             'BugPackageInfestation', joinColumn='bug', orderBy='id')
-    watches = MultipleJoin(
+    watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
-    externalrefs = MultipleJoin(
+    externalrefs = SQLMultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
     cves = RelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
-    cve_links = MultipleJoin('BugCve', joinColumn='bug', orderBy='id')
-    subscriptions = MultipleJoin(
+    cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
-    duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = MultipleJoin('BugAttachment', joinColumn='bug', orderBy='id')
+    duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
+    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
+        orderBy='id')
     specifications = RelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
