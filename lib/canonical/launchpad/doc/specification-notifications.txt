@@ -84,3 +84,16 @@ Now let's take a look at what the notification looks like:
     <BLANKLINE>
         Status: Drafting => Pending Approval
 
+If we do a change, which we don't yet support sending a notification
+about, no notification is sent:
+
+    >>> stub.test_emails = []
+    >>> form = {
+    ...     'UPDATE_SUBMIT': 'Change', 'field.productseries': '2',
+    ...     'field.delivery': 'Unknown'}
+    >>> edit_view = getView(svg_support, '+setseries', TestRequest(form=form))
+    >>> edit_view.update()
+    u'Updated...'
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0

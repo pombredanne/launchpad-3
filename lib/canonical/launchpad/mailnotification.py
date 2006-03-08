@@ -1094,6 +1094,11 @@ def notify_specification_modified(spec, event):
         L.append("%sStatus: %s => %s" % (
             indent, old_status.title, new_status.title))
 
+    if len(L) == 3:
+        # The specification was modified, but we don't yet support
+        # sending notification for the change.
+        return
+
     body = '\n'.join(L)
 
     sent_addrs = set()
