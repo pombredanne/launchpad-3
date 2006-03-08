@@ -37,7 +37,7 @@ from canonical.archivepublisher.utils import (
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, DistroReleaseQueueStatus)
+    BuildStatus, DistroReleaseQueueStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -1470,6 +1470,74 @@ class NascentUpload:
 
         self.permitted_components = possible_components
 
+    def _checkVersion(self, proposed_version, archive_version, filename=None):
+        """ """
+        if apt_pkg.VersionCompare(proposed_version, archive_version) <= 0:
+            self.reject("%s: Version older than that in the archive. %s <= %s"
+                        % (filename, proposed_version, archive_version))
+
+    def _getKnownSources(self, uploaded_file):
+        """ """
+        sourcename = getUtility(ISourcePackageNameSet).getOrCreateByName(
+            uploaded_file.package)
+
+        if self.pocket is not PackagePublishingPocket.BACKPORTS:
+            exclude_pocket = PackagePublishingPocket.BACKPORTS
+        else:
+            exclude_pocket = None
+
+        candidates = self.distrorelease.getPublishedReleases(
+            sourcename, include_pending=True, exclude_pocket=exclude_pocket)
+
+        self.logger.debug("%d possible source(s)" % len(candidates))
+
+        return candidates
+
+    def _getKnownBinaries(self, uploaded_file):
+        """ """
+        # Look up the binary package overrides in the relevant
+        # distroarchrelease
+        binaryname = getUtility(IBinaryPackageNameSet).getOrCreateByName(
+            uploaded_file.package)
+
+        # XXX cprov 20060308: For god sake !!!!
+        # Cache the bpn for later.
+        uploaded_file.bpn = binaryname
+        archtag = uploaded_file.architecture
+
+        if archtag == "all":
+            archtag = self.changes_filename_archtag
+
+        self.logger.debug(
+            "Checking against %s for %s" %(archtag, uploaded_file.package))
+        try:
+            dar = self.distrorelease[archtag]
+        except NotFoundError:
+            self.reject(
+                "%s: Unable to find arch: %s" % (uploaded_file.package,
+                                                 archtag))
+            return None
+
+        if self.pocket is not PackagePublishingPocket.BACKPORTS:
+            exclude_pocket = PackagePublishingPocket.BACKPORTS
+        else:
+            exclude_pocket = None
+
+        candidates = dar.getReleasedPackages(
+            binaryname, exclude_pocket=exclude_pocket)
+
+        if not candidates:
+            # Try the other architectures...
+            for dar in self.distrorelease.architectures:
+                candidates = dar.getReleasedPackages(
+                    binaryname, exclude_pocket=exclude_pocket)
+                if candidates:
+                    break
+
+        self.logger.debug("%d possible binar{y,ies}" % len(candidates))
+
+        return candidates
+
     def find_and_apply_overrides(self):
         """Look in the db for each part of the upload to see if it's overridden
         or not.
@@ -1492,32 +1560,23 @@ class NascentUpload:
                 #if self.single_custom:
                 #    uploaded_file.new = True
                 continue
+
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease
                 # (any pocket would be enough)
                 self.logger.debug("getPublishedReleases()")
-                spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
-                    uploaded_file.package)
-                possible = self.distrorelease.getPublishedReleases(
-                    spn, include_pending=True)
-                self.logger.debug("%d possible source(s)" % len(possible))
+
+                possible = self._getKnownSources(uploaded_file)
 
                 if possible:
                     self.logger.debug("%s: (source) exists" % (
                         uploaded_file.package))
-                    # We have a set of possible overrides. The first in
-                    # the set will be the most useful since it should be
-                    # the most recently uploaded. We therefore use this one.
-                    override = possible[0]
-                    archive_version = override.sourcepackagerelease.version
-                    if apt_pkg.VersionCompare(self.changes['version'],
-                                              archive_version) <= 0:
-                        self.reject("%s: Version older than that in the "
-                                    "archive. %s <= %s"
-                                    % (uploaded_file.filename,
-                                       self.changes['version'],
-                                       archive_version))
 
+                    override = possible[0]
+                    proposed_version = self.changes['version']
+                    archive_version = override.sourcepackagerelease.version
+                    self._checkVersion(proposed_version, archive_version,
+                                       filename=uploaded_file.filename)
                     uploaded_file.component = override.component.name
                     uploaded_file.section = override.section.name
                     uploaded_file.new = False
@@ -1525,60 +1584,34 @@ class NascentUpload:
                     self.logger.debug("%s: (source) NEW" % (
                         uploaded_file.package))
                     uploaded_file.new = True
+
             elif not uploaded_file.is_source:
-                # Look up the binary package overrides in the relevant
-                # distroarchrelease
-                bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(
-                    uploaded_file.package)
-                # Cache the bpn for later.
-                uploaded_file.bpn = bpn
-                archtag = uploaded_file.architecture
-                if archtag == "all":
-                    archtag = self.changes_filename_archtag
-                try:
-                    self.logger.debug("Checking against %s for %s" %(
-                        archtag, uploaded_file.package))
-                    dar = self.distrorelease[archtag]
-                    possible = dar.getReleasedPackages(bpn)
-                    if not possible:
-                        # Try the other architectures...
-                        for dar in self.distrorelease.architectures:
-                            possible = dar.getReleasedPackages(bpn)
-                            if possible:
-                                break
+                self.logger.debug("getPublishedReleases()")
 
-                    self.logger.debug("getReleasedPackages() returned %d "
-                                      "possibilit{y,ies}" % len(possible))
-                    if possible:
-                        self.logger.debug("%s: (binary) exists" % (
-                            uploaded_file.package))
-                        # We have a set of possible overrides. The
-                        # first in the set will be the most useful
-                        # since it should be the most recently
-                        # uploaded. We therefore use this one.
-                        override=possible[0]
-                        archive_version = override.binarypackagerelease.version
-                        if (override.distroarchrelease ==
-                            self.distrorelease[archtag] and
-                            apt_pkg.VersionCompare(uploaded_file.version,
-                                                   archive_version) <= 0):
-                            self.reject("%s: Version older than that in the "
-                                        "archive. %s <= %s"
-                                        % (uploaded_file.filename,
-                                           uploaded_file.version,
-                                           archive_version))
-                        uploaded_file.component = override.component.name
-                        uploaded_file.section = override.section.name
-                        uploaded_file.priority = override.priority
-                        uploaded_file.new = False
-                    else:
-                        self.logger.debug("%s: (binary) NEW" % (
-                            uploaded_file.package))
-                        uploaded_file.new = True
-                except NotFoundError:
-                    self.reject("%s: Unable to find arch: %s" % (
-                        uploaded_file.filename, archtag))
+                possible = self._getKnownBinaries(uploaded_file)
 
+                if possible:
+                    self.logger.debug("%s: (binary) exists" % (
+                        uploaded_file.package))
+
+                    override = possible[0]
+                    proposed_version = uploaded_file.version
+                    archive_version = override.binarypackagerelease.version
+
+                    if (override.distroarchrelease ==
+                        self.distrorelease[uploaded_file.archtecture]):
+                        self._checkVersion(
+                            proposed_version, archive_version,
+                            filename=uploaded_file.filename)
+
+                    uploaded_file.component = override.component.name
+                    uploaded_file.section = override.section.name
+                    uploaded_file.priority = override.priority
+                    uploaded_file.new = False
+                else:
+                    self.logger.debug("%s: (binary) NEW" % (
+                        uploaded_file.package))
+                    uploaded_file.new = True
 
     def verify_acl(self):
         """Verify that the uploaded files are okay for their named components

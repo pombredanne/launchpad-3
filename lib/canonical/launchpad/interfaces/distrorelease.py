@@ -151,11 +151,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         this one."""
 
     def getPublishedReleases(sourcepackage_or_name, pocket=None,
-                             include_pending=False):
+                             include_pending=False, exclude_pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+
+        if exclude_pocket is specified we exclude results matching that pocket.
 
         If 'include_pending' is True, we return also the pending publication
         records, those packages that will get published in the next publisher

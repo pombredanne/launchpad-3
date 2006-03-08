@@ -354,7 +354,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         return item
 
     def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
-                             include_pending=False):
+                             include_pending=False, exclude_pocket=None):
         """See IDistroRelease."""
         # XXX cprov 20060213: we need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -378,6 +378,9 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
+
+        if exclude_pocket is not None:
+            queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
 
         if include_pending:
             queries.append("status in (%s, %s)" % sqlvalues(

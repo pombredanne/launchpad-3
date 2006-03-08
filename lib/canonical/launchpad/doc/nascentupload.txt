@@ -250,8 +250,9 @@ Finally we can ask the upload to process itself.
   DEBUG: getPublishedReleases()
   DEBUG: 0 possible source(s)
   DEBUG: ed: (source) NEW
+  DEBUG: getPublishedReleases()
   DEBUG: Checking against i386 for ed
-  DEBUG: getReleasedPackages() returned 0 possibilit{y,ies}
+  DEBUG: 0 possible binar{y,ies}
   DEBUG: ed: (binary) NEW
   DEBUG: Daniel Silverstone (26) is in main's uploaders.
   DEBUG: Daniel Silverstone (26) is in restricted's uploaders.
