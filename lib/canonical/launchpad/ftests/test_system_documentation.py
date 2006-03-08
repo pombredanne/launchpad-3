@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
 from canonical.launchpad.mail import stub
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -95,6 +96,16 @@ def supportTrackerTearDown(test):
     LibrarianTestSetup().tearDown()
     LaunchpadZopelessTestSetup().tearDown()
 
+def branchStatusSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='launchpad').setUp()
+    test._authserver = AuthserverTacTestSetup()
+    test._authserver.setUp()
+
+def branchStatusTearDown(test):
+    test._authserver.tearDown()
+    LaunchpadZopelessTestSetup().tearDown()
+
 
 # Files that have special needs can construct their own suite
 special = {
@@ -140,7 +151,10 @@ special = {
             setUp=importdSetUp, tearDown=importdTearDown),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
-            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown)
+            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
+    'branch-status-client.txt': FunctionalDocFileSuite(
+            '../doc/branch-status-client.txt',
+            setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
     }
 
 def test_suite():

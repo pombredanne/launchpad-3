@@ -24,8 +24,8 @@ from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
 from canonical.database.sqlbase import sqlvalues
 from canonical.lp import dbschema
 
-from canonical.authserver.interfaces import IUserDetailsStorage
-from canonical.authserver.interfaces import IUserDetailsStorageV2
+from canonical.authserver.interfaces import (
+    IUserDetailsStorage, IUserDetailsStorageV2, IBranchDetailsStorage)
 
 from canonical.foaf import nickname
 
