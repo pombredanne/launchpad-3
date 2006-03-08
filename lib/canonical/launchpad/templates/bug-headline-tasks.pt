@@ -22,32 +22,20 @@
         />
       </td>
 
-      <td style="margin: 0; padding: 0">
-        <a style="display: block; text-decoration: none; padding: 3px"
-           tal:attributes="href tasklink;
-                           class string:status${bugtask/status/title}"
+      <td tal:attributes="class string:status${bugtask/status/title}"
            tal:content="bugtask/status/title">
           $BugTask.status
-        <img tal:condition="bugtask/statusexplanation"
-             src="/@@/text"
-             />
-        </a>
       </td>
 
-      <td style="margin: 0; padding: 0"
-          tal:attributes="class string:severity${bugtask/severity/title}">
-        <a style="display: block; text-decoration: none; padding: 3px"
-           tal:attributes="href tasklink;
-                           class string:status${bugtask/status/title}"
+      <td tal:attributes="class string:severity${bugtask/severity/title}"
            tal:content="bugtask/severity/title">
           Critical
-        </a>
       </td>
 
       <td style="margin: 0; padding: 0; vertical-align: middle">
         <tal:has_watch condition="bugtask/bugwatch">
           <a style="display: block; text-decoration: none; padding: 3px"
-             tal:attributes="href tasklink">
+             tal:attributes="href bugtask/bugwatch/url">
             <img tal:condition="bugtask/assignee"
                  src="/@@/user.gif" alt="" />
             <img
