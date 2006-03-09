@@ -1,7 +1,7 @@
 # Copyright 2005 Canonical Ltd. All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, TextLine, Int, DateTime
+from zope.schema import Bool, Choice, TextLine, Int, DateTime, Field
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -64,7 +64,7 @@ class ITranslationImportQueueEntry(Interface):
         " None.")
 
     # XXX CarlosPerelloMarin 20060301: We are using Choice instead of Attribute
-    # due bug #29944
+    # due bug #34103
     status = Choice(
         title=_("The status of the import.")
         values=RosettaImportStatus.items,
@@ -87,20 +87,21 @@ class ITranslationImportQueueEntry(Interface):
     import_into = Attribute("The Object where this entry will be imported. Is"
         " None if we don't know where to import it.")
 
-    # XXX CarlosPerelloMarin 20060301: We are using Int instead of Attribute
-    # due bug #29944
-    pofile = Int(
+    # XXX CarlosPerelloMarin 20060301: We are using Field instead of Attribute
+    # due bug #34103
+    pofile = Field(
         title=_("The IPOfile where this entry should be imported."),
         required=False)
 
-    # XXX CarlosPerelloMarin 20060301: We are using Int instead of Attribute
-    # due bug #29944
-    potemplate = Int(
+    # XXX CarlosPerelloMarin 20060301: We are using Field instead of Attribute
+    # due bug #34103
+    potemplate = Field(
         title=_("The IPOTemplate associated with this entry."),
         description=_("The IPOTemplate associated with this entry. If path"
         " notes a .pot file, it should be used as the place where this entry"
         " will be imported, if it's a .po file, it indicates the template"
-        " associated with tha translation."))
+        " associated with tha translation."),
+        required=False)
 
     def getFileContent():
         """Return the imported file content as a stream."""
@@ -176,8 +177,7 @@ class ITranslationImportQueue(Interface):
         """Return all entries this import queue has."""
 
     def getFirstEntryToImport():
-        """Return the first entry of the queue that is ready to be imported.
-        """
+        """Return the first entry of the queue ready to be imported."""
 
     def executeAutomaticReviews(ztm):
         """Try to move entries from the Needs Review status to Approved one.
@@ -189,7 +189,9 @@ class ITranslationImportQueue(Interface):
         """
 
     def cleanUpQueue():
-        """Remove the DELETED and IMPORTED entries after an elapsed timeout.
+        """Remove old DELETED and IMPORTED entries.
+
+        Only entries older than 5 days will be removed.
         """
 
     def remove(entry):

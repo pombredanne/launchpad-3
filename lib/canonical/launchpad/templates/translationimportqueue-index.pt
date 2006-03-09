@@ -42,56 +42,11 @@
                tal:attributes="href entry/productseries/fmt:url"
                >Evolution Series: MAIN</a>
           </td>
-          <td>
-            <select
-              tal:condition="entry/required:launchpad.Edit"
-              tal:attributes="name string:status-${entry/id}">
-              <option
-                tal:condition="python: entry.status.name == 'APPROVED'"
-                value="approved"
-                selected="yes">Approved</option>
-              <tal:approved condition="entry/required:launchpad.Admin">
-              <option
-                tal:condition="python: entry.status.name != 'APPROVED' and
-                                       entry.import_into is not None"
-                value="approved">Approved</option>
-              </tal:approved>
-              <option
-                tal:condition="python: entry.status.name == 'IMPORTED'"
-                value="imported"
-                selected="yes">Imported</option>
-              <option
-                tal:condition="python: entry.status.name == 'DELETED'"
-                value="deleted"
-                selected="yes">Deleted</option>
-              <option
-                tal:condition="python: entry.status.name != 'DELETED'"
-                value="deleted">Deleted</option>
-              <option
-                tal:condition="python: entry.status.name == 'FAILED'"
-                value="failed"
-                selected="yes">Failed</option>
-              <option
-                tal:condition="python: entry.status.name == 'NEEDS_REVIEW'"
-                value="needs_review"
-                selected="yes">Needs Review</option>
-              <option
-                tal:condition="python: entry.status.name != 'NEEDS_REVIEW'"
-                value="needs_review">Needs Review</option>
-              <option
-                tal:condition="python: entry.status.name == 'BLOCKED'"
-                value="blocked"
-                selected="yes">Blocked</option>
-              <tal:blocked condition="entry/required:launchpad.Admin">
-              <option
-                tal:condition="python: entry.status.name != 'BLOCKED'"
-                value="blocked">Blocked</option>
-              </tal:blocked>
-            </select>
-            <span
-              tal:condition="not: entry/required:launchpad.Edit"
+          <td tal:condition="entry/required:launchpad.Edit"
+              tal:content="python: view.getStatusSelect(entry)">
+          </td>
+          <td tal:condition="not: entry/required:launchpad.Edit"
               tal:content="entry/status/title">Needs Review
-            </span>
           </td>
           <td>
             <tal:block condition="entry/required:launchpad.Admin">

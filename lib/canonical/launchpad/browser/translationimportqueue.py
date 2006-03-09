@@ -15,6 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.app.form.browser.widget import renderElement
 
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
@@ -257,3 +258,90 @@ class TranslationImportQueueView(LaunchpadView):
                 raise UnexpectedFormData(
                     'Ignored the request to change the status from %s to %s.'
                         % (entry.status.name, new_status_name))
+
+    def getStatusSelect(self, entry):
+        """Return a select html tag with the possible status for entry
+
+        :arg entry: An ITranslationImportQueueEntry.
+        """
+        assert helpers.check_permission('launchpad.Edit', entry), (
+            'You can only change the status if you have rights to do it')
+
+        if entry.status == RosettaImportStatus.APPROVED:
+            # If the entry is approved, this status should appear and set as
+            # selected.
+            approved_html = renderElement('option', selected='yes',
+                value=RosettaImportStatus.APPROVED.name,
+                contents=RosettaImportStatus.APPROVED.title)
+        elif (helpers.check_permission('launchpad.Admin', entry) and
+              entry.import_into is not None):
+            # The entry is not approved but if we are an admin and we know
+            # where it's going to be imported, we can approve it.
+            approved_html = renderElement('option',
+                value=RosettaImportStatus.APPROVED.name,
+                contents=RosettaImportStatus.APPROVED.title)
+        else:
+            # We should not add the approved status for this entry.
+            approved_html = ''
+
+        if entry.status == RosettaImportStatus.IMPORTED:
+            # If the entry is imported, this status should appear and set as
+            # selected.
+            imported_html = renderElement('option', selected='yes',
+                value=RosettaImportStatus.IMPORTED.name,
+                contents=RosettaImportStatus.IMPORTED.title)
+        else:
+            # Only the import script should be able to set the status to
+            # imported, and thus, we don't add it as an option to select.
+            imported_html = ''
+
+        if entry.status == RosettaImportStatus.DELETED:
+            selected = 'yes'
+        else:
+            selected = 'no'
+
+        deleted_html = renderElement('option', selected=selected,
+            value=RosettaImportStatus.DELETED.name,
+            contents=RosettaImportStatus.DELETED.title)
+
+        if entry.status == RosettaImportStatus.FAILED:
+            # If the entry is failed, this status should appear and set as
+            # selected.
+            failed_html = renderElement('option', selected='yes',
+                value=RosettaImportStatus.FAILED.name,
+                contents=RosettaImportStatus.FAILED.title)
+        else:
+            # Only the import script should be able to set the status to
+            # failed, and thus, we don't add it as an option to select.
+            failed_html = ''
+
+        if entry.status == RosettaImportStatus.NEEDS_REVIEW:
+            selected = 'yes'
+        else:
+            selected = 'no'
+
+        needs_review_html = renderElement('option', selected=selected,
+            value=RosettaImportStatus.NEEDS_REVIEW.name,
+            contents=RosettaImportStatus.NEEDS_REVIEW.title)
+
+        if entry.status == RosettaImportStatus.BLOCKED:
+            # If the entry is blocked, this status should appear and set as
+            # selected.
+            blocked_html = renderElement('option', selected='yes',
+                value=RosettaImportStatus.BLOCKED.name,
+                contents=RosettaImportStatus.BLOCKED.title)
+        elif helpers.check_permission('launchpad.Admin', entry):
+            # The entry is not blocked but if we are an admin, we can block
+            # it.
+            blocked_html = renderElement('option',
+                value=RosettaImportStatus.BLOCKED.name,
+                contents=RosettaImportStatus.BLOCKED.title)
+        else:
+            # We should not add the blocked status for this entry.
+            blocked_html = ''
+
+        # Generate the final select html tag with the possible values.
+        return renderElement('select', name='status-%d' % entry.id,
+            contents='%s\n%s\n%s\n%s\n%s\n%s\n' % (
+                approved_html, imported_html, deleted_html, failed_html,
+                needs_review_html, blocked_html))
