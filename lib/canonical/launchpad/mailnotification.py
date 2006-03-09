@@ -110,6 +110,9 @@ def update_bug_contact_subscriptions(modified_bugtask, event):
                     bugtask_after_modification.product.bugcontact)
     elif (IDistroBugTask.providedBy(modified_bugtask) or
           IDistroReleaseBugTask.providedBy(modified_bugtask)):
+        if bugtask_after_modification.sourcepackagename is None:
+            # No new bug contacts to be subscribed.
+            return
         if (bugtask_before_modification.sourcepackagename !=
             bugtask_after_modification.sourcepackagename):
             new_sourcepackage = (
