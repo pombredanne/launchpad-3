@@ -362,12 +362,12 @@ The rank of a result is calculated using the tsearch2 rank() function.
     ## ...     WHERE fti @@ ftq('gnome')
     ## ...     ORDER BY rank DESC, name
     ## ...     """)
-    ## applets                   1.00
-    ## gnome-terminal            1.00
-    ## gnomebaker                0.57
-    ## python-gnome2-dev         0.28
-    ## evolution                 0.20
-    ## ubuntu                    0.10
+    ## gnome-terminal            0.80
+    ## applets                   0.69
+    ## gnomebaker                0.28
+    ## python-gnome2-dev         0.14
+    ## evolution                 0.12
+    ## ubuntu                    0.06
 
 
 You can also build complex multi table queries and mush all the
