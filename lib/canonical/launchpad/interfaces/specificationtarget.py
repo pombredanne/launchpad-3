@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IHasSpecifications',
     'ISpecificationTarget',
+    'ISpecificationGoal',
     ]
 
 from zope.interface import Interface, Attribute
@@ -28,6 +29,7 @@ class IHasSpecifications(Interface):
         """
 
 
+
 class ISpecificationTarget(IHasSpecifications):
     """An interface for the objects which actually have unique
     specifications directly attached to them.
@@ -37,5 +39,17 @@ class ISpecificationTarget(IHasSpecifications):
         """Returns the specification with the given name, for this target,
         or None.
         """
+
+
+class ISpecificationGoal(ISpecificationTarget):
+    """An interface for those things which can have specifications proposed
+    as goals for them.
+    """
+
+    def acceptSpecificationGoal(spec):
+        """Accepts the given specification as a goal for this item."""
+
+    def declineSpecificationGoal(spec):
+        """Declines the specification as a goal for this item."""
 
 
