@@ -299,13 +299,16 @@ class TranslationImportQueueView(LaunchpadView):
             imported_html = ''
 
         if entry.status == RosettaImportStatus.DELETED:
-            selected = 'yes'
+            # If the entry is deleted, this status should appear and set as
+            # selected.
+            deleted_html = renderElement('option', selected='yes',
+                value=RosettaImportStatus.DELETED.name,
+                contents=RosettaImportStatus.DELETED.title)
         else:
-            selected = 'no'
+            deleted_html = renderElement('option',
+                value=RosettaImportStatus.DELETED.name,
+                contents=RosettaImportStatus.DELETED.title)
 
-        deleted_html = renderElement('option', selected=selected,
-            value=RosettaImportStatus.DELETED.name,
-            contents=RosettaImportStatus.DELETED.title)
 
         if entry.status == RosettaImportStatus.FAILED:
             # If the entry is failed, this status should appear and set as
@@ -319,13 +322,15 @@ class TranslationImportQueueView(LaunchpadView):
             failed_html = ''
 
         if entry.status == RosettaImportStatus.NEEDS_REVIEW:
-            selected = 'yes'
+            # If the entry needs review, this status should appear and set as
+            # selected.
+            needs_review_html = renderElement('option', selected='yes',
+                value=RosettaImportStatus.NEEDS_REVIEW.name,
+                contents=RosettaImportStatus.NEEDS_REVIEW.title)
         else:
-            selected = 'no'
-
-        needs_review_html = renderElement('option', selected=selected,
-            value=RosettaImportStatus.NEEDS_REVIEW.name,
-            contents=RosettaImportStatus.NEEDS_REVIEW.title)
+            needs_review_html = renderElement('option',
+                value=RosettaImportStatus.NEEDS_REVIEW.name,
+                contents=RosettaImportStatus.NEEDS_REVIEW.title)
 
         if entry.status == RosettaImportStatus.BLOCKED:
             # If the entry is blocked, this status should appear and set as
