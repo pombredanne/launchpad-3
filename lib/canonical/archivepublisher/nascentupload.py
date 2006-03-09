@@ -725,8 +725,18 @@ class NascentUpload:
             changes['urgency'] = "low"
         # Store the architecture of the changes file away for later.
         m = re_changes_file_name.match(self.changes_basename)
+        if m is None:
+            raise UploadError(
+                '%s -> missapplied changesfile name, '
+                'should follow "<pkg>_<version>_<arch>.changes" format'
+                % self.changes_basename)
         self.changes_filename_archtag = m.group(3)
         # Wahey, the changes are parsed all okay :-)
+
+        # XXX cprov 20060308: force the cachedproperty to set policy specifc
+        # attributes now. Otherwise they won't get set properly for custom
+        # uploads. Life sucks !!!
+        self.distrorelease
 
     @cachedproperty
     def distro(self):

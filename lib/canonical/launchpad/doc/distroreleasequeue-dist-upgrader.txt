@@ -17,11 +17,12 @@ This test will check the upload of dist-upgrade tarballs
   ...     def debug(self, s):
   ...         print "DEBUG:", s
 
+  >>> class QuietLogger:
+  ...     def debug(self, s):
+  ...         pass
 
   >>> class MockOptions:
   ...     distro = "ubuntutest"
-  ...     distrorelease = "breezy-autotest"
-
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().setUp()
@@ -39,7 +40,22 @@ Login as an admin.
 
   >>> login('foo.bar@canonical.com')
 
-Do the upload into the system.
+First, test the rejection of a missapplied changesfile name:
+
+  >>> upload = NascentUpload(findPolicyByName('sync'),
+  ...     datadir(''), "dist-upgrader_20060302.0120.changes", QuietLogger())
+  >>> mock_options = MockOptions()
+  >>> upload.policy.setOptions(mock_options)
+
+  >>> from canonical.archivepublisher.nascentupload import UploadError
+  >>> try:
+  ...    upload.process()
+  ... except UploadError, info:
+  ...    print 'BOOM:', info
+  BOOM: dist-upgrader_20060302.0120.changes -> missapplied changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
+
+
+Now do a proper upload into the system.
 
   >>> upload = NascentUpload(findPolicyByName('insecure'),
   ...     datadir(''), "dist-upgrader_20060302.0120_all.changes", MockLogger())
