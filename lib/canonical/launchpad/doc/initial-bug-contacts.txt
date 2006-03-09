@@ -218,6 +218,45 @@ The same people as before are subcribed:
 
     >>> stub.test_emails = []
 
+Bug contacts are not limited to persons, teams are also allowed. Teams
+are a bit different, since they might not have a contact address. Let's
+add such a team as a bug contact.
+
+    >>> ubuntu_gnome = getUtility(IPersonSet).get(18)
+    >>> ubuntu_gnome.displayname
+    u'Ubuntu Gnome Team'
+    >>> ubuntu_gnome.preferredemail is None
+    True
+    >>> ubuntu_pmount.addBugContact(ubuntu_gnome)
+
+    >>> old_state = Snapshot(
+    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
+
+    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
+    ...     ubuntu_pmount.sourcepackagename)
+
+    >>> source_package_changed = SQLObjectModifiedEvent(
+    ...     bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
+
+    >>> notify(source_package_changed)
+    >>> transaction.commit()
+
+The Ubuntu Gnome team was subscribed to the bug:
+
+    >>> sorted(
+    ...     [subscription.person.displayname for subscription in
+    ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
+    [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team']
+
+And since the team didn't have a contact address, a notification was
+sent to each member:
+
+    >>> print [
+    ...    to_addrs
+    ...    for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
+    [['dilys@muse.19inch.net'], ['foo.bar@canonical.com'],
+     ['mark@hbd.com'], ['test@canonical.com']]
+
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package. So, if Mark Shuttleworth
 becomes a bug contact for ubuntu mozilla-firefox:
@@ -254,7 +293,7 @@ the bug contacts remain unchanged:
     >>> sorted(
     ...     [subscription.person.displayname for subscription in
     ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
-    [u'Foo Bar', u'Sample Person', u'Steve Alexander']
+    [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team']
 
 Product Bug Contacts and Bug Tasks
 ----------------------------------
