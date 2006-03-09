@@ -26,7 +26,6 @@ Now, we POST the form and expect to be redirected to the spec home page.
   >>> print http(r"""
   ... POST /products/firefox/+spec/svg-support/+setseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 611
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ... 
   ... -----------------------------26999413214087432371486976730
@@ -42,7 +41,7 @@ Now, we POST the form and expect to be redirected to the spec home page.
   ... 
   ... would be great to have, but has high risk
   ... -----------------------------26999413214087432371486976730
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Continue
   ... -----------------------------26999413214087432371486976730--
@@ -68,7 +67,6 @@ OK, we will also pitch the e4x spec to the same series:
   >>> print http(r"""
   ... POST /products/firefox/+spec/e4x/+setseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 611
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ... 
   ... -----------------------------26999413214087432371486976730
@@ -84,7 +82,7 @@ OK, we will also pitch the e4x spec to the same series:
   ... 
   ... would be great to have, but has high risk
   ... -----------------------------26999413214087432371486976730
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Continue
   ... -----------------------------26999413214087432371486976730--

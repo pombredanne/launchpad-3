@@ -105,7 +105,6 @@ redirected back to the spec page when we are done.
   >>> print http(r"""
   ... POST /distros/ubuntu/+spec/media-integrity-check/+setrelease HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 570
   ... Content-Type: multipart/form-data; boundary=---------------------------20513410904024403932114303780
   ... 
   ... -----------------------------20513410904024403932114303780
@@ -121,7 +120,7 @@ redirected back to the spec page when we are done.
   ... 
   ... 
   ... -----------------------------20513410904024403932114303780
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Continue
   ... -----------------------------20513410904024403932114303780--
