@@ -24,10 +24,16 @@
     <table class="listing" width="100%">
         <tal:loop repeat="entry view/batch">
         <tr>
-          <td tal:condition="entry/import_into" rowspan="3">
+          <tal:comment replace="nothing">
+            XXX: CarlosPerelloMarin 20060309:
+            We are using here condition="entry/import_into/title|nothing"
+            because, sometimes, entry/import_into evaluates as false when
+            it should not. See bug #34213 for more information.
+          </tal:comment>
+          <td tal:condition="entry/import_into/title|nothing" rowspan="3">
             <img alt="" src="/@@/download.png" />
           </td>
-          <td tal:condition="not: entry/import_into" rowspan="2">
+          <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
             <img alt="" src="/@@/download.png" />
           </td>
           <td>
@@ -63,7 +69,13 @@
             on <span tal:content="entry/dateimported/fmt:datetime">date</span>
           </td>
         </tr>
-        <tr tal:condition="entry/import_into" class="discreet secondary">
+        <tal:comment replace="nothing">
+          XXX: CarlosPerelloMarin 20060309:
+          We are using here condition="entry/import_into/title|nothing"
+          because, sometimes, entry/import_into evaluates as false when
+          it should not. See bug #34213 for more information.
+        </tal:comment>
+        <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
           <td colspan="3">
             Will be imported into 
             <a tal:content="entry/import_into/title"
