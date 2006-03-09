@@ -1,7 +1,9 @@
 # Copyright 2005 Canonical Ltd. All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, TextLine, Int, DateTime, Field
+from zope.schema import Bool, Choice, TextLine, Datetime, Field
+
+from canonical.lp.dbschema import RosettaImportStatus
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -66,7 +68,7 @@ class ITranslationImportQueueEntry(Interface):
     # XXX CarlosPerelloMarin 20060301: We are using Choice instead of Attribute
     # due bug #34103
     status = Choice(
-        title=_("The status of the import.")
+        title=_("The status of the import."),
         values=RosettaImportStatus.items,
         required=True)
 

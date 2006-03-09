@@ -43,7 +43,7 @@
                >Evolution Series: MAIN</a>
           </td>
           <td tal:condition="entry/required:launchpad.Edit"
-              tal:content="python: view.getStatusSelect(entry)">
+              tal:content="structure python: view.getStatusSelect(entry)">
           </td>
           <td tal:condition="not: entry/required:launchpad.Edit"
               tal:content="entry/status/title">Needs Review
@@ -66,8 +66,7 @@
         <tr tal:condition="entry/import_into" class="discreet secondary">
           <td colspan="3">
             Will be imported into 
-            <a tal:condition="entry/import_into"
-               tal:content="entry/import_into/title"
+            <a tal:content="entry/import_into/title"
                tal:attributes="href entry/import_into/fmt:url"
                >Foo</a>
           </td>

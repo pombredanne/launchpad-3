@@ -17,10 +17,10 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
 
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
-    ILaunchpadCelebrities, IEditTranslationImportQueueEntry, IPOTemplateSet,
-    NotFoundError, UnexpectedFormData)
+    ILaunchpadCelebrities, IPOTemplateSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -116,17 +116,16 @@ class TranslationImportQueueEntryView(GeneralFormView):
                 self.context.path,
                 self.context.importer)
 
-            # Point to the right path.
-            potemplate.path = self.context.path
-
-            if language is None:
-                # We can remove the element from the queue as it was a direct
-                # import into an IPOTemplate.
-                translationimportqueue_set.remove(self.context)
-                return 'You associated the queue item with a PO Template.'
+        # Store the associated IPOTemplate.
+        self.context.potemplate = potemplate
 
         if language is None:
-            self.context.potemplate = potemplate
+            # We are importing an IPOTemplate file.
+            if self.context.path.endswith('.po'):
+                # The original import was a .po file but the admin decided to
+                # import it as a .pot file, we update the path changing the
+                # file extension from .po to .pot to reflect this fact.
+                self.context.path = '%st' % self.context.path
         else:
             # We are hadling an IPOFile import.
             pofile = potemplate.getOrCreatePOFile(language.code, variant,
@@ -134,8 +133,6 @@ class TranslationImportQueueEntryView(GeneralFormView):
             self.context.pofile = pofile
 
         self.context.status = RosettaImportStatus.APPROVED
-
-        return 'You associated the queue item with a PO File.'
 
     def nextURL(self):
         """Return the URL of the main import queue at 'rosetta/imports'."""
@@ -204,6 +201,7 @@ class TranslationImportQueueView(LaunchpadView):
         # The user must be logged in.
         assert self.user is not None
 
+        number_of_changes = 0
         for form_item in self.form:
             if not form_item.startswith('status-'):
                 # We are not interested on this form_item.
@@ -231,25 +229,22 @@ class TranslationImportQueueView(LaunchpadView):
 
             # The status changed.
 
-            # XXX Carlos Perello Marin 20051124: We should not check the
-            # permissions here but use the standard security system. Please, look
-            # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
-            # details.
-            celebrities = getUtility(ILaunchpadCelebrities)
-            is_admin = (self.user.inTeam(celebrities.admin) or
-                        self.user.inTeam(celebrities.rosetta_expert))
-            is_owner = self.user.inTeam(entry.importer)
+            number_of_changes += 1
 
             # Only the importer, launchpad admins or Rosetta experts have
             # special permissions to change status.
-            if new_status_name == 'deleted' and (is_admin or is_owner):
+            if (new_status_name == RosettaImportStatus.DELETED.name and
+                helpers.check_permission('launchpad.Edit', entry)):
                 entry.status = RosettaImportStatus.DELETED
-            elif new_status_name == 'blocked' and is_admin:
+            elif (new_status_name == RosettaImportStatus.BLOCKED.name and
+                  helpers.check_permission('launchpad.Admin', entry)):
                 entry.status = RosettaImportStatus.BLOCKED
-            elif (new_status_name == 'approved' and is_admin and
+            elif (new_status_name == RosettaImportStatus.APPROVED.name and
+                  helpers.check_permission('launchpad.Admin', entry) and
                   entry.import_into is not None):
                 entry.status = RosettaImportStatus.APPROVED
-            elif new_status_name == 'needs_review' and is_admin:
+            elif (new_status_name == RosettaImportStatus.NEEDS_REVIEW.name and
+                  helpers.check_permission('launchpad.Admin', entry)):
                 entry.status = RosettaImportStatus.NEEDS_REVIEW
             else:
                 # The user was not the importer or we are trying to set a
@@ -258,6 +253,14 @@ class TranslationImportQueueView(LaunchpadView):
                 raise UnexpectedFormData(
                     'Ignored the request to change the status from %s to %s.'
                         % (entry.status.name, new_status_name))
+
+        if number_of_changes == 0:
+            self.request.response.addWarningNotification(
+                "Ignored your status change request as you didn't select any"
+                " change.")
+        else:
+            self.request.response.addInfoNotification(
+                "Changed the status of %d queue entries." % number_of_changes)
 
     def getStatusSelect(self, entry):
         """Return a select html tag with the possible status for entry

@@ -17,12 +17,11 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
-from zope.app.form.browser.add import AddView
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOExportRequestSet, IPersonSet,
+    IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
     ICanonicalUrlData, ILaunchpadCelebrities, ILaunchBag, IPOFileSet,
     IPOTemplateSubset, ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
@@ -208,8 +207,10 @@ class POTemplateView(LaunchpadView):
                 potemplate=self.context)
 
             self.request.response.addInfoNotification(
-                "Your upload worked. The template's content will appear in"
-                " Rosetta in a few minutes.")
+                'Thank you for your upload. The file content will be imported'
+                ' soon into Rosetta. You can track its status from the'
+                ' <a href="%s">Translation Import Queue</a>' %
+                    canonical_url(translation_import_queue))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -222,8 +223,12 @@ class POTemplateView(LaunchpadView):
 
             if num > 0:
                 self.request.response.addInfoNotification(
-                    'Your upload worked. %d files from the tarball'
-                    ' will be imported into Rosetta in a few minutes.' % num)
+                    'Thank you for your upload. %d files from the tarball'
+                    ' will be imported soon into Rosetta. You can track its'
+                    ' status from the <a href="%s">Translation Import Queue'
+                    '</a>' % (num, canonical_url(translation_import_queue)
+                        )
+                    )
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"

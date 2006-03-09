@@ -14,7 +14,6 @@ __all__ = [
 
 import urllib
 import re
-from datetime import datetime
 
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
@@ -24,8 +23,6 @@ from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
     ITranslationImportQueue, UnexpectedFormData)
-from canonical.launchpad.components.poparser import POHeader
-from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
@@ -474,8 +471,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             potemplate=self.context.potemplate)
 
         self.request.response.addInfoNotification(
-            "Your upload worked. The translation content will appear in"
-            " Rosetta in a few minutes.")
+            'Thank you for your upload. The PO file content will be imported'
+            ' soon into Rosetta. You can track its status from the'
+            ' <a href="%s">Translation Import Queue</a>' %
+                canonical_url(translation_import_queue))
 
     def _store_translations(self):
         """Handle a form submission to store new translations."""

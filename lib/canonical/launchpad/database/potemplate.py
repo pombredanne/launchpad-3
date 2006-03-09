@@ -539,7 +539,7 @@ class POTemplate(SQLBase, RosettaStats):
         """See IPOTemplate."""
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        TranslationImportQueueEntry.selectBy(
+        translation_import_queue.selectBy(
                 potemplateID=pofile_or_potemplate.id,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')

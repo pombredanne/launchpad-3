@@ -614,7 +614,7 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        return TranslationImportQueueEntry.selectFirstBy(
+        return translation_import_queue.selectFirstBy(
                 pofileID=self.id,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')
