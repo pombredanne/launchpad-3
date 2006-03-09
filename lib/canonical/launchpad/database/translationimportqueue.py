@@ -19,8 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
-    IPOTemplateSet, IPOFile, IPOTemplate, ILanguageSet, NotFoundError)
-from canonical.launchpad.database import SourcePackage
+    IPOTemplateSet, ILanguageSet, NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import RosettaImportStatus, EnumCol
 
@@ -60,6 +59,8 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def sourcepackage(self):
         """See ITranslationImportQueueEntry."""
+        from canonical.launchpad.database import SourcePackage
+
         if self.sourcepackagename is None or self.distrorelease is None:
             return None
 

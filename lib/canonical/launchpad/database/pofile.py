@@ -34,12 +34,13 @@ from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
     IPOFileSet, IPOFile, IPOTemplateExporter, ILibraryFileAliasSet,
-    ILaunchpadCelebrities, ITranslationImportQueue, ZeroLengthPOExportError,
-    NotFoundError)
+    ILaunchpadCelebrities, ZeroLengthPOExportError, NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
+from canonical.launchpad.database.translationimportqueue import (
+    TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
@@ -612,9 +613,7 @@ class POFile(SQLBase, RosettaStats):
 
     def getNextToImport(self):
         """See IPOFile."""
-        translation_import_queue = getUtility(ITranslationImportQueue)
-
-        return translation_import_queue.selectFirstBy(
+        return TranslationImportQueueEntry.selectFirstBy(
                 pofileID=self.id,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')

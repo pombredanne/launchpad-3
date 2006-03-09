@@ -3,7 +3,6 @@
 __metaclass__ = type
 __all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
 
-import StringIO
 import datetime
 import os.path
 
@@ -15,7 +14,7 @@ from zope.event import notify
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
 
-from canonical.lp.dbschema import RosettaImportStatus, EnumCol
+from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
@@ -25,7 +24,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPersonSet,
-    ITranslationImportQueue, IPOTemplateExporter, LanguageNotFound,
+    IPOTemplateExporter, LanguageNotFound,
     TranslationConstants, NotFoundError, NameNotAvailable)
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -35,6 +34,8 @@ from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.potemplatename import POTemplateName
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
+from canonical.launchpad.database.translationimportqueue import (
+    TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
@@ -537,10 +538,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getNextToImport(self):
         """See IPOTemplate."""
-        translation_import_queue = getUtility(ITranslationImportQueue)
-
-        translation_import_queue.selectBy(
-                potemplateID=pofile_or_potemplate.id,
+        return TranslationImportQueueEntry.selectFirstBy(
+                potemplateID=self.id,
                 status=RosettaImportStatus.APPROVED,
                 orderBy='dateimported')
 
