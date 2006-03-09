@@ -1,0 +1,116 @@
+<metal:quantity_widgets define-macro="quantity_widgets">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+        :widgets: A dictionary mapping ShipItFlavour and ShipItArchitecture
+                  objects to their corresponding widgets.
+  </tal:comment>
+
+  <ul>
+    <li tal:repeat="flavour widgets">
+      <label tal:content="flavour/title">Ubuntu</label>
+      <table>
+        <tr>
+        <tal:block repeat="arch python:widgets[flavour]">
+          <td align="right">
+            <strong tal:content="arch/title" />:
+          </td>
+          <td align="left" 
+              tal:define="widget python:widgets[flavour][arch]">
+            <div tal:attributes="class python:error and 'portalError' or None"
+                 tal:define="error widget/error">
+              <span tal:content="structure widget" />
+              <div tal:condition="error" tal:content="structure error" />
+            </div>
+          </td>
+        </tal:block>
+        </tr>
+      </table>
+      <br />
+    </li>
+  </ul>
+
+</metal:quantity_widgets>
+
+
+<metal:display_widget define-macro="display_widget">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+        :widget: The widget that's going to be rendered.
+  </tal:comment>
+
+  <th tal:content="widget/label">Label:</th>
+  <td>
+    <div tal:attributes="class python:error and 'portalError' or None"
+         tal:define="error widget/error">
+      <span tal:replace="structure widget" />
+      <span tal:condition="widget/required"
+            class="fieldRequired"
+            title="Required">(Required)</span>
+      <div tal:condition="error" tal:content="structure error" />
+    </div>
+  </td>
+</metal:display_widget>
+
+
+<metal:shipping_details define-macro="shipping_details">
+  <tal:comment replace="nothing">
+    This macro expects the view to have the following widgets:
+      recipientdisplayname_widget
+      organization_widget
+      addressline1_widget
+      addressline2_widget
+      city_widget
+      province_widget
+      postcode_widget
+      country_widget
+      phone_widget
+  </tal:comment>
+
+  <table>
+    <tr>
+      <tal:block tal:define="widget nocall:view/recipientdisplayname_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+    <tr>
+      <tal:block tal:define="widget nocall:view/organization_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+    <tr>
+      <tal:block tal:define="widget nocall:view/addressline1_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+    <tr>
+      <tal:block tal:define="widget nocall:view/addressline2_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+    <tr>
+      <tal:block tal:define="widget nocall:view/city_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+    <tr>
+      <tal:block tal:define="widget nocall:view/province_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+    <tr>
+      <tal:block tal:define="widget nocall:view/postcode_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+    <tr>
+      <tal:block tal:define="widget nocall:view/country_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+    <tr>
+      <tal:block tal:define="widget nocall:view/phone_widget">
+        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+      </tal:block>
+    </tr>
+  </table>
+</metal:shipping_details>

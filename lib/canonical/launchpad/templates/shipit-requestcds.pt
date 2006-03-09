@@ -1,0 +1,164 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="body">
+
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
+  
+    <p class="portalMessage"
+       tal:define="status view/process_status"
+       tal:condition="status"
+       tal:content="status" />
+
+    <div class="portalError"
+      tal:repeat="top_of_page_error view/top_of_page_errors"
+      tal:content="structure top_of_page_error">
+      Schema validation errors.
+    </div>
+
+    <tal:current_request condition="view/current_order">
+      <p class="portalMessage">
+        This request hasn't been shipped yet. You can change it now, if you
+        want, and these changes will be applied before it's shipped.
+      </p>
+
+      <h2>Request Details</h2>
+      <ul>
+        <tal:block repeat="requested_cds view/current_order/getAllRequestedCDs">
+          <li tal:condition="requested_cds/quantity">
+            <strong tal:content="requested_cds/description" />
+          </li>
+        </tal:block>
+      </ul>
+      <div>
+        <form name="cancelrequest" action="" method="POST">
+          <input type="hidden" name="order" 
+                 tal:attributes="value view/current_order/id" />
+
+          <input type="submit" value="Cancel Request" name="cancel"
+                 class="formControls"/>
+        </form>
+      </div>
+    </tal:current_request>
+
+    <tal:pastrequests condition="view/user/pastShipItRequests">
+      <h1>Your previous requests</h1>
+
+      <ul>
+        <li tal:repeat="pastorder view/user/pastShipItRequests">
+          <span tal:replace="pastorder/totalCDs" /> CDs requested in
+          <span tal:replace="pastorder/daterequested/fmt:date" />.
+          <span tal:condition="pastorder/cancelled">This request was
+            cancelled, so no CDs were shipped.</span>
+          <tal:notcancelled tal:condition="not: pastorder/cancelled">
+            <tal:shipped condition="pastorder/shipment">
+              <span tal:replace="pastorder/totalapprovedCDs" />
+              CDs approved and sent to the shipping company in 
+              <span tal:replace="pastorder/shipment/shippingrun/datecreated/fmt:date" />.
+              <strong>Please note requests usually take from 4 to 6 weeks to
+                deliver, depending on the country of shipping.</strong>
+            </tal:shipped>
+            <tal:not-shipped condition="not: pastorder/shipment">
+              <span tal:condition="pastorder/isDenied">This request was
+                not approved, so no CDs were shipped.</span>
+            </tal:not-shipped>
+          </tal:notcancelled>
+        </li>
+      </ul>
+    </tal:pastrequests>
+
+    <h1>How many CDs would you like?</h1> 
+
+    <p>Shipping small numbers of CDs costs almost the same as shipping
+    one, so please feel free to request multiple CDs to give away and
+    share with friends.</p>
+
+    <p>Ubuntu CDs are made specifically for various types of
+    computers.</p>
+
+    <ul>
+      <li>The <strong>PC</strong> Edition will run on almost all PCs.
+      This includes most machines with Intel/AMD/etc type processors
+      and computers that can also run Microsoft Windows. Choose this
+      if you are unsure.</li>
+
+      <li>The <strong>64-bit PC</strong> Edition will run on computers
+      based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
+      EM64T Xeon).</li>
+
+      <li>The <strong>Mac</strong> Edition will run on Apple Macintosh
+      G3, G4, and G5 computers including iBooks and PowerBooks.</li> 
+    </ul>
+
+    <br />
+
+    <form name="shipit" action="" method="POST">
+
+    <div style="margin: 0em 5em">
+      <div tal:repeat="request_type view/standardShipItRequests">
+        <label>
+          <tal:current-order-for-this-flavour 
+               condition="view/current_order_standard_id">
+            <input type="radio" name="ordertype"
+              tal:attributes="
+                value request_type/id;
+                checked python:request_type.id == view.current_order_standard_id">
+          </tal:current-order-for-this-flavour>
+          <tal:no-current-order-for-this-flavour 
+               condition="not: view/current_order_standard_id">
+            <input type="radio" name="ordertype"
+                   tal:attributes="value request_type/id;
+                                   checked request_type/isdefault">
+          </tal:no-current-order-for-this-flavour>
+          <span tal:content="request_type/description" />
+        </label>
+      </div>
+
+      <br />
+      <div>
+        <label tal:attributes="for view/reason_widget/name"
+               tal:content="view/reason_widget/label">
+          Label
+        </label>
+        (<span class="formHelp" tal:condition="view/reason_widget/hint"
+           tal:content="view/reason_widget/hint">Some help text
+        </span>)
+        <div tal:content="structure view/reason_widget" />
+      </div>
+    </div>
+
+    <h2>Shipping address</h2>
+
+    <metal:shipping_details
+      use-macro="context/@@shipit_macros/shipping_details" />
+
+    <div style="text-align: right">
+      <tal:current_request condition="view/current_order">
+        <input type="submit" value="Change Request" name="FORM_SUBMIT"
+               class="formControls"/>
+      </tal:current_request>
+
+      <tal:no_current_request condition="not: view/current_order">
+        <input type="submit" value="Request CDs" name="FORM_SUBMIT"
+               class="formControls"/>
+      </tal:no_current_request>
+    </div>
+
+    </form>
+
+    </td>
+    </tr>
+    </table>  
+
+  </div>
+
+</body>
+</html>
+
