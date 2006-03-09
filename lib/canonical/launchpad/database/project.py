@@ -99,9 +99,13 @@ class Project(SQLBase, BugTargetBase):
         return None
 
     def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
+        """See IBugTarget."""
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
+
+    def createBug(self, title, comment, private=False):
+        """See IBugTarget."""
+        raise NotImplementedError
 
 
 class ProjectSet:
