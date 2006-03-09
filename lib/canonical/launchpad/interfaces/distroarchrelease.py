@@ -72,7 +72,7 @@ class IDistroArchRelease(IHasOwner):
         """Search BinaryPackageRelease published in this release for those
         matching the given text."""
 
-    def getReleasedPackages(name, pocket=None, include_pending=False,
+    def getReleasedPackages(binary_name, pocket=None, include_pending=False,
                             exclude_pocket=None):
         """Get the publishing records for the given binary package name.
 

@@ -151,14 +151,14 @@ class DistroArchRelease(SQLBase):
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds([self.id], status)
 
-    def getReleasedPackages(self, name, pocket=None, include_pending=False,
-                            exclude_pocket=None):
+    def getReleasedPackages(self, binary_name, pocket=None,
+                            include_pending=False, exclude_pocket=None):
         """See IDistroArchRelease."""
         queries = []
 
-        if not IBinaryPackageName.providedBy(name):
+        if not IBinaryPackageName.providedBy(binary_name):
             binname_set = getUtility(IBinaryPackageNameSet)
-            binary_name = binname_set.getOrCreateByName(name)
+            binary_name = binname_set.getOrCreateByName(binary_name)
 
         queries.append("""
         binarypackagerelease=binarypackagerelease.id AND
