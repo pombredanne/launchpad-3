@@ -66,6 +66,7 @@ class BzrSync:
             didsomething |= self.syncRevision(revision_id, pending_parents)
         if pending_parents:
             didsomething |= self.syncPendingParents(pending_parents)
+        didsomething |= self.truncateHistory()
 
         return didsomething
 
@@ -134,9 +135,8 @@ class BzrSync:
                 sequence=bzr_revno, branchID=self.db_branch.id)
 
             if db_revno and db_revno.revision.revision_id != revision_id:
-                # destroy RevisionNumber rows that do not match branch
-                db_revno.destroySelf()
-                db_revno = None
+                db_revno.revision = db_revision.id
+                didsomething = True
 
             if not db_revno:
                 db_revno = RevisionNumber(
@@ -197,6 +197,28 @@ class BzrSync:
                 didsomething = True
 
         return didsomething
+
+    def truncateHistory(self):
+        """Remove excess RevisionNumber rows.
+
+        That is needed 'uncommit' or 'pull/push --overwrite' shortened the
+        revision history. RevisionNumber rows with a sequence matching entries
+        in the bzr history are updated by syncRevision, but we need to
+        separately delete the excess rows.
+        """
+        db_history_len = self.db_branch.revision_history.count()
+        excess = db_history_len - len(self.bzr_history)
+        # syncRevision should be called on every item of the branch history
+        # before truncating history, so the history recorded in the database
+        # must be already at least as long as the history of the branch.
+        assert excess >= 0
+        if excess == 0:
+            return False
+        self.trans_manager.begin()
+        for revno in self.db_branch.latest_revisions(excess):
+            revno.destroySelf()
+        self.trans_manager.commit()
+        return True
 
 
 def main(branch_id):
