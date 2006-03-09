@@ -13,6 +13,8 @@ __all__ = [
     'TranslationImportQueueView',
     ]
 
+import urllib
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
@@ -20,7 +22,7 @@ from zope.app.form.browser.widget import renderElement
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
-    ILaunchpadCelebrities, IPOTemplateSet, NotFoundError, UnexpectedFormData)
+    IPOTemplateSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -84,8 +86,6 @@ class TranslationImportQueueEntryView(GeneralFormView):
     def process(self, potemplatename, path=None, sourcepackagename=None,
         language=None, variant=None):
         """Process the form we got from the submission."""
-        translationimportqueue_set = getUtility(ITranslationImportQueue)
-
         if path and self.context.path != path:
             # The Rosetta Expert decided to change the path of the file.
             self.context.path = path
@@ -157,14 +157,22 @@ class TranslationImportQueueContextMenu(ContextMenu):
 class TranslationImportQueueView(LaunchpadView):
     """View class used for Translation Import Queue management."""
 
+    DEFAULT_LENGTH = 50
+
     def initialize(self):
         """Useful initialization for this view class."""
         self.form = self.request.form
 
         # Setup the batching for this page.
-        start = int(self.request.get('batch_start', 0))
-        self.batch = Batch(self.context.getAllEntries(), start, size=50)
+        self.start = int(self.request.get('batch_start', 0))
+        self.end = int(self.request.get('batch_end', self.DEFAULT_LENGTH))
+        self.batch = Batch(
+            self.context.getAllEntries(), self.start,
+            size=self.DEFAULT_LENGTH)
         self.batchnav = BatchNavigator(self.batch, self.request)
+
+        # Flag to control whether the view page should be rendered.
+        self.redirecting = False
 
         # Process the form.
         self.processForm()
@@ -262,6 +270,17 @@ class TranslationImportQueueView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Changed the status of %d queue entries." % number_of_changes)
 
+        # We do a redirect so the submit doesn't breaks if the rendering of
+        # the page takes too much time.
+        parameters = {
+            'batch_start': self.start,
+            'batch_end': self.end,
+            }
+        query_portion = urllib.urlencode(parameters)
+        self.request.response.redirect(
+            '%s?%s' % (self.request.getURL(), query_portion))
+        self.redirecting = True
+
     def getStatusSelect(self, entry):
         """Return a select html tag with the possible status for entry
 
@@ -353,3 +372,9 @@ class TranslationImportQueueView(LaunchpadView):
             contents='%s\n%s\n%s\n%s\n%s\n%s\n' % (
                 approved_html, imported_html, deleted_html, failed_html,
                 needs_review_html, blocked_html))
+
+    def render(self):
+        if self.redirecting:
+            return u''
+        else:
+            return LaunchpadView.render(self)
