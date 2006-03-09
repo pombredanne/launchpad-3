@@ -163,8 +163,8 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.commitRevision('second')
         self.syncAndCount(new_revisions=1)
         self.assertEqual(self.db_branch.revision_count(), 1)
-        [revision] = self.db_branch.revision_history
-        self.assertEqual(revision.log_body, 'second')
+        [revno] = self.db_branch.revision_history
+        self.assertEqual(revno.revision.log_body, 'second')
 
     def test_import_revision_with_url(self):
         """Importing a revision passing the url parameter works."""

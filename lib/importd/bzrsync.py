@@ -130,15 +130,26 @@ class BzrSync:
             # Revision is in history, so append it to the RevisionNumber
             # table as well, if not yet there.
             bzr_revno = self.bzr_history.index(revision_id) + 1
-            db_revno = RevisionNumber.selectOneBy(revisionID=db_revision.id,
-                                                  branchID=self.db_branch.id)
-            if not db_revno or db_revno.sequence != bzr_revno:
-                if db_revno:
-                    db_revno.destroySelf()
-                db_revno = RevisionNumber(sequence=bzr_revno,
-                                          revision=db_revision.id,
-                                          branch=self.db_branch.id)
+            db_revno = RevisionNumber.selectOneBy(
+                sequence=bzr_revno, branchID=self.db_branch.id)
+
+            if db_revno and db_revno.revision.revision_id != revision_id:
+                # destroy RevisionNumber rows that do not match branch
+                db_revno.destroySelf()
+                db_revno = None
+
+            if not db_revno:
+                db_revno = RevisionNumber(
+                    sequence=bzr_revno,
+                    revision=db_revision.id,
+                    branch=self.db_branch.id)
                 didsomething = True
+
+            # Sanity check that recorded revision history and ancestry match
+            # TODO: need to record parents immediately!
+
+            # TODO: check that recorded parent list is equal to parent list in
+            # branch.
 
         if didsomething:
             self.trans_manager.commit()
