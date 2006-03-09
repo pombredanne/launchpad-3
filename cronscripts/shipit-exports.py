@@ -68,56 +68,6 @@ def create_shippingrun(request_ids, ztm, logger_obj):
     return shippingrun
 
 
-def export_shippingrun(shippingrun):
-    """Return a csv file containing all requests that are part of the given
-    shippingrun.
-    """
-    file_fields = (('recordnr', 'id'),
-                   ('Ship to company', 'organization'),
-                   ('Ship to name', 'recipientdisplayname'),
-                   ('Ship to addr1', 'addressline1'),
-                   ('Ship to addr2', 'addressline2'),
-                   ('Ship to city', 'city'),
-                   ('Ship to county', 'province'),
-                   ('Ship to zip', 'postcode'),
-                   ('Ship to country', 'countrycode'),
-                   ('Ship to phone', 'phone'),
-                   ('Ship to email address', 'recipient_email'),
-                   ('ship quantity PC', 'quantityx86approved'),
-                   ('ship quantity 64-bit PC', 'quantityamd64approved'),
-                   ('ship quantity Mac', 'quantityppcapproved'))
-
-    csv_file = StringIO()
-    csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
-    row = [label for label, attr in file_fields]
-    row.extend(['token', 'Ship via', 'display'])
-    csv_writer.writerow(row)
-
-    for request in shippingrun.requests:
-        row = []
-        for label, attr in file_fields:
-            value = getattr(request, attr)
-            if isinstance(value, (unicode, str)):
-                # Text fields can't have non-ASCII characters or commas.
-                # This is a restriction of the shipping company.
-                value = value.replace(',', ';')
-                value = value.encode('ASCII')
-            row.append(value)
-        row.append(request.shipment.logintoken)
-        row.append(request.shippingservice.title)
-        # XXX: 'display' is some magic number that's used by the shipping
-        # company. Need to figure out what's it for and use a better name.
-        # -- Guilherme Salgado, 2005-10-04
-        if request.totalapprovedCDs >= 100:
-            display = 1
-        else:
-            display = 0
-        row.append(display)
-        csv_writer.writerow(row)
-
-    return csv_file
-
-
 def main(argv):
     options = parse_options(argv[1:])
     logger_obj = logger(options, 'shipit-export-orders')
@@ -155,7 +105,7 @@ def main(argv):
             request_ids = []
         shippingrun = create_shippingrun(request_ids_subset, ztm, logger_obj)
 
-        csv_file = export_shippingrun(shippingrun)
+        csv_file = shippingrun.exportToCSVFile()
         # Seek to the beginning of the file, so the librarian can read it.
         csv_file.seek(0)
 

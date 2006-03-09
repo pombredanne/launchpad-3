@@ -672,6 +672,8 @@ def productseries(context, view):
     return '%s release series: %s' % (
         context.product.displayname, context.displayname)
 
+shipit_adminrequest = 'XXX: Fixme'
+
 shipit_index = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
@@ -681,6 +683,8 @@ shipit_myrequest = "Your ShipIt order"
 shipit_oops = 'Error: Oops'
 
 shipit_reports = 'ShipIt reports'
+
+shipit_requestcds = 'XXX: Fixme'
 
 shipitrequests_index = 'ShipIt requests'
 

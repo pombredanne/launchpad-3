@@ -54,10 +54,11 @@
           <option value="standard"
                   tal:attributes="selected python: view.selectedType == 'standard'">
             All standard quantities</option>
-          <option tal:repeat="request view/standardShipItRequests"
-                  tal:attributes="value request/id;
-                                  selected python: view.selectedType == request.id">
-            <span tal:replace="request/description" /></option>
+          <option tal:repeat="option view/standardShipItRequests"
+                  tal:attributes="value option/id;
+                                  selected python: view.selectedType == option.id">
+            <span tal:replace="option/flavour/title" />:
+            <span tal:replace="option/description" /></option>
         </select>
       </td>
     </tr>

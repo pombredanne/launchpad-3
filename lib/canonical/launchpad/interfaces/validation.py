@@ -11,7 +11,14 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
-    'valid_distrotask'
+    'valid_distrotask',
+    'valid_shipit_recipientdisplayname',
+    'valid_shipit_phone',
+    'valid_shipit_city',
+    'valid_shipit_addressline1',
+    'valid_shipit_addressline2',
+    'valid_shipit_organization',
+    'valid_shipit_province',
     ]
 
 import urllib
@@ -29,6 +36,84 @@ from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.lp.dbschema import MirrorPulseType
+
+
+def _valid_ascii_text(text):
+    """Check if the given text contains only ASCII characters."""
+    try:
+        text.encode('ascii')
+    except UnicodeEncodeError, e:
+        first_non_ascii_char = text[e.start:e.end]
+        e_with_accute = u'\N{LATIN SMALL LETTER E WITH ACUTE}'
+        raise LaunchpadValidationError(_(dedent("""
+            Sorry, but non-ASCII characters (such as '%s'), aren't accepted
+            by our shipping company. Please change these to ASCII
+            equivalents. (For instance, '%s' should be changed to 'e')"""
+            % (first_non_ascii_char, e_with_accute))))
+
+
+def valid_shipit_organization(value):
+    """Make sure organization follows the mailing constraints."""
+    _valid_ascii_text(value)
+    if len(value) > 30:
+        raise LaunchpadValidationError(_(
+            "The organization can't have more than 30 characters."))
+    return True
+
+
+def valid_shipit_recipientdisplayname(value):
+    """Make sure the entered name follows the mailing constraints."""
+    _valid_ascii_text(value)
+    if len(value) > 20:
+        raise LaunchpadValidationError(_(
+            "The recipient's name can't have more than 20 characters."))
+    return True
+
+
+def valid_shipit_city(value):
+    """Make sure city follows the mailing constraints."""
+    _valid_ascii_text(value)
+    if len(value) > 30:
+        raise LaunchpadValidationError(_(
+            "The city name can't have more than 30 characters."))
+    return True
+
+
+def valid_shipit_addressline1(value):
+    """Make sure addressline1 follows the mailing constraints."""
+    _valid_ascii_text(value)
+    if len(value) > 30:
+        raise LaunchpadValidationError(_(
+            "Address (first line) can't have more than 30 characters. "
+            "You should use the second line if your address is too long."))
+    return True
+
+
+def valid_shipit_addressline2(value):
+    """Make sure addressline2 follows the mailing constraints."""
+    _valid_ascii_text(value)
+    if len(value) > 30:
+        raise LaunchpadValidationError(_(
+            "Address (second line) can't have more than 30 characters. "
+            "You should use the first line if your address is too long."))
+    return True
+
+
+def valid_shipit_phone(value):
+    """Make sure phone follows the mailing constraints."""
+    _valid_ascii_text(value)
+    if len(value) > 16:
+        raise LaunchpadValidationError(_(
+            "Your phone mumber must be less than 16 characters. Leave it "
+            "blank if it will not fit."))
+    return True
+
+def valid_shipit_province(value):
+    # XXX: The old shipit didn't have any constraint on the province field,
+    # but I guess this might be wrong. We have limits on the length of all
+    # other fields, so I guess this one has one too.
+    return True
+
 
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.

@@ -31,6 +31,7 @@ __all__ = [
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
+    'ShipItFlavourVocabulary',
     'SpecificationDeliveryVocabulary',
     'SpecificationPriorityVocabulary',
     'SpecificationStatusVocabulary',
@@ -92,6 +93,7 @@ PackagePublishingPocketVocabulary = vocab_factory(
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
+ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
 SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)

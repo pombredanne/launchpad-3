@@ -11,35 +11,19 @@
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <link rel="shortcut icon" href="/@@/ubuntu-favicon.ico" />
+    <link rel="shortcut icon" href="/@@/kubuntu-favicon.ico" />
 
-    <style type="text/css" media="screen"> @import url(/@@/ubuntu-plone.css);</style>
-    <style type="text/css" media="screen"> @import url(/@@/ubuntu.css);</style>
-    <style type="text/css" media="screen"> @import url(/@@/ubuntu-masthead.css);</style>
-    <style type="text/css" media="screen"> @import url(/@@/ubuntu-discs.css);</style>
+    <style type="text/css" media="screen"> @import url(/@@/edubuntu-common.css);</style>
+    <style type="text/css" media="screen"> @import url(/@@/edubuntu-screen.css);</style>
+    <style type="text/css" media="screen"> @import url(/@@/edubuntu.css);</style>
     <style type="text/css">
       <!-- 
-        /* Undo Ubuntu's CSS treachery */
-        .shipitPortlet {
-            font-size: 80%;
-         }
-        .shipitPortlet .shipitPortletBody {
-            position: relative;
-            top: -1px;
-            background: transparent;
-            border: 1px solid #8cacbb;
-            padding: 1em;
-            margin: 0;
-        }
-        .shipitPortlet h4 {
-          margin: 0;
-          background-color: #dee7ec;
-          border: 1px solid #8cacbb;
-          padding: 0em 0.3em 0em 1em;
-          text-transform: lowercase;
-          display: block;
-          font-size: 1em;
-          font-weight: normal;
+        /* Visually differentiate disabled and enabled form fields. */
+        select[disabled],
+        textarea[disabled],
+        input[disabled] {
+            border-style: dotted;
+            color: #999;
         }
         #body {
           margin: 1em;
@@ -60,6 +44,7 @@
 
       <div id="mastWrapper">
         <div id="masthead">
+          <img src="@@/edubuntu-headerlogo.png" />
            <div id="search">
             <tal:block condition="request/lp:person">
               <form action="/+logout" class="login" method="POST">
@@ -172,10 +157,10 @@
 
     <div class="visualClear">&nbsp;</div>
 
-    <div class="footer" class="inside" 
-         style="background: url(/@@/ubuntu-header-bg4.png) bottom left repeat-x #fff;">
+    <div class="footer" class="inside"
+         style="background: url(/@@/edubuntu-header.png) bottom left repeat-x #fff;">
       &copy; 2004-2006 <a href="http://www.canonical.com">Canonical Ltd</a>.
-      Ubuntu, ShipIt and Canonical are registered trademarks of Canonical Ltd.
+      KUbuntu, ShipIt and Canonical are registered trademarks of Canonical Ltd.
       <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607"
       >Ubuntu ShipIt FAQ</a>
     </div>

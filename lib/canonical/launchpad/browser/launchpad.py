@@ -27,14 +27,14 @@ from canonical.launchpad.interfaces import (
     IMaloneApplication, IProductSet, IShipItApplication, IPersonSet,
     IDistributionSet, ISourcePackageNameSet, IBinaryPackageNameSet,
     IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
-    IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
-    IRegistryApplication, IRosettaApplication, ISpecificationSet,
-    ISprintSet, ITicketSet, IFOAFApplication, IBuilderSet, IBountySet,
-    IBugSet, IBugTrackerSet, ICveSet, IProduct, IProductSeries,
+    IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
+    ISpecificationSet, ISprintSet, ITicketSet, IFOAFApplication, IBuilderSet,
+    IBountySet, IBugSet, IBugTrackerSet, ICveSet, IProduct, IProductSeries,
     IMilestone, IDistribution, IDistroRelease, IDistroArchRelease,
     IDistributionSourcePackage, ISourcePackage,
-    IDistroArchReleaseBinaryPackage, IDistroReleaseBinaryPackage,
-    IPerson, IProject, ISprint)
+    IDistroArchReleaseBinaryPackage, IDistroReleaseBinaryPackage)
+from canonical.launchpad.layers import (
+    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -468,7 +468,6 @@ class LaunchpadRootNavigation(Navigation):
 
     stepto_utilities = {
         'products': IProductSet,
-        'shipit': IShipItApplication,
         'people': IPersonSet,
         'distros': IDistributionSet,
         'sourcepackagenames': ISourcePackageNameSet,
@@ -501,6 +500,21 @@ class LaunchpadRootNavigation(Navigation):
     def calendar(self):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
+
+    @stepto('shipit-ubuntu')
+    def shipit_ubuntu(self):
+        setFirstLayer(self.request, ShipItUbuntuLayer)
+        return getUtility(IShipItApplication)
+
+    @stepto('shipit-kubuntu')
+    def shipit_kubuntu(self):
+        setFirstLayer(self.request, ShipItKUbuntuLayer)
+        return getUtility(IShipItApplication)
+
+    @stepto('shipit-edubuntu')
+    def shipit_edubuntu(self):
+        setFirstLayer(self.request, ShipItEdUbuntuLayer)
+        return getUtility(IShipItApplication)
 
 
 class FOAFApplicationNavigation(Navigation):

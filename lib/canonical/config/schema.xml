@@ -309,6 +309,18 @@
             required="no" default="20" />
     </sectiontype>
 
+    <sectiontype name="shipit">
+        <description>
+            Shipit-specific configuration options.
+        </description>
+        <key name="shipit_admins_email" datatype="string" required="yes" />
+        <key name="shipit_ubuntu_from_email" datatype="string" required="yes" />
+        <key name="shipit_edubuntu_from_email" datatype="string" 
+             required="yes" />
+        <key name="shipit_kubuntu_from_email" datatype="string" 
+             required="yes" />
+    </sectiontype>
+
     <sectiontype name="poimport">
         <description>
             Configuration for cronscripts/rosetta-poimport
@@ -565,6 +577,7 @@
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
         <section name="*" type="malone" attribute="malone" />
+        <section name="*" type="shipit" attribute="shipit" />
         <section name="*" type="rosetta" attribute="rosetta" />
         <section name="*" type="librarian" attribute="librarian" />
         <section name="*" type="zopeless" attribute="zopeless" />
