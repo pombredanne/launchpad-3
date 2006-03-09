@@ -100,8 +100,6 @@ def update_bug_contact_subscriptions(modified_bugtask, event):
     if bugtask_after_modification.bug.private:
         return
 
-    old_cc_list = get_cc_list(bugtask_after_modification.bug)
-
     # Calculate the list of new bug contacts, if any.
     new_bugcontacts = []
     if IUpstreamBugTask.providedBy(modified_bugtask):
@@ -126,21 +124,22 @@ def update_bug_contact_subscriptions(modified_bugtask, event):
     # Subscribe all the new bug contacts for the new package or product if they
     # aren't already subscribed to this bug.
     bug = bugtask_after_modification.bug
-    new_bugcontacts_addresses = set()
+    old_cc_list = get_cc_list(bug)
+    new_bugcontact_addresses = set()
     for bugcontact in new_bugcontacts:
         if not bug.isSubscribed(bugcontact):
             bug.subscribe(bugcontact)
-            new_bugcontacts_addresses.update(contactEmailAddresses(bugcontact))
+            new_bugcontact_addresses.update(contactEmailAddresses(bugcontact))
 
-    # Send a notification to the new bug contacts, that weren't
-    # subscribed to the bug before, that looks identical to a new bug
+    # Send a notification to the new bug contacts that weren't
+    # subscribed to the bug before, which looks identical to a new bug
     # report.
     subject, body = generate_bug_add_email(bug)
-    new_bugcontacts_addresses.difference_update(old_cc_list)
-    if new_bugcontacts_addresses:
+    new_bugcontact_addresses.difference_update(old_cc_list)
+    if new_bugcontact_addresses:
         send_bug_notification(
             bug=bug, user=bug.owner, subject=subject, body=body,
-            to_addrs=new_bugcontacts_addresses)
+            to_addrs=new_bugcontact_addresses)
 
 
 def get_bugmail_replyto_address(bug):

@@ -208,17 +208,16 @@ package to None.
 
     >>> notify(source_package_changed)
     >>> transaction.commit()
+    >>> stub.test_emails = []
 
-The same people as before are subcribed:
+Ensure the same people as before are subscribed:
 
     >>> sorted(
     ...     [subscription.person.displayname for subscription in
     ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
     [u'Foo Bar', u'Sample Person', u'Steve Alexander']
 
-    >>> stub.test_emails = []
-
-Bug contacts are not limited to persons, teams are also allowed. Teams
+Bug contacts are not limited to persons; teams are also allowed. Teams
 are a bit different, since they might not have a contact address. Let's
 add such a team as a bug contact.
 
