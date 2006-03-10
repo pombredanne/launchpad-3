@@ -65,7 +65,6 @@ class Sprint(SQLBase):
         return Specification.select(AND(
             Specification.q.id == SprintSpecification.q.specificationID,
             NOT(IN(Specification.q.status, [
-                SpecificationStatus.IMPLEMENTED,
                 SpecificationStatus.INFORMATIONAL,
                 SpecificationStatus.OBSOLETE,
                 SpecificationStatus.SUPERSEDED,
@@ -89,6 +88,18 @@ class Sprint(SQLBase):
         sprintspecs = SprintSpecification.select(query)
         return sorted(sprintspecs, key=lambda a: a.specification.priority,
             reverse=True)
+
+    def getSpecificationLink(self, speclink_id):
+        """See ISprint.
+        
+        NB: we expose the horrible speclink.id because there is no unique
+        way to refer to a specification outside of a product or distro
+        context. Here we are a sprint that could cover many products and/or
+        distros.
+        """
+        speclink = SprintSpecification.get(speclink_id)
+        assert (speclink.sprint.id == self.id)
+        return speclink
 
     # attendance
     def attend(self, person, time_starts, time_ends):

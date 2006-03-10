@@ -165,7 +165,7 @@ EVENT: upstream product assignment edited
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNKNOWN.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
   True

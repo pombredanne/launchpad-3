@@ -124,3 +124,36 @@ XXX: We really should update the status from the bug watch, but that's
     True
     >>> thunderbird_task.status.title
     'Unknown'
+
+Milestone Editing Permissions
+-----------------------------
+
+A milestone can be edited only by a user with launchpad.Edit permissions
+on the distribution or product context. When the user has this
+permission, the edit page renders an input widget, otherwise it renders
+a display widget.
+
+    >>> from zope.app.form.interfaces import IInputWidget
+
+The distribution owner gets an edit widget for the distribution task.
+
+    >>> login("mark@hbd.com")
+
+    >>> request = LaunchpadTestRequest()
+    >>> ubuntu_task = getUtility(IBugTaskSet).get(17)
+    >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
+
+    >>> IInputWidget.providedBy(bugtask_edit_view.milestone_widget)
+    True
+
+But an unprivileged user does not.
+
+    >>> from zope.app.form.browser import ItemDisplayWidget
+
+    >>> login("no-priv@canonical.com")
+
+    >>> request = LaunchpadTestRequest()
+    >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
+
+    >>> isinstance(bugtask_edit_view.milestone_widget, ItemDisplayWidget)
+    True

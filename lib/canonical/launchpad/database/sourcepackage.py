@@ -83,8 +83,6 @@ class SourcePackage(BugTargetBase):
         """See ISourcePackage."""
         # XXX: 20051219 jamesh
         # Is the orderBy clause here correct, or just to avoid the warning?
-        # I've changed this to selectOne() with a limit to avoid the
-        # len() usage.
         pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND

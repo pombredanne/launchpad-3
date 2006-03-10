@@ -27,7 +27,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import (
-    setUpWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -434,14 +434,27 @@ class BugTaskEditView(GeneralFormView):
             self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.milestone_widget = None
         else:
+            # Set up the milestone widget as an input widget only if the
+            # has launchpad.Edit permissions on the distribution, for
+            # distro tasks, or launchpad.Edit permissions on the
+            # product, for upstream tasks.
+            milestone_context = (
+                self.context.product or self.context.distribution or
+                self.context.distrorelease.distribution)
+
             # Don't edit self.fieldNames directly. ZCML magic causes
             # self.fieldNames to be shared by all BugTaskEditView
             # instances.
-            self.fieldNames = list(self.fieldNames)
-            self.fieldNames.remove('bugwatch')
+            edit_field_names = list(self.fieldNames)
+            edit_field_names.remove('bugwatch')
             self.bugwatch_widget = None
             display_field_names = []
-            edit_field_names = self.fieldNames
+            if (("milestone" in edit_field_names) and not
+                helpers.check_permission("launchpad.Edit", milestone_context)):
+                # The user doesn't have permission to edit the
+                # milestone, so render a read-only milestone widget.
+                edit_field_names.remove("milestone")
+                display_field_names.append("milestone")
 
         self.fieldNames = edit_field_names
         setUpWidgets(
