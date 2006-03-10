@@ -118,7 +118,7 @@ def main():
         where datname='launchpad_ftest_template'
         """)
     enc = cur.fetchone()[0]
-    if enc != 'UNICODE':
+    if enc not in ('UNICODE', 'UTF8'):
         print 'Database encoding incorrectly set'
         return 1
     cur.execute(r"""
