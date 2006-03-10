@@ -67,10 +67,17 @@ class ImportProcess:
                 # set the status to FAILED.
                 self.logger.error('Got an unexpected exception while'
                                   ' importing %s' % title, exc_info=1)
+                # We are going to abort the transaction, need to save the id
+                # of this entry to update its status.
+                failed_entry_id = entry_to_import.id
                 self.ztm.abort()
-                # This prevents us to import again the same failed element.
+                # Get the needed objects to set the failed entry status as
+                # FAILED.
+                translation_import_queue = getUtility(ITranslationImportQueue)
+                entry_to_import = translation_import_queue[failed_entry_id]
                 entry_to_import.status = RosettaImportStatus.FAILED
                 self.ztm.commit()
+                # Go to process next entry.
                 continue
 
             # As soon as the import is done, we commit the transaction
