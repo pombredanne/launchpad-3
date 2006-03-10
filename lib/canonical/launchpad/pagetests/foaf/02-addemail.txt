@@ -19,6 +19,9 @@ The First One
   ...An email message was sent to...
   ...
 
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> assert not stub.test_emails
 
   Add the same email again. While it's unconfirmed, you can try to add them as
   many times as you want, because you can have lost the token and then you'll
@@ -42,8 +45,8 @@ The First One
   Get the token we'll have to use to finish the registration process.
 
   >>> import email, re
-  >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]
@@ -157,6 +160,7 @@ The Second One
   >>> import email, re
   >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]

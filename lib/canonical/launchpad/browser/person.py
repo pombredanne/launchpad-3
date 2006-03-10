@@ -19,6 +19,7 @@ __all__ = [
     'TeamListView',
     'UbunteroListView',
     'FOAFSearchView',
+    'PersonSpecWorkLoadView',
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
@@ -41,19 +42,17 @@ __all__ = [
 
 import cgi
 import urllib
-import itertools
 import sets
 from StringIO import StringIO
 
 from zope.event import notify
-from zope.security.proxy import isinstance as zope_isinstance
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility, getView
+from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
@@ -63,20 +62,22 @@ from canonical.lp.dbschema import (
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES
+    )
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint, shortlist)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -296,35 +297,46 @@ class TeamBugsMenu(PersonBugsMenu):
 class PersonSpecsMenu(ApplicationMenu):
 
     usedfor = IPerson
-
     facet = 'specifications'
-
     links = ['created', 'assigned', 'drafted', 'review', 'approver',
-             'subscribed']
+             'workload', 'subscribed']
 
     def created(self):
-        text = 'Specifications Created'
-        return Link('+createdspecs', text, icon='spec')
+        text = 'Registrant'
+        summary = 'List specs registered by %s' % self.context.browsername
+        return Link('+specs?role=created', text, summary, icon='spec')
 
     def approver(self):
-        text = 'Specifications for Approval'
-        return Link('+approverspecs', text, icon='spec')
+        text = 'Approver'
+        summary = 'List specs with %s is supposed to approve' % (
+            self.context.browsername)
+        return Link('+specs?role=approver', text, summary, icon='spec')
 
     def assigned(self):
-        text = 'Specifications Assigned'
-        return Link('+assignedspecs', text, icon='spec')
+        text = 'Assignee'
+        summary = 'List specs for which %s is the assignee' % (
+            self.context.browsername)
+        return Link('+specs?role=assigned', text, summary, icon='spec')
 
     def drafted(self):
-        text = 'Specifications Drafted'
-        return Link('+draftedspecs', text, icon='spec')
+        text = 'Drafter'
+        summary = 'List specs drafted by %s' % self.context.browsername
+        return Link('+specs?role=drafted', text, summary, icon='spec')
 
     def review(self):
-        text = 'Feedback Requests'
-        return Link('+reviewspecs', text, icon='spec')
+        text = 'Feedback requested'
+        summary = 'List specs where feedback has been requested from %s' % (
+            self.context.browsername)
+        return Link('+specs?role=feedback', text, summary, icon='spec')
+
+    def workload(self):
+        text = 'Workload'
+        summary = 'Show all specification work assigned'
+        return Link('+specworkload', text, summary, icon='spec')
 
     def subscribed(self):
-        text = 'Specifications Subscribed'
-        return Link('+subscribedspecs', text, icon='spec')
+        text = 'Subscribed'
+        return Link('+specs?role=subscribed', text, icon='spec')
 
 
 class PersonSupportMenu(ApplicationMenu):
@@ -661,6 +673,37 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
+class PersonSpecWorkLoadView(LaunchpadView):
+    """View used to render the specification workload for a particular person.
+
+    It shows the set of specifications with which this person has a role.
+    """
+
+    def initialize(self):
+        assert IPerson.providedBy(self.context), (
+            'PersonSpecWorkLoadView should be used only on an IPerson.')
+
+    class PersonSpec:
+        """One record from the workload list."""
+
+        def __init__(self, spec, person):
+            self.spec = spec
+            self.assignee = spec.assignee == person
+            self.drafter = spec.drafter == person
+            self.approver = spec.approver == person
+
+    @cachedproperty
+    def workload(self):
+        """This code is copied in large part from browser/sprint.py. It may
+        be worthwhile refactoring this to use a common code base.
+
+        Return a structure that lists the specs for which this person is the
+        approver, the assignee or the drafter.
+        """
+        return [PersonSpecWorkLoadView.PersonSpec(spec, self.context)
+                for spec in self.context.specifications()]
+
+
 class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
@@ -925,49 +968,6 @@ class PersonView:
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
-
-    def sourcepackagerelease_open_bugs_count(self, sourcepackagerelease):
-        """Return the number of open bugs targeted to the sourcepackagename
-        and distrorelease of the given sourcepackagerelease.
-        """
-        params = BugTaskSearchParams(
-            user=self.user,
-            sourcepackagename=sourcepackagerelease.sourcepackagename,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        params.setDistributionRelease(sourcepackagerelease.uploaddistrorelease)
-        return getUtility(IBugTaskSet).search(params).count()
-
-    def maintainedPackagesByPackageName(self):
-        return self._groupSourcePackageReleasesByName(
-            self.context.maintainedPackages())
-
-    def uploadedButNotMaintainedPackagesByPackageName(self):
-        return self._groupSourcePackageReleasesByName(
-            self.context.uploadedButNotMaintainedPackages())
-
-    class SourcePackageReleasesByName:
-        """A class to hold a sourcepackagename and a list of
-        sourcepackagereleases of that sourcepackagename.
-        """
-
-        def __init__(self, name, releases):
-            self.name = name
-            self.releases = releases
-
-    def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
-        """Return a list of SourcePackageReleasesByName objects ordered by
-        SourcePackageReleasesByName.name.
-        
-        Each SourcePackageReleasesByName object contains a name, which is the
-        sourcepackagename and a list containing all sourcepackagereleases of
-        that sourcepackagename.
-        """
-        allreleasesbyallnames = []
-        keyfunc = lambda sprelease: sprelease.name
-        for key, group in itertools.groupby(sourcepackagereleases, keyfunc):
-            allreleasesbyallnames.append(
-                PersonView.SourcePackageReleasesByName(key, list(group)))
-        return sorted(allreleasesbyallnames, key=lambda s: s.name)
 
     def no_bounties(self):
         return not (self.context.ownedBounties or
@@ -1798,6 +1798,11 @@ class RequestPeopleMergeView(AddView):
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
+
+        # XXX: SteveAlexander: an experiment to see if this improves
+        #      problems with merge people tests.  2006-03-07
+        import canonical.database.sqlbase
+        canonical.database.sqlbase.flush_database_updates()
         dupename = dupeaccount.name
         sendMergeRequestEmail(
             token, dupename, self.request.getApplicationURL())

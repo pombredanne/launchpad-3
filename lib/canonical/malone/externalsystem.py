@@ -164,7 +164,9 @@ class Bugzilla(ExternalSystem):
         """Update the given bug watches."""
         bug_watches_by_remote_bug = {}
         for bug_watch in bug_watches:
-            bug_watches_by_remote_bug[bug_watch.remotebug] = bug_watch
+            #XXX: Use remotebug.strip() until bug 34105 is fixed.
+            #     -- Bjorn Tillenius, 2006-03-09
+            bug_watches_by_remote_bug[bug_watch.remotebug.strip()] = bug_watch
         bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
 
         data = {'form_name'   : 'buglist.cgi',
@@ -182,7 +184,7 @@ class Bugzilla(ExternalSystem):
             document = minidom.parseString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
             log.error('Failed to parse XML description for %s bugs %s: %s' %
-                      (self.baseurl, bug_ids, e))
+                      (self.baseurl, bug_ids_to_update, e))
             return None
         result = None
         bug_nodes = document.getElementsByTagName('bz:bug')
