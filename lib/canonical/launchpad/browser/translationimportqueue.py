@@ -165,7 +165,6 @@ class TranslationImportQueueView(LaunchpadView):
 
         # Setup the batching for this page.
         self.start = int(self.request.get('batch_start', 0))
-        self.end = int(self.request.get('batch_end', self.DEFAULT_LENGTH))
         self.batch = Batch(
             self.context.getAllEntries(), self.start,
             size=self.DEFAULT_LENGTH)
@@ -272,13 +271,8 @@ class TranslationImportQueueView(LaunchpadView):
 
         # We do a redirect so the submit doesn't breaks if the rendering of
         # the page takes too much time.
-        parameters = {
-            'batch_start': self.start,
-            'batch_end': self.end,
-            }
-        query_portion = urllib.urlencode(parameters)
         self.request.response.redirect(
-            '%s?%s' % (self.request.getURL(), query_portion))
+            '%s?batch_start=%d' % (self.request.getURL(), self.start))
         self.redirecting = True
 
     def getStatusSelect(self, entry):
