@@ -195,9 +195,9 @@ class ISpecification(IHasOwner):
         """
 
     # event-related methods
-    def getDelta(new_spec, user):
+    def getDelta(old_spec, user):
         """Return a dictionary of things that changed between this spec and
-        the new_spec.
+        the old_spec.
 
         This method is primarily used by event subscription code, to
         determine what has changed during an SQLObjectModifiedEvent.
@@ -287,6 +287,7 @@ class ISpecificationDelta(Interface):
     # fields on the spec itself, we provide just the new changed value
     title = Attribute("The spec title or None.")
     summary = Attribute("The spec summary or None.")
+    whiteboard = Attribute("The spec whiteboard or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
     distrorelease = Attribute("The release to which this is targeted.")
@@ -299,3 +300,6 @@ class ISpecificationDelta(Interface):
     priority = Attribute("Old and new priorities, or None")
     status = Attribute("Old and new statuses, or None")
     target = Attribute("Old and new target, or None")
+    approver = Attribute("Old and new approver, or None")
+    assignee = Attribute("Old and new assignee, or None")
+    drafter = Attribute("Old and new drafter, or None")
