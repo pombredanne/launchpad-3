@@ -31,6 +31,9 @@ __all__ = [
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
+    'RemoteBugTaskPriorityVocabulary',
+    'RemoteBugTaskSeverityVocabulary',
+    'RemoteBugTaskStatusVocabulary',
     'SpecificationDeliveryVocabulary',
     'SpecificationPriorityVocabulary',
     'SpecificationStatusVocabulary',
@@ -73,9 +76,12 @@ BranchLifecycleStatusVocabulary = \
     vocab_factory(dbschema.BranchLifecycleStatus)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
-BugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
-BugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
-BugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
+BugTaskStatusVocabulary = vocab_factory(
+    dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
+BugTaskPriorityVocabulary = vocab_factory(
+    dbschema.BugTaskPriority, noshow=[dbschema.BugTaskPriority.UNKNOWN])
+BugTaskSeverityVocabulary = vocab_factory(
+    dbschema.BugTaskSeverity, noshow=[dbschema.BugTaskSeverity.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS])
@@ -92,6 +98,9 @@ PackagePublishingPocketVocabulary = vocab_factory(
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
+RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
+RemoteBugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
+RemoteBugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
 SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)

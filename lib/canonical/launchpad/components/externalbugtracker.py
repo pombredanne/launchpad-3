@@ -164,7 +164,7 @@ class Bugzilla(ExternalSystem):
                 log.warning(
                     "Unknown Bugzilla status '%s' at %s" % (
                         remote_status, self.baseurl))
-            malone_status = None
+            malone_status = BugTaskStatus.UNKNOWN
 
         return malone_status
 

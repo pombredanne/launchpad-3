@@ -34,6 +34,8 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
+from canonical.lp.dbschema import (
+    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 
 
 class BugSetNavigation(Navigation):
@@ -357,9 +359,9 @@ class BugAlsoReportInView(GeneralFormView):
         if not target.official_malone:
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
-            taskadded.status = None
-            taskadded.priority = None
-            taskadded.severity = None
+            taskadded.status = BugTaskStatus.UNKNOWN
+            taskadded.priority = BugTaskPriority.UNKNOWN
+            taskadded.severity = BugTaskSeverity.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
         self._nextURL = canonical_url(taskadded)

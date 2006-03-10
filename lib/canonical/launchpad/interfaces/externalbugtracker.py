@@ -18,7 +18,4 @@ class IExternalBugtracker(Interface):
         """Update the given bug watches."""
 
     def convertRemoteStatus(remote_status):
-        """Converts the remote status string to a BugTaskStatus item.
-
-        Return None if it can't be converted.
-        """
+        """Converts the remote status string to a BugTaskStatus item."""

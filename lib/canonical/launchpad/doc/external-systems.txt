@@ -53,17 +53,17 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Rejected'
 
-If the status can't be converted, None is returned, and a warning
+If the status can't be converted, Unkown is returned, and a warning
 is logged.
 
-    >>> external_bugzilla.convertRemoteStatus('FOO') is None
+    >>> external_bugzilla.convertRemoteStatus('FOO').title
     WARNING:...:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org
-    True
+    'Unknown'
 
-UNKNOWN maps to None without generating a warning.
+UNKNOWN maps to Unknown without generating a warning.
 
-    >>> external_bugzilla.convertRemoteStatus('UNKNOWN') is None
-    True
+    >>> external_bugzilla.convertRemoteStatus('UNKNOWN').title
+    'Unknown'
 
 
 The main use of ExternalSystem is to update bug watches. This is done
@@ -122,12 +122,21 @@ now no bug watches are in need of updating:
 Now let's take a look at what happens when a bug watch is linked to
 from a bug task.
 
+    >>> login('foo.bar@canonical.com')
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
-    >>> print thunderbird_task.status is None
-    True
+    >>> print thunderbird_task.status.title
+    Unknown
     >>> thunderbird_task.bugwatch.remotestatus is None
     True
+
+We don't yet support updating the priority and severity for Bugzilla
+bugs, so let's set them to some bogus value, to see that they get set
+to UNKNOWN.
+
+    >>> from canonical.lp.dbschema import BugTaskPriority, BugTaskSeverity
+    >>> thunderbird_task.priority = BugTaskPriority.HIGH
+    >>> thunderbird_task.severity = BugTaskSeverity.MAJOR
 
 We need to create a new ExternalSystem for the Mozilla tracker:
 
@@ -144,6 +153,10 @@ synced:
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     Confirmed
+    >>> print thunderbird_task.priority.title
+    Unknown
+    >>> print thunderbird_task.severity.title
+    Unknown
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED
 
