@@ -58,15 +58,15 @@ class IPOMsgSet(Interface):
         """Returns the POSelection for this po msgset and
         plural form or None if there is no selection."""
 
-    def activeSubmission(pluralform):
-        """Returns the published translation submission for this po
-        msgset and plural form or None if there is no currently
-        active submission."""
+    def getActiveSubmission(pluralform):
+        """Return the published translation submission for this po
+        msgset and plural form or None.
+        """
 
     def getPublishedSubmission(pluralform):
         """Return the published translation submission for this po
-        msgset and plural form or None if there is no currently
-        published submission."""
+        msgset and plural form or None.
+        """
 
     def getSuggestedTexts(pluralform):
         """Return an iterator over any suggestions Rosetta might have for

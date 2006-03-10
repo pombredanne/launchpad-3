@@ -42,12 +42,10 @@ __all__ = [
 
 import cgi
 import urllib
-import itertools
 import sets
 from StringIO import StringIO
 
 from zope.event import notify
-from zope.security.proxy import isinstance as zope_isinstance
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -72,8 +70,7 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -970,49 +967,6 @@ class PersonView:
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
-
-    def sourcepackage_open_bugs_count(self, sourcepackagerelease):
-        """Return the number of open bugs targeted to the sourcepackagename
-        and distribution to which the given sourcepackagerelease was uploaded.
-        """
-        upload_distro = sourcepackagerelease.uploaddistrorelease.distribution
-        params = BugTaskSearchParams(
-            user=self.user,
-            sourcepackagename=sourcepackagerelease.sourcepackagename,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        return upload_distro.searchTasks(params).count()
-
-    def maintainedPackagesByPackageName(self):
-        return self._groupSourcePackageReleasesByName(
-            self.context.maintainedPackages())
-
-    def uploadedButNotMaintainedPackagesByPackageName(self):
-        return self._groupSourcePackageReleasesByName(
-            self.context.uploadedButNotMaintainedPackages())
-
-    class SourcePackageReleasesByName:
-        """A class to hold a sourcepackagename and a list of
-        sourcepackagereleases of that sourcepackagename.
-        """
-
-        def __init__(self, name, releases):
-            self.name = name
-            self.releases = releases
-
-    def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
-        """Return a list of SourcePackageReleasesByName objects ordered by
-        SourcePackageReleasesByName.name.
-
-        Each SourcePackageReleasesByName object contains a name, which is the
-        sourcepackagename and a list containing all sourcepackagereleases of
-        that sourcepackagename.
-        """
-        allreleasesbyallnames = []
-        keyfunc = lambda sprelease: sprelease.name
-        for key, group in itertools.groupby(sourcepackagereleases, keyfunc):
-            allreleasesbyallnames.append(
-                PersonView.SourcePackageReleasesByName(key, list(group)))
-        return sorted(allreleasesbyallnames, key=lambda s: s.name)
 
     def no_bounties(self):
         return not (self.context.ownedBounties or
