@@ -154,6 +154,7 @@ Change a bug task's severity:
     NORMAL True
     MAJOR True
     CRITICAL True
+    UNKNOWN True
 
 Change a bug task's priority:
 
@@ -168,6 +169,7 @@ Change a bug task's priority:
     LOW True
     MEDIUM True
     HIGH True
+    UNKNOWN True
 
 Create a new bug task:
 

@@ -54,6 +54,8 @@ from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.lp.dbschema import (
+    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, DBItemDisplayWidget)
 

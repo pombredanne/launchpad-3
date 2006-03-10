@@ -497,7 +497,7 @@ class BugTaskSet:
             assert distrorelease != distrorelease.distribution.currentrelease, (
                 'Bugtasks cannot be opened on the current release.')
 
-        return BugTask(
+        bugtask = BugTask(
             bug=bug,
             product=product,
             distribution=distribution,
@@ -510,6 +510,12 @@ class BugTaskSet:
             assignee=assignee,
             owner=owner,
             milestone=milestone)
+        if IRemoteBugTask.providedBy(bugtask):
+            bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
+            bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
+            bugtask.status = dbschema.BugTaskStatus.UNKNOWN
+
+        return bugtask
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
                            showclosed=False, orderBy=None, user=None):
