@@ -34,8 +34,8 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    IPerson, IPersonSet, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, ICalendarOwner, NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries, 
+    ISourcePackage, ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
@@ -236,22 +236,26 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
-        return Link('+specplan', text, icon='info')
+        return Link('+roadmap', text, icon='info')
 
     def table(self):
         text = 'Assignments'
-        return Link('+specstable', text, icon='info')
+        return Link('+assignments', text, icon='info')
 
     def workload(self):
         text = 'Workload'
         return Link('+workload', text, icon='info')
 
     def new(self):
-        text = 'Register a Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -262,7 +266,7 @@ class ProductBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a Bounty'
+        text = 'New Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -579,8 +583,8 @@ class ProductAddView(AddView):
                   "downloadurl",
                   "programminglang"]
         owner = IPerson(request.principal, None)
-        if self.isButtSource(owner):
-            # Buttsource members get it easy and are able to change this
+        if self.isVCSImport(owner):
+            # vcs-imports members get it easy and are able to change this
             # stuff during the edit process; this saves time wasted on
             # getting to product/+admin.
             fields.insert(1, "owner")
@@ -591,12 +595,11 @@ class ProductAddView(AddView):
         self._nextURL = '.'
         AddView.__init__(self, context, request)
 
-    def isButtSource(self, owner):
+    def isVCSImport(self, owner):
         if owner is None:
             return False
-        personset = getUtility(IPersonSet)
-        buttsource = personset.getByName('buttsource')
-        return owner.inTeam(buttsource)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return owner.inTeam(vcs_imports)
 
     def createAndAdd(self, data):
         # add the owner information for the product
@@ -604,7 +607,7 @@ class ProductAddView(AddView):
         if owner is None:
             raise zope.security.interfaces.Unauthorized(
                 "Need an authenticated Launchpad owner")
-        if self.isButtSource(owner):
+        if self.isVCSImport(owner):
             owner = data["owner"]
             reviewed = data["reviewed"]
         else:

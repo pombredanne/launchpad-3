@@ -12,7 +12,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
+    IUpstreamBugTask, )
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -104,8 +105,9 @@ def update_bug_contact_subscriptions(modified_bugtask, event):
     if IUpstreamBugTask.providedBy(modified_bugtask):
         if (bugtask_before_modification.product !=
             bugtask_after_modification.product):
-            new_bugcontacts.append(
-                bugtask_after_modification.product.bugcontact)
+            if bugtask_after_modification.product.bugcontact:
+                new_bugcontacts.append(
+                    bugtask_after_modification.product.bugcontact)
     elif (IDistroBugTask.providedBy(modified_bugtask) or
           IDistroReleaseBugTask.providedBy(modified_bugtask)):
         if (bugtask_before_modification.sourcepackagename !=
@@ -1076,3 +1078,75 @@ def notify_ticket_modified(ticket, event):
         'ticket_url': canonical_url(ticket),
         'body': body}
     send_ticket_notification(event, subject, body)
+
+
+def notify_specification_modified(spec, event):
+    """Notify the related people that a specification has been modifed."""
+    spec_delta = spec.getDelta(event.object_before_modification, event.user)
+    if spec_delta is None:
+        #XXX: Ideally, if an ISQLObjectModifiedEvent event is generated,
+        #     spec_delta shouldn't be None. I'm not confident that we
+        #     have enough test yet to assert this, though.
+        #     -- Bjorn Tillenius, 2006-03-08
+        return
+
+    subject = '[Spec %s] %s' % (spec.name, spec.title)
+    indent = ' '*4
+    info_lines = []
+    for dbitem_name in ('status', 'priority'):
+        title = ISpecification[dbitem_name].title
+        assert ISpecification[dbitem_name].required, (
+            "The mail notification assumes %s can't be None" % dbitem_name)
+        dbitem_delta = getattr(spec_delta, dbitem_name)
+        if dbitem_delta is not None:
+            old_item = dbitem_delta['old']
+            new_item = dbitem_delta['new']
+            info_lines.append("%s%s: %s => %s" % (
+                indent, title, old_item.title, new_item.title))
+
+    for person_attrname in ('approver', 'assignee', 'drafter'):
+        title = ISpecification[person_attrname].title
+        person_delta = getattr(spec_delta, person_attrname)
+        if person_delta is not None:
+            old_person = person_delta['old']
+            if old_person is None:
+                old_value = "(none)"
+            else:
+                old_value = old_person.displayname
+            new_person = person_delta['new']
+            if new_person is None:
+                new_value = "(none)"
+            else:
+                new_value = new_person.displayname
+            info_lines.append(
+                "%s%s: %s => %s" % (indent, title, old_value, new_value))
+
+    mail_wrapper = MailWrapper(width=72)
+    if spec_delta.whiteboard is not None:
+        if info_lines:
+            info_lines.append('')
+        info_lines.append('Whiteboard changed to:')
+        info_lines.append('')
+        info_lines.append(mail_wrapper.format(spec_delta.whiteboard))
+
+    if not info_lines:
+        # The specification was modified, but we don't yet support
+        # sending notification for the change.
+        return
+    body = get_email_template('specification-modified.txt') % {
+        'editor': event.user.displayname,
+        'info_fields': '\n'.join(info_lines),
+        'spec_title': spec.title,
+        'spec_url': canonical_url(spec)}
+
+    sent_addrs = set()
+    related_people = [spec.owner, spec.assignee, spec.approver, spec.drafter]
+    related_people = [
+        person for person in related_people if person is not None]
+    subscribers = [subscription.person for subscription in spec.subscriptions]
+
+    for notified_person in related_people + subscribers:
+        for address in contactEmailAddresses(notified_person):
+            if address not in sent_addrs:
+                simple_sendmail_from_person(event.user, address, subject, body)
+                sent_addrs.add(address)

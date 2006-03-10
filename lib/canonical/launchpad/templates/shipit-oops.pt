@@ -16,7 +16,7 @@
         ><code>system-error@launchpad.net</code></a>,
         including the error <abbr>ID</abbr>
         <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
-        and details of your problem.
+        in your message, and &#8220;bug&#8221; in the Subject line.
         Otherwise, try again in a few days.
       </p>
       <p>

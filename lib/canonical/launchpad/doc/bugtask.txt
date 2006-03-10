@@ -312,6 +312,20 @@ For upstream:
     >>> print bugtask_ids
     [2, 13, 14, 15]
 
+By project:
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    ...                                         BugTaskStatus.CONFIRMED),
+    ...                              orderby="id", user=None)
+    >>> bugtasks = mozilla_project.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+    >>> bugtask_ids = [bt.id for bt in bugtasks]
+    >>> print bugtask_ids
+    [2, 13, 14, 15]
+
 For a distribution:
 
     >>> debian = distroset.get(3)
@@ -340,7 +354,9 @@ For a person:
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
     ...                              orderby='targetname')
     >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
-    [u'evolution (Ubuntu)', u'evolution (upstream)', u'linux-source-2.6.15 (Ubuntu)', u'mozilla-firefox (debian)', u'mozilla-firefox (ubuntu)']
+    [u'Ubuntu', u'evolution (Ubuntu)', u'evolution (upstream)',
+     u'linux-source-2.6.15 (Ubuntu)', u'mozilla-firefox (debian)',
+     u'mozilla-firefox (ubuntu)']
 
 It's also possible to search bugs that a person is subscribed to:
 
@@ -386,7 +402,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    20
+    21
 
 Editing Bug Tasks
 -----------------

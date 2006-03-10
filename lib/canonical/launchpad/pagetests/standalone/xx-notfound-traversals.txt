@@ -76,12 +76,14 @@ spider -- StuartBishop 20050822
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 
 >>> check("/projects")
+>>> check("/projects/+all")
 >>> check("/projects/+syncreview", auth=True)
 >>> check("/projects/+review", auth=True)
 >>> check("/projects/mozilla")
 >>> check("/projects/mozilla/firefox")
 
 >>> check("/products")
+>>> check("/products/+all")
 >>> check("/products/firefox")
 >>> check_not_found("/products/firefox/+series")
 >>> check("/products/firefox/+series/1.0")
@@ -105,7 +107,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+bugs")
 >>> check("/distros/ubuntu/+specs")
 >>> check("/distros/ubuntu/+cve")
->>> check("/distros/ubuntu/+specplan")
+>>> check("/distros/ubuntu/+roadmap")
 >>> check("/distros/ubuntu/+edit", auth=True)
 >>> check("/distros/ubuntu/+reassign", auth=True)
 >>> check("/distros/ubuntu/+selectmemberteam", auth=True)
@@ -297,6 +299,7 @@ And this is for a person:
 >>> check("/people/name16/+reportedbugs")
 >>> check("/people/name16/+assignedbugs")
 >>> check("/people/name16/+packagebugs")
+>>> check("/people/name16/+packages")
 >>> check("/people/name16/+editsshkeys", auth=True)
 >>> check("/people/name16/+editpgpkeys", auth=True)
 >>> check("/people/name16/+editwikinames", auth=True)
@@ -304,13 +307,17 @@ And this is for a person:
 >>> check("/people/name16/+codesofconduct", auth=True)
 >>> check("/people/name16/+edithomepage", auth=True)
 >>> check("/people/name16/+edithackergotchi", auth=True)
->>> check("/people/name16/+packages")
 >>> check("/people/name16/+review", auth=True)
 >>> check("/people/name16/+portlet-emails")
 >>> check("/people/name16/+portlet-details")
 >>> check("/people/name16/+portlet-team-assignedbugs")
 >>> check("/people/name16/+calendar")
 >>> check("/people/name16/+calendar/+subscribe", auth=True)
+
+sabdfl owns many packages, so he's a better test for some pages:
+
+>>> check("/people/sabdfl/+packagebugs")
+>>> check("/people/sabdfl/+packages")
 
 >>> check("/bazaar")
 >>> check("/bazaar/+portlet-importstats")

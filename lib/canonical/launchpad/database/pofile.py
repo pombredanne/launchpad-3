@@ -7,6 +7,7 @@ import StringIO
 import pytz
 import datetime
 import os.path
+import logging
 
 # Zope interfaces
 from zope.interface import implements, providedBy
@@ -798,6 +799,15 @@ class POFile(SQLBase, RosettaStats):
         size = len(contents)
         file = StringIO.StringIO(contents)
 
+
+        # XXX CarlosPerelloMarin 20060227: Added the debugID argument to help
+        # us to debug bug #1887 on production. This will let us track this
+        # librarian import so we can discover why sometimes, the fetch of it
+        # fails.
+        self.exportfile = alias_set.create(
+            filename, size, file, 'application/x-po',
+            debugID='pofile-id-%d' % self.id)
+
         # Note that UTC_NOW is resolved to the time at the beginning of the
         # transaction. This is significant because translations could be added
         # to the database while the export transaction is in progress, and the
@@ -806,9 +816,6 @@ class POFile(SQLBase, RosettaStats):
         # same transaction -- e.g. in a call to validExportCache(). This is
         # why we call .sync() -- it turns the UTC_NOW reference into an
         # equivalent datetime object.
-
-        self.exportfile = alias_set.create(
-            filename, size, file, 'appliction/x-po')
         self.exporttime = UTC_NOW
         self.sync()
 
@@ -832,17 +839,27 @@ class POFile(SQLBase, RosettaStats):
         if self.validExportCache() and included_obsolete:
             # Only use the cache if the request includes obsolete messages,
             # without them, we always do a full export.
-            return self.fetchExportCache()
-        else:
-            contents = self.uncachedExport()
+            try:
+                return self.fetchExportCache()
+            except LookupError:
+                # XXX: Carlos Perello Marin 20060224 Workaround for bug #1887
+                # Something produces the LookupError exception and we don't
+                # know why. This will allow us to provide an export.
+                logging.warning(
+                    "Error fetching a cached file from librarian", exc_info=1)
 
-            if len(contents) == 0:
-                raise ZeroLengthPOExportError
+        contents = self.uncachedExport()
 
-            if included_obsolete:
-                # Update the cache if the request includes obsolete messages.
-                self.updateExportCache(contents)
-            return contents
+        if len(contents) == 0:
+            # The export is empty, this is completely broken, raised the
+            # exception.
+            raise ZeroLengthPOExportError, "Exporting %s" % self.title
+
+        if included_obsolete:
+            # Update the cache if the request includes obsolete messages.
+            self.updateExportCache(contents)
+
+        return contents
 
     def exportToFileHandle(self, filehandle, included_obsolete=True):
         """See IPOFile."""

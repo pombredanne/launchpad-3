@@ -3,7 +3,7 @@
    tal:content="context/title">Product Title Here</a>
 <div style="font-size: 80%; margin-left: 25px;">
   <div tal:content="context/summary" tal:condition="context/summary">
-    Sumary Goes Here
+    Summary Goes Here
   </div>
   <div>
     Registered by <img src="/@@/user.gif" />&nbsp;<a
@@ -12,4 +12,3 @@
        <span tal:replace="context/datecreated/fmt:date">2005-10-12</span>
   </div>
 </div>
-<hr />

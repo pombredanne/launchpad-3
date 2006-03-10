@@ -1,12 +1,21 @@
 
 Resetting to autotest does in fact reset to autotest.
 
+Check that the +sourceadmin form load s and that the importstatus is the
+expected value.
+
+
   >>> print http(r"""
   ... GET /products/a52dec/+series/failedbranch/+sourceadmin HTTP/1.1
   ... Authorization: Basic cm9iZXJ0Y0Byb2JlcnRjb2xsaW5zLm5ldDpsdW5jaHBhZA==
   ... """)
   HTTP/1.1 200 Ok
-  ...Failed import control...
+  ...Test Failed...
+  ...Rerun this import in the Autotester...
+
+
+Set the resetToAutotest checkbox.
+
 
   >>> print http(r"""
   ... POST /products/a52dec/+series/failedbranch/+sourceadmin HTTP/1.1
@@ -18,4 +27,19 @@ Resetting to autotest does in fact reset to autotest.
   ...
   ...
   Location: http://localhost:9000/products/a52dec/+series/failedbranch...
+  ...
+
+
+Check that the importstatus was indeed updated.
+
+
+  >>> print http(r"""
+  ... GET /products/a52dec/+series/main HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+	  <tr>
+	    <td><b>Bazaar Publishing:</b></td>
+	    <td>Testing</td>
+	  </tr>
   ...
