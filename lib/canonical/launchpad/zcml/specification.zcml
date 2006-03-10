@@ -378,7 +378,7 @@
 <subscriber
    for="canonical.launchpad.interfaces.ISpecification
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.specification.specification_goalstatus" />
+   handler="canonical.launchpad.subscribers.specification.specification_goalstatus" />
 
 <subscriber
    for="canonical.launchpad.interfaces.ISpecification
