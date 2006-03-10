@@ -1715,7 +1715,7 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         import queue to be incorporated into that package's translations.
         """)
 
-    DIST_UPGRADER = Item(0, """
+    DIST_UPGRADER = Item(2, """
         raw-dist-upgrader
 
         A raw-dist-upgrader file is a tarball. It is simply published into
