@@ -23,10 +23,10 @@ from zope.schema import Int, Object, TextLine
 
 from schoolbell.interfaces import IEditCalendar
 
+from canonical.launchpad import _
 from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
-from canonical.launchpad import _
 
 class ILaunchpadCalendar(IEditCalendar, IHasOwner):
     """Launchpad specific calendar.

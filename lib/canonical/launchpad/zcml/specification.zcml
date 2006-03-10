@@ -15,7 +15,7 @@
       set_attributes="title summary status specurl needs_discussion
                       superseded_by milestone productseries distrorelease
                       product distribution approver assignee drafter
-                      whiteboard man_days delivery" />
+                      whiteboard man_days delivery goalstatus" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved name" />
@@ -168,33 +168,35 @@
       height="5" />
   </browser:editform>
 
-  <browser:editform
-    name="+setdistrorelease"
+  <browser:generalform
+    name="+setrelease"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a distribution release"
-    fields="distrorelease delivery whiteboard"
+    fields="distrorelease whiteboard"
+    keyword_arguments="distrorelease whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-distrorelease.pt">
     <browser:widget
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
-  </browser:editform>
+  </browser:generalform>
 
-  <browser:editform
+  <browser:generalform
     name="+setseries"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Target to a series"
-    fields="productseries delivery whiteboard"
+    label="Target to a product series"
+    fields="productseries whiteboard"
+    keyword_arguments="productseries whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-productseries.pt">
     <browser:widget
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
-  </browser:editform>
+  </browser:generalform>
 
   <browser:editform
     name="+priority"
@@ -215,7 +217,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change status"
-    fields="status needs_discussion man_days whiteboard"
+    fields="status needs_discussion man_days delivery whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget
@@ -243,7 +245,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Administer specification"
-    fields="name priority"
+    fields="name goalstatus"
     permission="launchpad.Admin"
     template="../templates/specification-edit.pt"
   />
@@ -372,5 +374,15 @@
   </content>
 
 </facet>
+
+<subscriber
+   for="canonical.launchpad.interfaces.ISpecification
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.subscribers.specification.specification_goalstatus" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ISpecification
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_specification_modified" />
 
 </configure>

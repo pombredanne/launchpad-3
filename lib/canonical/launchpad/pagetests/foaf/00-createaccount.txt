@@ -35,6 +35,15 @@
   ...The email address foo.bar@canonical.com is already registered in our system...
   ...
 
+  >>> from canonical.launchpad.mail import stub
+
+  XXX SteveAlexander 2006-03-07.  This is a little bit evil.  I'm going to
+      clear out the stub.test_emails list.  We'll need to check this is
+      properly cleared out between tests in future, and issue a warning
+      if a test leaves email cruft behind.
+
+  >>> stub.test_emails[:] = []
+
 
   Now, provide a valid email address and ask to create a new account.
 
@@ -52,8 +61,8 @@
   Get the token we'll have to use to finish the registration process.
 
   >>> import email, re
-  >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]
@@ -133,10 +142,9 @@
   ... """ % path)
   HTTP/1.1 200 Ok
   ...
-          <p class="portalMessage">An error occurred.</p>
-  <BLANKLINE>
-  <BLANKLINE>
-          <div class="portalError">The email address foobarino@baz.com.br is already registered.</div>
+  ...An error occured...
+  ...
+  ...The email address foobarino@baz.com.br is already registered...
   ...
 
 
@@ -343,6 +351,7 @@
   Get the token we'll have to use to finish the registration process.
 
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]

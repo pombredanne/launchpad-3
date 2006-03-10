@@ -8,11 +8,20 @@
   <content class="canonical.launchpad.database.DistroRelease">
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <!-- NB: check with SABDFL before modifying these, there is potential to
+         make a huge mess if these get changed and Soyuz has to republish
+         shedloads of data. -->
     <require
         permission="launchpad.Edit"
-        set_attributes="displayname title summary description version
-                        releasestatus owner datelastlangpack 
-                        nominatedarchindep"
+        set_attributes="displayname title summary description
+                        datelastlangpack"
+        />
+    <!-- NB: check with SABDFL before modifying these, there is potential to
+         make a huge mess if these get changed and Soyuz has to republish
+         shedloads of data. -->
+    <require
+        permission="launchpad.Admin"
+        set_attributes="version name releasestatus owner nominatedarchindep"
         />
   </content>
 
@@ -134,7 +143,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
-    permission="launchpad.Edit"
+    permission="launchpad.Admin"
     facet="overview"
     class="canonical.launchpad.browser.ObjectReassignmentView">
     <browser:page
@@ -143,17 +152,26 @@
       lp:url="/distros/$distro.id/$release.id/+reassign" />
   </browser:pages>
 
+  <!-- NB DO NOT CHANGE WITHOUT THINKING
+       Do not allow people to change the details of the distro release that
+       will affect the way Soyuz publishes the distrorelease. Check with
+       SABDFL before modifying this page. -->
   <browser:editform
     for="canonical.launchpad.interfaces.IDistroRelease"
     permission="launchpad.Edit"
+    label="Edit release details"
     name="+edit"
     schema="canonical.launchpad.interfaces.IDistroRelease"
     facet="overview"
     fields="displayname title summary description"
-    template="../templates/launchpad-editform.pt"
+    template="../templates/distrorelease-edit.pt"
     lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"
     />
 
+  <!-- NB DO NOT CHANGE WITHOUT THINKING
+       Do not allow people to change the details of the distro release that
+       will affect the way Soyuz publishes the distrorelease. Check with
+       SABDFL before modifying this page. -->
   <browser:editform
     for="canonical.launchpad.interfaces.IDistroRelease"
     permission="launchpad.Admin"

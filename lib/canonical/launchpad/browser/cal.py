@@ -732,7 +732,8 @@ class CalendarEventAddView(AddView):
         """
         calendar = self.context
         kw = dict([(str(k), v) for k, v in data.items()])
-        event = calendar.addEvent(SimpleCalendarEvent(**kw))
+        event = SimpleCalendarEvent(**kw)
+        calendar.addEvent(event)
         notify(ObjectCreatedEvent(event))
 
         dtstart = event.dtstart.astimezone(
