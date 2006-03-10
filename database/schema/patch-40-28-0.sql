@@ -1,5 +1,26 @@
 SET client_min_messages=ERROR;
 
+-- Migrate any POFile.path with NULL value
+
+CREATE OR REPLACE FUNCTION dirname(path text) RETURNS text AS
+$$
+import os.path
+return os.path.dirname(args[0])
+$$ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+
+UPDATE POFile
+SET path=(SELECT dirname(POTemplate.path)) || '/' || language.code || COALESCE('@' || variant, '') || '.po'
+FROM Language, POTemplate
+WHERE POFile.language = Language.id AND POFile.potemplate = POTemplate.id AND POFile.path IS NULL;
+
+DROP FUNCTION dirname(text);
+
+-- And now, we add the DB constraints.
+
+ALTER TABLE POFile ALTER COLUMN path SET NOT NULL;
+
+ALTER TABLE POTemplate ALTER COLUMN path SET NOT NULL;
+
 -- This restriction is not valid anymore.
 
 ALTER TABLE TranslationImportQueueEntry DROP CONSTRAINT valid_upload;
@@ -31,12 +52,6 @@ UPDATE TranslationImportQueueEntry SET status=6, date_status_changed=dateimporte
 ALTER TABLE TranslationImportQueueEntry ALTER COLUMN status SET NOT NULL;
 
 ALTER TABLE TranslationImportQueueEntry ALTER COLUMN date_status_changed SET NOT NULL;
-
--- Our data is following this restriction, but the DB schema lacks it, so we force it.
-
-ALTER TABLE POFile ALTER COLUMN path SET NOT NULL;
-
-ALTER TABLE POTemplate ALTER COLUMN path SET NOT NULL;
 
 
 -- Generate a table of POFile entries to import into the queue.
