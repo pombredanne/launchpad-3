@@ -105,7 +105,7 @@ Now we simulate that the bug watch got updated:
     >>> bugzilla_watch.remotestatus = 'RESOLVED FIXED'
 
 If we now link the bugtask to the bug watch, the bugtask's status will
-be set to None:
+be set to Unknown:
 
 XXX: We really should update the status from the bug watch, but that's
      not trivial to do at the moment. I will fix this later.
@@ -122,5 +122,5 @@ XXX: We really should update the status from the bug watch, but that's
     >>> edit_view.process_form()
     >>> thunderbird_task.bugwatch == bugzilla_watch
     True
-    >>> thunderbird_task.status is None
-    True
+    >>> thunderbird_task.status.title
+    'Unknown'

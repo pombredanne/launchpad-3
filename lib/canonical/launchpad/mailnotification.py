@@ -206,8 +206,7 @@ def generate_bug_add_email(bug):
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
         body += u"Affects: %s\n" % bugtask.targetname
-        if bugtask.severity:
-            body += u"       Severity: %s\n" % bugtask.severity.title
+        body += u"       Severity: %s\n" % bugtask.severity.title
 
         if bugtask.priority:
             priority = bugtask.priority.title
@@ -219,12 +218,7 @@ def generate_bug_add_email(bug):
             # There's a person assigned to fix this task, so show that
             # information too.
             body += u"       Assignee: %s\n" % bugtask.assignee.displayname
-
-        if bugtask.status:
-            status = bugtask.status.title
-        else:
-            status = "(unknown)"
-        body += u"         Status: %s\n" % status
+        body += u"         Status: %s\n" % bugtask.status.title
 
     # Add the description.
     body += u"\n"
@@ -417,8 +411,6 @@ def generate_bug_edit_email(bug_delta):
 
         for added_bugtask in added_bugtasks:
             body += u"Also affects: %s\n" % added_bugtask.targetname
-            if IRemoteBugTask.providedBy(added_bugtask):
-                continue
             body += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
             if added_bugtask.priority:
                 priority_title = added_bugtask.priority.title

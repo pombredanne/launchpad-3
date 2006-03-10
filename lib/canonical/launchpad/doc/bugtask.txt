@@ -784,8 +784,8 @@ Remote BugTasks
 ---------------
 
 If a bug tasks's target isn't using Malone officially, we say that it's
-a remote bug tasks. Such bug tasks provide IBugTasks, which relaxes the
-constraints of status and severity, to allow them to be None.
+a remote bug tasks. Such bug tasks provide IRemoteBugTask, which allows the
+status, piroity and severity to have an UNKNOWN value.
 
     >>> from canonical.launchpad.interfaces import IRemoteBugTask
     >>> bug_one = getUtility(IBugSet).get(1)

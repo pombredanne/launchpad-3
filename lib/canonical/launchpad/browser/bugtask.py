@@ -524,9 +524,9 @@ class BugTaskEditView(GeneralFormView):
             #     Malone status, but it's not trivial to do at the
             #     moment. I will fix this later.
             #     -- Bjorn Tillenius, 2006-03-01
-            bugtask.status = None
-            bugtask.priority = None
-            bugtask.severity = None
+            bugtask.status = BugTaskStatus.UNKNOWN
+            bugtask.priority = BugTaskPriority.UNKNOWN
+            bugtask.severity = BugTaskSeverity.UNKNOWN
             bugtask.assignee = None
 
         if milestone_cleared:

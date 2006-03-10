@@ -237,7 +237,4 @@ class DBItemDisplayWidget(BrowserWidget):
                 'span', contents=dbitem.title,
                 cssClass="%s%s" % (dbitem_field.__name__, dbitem.title))
         else:
-            if IRemoteBugTask.providedBy(bugtask):
-                return renderElement('i', contents='unknown')
-            else:
-                return renderElement('span', contents='&mdash;')
+            return renderElement('span', contents='&mdash;')

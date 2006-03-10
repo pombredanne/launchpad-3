@@ -85,16 +85,6 @@ If the value is None, a dash is displayed:
     >>> print priority_widget()
     <span>&mdash;</span>
 
-And if it's a remote bug task, None is used to indicate that a value
-hasn't been pulled from the bug watch, so 'unknown' is displayed:
-
-    >>> thunderbird_bugtask.status is None
-    True
-    >>> status_field = IBugTask['status'].bind(thunderbird_bugtask)
-    >>> status_widget = DBItemDisplayWidget(status_field, None)
-    >>> print status_widget()
-    <i>unknown</i>
-
 We can set a specific value to be displayed using setRenderedValue():
 
     >>> from canonical.lp.dbschema import BugTaskStatus

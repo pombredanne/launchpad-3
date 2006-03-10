@@ -319,13 +319,9 @@ class IRemoteBugTask(IBugTask):
 
     The status of the bug will be updated from a remote bug watch.
     """
-    status = Choice(
-        title=_('Status'), vocabulary='RemoteBugTaskStatus',
-        default=dbschema.BugTaskStatus.UNCONFIRMED)
-    severity = Choice(
-        title=_('Severity'), vocabulary='RemoteBugTaskSeverity')
-    priority = Choice(
-        title=_('Priority'), vocabulary='RemoteBugTaskPriority')
+    status = Choice(title=_('Status'), vocabulary='RemoteBugTaskStatus')
+    severity = Choice(title=_('Severity'), vocabulary='RemoteBugTaskSeverity')
+    priority = Choice(title=_('Priority'), vocabulary='RemoteBugTaskPriority')
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
