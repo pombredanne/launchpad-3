@@ -34,6 +34,7 @@
   >>> import email, re
   >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]

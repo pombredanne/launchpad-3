@@ -23,8 +23,9 @@ from canonical.database.sqlbase import (quote_like, SQLBase, sqlvalues,
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort)
+    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
+    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
+    SpecificationGoalStatus)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
@@ -241,6 +242,16 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.distribution.getSpecification(name)
+
+    def acceptSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.distrorelease = self
+        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
+
+    def declineSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.distrorelease = self
+        spec.goalstatus = SpecificationGoalStatus.DECLINED
 
     @property
     def open_cve_bugtasks(self):

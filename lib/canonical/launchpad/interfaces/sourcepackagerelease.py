@@ -59,12 +59,16 @@ class ISourcePackageRelease(Interface):
     needs_building = Attribute("A boolean that indicates whether this package "
         "still needs to be built (on any architecture)")
 
-    open_tickets_count = Attribute(
+    open_ticket_count = Attribute(
         "The number of open support tickets on the distrorelease and "
         "sourcepackagename of this SourcePackageRelease")
+
     sourcepackage = Attribute(
         "The magic SourcePackage for the sourcepackagename and "
         "distrorelease of this object.")
+    distrosourcepackage = Attribute(
+        "The magic DistroSourcePackage for the sourcepackagename and "
+        "distribution of this object.")
     productrelease = Attribute("The best guess we have as to the Launchpad "
         "ProductRelease associated with this SourcePackageRelease.")
 
@@ -112,6 +116,11 @@ class ISourcePackageRelease(Interface):
 
         All arguments are optional and can be set individually. A non-passed
         argument remains untouched.
+        """
+
+    def countOpenBugsInUploadedDistro(user):
+        """Return the number of open bugs targeted to the sourcepackagename
+        and distribution to which this release was uploaded.
         """
 
     def attachTranslationFiles(tarball_alias, is_published, importer=None):

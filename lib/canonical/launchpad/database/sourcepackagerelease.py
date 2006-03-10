@@ -16,6 +16,7 @@ from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.searchbuilder import any
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
@@ -24,7 +25,9 @@ from canonical.lp.dbschema import (
     PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue)
+    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
+    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    )
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
@@ -103,6 +106,11 @@ class SourcePackageRelease(SQLBase):
         return self.uploaddistrorelease.getSourcePackage(self.name)
 
     @property
+    def distrosourcepackage(self):
+        """See ISourcePackageRelease."""
+        return self.uploaddistrorelease.distribution.getSourcePackage(self.name)
+
+    @property
     def title(self):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
@@ -147,7 +155,7 @@ class SourcePackageRelease(SQLBase):
             return None
 
     @property
-    def open_tickets_count(self):
+    def open_ticket_count(self):
         """See ISourcePackageRelease."""
         results = Ticket.select("""
             status = %s AND
@@ -157,6 +165,18 @@ class SourcePackageRelease(SQLBase):
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()
+
+    def countOpenBugsInUploadedDistro(self, user):
+        """See ISourcePackageRelease."""
+        upload_distro = self.uploaddistrorelease.distribution
+        params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
+            user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        # XXX: we need to omit duplicates here or else our bugcounts are
+        # inconsistent. This is a wart, and we need to stop spreading
+        # these things over the code.
+        #   -- kiko, 2006-03-07
+        params.omit_dupes = True
+        return upload_distro.searchTasks(params).count()
 
     @property
     def binaries(self):

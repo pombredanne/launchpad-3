@@ -12,11 +12,10 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Roadmap of spec implementation</h1>
+  <h1>Roadmap</h1>
 
   <p class="documentDescription">
-    Based on the current specifications, their dependencies, priorities and
-    statuses, Launchpad recommends the following implementation plan.
+    Launchpad recommends the following sequence of spec implementations.
   </p>
 
   <p class="portalMessage" tal:condition="not: view/specPlan">
@@ -26,10 +25,8 @@
   </p>
 
   <tal:block condition="view/specPlan">
-    <h2>Implementation strategy</h2>
-
     <p>
-      These specifications should be implemented in the order given.
+      Specifications should be implemented in the order given.
       This will ensure that the most important specifications are implemented
       first, and that specification dependencies are respected.
     </p>

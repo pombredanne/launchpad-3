@@ -14,13 +14,13 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget)
+    IHasOwner, IBugTarget, ISpecificationGoal)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 from canonical.launchpad import _
 
-class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
+class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     """A specific release of an operating system distribution."""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(

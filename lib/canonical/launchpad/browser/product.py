@@ -236,22 +236,26 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
-        return Link('+specplan', text, icon='info')
+        return Link('+roadmap', text, icon='info')
 
     def table(self):
         text = 'Assignments'
-        return Link('+specstable', text, icon='info')
+        return Link('+assignments', text, icon='info')
 
     def workload(self):
         text = 'Workload'
         return Link('+workload', text, icon='info')
 
     def new(self):
-        text = 'Register a Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -262,7 +266,7 @@ class ProductBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a Bounty'
+        text = 'New Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):

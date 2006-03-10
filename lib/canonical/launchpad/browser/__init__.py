@@ -65,6 +65,7 @@ from canonical.launchpad.browser.specification import *
 from canonical.launchpad.browser.specificationbug import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationfeedback import *
+from canonical.launchpad.browser.specificationgoal import *
 from canonical.launchpad.browser.specificationsubscription import *
 from canonical.launchpad.browser.specificationtarget import *
 from canonical.launchpad.browser.sprint import *
