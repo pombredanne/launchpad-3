@@ -23,15 +23,7 @@ class SourcePackageName(SQLBase):
 
     potemplates = SQLMultipleJoin('POTemplate', joinColumn='sourcepackagename')
     packagings = SQLMultipleJoin('Packaging', joinColumn='sourcepackagename')
-
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(
-            sourcepackagenameID=self.id,
-            iscurrent=True)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
-
+    
     def __unicode__(self):
         return self.name
 
