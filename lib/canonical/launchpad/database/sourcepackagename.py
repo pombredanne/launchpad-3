@@ -6,7 +6,7 @@ __all__ = ['SourcePackageName', 'SourcePackageNameSet']
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, MultipleJoin
+from sqlobject import StringCol, SQLMultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote
 
@@ -21,9 +21,9 @@ class SourcePackageName(SQLBase):
     name = StringCol(dbName='name', notNull=True, unique=True,
         alternateID=True)
 
-    potemplates = MultipleJoin('POTemplate', joinColumn='sourcepackagename')
-    packagings = MultipleJoin('Packaging', joinColumn='sourcepackagename')
-
+    potemplates = SQLMultipleJoin('POTemplate', joinColumn='sourcepackagename')
+    packagings = SQLMultipleJoin('Packaging', joinColumn='sourcepackagename')
+    
     def __unicode__(self):
         return self.name
 
