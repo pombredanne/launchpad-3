@@ -9,8 +9,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
-    SQLObjectNotFound)
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, MultipleJoin,
+    RelatedJoin, SQLObjectNotFound)
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -71,7 +71,7 @@ class Branch(SQLBase):
 
     cache_url = StringCol(default=None)
 
-    revision_history = MultipleJoin('RevisionNumber', joinColumn='branch',
+    revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
         orderBy='-sequence')
 
     subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')

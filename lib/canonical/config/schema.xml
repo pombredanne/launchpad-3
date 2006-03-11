@@ -86,8 +86,6 @@
                 The prefix of the URL for the public area of the Supermirror.
                 This value is usually not meaningful to change, so it should
                 generally not be set explicitly so the default value is used.
-
-		This should end with a slash.
 	    </description>
 	    <example>http://bazaar.launchpad.net/</example>
         </key>
@@ -102,7 +100,7 @@
         <key name="bzr_push_root_url" datatype="canonical.config.urlbase"
             required="no" default="file:///srv/sm-ng/pushsftp-hosted/">
             <description>
-                The URL prefix for bzr push branches.  Used to generate URLs for
+                The URL prefix for bzr push branches. Used to generate URLs for
                 the branch puller to use, not for public URLs.
             </description>
         </key>
@@ -559,15 +557,16 @@
         <key name="dbuser" datatype="string" required="yes" />
     </sectiontype>
 
-    <sectiontype name="branchupdater">
-        <key name="dbuser" datatype="string" required="yes">
+    <sectiontype name="branchscanner">
+        <key name="dbuser" datatype="string" default="importd">
             <description>
-                The database user wich will be used to update branches.
+                The database user for the branch-scanner to update branches.
             </description>
         </key>
-        <key name="prefixurl" datatype="string" required="yes">
+        <key name="root_url" datatype="canonical.config.urlbase"
+	     default="prefixurl http://bazaar.launchpad.net/+branches/">
             <description>
-                URL prepended to branch ids to obtain branch URLs.
+                URL prepended to branch ids to obtain internal branch URLs.
             </description>
         </key>
     </sectiontype>
@@ -613,7 +612,7 @@
         <section name="*" type="uploader" attribute="uploader" />
         <section name="*" type="uploadqueue" attribute="uploadqueue" />
         <section name="*" type="supermirror" attribute="supermirror" />
-        <section name="*" type="branchupdater" attribute="branchupdater" />
+        <section name="*" type="branchscanner" attribute="branchscanner" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file
