@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'POFileNavigation',
     'POFileFacets',
     'POFileAppMenus',
     'POFileView',
@@ -29,7 +30,33 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
-    LaunchpadView)
+    LaunchpadView, Navigation)
+
+class POFileNavigation(Navigation):
+
+    usedfor = IPOFile
+
+    def traverse(self, name):
+        try:
+            sequence = int(name)
+        except ValueError:
+            # The URL does not have a number to do the traversal.
+            raise UnexpectedFormData(
+                "%r is not a valid sequence number." % name)
+
+        if sequence < 1:
+            # We got an invalid sequence number.
+            raise UnexpectedFormData(
+                "%r is not a valid sequence number." % name)
+
+        potmsgset = self.context.potemplate.getPOTMsgSetBySequence(sequence)
+
+        if potmsgset is None:
+            raise UnexpectedFormData(
+                "%r is not a valid sequence number." % name)
+
+        return potmsgset.getPOMsgSet(
+            self.context.language.code, self.context.variant)
 
 
 class POFileFacets(StandardLaunchpadFacets):
@@ -228,7 +255,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
     @property
     def lacks_plural_form_information(self):
-        """Return whether we now the plural forms for this language."""
+        """Return whether we know the plural forms for this language."""
         if self.context.potemplate.hasPluralMessage():
             # If there are no plural forms, we don't mind if we have or not
             # the plural form information.

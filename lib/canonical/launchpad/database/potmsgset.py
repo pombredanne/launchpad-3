@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     IPOTMsgSet, ILanguageSet, NotFoundError, NameNotAvailable)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.pomsgset import POMsgSet
+from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
@@ -112,7 +112,7 @@ class POTMsgSet(SQLBase):
         else:
             variantspec = ('= %s' % quote(variant))
 
-        return POMsgSet.selectOne('''
+        pomsgset = POMsgSet.selectOne('''
             POMsgSet.potmsgset = %d AND
             POMsgSet.pofile = POFile.id AND
             POFile.language = Language.id AND
@@ -122,6 +122,16 @@ class POTMsgSet(SQLBase):
                    variantspec,
                    quote(language_code)),
             clauseTables=['POFile', 'Language'])
+
+        if pomsgset is None:
+            # There isn't a POMsgSet yet, we return a Dummy one until we get a
+            # write operation that creates the real one.
+            pofile = self.potemplate.getPOFileOrDummy(
+                language_code, variant)
+            return DummyPOMsgSet(pofile, self)
+        else:
+            return pomsgset
+
 
     def translationsForLanguage(self, language):
         # To start with, find the number of plural forms. We either want the
