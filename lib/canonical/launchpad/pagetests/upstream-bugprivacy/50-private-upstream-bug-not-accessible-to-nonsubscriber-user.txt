@@ -17,7 +17,7 @@ Note that the no-privs user doesn't have the permissions to see bug #10.
   ... """)
   HTTP/1.1 403 Forbidden
   ...
-  Unauthorized: ('browserDefault', 'launchpad.View')
+      <title>Forbidden</title>
   ...
 
 This is also true if no-privs tries to access the bug from another
@@ -29,5 +29,5 @@ context.
   ... """)
   HTTP/1.1 403 Forbidden
   ...
-  Unauthorized: ('browserDefault', 'launchpad.View')
+      <title>Forbidden</title>
   ...
