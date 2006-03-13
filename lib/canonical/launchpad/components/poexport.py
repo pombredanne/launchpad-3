@@ -69,18 +69,8 @@ class OutputPOFile:
         for msgset in msgsets:
             if msgset.obsolete and len(msgset.msgstrs) == 0:
                 continue
-            else:
-                try:
-                    chunks.extend([msgset.export_string()])
-                except UnicodeEncodeError:
-                    # This msgset has a character that is not valid based on
-                    # the information stored in the header. Instead of
-                    # failing, we export it without translations
-                    logging.warning('We have encoding problems using %s:\n%r' % (
-                        self.header.charset, msgset.export_unicode_string()))
-                    msgset.msgstr = None
-                    msgset.msgstrPlurals = None
-                    chunks.extend([msgset.export_string()])
+
+            chunks.append(msgset.export_string())
 
         return '\n\n'.join(chunks)
 
@@ -208,6 +198,24 @@ def last_translator_text(person):
 
     return '%s <%s>' % (person.browsername, email)
 
+def dump_file(content_to_export):
+    """Return a string representing a .po file.
+
+    :arg content_to_export: An OutputPOFile that needs to be exported.
+
+    The encoding of the string will depend on the declared encoding at
+    content_to_export.header or 'UTF-8' if cannot be represented by it.
+    """
+
+    try:
+        # Export the object.
+        return content_to_export.export_string()
+    except UnicodeEncodeError:
+        # Got any message that cannot be represented by its default encoding,
+        # need to force a UTF-8 export.
+        content_to_export.header['Content-Type'] = 'text/plain; charset=UTF-8'
+        return content_to_export.export_string()
+
 def export_rows(rows, pofile_output):
     """Convert a list of PO file export view rows to a set of PO files.
 
@@ -305,9 +313,9 @@ def export_rows(rows, pofile_output):
 
             # Output the current PO file.
 
-            if pofile:
-                pofile_output(potemplate, language, variant,
-                    pofile.export_string())
+            if pofile is not None:
+                exported_file = dump_file(pofile)
+                pofile_output(potemplate, language, variant, exported_file)
 
             # Generate the header of the new PO file.
 
@@ -447,8 +455,10 @@ def export_rows(rows, pofile_output):
                 msgset.flags.append('fuzzy')
         pofile.append(msgset)
 
-    if pofile:
-        pofile_output(potemplate, language, variant, pofile.export_string())
+    if pofile is not None:
+        exported_file = dump_file(pofile)
+        pofile_output(potemplate, language, variant, exported_file)
+
 
 class FilePOFileOutput:
     """Output PO files from an export to a single file handle."""

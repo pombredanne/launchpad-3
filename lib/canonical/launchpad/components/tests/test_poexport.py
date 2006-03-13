@@ -225,6 +225,34 @@ class EncodingExportTest(ExportTest):
 
         self.test_export(rows, expected_pofiles)
 
+class BrokenEncodingExportTest(ExportTest):
+    """Test what happens when the content and the encoding don't agree.
+
+    If an IPOFile fails to encode using the character set specified in the
+    header, the header should be changed to specify to UTF-8 and the IPOFile
+    exported accordingly.
+    """
+
+    def runTest(self):
+        prototype1 = TestRow(language='es', potsequence=1, posequence=1,
+            msgidpluralform=0, translationpluralform=0, msgid="a",
+            translation=u'\u00e1', potemplate=TestPOTemplate())
+
+        rows = [
+            prototype1.clone(potemplate=TestPOTemplate(),
+                poheader='Content-Type: text/plain; charset=ASCII\n'),
+        ]
+
+        expected_pofiles = [[
+            'msgid ""',
+            'msgstr "Content-Type: text/plain; charset=UTF-8\\n"',
+            '',
+            'msgid "a"',
+            'msgstr "\xc3\xa1"',
+        ]]
+
+        self.test_export(rows, expected_pofiles)
+
 class IncompletePluralMessageTest(ExportTest):
     """Test that plural message sets which are missing some translations are
     correctly exported.
@@ -402,6 +430,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(BasicExportTest())
     suite.addTest(EncodingExportTest())
+    suite.addTest(BrokenEncodingExportTest())
     suite.addTest(IncompletePluralMessageTest())
     suite.addTest(InactiveTranslationTest())
     suite.addTest(HeaderUpdateTest())
