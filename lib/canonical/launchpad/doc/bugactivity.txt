@@ -70,8 +70,8 @@ EVENT: user files a bug
   ...     title="a test bug", summary="this is only a test bug",
   ...     comment="this is only a test bug\nplease ignore",
   ...     owner=user)
-  >>> bug.activity
-  []
+  >>> bug.activity.count()
+  0 
   >>> object_created = SQLObjectCreatedEvent(bug)
   >>> notify(object_created)
   >>> latest_activity = bug.activity[-1]

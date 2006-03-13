@@ -24,6 +24,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import (
     setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, WidgetsError
@@ -700,7 +701,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 self, self.schema,
                 names=[
                     "searchtext", "status", "assignee", "severity",
-                    "priority", "owner", "omit_dupes", "has_patch"]))
+                    "priority", "owner", "omit_dupes", "has_patch",
+                    "milestone"]))
 
         if extra_params:
             data.update(extra_params)
@@ -768,7 +770,7 @@ class BugTaskSearchListingView(LaunchpadView):
         for term in vocabulary_registry.get(None, vocabulary_name):
             widget_values.append(
                 dict(
-                    value=term.token, title=term.token,
+                    value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
 
         return helpers.shortlist(widget_values, longest_expected=10)
@@ -786,6 +788,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def getSeverityWidgetValues(self):
         """Return data used to render the severity checkboxes."""
         return self.getWidgetValues("BugTaskSeverity")
+
+    def getMilestoneWidgetValues(self):
+        """Return data used to render the milestone checkboxes."""
+        return self.getWidgetValues("Milestone")
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""

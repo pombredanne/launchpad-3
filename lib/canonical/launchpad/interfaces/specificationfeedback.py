@@ -12,6 +12,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int, Text
+
 from canonical.launchpad import _
 
 class ISpecificationFeedback(Interface):

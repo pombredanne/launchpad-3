@@ -45,7 +45,7 @@ class POMsgSetView(LaunchpadView):
         self._suggested_submissions = None
         self._second_language_submissions = None
 
-        self.msgids = list(self.potmsgset.messageIDs())
+        self.msgids = list(self.potmsgset.getPOMsgIDs())
 
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
@@ -175,9 +175,13 @@ class POMsgSetView(LaunchpadView):
 
         if index in self.translation_range:
             translation = self.translations[index]
-            # We store newlines as '\n' but forms should have them as '\r\n'
-            # so we need to change them before showing them.
-            return helpers.unix2windows_newlines(translation)
+            # We store newlines as '\n', '\r' or '\r\n', depending on the
+            # msgid but forms should have them as '\r\n' so we need to change
+            # them before showing them.
+            if translation is not None:
+                return helpers.convert_newlines_to_web_form(translation)
+            else:
+                return None
         else:
             raise IndexError('Translation out of range')
 
@@ -347,10 +351,8 @@ class POMsgSetView(LaunchpadView):
             if msgset_ID_LANGCODE_translation_PLURALFORM not in self.form:
                 break
             value = self.form[msgset_ID_LANGCODE_translation_PLURALFORM]
-            translation_normalized = (
-                helpers.normalize_newlines(value))
             self.form_posted_translations[pluralform] = (
-                helpers.contract_rosetta_tabs(translation_normalized))
+                helpers.contract_rosetta_tabs(value))
         else:
             raise AssertionError("There were more than 100 plural forms!")
 
@@ -382,7 +384,7 @@ class POMsgSetView(LaunchpadView):
             # needs review.
 
             msgids_text = [pomsgid.msgid
-                           for pomsgid in self.potmsgset.messageIDs()]
+                           for pomsgid in self.potmsgset.getPOMsgIDs()]
 
             # Validate the translation we got from the translation form
             # to know if gettext is happy with the input.

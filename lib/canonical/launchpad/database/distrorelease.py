@@ -15,7 +15,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, MultipleJoin, IntCol, SQLObjectNotFound,
+    StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
     RelatedJoin)
 
 from canonical.database.sqlbase import (
@@ -23,7 +23,7 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
+    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
     SpecificationGoalStatus)
 
@@ -98,10 +98,10 @@ class DistroRelease(SQLBase, BugTargetBase):
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
 
-    architectures = MultipleJoin(
+    architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
-    binary_package_caches = MultipleJoin('DistroReleasePackageCache',
+    binary_package_caches = SQLMultipleJoin('DistroReleasePackageCache',
         joinColumn='distrorelease', orderBy='name')
 
     components = RelatedJoin(
