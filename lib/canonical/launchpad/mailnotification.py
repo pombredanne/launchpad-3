@@ -134,11 +134,11 @@ def update_bug_contact_subscriptions(modified_bugtask, event):
     # Send a notification to the new bug contacts that weren't
     # subscribed to the bug before, which looks identical to a new bug
     # report.
-    subject, body = generate_bug_add_email(bug)
+    subject, contents = generate_bug_add_email(bug)
     new_bugcontact_addresses.difference_update(old_cc_list)
     if new_bugcontact_addresses:
         send_bug_notification(
-            bug=bug, user=bug.owner, subject=subject, body=body,
+            bug=bug, user=bug.owner, subject=subject, contents=contents,
             to_addrs=new_bugcontact_addresses)
 
 

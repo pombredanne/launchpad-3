@@ -137,7 +137,7 @@ Person got notified since he's the owner of the product:
     'test@canonical.com'
     >>> print sample_person_msg.get_payload()
     Public bug reported:
-    ...
+    <BLANKLINE>
     Affects: firefox (upstream)
     ...
     There is a bug in Firefox.
@@ -186,7 +186,7 @@ Bar got notified since he's a bug contact for the mozilla package:
     'test@canonical.com'
     >>> print sample_person_msg.get_payload()
     Public bug reported:
-    ...
+    <BLANKLINE>
     Affects: mozilla-firefox (Ubuntu)
     ...
     There's a bug in Ubuntu.
@@ -705,9 +705,7 @@ A notification was sent to all the bug's subscribers, and to dilys:
     >>> sample_person_msg['To']
     'test@canonical.com'
     >>> print sample_person_msg.get_payload()
-    Public bug report changed:
-    ...
-    Also affects: Debian
+    *** Also affects: Debian
     ...
 
 
@@ -882,9 +880,9 @@ edited:
     >>> print msg['Subject']
     [Bug 7]...
     >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    ...
+    *** Changed in: evolution (upstream)
         Status: Unconfirmed => Confirmed
+    ...
 
 If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
@@ -902,17 +900,18 @@ The user is a bug contact of the upstream product
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to no one
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    mozilla-firefox (Ubuntu): Unconfirmed, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> print msg['Subject']
     [Bug 1]...
     >>> print msg.get_payload(decode=True)
-    Public bug report changed:
+    *** Changed in: firefox (upstream)
     ...
         Status: Unconfirmed => Confirmed
+    ...
 
 The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -938,15 +937,14 @@ The user is a package bug contact
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> print msg['Subject']
     [Bug 1]...
     >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    ...
+    *** Changed in: mozilla-firefox (Ubuntu)
         Assignee: (unassigned) => No Privileges Person
     ...
 
@@ -968,15 +966,14 @@ The user is a distribution member
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> print msg['Subject']
     [Bug 1]...
     >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    ...
+    *** Changed in: mozilla-firefox (Ubuntu)
         Assignee: No Privileges Person => Sample Person
     ...
 
@@ -996,7 +993,7 @@ user, telling him that he has to use the 'affects' command.
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> transaction.commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]

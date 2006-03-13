@@ -83,8 +83,7 @@ notification:
     '[Bug 2] Blackhole Trash folder'
 
     >>> print msg.get_payload(decode = True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/2
+    *** This bug has been marked a duplicate of bug 1
     ...
 
   2. To the subscribers of the dup-target bug.
@@ -114,6 +113,5 @@ notification:
     '[Bug 1] Firefox does not support SVG'
 
     >>> print msg.get_payload(decode = True) #doctest: -NORMALIZE_WHITESPACE
-    http://.../malone/bugs/1
-    <BLANKLINE>
-    *** Bug 2 has been marked a duplicate of this bug ***
+    *** Bug 2 has been marked a duplicate of this bug
+    ...

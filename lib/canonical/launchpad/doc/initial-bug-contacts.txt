@@ -130,19 +130,14 @@ package is already subscribed to the bug:
     >>> import transaction
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.helpers import capture_state
-    >>> from canonical.launchpad.components.bugtask import mark_task
+    >>> from canonical.launchpad.helpers import Snapshot
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.launchpad.mail import stub
 
     >>> ubuntu_pmount.addBugContact(sample_person)
 
-    >>> old_state = capture_state(
-    ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IDistroBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
@@ -187,9 +182,8 @@ priority, etc.
     '[Bug 1] Firefox does not support SVG'
     >>> print msg.get_payload(decode=True)
     Public bug reported:
-    http://.../malone/bugs/...
-    ...
-    Affects: pmount (Ubuntu)
+    <BLANKLINE>
+    Affects: firefox (upstream)
     ...
 
     >>> stub.test_emails = []
@@ -269,12 +263,8 @@ and the bug is made private:
 
 and then the bug gets reassigned to mozilla firefox:
 
-    >>> old_state = capture_state(
-    ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IDistroBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_firefox.sourcepackagename)
@@ -325,12 +315,8 @@ Bar gets subscribed to the bug in the process:
     ...      bug_two_in_ubuntu.bug.subscriptions])
     [u'Steve Alexander']
 
-    >>> old_state = capture_state(
-    ...     bug_two_in_ubuntu, "id", "status", "severity", "product",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IUpstreamBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_two_in_ubuntu, providing=IUpstreamBugTask)
 
     >>> bug_two_in_ubuntu.product = mozilla_firefox
 
@@ -366,7 +352,6 @@ report:
     '[Bug 2] Blackhole Trash folder'
     >>> print msg.get_payload(decode=True)
     Public bug reported:
-    http://.../malone/bugs/...
     <BLANKLINE>
     Affects: firefox (upstream)
     ...
