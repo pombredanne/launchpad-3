@@ -50,7 +50,7 @@ helpfully sorted for us.
 Or we can go the long way via the product series.
 
     >>> all_series = firefox.serieslist
-    >>> len(all_series)
+    >>> all_series.count()
     2
     >>> # Select the '1.0' series, and show all its releases
     >>> series = [s for s in all_series if s.name=='1.0'][0]

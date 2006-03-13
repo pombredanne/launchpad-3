@@ -72,7 +72,7 @@ Create a Spanish PO file, with an active translation submission created on
     >>> translations = { 0: u'blah (es)' }
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
     ...                               published=False)
-    >>> submission_es = pomsgset.activeSubmission(0)
+    >>> submission_es = pomsgset.getActiveSubmission(0)
     >>> submission_es.datecreated = d2000_01_01
 
 Create a Welsh PO file, with an active translation submission created on
@@ -83,7 +83,7 @@ Create a Welsh PO file, with an active translation submission created on
     >>> translations = { 0: u'blah (cy)' }
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
     ...                               published=False)
-    >>> submission_cy = pomsgset.activeSubmission(0)
+    >>> submission_cy = pomsgset.getActiveSubmission(0)
     >>> submission_cy.datecreated = d2000_01_03
 
 Now we try to export the PO files we've just created.

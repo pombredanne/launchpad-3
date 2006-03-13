@@ -70,8 +70,7 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES
-    )
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -975,9 +974,6 @@ class PersonView:
             self.context.subscribedBounties or
             self.context.claimedBounties)
 
-    def activeMembersCount(self):
-        return len(self.context.activemembers)
-
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
         user = getUtility(ILaunchBag).user
@@ -1069,13 +1065,13 @@ class PersonView:
                           for key in self.context.sshkeys])
 
     def sshkeysCount(self):
-        return len(self.context.sshkeys)
+        return self.context.sshkeys.count()
 
     def gpgkeysCount(self):
         return self.context.gpgkeys.count()
 
     def signedcocsCount(self):
-        return len(self.context.signedcocs)
+        return self.context.signedcocs.count()
 
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this
