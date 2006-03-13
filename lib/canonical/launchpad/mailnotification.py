@@ -209,31 +209,29 @@ def generate_bug_add_email(bug):
         # This is a public bug.
         visibility = u"Public"
 
-    contents = (u"%(visibility)s bug reported:\n"
-            u"%(bugurl)s\n\n"
-            % {'visibility' : visibility, 'bugurl' : canonical_url(bug)})
-
+    bug_info = ''
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
-        contents += u"Affects: %s\n" % bugtask.targetname
-        contents += u"       Severity: %s\n" % bugtask.severity.title
+        bug_info += u"Affects: %s\n" % bugtask.targetname
+        bug_info += u"       Severity: %s\n" % bugtask.severity.title
 
         if bugtask.priority:
             priority = bugtask.priority.title
         else:
             priority = "(none set)"
-        contents += u"       Priority: %s\n" % priority
+        bug_info += u"       Priority: %s\n" % priority
 
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
             # information too.
-            contents += u"       Assignee: %s\n" % bugtask.assignee.displayname
-        contents += u"         Status: %s\n" % bugtask.status.title
+            bug_info += u"       Assignee: %s\n" % bugtask.assignee.displayname
+        bug_info += u"         Status: %s\n" % bugtask.status.title
 
-    # Add the description.
-    contents += u"\n"
     mailwrapper = MailWrapper(width=72)
-    contents += u"Description:\n%s" % mailwrapper.format(bug.description)
+    contents = get_email_template('bug-add-notification-contents.txt') % {
+        'visibility' : visibility, 'bugurl' : canonical_url(bug),
+        'bug_info': bug_info,
+        'description': mailwrapper.format(bug.description)}
 
     contents = contents.rstrip()
 
