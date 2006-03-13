@@ -180,7 +180,7 @@ class PollView(BasePollView):
     def getPairwiseMatrixWithHeaders(self):
         """Return the pairwise matrix with headers being the option's names."""
         # Get a mutable matrix.
-        pairwise_matrix = list(self.context.getPairwiseMatrix())
+        pairwise_matrix = self.context.getPairwiseMatrix()
         headers = [None]
         for idx, option in enumerate(self.context.getAllOptions()):
             headers.append(option.title)

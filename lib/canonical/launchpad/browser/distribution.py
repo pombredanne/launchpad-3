@@ -19,7 +19,6 @@ from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
-from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
@@ -261,31 +260,22 @@ class DistributionView(BuildRecordsView):
         """
         # initialize control fields
         self.matches = 0
-        self.detailed = True
-        self.search_requested = False
 
         # check if the user invoke search, if not dismiss
         self.text = self.request.form.get('text', None)
         if not self.text:
+            self.search_requested = False
             return
-
-        # setup a batched list with the results
         self.search_requested = True
-        results = self.search_results()
-        start = int(self.request.get('batch_start', 0))
-        # store the results list length
-        self.matches = len(results)
-        # check if detailed list view is allowed for this result set.
-        self.check_detailed_view()
-        # since we are using the results length in the layout, we can save
-        # one query by passing this number to Batch initialization
-        self.batch = Batch(results, start, _listlength=self.matches)
-        self.batchnav = BatchNavigator(self.batch, self.request)
 
-    def check_detailed_view(self):
-        """Enable detailed list view only for sets smaller than 5 matches."""
+        results = self.search_results()
+        self.matches = len(results)
         if self.matches > 5:
             self.detailed = False
+        else:
+            self.detailed = True
+
+        self.batchnav = BatchNavigator(results, self.request)
 
     def search_results(self):
         """Return IDistributionSourcePackages according given a text.
@@ -299,9 +289,7 @@ class DistributionView(BuildRecordsView):
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
         results = self.context.source_package_caches
-        start = int(self.request.get('batch_start', 0))
-        self.batch = Batch(results, start, size=50)
-        self.batchnav = BatchNavigator(self.batch, self.request)
+        self.batchnav = BatchNavigator(results, self.request)
 
 
 class DistributionEditView(SQLObjectEditView):

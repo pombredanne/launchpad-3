@@ -35,7 +35,6 @@ from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
-from canonical.lp.z3batching import Batch
 from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
@@ -44,15 +43,13 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
     IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
     ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    valid_distrotask, valid_upstreamtask)
+    valid_distrotask, valid_upstreamtask, BugDistroReleaseTargetDetails)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
-
 
 
 def get_sortorder_from_request(request):
@@ -519,7 +516,7 @@ class BugListingPortletView(LaunchpadView):
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
     def getBugsAssignedToMeURL(self):
-        """Return the URL for bugs assigned to the current user on this target."""
+        """Return the URL for bugs assigned to the current user on target."""
         if self.user:
             return self.getSearchFilterURL(assignee=self.user.name)
         else:
@@ -661,8 +658,7 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the search results be displayed as a list?"""
         return True
 
-    def search(self, searchtext=None, batch_start=None, context=None,
-               extra_params=None):
+    def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
@@ -719,24 +715,17 @@ class BugTaskSearchListingView(LaunchpadView):
             else:
                 form_values[key] = value
 
-        search_params = BugTaskSearchParams(user=self.user, **form_values)
-        search_params.orderby = get_sortorder_from_request(self.request)
-
         # Base classes can provide an explicit search context.
         if not context:
             context = self.context
 
+        search_params = BugTaskSearchParams(user=self.user, **form_values)
+        search_params.orderby = get_sortorder_from_request(self.request)
         tasks = context.searchTasks(search_params)
-        if self.showBatchedListing():
-            if batch_start is None:
-                batch_start = int(self.request.get('batch_start', 0))
-            batch = Batch(tasks, batch_start, config.malone.buglist_batch_size)
-        else:
-            batch = tasks
 
-        return TableBatchNavigator(
-            batch=batch, request=self.request,
-            columns_to_show=self.columns_to_show)
+        return TableBatchNavigator(tasks, self.request,
+                    columns_to_show=self.columns_to_show,
+                    size=config.malone.buglist_batch_size)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""

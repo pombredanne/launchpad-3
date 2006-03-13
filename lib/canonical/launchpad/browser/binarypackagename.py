@@ -10,12 +10,10 @@ __all__ = [
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
-from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBinaryPackageNameSet)
 
-BATCH_SIZE = 40
 
 class BinaryPackageNameSetView(object):
 
@@ -26,17 +24,13 @@ class BinaryPackageNameSetView(object):
     def binaryPackagenamesBatchNavigator(self):
         name = self.request.get("name", "")
 
-        if not name:
-            binary_packagenames = list(self.context)
+        if name:
+            binary_packagenames = self.context.findByName(name)
         else:
-            binary_packagenames = list(self.context.findByName(name))
+            binary_packagenames = self.context
 
-        start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', BATCH_SIZE))
-        batch_size = BATCH_SIZE
+        return BatchNavigator(binary_packagenames, self.request)
 
-        batch = Batch(list=binary_packagenames, start=start, size=batch_size)
-        return BatchNavigator(batch=batch, request=self.request)
 
 class BinaryPackageNameAddView(AddView):
 

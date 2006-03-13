@@ -46,21 +46,19 @@ import sets
 from StringIO import StringIO
 
 from zope.event import notify
-from zope.security.proxy import isinstance as zope_isinstance
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility, getView
+from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy)
-from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
@@ -70,13 +68,15 @@ from canonical.launchpad.interfaces import (
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
+    UNRESOLVED_BUGTASK_STATUSES
+    )
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint, shortlist)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint,
+        )
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -85,7 +85,8 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView)
+    redirection, GeneralFormView,
+    )
 
 from canonical.launchpad import _
 
@@ -535,11 +536,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon)
 
 
-##XXX: (batch_size+global) cprov 20041003
-## really crap constant definition for BatchPages
-BATCH_SIZE = 40
-
-
 class BaseListView:
 
     header = ""
@@ -548,10 +544,8 @@ class BaseListView:
         self.context = context
         self.request = request
 
-    def _getBatchNavigator(self, list):
-        start = int(self.request.get('batch_start', 0))
-        batch = Batch(list=list, start=start, size=BATCH_SIZE)
-        return BatchNavigator(batch=batch, request=self.request)
+    def _getBatchNavigator(self, results):
+        return BatchNavigator(results, self.request)
 
     def getTeamsList(self):
         results = getUtility(IPersonSet).getAllTeams()
@@ -608,11 +602,11 @@ class FOAFSearchView:
 
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
-        searchfor = self.request.get("searchfor")
 
         if not name:
             return None
 
+        searchfor = self.request.get("searchfor")
         if searchfor == "peopleonly":
             results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
@@ -620,9 +614,7 @@ class FOAFSearchView:
         else:
             results = getUtility(IPersonSet).find(name)
 
-        start = int(self.request.get('batch_start', 0))
-        batch = Batch(list=results, start=start, size=BATCH_SIZE)
-        return BatchNavigator(batch=batch, request=self.request)
+        return BatchNavigator(results, self.request)
 
 
 class PersonRdfView:
@@ -702,11 +694,10 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return distribution.getSourcePackage(
             self.sourcepackagename_widget.getInputValue())
 
-    def search(self, searchtext=None, batch_start=None):
+    def search(self, searchtext=None):
         distrosourcepackage = self.current_package
         return BugTaskSearchListingView.search(
-            self, searchtext=searchtext, batch_start=batch_start,
-            context=distrosourcepackage)
+            self, searchtext=searchtext, context=distrosourcepackage)
 
     def getPackageBugCounts(self):
         """Return a list of dicts used for rendering the package bug counts."""

@@ -9,7 +9,6 @@ be better as a method on an existing content object or IFooSet object.
 __metaclass__ = type
 
 import email
-from email.Utils import make_msgid
 import subprocess
 import gettextpo
 import os
@@ -35,18 +34,16 @@ from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
 import canonical
-from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
     RosettaImportStatus, SourcePackageFileType,
     BinaryPackageFormat, BinaryPackageFileType)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed, DownloadFailed)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IHasOwner, IRequestPreferredLanguages,
+    ILaunchBag, IOpenLaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed,
     TranslationConstants)
-from canonical.launchpad.components.poparser import (
-    POSyntaxError, POInvalidInputError, POParser)
+from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
 def text_replaced(text, replacements, _cache={}):
@@ -1003,3 +1000,4 @@ def capture_state(obj, *fields):
         setattr(state, field, getattr(obj, field))
 
     return state
+
