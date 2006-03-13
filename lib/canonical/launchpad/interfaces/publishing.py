@@ -409,6 +409,9 @@ class ISecureBinaryPackagePublishingHistory(Interface):
             required=False, readonly=False,
             )
 
+    hasRemovalRequested = Bool(
+            title=_('Whether a removal has been requested for this record'))
+
 class ISourcePackagePublishingHistory(Interface):
     """A source package publishing history record."""
 
