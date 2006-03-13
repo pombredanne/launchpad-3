@@ -63,8 +63,8 @@ def main():
         # we expected.
         pass
     else:
-        if numeric_server_version < (7, 4):
-            print 'Your PostgreSQL version is too old.  You need 7.4.x'
+        if numeric_server_version < (8, 0):
+            print 'Your PostgreSQL version is too old.  You need 8.x.x'
             print 'You have %s' % server_version
             return 1
 
