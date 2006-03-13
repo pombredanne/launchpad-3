@@ -1,0 +1,6 @@
+%(visibility)s bug report changed:
+
+%(change_info)s
+
+Comment:
+%(comment)s

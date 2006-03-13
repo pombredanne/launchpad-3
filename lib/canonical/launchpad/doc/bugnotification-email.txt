@@ -83,7 +83,7 @@ demonstrate how the comment notification is formatted:
     u'[Bug 2] Blackhole Trash folder'
     >>> print body
     Public bug report changed:
-    http://.../malone/bugs/2
+    <BLANKLINE>
     <BLANKLINE>
     Comment:
     This would be a real killer feature. If there is already code to
@@ -125,7 +125,6 @@ returns the subject and body of the email, as a tuple.
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://.../bugs/2
     <BLANKLINE>
     Summary changed to:
         the new title
@@ -156,7 +155,6 @@ Another edit, this time the summary:
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://www.example.com/bugs/2
     <BLANKLINE>
     Short description changed to:
         this summary isn't particularly short is it? after all, what kind of
@@ -183,7 +181,6 @@ to a user that is explicitly subscribed to this bug):
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Private bug report changed:
-    http://.../bugs/2
     <BLANKLINE>
     Visibility changed to:
         Private
@@ -206,7 +203,6 @@ Now we set the bug public and check if the e-mail sent changed as well.
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://.../bugs/2
     <BLANKLINE>
     Visibility changed to:
         Public
@@ -236,7 +232,6 @@ pretend we had just added task five:
     u'[Bug 2] the new title'
     >>> print body
     Public bug report changed:
-    http://.../bugs/2
     <BLANKLINE>
     Also affects: mozilla-firefox (debian)
            Severity: Minor
@@ -277,7 +272,6 @@ bugmail when a bug task is edited.
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://.../bugs/2
     <BLANKLINE>
     Changed in: Ubuntu (upstream)
            Assignee: (unassigned) => Sample Person
@@ -321,7 +315,6 @@ Adding a web link can be seen as "editing" a bug.
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://www.example.com/bugs/2
     <BLANKLINE>
     Web links changed:
         + http://www.example.com/foo/bar (some title)
@@ -352,7 +345,6 @@ modified link as having been "Added" (though no actual "adding" or
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://www.example.com/bugs/2
     <BLANKLINE>
     Web links changed:
         + http://www.example.com/foo/bar (some better title)
@@ -393,7 +385,6 @@ generated when a bug watch is added:
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://www.example.com/bugs/2
     <BLANKLINE>
     Bug watches changed:
         + Bug 123 [The Mozilla.org Bug Tracker]
@@ -423,7 +414,6 @@ Let's demonstrate with an example:
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://www.example.com/bugs/2
     <BLANKLINE>
     Bug watches changed:
         + Bug 12 [The Mozilla.org Bug Tracker]
@@ -467,7 +457,6 @@ Adding a CVE will generate a notification that looks as follows:
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://www.example.com/bugs/2
     <BLANKLINE>
     Added CVE-2004-0718 (Candidate)
     -- 
@@ -493,7 +482,6 @@ Similarly, removing a CVE ref will result in an email:
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
-    http://www.example.com/bugs/2
     <BLANKLINE>
     Removed CVE-2004-0719 (Candidate)
     -- 

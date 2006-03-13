@@ -258,83 +258,80 @@ def generate_bug_edit_email(bug_delta):
     else:
         visibility = u"Public"
 
-    contents = (u"%(visibility)s bug report changed:\n"
-            u"%(bugurl)s\n\n"
-            % {'visibility' : visibility, 'bugurl' : bug_delta.bugurl})
-
     # figure out what's been changed; add that information to the
     # email as appropriate
+    change_info = ''
     if bug_delta.duplicateof is not None:
         new_bug_dupe = bug_delta.duplicateof['new']
         old_bug_dupe = bug_delta.duplicateof['old']
         assert new_bug_dupe is not None or old_bug_dupe is not None
         assert new_bug_dupe != old_bug_dupe
         if old_bug_dupe is not None:
-            contents += (
+            change_info += (
                 u"*** This bug is no longer a duplicate of bug %d ***\n\n" %
                 old_bug_dupe.id)
         if new_bug_dupe is not None:
-            contents += (
+            change_info += (
                 u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
                 new_bug_dupe.id)
 
     if bug_delta.title is not None:
-        contents += u"Summary changed to:\n"
-        contents += u"    %s\n" % bug_delta.title
+        change_info += u"Summary changed to:\n"
+        change_info += u"    %s\n" % bug_delta.title
 
     if bug_delta.summary is not None:
-        contents += u"Short description changed to:\n"
-        contents += mailwrapper.format(bug_delta.summary)
-        contents += u"\n"
+        change_info += u"Short description changed to:\n"
+        change_info += mailwrapper.format(bug_delta.summary)
+        change_info += u"\n"
 
     if bug_delta.description is not None:
-        contents += u"Description changed to:\n"
-        contents += mailwrapper.format(bug_delta.description)
-        contents += u"\n"
+        change_info += u"Description changed to:\n"
+        change_info += mailwrapper.format(bug_delta.description)
+        change_info += u"\n"
 
     if bug_delta.private is not None:
-        contents += u"Visibility changed to:\n"
+        change_info += u"Visibility changed to:\n"
         if bug_delta.private['new']:
-            contents += u"    Private\n"
+            change_info += u"    Private\n"
         else:
-            contents += u"    Public\n"
+            change_info += u"    Public\n"
 
     if bug_delta.external_reference is not None:
         new_ext_ref = bug_delta.external_reference['new']
-        contents += u"Web links changed:\n"
-        contents += u"    + %s (%s)\n" % (new_ext_ref.url, new_ext_ref.title)
+        change_info += u"Web links changed:\n"
+        change_info += u"    + %s (%s)\n" % (new_ext_ref.url, new_ext_ref.title)
         old_ext_ref = bug_delta.external_reference.get('old')
         if old_ext_ref is not None:
-            contents += u"    - %s (%s)\n" % (old_ext_ref.url, old_ext_ref.title)
+            change_info += u"    - %s (%s)\n" % (old_ext_ref.url, old_ext_ref.title)
 
     if bug_delta.bugwatch is not None:
         new_bugwatch = bug_delta.bugwatch['new']
-        contents += u"Bug watches changed:\n"
-        contents += u"    + Bug %s [%s]\n" % (
+        change_info += u"Bug watches changed:\n"
+        change_info += u"    + Bug %s [%s]\n" % (
             new_bugwatch.remotebug, new_bugwatch.bugtracker.title)
         old_bug_watch = bug_delta.bugwatch.get('old')
         if old_bug_watch:
-            contents += u"    - Bug %s [%s]\n" % (
+            change_info += u"    - Bug %s [%s]\n" % (
                 old_bug_watch.remotebug, old_bug_watch.bugtracker.title)
 
     if bug_delta.cve is not None:
         new_cve = bug_delta.cve.get('new', None)
         old_cve = bug_delta.cve.get('old', None)
-        contents += u""
+        change_info += u""
         if new_cve:
-            contents += u"Added %s\n" % new_cve.title
+            change_info += u"Added %s\n" % new_cve.title
         if old_cve:
-            contents += u"Removed %s\n" % old_cve.title
+            change_info += u"Removed %s\n" % old_cve.title
 
     if bug_delta.attachment is not None:
-        contents += "    - Changed attachments:\n"
-        contents += "        Added: %s\n" % (
+        change_info += "    - Changed attachments:\n"
+        change_info += "        Added: %s\n" % (
             bug_delta.attachment['new'].title)
-        contents += "           %s\n" % (
+        change_info += "           %s\n" % (
             bug_delta.attachment['new'].libraryfile.url)
         old_attachment = bug_delta.attachment.get('old')
         if old_attachment:
-            contents += "      Removed: %s\n" % old_attachment.title
+            change_info += "      Removed: %s\n" % old_attachment.title
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
@@ -343,11 +340,11 @@ def generate_bug_edit_email(bug_delta):
         if not zope_isinstance(bugtask_deltas, (list, tuple)):
             bugtask_deltas = [bugtask_deltas]
         for bugtask_delta in bugtask_deltas:
-            if not contents[-2:] == u"\n\n":
-                contents += u"\n"
+            if change_info and not change_info[-2:] == u"\n\n":
+                change_info += u"\n"
 
             if IUpstreamBugTask.providedBy(bugtask_delta.bugtask):
-                contents += u"Changed in: %s (upstream)\n" % (
+                change_info += u"Changed in: %s (upstream)\n" % (
                     bugtask_delta.bugtask.product.displayname)
             else:
                 if IDistroBugTask.providedBy(bugtask_delta.bugtask):
@@ -372,10 +369,10 @@ def generate_bug_edit_email(bug_delta):
                         spname = bugtask_delta.bugtask.sourcepackagename.name
 
                 if spname:
-                    contents += u"Task: %s %s\n" % (
+                    change_info += u"Task: %s %s\n" % (
                         distro_or_distrorelease_name, spname)
                 else:
-                    contents += u"Task: %s\n" % distro_or_distrorelease_name
+                    change_info += u"Task: %s\n" % distro_or_distrorelease_name
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
@@ -385,7 +382,7 @@ def generate_bug_edit_email(bug_delta):
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
                         change, displayattrname)
-                    contents += _get_task_change_row(
+                    change_info += _get_task_change_row(
                         fieldname, oldval_display, newval_display)
 
             if bugtask_delta.assignee is not None:
@@ -400,7 +397,7 @@ def generate_bug_edit_email(bug_delta):
                     u"%(label)15s: %(oldval)s => %(newval)s\n" % {
                     'label' : u"Assignee", 'oldval' : oldval_display,
                     'newval' : newval_display})
-                contents += changerow
+                change_info += changerow
 
             for fieldname, displayattrname in (
                 ("status", "title"), ("target", "name")):
@@ -408,12 +405,12 @@ def generate_bug_edit_email(bug_delta):
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
                         change, displayattrname)
-                    contents += _get_task_change_row(
+                    change_info += _get_task_change_row(
                         fieldname, oldval_display, newval_display)
 
     if bug_delta.added_bugtasks is not None:
-        if not contents[-2:] == u"\n\n":
-            contents += u"\n"
+        if not change_info[-2:] == u"\n\n":
+            change_info += u"\n"
 
         # Use zope_isinstance, to ensure that this Just Works with
         # security-proxied objects.
@@ -423,25 +420,32 @@ def generate_bug_edit_email(bug_delta):
             added_bugtasks = [bug_delta.added_bugtasks]
 
         for added_bugtask in added_bugtasks:
-            contents += u"Also affects: %s" % added_bugtask.targetname
-            contents += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
+            change_info += u"Also affects: %s" % added_bugtask.targetname
+            change_info += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
             if added_bugtask.priority:
                 priority_title = added_bugtask.priority.title
             else:
                 priority_title = "(none set)"
-            contents += u"%15s: %s\n" % (u"Priority", priority_title)
+            change_info += u"%15s: %s\n" % (u"Priority", priority_title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
-                contents += u"%15s: %s <%s>\n" % (
+                change_info += u"%15s: %s <%s>\n" % (
                     u"Assignee", assignee.name, assignee.preferredemail.email)
-            contents += u"%15s: %s" % (u"Status", added_bugtask.status.title)
+            change_info += u"%15s: %s" % (u"Status", added_bugtask.status.title)
 
-    contents = contents.rstrip()
+    change_info = change_info.rstrip()
 
     if bug_delta.comment_on_change:
         comment_wrapper = MailWrapper(width=72)
-        contents += "\n\nComment:\n"
-        contents += comment_wrapper.format(bug_delta.comment_on_change)
+        contents = get_email_template('bug-edit-notification-contents.txt') % {
+            'visibility': visibility, 'change_info': change_info,
+            'comment': comment_wrapper.format(bug_delta.comment_on_change)}
+    else:
+        contents = get_email_template(
+            'bug-edit-notification-contents-no-comment.txt') % {
+                'visibility': visibility, 'change_info': change_info}
+
+    contents = contents.rstrip()
 
     body = get_email_template('bug-notification.txt') % {
         'contents': contents,
@@ -457,33 +461,13 @@ def generate_bug_comment_email(bug_comment):
     bug_comment is expected to provide IBugMessage. The return value is
     (subject, body).
     """
-    subject = u"[Bug %d] %s" % (bug_comment.bug.id, bug_comment.bug.title)
-    bug = bug_comment.bug
-    if bug.private:
-        # This is a confidential bug.
-        visibility = u"Private"
-    else:
-        # This is a public bug.
-        visibility = u"Public"
-
-    comment_wrapper = MailWrapper(width=72)
-
-    contents = (u"%(visibility)s bug report changed:\n"
-            u"%(bugurl)s\n\n"
-            u"Comment:\n"
-            u"%(comment)s"
-            % {'visibility' : visibility, 'bugurl' : canonical_url(bug),
-               'comment' : comment_wrapper.format(
-                    bug_comment.message.text_contents)})
-
-    contents = contents.rstrip()
-
-    body = get_email_template('bug-notification.txt') % {
-        'contents': contents,
-        'bug_title': bug.title,
-        'bug_url': canonical_url(bug)}
-
-    return (subject, body)
+    # Generate an empty delta in order to reuse the edit notification
+    # code.
+    bug_delta = BugDelta(
+        bug_comment.bug, bugurl=canonical_url(bug_comment.bug),
+        user=bug_comment.message.owner,
+        comment_on_change=bug_comment.message.text_contents)
+    return generate_bug_edit_email(bug_delta)
 
 
 def _get_task_change_row(label, oldval_display, newval_display):
