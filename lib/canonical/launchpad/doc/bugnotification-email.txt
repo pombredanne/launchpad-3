@@ -64,6 +64,12 @@ Let's take a look at what the notification email looks like:
     Description:
     Malone pages that use more complex layouts with portlets and fancy CSS are
     sometimes not getting properly reflowed after rendering.
+    -- 
+    Bug Details:
+      Reflow problems with complex page layouts
+      http://.../malone/bugs/4
+    <BLANKLINE>
+
 
 Adding a bug comment
 --------------------
@@ -87,6 +93,11 @@ demonstrate how the comment notification is formatted:
     emails for Mr Gates... everything they delete would actually
     disappear! I'm sure Redmond will switch over as soon as they hear
     about this. It's not a bug, it's a feature!
+    -- 
+    Bug Details:
+      Blackhole Trash folder
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Editing a bug
 -------------
@@ -126,6 +137,11 @@ returns the subject and body of the email, as a tuple.
         that gets sent.
     <BLANKLINE>
         it's also smart enough to preserve whitespace, finally!
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Another edit, this time the summary:
 
@@ -146,6 +162,11 @@ Another edit, this time the summary:
     Short description changed to:
         this summary isn't particularly short is it? after all, what kind of
         summary is so long that it needs to be wrapped?
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
@@ -167,6 +188,11 @@ to a user that is explicitly subscribed to this bug):
     <BLANKLINE>
     Visibility changed to:
         Private
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Now we set the bug public and check if the e-mail sent changed as well.
 
@@ -185,6 +211,11 @@ Now we set the bug public and check if the e-mail sent changed as well.
     <BLANKLINE>
     Visibility changed to:
         Public
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Adding a new bug task
 ---------------------
@@ -213,6 +244,11 @@ pretend we had just added task five:
            Priority: High
            Assignee: name12 <test@canonical.com>
              Status: Confirmed
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Editing a bug task
 ------------------
@@ -250,6 +286,11 @@ bugmail when a bug task is edited.
     <BLANKLINE>
     Comment:
     this is indeed a bug
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Adding and editing web links
 ----------------------------
@@ -285,6 +326,11 @@ Adding a web link can be seen as "editing" a bug.
     <BLANKLINE>
     Web links changed:
         + http://www.example.com/foo/bar (some title)
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -312,6 +358,11 @@ modified link as having been "Added" (though no actual "adding" or
     Web links changed:
         + http://www.example.com/foo/bar (some better title)
         - http://www.example.com/foo/bar (some title)
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Adding and editing bug watches
 ------------------------------
@@ -347,6 +398,11 @@ generated when a bug watch is added:
     <BLANKLINE>
     Bug watches changed:
         + Bug 123 [The Mozilla.org Bug Tracker]
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -373,6 +429,11 @@ Let's demonstrate with an example:
     Bug watches changed:
         + Bug 12 [The Mozilla.org Bug Tracker]
         - Bug 123 [The Mozilla.org Bug Tracker]
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Adding and editing CVE relationships
 ------------------------------------
@@ -410,6 +471,11 @@ Adding a CVE will generate a notification that looks as follows:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Added CVE-2004-0718 (Candidate)
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Similarly, removing a CVE ref will result in an email:
 
@@ -431,6 +497,11 @@ Similarly, removing a CVE ref will result in an email:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Removed CVE-2004-0719 (Candidate)
+    -- 
+    Bug Details:
+      the new title
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
 Adding an infestation
 ---------------------
