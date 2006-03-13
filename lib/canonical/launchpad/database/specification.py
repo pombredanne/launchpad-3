@@ -7,7 +7,7 @@ __all__ = ['Specification', 'SpecificationSet']
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin, BoolCol)
+    ForeignKey, IntCol, StringCol, SQLMultipleJoin, RelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
     ISpecification, ISpecificationSet)
@@ -80,19 +80,19 @@ class Specification(SQLBase):
         foreignKey='Specification', notNull=False, default=None)
 
     # useful joins
-    subscriptions = MultipleJoin('SpecificationSubscription',
+    subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = RelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription', orderBy='name')
-    feedbackrequests = MultipleJoin('SpecificationFeedback',
+    feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
-    sprint_links = MultipleJoin('SprintSpecification', orderBy='id',
+    sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
     sprints = RelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    buglinks = MultipleJoin('SpecificationBug', joinColumn='specification',
+    buglinks = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
     bugs = RelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
@@ -100,7 +100,7 @@ class Specification(SQLBase):
     dependencies = RelatedJoin('Specification', joinColumn='specification',
         otherColumn='dependency', orderBy='title',
         intermediateTable='SpecificationDependency')
-    spec_dependency_links = MultipleJoin('SpecificationDependency',
+    spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
     blocked_specs = RelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',

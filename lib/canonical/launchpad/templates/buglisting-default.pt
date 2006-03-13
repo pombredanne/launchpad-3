@@ -19,6 +19,12 @@
              tal:attributes="href string:${context/fmt:url}/+bugs-advanced-search">
             <small>Advanced</small>
           </a>
+          <div style="margin-top: 5px">
+            <small>
+              Sort by:
+              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+            </small>
+          </div>
         </form>
         <script>
           <!--
