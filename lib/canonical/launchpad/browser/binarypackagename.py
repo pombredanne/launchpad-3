@@ -23,12 +23,10 @@ class BinaryPackageNameSetView(object):
 
     def binaryPackagenamesBatchNavigator(self):
         name = self.request.get("name", "")
-
         if name:
             binary_packagenames = self.context.findByName(name)
         else:
-            binary_packagenames = self.context
-
+            binary_packagenames = self.context.getAll()
         return BatchNavigator(binary_packagenames, self.request)
 
 

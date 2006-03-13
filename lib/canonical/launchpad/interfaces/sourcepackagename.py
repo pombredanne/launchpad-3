@@ -43,18 +43,15 @@ class ISourcePackageNameSet(Interface):
     def __getitem__(name):
         """Retrieve a sourcepackagename by name."""
 
-    def __iter__():
-        """Iterate over names"""
-
-    def __len__():
-        """Return the number of names in the entire set"""
-
     def get(sourcepackagenameid):
         """Return a sourcepackagename by its id.
 
         If the sourcepackagename can't be found a zope.exceptions.NotFoundError
         will be raised.
         """
+
+    def getAll():
+        """return an iselectresults representing all package names"""
 
     def findByName(name):
         """Find sourcepackagenames by its name or part of it"""

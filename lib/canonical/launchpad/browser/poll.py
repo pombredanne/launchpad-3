@@ -179,8 +179,10 @@ class PollView(BasePollView):
 
     def getPairwiseMatrixWithHeaders(self):
         """Return the pairwise matrix with headers being the option's names."""
-        # Get a mutable matrix.
-        pairwise_matrix = self.context.getPairwiseMatrix()
+        # XXX: The list() call here is necessary because, lo and behold,
+        # it gives us a non-security-proxied list object! Someone come
+        # in and fix this! -- kiko, 2006-03-13
+        pairwise_matrix = list(self.context.getPairwiseMatrix())
         headers = [None]
         for idx, option in enumerate(self.context.getAllOptions()):
             headers.append(option.title)

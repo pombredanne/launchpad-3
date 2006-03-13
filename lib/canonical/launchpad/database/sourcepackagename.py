@@ -53,20 +53,16 @@ class SourcePackageNameSet:
         except SQLObjectNotFound:
             raise NotFoundError(name)
 
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
-        return iter(SourcePackageName.select())
-
-    def __len__(self):
-        """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
-        return SourcePackageName.select().count()
-
     def get(self, sourcepackagenameid):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
         try:
             return SourcePackageName.get(sourcepackagenameid)
         except SQLObjectNotFound:
             raise NotFoundError(sourcepackagenameid)
+
+    def getAll(self):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        return SourcePackageName.select()
 
     def findByName(self, name):
         """Find sourcepackagenames by its name or part of it."""

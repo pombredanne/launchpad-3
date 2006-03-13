@@ -26,7 +26,7 @@ class SourcePackageNameSetView(object):
         if name:
             sourcepackagenames = self.context.findByName(name)
         else:
-            sourcepackagenames = self.context
+            sourcepackagenames = self.context.getAll()
         return BatchNavigator(sourcepackagenames, self.request)
 
 
