@@ -21,8 +21,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, TicketStatus,
-    PackagePublishingPocket)
+    SourcePackageFileType, BuildStatus, TicketStatus)
 
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
@@ -73,7 +72,7 @@ class SourcePackageRelease(SQLBase):
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease')
     publishings = SQLMultipleJoin('SourcePackagePublishing',
-        joinColumn='sourcepackagerelease')
+        joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
     @property
     def latest_build(self):

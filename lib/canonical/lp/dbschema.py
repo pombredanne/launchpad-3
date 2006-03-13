@@ -2762,6 +2762,15 @@ class BuildStatus(DBSchema):
         has been fixed.
         """)
 
+    SUPERSEDED = Item(5, """
+        Build for superseded Source.
+
+        Build record represents a build which never got to happen because the
+        source package release for the build was superseded before the job
+        was scheduled to be run on a builder. Builds which reach this state
+        will rarely if ever be reset to any other state.
+        """)
+
 
 class MirrorFreshness(DBSchema):
     """ Mirror Freshness

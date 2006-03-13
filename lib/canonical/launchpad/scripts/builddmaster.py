@@ -1336,8 +1336,17 @@ class BuilddMaster:
         builder = builders.firstAvailable()
 
         while builder is not None and len(queueItems) > 0:
-            self.startBuild(builders, builder, queueItems.pop(0))
-            builder = builders.firstAvailable()
+            build_candidate = queueItems.pop(0)
+            spr = build_candidate.build.sourcepackagerelease
+            # either dispatch or mark as superseded
+            if (spr.publishings[0].status <=
+                dbschema.PackagePublishingStatus.PUBLISHED):
+                self.startBuild(builders, builder, build_candidate)
+                builder = builders.firstAvailable()
+            else:
+                build_candidate.build.status = dbschema.BuildStatus.SUPERSEDED
+                build_candidate.destroySelf()
+
 
     def startBuild(self, builders, builder, queueItem):
         """Find the list of files and give them to the builder."""
