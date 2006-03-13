@@ -1,5 +1,4 @@
 %(visibility)s bug reported:
-%(bugurl)s
 
 %(bug_info)s
 

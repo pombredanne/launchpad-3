@@ -54,7 +54,6 @@ Let's take a look at what the notification email looks like:
     u'[Bug 4] Reflow problems with complex page layouts'
     >>> print body
     Public bug reported:
-    http://.../malone/bugs/4
     <BLANKLINE>
     Affects: firefox (upstream)
            Severity: Normal
