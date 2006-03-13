@@ -266,6 +266,11 @@
     />
 
   <vocabulary
+    name="SpecificationGoalStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationGoalStatusVocabulary"
+    />
+
+  <vocabulary
     name="Sprint"
     factory="canonical.launchpad.vocabularies.SprintVocabulary"
     />

@@ -35,8 +35,8 @@ IPersonSet. All you need for that is a valid email address.
 >>> p.teamowner is None
 True
 
->>> buttsource = personset.getByName('buttsource')
->>> buttsource.teamowner is None
+>>> vcs_imports = personset.getByName('vcs-imports')
+>>> vcs_imports.teamowner is None
 False
 >>> lifeless = personset.getByName('lifeless')
 >>> lifeless.teamowner is None
@@ -47,7 +47,7 @@ person is a member of a team. It accepts an object implementing
 IPerson, which is the common use case when checking permissions.
 
 >>> ddaa = personset.getByName('ddaa')
->>> lifeless.inTeam(buttsource) and ddaa.inTeam(buttsource)
+>>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
 True
 
 If a Person is not a Team then the Person object will not provide the
@@ -59,20 +59,20 @@ False
 
 If a Person is a Team then the Person will provide the ITeam interface.
 
->>> ITeam.providedBy(buttsource)
+>>> ITeam.providedBy(vcs_imports)
 True
 
 If a team doesn't have a contact email address, all notifications we send to
 the team will go to the preferred email of each member.
 
->>> contactEmailAddresses(buttsource)
+>>> contactEmailAddresses(vcs_imports)
 set(['david.allouche@canonical.com', 'robertc@robertcollins.net',
      'foo.bar@canonical.com'])
 
 We don't support changing a Person into a Team or a Team into a Person.
 
->>> buttsource.teamowner = None
->>> ITeam.providedBy(buttsource)
+>>> vcs_imports.teamowner = None
+>>> ITeam.providedBy(vcs_imports)
 True
 
 
@@ -323,21 +323,22 @@ Maintainer.
 >>> for sprelease in sabdfl.maintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
-(u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
 (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
-(u'evolution', u'Ubuntu Hoary', u'1.0')
-(u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
-(u'netapplet', u'Ubuntu Hoary', u'1.0-1')
-(u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
-(u'pmount', u'Ubuntu Hoary', u'0.1-1')
 (u'pmount', u'Ubuntu Hoary', u'0.1-2')
+(u'pmount', u'Ubuntu Hoary', u'0.1-1')
+(u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
+(u'netapplet', u'Ubuntu Hoary', u'1.0-1')
+(u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
+(u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
+(u'evolution', u'Ubuntu Hoary', u'1.0')
 
 >>> for sprelease in sabdfl.uploadedButNotMaintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
-(u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
+(u'libstdc++', u'Ubuntu Hoary', u'b8p')
 (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
-(u'libstdc++', u'Ubuntu Hoary', u'9.9-1')
+(u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
+(u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
 Bug contact packages

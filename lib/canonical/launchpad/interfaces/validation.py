@@ -11,7 +11,6 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
-    'valid_distrotask',
     'valid_shipit_recipientdisplayname',
     'valid_shipit_phone',
     'valid_shipit_city',
@@ -19,6 +18,8 @@ __all__ = [
     'valid_shipit_addressline2',
     'valid_shipit_organization',
     'valid_shipit_province',
+    'valid_distrotask',
+    'valid_upstreamtask'
     ]
 
 import urllib
@@ -333,11 +334,12 @@ def valid_distrotask(bug, distribution, sourcepackagename=None):
     errors = []
     if sourcepackagename is not None:
         msg = LaunchpadValidationError(_(
-            'Fix already requested for %s(%s)' %
+            'A fix for this bug has already been requested for %s (%s)' %
             (sourcepackagename.name, distribution.displayname)))
     else:
         msg = LaunchpadValidationError(_(
-            'Fix already requested for %s' % distribution.displayname))
+            'A fix for this bug has already been requested for %s' % 
+            distribution.displayname))
         sourcepackagename = NULL
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(
@@ -355,3 +357,21 @@ def valid_distrotask(bug, distribution, sourcepackagename=None):
             
     if errors:
         raise WidgetsError(errors)
+
+
+def valid_upstreamtask(bug, product):
+    """Check if a product bugtask already exists for a given bug.
+
+    If it exists, WidgetsError will be raised.
+    """
+    errors = []
+    user = getUtility(ILaunchBag).user
+    params = BugTaskSearchParams(user, bug=bug)
+    if product.searchTasks(params):
+        errors.append(LaunchpadValidationError(_(
+            'A fix for this bug has already been requested for %s' % 
+            product.displayname)))
+
+    if errors:
+        raise WidgetsError(errors)
+

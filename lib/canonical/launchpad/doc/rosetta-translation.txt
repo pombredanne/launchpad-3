@@ -58,7 +58,7 @@ Add a translation.
 
 Check that this submission is now the active one for this msgset/pluralform
 
-    >>> submission = pomsgset.activeSubmission(0)
+    >>> submission = pomsgset.getActiveSubmission(0)
     >>> submission.potranslation.translation == u'foo'
     True
 
@@ -94,7 +94,7 @@ this project from Pa.
     >>> translations = { 0: u'bar' }
     >>> pomsgset.updateTranslationSet(Pa, translations, fuzzy=False,
     ...                               published=True)
-    >>> submission = pomsgset.activeSubmission(0)
+    >>> submission = pomsgset.getActiveSubmission(0)
 
 Make sure that the new submission is in fact from Pa.
 
@@ -117,7 +117,7 @@ Now, let's add a translation from Pb, through the web.
     >>> translations = { 0: u'baz' }
     >>> pomsgset.updateTranslationSet(Pb, translations, fuzzy=False,
     ...                               published=False)
-    >>> web_submission = pomsgset.activeSubmission(0)
+    >>> web_submission = pomsgset.getActiveSubmission(0)
 
 Make sure the new submission is from Pb.
 
@@ -153,7 +153,7 @@ along and says it's 'baz', we don't record anything new.
     >>> translations = { 0: u'baz' }
     >>> pomsgset.updateTranslationSet(Pc, translations, fuzzy=False,
     ...                               published=False)
-    >>> repeat_submission = pomsgset.activeSubmission(0)
+    >>> repeat_submission = pomsgset.getActiveSubmission(0)
 
 Since that is exactly what Pb already said, let's see that the submission we
 got back was the one from Pb not a new one for Pc:
@@ -227,12 +227,12 @@ a whole 2 seconds.
 
 Let's make sure:
 
-    >>> noneditor_submission.datecreated > pomsgset.activeSubmission(0).datecreated
+    >>> noneditor_submission.datecreated > pomsgset.getActiveSubmission(0).datecreated
     True
 
 This new submission should not be active:
 
-    >>> pomsgset.activeSubmission(0) == noneditor_submission
+    >>> pomsgset.getActiveSubmission(0) == noneditor_submission
     False
 
 And it should definitely not be published:

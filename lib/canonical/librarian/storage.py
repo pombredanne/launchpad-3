@@ -72,11 +72,13 @@ class LibraryFileUpload(object):
     aliasID = None
     expires = None
     databaseName = None
+    debugID = None
 
     def __init__(self, storage, filename, size):
         self.storage = storage
         self.filename = filename
         self.size = size
+        self.debugLog = []
 
         # Create temporary file
         tmpfile, tmpfilepath = tempfile.mkstemp(dir=self.storage.incoming)
@@ -89,6 +91,7 @@ class LibraryFileUpload(object):
         self.digester.update(data)
 
     def store(self):
+        self.debugLog.append('storing %r, size %r' % (self.filename, self.size))
         self.tmpfile.close()
 
         # Verify the digest matches what the client sent us
@@ -110,6 +113,7 @@ class LibraryFileUpload(object):
                 if self.databaseName != databaseName:
                     raise WrongDatabaseError(self.databaseName, databaseName)
             
+            self.debugLog.append('database name %r ok' % (self.databaseName,))
             # If we haven't got a contentID, we need to create one and return
             # it to the client.
             if self.contentID is None:
@@ -117,13 +121,16 @@ class LibraryFileUpload(object):
                 aliasID = self.storage.library.addAlias(
                         contentID, self.filename, self.mimetype, self.expires
                         )
+                self.debugLog.append('created contentID: %r, aliasID: %r.' 
+                                     % (contentID, aliasID))
             else:
                 contentID = self.contentID
                 aliasID = None
-
+                self.debugLog.append('received contentID: %r' % (contentID,))
 
         except:
             # Abort transaction and re-raise
+            self.debugLog.append('failed to get contentID/aliasID, aborting')
             rollback()
             raise
 
@@ -132,6 +139,7 @@ class LibraryFileUpload(object):
             self._move(contentID)
         except:
             # Abort DB transaction
+            self.debugLog.append('failed to move file, aborting')
             rollback()
 
             # Remove file
@@ -142,6 +150,7 @@ class LibraryFileUpload(object):
 
         # Commit any DB changes
         commit()
+        self.debugLog.append('committed')
         
         # Return the IDs if we created them, or None otherwise
         return contentID, aliasID

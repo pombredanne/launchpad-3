@@ -797,6 +797,11 @@ COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itse
 COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
 COMMENT ON COLUMN Specification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
+COMMENT ON COLUMN Specification.delivery IS 'The implementation status of this
+specification. This field is used to track the actual delivery of the feature
+(implementing the spec), as opposed to the definition of expected behaviour
+(writing the spec).';
+COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
@@ -957,6 +962,20 @@ COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
+
+-- Build
+COMMENT ON TABLE Builder IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchrelease.';
+COMMENT ON COLUMN Build.datecreated IS 'When the build record was created.';
+COMMENT ON COLUMN Build.datebuilt IS 'When the build record was processed.';
+COMMENT ON COLUMN Build.buildduration IS 'How long this build took to be processed.';
+COMMENT ON COLUMN Build.distroarchrelease IS 'Points the target Distroarchrelease for this build.';
+COMMENT ON COLUMN Build.processor IS 'Points to the Distroarchrelease available processor target for this build.';
+COMMENT ON COLUMN Build.sourcepackagerelease IS 'Sourcepackagerelease which originated this build.';
+COMMENT ON COLUMN Build.buildstate IS 'Stores the current build procedure state.';
+COMMENT ON COLUMN Build.buildlog IS 'Points to the buildlog file stored in librarian.';
+COMMENT ON COLUMN Build.builder IS 'Points to the builder which has once processed it.';
+COMMENT ON COLUMN Build.pocket IS 'Stores the target pocket identifier for this build.';
+COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';

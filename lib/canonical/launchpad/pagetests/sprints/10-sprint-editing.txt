@@ -1,6 +1,6 @@
 
 We should be able to edit the details on a sprint. We will log in as Sample
-Person.
+Person and edit the ubz sprint.
 
   >>> print http(r"""
   ... GET /sprints/ubz/+edit HTTP/1.1

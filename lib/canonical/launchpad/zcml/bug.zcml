@@ -15,7 +15,7 @@
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
-        <allow attributes="id private bugtasks" />
+        <allow attributes="id private bugtasks subscriptions" />
         <require
             permission="launchpad.View"
             attributes="datecreated name title summary description ownerID
@@ -23,7 +23,7 @@
                         hits hitstimestamp activityscore activitytimestamp
                         displayname activity initial_message 
                         productinfestations packageinfestations watches
-                        externalrefs cves cve_links subscriptions duplicates
+                        externalrefs cves cve_links duplicates
                         attachments tickets specifications followup_subject
                         subscribe unsubscribe isSubscribed messages
                         notificationRecipientAddresses addWatch linkCVE

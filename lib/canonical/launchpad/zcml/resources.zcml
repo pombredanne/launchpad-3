@@ -81,6 +81,7 @@
     <resource name="phone_icon.gif" file="../images/phone_icon.gif" />
     <resource name="print.gif" file="../images/print.gif" />
     <resource name="product_icon.gif" file="../images/product_icon.gif" />
+    <resource name="project_icon.gif" file="../images/product_icon.gif" />
     <resource name="progress" file="../images/progress.gif" />
     <resource name="product" file="../images/product_icon.gif" />
     <resource name="purple-bar.png" file="../images/purple-bar.png" />

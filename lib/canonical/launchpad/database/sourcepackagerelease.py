@@ -10,10 +10,11 @@ from StringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin
+from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.searchbuilder import any
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
@@ -21,7 +22,9 @@ from canonical.lp.dbschema import (
     SourcePackageFileType, BuildStatus, TicketStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue)
+    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
+    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    )
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
@@ -62,11 +65,11 @@ class SourcePackageRelease(SQLBase):
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
 
-    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease',
+    builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
         orderBy=['-datecreated'])
-    files = MultipleJoin('SourcePackageReleaseFile',
+    files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease')
-    publishings = MultipleJoin('SourcePackagePublishing',
+    publishings = SQLMultipleJoin('SourcePackagePublishing',
         joinColumn='sourcepackagerelease')
 
     @property
@@ -77,6 +80,20 @@ class SourcePackageRelease(SQLBase):
         return None
 
     @property
+    def failed_builds(self):
+        return [build for build in self.builds
+                if build.buildstate == BuildStatus.FAILEDTOBUILD]
+
+    @property
+    def needs_building(self):
+        for build in self.builds:
+            if build.buildstate in [BuildStatus.NEEDSBUILD,
+                                    BuildStatus.MANUALDEPWAIT,
+                                    BuildStatus.CHROOTWAIT]:
+                return True
+        return False
+
+    @property
     def name(self):
         return self.sourcepackagename.name
 
@@ -84,6 +101,11 @@ class SourcePackageRelease(SQLBase):
     def sourcepackage(self):
         """See ISourcePackageRelease."""
         return self.uploaddistrorelease.getSourcePackage(self.name)
+
+    @property
+    def distrosourcepackage(self):
+        """See ISourcePackageRelease."""
+        return self.uploaddistrorelease.distribution.getSourcePackage(self.name)
 
     @property
     def title(self):
@@ -130,7 +152,7 @@ class SourcePackageRelease(SQLBase):
             return None
 
     @property
-    def open_tickets_count(self):
+    def open_ticket_count(self):
         """See ISourcePackageRelease."""
         results = Ticket.select("""
             status = %s AND
@@ -140,6 +162,18 @@ class SourcePackageRelease(SQLBase):
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()
+
+    def countOpenBugsInUploadedDistro(self, user):
+        """See ISourcePackageRelease."""
+        upload_distro = self.uploaddistrorelease.distribution
+        params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
+            user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        # XXX: we need to omit duplicates here or else our bugcounts are
+        # inconsistent. This is a wart, and we need to stop spreading
+        # these things over the code.
+        #   -- kiko, 2006-03-07
+        params.omit_dupes = True
+        return upload_distro.searchTasks(params).count()
 
     @property
     def binaries(self):

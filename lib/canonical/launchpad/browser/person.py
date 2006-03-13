@@ -19,6 +19,7 @@ __all__ = [
     'TeamListView',
     'UbunteroListView',
     'FOAFSearchView',
+    'PersonSpecWorkLoadView',
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
@@ -41,19 +42,17 @@ __all__ = [
 
 import cgi
 import urllib
-import itertools
 import sets
 from StringIO import StringIO
 
 from zope.event import notify
-from zope.security.proxy import isinstance as zope_isinstance
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility, getView
+from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
@@ -63,21 +62,21 @@ from canonical.lp.dbschema import (
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import (
-    ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    ISSHKeySet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 
-from canonical.launchpad.browser.bugtask import (
-    BugTaskSearchListingView, AdvancedBugTaskSearchView)
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint, shortlist)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -297,35 +296,46 @@ class TeamBugsMenu(PersonBugsMenu):
 class PersonSpecsMenu(ApplicationMenu):
 
     usedfor = IPerson
-
     facet = 'specifications'
-
     links = ['created', 'assigned', 'drafted', 'review', 'approver',
-             'subscribed']
+             'workload', 'subscribed']
 
     def created(self):
-        text = 'Specifications Created'
-        return Link('+createdspecs', text, icon='spec')
+        text = 'Registrant'
+        summary = 'List specs registered by %s' % self.context.browsername
+        return Link('+specs?role=created', text, summary, icon='spec')
 
     def approver(self):
-        text = 'Specifications for Approval'
-        return Link('+approverspecs', text, icon='spec')
+        text = 'Approver'
+        summary = 'List specs with %s is supposed to approve' % (
+            self.context.browsername)
+        return Link('+specs?role=approver', text, summary, icon='spec')
 
     def assigned(self):
-        text = 'Specifications Assigned'
-        return Link('+assignedspecs', text, icon='spec')
+        text = 'Assignee'
+        summary = 'List specs for which %s is the assignee' % (
+            self.context.browsername)
+        return Link('+specs?role=assigned', text, summary, icon='spec')
 
     def drafted(self):
-        text = 'Specifications Drafted'
-        return Link('+draftedspecs', text, icon='spec')
+        text = 'Drafter'
+        summary = 'List specs drafted by %s' % self.context.browsername
+        return Link('+specs?role=drafted', text, summary, icon='spec')
 
     def review(self):
-        text = 'Feedback Requests'
-        return Link('+reviewspecs', text, icon='spec')
+        text = 'Feedback requested'
+        summary = 'List specs where feedback has been requested from %s' % (
+            self.context.browsername)
+        return Link('+specs?role=feedback', text, summary, icon='spec')
+
+    def workload(self):
+        text = 'Workload'
+        summary = 'Show all specification work assigned'
+        return Link('+specworkload', text, summary, icon='spec')
 
     def subscribed(self):
-        text = 'Specifications Subscribed'
-        return Link('+subscribedspecs', text, icon='spec')
+        text = 'Subscribed'
+        return Link('+specs?role=subscribed', text, icon='spec')
 
 
 class PersonSupportMenu(ApplicationMenu):
@@ -653,6 +663,7 @@ class PersonRdfView:
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
 
+
 def userIsActiveTeamMember(team):
     """Return True if the user is an active member of this team."""
     user = getUtility(ILaunchBag).user
@@ -661,46 +672,70 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
-    """A Base view class to be used by all bug listings on a person page.
-    
-    All bug listings on a person page are in some way related to that person.
-    This means that this person (our context) has to be in the
-    BugTaskSearchParams that will be given to the searchTasks() method. To do
-    this, subclasses must define an context_parameter class variable whose 
-    value should be either 'owner', 'subscriber' or 'assignee'.
+class PersonSpecWorkLoadView(LaunchpadView):
+    """View used to render the specification workload for a particular person.
 
-    Please note this is a base class that is not meant to be used as a view
-    class. Instead, you should derive from it and use the derived class.
+    It shows the set of specifications with which this person has a role.
     """
 
-    context_parameter = None
+    def initialize(self):
+        assert IPerson.providedBy(self.context), (
+            'PersonSpecWorkLoadView should be used only on an IPerson.')
 
-    def getExtraSearchParams(self):
-        assert self.context_parameter is not None
-        params = AdvancedBugTaskSearchView.getExtraSearchParams(self)
-        params[self.context_parameter] = self.context
-        return params
+    class PersonSpec:
+        """One record from the workload list."""
 
-    def hasSimpleMode(self):
-        return True
+        def __init__(self, spec, person):
+            self.spec = spec
+            self.assignee = spec.assignee == person
+            self.drafter = spec.drafter == person
+            self.approver = spec.approver == person
 
-    def shouldShowAdvancedSearchWidgets(self):
-        """Return True if this view's advanced form should be shown."""
-        form = self.request.form
-        if form.get('advanced') and not form.get('simple'):
-            return True
-        return False
+    @cachedproperty
+    def workload(self):
+        """This code is copied in large part from browser/sprint.py. It may
+        be worthwhile refactoring this to use a common code base.
+
+        Return a structure that lists the specs for which this person is the
+        approver, the assignee or the drafter.
+        """
+        return [PersonSpecWorkLoadView.PersonSpec(spec, self.context)
+                for spec in self.context.specifications()]
 
 
-class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
+class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
-    context_parameter = 'owner'
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'owner': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Reported by %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs reported by %s" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+reportedbugs"
+
+    def shouldShowReporterWidget(self):
+        """Should the reporter widget be shown on the advanced search page?"""
+        return False
 
 
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug contact."""
+
+    columns_to_show = ["id", "summary", "importance", "status"]
 
     @property
     def current_package(self):
@@ -767,7 +802,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return search_params
 
     def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
-                                      extra_params=None):
+                                      advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
 
         Optional filter parameters can be specified as a dict with the
@@ -793,7 +828,15 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         person_url = canonical_url(self.context)
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
-        return person_url + '/+packagebugs-search?%s' % query_string
+        if advanced:
+            return person_url + '/+packagebugs-advanced?%s' % query_string
+        else:
+            return person_url + '/+packagebugs-search?%s' % query_string
+
+    def getBugContactPackageAdvancedSearchURL(self,
+                                              distributionsourcepackage=None):
+        """Construct the advanced search URL for a distributionsourcepackage."""
+        return self.getBugContactPackageSearchURL(advanced=True)
 
     def getOpenBugsURL(self, distributionsourcepackage):
         """Return the URL for open bugs on distributionsourcepackage."""
@@ -845,21 +888,61 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return False
 
 
-class PersonAssignedBugTaskSearchListingView(
-        BasePersonBugTaskSearchListingView):
+class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
     context_parameter = 'assignee'
 
-    def shouldShowAssignee(self):
-        """Should we show the assignee in the list of results?"""
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        """Return the open bugs assigned to a person."""
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'assignee': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def shouldShowAssigneeWidget(self):
+        """Should the assignee widget be shown on the advanced search page?"""
         return False
 
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs Assigned to %s: Advanced Search" % (
+            self.context.displayname)
 
-class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs assigned to %s" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+assignedbugs"
+
+
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
-    context_parameter = 'subscriber'
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        return BugTaskSearchListingView.search(
+            self, extra_params={
+                'subscriber': self.context,
+                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs %s is Cc'd to: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs %s is Cc'd to" % self.context.displayname
+
+    def getAdvancedSearchActionURL(self):
+        """Return a URL to be used as the action for the advanced search."""
+        return canonical_url(self.context) + "/+subscribedbugs"
 
 
 class PersonView:
@@ -885,57 +968,11 @@ class PersonView:
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
-    def sourcepackagerelease_open_bugs_count(self, sourcepackagerelease):
-        """Return the number of open bugs targeted to the sourcepackagename
-        and distrorelease of the given sourcepackagerelease.
-        """
-        params = BugTaskSearchParams(
-            user=self.user,
-            sourcepackagename=sourcepackagerelease.sourcepackagename,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        params.setDistributionRelease(sourcepackagerelease.uploaddistrorelease)
-        return getUtility(IBugTaskSet).search(params).count()
-
-    def maintainedPackagesByPackageName(self):
-        return self._groupSourcePackageReleasesByName(
-            self.context.maintainedPackages())
-
-    def uploadedButNotMaintainedPackagesByPackageName(self):
-        return self._groupSourcePackageReleasesByName(
-            self.context.uploadedButNotMaintainedPackages())
-
-    class SourcePackageReleasesByName:
-        """A class to hold a sourcepackagename and a list of
-        sourcepackagereleases of that sourcepackagename.
-        """
-
-        def __init__(self, name, releases):
-            self.name = name
-            self.releases = releases
-
-    def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
-        """Return a list of SourcePackageReleasesByName objects ordered by
-        SourcePackageReleasesByName.name.
-        
-        Each SourcePackageReleasesByName object contains a name, which is the
-        sourcepackagename and a list containing all sourcepackagereleases of
-        that sourcepackagename.
-        """
-        allreleasesbyallnames = []
-        keyfunc = lambda sprelease: sprelease.name
-        for key, group in itertools.groupby(sourcepackagereleases, keyfunc):
-            allreleasesbyallnames.append(
-                PersonView.SourcePackageReleasesByName(key, list(group)))
-        return sorted(allreleasesbyallnames, key=lambda s: s.name)
-
     def no_bounties(self):
         return not (self.context.ownedBounties or
             self.context.reviewerBounties or
             self.context.subscribedBounties or
             self.context.claimedBounties)
-
-    def activeMembersCount(self):
-        return len(self.context.activemembers)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
@@ -1028,13 +1065,13 @@ class PersonView:
                           for key in self.context.sshkeys])
 
     def sshkeysCount(self):
-        return len(self.context.sshkeys)
+        return self.context.sshkeys.count()
 
     def gpgkeysCount(self):
         return self.context.gpgkeys.count()
 
     def signedcocsCount(self):
-        return len(self.context.signedcocs)
+        return self.context.signedcocs.count()
 
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this
@@ -1757,6 +1794,11 @@ class RequestPeopleMergeView(AddView):
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
+
+        # XXX: SteveAlexander: an experiment to see if this improves
+        #      problems with merge people tests.  2006-03-07
+        import canonical.database.sqlbase
+        canonical.database.sqlbase.flush_database_updates()
         dupename = dupeaccount.name
         sendMergeRequestEmail(
             token, dupename, self.request.getApplicationURL())
