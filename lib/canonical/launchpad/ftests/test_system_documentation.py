@@ -12,7 +12,9 @@ from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 import sqlos.connection
 
 from canonical.config import config
-from canonical.functional import FunctionalDocFileSuite, SystemDoctestLayer
+from canonical.functional import (
+        FunctionalDocFileSuite, SystemDoctestLayer, ZopelessLayer,
+        )
 from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
         _disconnect_sqlos, _reconnect_sqlos
@@ -102,7 +104,6 @@ def supportTrackerTearDown(test):
 # and a FunctionalDocFileSuite. No idea why there are differences between
 # the relative paths, or how to fix this -- StuartBishop 20060228
 special = {
-
     # No setup or teardown at all, since it is demonstrating these features.
     'testing.txt': DocFileSuite(
             '../doc/testing.txt', optionflags=default_optionflags
@@ -117,7 +118,8 @@ special = {
     # data to the database as well.
     'poexport.txt': DocFileSuite(
             '../doc/poexport.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown
+            setUp=poExportSetUp, tearDown=poExportTearDown,
+            optionflags=default_optionflags
             ),
     'poexport-template-tarball.txt': DocFileSuite(
             '../doc/poexport-template-tarball.txt',
@@ -147,16 +149,19 @@ special = {
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
     }
 
+special['poexport.txt'].layer = ZopelessLayer
+special['support-tracker-emailinterface.txt'].layer = ZopelessLayer
+
 def test_suite():
     suite = unittest.TestSuite()
-    suite.layer = SystemDoctestLayer
 
     # Add special needs tests
     keys = special.keys()
     keys.sort()
     for key in keys:
         special_suite = special[key]
-        special_suite.layer = SystemDoctestLayer
+        if getattr(special_suite, 'layer', None) is None:
+            special_suite.layer = SystemDoctestLayer
         suite.addTest(special_suite)
 
     testsdir = os.path.abspath(
