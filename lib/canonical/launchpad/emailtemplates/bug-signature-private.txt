@@ -1,5 +1,4 @@
-%(contents)s
 -- 
-Bug Details:
+Confidential Bug Details:
   %(bug_title)s
   %(bug_url)s

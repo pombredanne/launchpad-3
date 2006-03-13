@@ -76,13 +76,17 @@ examples throughout the rest of this document.
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=Unconfirmed; priority=None;\n\tassignee=None; ']
 
-Note that all bug notification emails include an absolute URL to the
-bug:
+Note that all bug notification emails include a signature containing
+details about the bug.
 
     >>> print msg.get_payload(decode=True)
     Public bug reported:
-    http://.../malone/bugs/...
     ...
+    -- 
+    Bug Details:
+      firefox crashes all the time
+      http://.../malone/bugs/...
+    <BLANKLINE>
 
 Lastly, let's verify that dilys also received her own notification of
 this bug report. Note that each recipient receives their own copy of
@@ -177,9 +181,13 @@ they each have on notification recipients.
       status=Unconfirmed; priority=None; assignee=None;']
 
     >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    http://.../malone/bugs/...
+    *** Also affects: mozilla-firefox (Debian)
     ...
+    -- 
+    Bug Details:
+      firefox crashes all the time
+      http://.../malone/bugs/...
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -224,9 +232,13 @@ they each have on notification recipients.
      'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    http://.../malone/bugs/...
+    *** Also affects: mozilla-firefox (Debian Sid)
     ...
+    -- 
+    Bug Details:
+      firefox crashes all the time
+      http://.../malone/bugs/...
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -275,9 +287,13 @@ they each have on notification recipients.
      'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    http://.../malone/bugs/...
+    *** Also affects: evolution (upstream)
     ...
+    -- 
+    Bug Details:
+      firefox crashes all the time
+      http://.../malone/bugs/...
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -320,33 +336,29 @@ they each have on notification recipients.
      'distribution=debian; sourcepackage=mozilla-firefox;...',
      'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
 
-    >>> print msg.get_payload(decode = True)
-    Public bug report changed:
-    http://.../malone/bugs/...
-    ...
+    >>> print msg.get_payload(decode=True)
+    just a test comment
+    -- 
+    Bug Details:
+      firefox crashes all the time
+      http://.../malone/bugs/...
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
 5. Editing a task.
 
 Let's demonstrate a notification email where Sample Person marks a
-task Accepted, assigns himself to it, and adds a status note.
+task Fixed, and assigns himself to it.
 
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.helpers import Snapshot
 
-    >>> class MockObject(object):
-    ...     implements(IDistroBugTask)
-
-    >>> bugtask_before_modification = MockObject()
-    >>> for name in ["status", "priority", "severity", "product",
-    ...              "distribution", "distrorelease", "sourcepackagename",
-    ...              "bug", "assignee", "binarypackagename", "bugwatch",
-    ...              "milestone"]:
-    ...     setattr(bugtask_before_modification, name,
-    ...             getattr(firefox_crashes_in_debian, name))
+    >>> bugtask_before_modification = Snapshot(
+    ...     firefox_crashes_in_debian, providing=IDistroBugTask)
     >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXRELEASED
-    >>> firefox_crashes_in_debian.assignee = bug_submitter.id
+    >>> firefox_crashes_in_debian.assignee = bug_submitter
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
     ...     ["status", "assignee"])
@@ -381,9 +393,13 @@ task Accepted, assigns himself to it, and adds a status note.
      'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/...
+    *** Changed in: mozilla-firefox (Debian)
     ...
+    -- 
+    Bug Details:
+      firefox crashes all the time
+      http://.../malone/bugs/...
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -427,9 +443,13 @@ pretending we've just added a watch to a bug.
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
+    *** Bug watches changed:
     ...
+    -- 
+    Bug Details:
+      Firefox does not support SVG
+      http://.../malone/bugs/1
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -475,9 +495,13 @@ the changes made:
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
+    *** Bug watches changed:
     ...
+    -- 
+    Bug Details:
+      Firefox does not support SVG
+      http://.../malone/bugs/1
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -524,9 +548,12 @@ this document:
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
-    ...
+    *** Added CVE-2004-0276 (Entry)
+    -- 
+    Bug Details:
+      Firefox does not support SVG
+      http://.../malone/bugs/1
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -572,9 +599,13 @@ publishing an object created event.
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
+    *** Web links changed:
     ...
+    -- 
+    Bug Details:
+      Firefox does not support SVG
+      http://.../malone/bugs/1
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -619,9 +650,13 @@ When a link is edited, the notification will look as follows:
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
+    *** Web links changed:
     ...
+    -- 
+    Bug Details:
+      Firefox does not support SVG
+      http://.../malone/bugs/1
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -663,19 +698,24 @@ duplicate.
     [Bug 1] Firefox does not support SVG
     >>> body = bug_one_notification.get_payload(decode=True)
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    http://.../malone/bugs/1
-    ...
-    *** Bug 2 has been marked a duplicate of this bug ***
+    *** Bug 2 has been marked a duplicate of this bug
+    -- 
+    Bug Details:
+      Firefox does not support SVG
+      http://.../malone/bugs/1
+    <BLANKLINE>
 
     >>> bug_two_notification = sample_person_mails[1]
     >>> print bug_two_notification['Subject']
     [Bug 2] Blackhole Trash folder
     >>> body = bug_two_notification.get_payload(decode=True)
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/2
-    ...
-    *** This bug has been marked a duplicate of bug 1 ***
+    *** This bug has been marked a duplicate of bug 1
+    -- 
+    Bug Details:
+      Blackhole Trash folder
+      http://.../malone/bugs/2
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -711,12 +751,10 @@ check if the correct notification message is sent.
     [Bug 6] Firefox crashes when Save As dialog for a nonexistent...
     >>> body = bug_six_notification.get_payload(decode=True)
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/6
+    *** This bug is no longer a duplicate of bug 5
     <BLANKLINE>
-    *** This bug is no longer a duplicate of bug 5 ***
-    <BLANKLINE>
-    *** This bug has been marked a duplicate of bug 3 ***
+    *** This bug has been marked a duplicate of bug 3
+    ...
 
     >>> stub.test_emails = []
 
@@ -750,10 +788,8 @@ Now we unduplicate the above bug and check if the correct notification message i
     [Bug 6] Firefox crashes when Save As dialog for a nonexistent...
     >>> body = bug_six_notification.get_payload(decode=True)
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/6
+    *** This bug is no longer a duplicate of bug 3
     ...
-    *** This bug is no longer a duplicate of bug 3 ***
 
     >>> stub.test_emails = []
 

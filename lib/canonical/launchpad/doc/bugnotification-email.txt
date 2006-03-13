@@ -63,11 +63,6 @@ Let's take a look at what the notification email looks like:
     Description:
     Malone pages that use more complex layouts with portlets and fancy CSS are
     sometimes not getting properly reflowed after rendering.
-    -- 
-    Bug Details:
-      Reflow problems with complex page layouts
-      http://.../malone/bugs/4
-    <BLANKLINE>
 
 
 Adding a bug comment
@@ -88,11 +83,6 @@ demonstrate how the comment notification is formatted:
     emails for Mr Gates... everything they delete would actually
     disappear! I'm sure Redmond will switch over as soon as they hear
     about this. It's not a bug, it's a feature!
-    -- 
-    Bug Details:
-      Blackhole Trash folder
-      http://.../malone/bugs/2
-    <BLANKLINE>
 
 Editing a bug
 -------------
@@ -120,22 +110,15 @@ returns the subject and body of the email, as a tuple.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Summary changed to:
-        the new title
-    Description changed to:
-        a new description that is quite long. but the nice thing is that the
-        edit notification email generator knows how to indent and wrap
-        descriptions, so this will appear quite nice in the actual email
-        that gets sent.
-    <BLANKLINE>
-        it's also smart enough to preserve whitespace, finally!
-    -- 
-    Bug Details:
+    *** Summary changed to:
       the new title
-      http://.../malone/bugs/2
+    *** Description changed to:
+      a new description that is quite long. but the nice thing is that the
+      edit notification email generator knows how to indent and wrap
+      descriptions, so this will appear quite nice in the actual email that
+      gets sent.
     <BLANKLINE>
+      it's also smart enough to preserve whitespace, finally!
 
 Another edit, this time the summary:
 
@@ -150,16 +133,9 @@ Another edit, this time the summary:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Short description changed to:
-        this summary isn't particularly short is it? after all, what kind of
-        summary is so long that it needs to be wrapped?
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
+    *** Short description changed to:
+      this summary isn't particularly short is it? after all, what kind of
+      summary is so long that it needs to be wrapped?
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
@@ -176,15 +152,7 @@ to a user that is explicitly subscribed to this bug):
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
-    <BLANKLINE>
-    Visibility changed to:
-        Private
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
+    *** Visibility changed to: Private
 
 Now we set the bug public and check if the e-mail sent changed as well.
 
@@ -198,15 +166,7 @@ Now we set the bug public and check if the e-mail sent changed as well.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Visibility changed to:
-        Public
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
+    *** Visibility changed to: Public
 
 Adding a new bug task
 ---------------------
@@ -227,18 +187,11 @@ pretend we had just added task five:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body
-    Public bug report changed:
-    <BLANKLINE>
-    Also affects: mozilla-firefox (debian)
+    *** Also affects: mozilla-firefox (Debian)
            Severity: Minor
            Priority: High
            Assignee: name12 <test@canonical.com>
              Status: Confirmed
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
 
 Editing a bug task
 ------------------
@@ -269,16 +222,34 @@ bugmail when a bug task is edited.
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     this is indeed a bug
     <BLANKLINE>
-    Public bug report changed:
-    <BLANKLINE>
-    Changed in: Ubuntu (upstream)
+    *** Changed in: ubuntu (upstream)
            Assignee: (unassigned) => Sample Person
              Status: Unconfirmed => Confirmed
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
+
+Let's take a look at how it looks like when a distribution task is
+edited:
+
+    >>> debian_bugtask = getUtility(IBugTaskSet).get(5)
+    >>> print debian_bugtask.targetname
+    mozilla-firefox (Debian)
+    >>> debian_bugtask.assignee = None
+    >>> bugtask_delta = BugTaskDelta(
+    ...     bugtask=debian_bugtask,
+    ...     assignee={'old' : sample_person, 'new' : None})
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     bugtask_deltas=bugtask_delta,
+    ...     comment_on_change="I don't have time to work on this.")
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    I don't have time to work on this.
     <BLANKLINE>
+    *** Changed in: mozilla-firefox (Debian)
+           Assignee: Sample Person => (unassigned)
 
 Adding and editing web links
 ----------------------------
@@ -309,15 +280,8 @@ Adding a web link can be seen as "editing" a bug.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Web links changed:
+    *** Web links changed:
         + http://www.example.com/foo/bar (some title)
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -339,16 +303,9 @@ modified link as having been "Added" (though no actual "adding" or
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Web links changed:
+    *** Web links changed:
         + http://www.example.com/foo/bar (some better title)
         - http://www.example.com/foo/bar (some title)
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
 
 Adding and editing bug watches
 ------------------------------
@@ -379,15 +336,8 @@ generated when a bug watch is added:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Bug watches changed:
+    *** Bug watches changed:
         + Bug 123 [The Mozilla.org Bug Tracker]
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -408,16 +358,9 @@ Let's demonstrate with an example:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Bug watches changed:
+    *** Bug watches changed:
         + Bug 12 [The Mozilla.org Bug Tracker]
         - Bug 123 [The Mozilla.org Bug Tracker]
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
 
 Adding and editing CVE relationships
 ------------------------------------
@@ -451,14 +394,7 @@ Adding a CVE will generate a notification that looks as follows:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Added CVE-2004-0718 (Candidate)
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
+    *** Added CVE-2004-0718 (Candidate)
 
 Similarly, removing a CVE ref will result in an email:
 
@@ -476,14 +412,7 @@ Similarly, removing a CVE ref will result in an email:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    <BLANKLINE>
-    Removed CVE-2004-0719 (Candidate)
-    -- 
-    Bug Details:
-      the new title
-      http://.../malone/bugs/2
-    <BLANKLINE>
+    *** Removed CVE-2004-0719 (Candidate)
 
 Adding an infestation
 ---------------------
