@@ -1344,6 +1344,9 @@ class BuilddMaster:
                 self.startBuild(builders, builder, build_candidate)
                 builder = builders.firstAvailable()
             else:
+                self._logger.debug(
+                    "Build %s SUPERSEDED, queue item %s REMOVED"
+                    % (build_candidate.build.id, build_candidate.id))
                 build_candidate.build.status = dbschema.BuildStatus.SUPERSEDED
                 build_candidate.destroySelf()
 
