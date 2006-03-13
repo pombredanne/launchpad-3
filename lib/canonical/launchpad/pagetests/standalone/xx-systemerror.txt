@@ -16,7 +16,7 @@ Ensure exceptions generate normal output.
   ... """)
   HTTP/1.1 500 Internal Server Error
   ...
-  A server error occurred.
+        <h1 class="exception">Oops!</h1>
   ...
 
 If you want to see tracebacks rather than error pages, use the
