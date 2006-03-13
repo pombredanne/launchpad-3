@@ -82,10 +82,6 @@ demonstrate how the comment notification is formatted:
     >>> subject
     u'[Bug 2] Blackhole Trash folder'
     >>> print body
-    Public bug report changed:
-    <BLANKLINE>
-    <BLANKLINE>
-    Comment:
     This would be a real killer feature. If there is already code to
     make it possible, why aren't there tons of press announcements
     about the secuirty possibilities. Imagine - no more embarrassing
@@ -271,14 +267,13 @@ bugmail when a bug task is edited.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
+    this is indeed a bug
+    <BLANKLINE>
     Public bug report changed:
     <BLANKLINE>
     Changed in: Ubuntu (upstream)
            Assignee: (unassigned) => Sample Person
              Status: Unconfirmed => Confirmed
-    <BLANKLINE>
-    Comment:
-    this is indeed a bug
     -- 
     Bug Details:
       the new title

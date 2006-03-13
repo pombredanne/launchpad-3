@@ -437,9 +437,14 @@ def generate_bug_edit_email(bug_delta):
 
     if bug_delta.comment_on_change:
         comment_wrapper = MailWrapper(width=72)
-        contents = get_email_template('bug-edit-notification-contents.txt') % {
-            'visibility': visibility, 'change_info': change_info,
-            'comment': comment_wrapper.format(bug_delta.comment_on_change)}
+        comment = comment_wrapper.format(bug_delta.comment_on_change)
+        if change_info:
+            contents = get_email_template(
+                'bug-edit-notification-contents.txt') % {
+                    'visibility': visibility, 'change_info': change_info,
+                    'comment': comment}
+        else:
+            contents = comment
     else:
         contents = get_email_template(
             'bug-edit-notification-contents-no-comment.txt') % {
