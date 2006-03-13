@@ -1,5 +1,5 @@
-<div class="builds_list" tal:condition="not: view/setupBuildList"
-     tal:define="batch view/batchnav/currentBatch">
+<div class="builds_list" tal:condition="not: view/setupBuildList">
+  <tal:batch define="batch view/batchnav/currentBatch">
 
      <table>
        <tr>
@@ -115,4 +115,5 @@
            tal:condition="batch"
            replace="structure view/batchnav/@@+navigation-links" />
 
+  </tal:batch>
 </div>

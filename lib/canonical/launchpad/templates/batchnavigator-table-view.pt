@@ -17,7 +17,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="bugtask context/batch">
+      <tr tal:repeat="bugtask context/currentBatch">
         <td tal:content="bugtask/bug/id"
             tal:condition="context/show_column/id|nothing">42</td>
         <td>

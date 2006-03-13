@@ -48,7 +48,11 @@ class BinaryPackageNameSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
-        return BinaryPackageName.select()
+        return iter(BinaryPackageName.select())
+
+    def __len__(self):
+        """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
+        return BinaryPackageName.select().count()
 
     def findByName(self, name):
         """Find binarypackagenames by its name or part of it."""

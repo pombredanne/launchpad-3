@@ -343,7 +343,7 @@ class ProductSet:
                                 str(productid))
 
         return product
-    
+
     def getByName(self, name, default=None, ignore_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         if ignore_inactive:

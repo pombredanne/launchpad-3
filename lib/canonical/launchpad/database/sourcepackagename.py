@@ -55,8 +55,11 @@ class SourcePackageNameSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
-        for sourcepackagename in SourcePackageName.select():
-            yield sourcepackagename
+        return iter(SourcePackageName.select())
+
+    def __len__(self):
+        """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
+        return SourcePackageName.select().count()
 
     def get(self, sourcepackagenameid):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""

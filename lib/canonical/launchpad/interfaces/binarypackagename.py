@@ -40,6 +40,9 @@ class IBinaryPackageNameSet(Interface):
     def __iter__():
         """Iterate over names"""
 
+    def __len__():
+        """Return the number of names in the entire set"""
+
     def findByName(name):
         """Find binarypackagenames by its name or part of it"""
 

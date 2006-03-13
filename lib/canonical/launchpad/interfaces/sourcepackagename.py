@@ -46,6 +46,9 @@ class ISourcePackageNameSet(Interface):
     def __iter__():
         """Iterate over names"""
 
+    def __len__():
+        """Return the number of names in the entire set"""
+
     def get(sourcepackagenameid):
         """Return a sourcepackagename by its id.
 
