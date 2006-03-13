@@ -1,21 +1,21 @@
 
-We should be able to see a "+specstable" view on sprint, product and
+We should be able to see a "+portlet-latest-specs" view on sprint, product and
 distribution.
 
   >>> print http(r"""
-  ... GET /products/firefox/+specstable HTTP/1.1
+  ... GET /products/firefox/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+specstable HTTP/1.1
+  ... GET /distros/ubuntu/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
 
   >>> print http(r"""
-  ... GET /sprints/ubz/+specstable HTTP/1.1
+  ... GET /sprints/ubz/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
