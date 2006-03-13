@@ -179,24 +179,22 @@ class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
 
 
-class BugTaskView:
+class BugTaskView(LaunchpadView):
     """View class for presenting information about an IBugTask."""
 
     def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+
         # Make sure we always have the current bugtask.
         if not IBugTask.providedBy(context):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
 
-        self.request = request
         self.notices = []
 
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
-
         # establish if a subscription form was posted
         newsub = self.request.form.get('subscribe', None)
         if newsub and self.user and self.request.method == 'POST':
