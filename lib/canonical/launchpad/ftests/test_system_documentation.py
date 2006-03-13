@@ -98,6 +98,11 @@ def supportTrackerTearDown(test):
     LibrarianTestSetup().tearDown()
     LaunchpadZopelessTestSetup().tearDown()
 
+def karmaUpdaterTearDown(test):
+    # We can't detect db changes made by the subprocess
+    LaunchpadTestSetup().force_dirty_database()
+    tearDown(test)
+
 
 # Files that have special needs can construct their own suite
 # XXX: Note the wierd path differences between specifying a DocFileSuite
@@ -147,6 +152,13 @@ special = {
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
+    'karmaupdater.txt': FunctionalDocFileSuite(
+            'launchpad/doc/karmaupdater.txt',
+            setUp=setUp, tearDown=karmaUpdaterTearDown,
+            optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
+            )
+ 
     }
 
 special['poexport.txt'].layer = ZopelessLayer
@@ -188,7 +200,6 @@ def test_suite():
             optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
             )
-        one_test.layer = SystemDoctestLayer
         suite.addTest(one_test)
 
     return suite
