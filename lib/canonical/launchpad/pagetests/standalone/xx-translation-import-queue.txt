@@ -233,11 +233,11 @@ But Jordi, a Rosetta expert, will be allowed to remove it.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/rosetta/imports/+index?batch_start=0&batch_end=50
+  Location: http://localhost:9000/rosetta/imports/+index?batch_start=0
   Set-Cookie: launchpad=...
 
   >>> print http(r"""
-  ... GET /rosetta/imports/+index?batch_start=0&batch_end=50 HTTP/1.1
+  ... GET /rosetta/imports/+index?batch_start=0 HTTP/1.1
   ... Authorization: Basic am9yZGlAdWJ1bnR1LmNvbTp0ZXN0
   ... """)
   HTTP/1.1 200 Ok
@@ -287,12 +287,12 @@ Foo Bar Person is a launchpad admin and he's allowed to remove the entry.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/rosetta/imports/+index?batch_start=0&batch_end=50
+  Location: http://localhost:9000/rosetta/imports/+index?batch_start=0
   Set-Cookie: launchpad=...
 
 
   >>> print http(r"""
-  ... GET /rosetta/imports/+index?batch_start=0&batch_end=50 HTTP/1.1
+  ... GET /rosetta/imports/+index?batch_start=0 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -342,11 +342,11 @@ remove it.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/rosetta/imports/+index?batch_start=0&batch_end=50
+  Location: http://localhost:9000/rosetta/imports/+index?batch_start=0
   Set-Cookie: launchpad=...
 
   >>> print http(r"""
-  ... GET /rosetta/imports/+index?batch_start=0&batch_end=50 HTTP/1.1
+  ... GET /rosetta/imports/+index?batch_start=0 HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
