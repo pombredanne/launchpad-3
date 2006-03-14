@@ -226,3 +226,57 @@ user's preferred time zone:
                         April Fools
                         </a>
   ...
+
+
+We can add events directly to the top-level calendar. First we check if the
+page is accessible.
+
+  >>> print http(r"""
+  ... GET /calendar/+add HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Merged Calendar for Sample Person...
+
+And then we try to add an event.
+
+  >>> print http(r"""
+  ... POST /calendar/+add HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------105231308720623733461092412455
+  ... 
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... This is a test event
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... test
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.location"
+  ... 
+  ... 
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.dtstart"
+  ... 
+  ... 2006-03-09 12:00:00
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.duration"
+  ... 
+  ... 3
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.duration.unit"
+  ... 
+  ... h
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------105231308720623733461092412455--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../calendar/2006-W10
+  ...

@@ -24,7 +24,8 @@
         If you can&#8217;t make a support request, e-mail
         <a href="mailto:system-error@launchpad.net"
         ><code>system-error@launchpad.net</code></a>
-        with the error ID and details of your problem.
+        with the error <abbr>ID</abbr>,
+        including &#8220;bug&#8221; in the Subject line.
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

@@ -37,8 +37,7 @@ u'milestones'
 It's also possible to ask a product for all its associated series.
 
 >>> onedotzero = firefox.getSeries('1.0')
->>> series = firefox.serieslist
->>> series == [onedotzero, milestones]
+>>> list(firefox.serieslist) == [onedotzero, milestones]
 True
 
 New ProductSeries are created using Product.newSeries.

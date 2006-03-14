@@ -5,7 +5,10 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1><tal:release replace="context/displayname">Luix 5.10</tal:release> overview</h1> 
+      <h1>
+        <tal:release replace="context/displayname">Luix 5.10</tal:release>
+        overview
+      </h1> 
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">

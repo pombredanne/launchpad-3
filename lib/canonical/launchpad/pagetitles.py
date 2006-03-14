@@ -326,6 +326,8 @@ distrorelease_bugs = ContextTitle('Bugs in %s')
 
 distrorelease_cvereport = ContextDisplayName('CVE report for %s')
 
+distrorelease_edit = ContextTitle('Edit details of %s')
+
 def distrorelease_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
@@ -510,6 +512,8 @@ person_packagebugs_search = person_packagebugs
 person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
 person_review = ContextDisplayName("Review %s")
+
+person_specworkload = ContextDisplayName('Specification workload for %s')
 
 person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
@@ -789,9 +793,15 @@ specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
+specificationgoal_index = ContextTitle('Specification acceptance for %s')
+
+specificationtarget_index = ContextTitle('Specification Listing for %s')
+
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
-specificationtarget_specplan = ContextTitle('Project plan for %s')
+specificationtarget_roadmap = ContextTitle('Project plan for %s')
+
+specificationtarget_assignments = ContextTitle('Specification assignments for %s')
 
 specificationtarget_workload = ContextTitle('Feature workload in %s')
 
@@ -805,7 +815,7 @@ sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
 
-sprint_table = ContextTitle('Table of specifications for %s')
+sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 

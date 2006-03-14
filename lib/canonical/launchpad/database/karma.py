@@ -22,7 +22,7 @@ from zope.interface import implements
 # SQLObject imports
 from sqlobject import (
     DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
-    MultipleJoin)
+    SQLMultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -200,6 +200,6 @@ class KarmaCategory(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
 
-    karmaactions = MultipleJoin('KarmaAction', joinColumn='category',
+    karmaactions = SQLMultipleJoin('KarmaAction', joinColumn='category',
         orderBy='name')
 

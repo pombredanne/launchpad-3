@@ -21,6 +21,12 @@
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
           <span class="discreet">(Advanced search coming soon)</span>
+          <div style="margin-top: 5px">
+            <small>
+              Sort by:
+              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+            </small>
+          </div>
         </form>
         <script>
           <!--

@@ -30,9 +30,11 @@
     </content>
 
     <browser:menus
-        module="canonical.launchpad.browser"
-        classes="ProductSeriesContextMenu"
+        module="canonical.launchpad.browser.productseries"
+        classes="ProductSeriesFacets ProductSeriesOverviewMenu
+                 ProductSeriesSpecificationsMenu"
         />
+
 
     <browser:navigation
         module="canonical.launchpad.browser"

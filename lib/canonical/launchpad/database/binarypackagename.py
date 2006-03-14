@@ -9,7 +9,7 @@ from zope.interface import implements
 
 # SQLObject/SQLBase
 from sqlobject import (
-    SQLObjectNotFound, StringCol, MultipleJoin, CONTAINSSTRING)
+    SQLObjectNotFound, StringCol, SQLMultipleJoin, CONTAINSSTRING)
 
 # launchpad imports
 from canonical.database.sqlbase import SQLBase
@@ -28,7 +28,7 @@ class BinaryPackageName(SQLBase):
     name = StringCol(dbName='name', notNull=True, unique=True,
                      alternateID=True)
 
-    binarypackages = MultipleJoin(
+    binarypackages = SQLMultipleJoin(
         'BinaryPackage', joinColumn='binarypackagename'
         )
 

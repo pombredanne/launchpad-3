@@ -114,7 +114,8 @@ class LaunchpadBrowserPublication(
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
-    def clearSQLOSCache(self):
+    @staticmethod
+    def clearSQLOSCache():
         # Big boot for fixing SQLOS transaction issues - nuke the
         # connection cache at the start of a transaction. This shouldn't
         # affect performance much, as psycopg does connection pooling.
@@ -144,9 +145,7 @@ class LaunchpadBrowserPublication(
         conn = self.db.open('')
         cleanup = Cleanup(conn.close)
         request.hold(cleanup)  # Close the connection on request.close()
-
         self.openedConnection(conn)
-
         root = conn.root()
         canonical.launchpad.webapp.zodb.handle_before_traversal(root)
 

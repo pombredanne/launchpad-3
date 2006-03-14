@@ -4,10 +4,12 @@
 
 __metaclass__ = type
 
+from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser.add import AddView
 
 from zope.component import getUtility
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ISpecificationFeedback, ILaunchBag, IPersonSet)
 
@@ -22,7 +24,26 @@ __all__ = [
 
 class SpecificationFeedbackAddView(AddView):
 
+    def __init__(self, context, request):
+        AddView.__init__(self, context, request)
+        self.top_of_page_errors = []
+
+    def valid_feedback_request(self, spec, reviewer, requester):
+        for request in spec.getFeedbackRequests(reviewer):
+            if request.requester == requester:
+                return False
+        return True
+
     def create(self, reviewer, requester, queuemsg=None):
+        if reviewer == requester:
+            self.top_of_page_errors.append(_(
+                "You can't request feedback from yourself"))
+        elif not self.valid_feedback_request(self.context, reviewer, requester):
+            self.top_of_page_errors.append(_(
+                "You've already requested feedback from %s" 
+                % reviewer.displayname))
+        if self.top_of_page_errors:
+            raise WidgetsError(self.top_of_page_errors)
         return self.context.queue(reviewer, requester, queuemsg)
 
     def add(self, content):
