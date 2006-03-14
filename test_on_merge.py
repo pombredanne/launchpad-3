@@ -63,8 +63,8 @@ def main():
         # we expected.
         pass
     else:
-        if numeric_server_version < (7, 4):
-            print 'Your PostgreSQL version is too old.  You need 7.4.x'
+        if numeric_server_version < (8, 0):
+            print 'Your PostgreSQL version is too old.  You need 8.x.x'
             print 'You have %s' % server_version
             return 1
 
@@ -118,7 +118,7 @@ def main():
         where datname='launchpad_ftest_template'
         """)
     enc = cur.fetchone()[0]
-    if enc != 'UNICODE':
+    if enc not in ('UNICODE', 'UTF8'):
         print 'Database encoding incorrectly set'
         return 1
     cur.execute(r"""

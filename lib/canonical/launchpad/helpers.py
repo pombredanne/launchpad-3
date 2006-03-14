@@ -52,6 +52,9 @@ def text_replaced(text, replacements, _cache={}):
     The keys of the dict are substrings to find, the values are what to replace
     found substrings with.
 
+    :arg text: An unicode or str to do the replacement.
+    :arg replacements: A dictionary with the replacements that should be done
+
     >>> text_replaced('', {'a':'b'})
     ''
     >>> text_replaced('a', {'a':'c'})
@@ -60,6 +63,11 @@ def text_replaced(text, replacements, _cache={}):
     'fX bAr bAz'
     >>> text_replaced('1 2 3 4', {'1': '2', '2': '1'})
     '2 1 3 4'
+
+    Unicode strings work too.
+
+    >>> text_replaced(u'1 2 3 4', {u'1': u'2', u'2': u'1'})
+    u'2 1 3 4'
 
     The argument _cache is used as a cache of replacements that were requested
     before, so we only compute regular expressions once.
@@ -71,16 +79,22 @@ def text_replaced(text, replacements, _cache={}):
     cachekey = tuple(replacements.items())
     if cachekey not in _cache:
         L = []
+        if isinstance(text, unicode):
+            list_item = u'(%s)'
+            join_char = u'|'
+        else:
+            list_item = '(%s)'
+            join_char = '|'
         for find, replace in sorted(replacements.items(),
                                     key=lambda (key, value): len(key),
                                     reverse=True):
-            L.append('(%s)' % re.escape(find))
+            L.append(list_item % re.escape(find))
         # Make a copy of the replacements dict, as it is mutable, but we're
         # keeping a cached reference to it.
         replacements_copy = dict(replacements)
         def matchobj_replacer(matchobj):
             return replacements_copy[matchobj.group()]
-        regexsub = re.compile('|'.join(L)).sub
+        regexsub = re.compile(join_char.join(L)).sub
         def replacer(s):
             return regexsub(matchobj_replacer, s)
         _cache[cachekey] = replacer
@@ -444,9 +458,11 @@ def shortlist(sequence, longest_expected=15):
     """
     L = list(sequence)
     if len(L) > longest_expected:
-        warnings.warn("shortlist() should not be used here. It's meant to "
-              "listify sequences with no more than %d items." %
-              longest_expected)
+        warnings.warn(
+            "shortlist() should not be used here. It's meant to listify"
+            " sequences with no more than %d items.  There were %s items." %
+              (longest_expected, len(L)),
+              stacklevel=2)
     return L
 
 
@@ -579,45 +595,33 @@ def parse_cformat_string(string):
     return segments
 
 
-def normalize_newlines(text):
-    r"""Convert newlines to Unix form.
+def convert_newlines_to_web_form(unicode_text):
+    r"""Convert an Unicode text from any newline style to the one used on web
+    forms, that's the Windows style ('\r\n').
 
-    >>> normalize_newlines('foo')
-    'foo'
-    >>> normalize_newlines('foo\n')
-    'foo\n'
-    >>> normalize_newlines('foo\r')
-    'foo\n'
-    >>> normalize_newlines('foo\r\n')
-    'foo\n'
-    >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
-    'foo\nbar\n\nbaz'
+    >>> convert_newlines_to_web_form(u'foo')
+    u'foo'
+    >>> convert_newlines_to_web_form(u'foo\n')
+    u'foo\r\n'
+    >>> convert_newlines_to_web_form(u'foo\nbar\n\nbaz')
+    u'foo\r\nbar\r\n\r\nbaz'
+    >>> convert_newlines_to_web_form(u'foo\r\nbar')
+    u'foo\r\nbar'
+    >>> convert_newlines_to_web_form(u'foo\rbar')
+    u'foo\r\nbar'
     """
-    return text_replaced(text, {'\r\n': '\n', '\r': '\n'})
+    assert isinstance(unicode_text, unicode), (
+        "The given text must be unicode instead of %s" % type(unicode_text))
 
-
-def unix2windows_newlines(text):
-    r"""Convert Unix form new lines to Windows ones.
-
-    Raise ValueError if 'text' is already using Windows newlines format.
-
-    >>> unix2windows_newlines('foo')
-    'foo'
-    >>> unix2windows_newlines('foo\n')
-    'foo\r\n'
-    >>> unix2windows_newlines('foo\nbar\n\nbaz')
-    'foo\r\nbar\r\n\r\nbaz'
-    >>> unix2windows_newlines('foo\r\nbar')
-    Traceback (most recent call last):
-    ...
-    ValueError: ''foo\r\nbar'' is already converted
-    """
-    if text is None:
+    if unicode_text is None:
         return None
-    elif '\r\n' in text:
-        raise ValueError('\'%r\' is already converted' % text)
-
-    return text_replaced(text, {'\n': '\r\n'})
+    elif u'\r\n' in unicode_text:
+        # The text is already using the windows newline chars
+        return unicode_text
+    elif u'\n' in unicode_text:
+        return text_replaced(unicode_text, {u'\n': u'\r\n'})
+    else:
+        return text_replaced(unicode_text, {u'\r': u'\r\n'})
 
 
 def contract_rosetta_tabs(text):
@@ -653,37 +657,37 @@ def contract_rosetta_tabs(text):
     return text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
 
 
-def expand_rosetta_tabs(text):
+def expand_rosetta_tabs(unicode_text):
     r"""Replace tabs with their Rosetta representation.
 
     Normal strings get passed through unmolested.
 
-    >>> expand_rosetta_tabs('foo')
-    'foo'
-    >>> expand_rosetta_tabs('foo\\nbar')
-    'foo\\nbar'
+    >>> expand_rosetta_tabs(u'foo')
+    u'foo'
+    >>> expand_rosetta_tabs(u'foo\\nbar')
+    u'foo\\nbar'
 
-    Tabs get converted to '[tab]'.
+    Tabs get converted to u'[tab]'.
 
-    >>> expand_rosetta_tabs('foo\tbar')
-    'foo[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\tbar')
+    u'foo[tab]bar'
 
-    Literal occurrences of '[tab]' get escaped.
+    Literal occurrences of u'[tab]' get escaped.
 
-    >>> expand_rosetta_tabs('foo[tab]bar')
-    'foo\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo[tab]bar')
+    u'foo\\[tab]bar'
 
     Escaped ocurrences themselves get escaped.
 
-    >>> expand_rosetta_tabs('foo\\[tab]bar')
-    'foo\\\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\\[tab]bar')
+    u'foo\\\\[tab]bar'
 
     And so on...
 
-    >>> expand_rosetta_tabs('foo\\\\[tab]bar')
-    'foo\\\\\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\\\\[tab]bar')
+    u'foo\\\\\\[tab]bar'
     """
-    return text_replaced(text, {'\t': '[tab]', '[tab]': r'\[tab]'})
+    return text_replaced(unicode_text, {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
 
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
@@ -919,7 +923,7 @@ def getBinaryPackageFormat(fname):
 
 def intOrZero(value):
     """Return int(value) or 0 if the conversion fails.
-    
+
     >>> intOrZero('1.23')
     0
     >>> intOrZero('1.ab')

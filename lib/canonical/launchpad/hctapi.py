@@ -77,13 +77,10 @@ from canonical.launchpad.database import (
      Distribution, DistroRelease, DistroReleaseSet,
      DistributionSourcePackage, DistributionSourcePackageRelease,
      DistroReleaseSourcePackageRelease, SourcePackageName, SourcePackage,
-     SourcePackageRelease, Manifest, ManifestEntry, ManifestAncestry,
-     Branch
+     SourcePackageRelease,
+     Manifest, ManifestEntry, ManifestAncestry, Archive, ArchNamespace,
+     Branch, Changeset, VersionMapper
      )
-# XXX: these no longer exist, but the truth is this file is busted and
-# in heed of an overhaul.
-#   -- kiko, 2006-04-05
-#from canonical.launchpad.database import ArchNamespace, Changeset, Archive
 from hct.url import register_backend, UrlError
 
 
@@ -828,8 +825,6 @@ def put_manifest(url, manifest):
                 np = NameParser(entry.branch)
 
                 # Archive table entry
-                # XXX XXX XXX: this is completely busted -- Archive and
-                # ArchNamespace and Changeset don't even exist
                 archive = Archive.selectOneBy(name=np.get_archive())
                 if archive is None:
                     archive = Archive(name=np.get_archive(), visible=True,

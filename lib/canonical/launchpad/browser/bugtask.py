@@ -24,8 +24,9 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import (
-    setUpWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -96,7 +97,8 @@ class BugTargetTraversalMixin:
         # because it was filtered out by privacy-aware code.
         for bugtask in helpers.shortlist(bug.bugtasks):
             if bugtask.target == context:
-                return bugtask
+                # Security proxy this object on the way out.
+                return getUtility(IBugTaskSet).get(bugtask.id)
 
         # If we've come this far, it means that no actual task exists in this
         # context, so we'll return a null bug task. This makes it possible to,
@@ -404,6 +406,27 @@ class BugTaskEditView(GeneralFormView):
 
         return field_values
 
+    def _setUpWidgets(self):
+        """Set up the bug task status edit widgets."""
+        # Set up the milestone widget as an input widget only if the has
+        # launchpad.Edit permissions on the distribution, for distro tasks, or
+        # launchpad.Edit permissions on the product, for upstream tasks.
+        milestone_context = (
+            self.context.product or self.context.distribution or
+            self.context.distrorelease.distribution)
+
+        field_names = list(self.fieldNames)
+        if (("milestone" in field_names) and not
+            helpers.check_permission("launchpad.Edit", milestone_context)):
+            # The user doesn't have permission to edit the milestone, so render
+            # a read-only milestone widget.
+            field_names.remove("milestone")
+            setUpDisplayWidgets(self, self.schema, names=["milestone"])
+
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=field_names,
+            initial=self.initial_values)
+
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
@@ -674,7 +697,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 self, self.schema,
                 names=[
                     "searchtext", "status", "assignee", "severity",
-                    "priority", "owner", "omit_dupes", "has_patch"]))
+                    "priority", "owner", "omit_dupes", "has_patch",
+                    "milestone"]))
 
         if extra_params:
             data.update(extra_params)
@@ -735,7 +759,7 @@ class BugTaskSearchListingView(LaunchpadView):
         for term in vocabulary_registry.get(None, vocabulary_name):
             widget_values.append(
                 dict(
-                    value=term.token, title=term.token,
+                    value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
 
         return helpers.shortlist(widget_values, longest_expected=10)
@@ -753,6 +777,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def getSeverityWidgetValues(self):
         """Return data used to render the severity checkboxes."""
         return self.getWidgetValues("BugTaskSeverity")
+
+    def getMilestoneWidgetValues(self):
+        """Return data used to render the milestone checkboxes."""
+        return self.getWidgetValues("Milestone")
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""

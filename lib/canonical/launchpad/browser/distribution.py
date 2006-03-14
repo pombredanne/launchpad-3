@@ -6,6 +6,7 @@ __all__ = [
     'DistributionNavigation',
     'DistributionSetNavigation',
     'DistributionFacets',
+    'DistributionSpecificationsMenu',
     'DistributionView',
     'DistributionAllPackagesView',
     'DistributionEditView',
@@ -190,7 +191,7 @@ class DistributionBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register New Bounty'
+        text = 'New Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -202,18 +203,22 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
 
     def roadmap(self):
-        text = 'Show Roadmap'
-        return Link('+specplan', text, icon='info')
+        text = 'Roadmap'
+        return Link('+roadmap', text, icon='info')
 
     def table(self):
-        text = 'Show Assignments'
-        return Link('+specstable', text, icon='info')
+        text = 'Assignments'
+        return Link('+assignments', text, icon='info')
 
     def workload(self):
-        text = 'Show Workload'
+        text = 'Workload'
         return Link('+workload', text, icon='info')
 
     def new(self):
