@@ -46,10 +46,11 @@ We can get connections to this database
 
 Note that the type conversion methods have been loaded (as implemented
 by psycopgda), so our strings are Unicode and datetime instances returned.
+Note that PostgreSQL versions prior to 8.1 called UTF-8 UNICODE.
 
 >>> cursor.execute("SHOW client_encoding")
->>> cursor.fetchone()[0]
-u'UNICODE'
+>>> cursor.fetchone()[0] in (u'UNICODE', u'UTF8')
+True
 >>> cursor.execute("SELECT name, stamp FROM Beer")
 >>> tuple(cursor.fetchone())
 (u'Mountain Goat', datetime.datetime(2005, 12, 29, 0, 0))

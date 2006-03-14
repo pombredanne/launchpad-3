@@ -121,44 +121,56 @@ would also like to have a drafter associated with it.
   ...
   Location: http://.../products/firefox/+spec/extension-manager-upgrades
 
-Finally, we should be able to change the status metadata (priority, status
-etc) of the specification.
+
+Finally, we should be able to change the status metadata (definition status,
+implementation status, estimated man days etc) of the specification.
 
   >>> print http(r"""
   ... POST /products/firefox/+spec/extension-manager-upgrades/+status HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 824
-  ... Content-Type: multipart/form-data; boundary=---------------------------39919133514734389772038868621
+  ... Content-Length: 1201
+  ... Content-Type: multipart/form-data; boundary=---------------------------1238542372156117029153813220
   ... 
-  ... -----------------------------39919133514734389772038868621
+  ... -----------------------------1238542372156117029153813220
   ... Content-Disposition: form-data; name="field.status"
   ... 
   ... Drafting
-  ... -----------------------------39919133514734389772038868621
+  ... -----------------------------1238542372156117029153813220
   ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 
   ... 1
-  ... -----------------------------39919133514734389772038868621
-  ... Content-Disposition: form-data; name="field.priority"
+  ... -----------------------------1238542372156117029153813220
+  ... Content-Disposition: form-data; name="field.needs_discussion.used"
   ... 
-  ... Medium
-  ... -----------------------------39919133514734389772038868621
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... -----------------------------1238542372156117029153813220
+  ... Content-Disposition: form-data; name="field.needs_discussion"
+  ... 
+  ... on
+  ... -----------------------------1238542372156117029153813220
+  ... Content-Disposition: form-data; name="field.man_days"
+  ... 
+  ... 
+  ... -----------------------------1238542372156117029153813220
+  ... Content-Disposition: form-data; name="field.delivery"
+  ... 
+  ... Slow progress
+  ... -----------------------------1238542372156117029153813220
+  ... Content-Disposition: form-data; name="field.delivery-empty-marker"
   ... 
   ... 1
-  ... -----------------------------39919133514734389772038868621
+  ... -----------------------------1238542372156117029153813220
   ... Content-Disposition: form-data; name="field.whiteboard"
   ... 
   ... XXX
-  ... -----------------------------39919133514734389772038868621
+  ... -----------------------------1238542372156117029153813220
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Change
-  ... -----------------------------39919133514734389772038868621--
+  ... -----------------------------1238542372156117029153813220--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/extension-manager-upgrades
-
 

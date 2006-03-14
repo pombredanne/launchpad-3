@@ -11,7 +11,7 @@ from zope.interface import implements, providedBy
 from zope.event import notify
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, SQLObjectNotFound
+from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
 from canonical.lp.dbschema import RosettaImportStatus, EnumCol
 
@@ -91,7 +91,7 @@ class POTemplate(SQLBase, RosettaStats):
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
 
     # joins
-    pofiles = MultipleJoin('POFile', joinColumn='potemplate')
+    pofiles = SQLMultipleJoin('POFile', joinColumn='potemplate')
 
     def __len__(self):
         """Return the number of CURRENT POTMsgSets in this POTemplate."""

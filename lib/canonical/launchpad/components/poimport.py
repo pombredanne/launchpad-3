@@ -129,7 +129,7 @@ def import_po(pofile_or_potemplate, file, published=True):
         if pomessage.msgidPlural is not None and pomessage.msgidPlural != '':
             # Check if old potmsgset had a plural form already and mark as not
             # available in the file being imported.
-            msgids = list(potmsgset.messageIDs())
+            msgids = list(potmsgset.getPOMsgIDs())
             if len(msgids) > 1:
                 pomsgidsighting = potmsgset.getPOMsgIDSighting(
                     TranslationConstants.PLURAL_FORM)
