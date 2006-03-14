@@ -14,19 +14,19 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 class TitleWidget(TextWidget):
     """A launchpad title widget; a little wider than a normal Textline."""
     implements(IText)
-    displayWidth = 60
+    displayWidth = 44
 
 
 class SummaryWidget(TextAreaWidget):
     """A widget to capture a summary."""
     implements(IText)
-    width = 60
+    width = 44
     height = 5
 
 
 class DescriptionWidget(TextAreaWidget):
     """A widget to capture a description."""
     implements(IText)
-    width = 60
+    width = 44
     height = 10
 

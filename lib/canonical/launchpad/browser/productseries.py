@@ -3,7 +3,9 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
-           'ProductSeriesContextMenu',
+           'ProductSeriesOverviewMenu',
+           'ProductSeriesFacets',
+           'ProductSeriesSpecificationsMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesRdfView',
@@ -34,21 +36,10 @@ from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    stepto, canonical_url, LaunchpadView)
+    ApplicationMenu, stepto, canonical_url, LaunchpadView,
+    StandardLaunchpadFacets)
 
 from canonical.launchpad import _
-
-class ProductSeriesReviewView(SQLObjectEditView):
-    def changed(self):
-        """Redirect to the productseries page.
-
-        We need this because people can now change productseries'
-        product and name, and this will make their canonical_url to
-        change too.
-        """
-        self.request.response.addInfoNotification( 
-            _('This Serie has been changed'))
-        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesNavigation(Navigation):
@@ -64,20 +55,19 @@ class ProductSeriesNavigation(Navigation):
         return self.context.getRelease(name)
 
 
-class ProductSeriesContextMenu(ContextMenu):
+class ProductSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSeries
-    links = ['overview', 'specs', 'edit', 'editsource', 'ubuntupkg',
+    enable_only = ['overview', 'specifications', 'translations']
+
+
+class ProductSeriesOverviewMenu(ApplicationMenu):
+
+    usedfor = IProductSeries
+    facet = 'overview'
+    links = ['edit', 'editsource', 'ubuntupkg',
              'addpackage', 'addrelease', 'download', 'translationupload',
              'addpotemplate', 'review']
-
-    def overview(self):
-        text = 'Series Overview'
-        return Link('', text, icon='info')
-
-    def specs(self):
-        text = 'Specifications'
-        return Link('+specs', text, icon='info')
 
     def edit(self):
         text = 'Edit Series Details'
@@ -116,6 +106,53 @@ class ProductSeriesContextMenu(ContextMenu):
     def review(self):
         text = 'Review Series Details'
         return Link('+review', text, icon='edit')
+
+
+class ProductSeriesSpecificationsMenu(ApplicationMenu):
+    """Specs menu for ProductSeries.
+
+    This menu needs to keep track of whether we are showing all the
+    specs, or just those that are approved/declined/proposed. It should
+    allow you to change the set your are showing while keeping the basic
+    view intact.
+    """
+
+    usedfor = IProductSeries
+    facet = 'specifications'
+    links = ['roadmap', 'table', 'setgoals', 'listdeclined']
+
+    def listall(self):
+        text = 'Show All'
+        return Link('+specs?show=all', text, icon='info')
+
+    def listapproved(self):
+        text = 'Show Approved'
+        return Link('+specs?show=accepted', text, icon='info')
+
+    def listproposed(self):
+        text = 'Show Proposed'
+        return Link('+specs?show=proposed', text, icon='info')
+
+    def listdeclined(self):
+        text = 'Show Declined'
+        summary = 'Show the goals which have been declined'
+        return Link('+specs?show=declined', text, summary, icon='info')
+
+    def setgoals(self):
+        text = 'Set Goals'
+        summary = 'Approve or decline feature goals that have been proposed'
+        return Link('+setgoals', text, summary, icon='edit')
+
+    def table(self):
+        text = 'Assignments'
+        summary = 'Show the assignee, drafter and approver of these specs'
+        return Link('+assignments', text, summary, icon='info')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        summary = 'Show the sequence in which specs should be implemented'
+        return Link('+roadmap', text, summary, icon='info')
+
 
 
 def validate_cvs_root(cvsroot, cvsmodule):
@@ -256,13 +293,6 @@ class ProductSeriesView(LaunchpadView):
             pass
         ubuntu = self.curr_ubuntu_release.distribution
         self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
-
-    def namesReviewed(self):
-        if not (self.product.active and self.product.reviewed):
-            return False
-        if not self.product.project:
-            return True
-        return self.product.project.active and self.product.project.reviewed
 
     def rcs_selector(self):
         html = '<select name="rcstype">\n'
@@ -436,22 +466,20 @@ class ProductSeriesView(LaunchpadView):
         self.targetarchversion = form.get(
             'targetarchversion', self.targetarchversion).strip() or None
         # validate arch target details
-        if not pybaz.NameParser.is_archive_name(self.targetarcharchive):
-            self.request.response.addErrorNotification(
-                'Invalid target Arch archive name.')
-            self.has_errors = True
-        if not pybaz.NameParser.is_category_name(self.targetarchcategory):
-            self.request.response.addErrorNotification(
-                'Invalid target Arch category.')
-            self.has_errors = True
-        if not pybaz.NameParser.is_branch_name(self.targetarchbranch):
-            self.request.response.addErrorNotification(
-                'Invalid target Arch branch name.')
-            self.has_errors = True
-        if not pybaz.NameParser.is_version_id(self.targetarchversion):
-            self.request.response.addErrorNotification(
-                'Invalid target Arch version id.')
-            self.has_errors = True
+        arch_name_was_set = bool(
+            self.targetarcharchive or self.targetarchcategory
+            or self.targetarchbranch or self.targetarchversion)
+        if arch_name_was_set:
+            parser = pybaz.NameParser
+            for is_valid_check, value, description in [
+                (parser.is_archive_name, self.targetarcharchive, 'archive name'),
+                (parser.is_category_name, self.targetarchcategory, 'category'),
+                (parser.is_branch_name, self.targetarchbranch, 'branch name'),
+                (parser.is_version_id, self.targetarchversion, 'version id')]:
+                if not is_valid_check(value):
+                    self.request.response.addErrorNotification(
+                        'Invalid target Arch %s.' % description)
+                    self.has_errors = True
 
         # possibly resubmit for testing
         if self.context.autoTestFailed() and form.get('resetToAutotest', False):
@@ -590,6 +618,19 @@ class ProductSeriesEditView(SQLObjectEditView):
 
     def changed(self):
         # If the name changed then the URL changed, so redirect
+        self.request.response.redirect(canonical_url(self.context))
+
+
+class ProductSeriesReviewView(SQLObjectEditView):
+
+    def changed(self):
+        """Redirect to the productseries page.
+
+        We need this because people can now change productseries'
+        product and name, and this will make the canonical_url change too.
+        """
+        self.request.response.addInfoNotification(
+            _('This Series has been changed'))
         self.request.response.redirect(canonical_url(self.context))
 
 
