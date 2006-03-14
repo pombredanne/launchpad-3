@@ -123,14 +123,7 @@ def export(distribution_name, release_name, component, update, logger):
         logger.debug("Exporting %s (%d)" %
             (potemplate.displayname, index + 1))
 
-        try:
-            contents = potemplate.export()
-        except (LookupError, HTTPError):
-            # We catch the HTTPError exception because the test fail due the
-            # lack of sampledata for librarian files.
-            logger.exception(
-                "We had an error getting this file from librarian.")
-            continue
+        contents = potemplate.export()
 
         archive.add_file('rosetta-%s/templates/%s.pot' % (release.name,
             potemplate.potemplatename.translationdomain), contents)

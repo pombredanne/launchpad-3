@@ -101,17 +101,16 @@ class DistroArchReleaseBinaryPackage:
         """See IDistroArchReleaseBinaryPackage."""
         query = """
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        BinaryPackagePublishingHistory.status = %s AND
         BinaryPackagePublishingHistory.binarypackagerelease =
             BinaryPackageRelease.id AND
         BinaryPackageRelease.version = %s AND
         BinaryPackageRelease.binarypackagename = %s
-        """ % sqlvalues(self.distroarchrelease.id,
-                        PackagePublishingStatus.PUBLISHED,
-                        version, self.binarypackagename.id)
+        """ % sqlvalues(self.distroarchrelease.id, version,
+                        self.binarypackagename.id)
 
-        bpph = BinaryPackagePublishingHistory.selectOne(
-            query, clauseTables=['binarypackagerelease'])
+        bpph = BinaryPackagePublishingHistory.selectFirst(
+            query, clauseTables=['binarypackagerelease'],
+            orderBy=["-datecreated"])
 
         if bpph is None:
             return None
