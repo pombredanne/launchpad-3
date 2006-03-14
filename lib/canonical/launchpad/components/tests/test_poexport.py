@@ -4,6 +4,8 @@ __metaclass__ = type
 
 import pytz
 import unittest
+import logging
+from StringIO import StringIO
 from datetime import datetime
 
 from canonical.launchpad.components.poexport import export_rows
@@ -51,6 +53,22 @@ class TestRow:
 
 class ExportTest(unittest.TestCase):
     """Base class for export tests."""
+
+    def setUp(self):
+        """Set up the logger."""
+        logger = logging.getLogger('poexport-user-warnings')
+        # Disable the propagation of logging messages so we only use our
+        # handler.
+        logger.propagate = 0
+        # Here we are going to store the warning output.
+        self.warnings_stream = StringIO()
+        self.warnings_handler = logging.StreamHandler(self.warnings_stream)
+        logger.addHandler(self.warnings_handler)
+
+    def tearDown(self):
+        """Tear down the logger."""
+        logger = logging.getLogger('poexport-user-warnings')
+        logger.removeHandler(self.warnings_handler)
 
     def test_export(self, rows, expected_pofiles):
         """Export a set of rows and compare the generated PO files to expected
@@ -252,6 +270,16 @@ class BrokenEncodingExportTest(ExportTest):
         ]]
 
         self.test_export(rows, expected_pofiles)
+
+        # Flush the logger.
+        self.warnings_handler.flush()
+
+        # Check that we got the warning.
+        self.assertEqual(
+            u'Had to recode the file as UTF-8 as it has characters that'
+            u' cannot be represented using the ASCII charset\n',
+            self.warnings_stream.getvalue())
+
 
 class IncompletePluralMessageTest(ExportTest):
     """Test that plural message sets which are missing some translations are

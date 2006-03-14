@@ -203,7 +203,7 @@ def dump_file(content_to_export):
 
     :arg content_to_export: An OutputPOFile that needs to be exported.
 
-    The encoding of the string will depend on the declared encoding at
+    The encoding of the string will depend on the declared charset at
     content_to_export.header or 'UTF-8' if cannot be represented by it.
     """
 
@@ -213,6 +213,14 @@ def dump_file(content_to_export):
     except UnicodeEncodeError:
         # Got any message that cannot be represented by its default encoding,
         # need to force a UTF-8 export.
+        # We log it.
+        export_logger = logging.getLogger('poexport-user-warnings')
+        export_logger.warn(
+            'Had to recode the file as UTF-8 as it has characters that cannot'
+            ' be represented using the %s charset' % 
+                content_to_export.header.charset
+            )
+        # Export the file as UTF-8 as a workaround to this problem.
         content_to_export.header['Content-Type'] = 'text/plain; charset=UTF-8'
         return content_to_export.export_string()
 
