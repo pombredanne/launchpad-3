@@ -1,10 +1,13 @@
 <script type="text/javascript">
-  function toggleFormVisibility(me) {
-    if (me.style.display=="none") {
-      me.style.display = "table-row";
+  function toggleFormVisibility(row, expander) {
+    if (row.style.display=="none") {
+      expander.setAttribute('src', '/@@/treeExpanded.gif');
+      row.style.display = "table-row";
     } else {
-      me.style.display = "none";
+      editexpander.setAttribute('src', '/@@/treeCollapsed.gif');
+      row.style.display = "none";
     }
+    return false;
   }
 </script>
 
@@ -23,26 +26,26 @@
 
   <tbody>
     <tal:request repeat="bugtask context/bugtasks">
-      <tal:whatever define="shouldExpandStatus python:bugtask == view.currentBugTask() and view.user">
+      <tal:whatever define="shouldExpand python:bugtask == view.currentBugTask() and view.user">
         <tr tal:define="tasklink python: view.taskLink(bugtask)"
             tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(bugtask)">
           <td class="icon left">
             <a
-              tal:condition="shouldExpandStatus"
+              tal:condition="shouldExpand"
               tal:attributes="href tasklink"
-              onclick="toggleFormVisibility(document.getElementById('editform')); return false"
-            ><img alt="" src="/@@/treeCollapsed.gif" /></a>
+              onclick="return toggleFormVisibility(document.getElementById('editform'), document.getElementById('editexpander')); return false"
+            ><img id="editexpander" alt="" src="/@@/treeCollapsed.gif" /></a>
           </td>
           <td style="margin: 0; padding: 0">
             <a
-              tal:condition="shouldExpandStatus"
+              tal:condition="shouldExpand"
               tal:attributes="href tasklink"
               tal:content="bugtask/targetname"
-              onclick="toggleFormVisibility(document.getElementById('editform')); return false"
+              onclick="return toggleFormVisibility(document.getElementById('editform'), document.getElementById('editexpander'))"
               style="display: block; padding: 3px"
             />
             <a
-              tal:condition="not:shouldExpandStatus"
+              tal:condition="not:shouldExpand"
               tal:attributes="href tasklink"
               tal:content="bugtask/targetname"
               style="display: block; padding: 3px"
@@ -110,7 +113,7 @@
         <tr
           id="editform"
           style="display: none"
-          tal:condition="shouldExpandStatus"
+          tal:condition="shouldExpand"
           tal:define="current_task view/currentBugTask"
         >
           <td colspan="5" tal:content="structure current_task/@@+edit-form" />
