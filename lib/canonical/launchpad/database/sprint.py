@@ -6,27 +6,25 @@ __all__ = [
     'SprintSet',
     ]
 
-import datetime
 
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin)
+    ForeignKey, StringCol, RelatedJoin)
 from sqlobject.sqlbuilder import AND, IN, NOT
 
-from canonical.launchpad.interfaces import ISprint, ISprintSet, NotFoundError
+from canonical.launchpad.interfaces import ISprint, ISprintSet
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.validators.name import valid_name
 
 from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
 from canonical.lp.dbschema import (
-    SpecificationSort, SprintSpecificationStatus, SpecificationStatus)
+    SprintSpecificationStatus, SpecificationStatus)
 
 
 class Sprint(SQLBase):
@@ -65,7 +63,6 @@ class Sprint(SQLBase):
         return Specification.select(AND(
             Specification.q.id == SprintSpecification.q.specificationID,
             NOT(IN(Specification.q.status, [
-                SpecificationStatus.IMPLEMENTED,
                 SpecificationStatus.INFORMATIONAL,
                 SpecificationStatus.OBSOLETE,
                 SpecificationStatus.SUPERSEDED,
@@ -89,6 +86,18 @@ class Sprint(SQLBase):
         sprintspecs = SprintSpecification.select(query)
         return sorted(sprintspecs, key=lambda a: a.specification.priority,
             reverse=True)
+
+    def getSpecificationLink(self, speclink_id):
+        """See ISprint.
+        
+        NB: we expose the horrible speclink.id because there is no unique
+        way to refer to a specification outside of a product or distro
+        context. Here we are a sprint that could cover many products and/or
+        distros.
+        """
+        speclink = SprintSpecification.get(speclink_id)
+        assert (speclink.sprint.id == self.id)
+        return speclink
 
     # attendance
     def attend(self, person, time_starts, time_ends):

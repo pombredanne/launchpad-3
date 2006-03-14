@@ -3,11 +3,10 @@
 __metaclass__ = type
 __all__ = ['Manifest']
 
-from datetime import datetime
 
 from zope.interface import implements
 
-from sqlobject import MultipleJoin, StringCol, RelatedJoin
+from sqlobject import SQLMultipleJoin, StringCol, RelatedJoin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -26,7 +25,7 @@ class Manifest(SQLBase):
 
     uuid = StringCol(notNull=True, alternateID=True)
 
-    entries = MultipleJoin('ManifestEntry', joinColumn='manifest',
+    entries = SQLMultipleJoin('ManifestEntry', joinColumn='manifest',
                            orderBy='sequence')
 
     ancestors = RelatedJoin('Manifest', joinColumn='child',

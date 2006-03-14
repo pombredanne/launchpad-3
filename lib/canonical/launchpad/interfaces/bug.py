@@ -12,14 +12,30 @@ __all__ = [
     'IBugAddForm',
     ]
 
+from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    non_duplicate_bug, IMessageTarget)
+    non_duplicate_bug, IMessageTarget, NotFoundError)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import Title, Summary, BugField
+from canonical.launchpad.fields import (
+    ContentNameField, Title, Summary, BugField)
+
+
+class BugNameField(ContentNameField):
+    errormessage = _("%s is already in use by another bug.")
+
+    @property
+    def _content_iface(self):
+        return IBug
+
+    def _getByName(self, name):
+        try:
+            return getUtility(IBugSet).getByNameOrID(name)
+        except NotFoundError:
+            return None
 
 
 class CreatedBugWithNoBugTasksError(Exception):
@@ -33,7 +49,7 @@ class IBug(IMessageTarget):
         title=_('Bug ID'), required=True, readonly=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    name = TextLine(
+    name = BugNameField(
         title=_('Nickname'), required=False,
         description=_("""A short and unique name for this bug.
         Add a nickname only if you often need to retype the URL

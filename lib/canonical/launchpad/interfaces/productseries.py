@@ -16,13 +16,14 @@ from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.interfaces import ISpecificationTarget
+from canonical.launchpad.interfaces import ISpecificationGoal
 
 from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
-class IProductSeries(ISpecificationTarget):
+
+class IProductSeries(ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly

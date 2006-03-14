@@ -199,9 +199,3 @@ DistroRelease can build meta objects for packages
    >>> IDistroReleaseSourcePackageRelease.providedBy(pmount_srcrel)
    True
 
-
-DistroRelease.updateCompletePackageCache will update the package cache for all
-binary packages names published in this distro release
-
-    >>> warty.updateCompletePackageCache()
-

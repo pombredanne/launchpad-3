@@ -18,16 +18,15 @@ __all__ = [
     'ICalendarYear',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Object, TextLine
 
 from schoolbell.interfaces import IEditCalendar
 
+from canonical.launchpad import _
 from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
-_ = MessageIDFactory('launchpad')
 
 class ILaunchpadCalendar(IEditCalendar, IHasOwner):
     """Launchpad specific calendar.

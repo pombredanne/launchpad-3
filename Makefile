@@ -48,7 +48,7 @@ check: build
 	# Store time information - we store this in /tmp instead of the cwd
 	# so we can see the results after PQM runs.
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py --times=/tmp/test.times
+	${PYTHON} -t ./test_on_merge.py -vv --times=/tmp/test.times
 
 lint:
 	@sh ./utilities/lint.sh
