@@ -54,20 +54,21 @@ class Batch(object):
             size = BATCH_SIZE
         self.size = size
 
-        if start+size >= listlength:
+        if start >= listlength:
+            self.trueSize = 0
+        elif start+size >= listlength:
             self.trueSize = listlength-start
         else:
             self.trueSize = size
 
         if listlength == 0:
-            self.start = -1
-        elif start >= listlength:
-            # XXX: handle this properly, bug 1235
-            raise IndexError, 'start index key out of range'
-        else:
-            self.start = start
+            start = -1
 
-        self.end = start+self.trueSize-1
+        self.start = start
+        if self.trueSize == 0:
+            self.end = start
+        else:
+            self.end = start+self.trueSize-1
 
     def __len__(self):
         if self.trueSize < 0:
@@ -93,7 +94,10 @@ class Batch(object):
         return Batch(self.list, start, self.size, _listlength=self.listlength)
 
     def prevBatch(self):
-        start = self.start - self.size
+        if self.start > self.listlength:
+            start = self.listlength - (self.listlength % self.size)
+        else:
+            start = self.start - self.size
         if start < 0:
             return None
         return Batch(self.list, start, self.size, _listlength=self.listlength)
