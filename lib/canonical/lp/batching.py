@@ -12,8 +12,15 @@ class BatchNavigator:
 
     implements(IBatchNavigator)
 
-    def __init__(self, batch, request=None):
-        self.batch = batch
+    def __init__(self, results, request, size=None):
+        start = request.get('batch_start', 0)
+        try:
+            start = int(start)
+        except ValueError:
+            # We ignore invalid request variables since it probably
+            # means the user finger-fumbled it
+            start = 0
+        self.batch = Batch(results, size=size, start=start)
         self.request = request
 
     def cleanQueryString(self, query_string):
@@ -93,7 +100,7 @@ class BatchNavigator:
 
         if current != 1:
             url = self.generateBatchURL(batches[0])
-            urls.insert(0,{'_first_':url})
+            urls.insert(0, {'_first_' : url})
         if current != size:
             url = self.generateBatchURL(batches[size-1])
             urls.append({'_last_':url})
@@ -108,11 +115,10 @@ class TableBatchNavigator(BatchNavigator):
     """See canonical.launchpad.interfaces.ITableBatchNavigator."""
     implements(ITableBatchNavigator)
 
-    def __init__(self, batch, request=None, columns_to_show=None):
-        self.batch = batch
-        self.request = request
-        self.show_column = {}
+    def __init__(self, results, request, size=None, columns_to_show=None):
+        BatchNavigator.__init__(self, results, request, size)
 
+        self.show_column = {}
         if columns_to_show:
             for column_to_show in columns_to_show:
                 self.show_column[column_to_show] = True
