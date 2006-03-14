@@ -531,18 +531,6 @@ class DistroRelease(SQLBase, BugTargetBase):
             return section
         raise NotFoundError(name)
 
-    def enableComponentByName(self, name):
-        """See IDistroRelease."""
-        component = getUtility(IComponentSet).ensure(name)
-        return ComponentSelection(distroreleaseID=self.id,
-                                  componentID=component.id)
-
-    def enableSectionByName(self, name):
-        """See IDistroRelease."""
-        section = getUtility(ISectionSet).ensure(name)
-        return SectionSelection(distroreleaseID=self.id,
-                                sectionID=section.id)
-
     def removeOldCacheItems(self):
         """See IDistroRelease."""
 
@@ -692,13 +680,11 @@ class DistroRelease(SQLBase, BugTargetBase):
             assert not version and not exact_match
             return self.getQueueItems(status)
 
-        source_clauseTables = ['DistroReleaseQueueSource']
         source_where_clauses = ["""
             distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
             AND distrorelease = %s
             AND status = %s""" % sqlvalues(self.id, status)]
 
-        build_clauseTables = ['DistroReleaseQueueBuild']
         build_where_clauses = ["""
             distroreleasequeue.id = distroreleasequeuebuild.distroreleasequeue
             AND distrorelease = %s

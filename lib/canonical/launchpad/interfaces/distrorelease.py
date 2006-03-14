@@ -209,19 +209,11 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         list for this distrorelease.
         """
 
-    def enableComponentByName(name):
-        """Enable component name in this DistroRelease.
+    def addComponent(component):
+        """SQLObject provided method to fill a related join key component."""
 
-        Ensure component name exists and enable it via ComponentSelection.
-        Return the ComponentSelection row instance.
-        """
-
-    def enableSectionByName(name):
-        """Enable section name in this DistroRelease.
-
-        Ensure section name exists and enable it via SectionSelection.
-        Return the SectionSelection row instance.
-        """
+    def addSection(section):
+        """SQLObject provided method to fill a related join key section."""
 
     def getBinaryPackagePublishing(name, version, archtag, sourcename, orderBy):
         """Get BinaryPackagePublishings in a DistroRelease.

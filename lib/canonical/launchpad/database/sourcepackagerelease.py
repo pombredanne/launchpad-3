@@ -240,7 +240,7 @@ class SourcePackageRelease(SQLBase):
                     status=BuildStatus.NEEDSBUILD,
                     pocket=None):
         """See ISourcePackageRelease."""
-        # assertion on new API
+        # ensure pocket can't be ommited
         assert pocket is not None
         # Guess a processor if one is not provided
         if processor is None:

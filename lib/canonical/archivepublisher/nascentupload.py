@@ -1613,9 +1613,9 @@ class NascentUpload:
                 candidates = self._getPublishedSources(
                     uploaded_file, self.pocket)
 
-                self.logger.debug("%d possible source(s)" % len(candidates))
-
                 if candidates:
+                    self.logger.debug("%d possible source(s)"
+                                      % candidates.count())
                     self.logger.debug("%s: (source) exists" % (
                         uploaded_file.package))
                     override = candidates[0]
@@ -1646,9 +1646,10 @@ class NascentUpload:
                 candidates = self._getPublishedBinaries(
                     uploaded_file, archtag, self.pocket)
 
-                self.logger.debug("%d possible binar{y,ies}" % len(candidates))
-
                 if candidates:
+                    self.logger.debug("%d possible binar{y,ies}"
+                                      % candidates.count())
+
                     self.logger.debug("%s: (binary) exists" % (
                         uploaded_file.package))
                     override = candidates[0]
@@ -1997,10 +1998,10 @@ class NascentUpload:
         if not self.is_new():
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
-                queue_root.set_accepted()
+                queue_root.setAccepted()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.set_unapproved()
+                queue_root.setUnapproved()
 
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):

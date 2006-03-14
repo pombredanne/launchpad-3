@@ -330,21 +330,19 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
-        # XXX: this could be done as a query on LibraryFileAlias joining
-        # on SourcePackageFilePublishing, instead of this odd for ..
-        # return -- kiko, 2006-01-27
         if source:
-            candidates = SourcePackageFilePublishing.selectBy(
+            candidate = SourcePackageFilePublishing.selectFirstBy(
                 distribution=self.id,
                 libraryfilealiasfilename=filename)
-            for candidate in candidates:
-                return LibraryFileAlias.get(candidate.libraryfilealias)
+
         if binary:
-            candidates = BinaryPackageFilePublishing.selectBy(
+            candidate = BinaryPackageFilePublishing.selectFirstBy(
                 distribution=self.id,
                 libraryfilealiasfilename=filename)
-            for candidate in candidates:
-                return LibraryFileAlias.get(candidate.libraryfilealias)
+
+        if candidate is not None:
+            return LibraryFileAlias.get(candidate.libraryfilealias)
+
         raise NotFoundError(filename)
 
 

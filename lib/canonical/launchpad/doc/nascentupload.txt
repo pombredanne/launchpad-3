@@ -399,7 +399,7 @@ The ed source would be in NEW, so punt it into accepted.
   ...     try:
   ...         print "%s/%s" % (item.sourcepackagename.name, 
   ...                          item.sourceversion)
-  ...         item.set_accepted()
+  ...         item.setAccepted()
   ...         item.sync()
   ...     except QueueInconsistentStateError, info:
   ...         print info

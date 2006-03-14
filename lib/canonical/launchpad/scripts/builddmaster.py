@@ -1338,8 +1338,9 @@ class BuilddMaster:
         while builder is not None and len(queueItems) > 0:
             build_candidate = queueItems.pop(0)
             spr = build_candidate.build.sourcepackagerelease
-            # either dispatch or mark as superseded
-            if (spr.publishings[0].status <=
+            # either dispatch or mark obsolete builds (sources superseded
+            # or removed) as SUPERSEDED.
+            if (spr.publishing and spr.publishings[0].status <=
                 dbschema.PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
                 builder = builders.firstAvailable()
@@ -1347,7 +1348,8 @@ class BuilddMaster:
                 self._logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
                     % (build_candidate.build.id, build_candidate.id))
-                build_candidate.build.status = dbschema.BuildStatus.SUPERSEDED
+                build_candidate.build.buildstate = (
+                    dbschema.BuildStatus.SUPERSEDED)
                 build_candidate.destroySelf()
 
 

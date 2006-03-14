@@ -28,19 +28,19 @@ from canonical.lp.dbschema import EnumCol
 class BinaryPackageRelease(SQLBase):
     implements(IBinaryPackageRelease)
     _table = 'BinaryPackageRelease'
-    binarypackagename = ForeignKey(dbName='binarypackagename', 
-        foreignKey='BinaryPackageName', notNull=True)
+    binarypackagename = ForeignKey(dbName='binarypackagename', notNull=True,
+                                   foreignKey='BinaryPackageName')
     version = StringCol(dbName='version', notNull=True)
     summary = StringCol(dbName='summary', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
-        schema=dbschema.BinaryPackageFormat)
+                               schema=dbschema.BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
-        notNull=True)
+                           notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
-    priority = EnumCol(dbName='priority',
-        schema=dbschema.PackagePublishingPriority)
+    priority = EnumCol(dbName='priority', notNull=True,
+                       schema=dbschema.PackagePublishingPriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
@@ -53,7 +53,7 @@ class BinaryPackageRelease(SQLBase):
     copyright = StringCol(dbName='copyright')
     licence = StringCol(dbName='licence')
     architecturespecific = BoolCol(dbName='architecturespecific',
-        notNull=True)
+                                   notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     files = MultipleJoin('BinaryPackageFile',
@@ -164,9 +164,6 @@ class BinaryPackageReleaseSet:
         query, clauseTables = self._buildBaseQuery(distroreleaseID)
         queries = [query]
 
-        # XXX: Rewrite this code to use "AND".join(); I'm hacking on an
-        # extra space here to make this work.
-        #   -- kiko, 2005-09-23
         if fti:
             queries.append("""
                 (BinaryPackageName.name LIKE lower('%%' || %s || '%%')
@@ -188,10 +185,6 @@ class BinaryPackageReleaseSet:
     def getByNameInDistroRelease(self, distroreleaseID, name=None,
                                  version=None, archtag=None, orderBy=None):
         """Get a BinaryPackageRelease in a DistroRelease by its name."""
-
-        # XXX: Rewrite this code to use "AND".join(); I'm hacking on an
-        # extra space here to make this work.
-        #   -- kiko, 2005-09-23
         query, clauseTables = self._buildBaseQuery(distroreleaseID)
         queries = [query]
 

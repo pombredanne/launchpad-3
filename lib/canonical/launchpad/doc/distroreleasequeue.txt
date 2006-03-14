@@ -70,7 +70,7 @@ XXX cprov 20051209: need to build a broken upload to test it properly
 
   >>> for item in new_queue:
   ...     try:
-  ...         item.set_accepted()
+  ...         item.setAccepted()
   ...     except QueueInconsistentStateError, info:
   ...         print info
 
@@ -276,7 +276,7 @@ Performing full acceptance:
   >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW)
   >>> for item in items:
   ...      try:
-  ...          item.set_accepted()
+  ...          item.setAccepted()
   ...      except QueueInconsistentStateError, e:
   ...          print item.sourcepackagename.name, e
   ...      else:
@@ -289,7 +289,7 @@ Performing full acceptance:
 Move the DistroReleaseQueue items back to NEW
 
   >>> for item in items:
-  ...     item.set_new()
+  ...     item.setNew()
 
 
 Check forbidden approval of not selected Section:
@@ -311,7 +311,7 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
   ...       item.builds[0].build.binarypackages[0])
   >>> naked_bin.component = getUtility(IComponentSet).new('hell')
   >>> try:
-  ...     item.set_accepted()
+  ...     item.setAccepted()
   ... except QueueInconsistentStateError, e:
   ...     print item.sourcepackagename.name, e
   ... else:
@@ -337,7 +337,7 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
 Try to perform single acceptance of pmount with not allowed section:
 
   >>> try:
-  ...     item.set_accepted()
+  ...     item.setAccepted()
   ... except QueueInconsistentStateError, e:
   ...     print item.sourcepackagename.name, e
   ... else:
@@ -364,9 +364,9 @@ Construct a new upload for universe/misc and a lot of errors ;)
   Rejected:
   usplash_0.1-22_powerpc.deb: Unknown architecture: 'powerpc'.
   Unable to find source package usplash/0.1-22 in hoary
-  usplash_0.1-22_powerpc.deb: Unable to find arch: powerpc
+  usplash: Unable to find arch: powerpc
+  usplash: Unable to find arch: powerpc
   Signer has no upload rights at all to this distribution.
-  Signer is not permitted to upload to the component 'universe' of file 'usplash_0.1-22_powerpc.deb'
   Alas, someone called do_accept when we're rejected
   <BLANKLINE>
   -----BEGIN PGP SIGNED MESSAGE-----

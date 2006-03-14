@@ -24,7 +24,7 @@ class IComponent(Interface):
 
 
 class IComponentSelection(Interface):
-    """Represents the allowed components within a Distrorelease."""
+    """Represents a single component allowed within a Distrorelease."""
     id = Attribute("The ID")
     distrorelease = Attribute("Target DistroRelease")
     component = Attribute("Selected Component")
