@@ -167,8 +167,8 @@ class IBugDelta(Interface):
 
     # fields on the bug itself
     title = Attribute("A dict with two keys, 'old' and 'new', or None.")
-    summary = Attribute("The new bug summary or None.")
-    description = Attribute("The new bug description or None.")
+    summary = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(

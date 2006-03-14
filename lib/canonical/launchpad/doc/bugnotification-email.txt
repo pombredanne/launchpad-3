@@ -90,20 +90,26 @@ Editing a bug
 generate_bug_edit_email accepts an object that provides IBugDelta, and
 returns the subject and body of the email, as a tuple.
 
-   >>> sample_person = getUtility(IPersonSet).get(12)
-   >>> edited_bug = getUtility(IBugSet).get(2)
+    >>> sample_person = getUtility(IPersonSet).get(12)
+    >>> edited_bug = getUtility(IBugSet).get(2)
 
     >>> old_title = edited_bug.title
     >>> edited_bug.title = "the new title"
-    >>> edited_bug.description = """\
-    ... a new description that is quite long. but the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent.\n\nit's also smart enough to preserve whitespace, finally!"""
+    >>> old_description = edited_bug.description
+    >>> edited_bug.description = (
+    ...     "The Trash folder seems to have significant problems! At the"
+    ...     " moment, dragging an item to the Trash results in immediate"
+    ...     " deletion. The item does not appear in the Trash, it is just"
+    ...     " deleted from my hard disk. There is no undo or ability to"
+    ...     " recover the deleted file. Help!")
 
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     title={'new': edited_bug.title, 'old': old_title},
-    ...     description = edited_bug.description)
+    ...     description={'new': edited_bug.description,
+    ...                  'old': old_description})
     >>> IBugDelta.providedBy(bug_delta)
     True
 
@@ -115,30 +121,56 @@ returns the subject and body of the email, as a tuple.
     <BLANKLINE>
     - Blackhole Trash folder
     + the new title
-    *** Description changed to:
-      a new description that is quite long. but the nice thing is that the
-      edit notification email generator knows how to indent and wrap
-      descriptions, so this will appear quite nice in the actual email that
-      gets sent.
+    *** Description changed:
     <BLANKLINE>
-      it's also smart enough to preserve whitespace, finally!
+      The Trash folder seems to have significant problems! At the moment,
+    - dragging an item to the trash results in immediate deletion. The item
+    + dragging an item to the Trash results in immediate deletion. The item
+      does not appear in the Trash, it is just deleted from my hard disk.
+      There is no undo or ability to recover the deleted file. Help!
 
-Another edit, this time the summary:
 
+Another edit, this time the summary, and a long description, showing
+that the description is wrapped properly:
+
+    >>> old_summary = edited_bug.summary
     >>> edited_bug.summary = "this summary isn't particularly short is it? after all, what kind of summary is so long that it needs to be wrapped?"
+    >>> old_description = edited_bug.description
+    >>> edited_bug.description = """\
+    ... a new description that is quite long. but the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent.\n\nit's also smart enough to preserve whitespace, finally!"""
 
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     summary = edited_bug.summary)
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     description={'new': edited_bug.description,
+    ...                  'old': old_description},
+    ...     summary={'new': edited_bug.summary, 'old': old_summary})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Short description changed to:
-      this summary isn't particularly short is it? after all, what kind of
-      summary is so long that it needs to be wrapped?
+    *** Short description changed:
+    <BLANKLINE>
+    - Everything put into the folder "Trash" disappears!
+    + this summary isn't particularly short is it? after all, what kind of
+    + summary is so long that it needs to be wrapped?
+    <BLANKLINE>
+    *** Description changed:
+    <BLANKLINE>
+    - The Trash folder seems to have significant problems! At the moment,
+    - dragging an item to the Trash results in immediate deletion. The item
+    - does not appear in the Trash, it is just deleted from my hard disk.
+    - There is no undo or ability to recover the deleted file. Help!
+    + a new description that is quite long. but the nice thing is that the
+    + edit notification email generator knows how to indent and wrap
+    + descriptions, so this will appear quite nice in the actual email that
+    + gets sent.
+    + 
+    + it's also smart enough to preserve whitespace, finally!
+
+
+    
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):

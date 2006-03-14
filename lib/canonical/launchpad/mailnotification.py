@@ -4,7 +4,9 @@
 
 __metaclass__ = type
 
+from difflib import unified_diff
 import itertools
+import re
 import sets
 import textwrap
 
@@ -238,6 +240,48 @@ def generate_bug_add_email(bug):
     return (subject, contents)
 
 
+def get_unified_diff(old_text, new_text, text_width):
+    r"""Return a unified diff of the two texts.
+
+    Before the diff is produced, the texts are wrapped to the given text
+    width.
+
+        >>> print get_unified_diff(
+        ...     'Some text\nAnother line\n',
+        ...     'Some more text\nAnother line\n',
+        ...     text_width=72)
+        - Some text
+        + Some more text
+          Another line
+
+    """
+    mailwrapper = MailWrapper(width=72)
+    old_text_wrapped = mailwrapper.format(old_text)
+    new_text_wrapped = mailwrapper.format(new_text)
+
+    lines_of_context = len(old_text_wrapped.splitlines())
+    text_diff = unified_diff(
+        old_text_wrapped.splitlines(),
+        new_text_wrapped.splitlines(),
+        n=lines_of_context)
+    # Remove the diff header, which consists of the first three
+    # lines.
+    text_diff = list(text_diff)[3:]
+    # Let's simplify the diff output by removing the helper lines,
+    # which begin with '?'.
+    text_diff = [
+        diff_line for diff_line in text_diff
+        if not diff_line.startswith('?')
+        ]
+    # Add a whitespace between the +/- and the text line.
+    text_diff = [
+        re.sub('^([\+\- ])(.*)', r'\1 \2', line)
+        for line in text_diff
+        ]
+    text_diff = '\n'.join(text_diff)
+    return text_diff
+
+
 def generate_bug_edit_email(bug_delta):
     """Generate a bug edit notification based on the bug_delta.
 
@@ -245,8 +289,6 @@ def generate_bug_edit_email(bug_delta):
     is (subject, body).
     """
     subject = u"[Bug %d] %s" % (bug_delta.bug.id, bug_delta.bug.title)
-
-    mailwrapper = MailWrapper(width=72, indent=u" "*2)
 
     if bug_delta.bug.private:
         visibility = u"Private"
@@ -278,14 +320,21 @@ def generate_bug_edit_email(bug_delta):
         change_info += u"+ %s\n" % bug_delta.title['new']
 
     if bug_delta.summary is not None:
-        change_info += u"*** Short description changed to:\n"
-        change_info += mailwrapper.format(bug_delta.summary)
-        change_info += u"\n"
+        summary_diff = get_unified_diff(
+            bug_delta.summary['old'],
+            bug_delta.summary['new'], 72)
+        change_info += u"*** Short description changed:\n\n"
+        change_info += summary_diff
+        change_info += u"\n\n"
 
     if bug_delta.description is not None:
-        change_info += u"*** Description changed to:\n"
-        change_info += mailwrapper.format(bug_delta.description)
-        change_info += u"\n"
+        description_diff = get_unified_diff(
+            bug_delta.description['old'],
+            bug_delta.description['new'], 72)
+
+        change_info += u"*** Description changed:\n\n"
+        change_info += description_diff
+        change_info += u"\n\n"
 
     if bug_delta.private is not None:
         if bug_delta.private['new']:
@@ -622,15 +671,9 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("summary", "description"):
-        # fields for which we simply show the new value when they
-        # change
-        old_val = getattr(old_bug, field_name)
-        new_val = getattr(new_bug, field_name)
-        if old_val != new_val:
-            changes[field_name] = new_val
 
-    for field_name in ("title", "name", "private", "duplicateof"):
+    for field_name in ("title", "description", "summary", "name", "private",
+                       "duplicateof"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)
