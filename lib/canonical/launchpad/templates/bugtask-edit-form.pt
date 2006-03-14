@@ -163,7 +163,7 @@
               <label for="comment_on_change">Comment on this change (optional)</label>
 
               <div>
-                <textarea cols="62" id="comment_on_change" name="comment_on_change" rows="15"
+                <textarea cols="62" id="comment_on_change" name="comment_on_change" rows="4"
                           tal:content="request/comment_on_change|nothing"></textarea>
               </div>
             </div>
@@ -171,7 +171,7 @@
               <label for="comment_on_change">Comment on this change (optional)</label>
 
               <div>
-                <textarea cols="62" id="comment_on_change" name="comment_on_change" rows="15"
+                <textarea cols="62" id="comment_on_change" name="comment_on_change" rows="4"
                           tal:content="request/comment_on_change|nothing"></textarea>
               </div>
               <div>

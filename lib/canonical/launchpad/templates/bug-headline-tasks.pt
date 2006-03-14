@@ -1,12 +1,10 @@
 <script type="text/javascript">
   function toggleFormVisibility(me) {
     if (me.style.display=="none") {
-      me.style.display = "block";
+      me.style.display = "table-row";
     } else {
       me.style.display = "none";
     }
-
-    return false;
   }
 </script>
 
@@ -16,7 +14,7 @@
               font-size: 90%;">
   <thead>
     <tr>
-      <th colspan="2">Affects</th>
+      <th>Affects</th>
       <th>Status</th>
       <th>Severity</th>
       <th>Assigned To</th>
@@ -27,27 +25,25 @@
     <tal:request repeat="bugtask context/bugtasks">
     <tr tal:define="tasklink python: view.taskLink(bugtask)"
         tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(bugtask)">
-      <td class="icon left">
-        <a tal:condition="python:bugtask == view.currentBugTask() and not view.user"
-           tal:attributes="href string:${bugtask/fmt:url}/+login">
-          <img src="/@@/edit.gif" />
-        </a>
-        <span tal:condition="python:bugtask == view.currentBugTask() and view.user"
-           onclick="toggleFormVisibility(document.getElementById('editform'))"
-           tal:attributes="href tasklink">
-          <img src="/@@/edit.gif" />
-        </span>
-        <div id="editform"
-             style="display: none"
-             tal:define="current_task view/currentBugTask">
-          <div tal:content="structure current_task/@@+edit-form">
-          </div>
-        </div>
-      </td>
       <td style="margin: 0; padding: 0">
-        <a style="display: block; text-decoration: none; padding: 3px"
-           tal:attributes="href tasklink"
-           tal:content="bugtask/targetname"
+        <a
+          tal:condition="python:bugtask == view.currentBugTask() and view.user"
+          tal:attributes="href tasklink"
+          tal:content="bugtask/targetname"
+          onclick="toggleFormVisibility(document.getElementById('editform')); return false"
+          style="display: block; padding: 3px"
+        />
+        <a
+          tal:condition="python:bugtask == view.currentBugTask() and not view.user"
+          tal:attributes="href tasklink"
+          tal:content="bugtask/targetname"
+          style="display: block; padding: 3px"
+        />
+        <a
+          tal:condition="python:bugtask != view.currentBugTask()"
+          tal:attributes="href tasklink"
+          tal:content="bugtask/targetname"
+          style="display: block; padding: 3px"
         />
       </td>
 
@@ -108,6 +104,14 @@
       </td>
 
     </tr>
+    
+      <tr
+        id="editform"
+        style="display: none"
+        tal:define="current_task view/currentBugTask"
+      >
+        <td colspan="5" tal:content="structure current_task/@@+edit-form" />
+      </tr>
     </tal:request>
   </tbody>
 
