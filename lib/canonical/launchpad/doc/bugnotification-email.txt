@@ -280,8 +280,8 @@ Adding a web link can be seen as "editing" a bug.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Web links changed:
-        + http://www.example.com/foo/bar (some title)
+    *** Web link added: "some title"
+    *** http://www.example.com/foo/bar
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -303,9 +303,11 @@ modified link as having been "Added" (though no actual "adding" or
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Web links changed:
-        + http://www.example.com/foo/bar (some better title)
-        - http://www.example.com/foo/bar (some title)
+    *** Web link removed: "some title"
+    *** http://www.example.com/foo/bar
+    <BLANKLINE>
+    *** Web link added: "some better title"
+    *** http://www.example.com/foo/bar
 
 Adding and editing bug watches
 ------------------------------
@@ -322,45 +324,48 @@ generated when a bug watch is added:
     ...         self.bug = bug
     ...         self.bugtracker = bugtracker
     ...         self.remotebug = remotebug
+    ...         self.url = "%sshow_bug.cgi?id=%s" % (
+    ...             bugtracker.baseurl, remotebug)
     >>> mock_bug_watch = MockBugWatch(
-    ...     bug = edited_bug,
-    ...     bugtracker = getUtility(IBugTrackerSet)["mozilla.org"],
-    ...     remotebug = 123)
+    ...     bug=edited_bug,
+    ...     bugtracker=getUtility(IBugTrackerSet)["mozilla.org"],
+    ...     remotebug="123")
 
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     bugwatch = {'new' : mock_bug_watch})
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     bugwatch={'new' : mock_bug_watch})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Bug watches changed:
-        + Bug 123 [The Mozilla.org Bug Tracker]
+    *** Bug watch added: The Mozilla.org Bug Tracker #123
+    *** https://bugzilla.mozilla.org/show_bug.cgi?id=123
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
 Let's demonstrate with an example:
 
     >>> mock_bug_watch_edited = MockBugWatch(
-    ...     bug = edited_bug,
-    ...     bugtracker = getUtility(IBugTrackerSet)["mozilla.org"],
-    ...     remotebug = 12)
+    ...     bug=edited_bug,
+    ...     bugtracker=getUtility(IBugTrackerSet)["mozilla.org"],
+    ...     remotebug="12")
 
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     bugwatch =
-    ...         {'old' : mock_bug_watch, 'new' : mock_bug_watch_edited})
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     bugwatch={'old' : mock_bug_watch, 'new' : mock_bug_watch_edited})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Bug watches changed:
-        + Bug 12 [The Mozilla.org Bug Tracker]
-        - Bug 123 [The Mozilla.org Bug Tracker]
+    *** Bug watch removed: The Mozilla.org Bug Tracker #123
+    *** https://bugzilla.mozilla.org/show_bug.cgi?id=123
+    <BLANKLINE>
+    *** Bug watch added: The Mozilla.org Bug Tracker #12
+    *** https://bugzilla.mozilla.org/show_bug.cgi?id=12
 
 Adding and editing CVE relationships
 ------------------------------------
@@ -372,51 +377,77 @@ Adding a CVE will generate a notification that looks as follows:
 
     >>> class MockCVE:
     ...     implements(ICve)
-    ...     def __init__(self, sequence, status, description):
+    ...     def __init__(self, sequence, status, url, description):
     ...         self.sequence = sequence
     ...         self.status = status
     ...         self.displayname = 'CVE-' + sequence
     ...         self.description = description
+    ...         self.url = url
     ...     @property
     ...     def title(self):
     ...         return '%s (%s)' % (self.displayname, self.status.title)
     >>> mock_cve = MockCVE(
-    ...     sequence = "2004-0718",
-    ...     status = CveStatus.CANDIDATE,
-    ...     description = "a test cve ref")
+    ...     sequence="2004-0718",
+    ...     status=CveStatus.CANDIDATE,
+    ...     url='http://cve.mitre.org/whatsit?id=CVE-2004-0718',
+    ...     description="a test cve ref")
 
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     cve = {'new' : mock_cve})
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     cve={'new' : mock_cve})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Added CVE-2004-0718 (Candidate)
+    *** CVE added: CVE-2004-0718 (Candidate)
+    *** http://cve.mitre.org/whatsit?id=CVE-2004-0718
 
 Similarly, removing a CVE ref will result in an email:
 
     >>> mock_cve_ref_removed = MockCVE(
-    ...     sequence = "2004-0719",
-    ...     status = CveStatus.CANDIDATE,
-    ...     description = "a test cve ref")
+    ...     sequence="2004-0719",
+    ...     status=CveStatus.CANDIDATE,
+    ...     url='http://cve.mitre.org/whatsit?id=CVE-2004-0719',
+    ...     description="a test cve ref")
 
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     cve = {'old' : mock_cve_ref_removed})
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     cve={'old' : mock_cve_ref_removed})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Removed CVE-2004-0719 (Candidate)
+    *** CVE removed: CVE-2004-0719 (Candidate)
+    *** http://cve.mitre.org/whatsit?id=CVE-2004-0719
 
-Adding an infestation
----------------------
+Adding attachments
+------------------
 
-   XXX: Brad Bollenbach, 2005-04-11: I'm not going to touch anything
-   infestation-related for the moment, until we have these things
-   better figured out (i.e. how exactly we want to use them, etc.)
+Adding an attachment will generate a notification that looks as follows:
+
+    >>> class MockLibraryFile:
+    ...     def __init__(self, url):
+    ...         self.url = url
+    >>> class MockAttachment:
+    ...     def __init__(self, title, libraryfile):
+    ...         self.title = title
+    ...         self.libraryfile = libraryfile
+    >>> attachment = MockAttachment(
+    ...     title="A screenshot of the problem",
+    ...     libraryfile=MockLibraryFile('http://foo.com/screenshot.png'))
+
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     attachment={'new' : attachment})
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    *** Attachment added: "A screenshot of the problem"
+    *** http://foo.com/screenshot.png

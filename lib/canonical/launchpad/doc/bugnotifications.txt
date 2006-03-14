@@ -711,6 +711,7 @@ duplicate.
     >>> body = bug_two_notification.get_payload(decode=True)
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     *** This bug has been marked a duplicate of bug 1
+    *** "Firefox does not support SVG"
     -- 
     Bug Details:
       Blackhole Trash folder
@@ -752,8 +753,10 @@ check if the correct notification message is sent.
     >>> body = bug_six_notification.get_payload(decode=True)
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     *** This bug is no longer a duplicate of bug 5
+    *** "Firefox install instructions should be complete"
     <BLANKLINE>
     *** This bug has been marked a duplicate of bug 3
+    *** "Bug Title Test"
     ...
 
     >>> stub.test_emails = []

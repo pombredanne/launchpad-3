@@ -263,12 +263,14 @@ def generate_bug_edit_email(bug_delta):
         assert new_bug_dupe != old_bug_dupe
         if old_bug_dupe is not None:
             change_info += (
-                u"*** This bug is no longer a duplicate of bug %d\n\n" %
-                old_bug_dupe.id)
+                u"*** This bug is no longer a duplicate of bug %d\n" %
+                    old_bug_dupe.id)
+            change_info += u'*** "%s"\n\n' % old_bug_dupe.title
         if new_bug_dupe is not None:
             change_info += (
-                u"*** This bug has been marked a duplicate of bug %d\n\n" %
-                new_bug_dupe.id)
+                u"*** This bug has been marked a duplicate of bug %d\n" %
+                    new_bug_dupe.id)
+            change_info += '*** "%s"\n\n' % new_bug_dupe.title
 
     if bug_delta.title is not None:
         change_info += u"*** Summary changed to:\n"
@@ -292,41 +294,41 @@ def generate_bug_edit_email(bug_delta):
         change_info += u"*** Visibility changed to: %s\n" % visibility
 
     if bug_delta.external_reference is not None:
-        new_ext_ref = bug_delta.external_reference['new']
-        change_info += u"*** Web links changed:\n"
-        change_info += u"    + %s (%s)\n" % (new_ext_ref.url, new_ext_ref.title)
         old_ext_ref = bug_delta.external_reference.get('old')
         if old_ext_ref is not None:
-            change_info += u"    - %s (%s)\n" % (old_ext_ref.url, old_ext_ref.title)
+            change_info += u'*** Web link removed: "%s"\n' % old_ext_ref.title
+            change_info += u"*** %s\n\n" % old_ext_ref.url
+        new_ext_ref = bug_delta.external_reference['new']
+        if new_ext_ref is not None:
+            change_info += u'*** Web link added: "%s"\n' % new_ext_ref.title
+            change_info += u"*** %s\n\n" % new_ext_ref.url
 
     if bug_delta.bugwatch is not None:
-        new_bugwatch = bug_delta.bugwatch['new']
-        change_info += u"*** Bug watches changed:\n"
-        change_info += u"    + Bug %s [%s]\n" % (
-            new_bugwatch.remotebug, new_bugwatch.bugtracker.title)
         old_bug_watch = bug_delta.bugwatch.get('old')
         if old_bug_watch:
-            change_info += u"    - Bug %s [%s]\n" % (
-                old_bug_watch.remotebug, old_bug_watch.bugtracker.title)
+            change_info += u"*** Bug watch removed: %s #%s\n" % (
+                old_bug_watch.bugtracker.title, old_bug_watch.remotebug)
+            change_info += u"*** %s\n\n" % old_bug_watch.url
+        new_bug_watch = bug_delta.bugwatch['new']
+        if new_bug_watch:
+            change_info += u"*** Bug watch added: %s #%s\n" % (
+                new_bug_watch.bugtracker.title, new_bug_watch.remotebug)
+            change_info += u"*** %s\n\n" % new_bug_watch.url
 
     if bug_delta.cve is not None:
         new_cve = bug_delta.cve.get('new', None)
         old_cve = bug_delta.cve.get('old', None)
-        change_info += u""
-        if new_cve:
-            change_info += u"*** Added %s\n" % new_cve.title
         if old_cve:
-            change_info += u"*** Removed %s\n" % old_cve.title
+            change_info += u"*** CVE removed: %s\n" % old_cve.title
+            change_info += u"*** %s\n\n" % old_cve.url
+        if new_cve:
+            change_info += u"*** CVE added: %s\n" % new_cve.title
+            change_info += u"*** %s\n\n" % new_cve.url
 
-    if bug_delta.attachment is not None:
-        change_info += "*** Attachments changed:\n"
-        change_info += "    + %s\n" % (
-            bug_delta.attachment['new'].title)
-        change_info += "      %s\n" % (
-            bug_delta.attachment['new'].libraryfile.url)
-        old_attachment = bug_delta.attachment.get('old')
-        if old_attachment:
-            change_info += "    - %s\n" % old_attachment.title
+    if bug_delta.attachment is not None and bug_delta.attachment['new']:
+        added_attachment = bug_delta.attachment['new']
+        change_info += '*** Attachment added: "%s"\n' % added_attachment.title
+        change_info += "*** %s\n" % added_attachment.libraryfile.url
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
