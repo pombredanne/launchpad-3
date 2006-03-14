@@ -443,7 +443,7 @@ pretending we've just added a watch to a bug.
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    *** Bug watches changed:
+    *** Bug watch added: The Mozilla.org Bug Tracker #2000
     ...
     -- 
     Bug Details:
@@ -459,6 +459,7 @@ the changes made:
     >>> bugwatch_before_modification = MockObject()
     >>> bugwatch_before_modification.bugtracker = bugwatch.bugtracker
     >>> bugwatch_before_modification.remotebug = bugwatch.remotebug
+    >>> bugwatch_before_modification.url = bugwatch.url
     >>> bugwatch.remotebug = "2001"
     >>> bugwatch_modified = SQLObjectModifiedEvent(
     ...     object = bugwatch,
@@ -495,7 +496,7 @@ the changes made:
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    *** Bug watches changed:
+    *** Bug watch removed: The Mozilla.org Bug Tracker #2000
     ...
     -- 
     Bug Details:
@@ -548,7 +549,8 @@ this document:
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    *** Added CVE-2004-0276 (Entry)
+    *** CVE added: CVE-2004-0276 (Entry)
+    ...
     -- 
     Bug Details:
       Firefox does not support SVG
@@ -599,7 +601,7 @@ publishing an object created event.
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    *** Web links changed:
+    *** Web link added: "test"
     ...
     -- 
     Bug Details:
@@ -650,7 +652,7 @@ When a link is edited, the notification will look as follows:
      'distribution=debian; sourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    *** Web links changed:
+    *** Web link removed: "test"
     ...
     -- 
     Bug Details:

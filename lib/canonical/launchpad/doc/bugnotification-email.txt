@@ -93,15 +93,16 @@ returns the subject and body of the email, as a tuple.
    >>> sample_person = getUtility(IPersonSet).get(12)
    >>> edited_bug = getUtility(IBugSet).get(2)
 
+    >>> old_title = edited_bug.title
     >>> edited_bug.title = "the new title"
     >>> edited_bug.description = """\
     ... a new description that is quite long. but the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent.\n\nit's also smart enough to preserve whitespace, finally!"""
 
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     title = edited_bug.title,
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     title={'new': edited_bug.title, 'old': old_title},
     ...     description = edited_bug.description)
     >>> IBugDelta.providedBy(bug_delta)
     True
@@ -110,8 +111,10 @@ returns the subject and body of the email, as a tuple.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Summary changed to:
-      the new title
+    *** Summary changed:
+    <BLANKLINE>
+    - Blackhole Trash folder
+    + the new title
     *** Description changed to:
       a new description that is quite long. but the nice thing is that the
       edit notification email generator knows how to indent and wrap

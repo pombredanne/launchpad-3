@@ -273,8 +273,9 @@ def generate_bug_edit_email(bug_delta):
             change_info += '*** "%s"\n\n' % new_bug_dupe.title
 
     if bug_delta.title is not None:
-        change_info += u"*** Summary changed to:\n"
-        change_info += u"%s\n" % mailwrapper.format(bug_delta.title)
+        change_info += u"*** Summary changed:\n\n"
+        change_info += u"- %s\n" % bug_delta.title['old']
+        change_info += u"+ %s\n" % bug_delta.title['new']
 
     if bug_delta.summary is not None:
         change_info += u"*** Short description changed to:\n"
@@ -621,7 +622,7 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("title", "summary", "description"):
+    for field_name in ("summary", "description"):
         # fields for which we simply show the new value when they
         # change
         old_val = getattr(old_bug, field_name)
@@ -629,7 +630,7 @@ def get_bug_delta(old_bug, new_bug, user):
         if old_val != new_val:
             changes[field_name] = new_val
 
-    for field_name in ("name", "private", "duplicateof"):
+    for field_name in ("title", "name", "private", "duplicateof"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)

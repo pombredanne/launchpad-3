@@ -166,7 +166,7 @@ class IBugDelta(Interface):
     comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
-    title = Attribute("The new bug title or None.")
+    title = Attribute("A dict with two keys, 'old' and 'new', or None.")
     summary = Attribute("The new bug summary or None.")
     description = Attribute("The new bug description or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
