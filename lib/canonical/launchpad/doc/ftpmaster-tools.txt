@@ -37,10 +37,10 @@ INFO
   >>> process = subprocess.Popen([sys.executable, script,
   ...                             "-R", "breezy-autotest", "info", "*"],
   ...                             stdout=subprocess.PIPE)
-  >>> process.wait()
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
-
-  >>> print process.stdout.read()
+  >>> print stdout
   Initialising connection to queue new
   Running: "info *"
   Listing ubuntu/breezy-autotest (NEW) 4/4
@@ -63,12 +63,11 @@ SOURCE OVERRIDE
   >>> process = subprocess.Popen([sys.executable, script, "-N",
   ...                             "-R", "breezy-autotest",
   ...                             "override", "netapplet", "source",
-  ...                             "universe/base"],
-  ...                            stdout=subprocess.PIPE)
-  >>> process.wait()
+  ...                             "universe/base"], stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
-
-  >>> print process.stdout.read()
+  >>> print stdout
   Initialising connection to queue new
   Running: "override netapplet source universe/base"
   Overriding ubuntu/breezy-autotest (NEW) 1/4
@@ -84,10 +83,10 @@ BINARY OVERRIDE
   ...                             "override", "pmount", "binary",
   ...                             "universe/web/extra"],
   ...                            stdout=subprocess.PIPE)
-  >>> process.wait()
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
-
-  >>> print process.stdout.read()
+  >>> print stdout
   Initialising connection to queue new
   Running: "override pmount binary universe/web/extra"
   Overriding ubuntu/breezy-autotest (NEW) 1/4
@@ -114,10 +113,10 @@ ACCEPT
   ...                             "-R", "breezy-autotest",
   ...                             "alsa-utils", "-A", "foo@bar.com"],
   ...                            stdout=subprocess.PIPE)
-  >>> process.wait()
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
-
-  >>> print process.stdout.read()
+  >>> print stdout
   Initialising connection to queue new
   Running: "accept alsa-utils"
   Accepting ubuntu/breezy-autotest (NEW) 1/4
@@ -145,10 +144,10 @@ REJECT
   >>> process = subprocess.Popen([sys.executable, script, "-NM", "reject",
   ...                             "-R", "breezy-autotest", "alsa-utils"],
   ...                            stdout=subprocess.PIPE)
-  >>> process.wait()
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
-
-  >>> print process.stdout.read()
+  >>> print stdout
   Initialising connection to queue new
   Running: "reject alsa-utils"
   Rejecting ubuntu/breezy-autotest (NEW) 1/4
@@ -181,11 +180,11 @@ FETCH CHANGES
 
   >>> process = subprocess.Popen([sys.executable, script,
   ...                             "-R", "breezy-autotest", "fetch", "pmount"],
-  ...                             stdout=subprocess.PIPE)
-  >>> process.wait()
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
   0
-
-  >>> print process.stdout.read()
+  >>> print stdout
   Initialising connection to queue new
   Running: "fetch pmount"
   Fetching ubuntu/breezy-autotest (NEW) 1/4

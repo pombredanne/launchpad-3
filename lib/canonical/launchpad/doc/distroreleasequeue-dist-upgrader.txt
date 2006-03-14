@@ -13,13 +13,7 @@ This test will check the upload of dist-upgrade tarballs
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-  >>> class MockLogger:
-  ...     def debug(self, s):
-  ...         print "DEBUG:", s
-
-  >>> class QuietLogger:
-  ...     def debug(self, s):
-  ...         pass
+  >>> import logging
 
   >>> class MockOptions:
   ...     distro = "ubuntutest"
@@ -43,7 +37,8 @@ Login as an admin.
 First, test the rejection of a missapplied changesfile name:
 
   >>> upload = NascentUpload(findPolicyByName('sync'),
-  ...     datadir(''), "dist-upgrader_20060302.0120.changes", QuietLogger())
+  ...     datadir(''), "dist-upgrader_20060302.0120.changes",
+  ...     logging.getLogger())
   >>> mock_options = MockOptions()
   >>> upload.policy.setOptions(mock_options)
 
@@ -57,8 +52,13 @@ First, test the rejection of a missapplied changesfile name:
 
 Now do a proper upload into the system.
 
+  >>> class MockLogger:
+  ...     def debug(self, s):
+  ...         print "DEBUG:", s
+
   >>> upload = NascentUpload(findPolicyByName('insecure'),
-  ...     datadir(''), "dist-upgrader_20060302.0120_all.changes", MockLogger())
+  ...     datadir(''), "dist-upgrader_20060302.0120_all.changes",
+  ...     MockLogger())
 
 
   >>> upload.changes_filename == datadir(

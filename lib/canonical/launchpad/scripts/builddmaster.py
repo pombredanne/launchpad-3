@@ -76,7 +76,10 @@ version_relation_map = {
 
 
 def file_chunks(from_file, chunk_size=256*KBYTE):
-    """Using the special two-arg form of iter() iterate a file's chunks."""
+    """Using the special two-arg form of iter() iterate a file's chunks.
+
+    Returns an iterator yielding chunks from the file of size chunk_size
+    """
     return iter(lambda: from_file.read(chunk_size), '')
 
 class BuildDaemonPackagesArchSpecific:
@@ -665,7 +668,9 @@ class BuilderGroup:
         self.logger.debug("%s" % uploader_argv)
         uploader_process = subprocess.Popen(uploader_argv,
                                             stdout=subprocess.PIPE)
-        result_code = uploader_process.wait()
+        # nothing would be written to the stdout/stderr, but it's safe
+        stdout, stderr = uploader_process.communicate()
+        result_code = uploader_process.returncode
 
         if os.path.exists(upload_dir):
             self.logger.debug("The upload directory did not get moved.")
@@ -1169,8 +1174,8 @@ class BuilddMaster:
         try:
             parsed_deps = apt_pkg.ParseDepends(dependencies_line)
         except ValueError:
-            self._logger.warn("COULD NOT PARSE DEP: %s" %
-                              dependencies_line)
+            self._logger.critical("COULD NOT PARSE DEP: %s" %
+                                  dependencies_line)
             # XXX cprov 20051018:
             # We should remove the job if we could not parse its
             # dependency, but AFAICS, the integrity checks in
@@ -1340,7 +1345,7 @@ class BuilddMaster:
             spr = build_candidate.build.sourcepackagerelease
             # either dispatch or mark obsolete builds (sources superseded
             # or removed) as SUPERSEDED.
-            if (spr.publishing and spr.publishings[0].status <=
+            if (spr.publishings and spr.publishings[0].status <=
                 dbschema.PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
                 builder = builders.firstAvailable()

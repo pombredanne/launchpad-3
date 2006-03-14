@@ -117,12 +117,12 @@ Check if it implements its interface completely:
 Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
 
   >>> for item in qset:
-  ...     item.id
+  ...     print item.id
   1
   2
   3
   4
-  5L
+  5
 
 Retrieving an IDistroReleaseQueue by its id:
 

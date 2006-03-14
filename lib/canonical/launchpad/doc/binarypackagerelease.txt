@@ -34,11 +34,11 @@ Check IBinaryPackageRelease.override() behaviour:
 
 The override method does implicitly exactly the same than:
 
-   IBinaryPackagerelease.set(component=new_component,
-                             section=new_section,
-                             priority=new_priority)
+   BinaryPackagerelease.set(component=new_component,
+                            section=new_section,
+                            priority=new_priority)
 
-but it only sets the not-empty attributes, so you can override the
+but it only sets the not-empty given arguments, so you can override the
 attributes exclusively. It only exists to improve the code clarity,
 in ftp-master/queue tool and other scripts.
 
