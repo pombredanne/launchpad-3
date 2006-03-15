@@ -1,3 +1,13 @@
+launchpad-buildd (31) unstable; urgency=low
+
+  * Cherry-pick patch from Ryan's sbuild that outputs dpkg --purge output
+    line-by-line, instead of as one big blob, to make output on the web
+    UI a little bit more friendly for people following along at home.
+  * Install a cron.daily script (eww) to purge old build logs for now until
+    I have the time to learn how twisted's native log rotation works.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Wed, 15 Mar 2006 17:23:26 +1100
+
 launchpad-buildd (30) unstable; urgency=low
 
   * Move our translation publishing mojo so it happens BEFORE we move
