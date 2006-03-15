@@ -110,9 +110,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
         self._setUpWidgets()
 
-    def _setUpWidgets(self):
+    def _setUpWidgets(self, context=None):
+        """Set up the widgets.
+
+        :param context: The context to use. If it's None, self.context
+                        is used.
+        """
         setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames,
-                     initial=self.initial_values)
+                     initial=self.initial_values, context=context)
 
     def setPrefix(self, prefix):
         for widget in self.widgets():
