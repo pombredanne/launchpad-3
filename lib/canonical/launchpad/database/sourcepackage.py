@@ -33,7 +33,7 @@ from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.distributionsourcepackagerelease import \
     DistributionSourcePackageRelease
 from canonical.launchpad.database.distroreleasesourcepackagerelease import \
@@ -384,7 +384,7 @@ class SourcePackage(BugTargetBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)

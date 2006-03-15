@@ -11,6 +11,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+from zope.schema import Choice, List
 
 _ = MessageIDFactory('launchpad')
 
@@ -45,4 +46,14 @@ class ITicketTarget(IHasTickets):
 
         If there is no such ticket number for this target, return None
         """
+
+    def addSupportContact(person):
+        """Adds a new support contact."""
+
+    support_contacts = List(
+        title=_("Support Contacts"),
+        description=_(
+            "Persons that will be automatically subscribed to new support"
+            " requests."),
+        value_type=Choice(vocabulary="ValidPersonOrTeam"))
 

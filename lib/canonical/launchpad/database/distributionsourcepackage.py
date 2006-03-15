@@ -31,7 +31,8 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.supportcontact import SupportContact
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.helpers import shortlist
 
 _arg_not_provided = object()
@@ -241,7 +242,7 @@ class DistributionSourcePackage(BugTargetBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
@@ -259,6 +260,27 @@ class DistributionSourcePackage(BugTargetBase):
         if ticket.sourcepackagename != self.sourcepackagename:
             return None
         return ticket
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return
+        SupportContact(
+            product=None, person=person.id,
+            sourcepackagename=self.sourcepackagename.id,
+            distribution=self.distribution.id)
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
 
     def __eq__(self, other):
         """See IDistributionSourcePackage."""
