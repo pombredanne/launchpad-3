@@ -102,9 +102,7 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         return {}
 
     # internal methods, should not be overridden
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-
+    def initialize(self):
         self.errors = {}
         self.process_status = None
 
