@@ -7,7 +7,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, MultipleJoin, RelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
     SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -84,10 +84,10 @@ class Distribution(SQLBase, BugTargetBase):
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    milestones = MultipleJoin('Milestone', joinColumn='distribution')
-    uploaders = MultipleJoin('DistroComponentUploader',
+    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution')
+    uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
-    source_package_caches = MultipleJoin('DistributionSourcePackageCache',
+    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
         joinColumn='distribution', orderBy='name')
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)

@@ -12,18 +12,14 @@ __all__ = [
     'BuildRecordsView',
     ]
 
-from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-
 from canonical.lp.dbschema import BuildStatus
 
-from canonical.launchpad.interfaces import IHasBuildRecords
-
-from canonical.launchpad.interfaces import IBuild
+from canonical.launchpad.interfaces import IHasBuildRecords, IBuild
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough,
-    ApplicationMenu, LaunchpadView, enabled_with_permission)
+    StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
+    LaunchpadView, enabled_with_permission)
 
 
 class BuildNavigation(GetitemNavigation):
@@ -102,13 +98,7 @@ class BuildRecordsView(LaunchpadView):
 
         # request context build records according the selected state
         builds = self.context.getBuildRecords(state_map[self.state])
-
-        # recover batch page
-        start = int(self.request.get('batch_start', 0))
-
-        # setup the batched list to present
-        self.batch = Batch(builds, start)
-        self.batchnav = BatchNavigator(self.batch, self.request)
+        self.batchnav = BatchNavigator(builds, self.request)
 
 
     def showBuilderInfo(self):

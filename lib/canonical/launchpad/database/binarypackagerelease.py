@@ -6,7 +6,7 @@ __all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
+from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
@@ -56,7 +56,7 @@ class BinaryPackageRelease(SQLBase):
                                    notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    files = MultipleJoin('BinaryPackageFile',
+    files = SQLMultipleJoin('BinaryPackageFile',
         joinColumn='binarypackagerelease')
 
     @property
