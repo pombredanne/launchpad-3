@@ -9,7 +9,7 @@
 
   <h1>Translation files pending to be imported</h1>
 
-  <tal:block condition="view/has_things_to_import">
+  <tal:block condition="view/batch">
   <div class="documentDescription">
     These are all the translation resources that are waiting to be imported
     into Rosetta. <tal:loggedin condition="not:request/lp:person">
@@ -17,156 +17,87 @@
     list.</tal:loggedin>
   </div>
 
+  <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
+
   <form name="entries_to_import" action="" method="POST">
 
-    <table class="sortable listing" id="translation-import-queue" width="100%">
-      <thead>
+    <table class="listing" width="100%">
+        <tal:loop repeat="entry view/batch">
         <tr>
-          <th></th>
-          <th>Origin</th>
-          <th>Path</th>
-          <th>Uploader</th>
-          <th>Uploaded on</th>
-          <th>Published</th>
-          <th>Import into</th>
-          <th></th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="entry view/iterReadyToImport">
+          <tal:comment replace="nothing">
+            XXX: CarlosPerelloMarin 20060309:
+            We are using here condition="entry/import_into/title|nothing"
+            because, sometimes, entry/import_into evaluates as false when
+            it should not. See bug #34213 for more information.
+          </tal:comment>
+          <td tal:condition="entry/import_into/title|nothing" rowspan="3">
+            <img alt="" src="/@@/download.png" />
+          </td>
+          <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
+            <img alt="" src="/@@/download.png" />
+          </td>
           <td>
+            <a tal:attributes="href entry/content/url"
+               tal:content="entry/path">po/foo.pot</a> in
             <a tal:condition="entry/sourcepackage"
                tal:content="entry/sourcepackage/title"
-               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
+               tal:attributes="href entry/sourcepackage/fmt:url"
                >evolution in Ubuntu Hoary</a>
             <a tal:condition="entry/productseries"
                tal:content="entry/productseries/title"
-               tal:attributes="href string:${entry/productseries/fmt:url}"
+               tal:attributes="href entry/productseries/fmt:url"
                >Evolution Series: MAIN</a>
           </td>
-          <td>
-            <span tal:content="entry/path">po/foo.pot</span>
+          <td tal:condition="entry/required:launchpad.Edit"
+              tal:content="structure python: view.getStatusSelect(entry)">
+          </td>
+          <td tal:condition="not: entry/required:launchpad.Edit"
+              tal:content="entry/status/title">Needs Review
           </td>
           <td>
-            <input type="checkbox"
-                   tal:condition="entry/required:launchpad.Edit"
-                   tal:attributes="name string:entry-${entry/id}" />
+            <tal:block condition="entry/required:launchpad.Admin">
+              [<a tal:attributes="href entry/fmt:url">Edit</a>]
+            </tal:block>
           </td>
-          <td>
+        </tr>
+        <tr class="discreet secondary">
+          <td colspan="3">
+            Uploaded by 
             <a tal:content="entry/importer/browsername"
-               tal:attributes="href string:${entry/importer/fmt:url}"
+               tal:attributes="href entry/importer/fmt:url"
                >Mark Shuttleworth</a>
+            on <span tal:content="entry/dateimported/fmt:datetime">date</span>
           </td>
-          <td tal:content="entry/dateimported/fmt:datetime">
-            date
-          </td>
-          <td>
-            <span tal:content="entry/is_published">True</span>
-          </td>
-          <td>
+        </tr>
+        <tal:comment replace="nothing">
+          XXX: CarlosPerelloMarin 20060309:
+          We are using here condition="entry/import_into/title|nothing"
+          because, sometimes, entry/import_into evaluates as false when
+          it should not. See bug #34213 for more information.
+        </tal:comment>
+        <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
+          <td colspan="3">
+            Will be imported into 
             <a tal:content="entry/import_into/title"
-               tal:attributes="href string:${entry/import_into/fmt:url}"
+               tal:attributes="href entry/import_into/fmt:url"
                >Foo</a>
           </td>
-          <td>
-            [<a tal:attributes="href string:${entry/content/url}">Download</a>]
-          </td>
-          <td>
-            <tal:block condition="entry/required:launchpad.Admin">
-              [<a tal:attributes="href string:${entry/fmt:url}">Edit</a>]
-            </tal:block>
-          </td>
         </tr>
-      </tbody>
+        </tal:loop>
     </table>
     <input tal:condition="request/lp:person"
-           type="submit" name="remove_import" value="Remove" />
-    <input tal:condition="context/required:launchpad.Admin"
-           type="submit" name="block_import" value="Block" />
+           type="submit"
+           name="handle_queue"
+           value="Change Status" />
     <br />
   </form>
   </tal:block>
 
-  <tal:block condition="view/has_pending_reviews">
-  <div class="documentDescription">
-    These are the translation resources that need to be reviewed by a Rosetta
-    Expert before they are imported into Rosetta.
-    <tal:loggedin condition="not:request/lp:person">To remove resources from
-    this list, <a href="+login">log in</a> first.</tal:loggedin>
-  </div>
+  <tal:block condition="not:view/has_entries">
 
-  <form name="entries_to_review" action="" method="POST">
-
-    <table class="sortable listing" id="translation-import-queue-review" width="100%">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Origin</th>
-          <th>Path</th>
-          <th>Uploader</th>
-          <th>Imported on</th>
-          <th>Published</th>
-          <th></th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="entry view/iterPendingReview">
-          <td>
-            <input type="checkbox"
-                   tal:condition="entry/required:launchpad.Edit"
-                   tal:attributes="name string:entry-${entry/id}" />
-          </td>
-          <td>
-            <a tal:condition="entry/sourcepackage"
-               tal:content="entry/sourcepackage/title"
-               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
-               >evolution in Ubuntu Hoary</a>
-            <a tal:condition="entry/productseries"
-               tal:content="entry/productseries/title"
-               tal:attributes="href string:${entry/productseries/fmt:url}"
-               >Evolution Series: MAIN</a>
-          </td>
-          <td>
-            <span tal:content="entry/path">po/foo.pot</span>
-          </td>
-          <td>
-            <a tal:content="entry/importer/browsername"
-               tal:attributes="href string:${entry/importer/fmt:url}"
-               >Mark Shuttleworth</a>
-          </td>
-          <td tal:content="entry/dateimported/fmt:datetime">
-            date
-          </td>
-          <td>
-            <span tal:content="entry/is_published">True</span>
-          </td>
-          <td>
-            [<a tal:attributes="href string:${entry/content/url}">Download</a>]
-          </td>
-          <td>
-            <tal:block condition="entry/required:launchpad.Admin">
-              [<a tal:attributes="href string:${entry/fmt:url}">Edit</a>]
-            </tal:block>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <input tal:condition="request/lp:person"
-           type="submit" name="remove_review" value="Remove" />
-    <input tal:condition="context/required:launchpad.Admin"
-           type="submit" name="block_review" value="Block" />
-    <br />
-  </form>
-  </tal:block>
-
-  <tal:block condition="not: view/has_things_to_import">
-    <tal:block condition="not: view/has_pending_reviews">
-      <div class="documentDescription">
-        There are no pending files to be imported into Rosetta.
-      </div>
-    </tal:block>
+    <div class="documentDescription">
+      There are no pending files to be imported into Rosetta.
+    </div>
   </tal:block>
 </div>
 
