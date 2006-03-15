@@ -31,6 +31,7 @@ __all__ = [
     'MilestoneVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
+    'PersonActiveMembershipVocabulary',
     'POTemplateNameVocabulary',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
@@ -69,7 +70,7 @@ from canonical.launchpad.database import (
     BinaryAndSourcePackageName)
 from canonical.launchpad.interfaces import (
     IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet)
+    IMilestoneSet, IPerson)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -599,6 +600,47 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
         self.extra_clause = """
             (person.teamowner != %d OR person.teamowner IS NULL) AND
             person.id != %d""" % (context.id, context.id)
+
+
+class PersonActiveMembershipVocabulary:
+    """All the teams the person is an active member of."""
+
+    implements(IVocabulary, IVocabularyTokenized)
+
+    def __init__(self, context):
+        assert IPerson.providedBy(context)
+        self.context = context
+
+    def __len__(self):
+        return self.context.myactivememberships.count()
+
+    def __iter__(self):
+        return iter(
+            [self.getTerm(membership.team) 
+             for membership in self.context.myactivememberships])
+
+    def getTerm(self, team):
+        if team not in self:
+            raise LookupError(team)
+        return SimpleTerm(team, team.name, team.displayname)
+
+    def __contains__(self, obj):
+        if not ITeam.providedBy(obj):
+            return False
+        member_teams = [
+            membership.team for membership in self.context.myactivememberships
+            ]
+        return obj in member_teams
+
+    def getQuery(self):
+        return None
+
+    def getTermByToken(self, token):
+        for membership in self.context.myactivememberships:
+            if membership.team.name == token:
+                return self.getTerm(membership.team)
+        else:
+            raise LookupError(token)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
