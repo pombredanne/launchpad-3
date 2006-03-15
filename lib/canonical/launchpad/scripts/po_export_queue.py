@@ -9,9 +9,8 @@ from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.lp.dbschema import RosettaFileFormat
+from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.helpers import (
-    join_lines, RosettaWriteTarFile)
 from canonical.launchpad.components.poexport import MOCompiler
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
@@ -138,11 +137,14 @@ def get_handler(format, obj):
     return format_handlers[format](obj)
 
 def get_rosetta_experts_email():
-    """Return Rosetta Experts' email address."""
+    """Return Rosetta Experts' email address as a string."""
 
     rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
 
-    return helpers.contactEmailAddresses(rosetta_expert)
+    assert rosetta_expert.preferredemail, (
+        'Rosetta experts team must have always a contact email.')
+
+    return str(rosetta_expert.preferredemail.email)
 
 
 class ExportResult:
@@ -182,7 +184,8 @@ class ExportResult:
                 '',
                 'The following files where exported but had warnings:',
                 '',
-                warnings
+                warnings,
+                ''
                 ])
         else:
             # There are no warnings.
@@ -192,7 +195,7 @@ class ExportResult:
 
     def _notify_failure(self, person):
         """Send an email notification about the export failing."""
-        body = join_lines(
+        body = helpers.join_lines(
             '',
             'Hello %s,' % person.browsername,
             '',
@@ -217,7 +220,7 @@ class ExportResult:
             ' * %s' % failure
             for failure in self.failures])
 
-        body = join_lines(
+        body = helpers.join_lines(
             '',
             'Hello %s,' % person.browsername,
             '',
@@ -230,7 +233,6 @@ class ExportResult:
             'The Rosetta team has been notified of this problem. Please',
             'reply to this email for further assistance.',
             self._getWarningsLines(),
-            '',
             'Of the %d files you requested, Rosetta successfully exported',
             '%d, which can be downloaded from the following location:',
             '',
@@ -252,21 +254,23 @@ class ExportResult:
 
     def _notify_success(self, person):
         """Send an email notification about the export working."""
-        body = join_lines(
+        body = helpers.join_lines(
             '',
             'Hello %s,' % person.browsername,
             self._getWarningsLines(),
-            '',
             'The files you requested from Rosetta are ready for download',
             'from the following location:',
             '',
             '    %s' % self.url)
 
-        simple_sendmail(
-            from_addr=get_rosetta_experts_email(),
-            to_addrs=helpers.contactEmailAddresses(person),
-            subject='Rosetta PO export request: %s' % self.name,
-            body=body)
+        recipients = list(helpers.contactEmailAddresses(person))
+
+        for recipient in [str(recipient) for recipient in recipients]:
+            simple_sendmail(
+                from_addr=get_rosetta_experts_email(),
+                to_addrs=[recipient],
+                subject='Rosetta PO export request: %s' % self.name,
+                body=body)
 
     def notify(self, person):
         """Send a notification email to the given person about the export.
@@ -371,7 +375,7 @@ def process_multi_object_request(objects, format):
 
     name = get_handler(format, objects[0]).get_name()
     filehandle = tempfile.TemporaryFile()
-    archive = RosettaWriteTarFile(filehandle)
+    archive = helpers.RosettaWriteTarFile(filehandle)
     result = ExportResult(name)
 
     for obj in objects:
