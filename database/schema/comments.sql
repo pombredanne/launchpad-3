@@ -1272,3 +1272,6 @@ COMMENT ON COLUMN TranslationImportQueueEntry.is_blocked IS 'If this flag is set
 COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
 COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
+
+-- SupportContact
+COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';

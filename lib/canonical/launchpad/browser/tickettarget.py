@@ -12,7 +12,6 @@ __all__ = [
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
 
-
 from canonical.launchpad.interfaces import IPerson, IManageSupportContacts
 from canonical.launchpad.webapp import GeneralFormView, canonical_url
 
@@ -105,7 +104,7 @@ class TicketTargetView:
 
 
 class SupportContactTeamsWidget(MultiCheckBoxWidget):
-    """A checkbox widget that doesn't require a vocabulary.
+    """A checkbox widget that doesn't require a vocabulary when constructed.
 
     We need this in order to use CustomWidgetFactory, since
     MultiCheckBoxWidget expects the vocabulary as the second argument.
@@ -157,7 +156,6 @@ class ManageSupportContactView(GeneralFormView):
                 response.addNotification(
                     'You have been removed as a support contact for %s' % (
                         self.context.displayname))
-
 
         user_teams = [
             membership.team for membership in self.user.myactivememberships]

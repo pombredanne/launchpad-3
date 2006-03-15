@@ -8,13 +8,12 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol
 
-from canonical.launchpad.interfaces import ISupportContact
-
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces import ISupportContact
 
 
 class SupportContact(SQLBase):
-    """See ISupportContact."""
+    """An entry for a support contact for a ITicketTarget."""
 
     implements(ISupportContact)
 

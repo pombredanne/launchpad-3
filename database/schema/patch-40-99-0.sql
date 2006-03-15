@@ -8,5 +8,20 @@ CREATE TABLE SupportContact (
     person INT NOT NULL REFERENCES Person(id)
     );
 
+/* XXX: The following constraints should be added to SupportContact:
+
+          - Either product or distribution has to be set, but not both
+
+          - (product, person) should be uniqe
+
+          - (distribution, sourcepackagename=NULL, person) should be
+            unique
+
+          - (distribution, sourcepackagename!=NULL, person) should be
+            unique
+
+          - If product is not NULL, sourcepackagename has to be NULL.
+*/
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 99, 0);
 
