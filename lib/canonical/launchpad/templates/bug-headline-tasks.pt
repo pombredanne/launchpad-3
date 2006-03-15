@@ -22,32 +22,20 @@
         />
       </td>
 
-      <td style="margin: 0; padding: 0">
-        <a style="display: block; text-decoration: none; padding: 3px"
-           tal:attributes="href tasklink;
-                           class string:status${bugtask/status/title}"
+      <td tal:attributes="class string:status${bugtask/status/title}"
            tal:content="bugtask/status/title">
           $BugTask.status
-        <img tal:condition="bugtask/statusexplanation"
-             src="/@@/text"
-             />
-        </a>
       </td>
 
-      <td style="margin: 0; padding: 0"
-          tal:attributes="class string:severity${bugtask/severity/title}">
-        <a style="display: block; text-decoration: none; padding: 3px"
-           tal:attributes="href tasklink;
-                           class string:status${bugtask/status/title}"
+      <td tal:attributes="class string:severity${bugtask/severity/title}"
            tal:content="bugtask/severity/title">
           Critical
-        </a>
       </td>
 
       <td style="margin: 0; padding: 0; vertical-align: middle">
         <tal:has_watch condition="bugtask/bugwatch">
           <a style="display: block; text-decoration: none; padding: 3px"
-             tal:attributes="href tasklink">
+             tal:attributes="href bugtask/bugwatch/url">
             <img tal:condition="bugtask/assignee"
                  src="/@@/user.gif" alt="" />
             <img
@@ -58,22 +46,23 @@
             #<span tal:replace="bugtask/bugwatch/remotebug">123</span>
           </a>
         </tal:has_watch>
-
         <tal:has_no_watch condition="not: bugtask/bugwatch">
-          <a style="display: block; text-decoration: none;"
-             tal:attributes="href tasklink">
-            <tal:has_assignee condition="bugtask/assignee">
+          <tal:has_assignee condition="bugtask/assignee">
+            <a
+              style="display: block; text-decoration: none;"
+              tal:attributes="href string:${bugtask/assignee/fmt:url}/+assignedbugs"
+            >
               <img src="/@@/user.gif"
                    style="padding-bottom: 2px"
                    alt="" />
               <span tal:replace="bugtask/assignee/browsername">
                 assignee.browsername
               </span>
-            </tal:has_assignee>
-            <tal:no_assignee condition="not: bugtask/assignee">
-              &mdash;
-            </tal:no_assignee>
-          </a>
+            </a>
+          </tal:has_assignee>
+          <tal:no_assignee condition="not: bugtask/assignee">
+            &mdash;
+          </tal:no_assignee>
         </tal:has_no_watch>
 
       </td>
