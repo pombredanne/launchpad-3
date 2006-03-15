@@ -190,10 +190,20 @@ class Product(SQLBase, BugTargetBase):
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:
-            return
+            return False
         SupportContact(
             product=self.id, person=person.id,
             sourcepackagename=None, distribution=None)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            productID=self.id, personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
 
     @property
     def support_contacts(self):

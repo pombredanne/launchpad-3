@@ -257,10 +257,17 @@ class TicketSet:
             product=product, distribution=distribution,
             sourcepackagename=sourcepackagename, datecreated=when)
 
+        support_contacts = list(ticket.target.support_contacts)
+        if ticket.sourcepackagename:
+            source_package = ticket.target.getSourcePackage(
+                ticket.sourcepackagename.name)
+            support_contacts += source_package.support_contacts
+
         # Subscribe the submitter and the support contacts.
         ticket.subscribe(owner)
-        for support_contact in ticket.target.support_contacts:
+        for support_contact in support_contacts:
             ticket.subscribe(support_contact)
+
         return ticket
 
     def getAnsweredTickets(self):

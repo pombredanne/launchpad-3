@@ -32,6 +32,7 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.distributionsourcepackagerelease import \
@@ -402,6 +403,39 @@ class SourcePackage(BugTargetBase):
         if ticket.sourcepackagename != self.sourcepackagename:
             return None
         return ticket
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return False
+        SupportContact(
+            product=None, person=person.id,
+            sourcepackagename=self.sourcepackagename.id,
+            distribution=self.distribution.id)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
 
     def __eq__(self, other):
         """See canonical.launchpad.interfaces.ISourcePackage."""

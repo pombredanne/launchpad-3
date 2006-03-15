@@ -74,6 +74,10 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
     def addticket(self):
         return Link('+addticket', 'Request Support', icon='add')
 
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
+
 
 class DistributionSourcePackageView:
 

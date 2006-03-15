@@ -893,6 +893,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
+tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
+
 translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
 translationgroups = 'Rosetta translation groups'
 

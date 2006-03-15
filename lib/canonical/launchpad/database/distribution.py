@@ -304,15 +304,27 @@ class Distribution(SQLBase, BugTargetBase):
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:
-            return
+            return False
         SupportContact(
             product=None, person=person.id,
             sourcepackagename=None, distribution=self)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOne(
+            "distribution = %d AND person = %d"
+            " AND sourcepackagename IS NULL" % (self.id, person.id))
+        support_contact_entry.destroySelf()
+        return True
 
     @property
     def support_contacts(self):
         """See ITicketTarget."""
-        support_contacts = SupportContact.selectBy(distributionID=self.id)
+        support_contacts = SupportContact.select(
+            """distribution = %d AND sourcepackagename IS NULL""" % self.id)
 
         return shortlist([
             support_contact.person for support_contact in support_contacts

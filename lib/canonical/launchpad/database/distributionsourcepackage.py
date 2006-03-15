@@ -264,11 +264,23 @@ class DistributionSourcePackage(BugTargetBase):
     def addSupportContact(self, person):
         """See ITicketTarget."""
         if person in self.support_contacts:
-            return
+            return False
         SupportContact(
             product=None, person=person.id,
             sourcepackagename=self.sourcepackagename.id,
             distribution=self.distribution.id)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
 
     @property
     def support_contacts(self):
