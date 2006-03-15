@@ -490,7 +490,7 @@ class BuilderGroup:
 
         try:
             res = slave.status()
-        except xmlrpclib.Fault, info:
+        except (xmlrpclib.Fault, socket.error), info:
             # XXX cprov 20050629
             # Hmm, a problem with the xmlrpc interface,
             # disable the builder ?? or simple notice the failure
@@ -794,9 +794,9 @@ class BuilderGroup:
 
                 try:
                     slavestatus = slave.status()
-                except Exception, e:
+                except (xmlrpclib.Fault, socket.error), info:
                     self.logger.debug("Builder %s wasn't counted due to (%s)."
-                                      % (builder.url, e))
+                                      % (builder.url, info))
                     continue
 
                 # ensure slave is IDLE
@@ -820,8 +820,7 @@ class BuilderGroup:
 
                 try:
                     slavestatus = slave.status()
-                except Exception, e:
-                    # XXX: swallowing exceptions randomly -- kiko
+                except (xmlrpclib.Fault, socket.error), info:
                     continue
                 if slavestatus[0] == BuilderStatus.IDLE:
                     return builder
