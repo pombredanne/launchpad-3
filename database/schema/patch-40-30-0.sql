@@ -20,6 +20,24 @@ CREATE TABLE personalpackagearchive (
         NOT NULL
 );
 
+CREATE INDEX PersonalPackageArchive__distrorelease__idx
+    ON PersonalPackageArchive(distrorelease);
+CREATE INDEX PersonalPackageArchive__datelastupdated__idx
+    ON PersonalPackageArchive(datelastupdated);
+
+-- Indexes for people merge and garbage collection to work happily
+CREATE INDEX PersonalPackageArchive__person__idx
+    ON PersonalPackageArchive(person);
+CREATE INDEX PersonalPackageArchive__packages__idx
+    ON PersonalPackageArchive(packages) WHERE packages IS NOT NULL;
+CREATE INDEX PersonalPackageArchive__sources__idx
+    ON PersonalPackageArchive(sources) WHERE sources IS NOT NULL;
+CREATE INDEX PersonalPackageArchive__release__idx
+    ON PersonalPackageArchive(release) WHERE release IS NOT NULL;
+CREATE INDEX PersonalPackageArchive__release_gpg__idx
+    ON PersonalPackageArchive(release_gpg) WHERE release_gpg IS NOT NULL;
+
+
 CREATE TABLE personalsourcepackagepublication (
     id serial PRIMARY KEY,
     personalpackagearchive integer NOT NULL CONSTRAINT
@@ -27,8 +45,12 @@ CREATE TABLE personalsourcepackagepublication (
         REFERENCES personalpackagearchive(id),
     sourcepackagerelease integer NOT NULL CONSTRAINT
         personalsourcepackagepublication_sourcepackagerelease_fk
-        REFERENCES sourcepackagerelease(id)
+        REFERENCES sourcepackagerelease(id),
+    CONSTRAINT personalsourcepackagepublication_key
+        UNIQUE (personalpackagearchive, sourcepackagerelease)
 );
 
+-- Ensure the DB matches the sqlobject class
+ALTER TABLE binarypackagerelease ALTER COLUMN priority SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 98, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 30, 0);
