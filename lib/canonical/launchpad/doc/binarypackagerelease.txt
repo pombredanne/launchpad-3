@@ -34,11 +34,11 @@ Check IBinaryPackageRelease.override() behaviour:
 
 The override method does implicitly exactly the same than:
 
-   IBinaryPackagerelease.set(component=new_component,
-                             section=new_section,
-                             priority=new_priority)
+   BinaryPackagerelease.set(component=new_component,
+                            section=new_section,
+                            priority=new_priority)
 
-but it only sets the not-empty attributes, so you can override the
+but it only sets the not-empty given arguments, so you can override the
 attributes exclusively. It only exists to improve the code clarity,
 in ftp-master/queue tool and other scripts.
 
@@ -75,10 +75,12 @@ Override again; ensure that only the changed item actually changes:
    ...  firefox_bin_release.priority.name)
    (u'universe', u'net', 'IMPORTANT')
 
+
 Abort transaction to avoid error propagation of the new attributes:
 
    >>> import transaction
    >>> transaction.abort()
+
 
 BinaryPackageReleaseSet utility:
 
@@ -95,4 +97,56 @@ BinaryPackageReleaseSet utility:
    >>> for item in ret:
    ...     print item.name
    pmount
+
+   >>> result = binset.findByNameInDistroRelease(warty.id, 'moz')
+   >>> print len(list(result))
+   1
+   >>> result = binset.findByNameInDistroRelease(warty.id, 'nosuchpackage')
+   >>> print len(list(result))
+   0
+   >>> result = binset.findByNameInDistroRelease(warty.id, 'Web Browser',
+   ...                                           fti=True)
+   >>> print len(list(result))
+   1
+   >>> result = binset.findByNameInDistroRelease(warty.id, 'X50keBLvzk',
+   ...                                           fti=True)
+   >>> print len(list(result))
+   0
+   >>> result = binset.findByNameInDistroRelease(warty.id, 'moz',
+   ...                                           archtag="nosucharch")
+   >>> print len(list(result))
+   0
+
+
+getByNameInDistroRelease
+------------------------
+
+   >>> result = binset.getByNameInDistroRelease(warty.id)
+   >>> print len(list(result))
+   1
+   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox')
+   >>> print len(list(result))
+   1
+   >>> result = binset.getByNameInDistroRelease(warty.id, 'nosuchpackage')
+   >>> print len(list(result))
+   0
+   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
+   ...                                          version='0.9')
+   >>> print len(list(result))
+   1
+   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
+   ...                                          version='nosuchversion')
+   >>> print len(list(result))
+   0
+   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
+   ...                                          archtag='i386')
+   >>> print len(list(result))
+   1
+   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
+   ...                                          archtag='nosucharch')
+   >>> print len(list(result))
+   0
+
+XXX: bug 5947, still lacking tests for getByNameVersion, getByArchTag,
+     getDistroReleasePackages and getBySourceName -- kiko, 2006-02-22
 

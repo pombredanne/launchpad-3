@@ -79,3 +79,91 @@ specs attached to mozilla-firefox).
     >>> check_permission('launchpad.Edit', newspec)
     False
 
+
+SpecificationDelta
+------------------
+
+When we modify a specification, we can get a delta of the changes using
+ISpecification.getDelta(). If there are no changes, None will be
+returned:
+
+    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.interfaces import ISpecification
+    >>> unmodified_spec = Snapshot(ubuspec, providing=ISpecification)
+    >>> unmodified_spec.getDelta(ubuspec, jdub) is None
+    True
+
+Now, let's do a bunch of changes, and see what the result looks like:
+
+    >>> ubuspec.title = 'New Title'
+    >>> ubuspec.summary = 'New summary.'
+    >>> ubuspec.specurl = 'http://www.ubuntu.com/NewSpec'
+    >>> ubuspec.distrorelease = ubuntu.getRelease('hoary')
+    >>> ubuspec.name = 'new-spec'
+    >>> ubuspec.priority = SpecificationPriority.LOW
+    >>> ubuspec.status = SpecificationStatus.DRAFT
+    >>> ubuspec.whiteboard = 'New whiteboard comments.'
+    >>> ubuspec.approver = sabdfl
+    >>> ubuspec.assignee = jdub
+    >>> ubuspec.drafter = jdub
+    >>> ubuspec.linkBug(2)
+    <...>
+
+    >>> delta = ubuspec.getDelta(unmodified_spec, jdub)
+    >>> delta.specification == ubuspec
+    True
+    >>> delta.user == jdub
+    True
+
+    >>> print delta.title
+    New Title
+    >>> print delta.summary
+    New summary.
+    >>> print delta.whiteboard
+    New whiteboard comments.
+    >>> print delta.specurl
+    http://www.ubuntu.com/NewSpec
+    >>> print delta.distrorelease.name
+    hoary
+
+    >>> print delta.name['old']
+    fix-spec-permissions
+    >>> print delta.name['new']
+    new-spec
+
+    >>> print delta.priority['old'].title
+    Proposed
+    >>> print delta.priority['new'].title
+    Low
+
+    >>> print delta.status['old'].title
+    Approved
+    >>> print delta.status['new'].title
+    Drafting
+
+    >>> print delta.approver['old'] is None
+    True
+    >>> print delta.approver['new'] == sabdfl
+    True
+
+    >>> print delta.assignee['old'] is None
+    True
+    >>> print delta.assignee['new'] == jdub
+    True
+
+    >>> print delta.drafter['old'] is None
+    True
+    >>> print delta.drafter['new'] == jdub
+    True
+
+    >>> [linked_bug.id for linked_bug in delta.bugs_linked]
+    [2]
+
+    >>> delta.bugs_unlinked is None
+    True
+    >>> delta.milestone is None
+    True
+    >>> delta.productseries is None
+    True
+    >>> delta.target is None
+    True

@@ -116,7 +116,7 @@ def logger_options(parser, default=logging.INFO):
                 )
         # Reset the global log
         global log
-        log._log = _logger(parser.values.loglevel)
+        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
             "-v", "--verbose", dest="loglevel", default=default,
@@ -135,7 +135,7 @@ def logger_options(parser, default=logging.INFO):
 
     # Set the global log
     global log
-    log._log = _logger(default)
+    log._log = _logger(default, out_stream=sys.stderr)
 
 
 def logger(options=None, name=None):
@@ -161,11 +161,9 @@ def logger(options=None, name=None):
 
     if options.log_file:
         out_stream = open(options.log_file, 'a')
-    else:
-        out_stream = None
+        return _logger(options.loglevel, out_stream=out_stream, name=name)
 
-    return _logger(options.loglevel, name, out_stream)
-
+    return _logger(options.loglevel, out_stream=sys.stderr, name=name)
 
 def reset_root_logger():
     root_logger = logging.getLogger()
@@ -174,15 +172,12 @@ def reset_root_logger():
         hdlr.close()
         root_logger.removeHandler(hdlr)
 
-def _logger(level, name=None, out_stream=None):
+def _logger(level, out_stream, name=None):
     """Create the actual logger instance, logging at the given level
 
     if name is None, it will get args[0] without the extension (e.g. gina).
+    'out_stream must be passed, the recommended value is sys.stderr'
     """
-    
-    if out_stream is None:
-        out_stream = sys.stderr
-
     if name is None:
         # Determine the logger name from the script name
         name = sys.argv[0]

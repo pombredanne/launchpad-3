@@ -478,7 +478,7 @@ class QueueActionReject(QueueAction):
         for queue_item in self.items:
             print 'Rejecting %s' % queue_item.sourcepackagename.name
             try:
-                queue_item.set_rejected()
+                queue_item.setRejected()
             except QueueInconsistentStateError, info:
                 print ('** %s could not be rejected due %s'
                        % (queue_item.sourcepackagename.name, info))
@@ -534,7 +534,7 @@ class QueueActionAccept(QueueAction):
         for queue_item in self.items:
             print 'Accepting %s' % queue_item.sourcepackagename.name
             try:
-                queue_item.set_accepted()
+                queue_item.setAccepted()
             except QueueInconsistentStateError, info:
                 print ('** %s could not be accepted due %s'
                        % (queue_item.sourcepackagename.name, info))

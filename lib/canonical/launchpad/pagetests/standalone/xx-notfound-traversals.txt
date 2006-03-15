@@ -107,7 +107,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+bugs")
 >>> check("/distros/ubuntu/+specs")
 >>> check("/distros/ubuntu/+cve")
->>> check("/distros/ubuntu/+specplan")
+>>> check("/distros/ubuntu/+roadmap")
 >>> check("/distros/ubuntu/+edit", auth=True)
 >>> check("/distros/ubuntu/+reassign", auth=True)
 >>> check("/distros/ubuntu/+selectmemberteam", auth=True)

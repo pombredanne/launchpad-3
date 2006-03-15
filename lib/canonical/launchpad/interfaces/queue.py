@@ -27,7 +27,7 @@ class QueueStateWriteProtectedError(Exception):
     """This exception prevent directly set operation in queue state.
 
     The queue state machine is controlled by its specific provided methods,
-    like: set_new, set_accepted and so on.
+    like: setNew, setAccepted and so on.
     """
 
 
@@ -60,7 +60,7 @@ class IDistroReleaseQueue(Interface):
             )
 
     status = Int(
-            title=_("Read-only Queue status"), required=False, readonly=True,
+            title=_("Queue status"), required=False, readonly=True,
             )
 
     distrorelease = Int(
@@ -90,23 +90,23 @@ class IDistroReleaseQueue(Interface):
 
     age = Attribute("The age of this queue item.")
 
-    def set_new():
+    def setNew():
         """Set queue state to NEW."""
 
-    def set_unapproved():
+    def setUnapproved():
         """Set queue state to UNAPPROVED."""
 
-    def set_accepted():
+    def setAccepted():
         """Set queue state to ACCEPTED.
 
         Preform the required checks on its content, so we garantee data
         integrity by code.
         """
 
-    def set_done():
+    def setDone():
         """Set queue state to DONE."""
 
-    def set_rejected():
+    def setRejected():
         """Set queue state to REJECTED."""
 
     def realiseUpload(logger=None):

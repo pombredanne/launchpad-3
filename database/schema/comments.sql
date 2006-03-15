@@ -799,6 +799,11 @@ COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itse
 COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
 COMMENT ON COLUMN Specification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
+COMMENT ON COLUMN Specification.delivery IS 'The implementation status of this
+specification. This field is used to track the actual delivery of the feature
+(implementing the spec), as opposed to the definition of expected behaviour
+(writing the spec).';
+COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';

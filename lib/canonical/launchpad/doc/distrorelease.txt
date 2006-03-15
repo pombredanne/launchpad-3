@@ -155,11 +155,13 @@ other things) the uploader for validating incoming uploads.
    ...     print s.name
    editors
 
-   >>> hoary.enableComponentByName('universe')
-   <ComponentSelection ...>
+   >>> from canonical.launchpad.interfaces import (
+   ...    IComponentSet, ISectionSet)
+   >>> univ = getUtility(IComponentSet).ensure('universe')
+   >>> web = getUtility(ISectionSet).ensure('web')
 
-   >>> hoary.enableSectionByName('web')
-   <SectionSelection ...>
+   >>> hoary.addComponent(univ)
+   >>> hoary.addSection(web)
 
    >>> for c in hoary.components:
    ...     print c.name

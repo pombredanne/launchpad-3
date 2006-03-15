@@ -14,13 +14,13 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget)
+    IHasOwner, IBugTarget, ISpecificationGoal)
 
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 from canonical.launchpad import _
 
-class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
+class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     """A specific release of an operating system distribution."""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(
@@ -151,11 +151,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         this one."""
 
     def getPublishedReleases(sourcepackage_or_name, pocket=None,
-                             include_pending=False):
+                             include_pending=False, exclude_pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+
+        if exclude_pocket is specified we exclude results matching that pocket.
 
         If 'include_pending' is True, we return also the pending publication
         records, those packages that will get published in the next publisher
@@ -207,19 +209,11 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         list for this distrorelease.
         """
 
-    def enableComponentByName(name):
-        """Enable component name in this DistroRelease.
+    def addComponent(component):
+        """SQLObject provided method to fill a related join key component."""
 
-        Ensure component name exists and enable it via ComponentSelection.
-        Return the ComponentSelection row instance.
-        """
-
-    def enableSectionByName(name):
-        """Enable section name in this DistroRelease.
-
-        Ensure section name exists and enable it via SectionSelection.
-        Return the SectionSelection row instance.
-        """
+    def addSection(section):
+        """SQLObject provided method to fill a related join key section."""
 
     def getBinaryPackagePublishing(name, version, archtag, sourcename, orderBy):
         """Get BinaryPackagePublishings in a DistroRelease.

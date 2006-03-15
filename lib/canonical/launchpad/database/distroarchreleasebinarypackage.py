@@ -188,14 +188,9 @@ class DistroArchReleaseBinaryPackage:
     def current_published(self):
         """See IDistroArchReleaseBinaryPackage."""
 
-        # Retrieve current publishing info
-        current = None
-        for publishing in self.publishing_history:
-            if publishing.status == PackagePublishingStatus.PUBLISHED:
-                current = publishing
-                break
-
-        if not current:
+        current = self.publishing_history.selectFirstBy(
+            status = PackagePublishingStatus.PUBLISHED)
+        if current is None:
             raise NotFoundError("Binary package %s not published in %s/%s"
                                 % (self.binarypackagename.name,
                                    self.distroarchrelease.distrorelease.name,

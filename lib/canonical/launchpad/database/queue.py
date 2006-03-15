@@ -113,15 +113,15 @@ class DistroReleaseQueue(SQLBase):
             'Directly write on queue status is forbidden use the '
             'provided methods to set it.')
 
-    def set_new(self):
+    def setNew(self):
         """See IDistroReleaseQueue."""
         self._SO_set_status(DistroReleaseQueueStatus.NEW)
 
-    def set_unapproved(self):
+    def setUnapproved(self):
         """See IDistroReleaseQueue."""
         self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
 
-    def set_accepted(self):
+    def setAccepted(self):
         """See IDistroReleaseQueue."""
         for source in self.sources:
             # if something goes wrong we will raise an exception
@@ -142,26 +142,36 @@ class DistroReleaseQueue(SQLBase):
         # if the previous checks applied and pass we do set the value
         self._SO_set_status(DistroReleaseQueueStatus.ACCEPTED)
 
-    def set_done(self):
+    def setDone(self):
         """See IDistroReleaseQueue."""
         self._SO_set_status(DistroReleaseQueueStatus.DONE)
 
-    def set_rejected(self):
+    def setRejected(self):
         """See IDistroReleaseQueue."""
         self._SO_set_status(DistroReleaseQueueStatus.REJECTED)
+
+    # XXX cprov 20060314: following properties should be redesigned to
+    # reduce the duplicated code.
 
     @cachedproperty
     def changesfilename(self):
         """A changes filename to accurately represent this upload."""
         filename = self.sourcepackagename.name + "_" + self.sourceversion + "_"
         arch_tags = []
-        if len(self.sources):
+        if self.sources:
             arch_tags.append("source")
         for queue_build in self.builds:
             tag = queue_build.build.distroarchrelease.architecturetag
             arch_tags.append(tag)
         filename += "+".join(arch_tags) + ".changes"
         return filename
+
+    @property
+    def age(self):
+        """See IDistroReleaseQueue"""
+        UTC = pytz.timezone('UTC')
+        now = datetime.now(UTC)
+        return now - self.datecreated
 
     @cachedproperty
     def datecreated(self):
@@ -172,18 +182,10 @@ class DistroReleaseQueue(SQLBase):
         a column at a later date.
         """
         assert self.sources or self.builds
-        for queue_source in self.sources:
-            return queue_source.sourcepackagerelease.dateuploaded
-        for queue_build in self.builds:
-            return queue_build.build.binarypackages[0].datecreated
-
-    @property
-    def age(self):
-        """See IDistroReleaseQueue"""
-        UTC = pytz.timezone('UTC')
-        now = datetime.now(UTC)
-        return now - self.datecreated
-
+        if self.sources:
+            return self.sources[0].sourcepackagerelease.dateuploaded
+        if self.builds:
+            return self.builds[0].build.binarypackages[0].datecreated
 
     @cachedproperty
     def sourcepackagename(self):
@@ -193,10 +195,10 @@ class DistroReleaseQueue(SQLBase):
         but may be made into a column at a later date.
         """
         assert self.sources or self.builds
-        for queue_source in self.sources:
-            return queue_source.sourcepackagerelease.sourcepackagename
-        for queue_build in self.builds:
-            return queue_build.build.sourcepackagerelease.sourcepackagename
+        if self.sources:
+            return self.sources[0].sourcepackagerelease.sourcepackagename
+        if self.builds:
+            return self.builds[0].build.sourcepackagerelease.sourcepackagename
 
     @cachedproperty
     def sourceversion(self):
@@ -205,10 +207,10 @@ class DistroReleaseQueue(SQLBase):
         This is currently heuristic but may be more easily calculated later.
         """
         assert self.sources or self.builds
-        for queue_source in self.sources:
-            return queue_source.sourcepackagerelease.version
-        for queue_build in self.builds:
-            return queue_build.build.sourcepackagerelease.version
+        if self.sources:
+            return self.sources[0].sourcepackagerelease.version
+        if self.builds:
+            return self.builds[0].build.sourcepackagerelease.version
 
     @cachedproperty
     def sourcepackagerelease(self):
@@ -217,10 +219,10 @@ class DistroReleaseQueue(SQLBase):
         This is currently heuristic but may be more easily calculated later.
         """
         assert self.sources or self.builds
-        for queue_source in self.sources:
-            return queue_source.sourcepackagerelease
-        for queue_build in self.builds:
-            return queue_build.build.sourcepackagerelease
+        if self.sources:
+            return self.sources[0].sourcepackagerelease
+        if self.builds:
+            return self.builds[0].build.sourcepackagerelease
 
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
@@ -236,7 +238,7 @@ class DistroReleaseQueue(SQLBase):
         for customfile in self.customfiles:
             customfile.publish(logger)
 
-        self.set_done()
+        self.setDone()
 
     def addSource(self, spr):
         """See IDistroReleaseQueue."""
@@ -272,11 +274,11 @@ class DistroReleaseQueueBuild(SQLBase):
         """See IDistroReleaseQueueBuild."""
         distrorelease = self.distroreleasequeue.distrorelease
         for binary in self.build.binarypackages:
-            if (binary.component not in distrorelease.components):
+            if binary.component not in distrorelease.components:
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
                     % (binary.component.name, distrorelease.name))
-            if (binary.section not in distrorelease.sections):
+            if binary.section not in distrorelease.sections:
                 raise QueueBuildAcceptError(
                     'Section "%s" is not allowed in %s' % (binary.section.name,
                                                            distrorelease.name))
@@ -347,12 +349,12 @@ class DistroReleaseQueueSource(SQLBase):
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
-        if (component not in distrorelease.components):
+        if component not in distrorelease.components:
             raise QueueSourceAcceptError(
                 'Component "%s" is not allowed in %s' % (component.name,
                                                          distrorelease.name))
 
-        if (section not in distrorelease.sections):
+        if section not in distrorelease.sections:
             raise QueueSourceAcceptError(
                 'Section "%s" is not allowed in %s' % (section.name,
                                                        distrorelease.name))
@@ -445,13 +447,14 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.debian_installer import (
             process_debian_installer)
+
+        temp_filename = self.temp_filename
         try:
             process_debian_installer(
-                self.archive_config.archiveroot,
-                self.temp_filename,
+                self.archive_config.archiveroot, temp_filename,
                 self.distroreleasequeue.distrorelease.name)
         finally:
-            shutil.rmtree(os.path.dirname(self.temp_filename))
+            shutil.rmtree(os.path.dirname(temp_filename))
 
     def publish_DIST_UPGRADER(self, logger=None):
         """See IDistroReleaseQueueCustom."""
@@ -459,13 +462,14 @@ class DistroReleaseQueueCustom(SQLBase):
         # to instantiate the object in question and avoid circular imports
         from canonical.archivepublisher.dist_upgrader import (
             process_dist_upgrader)
+
+        temp_filename = self.temp_filename
         try:
             process_dist_upgrader(
-                self.archive_config.archiveroot,
-                self.temp_filename,
+                self.archive_config.archiveroot, temp_filename,
                 self.distroreleasequeue.distrorelease.name)
         finally:
-            shutil.rmtree(os.path.dirname(self.temp_filename))
+            shutil.rmtree(os.path.dirname(temp_filename))
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""

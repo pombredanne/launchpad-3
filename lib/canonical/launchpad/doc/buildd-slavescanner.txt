@@ -567,6 +567,39 @@ Invoke dispacher on the available list: (no builder available atm)
   >>> for proc, queueItems in byproc.iteritems():
   ...     bm.dispatchByProcessor(proc, queueItems)
 
+We wish now to check what happens if we dispatchByProcessor and there
+are builds for now superseded source package releases in the queue.
+
+This involves subbing in a scarily large amount of crud, so here
+goes nothing.
+
+  >>> from canonical.lp.dbschema import PackagePublishingStatus
+
+  >>> class MockBG:
+  ...     def firstAvailable(self):
+  ...         return "Something which is not None"
+
+  >>> class MockProcessor:
+  ...     id = "fakeprocessor"
+  ...     name = "fakeprocessor"
+
+  >>> class MockPubRecord:
+  ...     def __init__(self):
+  ...         self.status = PackagePublishingStatus.SUPERSEDED
+
+  >>> class MockSPR:
+  ...     publishings = [MockPubRecord()]
+
+  >>> from canonical.launchpad.scripts.builddmaster import notes
+  >>> notes[MockProcessor()]["builders"] = MockBG()
+  >>> qitem = MockBuildQueue(1000, None, MockBuild(1001))
+  >>> qbuild = qitem.build
+  >>> queue = [qitem]
+  >>> qitem.build.sourcepackagerelease = MockSPR()
+  >>> bm.dispatchByProcessor(MockProcessor(), queue)
+
+  >>> qbuild.buildstate
+  <Item SUPERSEDED (5) ...>
 
 Initialize BuildQueue missing attributes for building:
 

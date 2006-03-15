@@ -23,8 +23,9 @@ from canonical.database.sqlbase import (quote_like, SQLBase, sqlvalues,
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort)
+    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
+    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
+    SpecificationGoalStatus)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
@@ -242,6 +243,16 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See ISpecificationTarget."""
         return self.distribution.getSpecification(name)
 
+    def acceptSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.distrorelease = self
+        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
+
+    def declineSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.distrorelease = self
+        spec.goalstatus = SpecificationGoalStatus.DECLINED
+
     @property
     def open_cve_bugtasks(self):
         """See IDistroRelease."""
@@ -354,7 +365,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         return item
 
     def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
-                             include_pending=False):
+                             include_pending=False, exclude_pocket=None):
         """See IDistroRelease."""
         # XXX cprov 20060213: we need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -378,6 +389,9 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
+
+        if exclude_pocket is not None:
+            queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
 
         if include_pending:
             queries.append("status in (%s, %s)" % sqlvalues(
@@ -516,18 +530,6 @@ class DistroRelease(SQLBase, BugTargetBase):
         if section in permitted:
             return section
         raise NotFoundError(name)
-
-    def enableComponentByName(self, name):
-        """See IDistroRelease."""
-        component = getUtility(IComponentSet).ensure(name)
-        return ComponentSelection(distroreleaseID=self.id,
-                                  componentID=component.id)
-
-    def enableSectionByName(self, name):
-        """See IDistroRelease."""
-        section = getUtility(ISectionSet).ensure(name)
-        return SectionSelection(distroreleaseID=self.id,
-                                sectionID=section.id)
 
     def removeOldCacheItems(self):
         """See IDistroRelease."""
@@ -678,13 +680,11 @@ class DistroRelease(SQLBase, BugTargetBase):
             assert not version and not exact_match
             return self.getQueueItems(status)
 
-        source_clauseTables = ['DistroReleaseQueueSource']
         source_where_clauses = ["""
             distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
             AND distrorelease = %s
             AND status = %s""" % sqlvalues(self.id, status)]
 
-        build_clauseTables = ['DistroReleaseQueueBuild']
         build_where_clauses = ["""
             distroreleasequeue.id = distroreleasequeuebuild.distroreleasequeue
             AND distrorelease = %s

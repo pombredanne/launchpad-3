@@ -6,7 +6,7 @@ Format: 1.7
 Date: Thu, 02 Mar 2006 01:20:25 +0100
 Architecture: all
 Version: 20060302.0120
-Distribution: hoary
+Distribution: breezy-autotest
 Source: dist-upgrader
 Binary: dist-upgrader
 Urgency: low
@@ -21,7 +21,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.1 (GNU/Linux)
 
-iD8DBQFECF+njn63CGxkqMURAr64AKCbtVDXCjA/u6fC3qfFTJuAhiJ1uACfeCVf
-LMEVsgzJDVP+mE4l8Z3A3UU=
-=zrG6
+iD8DBQFEEGGxjn63CGxkqMURAuSRAKCFN25VoMUMTk8dBlCS0I/3qyfdPgCeO+zb
+zlNO4dSsGwy36OwHSraXNAg=
+=4I9S
 -----END PGP SIGNATURE-----

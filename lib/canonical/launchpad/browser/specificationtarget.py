@@ -1,5 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
-
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 """ISpecificationTarget browser views."""
 
 __metaclass__ = type
@@ -8,80 +7,150 @@ __all__ = [
     'SpecificationTargetView',
     ]
 
-from canonical.lp.dbschema import SpecificationSort
+from canonical.lp.dbschema import (
+    SpecificationSort, SpecificationStatus, SprintSpecificationStatus,
+    SpecificationGoalStatus)
 
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import (
+    ISprint, IPerson, IProductSeries, IDistroRelease)
 
-class SpecificationTargetView:
+from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.helpers import shortlist
+from canonical.cachedproperty import cachedproperty
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+
+class SpecificationTargetView(LaunchpadView):
+
+    def initialize(self):
         self._plan = None
         self._dangling = None
-        self._workload = None
         self._categories = None
-        self._count = None
-        self._specs = None
         self.listing_detailed = True
         self.listing_compact = False
+
         url = self.request.getURL()
-        if '+createdspecs' in url:
+        # XXX: SteveAlexander, 2006-03-06.  This url-sniffing view_title
+        #      setting code is not tested.  It doesn't appear to be used
+        #      either.
+        if 'created' in url:
             self.view_title = 'Created by %s' % self.context.title
-        elif '+approverspecs' in url:
+        elif 'approver' in url:
             self.view_title = 'For approval by %s' % self.context.title
-        elif '+assignedspecs' in url:
+        elif 'assigned' in url:
             self.view_title = 'Assigned to %s' % self.context.title
-        elif '+reviewspecs' in url:
-            self.view_title = 'For review by %s' % self.context.title
-        elif '+draftedspecs' in url:
+        elif 'feedback' in url:
+            self.view_title = 'Need feedback from %s' % self.context.title
+        elif 'drafted' in url:
             self.view_title = 'Drafted by %s' % self.context.title
-        elif '+subscribedspecs' in url:
+        elif 'subscribed' in url:
             self.view_title = 'Subscribed by %s' % self.context.title
         else:
             self.view_title = ''
 
-    @property
+    @cachedproperty
     def specs(self):
-        if self._specs is not None:
-            return self._specs
-        if not IPerson.providedBy(self.context):
-            specs = self.context.specifications()
-        else:
-            # for a person, we need to figure out which set of specs to be
-            # showing.
+        """The list of specs that are going to be displayed in this view.
 
-            # XXX sabdfl 07/09/05 we need to discuss this in UBZ
-            url = self.request.getURL()
-            if '+createdspecs' in url:
+        The method can review the URL and decide what will be included,
+        and what will not.
+
+        The typical URL is of the form:
+
+           ".../name1/+specs?role=creator&show=all"
+
+        This method will interpret the show= part based on the kind of
+        object that the ISpecificationTarget happens to be.
+        """
+        url = self.request.getURL()
+        show = self.request.form.get('show', None)
+        role = self.request.form.get('role', None)
+        if IPerson.providedBy(self.context):
+            # for a person, we need to figure out which set of specs to be
+            # showing, mostly based on the relationship of the person to the
+            # specs.
+            if role == 'created':
                 specs = self.context.created_specs
-            elif '+approverspecs' in url:
+            elif role == 'approver':
                 specs = self.context.approver_specs
-            elif '+assignedspecs' in url:
+            elif role == 'assigned':
                 specs = self.context.assigned_specs
-            elif '+reviewspecs' in url:
+            elif role == 'feedback':
                 specs = self.context.feedback_specs
-            elif '+draftedspecs' in url:
+            elif role == 'drafter':
                 specs = self.context.drafted_specs
-            elif '+subscribedspecs' in url:
+            elif role == 'subscribed':
                 specs = self.context.subscribed_specs
             else:
-                specs = self.context.specifications()
-        self._specs = specs
-        # update listing style
-        self._count = specs.count()
-        if self._count > 5:
-            self.listing_detailed = False
-            self.listing_compact = True
-        return self._specs
+                specs = shortlist(self.context.specifications())
+
+            # now we want to filter the list based on whether or not we are
+            # showing all of them or just the ones that are not complete
+            if show != 'all':
+                specs = [spec for spec in specs if not spec.is_complete]
+
+        elif IProductSeries.providedBy(self.context) or \
+             IDistroRelease.providedBy(self.context):
+            # produce a listing for a product series or distrorelease
+
+            specs = shortlist(self.context.specifications())
+
+            # filtering here is based on whether or not the spec has been
+            # approved or declined for this target
+            if show == 'all':
+                # we won't filter it if they ask for all specs
+                pass
+            elif show == 'declined':
+                specs = [
+                    spec
+                    for spec in specs
+                    if spec.goalstatus == SpecificationGoalStatus.DECLINED]
+            elif show == 'proposed':
+                specs = [
+                    spec
+                    for spec in specs
+                    if spec.goalstatus == SpecificationGoalStatus.PROPOSED]
+            else:
+                # the default is to show only accepted specs
+                specs = [
+                    spec
+                    for spec in specs
+                    if spec.goalstatus == SpecificationGoalStatus.ACCEPTED]
+
+        elif ISprint.providedBy(self.context):
+            # process this as if it were a sprint
+
+            spec_links = shortlist(self.context.specificationLinks())
+
+            # filter based on whether the topics were deferred or accepted
+            if show == 'deferred':
+                specs = [
+                    spec_link.specification
+                    for spec_link in spec_links
+                    if spec_link.status == SprintSpecificationStatus.DEFERRED]
+            else:
+                specs = [
+                    spec_link.specification
+                    for spec_link in spec_links
+                    if spec_link.is_confirmed is True]
+
+        else:
+            # This is neither a person, nor a distrorelease, nor a product
+            # series spec listing, nor a sprint
+            specs = shortlist(self.context.specifications())
+
+            # now we want to filter the list based on whether or not we are
+            # showing all of them or just the ones that are not complete
+            if show != 'all':
+                specs = [spec for spec in specs if not spec.is_complete]
+
+        return specs
 
     @property
     def categories(self):
         """This organises the specifications related to this target by
         "category", where a category corresponds to a particular spec
         status. It also determines the order of those categories, and the
-        order of the specs inside each category. This is used for the +specs
-        view.
+        order of the specs inside each category.
 
         It is also used in IPerson, which is not an ISpecificationTarget but
         which does have a IPerson.specifications. In this case, it will also
@@ -111,15 +180,6 @@ class SpecificationTargetView:
         categories = categories.values()
         self._categories = sorted(categories, key=lambda a: a['status'].value)
         return self._categories
-
-    @property
-    def count(self):
-        """Return the number of specs in this view."""
-        if self._count is None:
-            # specs is a property; generating the spec list will as a
-            # side-effect set self._count.
-            speclist = self.specs
-        return self._count
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This
@@ -186,81 +246,5 @@ class SpecificationTargetView:
                 dangling.append(spec)
         self._plan = plan
         self._dangling = dangling
-
-    def workload(self):
-        """This code is copied in large part from browser/sprint.py. It may
-        be worthwhile refactoring this to use a common code base.
-        
-        Return a structure that lists people, and for each person, the
-        specs at on this target that for which they are the approver, the
-        assignee or the drafter."""
-
-        if self._workload is not None:
-            return self._workload
-
-        class MySpec:
-            def __init__(self, spec, user):
-                self.spec = spec
-                self.assignee = False
-                self.drafter = False
-                self.approver = False
-                if spec.assignee == user:
-                    self.assignee = True
-                if spec.drafter == user:
-                    self.drafter = True
-                if spec.approver == user:
-                    self.approver = True
-
-        class Group:
-            def __init__(self, person):
-                self.person = person
-                self.specs = set()
-
-            def by_priority(self):
-                return sorted(self.specs, key=lambda a: a.spec.priority,
-                    reverse=True)
-
-            def add_spec(self, spec):
-                for curr_spec in self.specs:
-                    if curr_spec.spec == spec:
-                        return
-                self.specs.add(MySpec(spec, self.person))
-
-        class Report:
-            def __init__(self):
-                self.contents = {}
-
-            def _getGroup(self, person):
-                group = self.contents.get(person.browsername, None)
-                if group is not None:
-                    return group
-                group = Group(person)
-                self.contents[person.browsername] = group
-                return group
-
-            def process(self, spec):
-                """Make sure that this Report.contents has a Group for each
-                person related to the spec, and that Group has the spec in
-                the relevant list.
-                """
-                if spec.assignee is not None:
-                    group = self._getGroup(spec.assignee)
-                    group.add_spec(spec)
-                if spec.drafter is not None:
-                    self._getGroup(spec.drafter).add_spec(spec)
-                if spec.approver is not None:
-                    self._getGroup(spec.approver).add_spec(spec)
-
-            def results(self):
-                return [self.contents[key]
-                    for key in sorted(self.contents.keys())]
-
-        report = Report()
-        for spec in self.specs:
-            report.process(spec)
-
-        self._workload = report.results()
-        return self._workload
-
 
 

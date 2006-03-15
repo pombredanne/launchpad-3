@@ -129,7 +129,8 @@ Invoke createBinaryPackageRelease with all required arguments.
   ...                                 architecturespecific)
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
-  >>> assert verifyObject(IBinaryPackageRelease, bin) is True
+  >>> verifyObject(IBinaryPackageRelease, bin)
+  True
 
 
 Commit previous transaction, data we want to preserv:

@@ -37,7 +37,7 @@ from canonical.archivepublisher.utils import (
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, DistroReleaseQueueStatus)
+    BuildStatus, DistroReleaseQueueStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -725,8 +725,18 @@ class NascentUpload:
             changes['urgency'] = "low"
         # Store the architecture of the changes file away for later.
         m = re_changes_file_name.match(self.changes_basename)
+        if m is None:
+            raise UploadError(
+                '%s -> missapplied changesfile name, '
+                'should follow "<pkg>_<version>_<arch>.changes" format'
+                % self.changes_basename)
         self.changes_filename_archtag = m.group(3)
         # Wahey, the changes are parsed all okay :-)
+
+        # XXX cprov 20060308: force the cachedproperty to set policy specifc
+        # attributes now. Otherwise they won't get set properly for custom
+        # uploads. Life sucks !!!
+        self.distrorelease
 
     @cachedproperty
     def distro(self):
@@ -1272,23 +1282,8 @@ class NascentUpload:
             self.reject("%s: does not mention any tar.gz or orig.tar.gz." % (
                         dsc_file.filename))
 
-        # XXX cprov 20051207: It was originally using sourcerer
-        # implementation of Debian version comparision which seems
-        # to fail for versions containing letters. Until we fix, let's
-        # use apt_pkg for this task.
-        version = dsc['version']
-        spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
-                dsc['source'])
-        self.spn = spn
-        releases = self.distrorelease.getPublishedReleases(spn)
-        apt_pkg.InitSystem()
-
-        for pub_record in releases:
-            pub_version = pub_record.sourcepackagerelease.version
-            if apt_pkg.VersionCompare(version, pub_version) <= 0:
-                self.reject("%s: Version older than that in the archive. "
-                            "%s <= %s" % (dsc_file.filename,
-                                          version, pub_version))
+        self.spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
+            dsc['source'])
 
         # For any file mentioned in the upload which does not exist in the
         # upload, go ahead and find it from the database.
@@ -1485,6 +1480,108 @@ class NascentUpload:
 
         self.permitted_components = possible_components
 
+    def _checkVersion(self, proposed_version, archive_version,
+                      filename=None):
+        """Check if the proposed version is higher than that in the archive."""
+        if apt_pkg.VersionCompare(proposed_version, archive_version) <= 0:
+            self.reject("%s: Version older than that in the archive. %s <= %s"
+                        % (filename, proposed_version, archive_version))
+
+    def _getPublishedSources(self, uploaded_file, target_pocket):
+        """Return the published sources (parents) for a given file."""
+        sourcename = getUtility(ISourcePackageNameSet).getOrCreateByName(
+            uploaded_file.package)
+        # XXX cprov 20060309: exclude BACKPORTS records for non-BACKPORTS
+        # uploads and in other hand include only BACKPORTS records for
+        # BACKPORTS uploads. See bug 34089
+        if target_pocket is not PackagePublishingPocket.BACKPORTS:
+            exclude_pocket = PackagePublishingPocket.BACKPORTS
+            pocket = None
+        else:
+            exclude_pocket = None
+            pocket = PackagePublishingPocket.BACKPORTS
+
+        candidates = self.distrorelease.getPublishedReleases(
+            sourcename, include_pending=True, pocket=pocket,
+            exclude_pocket=exclude_pocket)
+
+        return candidates
+
+    def _getPublishedBinaries(self, uploaded_file, archtag, target_pocket):
+        """Return the published binaries (parents) for given file & pocket."""
+        # Look up the binary package overrides in the relevant
+        # distroarchrelease
+        binaryname = getUtility(IBinaryPackageNameSet).getOrCreateByName(
+            uploaded_file.package)
+
+        # XXX cprov 20060308: For god sake !!!!
+        # Cache the bpn for later.
+        uploaded_file.bpn = binaryname
+
+        try:
+            dar = self.distrorelease[archtag]
+        except NotFoundError:
+            self.reject(
+                "%s: Unable to find arch: %s" % (uploaded_file.package,
+                                                 archtag))
+            return None
+        # XXX cprov 20060309: exclude BACKPORTS records for non-BACKPORTS
+        # uploads and in other hand include only BACKPORTS records for
+        # BACKPORTS uploads. See bug 34089
+        if target_pocket is not PackagePublishingPocket.BACKPORTS:
+            exclude_pocket = PackagePublishingPocket.BACKPORTS
+            pocket = None
+        else:
+            pocket = PackagePublishingPocket.BACKPORTS
+            exclude_pocket = None
+
+        candidates = dar.getReleasedPackages(
+            binaryname, include_pending=True, pocket=pocket,
+            exclude_pocket=exclude_pocket)
+
+        if not candidates:
+            # Try the other architectures...
+            for dar in self.distrorelease.architectures:
+                candidates = dar.getReleasedPackages(
+                    binaryname, include_pending=True, pocket=pocket,
+                    exclude_pocket=exclude_pocket)
+                if candidates:
+                    break
+
+        return candidates
+
+    def _checkSourceBackports(self, uploaded_file):
+        """ """
+        backports = self._getPublishedSources(
+            uploaded_file, PackagePublishingPocket.BACKPORTS)
+
+        if not backports:
+            return
+
+        first_backport = backports[-1].sourcepackagerelease.version
+        proposed_version = uploaded_file.version
+
+        if apt_pkg.VersionCompare(proposed_version, first_backport) >= 0:
+            self.reject("%s: Version newer than that in BACKPORTS. %s <= %s"
+                        % (filename, proposed_version, archive_version))
+
+
+    def _checkBinaryBackports(self, uploaded_file, archtag):
+        """ """
+        backports = self._getPublishedBinaries(
+            uploaded_file, archtag, PackagePublishingPocket.BACKPORTS)
+
+        if not backports:
+            return
+
+        first_backport = backports[-1].binarypackagerelease.version
+        proposed_version = uploaded_file.version
+
+        if apt_pkg.VersionCompare(proposed_version, first_backport) >= 0:
+            self.reject("%s: Version newer than that in BACKPORTS. %s <= %s"
+                        % (filename, proposed_version, archive_version))
+
+
     def find_and_apply_overrides(self):
         """Look in the db for each part of the upload to see if it's overridden
         or not.
@@ -1499,35 +1596,33 @@ class NascentUpload:
             if uploaded_file.custom or uploaded_file.section == "byhand":
                 # handled specially in insert_into_queue -- it goes
                 # into a custom queue, no overrides applied.
-                # They are always NEW.
-                uploaded_file.new = True
+
+                # XXX cprov 20060308: since the ftpmaster can't yet verify
+                # the content of custom uploads via the queue tool, moving
+                # them to NEW only makes it more confused. bug # 34070
+                # Single_Custom uploads should be NEW.
+                #if self.single_custom:
+                #    uploaded_file.new = True
                 continue
+
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease
                 # (any pocket would be enough)
                 self.logger.debug("getPublishedReleases()")
-                spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
-                    uploaded_file.package)
-                possible = self.distrorelease.getPublishedReleases(
-                    spn, include_pending=True)
-                self.logger.debug("%d possible source(s)" % len(possible))
 
-                if possible:
+                candidates = self._getPublishedSources(
+                    uploaded_file, self.pocket)
+
+                if candidates:
+                    self.logger.debug("%d possible source(s)"
+                                      % candidates.count())
                     self.logger.debug("%s: (source) exists" % (
                         uploaded_file.package))
-                    # We have a set of possible overrides. The first in
-                    # the set will be the most useful since it should be
-                    # the most recently uploaded. We therefore use this one.
-                    override = possible[0]
+                    override = candidates[0]
+                    proposed_version = self.changes['version']
                     archive_version = override.sourcepackagerelease.version
-                    if apt_pkg.VersionCompare(self.changes['version'],
-                                              archive_version) <= 0:
-                        self.reject("%s: Version older than that in the "
-                                    "archive. %s <= %s"
-                                    % (uploaded_file.filename,
-                                       self.changes['version'],
-                                       archive_version))
-
+                    self._checkVersion(proposed_version, archive_version,
+                                       filename=uploaded_file.filename)
                     uploaded_file.component = override.component.name
                     uploaded_file.section = override.section.name
                     uploaded_file.new = False
@@ -1535,60 +1630,48 @@ class NascentUpload:
                     self.logger.debug("%s: (source) NEW" % (
                         uploaded_file.package))
                     uploaded_file.new = True
+
+                self._checkSourceBackports(uploaded_file)
+
             elif not uploaded_file.is_source:
-                # Look up the binary package overrides in the relevant
-                # distroarchrelease
-                bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(
-                    uploaded_file.package)
-                # Cache the bpn for later.
-                uploaded_file.bpn = bpn
+                self.logger.debug("getPublishedReleases()")
+
                 archtag = uploaded_file.architecture
                 if archtag == "all":
                     archtag = self.changes_filename_archtag
-                try:
-                    self.logger.debug("Checking against %s for %s" %(
-                        archtag, uploaded_file.package))
-                    dar = self.distrorelease[archtag]
-                    possible = dar.getReleasedPackages(bpn)
-                    if not possible:
-                        # Try the other architectures...
-                        for dar in self.distrorelease.architectures:
-                            possible = dar.getReleasedPackages(bpn)
-                            if possible:
-                                break
 
-                    self.logger.debug("getReleasedPackages() returned %d "
-                                      "possibilit{y,ies}" % len(possible))
-                    if possible:
-                        self.logger.debug("%s: (binary) exists" % (
-                            uploaded_file.package))
-                        # We have a set of possible overrides. The
-                        # first in the set will be the most useful
-                        # since it should be the most recently
-                        # uploaded. We therefore use this one.
-                        override=possible[0]
-                        archive_version = override.binarypackagerelease.version
-                        if (override.distroarchrelease ==
-                            self.distrorelease[archtag] and
-                            apt_pkg.VersionCompare(uploaded_file.version,
-                                                   archive_version) <= 0):
-                            self.reject("%s: Version older than that in the "
-                                        "archive. %s <= %s"
-                                        % (uploaded_file.filename,
-                                           uploaded_file.version,
-                                           archive_version))
-                        uploaded_file.component = override.component.name
-                        uploaded_file.section = override.section.name
-                        uploaded_file.priority = override.priority
-                        uploaded_file.new = False
-                    else:
-                        self.logger.debug("%s: (binary) NEW" % (
-                            uploaded_file.package))
-                        uploaded_file.new = True
-                except NotFoundError:
-                    self.reject("%s: Unable to find arch: %s" % (
-                        uploaded_file.filename, archtag))
+                self.logger.debug("Checking against %s for %s"
+                                  %(archtag, uploaded_file.package))
 
+                candidates = self._getPublishedBinaries(
+                    uploaded_file, archtag, self.pocket)
+
+                if candidates:
+                    self.logger.debug("%d possible binar{y,ies}"
+                                      % candidates.count())
+
+                    self.logger.debug("%s: (binary) exists" % (
+                        uploaded_file.package))
+                    override = candidates[0]
+                    proposed_version = uploaded_file.version
+                    archive_version = override.binarypackagerelease.version
+
+                    if (override.distroarchrelease ==
+                        self.distrorelease[uploaded_file.archtecture]):
+                        self._checkVersion(
+                            proposed_version, archive_version,
+                            filename=uploaded_file.filename)
+
+                    uploaded_file.component = override.component.name
+                    uploaded_file.section = override.section.name
+                    uploaded_file.priority = override.priority
+                    uploaded_file.new = False
+                else:
+                    self.logger.debug("%s: (binary) NEW" % (
+                        uploaded_file.package))
+                    uploaded_file.new = True
+
+                self._checkBinaryBackports(uploaded_file, archtag)
 
     def verify_acl(self):
         """Verify that the uploaded files are okay for their named components
@@ -1915,10 +1998,10 @@ class NascentUpload:
         if not self.is_new():
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
-                queue_root.set_accepted()
+                queue_root.setAccepted()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
-                queue_root.set_unapproved()
+                queue_root.setUnapproved()
 
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):

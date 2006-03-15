@@ -85,9 +85,9 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change Drivers'
         return Link('+reassign', text, icon='edit')
 
     def packaging(self):
@@ -135,19 +135,39 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'specifications'
-    links = ['roadmap', 'table', 'new']
+    links = ['roadmap', 'table', 'setgoals', 'listdeclined',]
 
-    def new(self):
-        text = 'Register a Specification'
-        return Link('+addspec', text, icon='add')
+    def listall(self):
+        text = 'Show All'
+        return Link('+specs?show=all', text, icon='info')
+
+    def listapproved(self):
+        text = 'Show Approved'
+        return Link('+specs?show=accepted', text, icon='info')
+
+    def listproposed(self):
+        text = 'Show Proposed'
+        return Link('+specs?show=proposed', text, icon='info')
+
+    def listdeclined(self):
+        text = 'Show Declined'
+        summary = 'Show the goals which have been declined'
+        return Link('+specs?show=declined', text, icon='info')
+
+    def setgoals(self):
+        text = 'Set Goals'
+        summary = 'Approve or decline feature goals that have been proposed'
+        return Link('+setgoals', text, icon='info')
 
     def table(self):
-        text = 'Assignments Table'
-        return Link('+specstable', text, icon='info')
+        text = 'Assignments'
+        summary = 'Show the assignee, drafter and approver of these specs'
+        return Link('+assignments', text, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
-        return Link('+specplan', text, icon='info')
+        summary = 'Show the sequence in which specs should be implemented'
+        return Link('+roadmap', text, icon='info')
 
 
 class DistroReleaseView(BuildRecordsView):
