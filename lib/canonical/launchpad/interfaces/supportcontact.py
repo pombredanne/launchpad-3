@@ -10,7 +10,6 @@ __all__ = [
 
 
 from zope.interface import Interface, Attribute
-
 from zope.schema import Choice
 
 from canonical.launchpad import _

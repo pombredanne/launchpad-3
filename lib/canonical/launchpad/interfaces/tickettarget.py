@@ -49,10 +49,18 @@ class ITicketTarget(IHasTickets):
         """
 
     def addSupportContact(person):
-        """Adds a new support contact."""
+        """Adds a new support contact.
+
+        Returns True if the person was added, False if he already was a
+        support contact.
+        """
 
     def removeSupportContact(person):
-        """Removes a support contact."""
+        """Removes a support contact.
+
+        Returns True if the person was removed, False if he isn't a
+        support contact.
+        """
 
     support_contacts = List(
         title=_("Support Contacts"),

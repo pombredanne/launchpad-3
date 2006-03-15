@@ -69,6 +69,11 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
     # Fall-back template
     generated_form = ViewPageTemplateFile('../templates/launchpad-generalform.pt')
+    process_status = None
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self.errors = {}
 
     # methods that should be overridden
     def process(self, *args, **kw):
@@ -103,9 +108,6 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
     # internal methods, should not be overridden
     def initialize(self):
-        self.errors = {}
-        self.process_status = None
-
         self._setUpWidgets()
 
     def _setUpWidgets(self, context=None):

@@ -144,7 +144,9 @@ class ManageSupportContactView(GeneralFormView):
             SupportContactTeamsWidget)
         GeneralFormView._setUpWidgets(self, context=self.user)
 
-    def process(self, want_to_be_support_contact, support_contact_teams):
+    def process(self, want_to_be_support_contact, support_contact_teams=None):
+        if support_contact_teams is None:
+            support_contact_teams = []
         response = self.request.response
         if want_to_be_support_contact:
             if self.context.addSupportContact(self.user):
