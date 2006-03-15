@@ -144,9 +144,9 @@ def get_handler(format, obj):
 def get_rosetta_experts_email():
     """Return Rosetta Experts' email address."""
 
-    rosetta_expert = getUtility(ILaunchpadCelebritie).rosetta_expert
+    rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
 
-    return rosetta_expert.preferredemail.email
+    return helpers.contactEmailAddresses(rosetta_expert)
 
 
 class ExportResult:
@@ -161,36 +161,38 @@ class ExportResult:
 
     def __init__(self, name):
         self.name = name
-        self.url = url
+        self.url = None
         self.failures = []
         self.successes = {}
 
     def _getWarningsLines(self):
-        """Return a list of lines with logging information.
+        """Return a string with logging information about warnings.
 
         That logging information contains warning messages got while doing the
         export.
         """
-        warnings = []
         # Look for any export that is success but got any warning that we
         # should show to the user.
-        for success_key, success_value in self.successes.iteritems():
-            if success_value:
-                warnings.append('%s: %s' % (success_key, success_value))
+        warnings = '\n'.join([
+            '%s: %s' % (success_key, success_value)
+            for success_key, success_value in self.successes.iteritems()
+            if success_value
+            ])
 
         # Prepare the list of warnings to give some input about it to the
         # users.
         if warnings:
-            warnings_lines = [
+            warning_text = '\n'.join([
                 '',
                 'The following files where exported but had warnings:',
-                ''
-                ] + warnings
+                '',
+                warnings
+                ])
         else:
             # There are no warnings.
-            warnings_lines = []
+            warning_text = ''
 
-        return warnings_lines
+        return warning_text
 
     def _notify_failure(self, person):
         """Send an email notification about the export failing."""
@@ -202,7 +204,8 @@ class ExportResult:
             'requested. The Rosetta team has been notified of this',
             'problem. Please reply to this email for further assistance.')
 
-        recipients = [person.preferredemail.email, ERROR_ADDRESS]
+        recipients = list(helpers.contactEmailAddresses(person))
+        recipients.append(ERROR_ADDRESS)
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
@@ -215,7 +218,7 @@ class ExportResult:
         """Send an email notification about the export working partially."""
         # Get a list of files that failed.
         failure_list = '\n'.join([
-            ' * ' + failure
+            ' * %s' % failure
             for failure in self.failures])
 
         body = join_lines(
@@ -241,11 +244,12 @@ class ExportResult:
         total_count = success_count + len(self.failures)
         body %= (total_count, success_count, self.url)
 
-        recipients = [person.preferredemail.email, ERROR_ADDRESS]
+        recipients = list(helpers.contactEmailAddresses(person))
+        recipients.append(ERROR_ADDRESS)
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
-                from_addr=get_rosetta_experts_email,
+                from_addr=get_rosetta_experts_email(),
                 to_addrs=[recipient],
                 subject='Rosetta PO export request: %s' % self.name,
                 body=body)
@@ -262,12 +266,11 @@ class ExportResult:
             '',
             '    %s' % self.url)
 
-        for recipient in [str(recipient) for recipient in recipients]:
-            simple_sendmail(
-                from_addr=get_rosetta_experts_email,
-                to_addrs=[person.preferredemail.email],
-                subject='Rosetta PO export request: %s' % self.name,
-                body=body)
+        simple_sendmail(
+            from_addr=get_rosetta_experts_email(),
+            to_addrs=helpers.contactEmailAddresses(person),
+            subject='Rosetta PO export request: %s' % self.name,
+            body=body)
 
     def notify(self, person):
         """Send a notification email to the given person about the export.
@@ -328,7 +331,7 @@ class ExportResult:
         # Need to flush our handler buffers to be sure to get all warning
         # text.
         self.warnings_handler.flush()
-        self.success[name] = self.warnings_stream.getvalue()
+        self.successes[name] = self.warnings_stream.getvalue()
 
 def process_single_object_request(obj, format):
     """Process a request for a single object.
@@ -396,7 +399,7 @@ def process_multi_object_request(objects, format):
     size = filehandle.tell()
     filehandle.seek(0)
 
-    if successes:
+    if result.successes:
         alias_set = getUtility(ILibraryFileAliasSet)
         alias = alias_set.create(
             name='rosetta-%s.tar.gz' % name,
