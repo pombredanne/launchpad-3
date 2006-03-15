@@ -38,7 +38,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(len(batch), 3)
         batch = _Batch(self.getData(), 9, 3)
         self.assertEqual(len(batch), 1)
-        batch = Batch(self.getData(), 99, 3)
+        batch = _Batch(self.getData(), 99, 3)
         self.assertEqual(len(batch), 0)
 
     def test__getitem__(self):
@@ -58,7 +58,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(list(iter(batch)), ['one', 'two', 'three'])
         batch = _Batch(self.getData(), 9, 3)
         self.assertEqual(list(iter(batch)), ['ten'])
-        batch = Batch(self.getData(), 99, 3)
+        batch = _Batch(self.getData(), 99, 3)
         self.assertEqual(list(iter(batch)), [])
 
     def test__contains__(self):
@@ -79,7 +79,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(list(iter(nextnext)), ['seven', 'eight', 'nine'])
         next = _Batch(self.getData(), 9, 3).nextBatch()
         self.assertEqual(next, None)
-        next = Batch(self.getData(), 99, 3).nextBatch()
+        next = _Batch(self.getData(), 99, 3).nextBatch()
         self.assertEqual(next, None)
 
     def test_prevBatch(self):
@@ -89,7 +89,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(list(iter(prevprev)), ['four', 'five', 'six'])
         prev = _Batch(self.getData(), 0, 3).prevBatch()
         self.assertEqual(prev, None)
-        last = Batch(self.getData(), 99, 3).prevBatch()
+        last = _Batch(self.getData(), 99, 3).prevBatch()
         self.assertEqual(list(iter(last)), ['ten'])
 
     def test_batchRoundTrip(self):
@@ -110,7 +110,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(batch.total(), 10)
         batch = _Batch(self.getData(), 6, 3)
         self.assertEqual(batch.total(), 10)
-        batch = Batch(self.getData(), 99, 3)
+        batch = _Batch(self.getData(), 99, 3)
         self.assertEqual(batch.total(), 10)
     
     def test_startNumber(self):
@@ -118,7 +118,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(batch.startNumber(), 1)
         batch = _Batch(self.getData(), 9, 3)
         self.assertEqual(batch.startNumber(), 10)
-        batch = Batch(self.getData(), 99, 3)
+        batch = _Batch(self.getData(), 99, 3)
         self.assertEqual(batch.startNumber(), 100)
 
     def test_endNumber(self):
@@ -126,7 +126,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(batch.endNumber(), 3)
         batch = _Batch(self.getData(), 9, 3)
         self.assertEqual(batch.endNumber(), 10)
-        batch = Batch(self.getData(), 99, 3)
+        batch = _Batch(self.getData(), 99, 3)
         self.assertEqual(batch.endNumber(), 100)
         
 
