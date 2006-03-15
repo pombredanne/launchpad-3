@@ -283,24 +283,7 @@ we are running the entire set of tests by 'make check'. If it's not
 available (single test running) setup one only for local use.
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> from urllib import urlopen
-  >>> from canonical.config import config
-  >>> host = config.librarian.download_host
-  >>> port = config.librarian.download_port
-
-  Set a socket timeout, so that this test cannot hang indefinitely.
-
-  >>> import socket
-  >>> socket.setdefaulttimeout(1)
-
-
-  >>> LOCAL_LIBRARIAN = False
-
-  >>> try:
-  ...     urlopen('http://%s:%d/' % (host, port))
-  ... except IOError:
-  ...     LibrarianTestSetup().setUp()
-  ...     LOCAL_LIBRARIAN = True
+  >>> LibrarianTestSetup().setUp()
 
 Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
@@ -615,8 +598,6 @@ Request a Mock slave build process:
 See OkSlave() class implementation for further details
 
 
-Remove locally installed Librarian server if necessary
+Remove locally started Librarian server
 
-  >>> if LOCAL_LIBRARIAN:
-  ...     LibrarianTestSetup().tearDown()
-  ...     socket.setdefaulttimeout(None)
+  >>> LibrarianTestSetup().tearDown()

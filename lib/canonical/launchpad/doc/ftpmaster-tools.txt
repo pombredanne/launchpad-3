@@ -9,24 +9,7 @@ open a new connection, let's invoke it in dry-run mode.
   >>> import sys
   >>> from canonical.config import config
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> from urllib import urlopen
-
-  >>> host = config.librarian.download_host
-  >>> port = config.librarian.download_port
-
-  Set a socket timeout, so that this test cannot hang indefinitely.
-
-  >>> import socket
-  >>> socket.setdefaulttimeout(1)
-
-
-  >>> LOCAL_LIBRARIAN = False
-
-  >>> try:
-  ...     x = urlopen('http://%s:%d/' % (host, port))
-  ... except IOError:
-  ...     LibrarianTestSetup().setUp()
-  ...     LOCAL_LIBRARIAN = True
+  >>> LibrarianTestSetup().setUp()
 
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
@@ -201,9 +184,7 @@ FETCH CHANGES
   >>> os.remove('pmount_0.1-1_i386.changes')
 
 
-  >>> if LOCAL_LIBRARIAN:
-  ...     LibrarianTestSetup().tearDown()
-  ...     socket.setdefaulttimeout(None)
+  >>> LibrarianTestSetup().tearDown()
 
   >>> import shutil
   >>> shutil.rmtree('/var/tmp/fatsam.test/00')

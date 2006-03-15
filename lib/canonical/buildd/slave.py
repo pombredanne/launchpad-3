@@ -183,7 +183,7 @@ class BuildStatus:
     PACKAGEFAIL = "BuildStatus.PACKAGEFAIL"
     CHROOTFAIL = "BuildStatus.CHROOTFAIL"
     BUILDERFAIL = "BuildStatus.BUILDERFAIL"
-    GIVENBACK = "BuildStatus.GIVENBACK"
+
 
 class BuildDSlave(object):
     """Build Daemon slave. Implementation of most needed functions

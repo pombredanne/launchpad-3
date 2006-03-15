@@ -217,8 +217,8 @@ class QueueAction:
 
     def printItem(self, queue_item):
         """Print out a one line summary of the queue item provided."""
-        sourceful = len(queue_item.sources) > 0
-        binaryful = len(queue_item.builds) > 0
+        sourceful = queue_item.sources.count() > 0
+        binaryful = queue_item.builds.count() > 0
         sourcever = queue_item.sourceversion
         spn = queue_item.sourcepackagename.name
         age = DurationFormatterAPI(queue_item.age).approximateduration()
