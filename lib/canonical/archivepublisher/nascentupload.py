@@ -599,6 +599,11 @@ class NascentUpload:
             if key is None:
                 raise UploadError("Signing key not found within launchpad.")
 
+            if key.active == False:
+                raise UploadError(
+                    "File %s is signed with a deactivated key %s"
+                    % (filename, key.keyid))
+
             return key.owner, key, sig
 
         except GPGVerificationError, e:
