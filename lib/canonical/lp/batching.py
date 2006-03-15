@@ -5,7 +5,7 @@ __metaclass__ = type
 import cgi, urllib
 
 from zope.interface import implements
-from canonical.lp.z3batching import Batch
+from canonical.lp.z3batching import _Batch
 from canonical.lp.interfaces import IBatchNavigator, ITableBatchNavigator
 
 class BatchNavigator:
@@ -20,7 +20,7 @@ class BatchNavigator:
             # We ignore invalid request variables since it probably
             # means the user finger-fumbled it
             start = 0
-        self.batch = Batch(results, size=size, start=start)
+        self.batch = _Batch(results, size=size, start=start)
         self.request = request
 
     def cleanQueryString(self, query_string):
@@ -47,7 +47,7 @@ class BatchNavigator:
         return url
 
     def getBatches(self):
-        batch = Batch(self.batch.list, size = self.batch.size)
+        batch = _Batch(self.batch.list, size = self.batch.size)
         batches = [batch]
         while 1:
             batch = batch.nextBatch()

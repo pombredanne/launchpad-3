@@ -27,7 +27,7 @@ from sqlos.interfaces import ISelectResults
 #   -- kiko, 2006-03-13
 BATCH_SIZE = 50
 
-class Batch(object):
+class _Batch(object):
     implements(IBatch)
 
     def __init__(self, results, start=0, size=None, _listlength=None):
@@ -90,13 +90,13 @@ class Batch(object):
         start = self.start + self.size
         if start >= self.listlength:
             return None
-        return Batch(self.list, start, self.size, _listlength=self.listlength)
+        return _Batch(self.list, start, self.size, _listlength=self.listlength)
 
     def prevBatch(self):
         start = self.start - self.size
         if start < 0:
             return None
-        return Batch(self.list, start, self.size, _listlength=self.listlength)
+        return _Batch(self.list, start, self.size, _listlength=self.listlength)
 
     def first(self):
         return self.list[self.start]
