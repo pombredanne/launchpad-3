@@ -75,6 +75,11 @@ def relative_symlink(src_path, dst_path):
     if os.path.isabs(src_path):
         if not os.path.isabs(dst_path):
             dst_path = os.path.abspath(dst_path)
+        # XXX: dsilvers: 20060315: Note that os.path.commonprefix does not
+        # require that the common prefix be full path elements. As a result
+        # the common prefix of /foo/bar/baz and /foo/barbaz is /foo/bar.
+        # This isn't an issue here in the pool code but it could be a
+        # problem if this code is transplanted elsewhere.
         common_prefix = os.path.commonprefix([src_path_elems, dst_path_elems])
         backward_elems = ['..'] * (len(dst_path_elems)-len(common_prefix)-1)
         forward_elems = src_path_elems[len(common_prefix):]
@@ -110,9 +115,9 @@ class _diskpool_atomicfile:
     def close(self):
         """Make the atomic move into place having closed the temp file."""
         self.fd.close()
-        # XXX: dsilvers: 20060102: for some reason this file is 0600 a lot of
-        # the time. So this chmod forces 0644 which is our friend.
         os.chmod(self.tempname, 0644)
+        # Note that this will fail if the target and the temp dirs are on
+        # different filesystems.
         os.rename(self.tempname, self.targetfilename)
 
 

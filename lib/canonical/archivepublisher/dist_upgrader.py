@@ -50,9 +50,8 @@ class DistUpgraderInvalidTarfile(DistUpgraderError):
 def extract_filename_parts(tarfile_path):
     """Extract the basename, version and arch of the supplied d-i tarfile."""
     tarfile_base = os.path.basename(tarfile_path)
-    components = tarfile_base.split('_')
-    version = components[1]
-    arch = components[2].split('.')[0]
+    name, version, arch = tarfile_base.split('_')
+    arch = arch.split('.')[0]
     return tarfile_base, version, arch
 
 
@@ -76,7 +75,7 @@ def process_dist_upgrader(archive_root, tarfile_path, distrorelease,
     unpack_dir = 'dist-upgrader-%s' % arch
 
     # Make sure the target version doesn't already exist. If it does, raise
-    # DebianInstallerAlreadyExists.
+    # DistUpgraderAlreadyExists.
     if os.path.exists(os.path.join(target, version)):
         raise DistUpgraderAlreadyExists(arch, version)
 
@@ -87,9 +86,10 @@ def process_dist_upgrader(archive_root, tarfile_path, distrorelease,
     # DistUpgraderInvalidTarfile.
     tar = None
     extracted = False
+
     try:
+        tar = tarfile.open(tarfile_path)
         try:
-            tar = tarfile.open(tarfile_path)
             for tarinfo in tar:
                 if tarinfo.name != os.path.join('current'):
                     tar.extract(tarinfo, target)
@@ -97,11 +97,11 @@ def process_dist_upgrader(archive_root, tarfile_path, distrorelease,
                     mode = stat.S_IMODE(os.stat(newpath).st_mode)
                     os.chmod(newpath, mode | stat.S_IWGRP)
                     extracted = True
-        except tarfile.TarError, e:
-            raise DistUpgraderTarError(tarfile_path, e)
-    finally:
-        if tar is not None:
+        finally:
             tar.close()
+    except tarfile.TarError, e:
+        raise DistUpgraderTarError(tarfile_path, e)
+
     if not extracted:
         raise DistUpgraderInvalidTarfile(tarfile_path, expected_dir)
 

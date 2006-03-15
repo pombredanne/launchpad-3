@@ -101,7 +101,8 @@ urgency_map = {
     }
 
 # Map priorities to their dbschema valuesa
-# XXX cprov 20060119: Accepting priority absence ('-') as EXTRA
+# We treat a priority of '-' as EXTRA since some packages in some distros
+# are broken and we can't fix the world.
 priority_map = {
     "required": PackagePublishingPriority.REQUIRED,
     "important": PackagePublishingPriority.IMPORTANT,
@@ -138,11 +139,9 @@ class FileNotFound(UploadError):
 
 def split_section(section):
     """Split the component out of the section."""
-    # XXX: dsilvers: 20051013: This may not be enough, check back later.
-    # bug 3137
     if "/" not in section:
         return "main", section
-    return section.split("/")
+    return section.split("/", 1)
 
 
 class NascentUploadedFile:
@@ -341,12 +340,12 @@ class NascentUpload:
         changes = parse_tagfile(
             self.changes_filename,
             allow_unsigned = self.policy.unsigned_changes_ok)
-        format = float(changes["format"])
-        # XXX cprov 20051207: adopting a default format for missing format.
-        # It assumes the normally accepted version, '1.5'
-        if not format:
+
+        try:
+            format = float(changes["format"])
+        except KeyError:
+            # If format is missing, pretend it's 1.5
             format = 1.5
-            return changes
 
         if format < 1.5 or format > 2.0:
             raise UploadError(
@@ -420,16 +419,12 @@ class NascentUpload:
         files_archindep = False
         files_archdep = False
 
-        # XXX:We now understand better the reality of these conditions.
-        # The Architecture line specifies the package-wide
-        # architectures, not the speciifc upload. This means it is valid
-        # to receive a package upload that has:
-        #   Architecture: powerpc all
-        # and yet the files listing contains only _powerpc.deb files.
-        # Because of this, think_* is used only as a screen; if the
-        # files_X is true, then think_X must be true as well, but none
-        # of the reverses are necessarily true.
-
+        # An upload may list 'powerpc' and 'all' in its architecture line
+        # and yet only upload 'powerpc' because of being built -B by a buildd.
+        # As a result, we use the think_* variables as a screen. If the
+        # files_X value is true then think_X must also be true. However nothing
+        # useful can be said of the other cases.
+ 
         for uploaded_file in self.files:
             if uploaded_file.custom or uploaded_file.section == "byhand":
                 files_binaryful = True
@@ -736,12 +731,12 @@ class NascentUpload:
                 'should follow "<pkg>_<version>_<arch>.changes" format'
                 % self.changes_basename)
         self.changes_filename_archtag = m.group(3)
-        # Wahey, the changes are parsed all okay :-)
-
-        # XXX cprov 20060308: force the cachedproperty to set policy specifc
-        # attributes now. Otherwise they won't get set properly for custom
-        # uploads. Life sucks !!!
-        self.distrorelease
+        # If this upload is purely a custom upload then we never interrogate
+        # the distrorelease and so the policy never gets initialised. Thus
+        # here we ask the policy to initialise itself given our changes file.
+        # This has the side-effect of checking that the distrorelease is valid
+        # and causing a reject nice and early if it isn't.
+        self.policy.setDistroReleaseAndPocket(changes["distribution"])
 
     @cachedproperty
     def distro(self):
@@ -1355,8 +1350,7 @@ class NascentUpload:
                     os.path.join(tmpdir,dsc_file.filename)]
             dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE)
-            garbage = dpkg_source.stderr.read()
-            output = dpkg_source.stdout.read()
+            output, garbage = dpkg_source.communicate()
             result = dpkg_source.wait()
             if result != 0:
                 self.reject("dpkg-source failed for %s [return: %s]" % (
@@ -1374,7 +1368,7 @@ class NascentUpload:
         try:
             shutil.rmtree(tmpdir)
         except OSError, e:
-            # XXX: untested code, errno was missing
+            # XXX: dsilvers: 20060315: We currently lack a test for this.
             if errno.errorcode[e.errno] != 'EACCES':
                 raise UploadError("%s: couldn't remove tmp dir %s" % (
                     dsc_file.filename, tmpdir))
@@ -1978,11 +1972,10 @@ class NascentUpload:
             queue_root.addSource(self.policy.sourcepackagerelease)
         # If we're binaryful, add the build
         if self.binaryful and not self.single_custom:
-            # XXX cprov 20060224: don't rely on policy pockets for binary
-            # uploads, they always are traget to distrorelease 'autobuild',
-            # which means pocket RELEASE. It target any non-RELEASE pocket
-            # build to RELEASE pocket. The right pocket is that stored in
-            # build record anyway.
+            # We cannot rely on the distrorelease coming in for a binary
+            # release because it is always set to 'autobuild' by the builder.
+            # We instead have to take it from the policy which gets instructed
+            # by the buildd master during the upload.
             queue_root.pocket = self.policy.build.pocket
             queue_root.addBuild(self.policy.build)
         # Finally, add any custom files.
