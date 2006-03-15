@@ -13,11 +13,6 @@
             interface="canonical.launchpad.interfaces.IPOFile"
             set_attributes="header pluralforms path"
             />
-        <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IRawFileData"
-            set_attributes="rawimportstatus"
-            />
     </content>
 
     <browser:url
