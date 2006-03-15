@@ -245,6 +245,12 @@ def export_rows(rows, pofile_output):
     msgset = None
 
     for row in rows:
+        # Assert added due we allowed this situation on the past and it's
+        # broken.
+        assert ((row.poheader is not None and row.pofile is not None) or
+                row.poheader is None), (
+            'row.pofile cannot be None, we have a poheader!')
+
         new_pofile = False
         new_msgset = False
 

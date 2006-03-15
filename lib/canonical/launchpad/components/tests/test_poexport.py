@@ -294,7 +294,8 @@ class BrokenEncodingExportTest(ExportTest):
     def runTest(self):
         prototype1 = TestRow(language='es', potsequence=1, posequence=1,
             msgidpluralform=0, translationpluralform=0, msgid="a",
-            translation=u'\u00e1', potemplate=TestPOTemplate())
+            translation=u'\u00e1', potemplate=TestPOTemplate(),
+            pofile=TestPOFile())
 
         rows = [
             prototype1.clone(potemplate=TestPOTemplate(),
@@ -303,7 +304,10 @@ class BrokenEncodingExportTest(ExportTest):
 
         expected_pofiles = [[
             'msgid ""',
-            'msgstr "Content-Type: text/plain; charset=UTF-8\\n"',
+            'msgstr ""',
+            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
+            '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
             '',
             'msgid "a"',
             'msgstr "\xc3\xa1"',
