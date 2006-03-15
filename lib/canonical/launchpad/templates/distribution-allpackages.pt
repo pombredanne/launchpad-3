@@ -12,7 +12,8 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="batch view/batchnav/currentBatch">
 
   <h1>All source packages</h1>
 
@@ -22,11 +23,11 @@
   </p>
 
   <tal:navigation
-    replace="structure view/batchnav/@@+navigation-links"
-    tal:condition="view/batch"/>
+    tal:condition="batch"
+    replace="structure view/batchnav/@@+navigation-links" />
 
   <p>
-  <tal:per_item repeat="result view/batch">
+  <tal:per_item repeat="result batch">
     <tal:pkg define="package result/distributionsourcepackage">
       <a tal:content="package/name"
          tal:attributes="href package/fmt:url">apache2</a>
@@ -35,8 +36,8 @@
   </p>
 
   <tal:navigation
-    replace="structure view/batchnav/@@+navigation-links"
-    tal:condition="view/batch"/>
+    tal:condition="batch"
+    replace="structure view/batchnav/@@+navigation-links" />
 
 </div>
 </body>
