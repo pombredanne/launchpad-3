@@ -59,12 +59,6 @@
             </p>
           </div>
 
-          <p class="documentDescription"
-             tal:condition="context/bug/summary"
-             tal:content="context/bug/summary">
-             Bug summary goes here if it exists.
-          </p>
-
           <div class="field">
             <table>
             <tal:distrotask condition="python:context.distribution or

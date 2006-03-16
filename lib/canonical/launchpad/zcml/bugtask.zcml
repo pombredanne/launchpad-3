@@ -168,7 +168,7 @@
         label="Edit bug description"
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
-        fields="title description summary name"
+        fields="title description name"
         lp:url="malone/bugs/$Bug.id/+edit">
         <browser:widget
            field="title"
