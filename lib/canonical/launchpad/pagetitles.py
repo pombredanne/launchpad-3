@@ -131,6 +131,8 @@ def bug_attachment_edit(context, view):
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
+bug_edit = ContextTitle('%s')
+
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):

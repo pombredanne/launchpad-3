@@ -140,12 +140,13 @@ class BugContextMenu(ContextMenu):
         return Link('+backport', text, icon='bug', enabled=enabled)
 
 
-class BugView(LaunchpadView):
+class BugView:
     """View class for presenting information about an IBug."""
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
         self.context = IBug(context)
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
 
     def currentBugTask(self):
         """Return the current IBugTask.
