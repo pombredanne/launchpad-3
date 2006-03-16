@@ -20,8 +20,7 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
-from canonical.database.sqlbase import (
-    SQLBase, sqlvalues, quote_like, convert_to_sql_id)
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
@@ -355,29 +354,28 @@ class BugTaskSet:
         # * an sqlobject
         # * a dbschema item
         # * None (meaning no filter criteria specified for that arg_name)
+        #
+        # XXX: is this a good candidate for becoming infrastructure in
+        # canonical.database.sqlbase?
+        #   -- kiko, 2006-03-16
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
+            clause = "BugTask.%s " % arg_name
             if zope_isinstance(arg_value, any):
                 # When an any() clause is provided, the argument value
                 # is a list of acceptable filter values.
                 if not arg_value.query_values:
                     continue
-                # There could be SQLObjects inside the any() clause; we
-                # need to sanitize each of the arguments.
-                real_values = [convert_to_sql_id(v)
-                               for v in arg_value.query_values]
-                arg_values = sqlvalues(*real_values)
-                where_arg = ", ".join(arg_values)
-                clause = "BugTask.%s IN (%s)" % (arg_name, where_arg)
-            elif arg_value is NULL:
+                where_arg = ",".join(sqlvalues(*arg_value.query_values))
+                clause += "IN (%s)" % where_arg
+            elif arg_value is not NULL:
+                clause += "= %s" % sqlvalues(arg_value)
+            else:
                 # The argument value indicates we should match
                 # only NULL values for the column named by
                 # arg_name.
-                clause = "BugTask.%s IS NULL" % arg_name
-            else:
-                clause = "BugTask.%s = %d" % (arg_name,
-                                              convert_to_sql_id(arg_value))
+                clause += "IS NULL"
             extra_clauses.append(clause)
 
         if params.omit_dupes:
