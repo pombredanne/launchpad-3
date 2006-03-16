@@ -6,7 +6,7 @@
 <body>
 
 <metal:main_template fill-slot="titleheader">
-   <tal:display_name replace="view/display_name" />
+   <tal:display_name replace="context/displayname" />
 </metal:main_template>
 
 <metal:leftportlets fill-slot="portlets_one">

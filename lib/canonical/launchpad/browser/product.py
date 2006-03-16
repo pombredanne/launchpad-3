@@ -324,9 +324,6 @@ class ProductView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(request)
         self.status_message = None
-        self.branches = [
-            getView(branch, '+index', request)
-            for branch in self.context.branches]
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
