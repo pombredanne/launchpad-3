@@ -47,7 +47,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBranch"
-        facet="code"
+        facet="overview"
         permission="zope.Public"
         class="canonical.launchpad.browser.BranchView" >
         <browser:page
@@ -71,7 +71,7 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchView"
-    facet="code"
+    facet="overview"
     permission="launchpad.AnyPerson">
     <browser:page
       name="+subscribe"
@@ -82,7 +82,7 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="code"
+    facet="overview"
     fields="url title summary home_page author whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
@@ -112,7 +112,7 @@
     name="+lifecycle"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="code"
+    facet="overview"
     label="Set branch status"
     fields="lifecycle_status whiteboard"
     permission="launchpad.Edit"
@@ -127,7 +127,7 @@
     name="+admin"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="code"
+    facet="overview"
     label="Branch administration"
     fields="owner product name whiteboard"
     permission="launchpad.Admin"

@@ -10,7 +10,7 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/batch">
+  <tal:block condition="view/batchnav/currentBatch">
   <p>
     These are all the translation resources that are waiting to be imported
     into Rosetta. <tal:loggedin condition="not:request/lp:person">
@@ -23,7 +23,7 @@
   <form name="entries_to_import" action="" method="POST">
 
     <table class="listing" width="100%">
-        <tal:loop repeat="entry view/batch">
+        <tal:loop repeat="entry view/batchnav/currentBatch">
         <tr>
           <tal:comment replace="nothing">
             XXX: CarlosPerelloMarin 20060309:

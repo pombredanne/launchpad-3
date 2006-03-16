@@ -11,7 +11,6 @@ __all__ = [
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
-    'PersonCodeMenu',
     'PersonOverviewMenu',
     'TeamOverviewMenu',
     'BaseListView',
@@ -59,7 +58,6 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy)
-from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.cachedproperty import cachedproperty
@@ -70,13 +68,15 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
+    )
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint,
+        )
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -85,7 +85,8 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView)
+    redirection, GeneralFormView,
+    )
 
 from canonical.launchpad import _
 
@@ -202,9 +203,7 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar', 'code']
-
-    links = StandardLaunchpadFacets.links + ['code']
+                   'translations', 'calendar']
 
     def overview(self):
         text = 'Overview'
@@ -254,11 +253,6 @@ class PersonFacets(StandardLaunchpadFacets):
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link('+calendar', text, summary, enabled=enabled)
-
-    def code(self):
-        text = 'Code'
-        summary = 'Branches and revisions by %s' % self.context.browsername
-        return Link('+branches', text, summary)
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -361,29 +355,6 @@ class PersonSupportMenu(ApplicationMenu):
         return Link('+subscribedtickets', text, icon='ticket')
 
 
-class PersonCodeMenu(ApplicationMenu):
-
-    usedfor = IPerson
-    facet = 'code'
-    links = ['authored', 'registered', 'subscribed', 'add']
-
-    def authored(self):
-        text = 'Branches Authored'
-        return Link('+authoredbranches', text, icon='branch')
-
-    def registered(self):
-        text = 'Branches Registered'
-        return Link('+registeredbranches', text, icon='branch')
-
-    def subscribed(self):
-        text = 'Branches Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
-
-    def add(self):
-        text = 'Add Bazaar Branch'
-        return Link('+addbranch', text, icon='add')
-
-
 class CommonMenuLinks:
 
     @enabled_with_permission('launchpad.Edit')
@@ -406,7 +377,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editwikinames', 'editircnicknames', 'editjabberids',
              'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages']
+             'codesofconduct', 'administer', 'common_packages',
+             'branches', 'authored', 'registered', 'subscribed', 'addbranch']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -488,6 +460,27 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Administer'
         return Link(target, text, icon='edit')
 
+    def branches(self):
+        text = 'Bzr Branches'
+        summary = 'Branches and revisions by %s' % self.context.browsername
+        return Link('+branches', text, summary)
+
+    def authored(self):
+        text = 'Branches Authored'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Branches Registered'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Branches Subscribed'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def addbranch(self):
+        text = 'Register Branch'
+        return Link('+addbranch', text, icon='add')
+
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -546,11 +539,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon=icon)
 
 
-##XXX: (batch_size+global) cprov 20041003
-## really crap constant definition for BatchPages
-BATCH_SIZE = 40
-
-
 class BaseListView:
 
     header = ""
@@ -559,10 +547,8 @@ class BaseListView:
         self.context = context
         self.request = request
 
-    def _getBatchNavigator(self, list):
-        start = int(self.request.get('batch_start', 0))
-        batch = Batch(list=list, start=start, size=BATCH_SIZE)
-        return BatchNavigator(batch=batch, request=self.request)
+    def _getBatchNavigator(self, results):
+        return BatchNavigator(results, self.request)
 
     def getTeamsList(self):
         results = getUtility(IPersonSet).getAllTeams()
@@ -619,11 +605,11 @@ class FOAFSearchView:
 
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
-        searchfor = self.request.get("searchfor")
 
         if not name:
             return None
 
+        searchfor = self.request.get("searchfor")
         if searchfor == "peopleonly":
             results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
@@ -631,9 +617,7 @@ class FOAFSearchView:
         else:
             results = getUtility(IPersonSet).find(name)
 
-        start = int(self.request.get('batch_start', 0))
-        batch = Batch(list=results, start=start, size=BATCH_SIZE)
-        return BatchNavigator(batch=batch, request=self.request)
+        return BatchNavigator(results, self.request)
 
 
 class PersonRdfView:
@@ -744,11 +728,10 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return distribution.getSourcePackage(
             self.sourcepackagename_widget.getInputValue())
 
-    def search(self, searchtext=None, batch_start=None):
+    def search(self, searchtext=None):
         distrosourcepackage = self.current_package
         return BugTaskSearchListingView.search(
-            self, searchtext=searchtext, batch_start=batch_start,
-            context=distrosourcepackage)
+            self, searchtext=searchtext, context=distrosourcepackage)
 
     def getPackageBugCounts(self):
         """Return a list of dicts used for rendering the package bug counts."""

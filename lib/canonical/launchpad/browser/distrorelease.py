@@ -224,10 +224,11 @@ class DistroReleaseView(BuildRecordsView):
         return templateview_list
 
     def distroreleaselanguages(self):
-        """Yields a DistroReleaseLanguage object for each language this
-        distro has been translated into, and for each of the user's
-        preferred languages. Where the release has no DistroReleaseLanguage
-        for that language, we use a DummyDistroReleaseLanguage.
+        """Produces a list containing a DistroReleaseLanguage object for
+        each language this distro has been translated into, and for each
+        of the user's preferred languages. Where the release has no
+        DistroReleaseLanguage for that language, we use a
+        DummyDistroReleaseLanguage.
         """
 
         # find the existing DRLanguages
@@ -244,9 +245,8 @@ class DistroReleaseView(BuildRecordsView):
             if lang not in existing_languages:
                 drl = drlangset.getDummy(self.context, lang)
                 drlangs.append(drl)
-        drlangs.sort(key=lambda a: a.language.englishname)
 
-        return drlangs
+        return sorted(drlangs, key=lambda a: a.language.englishname)
 
     def unlinked_translatables(self):
         """Return a list of sourcepackage that don't have a link to a product.

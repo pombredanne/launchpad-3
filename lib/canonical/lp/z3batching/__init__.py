@@ -13,23 +13,28 @@
 # Some parts Copyright 2005 Canonical Ltd.
 #
 ##############################################################################
-"""Batching Support
 
-$Id$
 """
+Zope-derived Batching Support
+"""
+
 from zope.interface import implements
 from interfaces import IBatch
 
 from sqlos.interfaces import ISelectResults
 
-class Batch(object):
+# XXX: replace this with a configuration option
+#   -- kiko, 2006-03-13
+BATCH_SIZE = 50
+
+class _Batch(object):
     implements(IBatch)
 
-    def __init__(self, list, start=0, size=20, _listlength=None):
-        if list is None:
-            list = []
-        self.list = list
-        self.start = start
+    def __init__(self, results, start=0, size=None, _listlength=None):
+        if results is None:
+            results = []
+        self.list = results
+
         # We only check the length of the list once, because if the
         # list is a SelectResults from SQLObject, list.count() hits
         # the database each time.  Ideally SQLObject would be smart
@@ -37,22 +42,33 @@ class Batch(object):
         # route.
         #   -- Andrew Bennetts, 2005-06-22
         if _listlength is None:
-            if ISelectResults.providedBy(list):
-                listlength = list.count()
+            if ISelectResults.providedBy(results):
+                listlength = results.count()
             else:
-                listlength = len(list)
+                listlength = len(results)
         else:
             listlength = _listlength
         self.listlength = listlength
-        if listlength == 0:
-            self.start = -1
-        elif start >= listlength:
-            raise IndexError, 'start index key out of range'
+
+        if size is None:
+            size = BATCH_SIZE
         self.size = size
-        self.trueSize = size
-        if start+size >= listlength:
+
+        if start >= listlength:
+            self.trueSize = 0
+        elif start+size >= listlength:
             self.trueSize = listlength-start
-        self.end = start+self.trueSize-1
+        else:
+            self.trueSize = size
+
+        if listlength == 0:
+            start = -1
+
+        self.start = start
+        if self.trueSize == 0:
+            self.end = start
+        else:
+            self.end = start+self.trueSize-1
 
     def __len__(self):
         if self.trueSize < 0:
@@ -75,13 +91,16 @@ class Batch(object):
         start = self.start + self.size
         if start >= self.listlength:
             return None
-        return Batch(self.list, start, self.size, _listlength=self.listlength)
-    
+        return _Batch(self.list, start, self.size, _listlength=self.listlength)
+
     def prevBatch(self):
-        start = self.start - self.size
+        if self.start > self.listlength:
+            start = self.listlength - (self.listlength % self.size)
+        else:
+            start = self.start - self.size
         if start < 0:
             return None
-        return Batch(self.list, start, self.size, _listlength=self.listlength)
+        return _Batch(self.list, start, self.size, _listlength=self.listlength)
 
     def first(self):
         return self.list[self.start]
@@ -97,3 +116,4 @@ class Batch(object):
 
     def endNumber(self):
         return self.end+1
+

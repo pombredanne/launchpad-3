@@ -77,23 +77,23 @@
     <!-- sabdfl 24/10/2005 this is the old searching, largely disabled in
          favour of the new FTQ based approach, but i've left this stuff here
          in case we want to revert -->
-			 
+
   <table width="100%" 
-         tal:define="currentBatch python:list(bn.currentBatch())"> 
+         tal:define="currentBatch bn/currentBatch"> 
     <tr>
       <th tal:condition="currentBatch">
          Packages found
       </th>
-      <th tal:condition="not:currentBatch">
+      <th tal:condition="not: currentBatch">
          <i>No Packages found</i>
       </th>
     </tr>
-    <tr tal:repeat="release currentBatch">      
+    <tr tal:repeat="release currentBatch">
       <tal:dummy tal:define="package release">
       <td><a tal:content="package/name"
              tal:attributes="href package/name">PACKAGENAME
           </a>:
-	  <span tal:replace="package/summary">SHORTDESC</span>
+        <span tal:replace="package/summary">SHORTDESC</span>
       </td>
       </tal:dummy>
     </tr>    
@@ -104,14 +104,14 @@
       <table>
         <tr>
           <th tal:condition="prev_url">
-            <a tal:attributes="href prev_url"><b><< Prev</b></a>
+            <a tal:attributes="href prev_url"><b>&lt;&lt; Prev</b></a>
           </th>
           <th tal:repeat="page_link bn/batchPageURLs">
             <a tal:attributes="href python:page_link.values()[0]"
                tal:content="python:page_link.keys()[0]"></a>
           </th>
           <th tal:condition="next_url" >
-            <a tal:attributes="href next_url"><b>Next >></b></a>
+            <a tal:attributes="href next_url"><b>Next &gt;&gt;</b></a>
           </th>
         </tr>
       </table>
