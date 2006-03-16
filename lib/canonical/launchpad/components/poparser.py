@@ -593,7 +593,7 @@ class POParser(object):
         if not self.header:
             return
 
-        encode, decode, reader, writer = codecs.lookup(self.header.charset)
+        decode = codecs.getdecoder(self.header.charset)
         # decode as many characters as we can:
         try:
             newchars, length = decode(self._pending_chars, 'strict')
@@ -688,19 +688,67 @@ class POParser(object):
         # convert buffered input to the encoding specified in the PO header
         self._convert_chars()
 
-    def to_unicode(self, text):
-        'Convert text to unicode'
-        if self.header: # header converts itself to unicode on updateDict()
-            try:
-                return unicode(text, self.header.charset)
-            except UnicodeError:
-                logging.warning(POSyntaxWarning(
-                    self._lineno,
-                    'string is not in declared charset %r' % self.header.charset
-                    ))
-                return unicode(text, self.header.charset, 'replace')
+    def _parse_quoted_string(self, string):
+        """Parse a quoted string, interpreting escape sequences.
+
+          >>> parser = POParser()
+          >>> parser._parse_quoted_string(u'\"abc\"')
+          u'abc'
+          >>> parser._parse_quoted_string(u'\"abc\\ndef\"')
+          u'abc\ndef'
+          >>> parser._parse_quoted_string(u'abc')
+          Traceback (most recent call last):
+            ...
+          POSyntaxError: string is not quoted
+          >>> parser._parse_quoted_string(u'\"ab')
+          Traceback (most recent call last):
+            ...
+          POSyntaxError: string not terminated
+          >>> parser._parse_quoted_string(u'\"ab\"x')
+          Traceback (most recent call last):
+            ...
+          POSyntaxError: extra content found after string
+        """
+        if string[0] != '"':
+            raise POSyntaxError(self._lineno, "string is not quoted")
+        output = ''
+        string = string[1:]
+        escape_map = {
+            'a': '\a',
+            'b': '\b',
+            'c': '\c',
+            'f': '\f',
+            'n': '\n',
+            'r': '\r',
+            't': '\t',
+            'v': '\v',
+            '"': '"',
+            '\'': '\'',
+            '\\': '\\',
+            }
+        while string:
+            if string[0] == '\\':
+                if string[1] in escape_map:
+                    output += escape_map[string[1]]
+                    string = string[2:]
+                else:
+                    raise POSyntaxError(self._lineno,
+                                        "unknown escape sequence %s"
+                                        % string[:2])
+            elif string[0] == '"':
+                string = string[1:]
+                break
+            else:
+                output += string[0]
+                string = string[1:]
         else:
-            return text
+            raise POSyntaxError(self._lineno,
+                                "string not terminated")
+        # if there is any non-string data afterwards, raise an exception
+        if string and not string.isspace():
+            raise POSyntaxError(self._lineno,
+                                "extra content found after string")
+        return output
 
     def parse_line(self, l):
         self._lineno += 1
@@ -735,7 +783,6 @@ class POParser(object):
             self._partial_transl['obsolete'] = True
 
         if l[0] == '#':
-            ########l = self.to_unicode(l)
             # Record flags
             if l[:2] == '#,':
                 new_flags = [flag.strip() for flag in l[2:].split(',')]
@@ -795,18 +842,7 @@ class POParser(object):
                 'some implementations of msgfmt'))
             return
 
-        # Parse a str line
-        if not (l[0] == l[-1] == '"'):
-            raise POSyntaxError(self._lineno)
-        # XXX: not sure if all Python escapes are OK in a PO file...
-        # better be tolerant than strict when reading, since
-        # we're already quite strict when writing
-        try:
-            l = l[1:-1].decode('unicode_escape')
-        except ValueError:
-            raise POSyntaxError(self._lineno)
-
-        ########l = self.to_unicode(l)
+        l = self._parse_quoted_string(l)
 
         if self._section == 'msgid':
             self._partial_transl['msgid'] += l
