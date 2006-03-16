@@ -9,6 +9,7 @@ __all__ = [
     'BranchContextMenu',
     'BranchEditView',
     'BranchPullListing',
+    'BranchUrlWidget',
     'BranchView',
     ]
 
@@ -16,6 +17,7 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
+from zope.app.form.browser import TextWidget
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
@@ -123,15 +125,14 @@ class BranchView(LaunchpadView):
 
 
 class BranchEditView(SQLObjectEditView):
+
     def __init__(self, context, request):
         # If the context URL is none, Make a copy of the field names list and
         # remove 'url' from it. This is to prevent users from converting
         # push/import branches to pull branches.
-
         if context.url is None:
             self.fieldNames = list(self.fieldNames)
             self.fieldNames.remove('url')
-
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
@@ -144,19 +145,27 @@ class BranchAddView(SQLObjectAddView):
 
     def create(self, name, owner, author, product, url, title,
                lifecycle_status, summary, home_page):
-        """Handle a request to create a new branch for this product."""        
-        branch_set = getUtility(IBranchSet)
-        branch = branch_set.new(
-            name=name, owner=owner, author=author, product=product, url=url,
-            title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page)
+        """Handle a request to create a new branch for this product."""
+        stripped_url = url.rstrip('/')
+        branch = getUtility(IBranchSet).new(
+            name=name, owner=owner, author=author, product=product,
+            url=stripped_url, title=title, summary=summary,
+            lifecycle_status=lifecycle_status, home_page=home_page)
         self._nextURL = canonical_url(branch)
 
     def nextURL(self):
         assert self._nextURL is not None, 'nextURL was called before create()'
         return self._nextURL
 
-        
+
+class BranchUrlWidget(TextWidget):
+    """Simple text line widget that ignores trailing slashes."""
+
+    def _toFieldValue(self, input):
+        value = TextWidget._toFieldValue(self, input)
+        return value.rstrip('/')
+
+
 class BranchPullListing(LaunchpadView):
     """Listing of all the branches that the Supermirror should pull soon.
 

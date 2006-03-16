@@ -3,6 +3,7 @@
 __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
+import re
 from urlparse import urljoin
 
 from zope.interface import implements
@@ -197,6 +198,47 @@ class BranchSet:
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page)
+
+    def getByUrl(self, url, default=None):
+        """See IBranchSet."""
+        # import locally to avoid circular imports
+        assert not url.endswith('/')
+        branch = Branch.selectOneBy(url=url)
+        if branch is not None:
+            return branch
+        else:
+            prefix = config.launchpad.supermirror_root
+            if url.startswith(prefix):
+                unique_name = url[len(prefix):]
+                return self.getByUniqueName(unique_name, default)
+            else:
+                return default
+
+    def getByUniqueName(self, unique_name, default=None):
+        """Find a branch by its ~owner/product/name unique name."""
+        from canonical.launchpad.database.person import Person
+        from canonical.launchpad.database.product import Product
+        match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
+        if match is None:
+            return default
+        owner_name, product_name, branch_name = match.groups()
+        owner = Person.selectOneBy(name=owner_name)
+        if owner is None:
+            return default
+        if product_name == '+junk':
+            query = ('owner=%d AND product IS NULL AND name=%s'
+                     % (owner.id, quote(branch_name)))
+        else:
+            product = Product.selectOneBy(name=product_name)
+            if product is None:
+                return default
+            query = ('owner=%d AND product=%d AND name=%s'
+                     % (owner.id, product.id, quote(branch_name)))
+        branch = Branch.selectOne(query)
+        if branch is None:
+            return default
+        else:
+            return branch
 
     def get_supermirror_pull_queue(self):
         """See IBranchSet.get_supermirror_pull_queue."""
