@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
@@ -29,7 +29,7 @@
           Specification
         </th>
         <th>
-          Definition
+          Status
         </th>
         <th>
           Delivery
@@ -37,7 +37,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr class="lesser" tal:repeat="spec view/specs">
+      <tr tal:repeat="spec view/specs">
         <td tal:attributes="class string:specpriority${spec/priority/name}"
             tal:content="spec/priority/title">High</td>
         <td><a tal:content="spec/name/fmt:shorten/35"
