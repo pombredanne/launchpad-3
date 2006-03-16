@@ -1,16 +1,19 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
 import os
 import sys
 
 import bzrlib.branch
 from bzrlib.errors import NotBranchError
 
-from genericbranch import GenericBranch
-from configuration import config
+from canonical.launchpad.scripts.supermirror.genericbranch import GenericBranch
+
 
 # XXX This needs to be folded into genericbranch. Some of the stuff,
 # such as supported_formats, won't be necessary any more. -jblack
 # 2006-05-13
 class BZR_5_6(GenericBranch):
+
     supported_formats = ["Bazaar-NG branch, format 6\n",
                          "Bazaar-NG branch, format 5\n"]
     version_file = ".bzr/branch-format"

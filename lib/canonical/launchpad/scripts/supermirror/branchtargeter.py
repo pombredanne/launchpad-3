@@ -1,3 +1,5 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
 def branchtarget(branchnum):
     """Convert a launchpad id into a directory structure.
 

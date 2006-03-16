@@ -1,11 +1,11 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
 import signal
 import os
 
-from supermirror.bzr_5_6 import BZR_5_6
-from supermirror import lockfile
-from configuration import config
-from branchtargeter import branchtarget
-from supermirror.branchfactory import BranchFactory
+from canonical.config import config
+from canonical.launchpad.scripts import lockfile
+
 
 class JobManager:
     """Schedule and manage the mirroring of branches.
@@ -19,7 +19,6 @@ class JobManager:
         self.jobswaiting = 0
         self.hemlock = False
         self.actualLock = None
-        # dictonary of queues
     
     def die(self):
         """Tell the jobmanager to quit as soon as is safe.
@@ -71,50 +70,25 @@ class JobManager:
         # for it yet. -jblack 2006-03-13
         raise NotImplementedError
 
-    def branchStreamToBranchList(self, inputstream):
-        """Convert a stream of branch URLS to list of branch objects.
-        
-        This function takes a file handle associated with a text file of
-        the form:
-            
-            LAUNCHPAD_ID URL_FOR_BRANCH
-            ...
-            LAUNCHPAD_ID URL_FOR_BRANCH
-
-        This series of urls is converted into a python list of branch
-        objects of the appropriate type.
-        """
-        branches = []
-        branchfactory = BranchFactory()
-        destination = config.branchesdest
-        for line in inputstream.readlines():
-            (branchnum, branchsrc) = line.split(" ")
-            branchsrc = branchsrc.strip()
-            path = branchtarget(branchnum)
-            branchdest = os.path.join(destination, path)
-            branches.append(branchfactory.produce(branchsrc, branchdest))
-        return branches
-
-    def lock(self):
-        self.actualLock = lockfile.LockFile(config.masterlock)
+    def lock(self, lockfilename=config.supermirror.masterlock):
+        self.actualLock = lockfile.LockFile(lockfilename)
         try:
             self.actualLock.acquire()
         except OSError, e:
-            raise LockError
+            raise LockError(lockfilename)
 
     def unlock(self):
         self.actualLock.release()
 
 
-class JobManagerError(StandardError):
-    def __str__(self):
-        return 'Unknown Jobmanager error: %s' \
-                % (self.__class__.__name__, str(e))
+class LockError(StandardError):
 
+    def __init__(self, lockfilename):
+        self.lockfilename = lockfilename
 
-class LockError(JobManagerError):
     def __str__(self):
-        return 'Jobmanager unable to get master lock'
+        return 'Jobmanager unable to get master lock: %s' % self.lockfilename
+
 
 class JobManagerController:
     """A class to control a Job Manager."""

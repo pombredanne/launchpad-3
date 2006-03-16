@@ -1,10 +1,13 @@
 import unittest
-import jobmanager 
 import signal
 
+from canonical.launchpad.scripts.supermirror import jobmanager 
+
 class TestJobManagerController(unittest.TestCase):
+
     def testExistance(self):
-        from jobmanager import JobManagerController
+        from canonical.launchpad.scripts.supermirror.jobmanager import (
+            JobManagerController)
 
 
 class TestSignaling(unittest.TestCase):
@@ -34,3 +37,6 @@ class TestSignaling(unittest.TestCase):
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
+
+if __name__ == '__main__':
+    unittest.main(defaultTest='test_suite')

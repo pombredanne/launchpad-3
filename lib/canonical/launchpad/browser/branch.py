@@ -171,6 +171,9 @@ class BranchAddView(SQLObjectAddView):
         return self._nextURL
 
         
+# XXX: This can probably be removed now that the supermirror pull script is
+# part of Launchpad and uses the database classes directly.
+# Guilherme Salgado, 2006-03-16
 class BranchPullListing(LaunchpadView):
     """Listing of all the branches that the Supermirror should pull soon.
 

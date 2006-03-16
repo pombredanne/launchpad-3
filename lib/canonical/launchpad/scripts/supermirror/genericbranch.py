@@ -1,14 +1,14 @@
-import os
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
 import urllib
 
-import lockfile
 
 # XXX The BZR_5_6 branch code needs to be folded into here - jblack
 # 2006-05-13
 class GenericBranch:
     """The prototypical supermirror representation of a branch."""
 
-    supported_formats = ["A non existant detection file\n"]
+    supported_formats = ["Generic Branch format\n"]
     version_file = ".bzr/branch-format"
     branchtype = "generic"
     lock = None
@@ -52,6 +52,7 @@ class GenericBranch:
         # XXX Untested code. needs test case first. -jblack 2005-05-13
         raise NotImplementedError
 
+        source = self.source
         if source.find(":") < 0:
             return "localhost"
 

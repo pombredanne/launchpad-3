@@ -559,6 +559,8 @@
 
     <sectiontype name="supermirror">
         <key name="dbuser" datatype="string" default="supermirror" />
+        <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
+        <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
     </sectiontype>
 
     <sectiontype name="canonical">

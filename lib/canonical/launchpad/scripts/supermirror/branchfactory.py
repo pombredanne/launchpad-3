@@ -1,5 +1,7 @@
-from genericbranch import GenericBranch
-from bzr_5_6 import BZR_5_6
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+from canonical.launchpad.scripts.supermirror.bzr_5_6 import BZR_5_6
+
 
 class BranchFactory:
 # XXX At the time this  was written it was meant to be a garbage
