@@ -5,7 +5,7 @@ from zope.app.form.browser.itemswidgets import ItemsWidgetBase, SingleDataHelper
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.schema.vocabulary import IVocabularyFactory
 
-from canonical.lp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.vocabularies import IHugeVocabulary
 
 
