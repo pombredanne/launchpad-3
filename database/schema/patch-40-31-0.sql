@@ -7,4 +7,4 @@ ALTER TABLE personalpackagearchive DROP COLUMN sources;
 ALTER TABLE personalpackagearchive DROP COLUMN release;
 ALTER TABLE personalpackagearchive DROP COLUMN release_gpg;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 30, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 31, 0);
