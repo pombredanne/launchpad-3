@@ -256,8 +256,8 @@ def get_unified_diff(old_text, new_text, text_width):
 
     """
     mailwrapper = MailWrapper(width=72)
-    old_text_wrapped = mailwrapper.format(old_text)
-    new_text_wrapped = mailwrapper.format(new_text)
+    old_text_wrapped = mailwrapper.format(old_text or '')
+    new_text_wrapped = mailwrapper.format(new_text or '')
 
     lines_of_context = len(old_text_wrapped.splitlines())
     text_diff = unified_diff(
