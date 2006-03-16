@@ -7,7 +7,7 @@ __all__ = ['Specification', 'SpecificationSet']
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin, BoolCol)
+    ForeignKey, IntCol, StringCol, SQLMultipleJoin, RelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
     ISpecification, ISpecificationSet)
@@ -31,7 +31,7 @@ from canonical.launchpad.components.specification import SpecificationDelta
 
 from canonical.lp.dbschema import (
     EnumCol, SpecificationStatus, SpecificationPriority,
-    SpecificationDelivery)
+    SpecificationDelivery, SpecificationGoalStatus)
 
 
 class Specification(SQLBase):
@@ -65,6 +65,8 @@ class Specification(SQLBase):
         foreignKey='Distribution', notNull=False, default=None)
     distrorelease = ForeignKey(dbName='distrorelease',
         foreignKey='DistroRelease', notNull=False, default=None)
+    goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
+        default=SpecificationGoalStatus.PROPOSED)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
@@ -78,19 +80,19 @@ class Specification(SQLBase):
         foreignKey='Specification', notNull=False, default=None)
 
     # useful joins
-    subscriptions = MultipleJoin('SpecificationSubscription',
+    subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = RelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription', orderBy='name')
-    feedbackrequests = MultipleJoin('SpecificationFeedback',
+    feedbackrequests = SQLMultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
-    sprint_links = MultipleJoin('SprintSpecification', orderBy='id',
+    sprint_links = SQLMultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
     sprints = RelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    buglinks = MultipleJoin('SpecificationBug', joinColumn='specification',
+    buglinks = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
     bugs = RelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
@@ -98,7 +100,7 @@ class Specification(SQLBase):
     dependencies = RelatedJoin('Specification', joinColumn='specification',
         otherColumn='dependency', orderBy='title',
         intermediateTable='SpecificationDependency')
-    spec_dependency_links = MultipleJoin('SpecificationDependency',
+    spec_dependency_links = SQLMultipleJoin('SpecificationDependency',
         joinColumn='specification', orderBy='id')
     blocked_specs = RelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
@@ -131,6 +133,13 @@ class Specification(SQLBase):
         self.distribution = distribution
         self.delivery = SpecificationDelivery.UNKNOWN
 
+    @property
+    def goal(self):
+        """See ISpecification."""
+        if self.productseries:
+            return self.productseries
+        return self.distrorelease
+
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""
         for sprintspecification in self.sprint_links:
@@ -156,10 +165,12 @@ class Specification(SQLBase):
     def is_complete(self):
         """See ISpecification."""
         return self.status in [
-            SpecificationStatus.IMPLEMENTED,
             SpecificationStatus.INFORMATIONAL,
             SpecificationStatus.OBSOLETE,
             SpecificationStatus.SUPERSEDED,
+            ] or self.delivery in [
+            SpecificationDelivery.IMPLEMENTED,
+            SpecificationDelivery.AWAITINGDEPLOYMENT
             ]
 
     @property
@@ -182,8 +193,8 @@ class Specification(SQLBase):
     def getDelta(self, old_spec, user):
         """See ISpecification."""
         changes = {}
-        for field_name in ("title", "summary", "specurl", "productseries",
-            "distrorelease", "milestone"):
+        for field_name in ("title", "summary", "whiteboard", "specurl",
+            "productseries", "distrorelease", "milestone"):
             # fields for which we simply show the new value when they
             # change
             old_val = getattr(old_spec, field_name)
@@ -191,25 +202,26 @@ class Specification(SQLBase):
             if old_val != new_val:
                 changes[field_name] = new_val
 
-        for field_name in ("name", "priority", "status", "target"):
+        for field_name in ("name", "priority", "status", "target", "approver",
+                "assignee", "drafter"):
             # fields for which we show old => new when their values change
-            old_val = getattr(self, field_name)
-            new_val = getattr(old_spec, field_name)
+            old_val = getattr(old_spec, field_name)
+            new_val = getattr(self, field_name)
             if old_val != new_val:
                 changes[field_name] = {}
                 changes[field_name]["old"] = old_val
                 changes[field_name]["new"] = new_val
 
-        old_bugs = self.bugs
-        new_bugs = old_spec.bugs
+        old_bugs = old_spec.bugs
+        new_bugs = self.bugs
         for bug in old_bugs:
             if bug not in new_bugs:
-                if not changes.has_attr('bugs_unlinked'):
+                if not changes.has_key('bugs_unlinked'):
                     changes['bugs_unlinked'] = []
                 changes['bugs_unlinked'].append(bug)
         for bug in new_bugs:
             if bug not in old_bugs:
-                if not changes.has_attr('bugs_linked'):
+                if not changes.has_key('bugs_linked'):
                     changes['bugs_linked'] = []
                 changes['bugs_linked'].append(bug)
 
@@ -346,11 +358,18 @@ class SpecificationSet:
         for row in Specification.select():
             yield row
 
-    def getByName(self, name, default=None):
+    def getByName(self, name):
         """See ISpecificationSet."""
         specification = Specification.selectOneBy(name=name)
         if specification is None:
-            return default
+            return None 
+        return specification
+
+    def getByURL(self, url):
+        """See ISpecificationSet."""
+        specification = Specification.selectOneBy(specurl=url)
+        if specification is None:
+            return None 
         return specification
 
     @property

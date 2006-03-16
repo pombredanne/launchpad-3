@@ -9,7 +9,7 @@
     <a tal:attributes="href context/distribution/fmt:url">
     <span tal:replace="context/distribution/displayname" /></a><br />
 
-    <b>Admin:</b><br />
+    <b>Drivers:</b><br />
     <img src="/@@/user.gif">
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">owner name</a><br />

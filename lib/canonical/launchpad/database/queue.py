@@ -9,7 +9,7 @@ import tempfile
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, MultipleJoin
+from sqlobject import ForeignKey, SQLMultipleJoin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -65,12 +65,12 @@ class DistroReleaseQueue(SQLBase):
 
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
-    sources = MultipleJoin('DistroReleaseQueueSource',
+    sources = SQLMultipleJoin('DistroReleaseQueueSource',
                            joinColumn='distroreleasequeue')
-    builds = MultipleJoin('DistroReleaseQueueBuild',
+    builds = SQLMultipleJoin('DistroReleaseQueueBuild',
                           joinColumn='distroreleasequeue')
     # Also the custom files associated with the build.
-    customfiles = MultipleJoin('DistroReleaseQueueCustom',
+    customfiles = SQLMultipleJoin('DistroReleaseQueueCustom',
                                joinColumn='distroreleasequeue')
 
     def realiseUpload(self, logger=None):

@@ -6,7 +6,7 @@ __all__ = ['SourcePackageName', 'SourcePackageNameSet']
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, MultipleJoin
+from sqlobject import StringCol, SQLMultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote
 
@@ -21,17 +21,9 @@ class SourcePackageName(SQLBase):
     name = StringCol(dbName='name', notNull=True, unique=True,
         alternateID=True)
 
-    potemplates = MultipleJoin('POTemplate', joinColumn='sourcepackagename')
-    packagings = MultipleJoin('Packaging', joinColumn='sourcepackagename')
-
-    @property
-    def currentpotemplates(self):
-        result = POTemplate.selectBy(
-            sourcepackagenameID=self.id,
-            iscurrent=True)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
-
+    potemplates = SQLMultipleJoin('POTemplate', joinColumn='sourcepackagename')
+    packagings = SQLMultipleJoin('Packaging', joinColumn='sourcepackagename')
+    
     def __unicode__(self):
         return self.name
 
@@ -53,17 +45,16 @@ class SourcePackageNameSet:
         except SQLObjectNotFound:
             raise NotFoundError(name)
 
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
-        for sourcepackagename in SourcePackageName.select():
-            yield sourcepackagename
-
     def get(self, sourcepackagenameid):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
         try:
             return SourcePackageName.get(sourcepackagenameid)
         except SQLObjectNotFound:
             raise NotFoundError(sourcepackagenameid)
+
+    def getAll(self):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        return SourcePackageName.select()
 
     def findByName(self, name):
         """Find sourcepackagenames by its name or part of it."""

@@ -15,7 +15,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, MultipleJoin, IntCol, SQLObjectNotFound,
+    StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
     RelatedJoin)
 
 from canonical.database.sqlbase import (
@@ -23,8 +23,9 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort)
+    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
+    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
+    SpecificationGoalStatus)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
@@ -97,10 +98,10 @@ class DistroRelease(SQLBase, BugTargetBase):
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
 
-    architectures = MultipleJoin(
+    architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
-    binary_package_caches = MultipleJoin('DistroReleasePackageCache',
+    binary_package_caches = SQLMultipleJoin('DistroReleasePackageCache',
         joinColumn='distrorelease', orderBy='name')
 
     components = RelatedJoin(
@@ -238,6 +239,16 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.distribution.getSpecification(name)
+
+    def acceptSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.distrorelease = self
+        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
+
+    def declineSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.distrorelease = self
+        spec.goalstatus = SpecificationGoalStatus.DECLINED
 
     @property
     def open_cve_bugtasks(self):

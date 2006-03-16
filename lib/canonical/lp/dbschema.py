@@ -79,6 +79,7 @@ __all__ = (
 'SourcePackageRelationships',
 'SourcePackageUrgency',
 'SpecificationDelivery',
+'SpecificationGoalStatus',
 'SpecificationPriority',
 'SpecificationSort',
 'SpecificationStatus',
@@ -1128,14 +1129,18 @@ class SourcePackageUrgency(DBSchema):
 
 
 class SpecificationDelivery(DBSchema):
-    """The estimated likelyhood that a feature is actually delivered in the
-    targeted release or series.
+    """Specification Delivery Status
+    
+    This tracks the implementation or delivery of the feature being
+    specified. The status values indicate the progress that is being made in
+    the actual coding or configuration that is needed to realise the
+    feature.
     """
 
     UNKNOWN = Item(0, """
         Unknown
 
-        There is no estimate of the likelyhood of delivery for this feature.
+        We have no information on the implementation of this feature.
         """)
 
     DEFERRED = Item(10, """
@@ -1146,31 +1151,79 @@ class SpecificationDelivery(DBSchema):
         deferred to a later date of implementation.
         """)
 
-    UNLIKELY = Item(40, """
-        Unlikely
+    NEEDSINFRASTRUCTURE = Item(40, """
+        Needs Infrastructure
 
-        This feature is unlikely to be delivered in the targeted release. It
-        has a high risk of failure.
+        Work cannot proceed on this feature, because it depends on
+        infrastructure (servers, databases, connectivity, system
+        administration work) which has not been done.
         """)
 
-    PROBABLE = Item(60, """
-        Probable
+    BLOCKED = Item(50, """
+        Blocked
 
-        This specification is considered likely to be implemented in the
-        targeted release, but has not yet been delivered.
+        Work cannot proceed on this specification because it depends on
+        another feature in a different specification which has not yet been
+        done. Note: the other specification should be listed as a blocker of
+        this one.
         """)
 
-    CERTAIN = Item(70, """
-        Certain
+    STARTED = Item(60, """
+        Started
 
-        This functionality is considered a certainty for the targeted
-        release, but has not yet been delivered.
+        Work has begun on this feature, but has not yet been published
+        except as informal branches or patches. No indication is given as to
+        whether or not this work will be completed for the targeted release.
         """)
 
-    DONE = Item(90, """
-        Done
+    SLOW = Item(65, """
+        Slow progress
 
-        This functionality has been delivered for the targeted release.
+        Work has been slow on this item and it has a high risk of not being
+        delivered on time. Help is wanted on direction or assistance is
+        needed with the implementation of the feature.
+        """)
+
+    GOOD = Item(70, """
+        Good progress
+
+        This functionality is making good progress and is considered on 
+        track for delivery in the targeted release.
+        """)
+
+    BETA = Item(75, """
+        Beta Available
+
+        The code for this feature has reached the point where a beta version
+        that implements substantially all of the required functionality
+        is being published for widespread testing, in personal package
+        archives or a personal release, but the code is not yet in the
+        main archive or mainline branch. Testing and feedback are solicited.
+        """)
+
+    NEEDSREVIEW = Item(80, """
+        Needs Code Review
+
+        The developer is satisfied that the feature has been well
+        implemented, and is now ready for review and final sign-off on the
+        feature, after which it will be marked implemented or deployed.
+        """)
+
+    AWAITINGDEPLOYMENT = Item(85, """
+        Awaiting Deployment
+
+        The work contemplated in this specification has been done, and can
+        be deployed in the production environment, but the system
+        administrators have not yet attended to that. Note: the status
+        whiteboard should include an RT ticket for the deployment.
+        """)
+
+    IMPLEMENTED = Item(90, """
+        Implemented
+
+        This functionality has been delivered for the targeted release, the
+        code has been uploaded to the main archives or committed to the
+        targeted product series, and no further work is necessary.
         """)
 
 
@@ -1181,7 +1234,7 @@ class SpecificationPriority(DBSchema):
     """
 
     NOTFORUS = Item(0, """
-        Not for us
+        Not
 
         This feature has been proposed but the project leaders have decided
         that it is not appropriate for inclusion in the mainline codebase.
@@ -1314,13 +1367,6 @@ class SpecificationStatus(DBSchema):
         presentation/UI issues.
         """)
 
-    IMPLEMENTED = Item(50, """
-        Implemented
-
-        The specification has been implemented, and has landed in the
-        codebase to which it was targeted.
-        """)
-
     INFORMATIONAL = Item(55, """
         Informational
 
@@ -1344,6 +1390,37 @@ class SpecificationStatus(DBSchema):
         This specification has been obsoleted. Probably, we decided not to
         implement it for some reason. It should not be displayed, and people
         should not put any effort into implementing it.
+        """)
+
+
+class SpecificationGoalStatus(DBSchema):
+    """The target status for this specification
+    
+    This enum allows us to show whether or not the specification has been
+    approved or declined as a target for the given product series or distro
+    release.
+    """
+
+    ACCEPTED = Item(10, """
+        Accepted
+
+        The drivers have confirmed that this specification is targeted to
+        the stated distribution release or product series.
+        """)
+
+    DECLINED = Item(20, """
+        Declined
+
+        The drivers have decided not to accept this specification as a goal
+        for the stated distribution release or product series.
+        """)
+
+    PROPOSED = Item(30, """
+        Proposed
+
+        This spec has been submitted as a potential goal for the stated
+        product series or distribution release, but the drivers have not yet
+        accepted or declined that goal.
         """)
 
 
@@ -2516,36 +2593,47 @@ class RosettaTranslationOrigin(DBSchema):
 class RosettaImportStatus(DBSchema):
     """Rosetta Import Status
 
-    After a raw file is added into Rosetta it could have a set of
-    states like ignore, pending, imported or failed.
-    This schema documents those options.
+    Define the status of an import on the Import queue. It could have one
+    of the following states: approved, imported, deleted, failed, needs_review
+    or blocked.
     """
 
-    IGNORE = Item(1, """
-        Ignore
+    APPROVED = Item(1, """
+        Approved
 
-        There are not any rawfile attached and we don't need to do
-        anything with that field.
+        The entry has been approved by a Rosetta Expert or was able to be
+        approved by our automatic system and is waiting to be imported.
         """)
 
-    PENDING = Item(2, """
-        Pending
-
-        There are a rawfile pending of review to be finally imported into
-        the system.
-        """)
-
-    IMPORTED = Item(3, """
+    IMPORTED = Item(2, """
         Imported
 
-        The attached rawfile has been already imported so it does not needs
-        any extra process.
+        The entry has been imported.
+        """)
+
+    DELETED = Item(3, """
+        Deleted
+
+        The entry has been removed before being imported.
         """)
 
     FAILED = Item(4, """
         Failed
 
-        The attached rawfile import failed.
+        The entry import failed.
+        """)
+
+    NEEDS_REVIEW = Item(5, """
+        Needs Review
+
+        A Rosetta Expert needs to review this entry to decide whether it will
+        be imported and where it should be imported.
+        """)
+
+    BLOCKED = Item(6, """
+        Blocked
+
+        The entry has been blocked to be imported by a Rosetta Expert.
         """)
 
 
