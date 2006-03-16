@@ -6,7 +6,7 @@
 <body>
 
 <div metal:fill-slot="main" class="visualPadding"
-     tal:define="batch view/batch">
+     tal:define="batch view/batchnav/currentBatch">
 
   <h1>Bazaar: Upstream revision control imports</h1>
 
