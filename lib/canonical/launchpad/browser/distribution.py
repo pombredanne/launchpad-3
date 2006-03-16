@@ -20,7 +20,6 @@ from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
-from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
@@ -32,6 +31,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, LaunchpadView,
     enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     canonical_url, redirection)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):

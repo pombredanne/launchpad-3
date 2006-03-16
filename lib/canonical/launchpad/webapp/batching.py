@@ -5,8 +5,10 @@ __metaclass__ = type
 import cgi, urllib
 
 from zope.interface import implements
-from canonical.lp.z3batching import _Batch
-from canonical.lp.interfaces import IBatchNavigator, ITableBatchNavigator
+from canonical.launchpad.webapp.z3batching import _Batch
+from canonical.launchpad.webapp.interfaces import (
+    IBatchNavigator, ITableBatchNavigator,
+    )
 
 class BatchNavigator:
 
