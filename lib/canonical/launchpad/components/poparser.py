@@ -576,19 +576,67 @@ class POParser(object):
         self.header_factory = header_factory
         self.header = None
         self.messages = []
-        self._pending_line = ''
+        self._pending_chars = ''
+        self._pending_unichars = u''
         self._lineno = 0
         self._make_dataholder()
         self._section = None
         self._plural_case = None
 
+    def _convert_chars(self):
+        # is there anything to convert?
+        if not self._pending_chars:
+            return
+
+        # if the PO header hasn't been parsed, then we don't know the
+        # encoding yet
+        if not self.header:
+            return
+
+        encode, decode, reader, writer = codecs.lookup(self.header.charset)
+        # decode as many characters as we can:
+        try:
+            newchars, length = decode(self._pending_chars, 'strict')
+        except UnicodeDecodeError, exc:
+            # XXX: James Henstridge 20060316
+            # If the number of unconvertable chars is longer than a
+            # multibyte sequence to be, the UnicodeDecodeError indicates
+            # a real error, rather than a partial read.
+            # I don't know what the longest multibyte sequence in the
+            # encodings we need to support, but it shouldn't be more
+            # than 20 bytes ...
+            if len(self._pending_chars) - exc.start > 20:
+                raise POInvalidInputError(self._lineno,
+                                          "could not decode input from %s"
+                                          % self.header.charset)
+            newchars, length = decode(self._pending_chars[:exc.start],
+                                      'strict')
+        self._pending_unichars += newchars
+        self._pending_chars = self._pending_chars[length:]
+
+    def _get_line(self):
+        # do we know what charset the data is in yet?
+        if self.header:
+            if u'\n' in self._pending_unichars:
+                line, self._pending_unichars = self._pending_unichars.split(u'\n', 1)
+                return line
+            else:
+                return None
+        else:
+            if '\n' in self._pending_chars:
+                line, self._pending_chars = self._pending_chars.split('\n', 1)
+                return unicode(line, 'ASCII')
+            else:
+                return None
+
     def write(self, string):
         """Parse string as a PO file fragment."""
-        string = self._pending_line + string
-        lines = string.split('\n')
-        for l in lines[:-1]:
-            self.parse_line(l)
-        self._pending_line = lines[-1]
+        self._pending_chars += string
+        self._convert_chars()
+        line = self._get_line()
+        while line is not None:
+            self.parse_line(line)
+            line = self._get_line()
 
     def _make_dataholder(self):
         self._partial_transl = {}
@@ -637,6 +685,9 @@ class POParser(object):
             logging.warning(POSyntaxWarning(self._lineno,
                                           'Header entry is not first entry'))
 
+        # convert buffered input to the encoding specified in the PO header
+        self._convert_chars()
+
     def to_unicode(self, text):
         'Convert text to unicode'
         if self.header: # header converts itself to unicode on updateDict()
@@ -684,7 +735,7 @@ class POParser(object):
             self._partial_transl['obsolete'] = True
 
         if l[0] == '#':
-            l = self.to_unicode(l)
+            ########l = self.to_unicode(l)
             # Record flags
             if l[:2] == '#,':
                 new_flags = [flag.strip() for flag in l[2:].split(',')]
@@ -751,11 +802,11 @@ class POParser(object):
         # better be tolerant than strict when reading, since
         # we're already quite strict when writing
         try:
-            l = l[1:-1].decode('string_escape')
+            l = l[1:-1].decode('unicode_escape')
         except ValueError:
             raise POSyntaxError(self._lineno)
 
-        l = self.to_unicode(l)
+        ########l = self.to_unicode(l)
 
         if self._section == 'msgid':
             self._partial_transl['msgid'] += l
@@ -773,12 +824,23 @@ class POParser(object):
         """Indicate that the PO data has come to an end.
         Throws an exception if the parser was in the
         middle of a message."""
-        if self._pending_line:
-            logging.warning(POSyntaxWarning(self._lineno,
-                                          'No newline at end of file'))
-            self.parse_line(self._pending_line)
+        # handle remaining buffered data:
+        if self._pending_unichars:
+            logging.warning(POSyntaxWarning(
+                self._lineno, 'No newline at end of file'))
+            self.parse_line(self._pending_unichars)
+        if self._pending_chars:
+            if self.header:
+                logger.warning(POSyntaxWarning(
+                    self._lineno, 'Unconvertable data at end of file'))
+            else:
+                logging.warning(POSyntaxWarning(
+                    self._lineno, 'No newline at end of file'))
+                self.parse_line(unicode(self._pending_chars, 'ASCII'))
+
         if self._section and self._section.startswith('msgid'):
             raise POSyntaxError(self._lineno)
+
         if self._partial_transl and self._partial_transl['msgid']:
             self.append()
         elif self._partial_transl is not None:
@@ -789,6 +851,7 @@ class POParser(object):
                 # header is last entry... in practice this should
                 # only happen when the file is empty
                 self._make_header()
+
         if not self.header:
             # XXX kiko: it may be that we need to run a _make_header() here
             # to ensure we have one, but I'm not guessing.
