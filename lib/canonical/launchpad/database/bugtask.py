@@ -406,26 +406,9 @@ class BugTaskSet:
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
 
-        # Filter the search results for privacy-awareness.
-        if params.user:
-            # A subselect is used here because joining through
-            # TeamParticipation is only relevant to the "user-aware"
-            # part of the WHERE condition (i.e. the bit below.) The
-            # other half of this condition (see code above) does not
-            # use TeamParticipation at all.
-            clause = ("""
-                     (Bug.private = FALSE OR Bug.id in (
-                          SELECT Bug.id
-                          FROM Bug, BugSubscription, TeamParticipation
-                          WHERE Bug.id = BugSubscription.bug AND
-                                TeamParticipation.person = %(personid)s AND
-                                BugSubscription.person =
-                                  TeamParticipation.team))
-                                  """ %
-                      sqlvalues(personid=params.user.id))
-        else:
-            clause = "Bug.private = FALSE"
-        extra_clauses.append(clause)
+        clause = self._getPrivacyFilter(params.user)
+        if clause:
+            extra_clauses.append(clause)
 
         orderby = params.orderby
         if orderby is None:
@@ -505,55 +488,48 @@ class BugTaskSet:
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
                            showclosed=False, orderBy=None, user=None):
-        if showclosed:
-            showclosed = ""
-        else:
-            showclosed = (
-                ' AND BugTask.status < %s' %
-                sqlvalues(dbschema.BugTaskStatus.FIXCOMMITTED))
+        filters = ['BugTask.bug = Bug.id',
+                   'BugTask.product = Product.id',
+                   'Product.owner = TeamParticipation.team',
+                   'TeamParticipation.person = %s' % person.id]
 
-        priority_severity_filter = ""
+        if not showclosed:
+            committed = dbschema.BugTaskStatus.FIXCOMMITTED
+            filters.append('BugTask.status < %s' % sqlvalues(committed))
+
         if minpriority is not None:
-            priority_severity_filter = (
-                ' AND BugTask.priority >= %s' % sqlvalues(minpriority))
+            filters.append('BugTask.priority >= %s' % sqlvalues(minpriority))
         if minseverity is not None:
-            priority_severity_filter += (
-                ' AND BugTask.severity >= %s' % sqlvalues(minseverity))
+            filters.append('BugTask.severity >= %s' % sqlvalues(minseverity))
 
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        privacy_filter = None
-        if user:
-            if user.inTeam(admin_team):
-                # No privacy filtering for admin needed, so just insert the SQL
-                # needed to do a proper join.
-                privacy_filter = " AND BugTask.bug = Bug.id"
-            else:
-                # Include privacy filtering.
-                privacy_filter = " AND "
-                privacy_filter += ("""
-                    (BugTask.bug = Bug.id AND
-                    (Bug.private = FALSE OR
-                     Bug.id in (
-                       SELECT Bug.id FROM Bug, BugSubscription
-                       WHERE (Bug.id = BugSubscription.bug) AND
-                             (BugSubscription.person = TeamParticipation.team) AND
-                             (TeamParticipation.person = %d))))""" % user.id)
-        else:
-            # Anonymous user, therefore filter to only return public bugs.
-            privacy_filter = " AND BugTask.bug = Bug.id AND Bug.private = FALSE"
+        privacy_filter = self._getPrivacyFilter(user)
+        if privacy_filter:
+            filters.append(privacy_filter)
 
-        filters = priority_severity_filter + showclosed
-        if privacy_filter is not None:
-            filters += privacy_filter
+        # We shouldn't show duplicate bug reports.
+        filters.append('Bug.duplicateof IS NULL')
 
-        # Don't show duplicate bug reports.
-        filters += ' AND Bug.duplicateof IS NULL'
-
-        maintainedProductBugTasksQuery = ('''
-            BugTask.product = Product.id AND
-            Product.owner = TeamParticipation.team AND
-            TeamParticipation.person = %s''' % person.id)
-
-        return BugTask.select(
-            maintainedProductBugTasksQuery + filters,
+        return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
+
+    def _getPrivacyFilter(self, user):
+        """An SQL filter for search results that adds privacy-awareness."""
+        if user is None:
+            return "Bug.private = FALSE"
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admin_team):
+            return ""
+        # A subselect is used here because joining through
+        # TeamParticipation is only relevant to the "user-aware"
+        # part of the WHERE condition (i.e. the bit below.) The
+        # other half of this condition (see code above) does not
+        # use TeamParticipation at all.
+        return """
+            (Bug.private = FALSE OR Bug.id in (
+                 SELECT Bug.id
+                 FROM Bug, BugSubscription, TeamParticipation
+                 WHERE Bug.id = BugSubscription.bug AND
+                       TeamParticipation.person = %(personid)s AND
+                       BugSubscription.person = TeamParticipation.team))
+                         """ % sqlvalues(personid=user.id)
+
