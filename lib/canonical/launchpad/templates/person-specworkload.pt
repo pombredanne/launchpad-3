@@ -1,0 +1,45 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Specification workload</h1>
+
+  <div tal:replace="structure context/@@+table-specworkload" />
+
+  <tal:is_team condition="context/isTeam">
+
+    <h2>Team member workload</h2>
+
+    <p class="discreet">
+      The following people are all members of the
+      <span tal:replace="context/browsername">Admins</span> team in
+      Launchpad. We list each of their specification workloads so that you
+      can get a sense of the overall workload balance.
+    </p>
+
+    <tal:participants repeat="member context/allmembers">
+
+      <h3 tal:content="member/browsername">Foo Bar</h3>
+
+      <div tal:replace="structure member/@@+table-specworkload" />
+
+    </tal:participants>
+
+  </tal:is_team>
+
+
+</div>
+</body>
+</html>

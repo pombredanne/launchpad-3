@@ -26,6 +26,10 @@ class UnknownBugTrackerTypeError(Exception):
         return self.bugtrackertypename
 
 
+class UnsupportedBugTrackerVersion(Exception):
+    """The bug tracker version is not supported."""
+
+
 class BugTrackerConnectError(Exception):
     """
     Exception class to catch misc errors contacting a bugtracker
@@ -77,8 +81,9 @@ class Bugzilla(ExternalSystem):
         else:
             self.version = self._probe_version()
         if not self.version or self.version < '2.16':
-            raise NotImplementedError("Unsupported version %r for %s" 
-                                      % (self.version, baseurl))
+            raise UnsupportedBugTrackerVersion(
+                "Unsupported version %r for %s" % (self.version, baseurl))
+
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
         # For some reason, bugs.kde.org doesn't allow the regular urllib
@@ -159,7 +164,9 @@ class Bugzilla(ExternalSystem):
         """Update the given bug watches."""
         bug_watches_by_remote_bug = {}
         for bug_watch in bug_watches:
-            bug_watches_by_remote_bug[bug_watch.remotebug] = bug_watch
+            #XXX: Use remotebug.strip() until bug 34105 is fixed.
+            #     -- Bjorn Tillenius, 2006-03-09
+            bug_watches_by_remote_bug[bug_watch.remotebug.strip()] = bug_watch
         bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
 
         data = {'form_name'   : 'buglist.cgi',
@@ -177,7 +184,7 @@ class Bugzilla(ExternalSystem):
             document = minidom.parseString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
             log.error('Failed to parse XML description for %s bugs %s: %s' %
-                      (self.baseurl, bug_ids, e))
+                      (self.baseurl, bug_ids_to_update, e))
             return None
         result = None
         bug_nodes = document.getElementsByTagName('bz:bug')

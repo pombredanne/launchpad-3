@@ -1,0 +1,84 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Set goals</h1>
+
+  <p class="documentDescription">
+    This page allows you to accept or decline specifications as goals for
+    <span tal:replace="context/displayname">Mozilla Firefox 1.0</span>.
+  </p>
+
+  <p class="portalMessage"
+     tal:condition="view/status_message"
+     tal:content="view/status_message" />
+
+  <p tal:condition="not: view/specs">
+    <i>There are no specifications currently proposed as goals for
+    <span tal:replace="context/displayname">1.0</span>. You can check the
+    list of specifications previously declined using the links to the right
+    of this page.</i>
+  </p>
+
+  <form tal:attributes="action request/URL" method="POST">
+
+    <table tal:condition="view/specs">
+      <tbody>
+        <tr tal:repeat="spec view/specs">
+          <td>
+            <input type="checkbox" name="specification"
+                   tal:attributes="
+                     value spec/name;
+                     id string:spec_${spec/name}" />
+          </td>
+          <td class="lesser">
+            <label tal:attributes="for string:spec_${spec/name}">
+              <img src="/@@/spec" />
+              <span tal:replace="spec/title">fix-it</span>
+            </label>
+            
+            <div tal:content="spec/summary"
+                 class="lesser discreet" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div tal:condition="view/specs" class="discreet">
+      Select the specifications that you wish to accept or decline.
+    </div>
+
+    <div class="actions">
+      <input type="submit"
+             name="SUBMIT_CANCEL"
+             value="Cancel" />
+      <input tal:condition="view/specs"
+             type="submit"
+             name="SUBMIT_ACCEPT"
+             value="Accept" />
+      <input tal:condition="view/specs"
+             type="submit"
+             name="SUBMIT_DECLINE"
+             value="Decline" />
+    </div>
+
+  </form>
+
+</div>
+
+</body>
+</html>

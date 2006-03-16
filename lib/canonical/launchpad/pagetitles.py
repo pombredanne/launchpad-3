@@ -41,11 +41,6 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
 
-class BugPageTitle:
-    def __call__(self, context, view):
-        return smartquote('Bug #%d: "%s"') % (context.id, context.title)
-
-
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return smartquote('Bug #%d in %s: "%s"') % (
@@ -136,15 +131,13 @@ def bug_attachment_edit(context, view):
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = BugPageTitle()
+bug_edit = ContextTitle('%s')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):
     return smartquote('Bug #%d - Edit Web link "%s"') % (
         context.bug.id, context.title)
-
-bug_index = BugPageTitle()
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
@@ -326,6 +319,8 @@ distrorelease_addport = ContextTitle('Add a port of %s')
 distrorelease_bugs = ContextTitle('Bugs in %s')
 
 distrorelease_cvereport = ContextDisplayName('CVE report for %s')
+
+distrorelease_edit = ContextTitle('Edit details of %s')
 
 def distrorelease_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
@@ -511,6 +506,8 @@ person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
 person_review = ContextDisplayName("Review %s")
 
+person_specworkload = ContextDisplayName('Specification workload for %s')
+
 person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
 person_translations = ContextDisplayName('Translations made by %s')
@@ -645,7 +642,9 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Product and group registration in Launchpad'
 
-registry_listall = 'Launchpad: Complete list' # bug 3508
+products_all = 'All Upstream Products registered in Launchpad'
+
+projects_all = 'All Projects registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
@@ -787,9 +786,15 @@ specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
+specificationgoal_index = ContextTitle('Specification acceptance for %s')
+
+specificationtarget_index = ContextTitle('Specification Listing for %s')
+
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
-specificationtarget_specplan = ContextTitle('Project plan for %s')
+specificationtarget_roadmap = ContextTitle('Project plan for %s')
+
+specificationtarget_assignments = ContextTitle('Specification assignments for %s')
 
 specificationtarget_workload = ContextTitle('Feature workload in %s')
 
@@ -803,7 +808,7 @@ sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
 
-sprint_table = ContextTitle('Table of specifications for %s')
+sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 

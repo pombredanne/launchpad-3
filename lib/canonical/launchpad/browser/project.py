@@ -32,7 +32,8 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured, GetitemNavigation, Navigation)
+    structured, GetitemNavigation, Navigation, ContextMenu)
+
 
 _ = MessageIDFactory('launchpad')
 
@@ -40,6 +41,9 @@ _ = MessageIDFactory('launchpad')
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
 
     usedfor = IProject
+
+    def breadcrumb(self):
+        return self.context.displayname
 
     def traverse(self, name):
         return self.context.getProduct(name)
@@ -49,29 +53,34 @@ class ProjectSetNavigation(GetitemNavigation):
 
     usedfor = IProjectSet
 
+    def breadcrumb(self):
+        return 'Projects'
+
+
+class ProjectSetContextMenu(ContextMenu):
+
+    usedfor = IProjectSet
+    links = ['register', 'listall']
+
+    def register(self):
+        text = 'Register a Project'
+        return Link('+new', text, icon='add')
+
+    def listall(self):
+        text = 'List All Projects'
+        return Link('+all', text, icon='list')
 
 class ProjectFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+    enable_only = ['overview', 'bounties', 'calendar']
 
     def overview(self):
         target = ''
         text = 'Overview'
         return Link(target, text)
-
-    def bugs(self):
-        target = '+bugs'
-        text = 'Bugs'
-        return Link(target, text, enabled=False)
-
-    def translations(self):
-        target = '+translations'
-        text = 'Translations'
-        return Link(target, text, enabled=False)
 
     def calendar(self):
         target = '+calendar'
@@ -152,6 +161,7 @@ class ProjectView(object):
         self.request.response.redirect(self.request.URL[-1])
 
     def hasProducts(self):
+        # XXX: get rid of this crap using selectFirst()
         return len(list(self.context.products())) > 0
 
     def productTranslationStats(self):

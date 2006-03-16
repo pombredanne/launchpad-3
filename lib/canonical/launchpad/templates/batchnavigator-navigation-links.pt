@@ -18,12 +18,12 @@
       <td style="text-align: right;">
         <tal:previous condition="prev_page_url">
           <a tal:attributes="href prev_page_url" rel="previous"
-          >&laquo; Previous</a>
+          >&laquo;&nbsp;Previous</a>
         </tal:previous>
         <span
           tal:condition="not:prev_page_url"
           class="unavailable"
-        >&laquo; Previous</span>
+        >&laquo;&nbsp;Previous</span>
         <tal:intermediaries repeat="page_url context/batchPageURLs">
           <a
             tal:condition="python:len(page_url) > 1"
@@ -34,12 +34,12 @@
         <tal:next condition="next_page_url">
           &mdash;
           <a tal:attributes="href next_page_url" rel="next"
-          >Next &raquo;</a>
+          >Next&nbsp;&raquo;</a>
         </tal:next>
         <span
           tal:condition="not:next_page_url"
           class="unavailable"
-        >&mdash; Next &raquo;</span>
+        >&mdash; Next&nbsp;&raquo;</span>
       </td>
     </tr>
   </tbody>

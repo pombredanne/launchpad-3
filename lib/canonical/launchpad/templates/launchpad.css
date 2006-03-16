@@ -167,7 +167,7 @@ table.listing {
   font-size: 85%;
   margin: 1em 0;
 }
-table.listing, table.listing tbody {
+table.listing, table.listing>tbody {
   border-bottom: 1px solid #8cacbb;
 }
 table.listing>thead, table.listing>thead>tr>th {
@@ -395,7 +395,7 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
-/* Column definitions: */
+/* Column definitions for old layout: */
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
@@ -413,6 +413,20 @@ ul.app>li.current {
   width: 24%; /* = 25% - 1% whitespace */
 }
 #portal-column-one {
+  display: inline;
+  float: left;
+  margin-left: -100%; /* flush with the left edge of the page */
+  width: 24%; /* = 25% - 1% whitespace */
+}
+
+/* Column definitions for 2col layout: */
+#layout2col-main {
+  display: inline;
+  float: left;
+  margin-left: 25%;
+  width: 75%;
+}
+#layout2col-portlets {
   display: inline;
   float: left;
   margin-left: -100%; /* flush with the left edge of the page */
@@ -716,6 +730,18 @@ tr.highlight {
 .specpriorityMEDIUM        { color: Orange; }
 .specpriorityHIGH          { color: Red; }
 .specpriorityESSENTIAL     { color: Red; }
+
+.specdeliveryUNKNOWN            {color: Gray; }
+.specdeliveryDEFERRED           {color: Red; }
+.specdeliveryNEEDSINFRASTUCTURE {color: Red; }
+.specdeliveryBLOCKED            {color: Red; }
+.specdeliverySTARTED            {color: Blue; }
+.specdeliverySLOW               {color: Red; }
+.specdeliveryGOOD               {color: Blue; }
+.specdeliveryBETA               {color: Orange; }
+.specdeliveryNEEDSREVIEW        {color: Purple; }
+.specdeliveryAWAITINGDEPLOYMENT {color: Red; }
+.specdeliveryIMPLEMENTED        {color: Green; }
 
 /* Board-like comment CSS */
 

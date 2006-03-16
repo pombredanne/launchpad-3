@@ -20,8 +20,7 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp import dbschema
-from canonical.database.sqlbase import (
-    SQLBase, sqlvalues, quote_like, convert_to_sql_id)
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
@@ -270,10 +269,6 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            # The statuses REJECTED, FIXCOMMITTED, and CONFIRMED will
-            # display with the assignee information as well. Showing
-            # assignees with other status would just be confusing
-            # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
                 '<img src="/@@/user.gif" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
@@ -283,18 +278,10 @@ class BugTask(SQLBase, BugTaskMixin):
             if status in (dbschema.BugTaskStatus.REJECTED, 
                           dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
-            elif  status == dbschema.BugTaskStatus.CONFIRMED:
+            else:
                 return '%s, assigned to %s' % (status.title.lower(), assignee_html)
-
-        # The status is something other than REJECTED, FIXCOMMITTED or
-        # CONFIRMED (whether assigned to someone or not), so we'll
-        # show only the status.
-        if status in (dbschema.BugTaskStatus.REJECTED, 
-                      dbschema.BugTaskStatus.UNCONFIRMED,
-                      dbschema.BugTaskStatus.FIXRELEASED):
-            return status.title.lower()
-
-        return status.title.lower() + ' (unassigned)'
+        else:
+            return status.title.lower() + ' (unassigned)'
 
 
 class BugTaskSet:
@@ -367,29 +354,28 @@ class BugTaskSet:
         # * an sqlobject
         # * a dbschema item
         # * None (meaning no filter criteria specified for that arg_name)
+        #
+        # XXX: is this a good candidate for becoming infrastructure in
+        # canonical.database.sqlbase?
+        #   -- kiko, 2006-03-16
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
+            clause = "BugTask.%s " % arg_name
             if zope_isinstance(arg_value, any):
                 # When an any() clause is provided, the argument value
                 # is a list of acceptable filter values.
                 if not arg_value.query_values:
                     continue
-                # There could be SQLObjects inside the any() clause; we
-                # need to sanitize each of the arguments.
-                real_values = [convert_to_sql_id(v)
-                               for v in arg_value.query_values]
-                arg_values = sqlvalues(*real_values)
-                where_arg = ", ".join(arg_values)
-                clause = "BugTask.%s IN (%s)" % (arg_name, where_arg)
-            elif arg_value is NULL:
+                where_arg = ",".join(sqlvalues(*arg_value.query_values))
+                clause += "IN (%s)" % where_arg
+            elif arg_value is not NULL:
+                clause += "= %s" % sqlvalues(arg_value)
+            else:
                 # The argument value indicates we should match
                 # only NULL values for the column named by
                 # arg_name.
-                clause = "BugTask.%s IS NULL" % arg_name
-            else:
-                clause = "BugTask.%s = %d" % (arg_name,
-                                              convert_to_sql_id(arg_value))
+                clause += "IS NULL"
             extra_clauses.append(clause)
 
         if params.omit_dupes:
@@ -420,26 +406,9 @@ class BugTaskSet:
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
 
-        # Filter the search results for privacy-awareness.
-        if params.user:
-            # A subselect is used here because joining through
-            # TeamParticipation is only relevant to the "user-aware"
-            # part of the WHERE condition (i.e. the bit below.) The
-            # other half of this condition (see code above) does not
-            # use TeamParticipation at all.
-            clause = ("""
-                     (Bug.private = FALSE OR Bug.id in (
-                          SELECT Bug.id
-                          FROM Bug, BugSubscription, TeamParticipation
-                          WHERE Bug.id = BugSubscription.bug AND
-                                TeamParticipation.person = %(personid)s AND
-                                BugSubscription.person =
-                                  TeamParticipation.team))
-                                  """ %
-                      sqlvalues(personid=params.user.id))
-        else:
-            clause = "Bug.private = FALSE"
-        extra_clauses.append(clause)
+        clause = self._getPrivacyFilter(params.user)
+        if clause:
+            extra_clauses.append(clause)
 
         orderby = params.orderby
         if orderby is None:
@@ -519,55 +488,48 @@ class BugTaskSet:
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
                            showclosed=False, orderBy=None, user=None):
-        if showclosed:
-            showclosed = ""
-        else:
-            showclosed = (
-                ' AND BugTask.status < %s' %
-                sqlvalues(dbschema.BugTaskStatus.FIXCOMMITTED))
+        filters = ['BugTask.bug = Bug.id',
+                   'BugTask.product = Product.id',
+                   'Product.owner = TeamParticipation.team',
+                   'TeamParticipation.person = %s' % person.id]
 
-        priority_severity_filter = ""
+        if not showclosed:
+            committed = dbschema.BugTaskStatus.FIXCOMMITTED
+            filters.append('BugTask.status < %s' % sqlvalues(committed))
+
         if minpriority is not None:
-            priority_severity_filter = (
-                ' AND BugTask.priority >= %s' % sqlvalues(minpriority))
+            filters.append('BugTask.priority >= %s' % sqlvalues(minpriority))
         if minseverity is not None:
-            priority_severity_filter += (
-                ' AND BugTask.severity >= %s' % sqlvalues(minseverity))
+            filters.append('BugTask.severity >= %s' % sqlvalues(minseverity))
 
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        privacy_filter = None
-        if user:
-            if user.inTeam(admin_team):
-                # No privacy filtering for admin needed, so just insert the SQL
-                # needed to do a proper join.
-                privacy_filter = " AND BugTask.bug = Bug.id"
-            else:
-                # Include privacy filtering.
-                privacy_filter = " AND "
-                privacy_filter += ("""
-                    (BugTask.bug = Bug.id AND
-                    (Bug.private = FALSE OR
-                     Bug.id in (
-                       SELECT Bug.id FROM Bug, BugSubscription
-                       WHERE (Bug.id = BugSubscription.bug) AND
-                             (BugSubscription.person = TeamParticipation.team) AND
-                             (TeamParticipation.person = %d))))""" % user.id)
-        else:
-            # Anonymous user, therefore filter to only return public bugs.
-            privacy_filter = " AND BugTask.bug = Bug.id AND Bug.private = FALSE"
+        privacy_filter = self._getPrivacyFilter(user)
+        if privacy_filter:
+            filters.append(privacy_filter)
 
-        filters = priority_severity_filter + showclosed
-        if privacy_filter is not None:
-            filters += privacy_filter
+        # We shouldn't show duplicate bug reports.
+        filters.append('Bug.duplicateof IS NULL')
 
-        # Don't show duplicate bug reports.
-        filters += ' AND Bug.duplicateof IS NULL'
-
-        maintainedProductBugTasksQuery = ('''
-            BugTask.product = Product.id AND
-            Product.owner = TeamParticipation.team AND
-            TeamParticipation.person = %s''' % person.id)
-
-        return BugTask.select(
-            maintainedProductBugTasksQuery + filters,
+        return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
+
+    def _getPrivacyFilter(self, user):
+        """An SQL filter for search results that adds privacy-awareness."""
+        if user is None:
+            return "Bug.private = FALSE"
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admin_team):
+            return ""
+        # A subselect is used here because joining through
+        # TeamParticipation is only relevant to the "user-aware"
+        # part of the WHERE condition (i.e. the bit below.) The
+        # other half of this condition (see code above) does not
+        # use TeamParticipation at all.
+        return """
+            (Bug.private = FALSE OR Bug.id in (
+                 SELECT Bug.id
+                 FROM Bug, BugSubscription, TeamParticipation
+                 WHERE Bug.id = BugSubscription.bug AND
+                       TeamParticipation.person = %(personid)s AND
+                       BugSubscription.person = TeamParticipation.team))
+                         """ % sqlvalues(personid=user.id)
+
