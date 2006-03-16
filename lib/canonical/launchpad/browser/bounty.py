@@ -57,7 +57,7 @@ class BountyContextMenu(ContextMenu):
             get_subscription_for_person(user, self.context) is not None):
             text = 'Unsubscribe from Bounty'
             icon = 'remove'
-        elif (user is None):
+        elif user is None:
             text = 'Subscribe/Unsubscribe'
             icon = 'edit'
         else:

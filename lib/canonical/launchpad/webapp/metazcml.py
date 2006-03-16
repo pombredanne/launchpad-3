@@ -213,7 +213,8 @@ class IFaviconDirective(Interface):
 
 
 class IGeneralFormDirective(
-    zope.app.form.browser.metadirectives.ICommonFormInformation):
+    zope.app.form.browser.metadirectives.ICommonFormInformation,
+    IAssociatedWithAFacet):
     """
     Define a general form
 
