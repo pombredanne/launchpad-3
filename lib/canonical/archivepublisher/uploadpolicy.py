@@ -222,11 +222,13 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 upload.reject("Not permitted to upload to a release in "
                               "%s state" %
                               self.distrorelease.releasestatus.name)
-        elif self.pocket == PackagePublishingPocket.UPDATES:
+        elif self.pocket in [PackagePublishingPocket.UPDATES,
+                             PackagePublishingPocket.BACKPORTS]:
             if distrorelease_is_open:
-                upload.reject("Not permitted to upload to the UPDATES pocket "
-                              "in a release in %s state" %
-                              self.distrorelease.releasestatus.name)
+                upload.reject("Not permitted to upload to the %s pocket "
+                              "in a release in %s state"
+                              % (self.pocket.name,
+                                 self.distrorelease.releasestatus.name))
             else:
                 # UPDATES+closed == okay
                 return

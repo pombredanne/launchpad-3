@@ -332,8 +332,8 @@ class Distribution(SQLBase, BugTargetBase):
                "space is pointless"
         if source:
             candidate = SourcePackageFilePublishing.selectFirstBy(
-                distribution=self.id,
-                libraryfilealiasfilename=filename)
+                distribution=self.id, libraryfilealiasfilename=filename,
+                orderBy=['id'])
 
         if binary:
             candidate = BinaryPackageFilePublishing.selectFirstBy(

@@ -85,13 +85,13 @@ class DistroReleaseQueue(SQLBase):
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
     sources = SQLMultipleJoin('DistroReleaseQueueSource',
-                           joinColumn='distroreleasequeue')
+                              joinColumn='distroreleasequeue')
     builds = SQLMultipleJoin('DistroReleaseQueueBuild',
-                          joinColumn='distroreleasequeue')
+                             joinColumn='distroreleasequeue')
 
     # Also the custom files associated with the build.
     customfiles = SQLMultipleJoin('DistroReleaseQueueCustom',
-                               joinColumn='distroreleasequeue')
+                                  joinColumn='distroreleasequeue')
 
 
     def _set_status(self, value):

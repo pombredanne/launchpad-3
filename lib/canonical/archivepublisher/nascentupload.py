@@ -1561,8 +1561,9 @@ class NascentUpload:
         proposed_version = uploaded_file.version
 
         if apt_pkg.VersionCompare(proposed_version, first_backport) >= 0:
-            self.reject("%s: Version newer than that in BACKPORTS. %s <= %s"
-                        % (filename, proposed_version, archive_version))
+            self.reject("%s: Version newer than that in BACKPORTS. %s >= %s"
+                        % (uploaded_file.package, proposed_version,
+                           first_backport))
 
 
     def _checkBinaryBackports(self, uploaded_file, archtag):
@@ -1577,8 +1578,9 @@ class NascentUpload:
         proposed_version = uploaded_file.version
 
         if apt_pkg.VersionCompare(proposed_version, first_backport) >= 0:
-            self.reject("%s: Version newer than that in BACKPORTS. %s <= %s"
-                        % (filename, proposed_version, archive_version))
+            self.reject("%s: Version newer than that in BACKPORTS. %s >= %s"
+                        % (uploaded_file.package, proposed_version,
+                           first_backport))
 
 
     def find_and_apply_overrides(self):
@@ -1614,7 +1616,7 @@ class NascentUpload:
 
                 if candidates:
                     self.logger.debug("%d possible source(s)"
-                                      % candidates.count())
+                                      % len(candidates))
                     self.logger.debug("%s: (source) exists" % (
                         uploaded_file.package))
                     override = candidates[0]
@@ -1647,9 +1649,9 @@ class NascentUpload:
 
                 if candidates:
                     self.logger.debug("%d possible binar{y,ies}"
-                                      % candidates.count())
+                                      % len(candidates))
 
-                    self.logger.debug("%s: (binary) exists" % (
+                    self.logger.debug("%d: (binary) exists" % (
                         uploaded_file.package))
                     override = candidates[0]
                     proposed_version = uploaded_file.version

@@ -197,7 +197,7 @@ of IDistroReleaseQueue entries.
 Invetigate the queue entries type:
 
   >>> for n in new_items:
-  ...     len(n.builds), len(n.sources)
+  ...     n.builds.count(), n.sources.count()
   (1, 0)
   (1, 0)
   (0, 1)
