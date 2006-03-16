@@ -8,7 +8,6 @@
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
-COMMENT ON COLUMN Bug.summary IS 'A brief summary of the bug. This will be displayed at the very top of the page in bold. It will also receive a higher ranking in FTI queries than the description and comments of the bug. The bug summary is not created necessarily when the bug is filed, instead we just use the first comment as a description and allow people to fill in the summary later as they converge on a clear description of the bug itself.';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
 
 /* BugTask */
