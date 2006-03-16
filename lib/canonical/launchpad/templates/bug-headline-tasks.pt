@@ -4,7 +4,7 @@
       expander.setAttribute('src', '/@@/treeExpanded.gif');
       row.style.display = "table-row";
     } else {
-      editexpander.setAttribute('src', '/@@/treeCollapsed.gif');
+      expander.setAttribute('src', '/@@/treeCollapsed.gif');
       row.style.display = "none";
     }
     return false;
