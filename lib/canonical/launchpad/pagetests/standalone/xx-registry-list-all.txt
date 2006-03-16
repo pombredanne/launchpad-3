@@ -6,7 +6,6 @@ We should have a page that lists all projects.
   ... """)
   HTTP/1.1 200 Ok
   ...Projects registered in Launchpad...
-  ...A complete list:...
 
 And similarly, one for all products.
 
@@ -16,5 +15,4 @@ And similarly, one for all products.
   ... """)
   HTTP/1.1 200 Ok
   ...Products registered in Launchpad...
-  ...A complete list:...
 

@@ -457,7 +457,7 @@ because the field is ignored for this user, nothing bad will happen.
   Location: borkage
   ...
 
-And now, test with the Foo Bar user, who is a member of the buttsource
+And now, test with the Foo Bar user, who is a member of the vcs-imports
 team. This should fail suggesting an invalid owner, and the reviewed
 value should be on.
 

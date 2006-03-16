@@ -24,8 +24,9 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import (
-    setUpWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -35,7 +36,6 @@ from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
-from canonical.lp.z3batching import Batch
 from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
@@ -44,15 +44,13 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
     IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
     ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    valid_distrotask, valid_upstreamtask)
+    valid_distrotask, valid_upstreamtask, BugDistroReleaseTargetDetails)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
-
 
 
 def get_sortorder_from_request(request):
@@ -99,7 +97,8 @@ class BugTargetTraversalMixin:
         # because it was filtered out by privacy-aware code.
         for bugtask in helpers.shortlist(bug.bugtasks):
             if bugtask.target == context:
-                return bugtask
+                # Security proxy this object on the way out.
+                return getUtility(IBugTaskSet).get(bugtask.id)
 
         # If we've come this far, it means that no actual task exists in this
         # context, so we'll return a null bug task. This makes it possible to,
@@ -407,6 +406,27 @@ class BugTaskEditView(GeneralFormView):
 
         return field_values
 
+    def _setUpWidgets(self):
+        """Set up the bug task status edit widgets."""
+        # Set up the milestone widget as an input widget only if the has
+        # launchpad.Edit permissions on the distribution, for distro tasks, or
+        # launchpad.Edit permissions on the product, for upstream tasks.
+        milestone_context = (
+            self.context.product or self.context.distribution or
+            self.context.distrorelease.distribution)
+
+        field_names = list(self.fieldNames)
+        if (("milestone" in field_names) and not
+            helpers.check_permission("launchpad.Edit", milestone_context)):
+            # The user doesn't have permission to edit the milestone, so render
+            # a read-only milestone widget.
+            field_names.remove("milestone")
+            setUpDisplayWidgets(self, self.schema, names=["milestone"])
+
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=field_names,
+            initial=self.initial_values)
+
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
@@ -440,12 +460,38 @@ class BugTaskEditView(GeneralFormView):
     def process(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        new_values = getWidgetsData(self, self.schema, self.fieldNames)
+        # Save the field names we extract from the form in a separate list,
+        # because we modify this list of names later if the bugtask is
+        # reassigned to a different product.
+        field_names = list(self.fieldNames)
+        new_values = getWidgetsData(self, self.schema, field_names)
 
         bugtask_before_modification = helpers.Snapshot(
             bugtask, providing=providedBy(bugtask))
+
+        # If the user is reassigning an upstream task to a different product,
+        # we'll clear out the milestone value, to avoid violating DB constraints
+        # that ensure an upstream task can't be assigned to a milestone on a
+        # different product.
+        milestone_cleared = None
+        if (IUpstreamBugTask.providedBy(bugtask) and
+            (bugtask.product != new_values.get("product")) and
+             bugtask.milestone):
+            milestone_cleared = bugtask.milestone
+            bugtask.milestone = None
+            # Remove the "milestone" field from the list of fields whose changes
+            # we want to apply, because we don't want the form machinery to try
+            # and set this value back to what it was!
+            field_names.remove("milestone")
+
         changed = applyWidgetsChanges(
-            self, self.schema, target=bugtask, names=self.fieldNames)
+            self, self.schema, target=bugtask, names=field_names)
+
+        if milestone_cleared:
+            self.request.response.addWarningNotification(
+                "The bug report for %s was removed from the %s milestone "
+                "because it was reassigned to a new product" % (
+                    bugtask.targetname, milestone_cleared.displayname))
 
         comment_on_change = self.request.form.get("comment_on_change")
 
@@ -469,8 +515,16 @@ class BugTaskEditView(GeneralFormView):
                 SQLObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
-                    edited_fields=self.fieldNames,
+                    edited_fields=field_names,
                     comment_on_change=comment_on_change))
+
+        if (bugtask_before_modification.sourcepackagename !=
+            bugtask.sourcepackagename):
+            # The source package was changed, so tell the user that we've
+            # subscribed the new bug contacts.
+            self.request.response.addNotification(
+                "The bug contacts for %s have been subscribed to this bug." % (
+                    bugtask.targetname))
 
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
@@ -485,7 +539,7 @@ class BugListingPortletView(LaunchpadView):
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
     def getBugsAssignedToMeURL(self):
-        """Return the URL for bugs assigned to the current user on this target."""
+        """Return the URL for bugs assigned to the current user on target."""
         if self.user:
             return self.getSearchFilterURL(assignee=self.user.name)
         else:
@@ -627,8 +681,7 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the search results be displayed as a list?"""
         return True
 
-    def search(self, searchtext=None, batch_start=None, context=None,
-               extra_params=None):
+    def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
@@ -639,19 +692,18 @@ class BugTaskSearchListingView(LaunchpadView):
         precedence over request params.
         """
         data = {}
-        if self.request.form.get("search"):
-            # It looks like the user clicked the "Search" button, so extract the
-            # form parameters.
+        data.update(
+            getWidgetsData(
+                self, self.schema,
+                names=[
+                    "searchtext", "status", "assignee", "severity",
+                    "priority", "owner", "omit_dupes", "has_patch",
+                    "milestone"]))
 
-            # Normalize the form_values as search params. Every list argument will
-            # be converted to an OR search, using the any() function.
-            data.update(
-                getWidgetsData(
-                    self, self.schema,
-                    names=[
-                        "searchtext", "status", "assignee", "severity",
-                        "priority", "owner", "omit_dupes", "has_patch"]))
+        if extra_params:
+            data.update(extra_params)
 
+        if data:
             searchtext = data.get("searchtext")
             if searchtext and searchtext.isdigit():
                 try:
@@ -664,22 +716,20 @@ class BugTaskSearchListingView(LaunchpadView):
             assignee_option = self.request.form.get("assignee_option")
             if assignee_option == "none":
                 data['assignee'] = NULL
-        else:
-            # The user didn't click the "Search" button, e.g., they came in at
-            # the default +bugs URL, so we'll inject default search parameters.
-            data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
-        if extra_params:
-            data.update(extra_params)
+            has_patch = data.pop("has_patch", False)
+            if has_patch:
+                data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
+        else:
+            if not self.request.form.get("search"):
+                # The user came in at the default +bugs URL, so inject default
+                # search parameters.
+                data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         if data.get("omit_dupes") is None:
             # The "omit dupes" parameter wasn't provided, so default to omitting
             # dupes from reports, of course.
             data["omit_dupes"] = True
-
-        has_patch = data.pop("has_patch", False)
-        if has_patch:
-            data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
 
         # "Normalize" the form data into search arguments.
         form_values = {}
@@ -689,24 +739,17 @@ class BugTaskSearchListingView(LaunchpadView):
             else:
                 form_values[key] = value
 
-        search_params = BugTaskSearchParams(user=self.user, **form_values)
-        search_params.orderby = get_sortorder_from_request(self.request)
-
         # Base classes can provide an explicit search context.
         if not context:
             context = self.context
 
+        search_params = BugTaskSearchParams(user=self.user, **form_values)
+        search_params.orderby = get_sortorder_from_request(self.request)
         tasks = context.searchTasks(search_params)
-        if self.showBatchedListing():
-            if batch_start is None:
-                batch_start = int(self.request.get('batch_start', 0))
-            batch = Batch(tasks, batch_start, config.malone.buglist_batch_size)
-        else:
-            batch = tasks
 
-        return TableBatchNavigator(
-            batch=batch, request=self.request,
-            columns_to_show=self.columns_to_show)
+        return TableBatchNavigator(tasks, self.request,
+                    columns_to_show=self.columns_to_show,
+                    size=config.malone.buglist_batch_size)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""
@@ -716,7 +759,7 @@ class BugTaskSearchListingView(LaunchpadView):
         for term in vocabulary_registry.get(None, vocabulary_name):
             widget_values.append(
                 dict(
-                    value=term.token, title=term.token,
+                    value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
 
         return helpers.shortlist(widget_values, longest_expected=10)
@@ -734,6 +777,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def getSeverityWidgetValues(self):
         """Return data used to render the severity checkboxes."""
         return self.getWidgetValues("BugTaskSeverity")
+
+    def getMilestoneWidgetValues(self):
+        """Return data used to render the milestone checkboxes."""
+        return self.getWidgetValues("Milestone")
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""

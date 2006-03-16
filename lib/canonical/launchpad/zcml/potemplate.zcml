@@ -17,11 +17,6 @@
                             sourcepackagename sourcepackageversion
                             binarypackagename languagepack path"
             />
-        <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IRawFileData"
-            set_attributes="rawimportstatus daterawimport"
-            />
     </content>
 
     <browser:navigation

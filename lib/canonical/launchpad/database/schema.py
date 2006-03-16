@@ -5,9 +5,9 @@ __all__ = ['SchemaSet', 'Schema', 'Label']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin
-from sqlobject import RelatedJoin, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from sqlobject import (
+    ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin, SQLObjectNotFound)
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
     ISchemaSet, ISchema, ILabel, NotFoundError)
@@ -43,7 +43,7 @@ class Schema(SQLBase):
         #BoolCol(name='extensible', dbName='extensible', notNull=True),
         ]
 
-    _labelsJoin = MultipleJoin('Label', joinColumn='schema')
+    _labelsJoin = SQLMultipleJoin('Label', joinColumn='schema')
 
     def labels(self):
         return iter(self._labelsJoin)

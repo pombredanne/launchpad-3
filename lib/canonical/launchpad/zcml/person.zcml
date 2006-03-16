@@ -29,8 +29,7 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PersonSupportMenu PersonCodeMenu PeopleContextMenu
-          TeamBugsMenu"
+          PersonSpecsMenu PersonSupportMenu PeopleContextMenu TeamBugsMenu"
       />
 
   <browser:url
@@ -160,6 +159,22 @@
         name="+teamlist"
         template="../templates/team-listing.pt" />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+table-specworkload"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonSpecWorkLoadView"
+    template="../templates/person-table-specworkload.pt"
+    lp:url="/people/$Person.name/+table-specworkload" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+specworkload"
+    facet="specifications"
+    permission="zope.Public"
+    template="../templates/person-specworkload.pt"
+    lp:url="/people/$Person.name/+specworkload" />
 
   <browser:page
      for="canonical.launchpad.interfaces.IPerson"
@@ -334,25 +349,7 @@
     with.-->
     <browser:page
         name="+specs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+createdspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+approverspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+assignedspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+draftedspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+reviewspecs"
-        template="../templates/specificationtarget-specs.pt" />
-    <browser:page
-        name="+subscribedspecs"
-        template="../templates/specificationtarget-specs.pt" />
+        template="../templates/specificationtarget-index.pt" />
   </browser:pages>
 
   <browser:pages
@@ -385,7 +382,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.BranchTargetView"
     permission="zope.Public"
-    facet="code"
+    facet="overview"
     >
     <!-- there is trickery here, in the view class, which detects the view
     name and then gives the template a different set of branches to work
@@ -518,10 +515,10 @@
       name="+addbranch"
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IBranch"
-      fields="product name owner author title url home_page lifecycle_status summary"
+      fields="product name owner lifecycle_status url title summary home_page author"
       class="canonical.launchpad.browser.BranchAddView"
-      facet="code"
-      keyword_arguments="product name owner author title url home_page lifecycle_status summary"
+      facet="overview"
+      keyword_arguments="product name owner lifecycle_status url title summary home_page author"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt">
       <browser:widget

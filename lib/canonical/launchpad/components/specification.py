@@ -12,21 +12,26 @@ class SpecificationDelta:
     """See canonical.launchpad.interfaces.ISpecificationDelta."""
     implements(ISpecificationDelta)
     def __init__(self, specification, user, title=None,
-        summary=None, specurl=None, productseries=None, distrorelease=None,
-        milestone=None, name=None, priority=None, status=None, target=None,
-        bugs_linked=None, bugs_unlinked=None):
+        summary=None, whiteboard=None, specurl=None, productseries=None,
+        distrorelease=None, milestone=None, name=None, priority=None,
+        status=None, target=None, bugs_linked=None, bugs_unlinked=None,
+        approver=None, assignee=None, drafter=None):
         self.specification = specification
         self.user = user
         self.title = title
         self.summary = summary
+        self.whiteboard = whiteboard
         self.specurl = specurl
-        productseries = productseries
-        distrorelease = distrorelease
-        milestone = milestone
+        self.productseries = productseries
+        self.distrorelease = distrorelease
+        self.milestone = milestone
         self.name = name
-        priority = priority
-        status = status
-        target = target
-        bugs_linked = bugs_linked
-        bugs_unlinked = bugs_unlinked
+        self.priority = priority
+        self.status = status
+        self.target = target
+        self.approver = approver
+        self.assignee = assignee
+        self.drafter = drafter
+        self.bugs_linked = bugs_linked
+        self.bugs_unlinked = bugs_unlinked
 

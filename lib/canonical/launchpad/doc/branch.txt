@@ -37,7 +37,7 @@ Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
 utility.
 
 >>> from zope.component import getUtility
->>> from canonical.launchpad.interfaces import IBranchSet
+>>> from canonical.launchpad.interfaces import IBranchSet, NotFoundError
 >>> branchset = getUtility(IBranchSet)
 
 It must define the IBranchSet interface.
@@ -53,6 +53,18 @@ True
 >>> print branchset.get(-1)
 None
 
+A branch is retrievable via BranchSet's __getitem__ 
+
+>>> branchset[24].name
+u'launchpad'
+
+If it doesn't exist an exception NotFoundError is raised
+
+>>> try:
+...     branchset[-1]
+... except NotFoundError:
+...     pass
+
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> personset = getUtility(IPersonSet)
 >>> ddaa = personset.getByName('ddaa')
@@ -67,6 +79,8 @@ None
 u'dev'
 >>> gterm_dev.product == gterm_product
 True
+>>> gterm_dev.url
+u'http://example.com/~ddaa/gterm.dev'
 
 Branches must implement the IBranch interface.
 
@@ -75,17 +89,25 @@ Branches must implement the IBranch interface.
 >>> verifyObject(IBranch, gterm_dev)
 True
 
-Branch may or may not be associated to a product, and may have no home_page
+Branch may or may not be associated to a product, and may have no home_page,
+no title, and no summary, and even no URL.
+
+Branches with no URL are primarily hosted on the supermirror.
 
 >>> url = 'http://example.com/~ddaa/junkcode'
->>> junkcode = branchset.new('junkcode', ddaa, None, url,
-...     title, summary=summary)
+>>> junkcode = branchset.new('junkcode', ddaa, None, None)
 >>> junkcode.name
 u'junkcode'
->>> junkcode.product is None
-True
->>> junkcode.home_page is None
-True
+>>> print repr(junkcode.product)
+None
+>>> print repr(junkcode.home_page)
+None
+>>> print repr(junkcode.title)
+None
+>>> print repr(junkcode.summary)
+None
+>>> print repr(junkcode.url)
+None
 
 == Branches and products ==
 
@@ -141,7 +163,7 @@ Branches can be subscribed to and unsubscribed from by a Person.
 True
 >>> subscription.branch == gterm_dev and subscription.person == sabdfl
 True
->>> gterm_dev.subscriptions == [subscription]
+>>> gterm_dev.subscriptions[0] == subscription
 True
 >>> gterm_dev.subscribers == [sabdfl]
 True
@@ -263,3 +285,4 @@ database. getByRevisionId returns None.
 
 >>> revisionset.getByRevisionId('missing-revision-id') is None
 True
+
