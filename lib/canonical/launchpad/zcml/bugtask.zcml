@@ -346,7 +346,7 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         name="+index" />
 
-    <browser:editform
+    <browser:generalform
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
@@ -364,9 +364,9 @@
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:editform>
+    </browser:generalform>
 
-    <browser:editform
+    <browser:generalform
         name="+edit-form"
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
@@ -384,7 +384,7 @@
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:editform>
+    </browser:generalform>
 
     <browser:schemadisplay
         name="+viewstatus-page"
@@ -410,7 +410,7 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         name="+index" />
 
-    <browser:editform
+    <browser:generalform
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
@@ -428,9 +428,9 @@
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:editform>
+    </browser:generalform>
 
-    <browser:editform
+    <browser:generalform
         name="+edit-form"
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
@@ -448,7 +448,7 @@
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:editform>
+    </browser:generalform>
 
     <browser:schemadisplay
         name="+viewstatus-page"
