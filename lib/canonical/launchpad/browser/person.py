@@ -503,14 +503,15 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editemblem(self):
         target = '+editemblem'
-        text = 'Edit Emblem'
+        text = 'Change Emblem'
         return Link(target, text, icon='edit')
 
     def members(self):
         target = '+members'
-        text = 'Edit Members'
+        text = 'Members'
         return Link(target, text, icon='people')
 
     def polls(self):
