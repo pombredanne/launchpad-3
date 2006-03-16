@@ -319,6 +319,20 @@ class POHeader(dict, POMessage):
 
     def __init__(self, **kw):
         dict.__init__(self)
+
+        # the charset is not known til the header has been parsed.
+        # Scan for the charset in the same way that 
+        self.charset = 'UTF-8'
+        if 'msgstr' in kw:
+            pos = kw['msgstr'].find('charset=')
+            if pos >= 0:
+                rest = kw['msgstr'][pos + len('charset='):]
+                self.charset = rest.split(None, 1)[0]
+
+        for attr in ['msgid', 'msgstr', 'commentText', 'sourceComment']:
+            if attr in kw:
+                kw[attr] = unicode(kw[attr], self.charset, 'replace')
+
         POMessage.__init__(self, **kw)
         self._casefold = {}
         self.header = self
@@ -625,7 +639,7 @@ class POParser(object):
         else:
             if '\n' in self._pending_chars:
                 line, self._pending_chars = self._pending_chars.split('\n', 1)
-                return unicode(line, 'ASCII')
+                return line
             else:
                 return None
 
@@ -872,7 +886,7 @@ class POParser(object):
             else:
                 logging.warning(POSyntaxWarning(
                     self._lineno, 'No newline at end of file'))
-                self.parse_line(unicode(self._pending_chars, 'ASCII'))
+                self.parse_line(self._pending_chars)
 
         if self._section and self._section.startswith('msgid'):
             raise POSyntaxError(self._lineno)
