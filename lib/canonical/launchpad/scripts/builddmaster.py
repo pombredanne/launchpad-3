@@ -1372,20 +1372,16 @@ class BuilddMaster:
             return
 
         try:
+            # send chroot
             builders.giveToBuilder(builder, chroot, self.librarian)
-        except Exception, e:
-            self._logger.warn("Disabling builder: %s" % builder.url,
-                              exc_info=1)
-            builders.failBuilder(builder, ("Exception %s passing a chroot "
-                                           "to the builder" % e))
-        else:
+            # build filemap structure with the files required in this build.
+            # and send them to the builder.
             filemap = {}
-
             for f in queueItem.files:
                 fname = f.libraryfile.filename
                 filemap[fname] = f.libraryfile.content.sha1
                 builders.giveToBuilder(builder, f.libraryfile, self.librarian)
-
+            # build extra arguments
             args = {
                 "ogrecomponent": queueItem.component_name,
                 }
@@ -1394,8 +1390,15 @@ class BuilddMaster:
             # this distrorelease (in case it requires any archindep source)
             args['arch_indep'] = (queueItem.archhintlist == 'all' or
                                   queueItem.archrelease.isNominatedArchIndep)
-
+            # request start of the process
             builders.startBuild(builder, queueItem, filemap,
                                 "debian", pocket, args)
+        except (xmlrpclib.Fault, socket.error), info:
+            # mark builder as 'failed'.
+            self._logger.warn("Disabling builder: %s" % builder.url,
+                              exc_info=1)
+            builders.failBuilder(
+                builder, "Exception (%s) when setting up to new job" % info)
+
         self.commit()
 
