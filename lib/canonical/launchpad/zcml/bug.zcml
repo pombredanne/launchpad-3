@@ -18,7 +18,7 @@
         <allow attributes="id private bugtasks subscriptions" />
         <require
             permission="launchpad.View"
-            attributes="datecreated name title summary description ownerID
+            attributes="datecreated name title description ownerID
                         owner duplicateof communityscore communitytimestamp
                         hits hitstimestamp activityscore activitytimestamp
                         displayname activity initial_message 
@@ -30,7 +30,7 @@
                         unlinkCVE findCvesInText newMessage linkMessage" />
         <require
             permission="launchpad.Edit"
-            set_attributes="datecreated name title summary description ownerID
+            set_attributes="datecreated name title description ownerID
                             owner duplicateof communityscore communitytimestamp
                             hits hitstimestamp activityscore activitytimestamp
                             activity initial_message private" />
