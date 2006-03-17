@@ -16,8 +16,8 @@ from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
+
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
@@ -27,6 +27,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,

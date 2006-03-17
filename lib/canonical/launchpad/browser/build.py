@@ -12,7 +12,6 @@ __all__ = [
     'BuildRecordsView',
     ]
 
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BuildStatus
 
 from canonical.launchpad.interfaces import IHasBuildRecords, IBuild
@@ -20,6 +19,7 @@ from canonical.launchpad.interfaces import IHasBuildRecords, IBuild
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
     LaunchpadView, enabled_with_permission)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class BuildNavigation(GetitemNavigation):

@@ -22,7 +22,6 @@ from zope.publisher.browser import FileUpload
 from CVS.protocol import CVSRoot
 import pybaz
 
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
@@ -37,6 +36,7 @@ from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets
     )
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad import _
 
