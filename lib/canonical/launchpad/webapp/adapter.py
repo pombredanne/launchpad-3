@@ -184,8 +184,8 @@ class RequestExpired(RuntimeError):
     implements(IRequestExpired)
 
 
-class RequestQueryTimedOut(RequestExpired):
-    """A query that was part of a request timed out."""
+class RequestStatementTimedOut(RequestExpired):
+    """A statement that was part of a request timed out."""
 
 
 class ConnectionWrapper:
@@ -245,7 +245,7 @@ class CursorWrapper:
                 errorstr = error.args[0]
                 if errorstr.startswith(
                     'ERROR:  canceling query due to user request'):
-                    raise RequestQueryTimedOut(statement, errorstr)
+                    raise RequestStatementTimedOut(statement)
             raise
 
     def __getattr__(self, attr):
