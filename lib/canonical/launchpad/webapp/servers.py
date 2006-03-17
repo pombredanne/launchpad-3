@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
+from zope.publisher.xmlrpc import XMLRPCRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
 from zope.app.publication.interfaces import IPublicationRequestFactory
@@ -150,7 +151,7 @@ def adaptRequestToResponse(request):
 
 class LaunchpadTestRequest(TestRequest):
     """Mock request for use in unit and functional tests.
-    
+
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
 
     This class subclasses TestRequest - the standard Mock request object
@@ -208,6 +209,32 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         if self._notifications is None:
             self._notifications = NotificationList()
         return self._notifications
+
+
+class LaunchpadXMLRPCRequest(XMLRPCRequest, ErrorReportRequest):
+    """Request type for doing XMLRPC in Launchpad."""
+
+
+class XMLRPCPublicationRequestFactory:
+
+    implements(IPublicationRequestFactory)
+
+    def __init__(self, db):
+        from canonical.publication import LaunchpadBrowserPublication
+        LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
+        self._xmlrpc = LaunchpadXMLRPCPublication(db)
+
+    def __call__(self, input_stream, output_steam, env):
+        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        method = env.get('REQUEST_METHOD', 'GET').upper()
+
+        if method in ['POST']:
+            request = LaunchpadXMLRPCRequest(input_stream, output_steam, env)
+            request.setPublication(self._xmlrpc)
+        else:
+            raise NotImplementedError()
+
+        return request
 
 
 class HTTPPublicationRequestFactory:
@@ -280,6 +307,16 @@ class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
             request, canonical.launchpad.layers.InternalHTTPLayer)
         return request
 
+# XXX: SteveAlexander, 2006-03-16.  We'll replace these different servers
+#      with fewer ones, and switch based on the Host: header.
+#      http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxypreservehost
+
+xmlrpc = ServerType(
+    PublisherHTTPServer,
+    XMLRPCPublicationRequestFactory,
+    CommonAccessLogger,
+    8080,
+    True)
 
 http = ServerType(
     PublisherHTTPServer,

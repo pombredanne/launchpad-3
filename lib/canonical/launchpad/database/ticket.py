@@ -9,7 +9,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, MultipleJoin, RelatedJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin, SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import ITicket, ITicketSet
 
@@ -60,16 +60,16 @@ class Ticket(SQLBase):
     whiteboard = StringCol(notNull=False, default=None)
 
     # useful joins
-    subscriptions = MultipleJoin('TicketSubscription',
+    subscriptions = SQLMultipleJoin('TicketSubscription',
         joinColumn='ticket', orderBy='id')
     subscribers = RelatedJoin('Person',
         joinColumn='ticket', otherColumn='person',
         intermediateTable='TicketSubscription', orderBy='name')
-    buglinks = MultipleJoin('TicketBug', joinColumn='ticket',
+    buglinks = SQLMultipleJoin('TicketBug', joinColumn='ticket',
         orderBy='id')
     bugs = RelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
-    reopenings = MultipleJoin('TicketReopening', orderBy='datecreated',
+    reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
 
     def _create(self, id, **kwargs):
@@ -267,6 +267,6 @@ class TicketSet:
     def get(self, ticket_id, default=None):
         """See ITicketSet."""
         try:
-           return Ticket.get(ticket_id)
+            return Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return default

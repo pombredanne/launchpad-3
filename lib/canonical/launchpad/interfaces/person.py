@@ -259,9 +259,9 @@ class IPerson(IHasSpecifications):
                 "we'll use to communicate with them."), readonly=True)
 
     preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
-            description=_("The SHA-1 hash of the preferred email address as "
-                "a hexadecimal string. This is used as a key by FOAF RDF "
-                "spec"), readonly=True)
+            description=_("The SHA-1 hash of the preferred email address and "
+                "a mailto: prefix as a hexadecimal string. This is used as "
+                "a key by FOAF RDF spec"), readonly=True)
 
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,

@@ -86,7 +86,7 @@ class RosettaPreferencesView:
                 else:
                     self.checked = ''
 
-        user_languages = list(self.person.languages)
+        user_languages = helpers.shortlist(self.person.languages)
 
         for language in getUtility(ILanguageSet):
             if language.visible:

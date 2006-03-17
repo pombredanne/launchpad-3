@@ -54,12 +54,16 @@ class BountyContextMenu(ContextMenu):
     def subscription(self):
         user = getUtility(ILaunchBag).user
         if (user is not None and
-            get_subscription_for_person(user, self.context) is None):
-            text = 'Unsubscribe From Bounty'
-            return Link('+unsubscribe', text, icon='edit')
+            get_subscription_for_person(user, self.context) is not None):
+            text = 'Unsubscribe from Bounty'
+            icon = 'remove'
+        elif user is None:
+            text = 'Subscribe/Unsubscribe'
+            icon = 'edit'
         else:
             text = 'Subscribe to Bounty'
-            return Link('+subscribe', text, icon='edit')
+            icon = 'add'
+        return Link('+subscribe', text, icon=icon)
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):

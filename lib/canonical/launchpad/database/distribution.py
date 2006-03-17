@@ -1,13 +1,13 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
+__all__ = ['Distribution', 'DistributionSet']
 
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, MultipleJoin, RelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
     SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -47,7 +47,7 @@ from canonical.lp.dbschema import (
     TranslationPermission, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
@@ -84,10 +84,10 @@ class Distribution(SQLBase, BugTargetBase):
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    milestones = MultipleJoin('Milestone', joinColumn='distribution')
-    uploaders = MultipleJoin('DistroComponentUploader',
+    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution')
+    uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
-    source_package_caches = MultipleJoin('DistributionSourcePackageCache',
+    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
         joinColumn='distribution', orderBy='name')
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
@@ -204,14 +204,13 @@ class Distribution(SQLBase, BugTargetBase):
     def bugCounter(self):
         counts = []
 
-        severities = [
-            BugTaskStatus.NEW,
-            BugTaskStatus.ACCEPTED,
-            BugTaskStatus.REJECTED,
-            BugTaskStatus.FIXED]
+        severities = [BugTaskStatus.NEW,
+                      BugTaskStatus.ACCEPTED,
+                      BugTaskStatus.REJECTED,
+                      BugTaskStatus.FIXED]
 
-        query = ("bugtask.distribution = %s AND "
-                 "bugtask.bugstatus = %i")
+        query = ("BugTask.distribution = %s AND "
+                 "BugTask.bugstatus = %i")
 
         for severity in severities:
             query = query % (quote(self.id), severity)
@@ -332,17 +331,19 @@ class Distribution(SQLBase, BugTargetBase):
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
         if source:
-            candidate = SourcePackageFilePublishing.selectOneBy(
-                distribution=self.id,
-                libraryfilealiasfilename=filename)
-            if candidate is not None:
-                return LibraryFileAlias.get(candidate.libraryfilealias)
+            candidate = SourcePackageFilePublishing.selectFirstBy(
+                distribution=self.id, libraryfilealiasfilename=filename,
+                orderBy=['id'])
+
         if binary:
-            candidate = BinaryPackageFilePublishing.selectOneBy(
+            candidate = BinaryPackageFilePublishing.selectFirstBy(
                 distribution=self.id,
-                libraryfilealiasfilename=filename)
-            if candidate is not None:
-                return LibraryFileAlias.get(candidate.libraryfilealias)
+                libraryfilealiasfilename=filename,
+                orderBy=["-id"])
+
+        if candidate is not None:
+            return LibraryFileAlias.get(candidate.libraryfilealias)
+
         raise NotFoundError(filename)
 
 
@@ -580,11 +581,4 @@ class DistributionSet:
             members=members,
             owner=owner)
 
-class DistroPackageFinder:
-
-    implements(IDistroPackageFinder)
-
-    def __init__(self, distribution=None, processorfamily=None):
-        self.distribution = distribution
-        # XXX kiko: and what about processorfamily?
 

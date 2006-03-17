@@ -7,7 +7,7 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, StringCol, AND, SQLObjectNotFound, BoolCol, DateCol,
-    MultipleJoin)
+    SQLMultipleJoin)
 
 from canonical.launchpad.interfaces import (
     IMilestone, IMilestoneSet, NotFoundError)
@@ -25,9 +25,9 @@ class Milestone(SQLBase):
     visible = BoolCol(notNull=True, default=True)
 
     # joins
-    bugtasks = MultipleJoin('BugTask', joinColumn='milestone',
+    bugtasks = SQLMultipleJoin('BugTask', joinColumn='milestone',
         orderBy=['-priority', '-datecreated', '-severity'])
-    specifications = MultipleJoin('Specification', joinColumn='milestone',
+    specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
         orderBy=['-priority', 'status', 'title'])
 
     @property
