@@ -11,18 +11,14 @@ __all__ = [
     'DistroArchReleaseBinariesView',
     ]
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
     GetitemNavigation, enabled_with_permission)
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.interfaces import IDistroArchRelease
-
-BATCH_SIZE = 40
 
 
 class DistroArchReleaseNavigation(GetitemNavigation):
@@ -89,18 +85,11 @@ class DistroArchReleaseBinariesView:
 
 
     def binaryPackagesBatchNavigator(self):
-        if not self.text:
-            binary_packages = []
+        if self.text:
+            binary_packages = self.context.searchBinaryPackages(self.text)
         else:
-            binary_packages = list(self.context.searchBinaryPackages(
-                self.text))
-
-        start = int(self.request.get('batch_start', 0))
-        batch_size = BATCH_SIZE
-        batch = Batch(list = binary_packages, start = start,
-                      size = batch_size)
-
-        return BatchNavigator(batch = batch, request = self.request)
+            binary_packages = []
+        return BatchNavigator(binary_packages, self.request)
 
 
 class DistroArchReleaseAddView(SQLObjectAddView):
