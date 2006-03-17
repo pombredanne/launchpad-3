@@ -155,14 +155,11 @@ POTMsgSet.applySanityFixes
 
 This function applies all checks we know to fix broken input
 
-As this test is too specific, we are going to change a msgid as we need for
-every test.
-
-For this test, we are going to use a msgid with a leading and a trailing
-newlines.
+As this test is very, we wil create a msgid just for this test. We are going
+to use a msgid with a leading and a trailing newline.
 
     >>> potmsgset = potemplate.createMessageSetFromText(
-    ...     u'\nnormal string with\nleading and trailing newlines\n')
+    ...     u'\nnormal string with\nleading and trailing newline\n')
 
 And the text we are going to check will have them too, but we are going to
 use '\r\n' like when we get a form submission.

@@ -256,14 +256,13 @@ class POTMsgSet(SQLBase):
         if mac_style in stripped_msgid:
             if msgid_style is not None:
                 raise BrokenTextError(
-                    "Broken msgid (%r), it's mixing different newline markers"
-                        % msgid)
+                    "msgid (%r) mixes different newline markers" % msgid)
             msgid_style = mac_style
 
         if unix_style in stripped_msgid:
             if msgid_style is not None:
                 raise BrokenTextError(
-                    "Broken msgid (%r), it's mixing different newline markers"
+                    "msgid (%r) mixes different newline markers" % msgid)
                         % msgid)
             msgid_style = unix_style
 
@@ -275,15 +274,13 @@ class POTMsgSet(SQLBase):
         if mac_style in stripped_text:
             if text_style is not None:
                 raise BrokenTextError(
-                    "Broken text (%r), it's mixing different newline markers"
-                        % text)
+                    "text (%r) mixes different newline markers" % text)
             text_style = mac_style
 
         if unix_style in stripped_text:
             if text_style is not None:
                 raise BrokenTextError(
-                    "Broken text (%r), it's mixing different newline markers"
-                        % text)
+                    "text (%r) mixes different newline markers" % text)
             text_style = unix_style
 
         if msgid_style is None or text_style is None:

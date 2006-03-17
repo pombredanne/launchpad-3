@@ -9,7 +9,7 @@ __all__ = [
     'BrokenTextError',
     ]
 
-class BrokenTextError(AssertionError):
+class BrokenTextError(ValueError):
     """Exception raised when we detect values on a text that aren't valid."""
 
 class IPOTMsgSet(Interface):
