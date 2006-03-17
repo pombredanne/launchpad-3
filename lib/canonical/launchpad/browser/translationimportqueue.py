@@ -59,6 +59,19 @@ class TranslationImportQueueEntryView(GeneralFormView):
         self.initialize()
         GeneralFormView.__init__(self, context, request)
 
+    @property
+    def initial_values(self):
+        """Initialize some values on the form, when it's possible."""
+        field_values = {}
+        if self.context.sourcepackagename is not None:
+            field_values['sourcepackagename'] = self.context.sourcepackagename
+        (language, variant) = self.context.guessed_language_and_variant
+        if language is not None:
+            field_values['language'] = language
+        if variant is not None:
+            field_values['variant'] = variant
+        return field_values
+
     def initialize(self):
         """Set the fields that will be shown based on the 'context' values.
 
