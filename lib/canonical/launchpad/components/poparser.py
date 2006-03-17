@@ -322,21 +322,23 @@ class POHeader(dict, POMessage):
 
         # the charset is not known til the header has been parsed.
         # Scan for the charset in the same way that 
-        self.charset = 'UTF-8'
+        self.charset = 'US-ASCII'
         if 'msgstr' in kw:
             pos = kw['msgstr'].find('charset=')
             if pos >= 0:
                 rest = kw['msgstr'][pos + len('charset='):]
                 self.charset = rest.split(None, 1)[0]
+        if self.charset == 'CHARSET':
+            self.charset = 'US-ASCII'
 
         for attr in ['msgid', 'msgstr', 'commentText', 'sourceComment']:
             if attr in kw:
-                kw[attr] = unicode(kw[attr], self.charset, 'replace')
+                if isinstance(kw[attr], str):
+                    kw[attr] = unicode(kw[attr], self.charset, 'replace')
 
         POMessage.__init__(self, **kw)
         self._casefold = {}
         self.header = self
-        self.charset = kw.get('charset', 'utf8')
         self.messages = kw.get('messages', [])
         self.nplurals = None
         self.pluralExpr = '0'
