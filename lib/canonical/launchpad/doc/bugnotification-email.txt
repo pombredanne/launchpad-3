@@ -117,11 +117,11 @@ returns the subject and body of the email, as a tuple.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Summary changed:
+    ** Summary changed:
     <BLANKLINE>
     - Blackhole Trash folder
     + the new title
-    *** Description changed:
+    ** Description changed:
     <BLANKLINE>
       The Trash folder seems to have significant problems! At the moment,
     - dragging an item to the trash results in immediate deletion. The item
@@ -150,13 +150,13 @@ that the description is wrapped properly:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Short description changed:
+    ** Short description changed:
     <BLANKLINE>
     - Everything put into the folder "Trash" disappears!
     + this summary isn't particularly short is it? after all, what kind of
     + summary is so long that it needs to be wrapped?
     <BLANKLINE>
-    *** Description changed:
+    ** Description changed:
     <BLANKLINE>
     - The Trash folder seems to have significant problems! At the moment,
     - dragging an item to the Trash results in immediate deletion. The item
@@ -187,7 +187,7 @@ to a user that is explicitly subscribed to this bug):
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Visibility changed to: Private
+    ** Visibility changed to: Private
 
 Now we set the bug public and check if the e-mail sent changed as well.
 
@@ -201,7 +201,7 @@ Now we set the bug public and check if the e-mail sent changed as well.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Visibility changed to: Public
+    ** Visibility changed to: Public
 
 Adding a new bug task
 ---------------------
@@ -222,7 +222,7 @@ pretend we had just added task five:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body
-    *** Also affects: mozilla-firefox (Debian)
+    ** Also affects: mozilla-firefox (Debian)
            Severity: Minor
            Priority: High
            Assignee: name12 <test@canonical.com>
@@ -257,7 +257,8 @@ bugmail when a bug task is edited.
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     this is indeed a bug
     <BLANKLINE>
-    *** Changed in: ubuntu (upstream)
+    ** ubuntu (upstream) changed:
+    <BLANKLINE>
            Assignee: (unassigned) => Sample Person
              Status: Unconfirmed => Confirmed
 
@@ -283,7 +284,8 @@ edited:
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     I don't have time to work on this.
     <BLANKLINE>
-    *** Changed in: mozilla-firefox (Debian)
+    ** mozilla-firefox (Debian) changed:
+    <BLANKLINE>
            Assignee: Sample Person => (unassigned)
 
 Adding and editing web links
@@ -315,8 +317,7 @@ Adding a web link can be seen as "editing" a bug.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Web link added: "some title"
-    *** http://www.example.com/foo/bar
+    ** Web link added: http://www.example.com/foo/bar
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -338,11 +339,9 @@ modified link as having been "Added" (though no actual "adding" or
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Web link removed: "some title"
-    *** http://www.example.com/foo/bar
+    ** Web link removed: http://www.example.com/foo/bar
     <BLANKLINE>
-    *** Web link added: "some better title"
-    *** http://www.example.com/foo/bar
+    ** Web link added: http://www.example.com/foo/bar
 
 Adding and editing bug watches
 ------------------------------
@@ -375,8 +374,8 @@ generated when a bug watch is added:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Bug watch added: The Mozilla.org Bug Tracker #123
-    *** https://bugzilla.mozilla.org/show_bug.cgi?id=123
+    ** Bug watch added: The Mozilla.org Bug Tracker #123
+    ** https://bugzilla.mozilla.org/show_bug.cgi?id=123
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -396,11 +395,11 @@ Let's demonstrate with an example:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Bug watch removed: The Mozilla.org Bug Tracker #123
-    *** https://bugzilla.mozilla.org/show_bug.cgi?id=123
+    ** Bug watch removed: The Mozilla.org Bug Tracker #123
+    ** https://bugzilla.mozilla.org/show_bug.cgi?id=123
     <BLANKLINE>
-    *** Bug watch added: The Mozilla.org Bug Tracker #12
-    *** https://bugzilla.mozilla.org/show_bug.cgi?id=12
+    ** Bug watch added: The Mozilla.org Bug Tracker #12
+    ** https://bugzilla.mozilla.org/show_bug.cgi?id=12
 
 Adding and editing CVE relationships
 ------------------------------------
@@ -436,8 +435,7 @@ Adding a CVE will generate a notification that looks as follows:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** CVE added: CVE-2004-0718 (Candidate)
-    *** http://cve.mitre.org/whatsit?id=CVE-2004-0718
+    ** CVE added: http://cve.mitre.org/whatsit?id=CVE-2004-0718
 
 Similarly, removing a CVE ref will result in an email:
 
@@ -456,8 +454,7 @@ Similarly, removing a CVE ref will result in an email:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** CVE removed: CVE-2004-0719 (Candidate)
-    *** http://cve.mitre.org/whatsit?id=CVE-2004-0719
+    ** CVE removed: http://cve.mitre.org/whatsit?id=CVE-2004-0719
 
 Adding attachments
 ------------------
@@ -484,5 +481,5 @@ Adding an attachment will generate a notification that looks as follows:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    *** Attachment added: "A screenshot of the problem"
-    *** http://foo.com/screenshot.png
+    ** Attachment added: "A screenshot of the problem"
+    ** http://foo.com/screenshot.png

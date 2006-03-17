@@ -305,17 +305,17 @@ def generate_bug_edit_email(bug_delta):
         assert new_bug_dupe != old_bug_dupe
         if old_bug_dupe is not None:
             change_info += (
-                u"*** This bug is no longer a duplicate of bug %d\n" %
+                u"** This bug is no longer a duplicate of bug %d\n" %
                     old_bug_dupe.id)
-            change_info += u'*** "%s"\n\n' % old_bug_dupe.title
+            change_info += u'"%4s"\n\n' % old_bug_dupe.title
         if new_bug_dupe is not None:
             change_info += (
-                u"*** This bug has been marked a duplicate of bug %d\n" %
+                u"** This bug has been marked a duplicate of bug %d\n" %
                     new_bug_dupe.id)
-            change_info += '*** "%s"\n\n' % new_bug_dupe.title
+            change_info += '"%4s"\n\n' % new_bug_dupe.title
 
     if bug_delta.title is not None:
-        change_info += u"*** Summary changed:\n\n"
+        change_info += u"** Summary changed:\n\n"
         change_info += u"- %s\n" % bug_delta.title['old']
         change_info += u"+ %s\n" % bug_delta.title['new']
 
@@ -323,7 +323,7 @@ def generate_bug_edit_email(bug_delta):
         summary_diff = get_unified_diff(
             bug_delta.summary['old'],
             bug_delta.summary['new'], 72)
-        change_info += u"*** Short description changed:\n\n"
+        change_info += u"** Short description changed:\n\n"
         change_info += summary_diff
         change_info += u"\n\n"
 
@@ -332,7 +332,7 @@ def generate_bug_edit_email(bug_delta):
             bug_delta.description['old'],
             bug_delta.description['new'], 72)
 
-        change_info += u"*** Description changed:\n\n"
+        change_info += u"** Description changed:\n\n"
         change_info += description_diff
         change_info += u"\n\n"
 
@@ -341,44 +341,40 @@ def generate_bug_edit_email(bug_delta):
             visibility = "Private"
         else:
             visibility = "Public"
-        change_info += u"*** Visibility changed to: %s\n" % visibility
+        change_info += u"** Visibility changed to: %s\n" % visibility
 
     if bug_delta.external_reference is not None:
         old_ext_ref = bug_delta.external_reference.get('old')
         if old_ext_ref is not None:
-            change_info += u'*** Web link removed: "%s"\n' % old_ext_ref.title
-            change_info += u"*** %s\n\n" % old_ext_ref.url
+            change_info += u'** Web link removed: %s\n\n' % old_ext_ref.url
         new_ext_ref = bug_delta.external_reference['new']
         if new_ext_ref is not None:
-            change_info += u'*** Web link added: "%s"\n' % new_ext_ref.title
-            change_info += u"*** %s\n\n" % new_ext_ref.url
+            change_info += u'** Web link added: %s\n' % new_ext_ref.url
 
     if bug_delta.bugwatch is not None:
         old_bug_watch = bug_delta.bugwatch.get('old')
         if old_bug_watch:
-            change_info += u"*** Bug watch removed: %s #%s\n" % (
+            change_info += u"** Bug watch removed: %s #%s\n" % (
                 old_bug_watch.bugtracker.title, old_bug_watch.remotebug)
-            change_info += u"*** %s\n\n" % old_bug_watch.url
+            change_info += u"** %s\n\n" % old_bug_watch.url
         new_bug_watch = bug_delta.bugwatch['new']
         if new_bug_watch:
-            change_info += u"*** Bug watch added: %s #%s\n" % (
+            change_info += u"** Bug watch added: %s #%s\n" % (
                 new_bug_watch.bugtracker.title, new_bug_watch.remotebug)
-            change_info += u"*** %s\n\n" % new_bug_watch.url
+            change_info += u"** %s\n\n" % new_bug_watch.url
 
     if bug_delta.cve is not None:
         new_cve = bug_delta.cve.get('new', None)
         old_cve = bug_delta.cve.get('old', None)
         if old_cve:
-            change_info += u"*** CVE removed: %s\n" % old_cve.title
-            change_info += u"*** %s\n\n" % old_cve.url
+            change_info += u"** CVE removed: %s\n" % old_cve.url
         if new_cve:
-            change_info += u"*** CVE added: %s\n" % new_cve.title
-            change_info += u"*** %s\n\n" % new_cve.url
+            change_info += u"** CVE added: %s\n" % new_cve.url
 
     if bug_delta.attachment is not None and bug_delta.attachment['new']:
         added_attachment = bug_delta.attachment['new']
-        change_info += '*** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "*** %s\n" % added_attachment.libraryfile.url
+        change_info += '** Attachment added: "%s"\n' % added_attachment.title
+        change_info += "** %s\n" % added_attachment.libraryfile.url
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
@@ -390,7 +386,7 @@ def generate_bug_edit_email(bug_delta):
             if change_info and not change_info[-2:] == u"\n\n":
                 change_info += u"\n"
 
-            change_info += u"*** Changed in: %s\n" % (
+            change_info += u"** %s changed:\n\n" % (
                 bugtask_delta.bugtask.targetname)
 
             for fieldname, displayattrname in (
@@ -439,7 +435,7 @@ def generate_bug_edit_email(bug_delta):
             added_bugtasks = [bug_delta.added_bugtasks]
 
         for added_bugtask in added_bugtasks:
-            change_info += u"*** Also affects: %s\n" % added_bugtask.targetname
+            change_info += u"** Also affects: %s\n" % added_bugtask.targetname
             change_info += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
             if added_bugtask.priority:
                 priority_title = added_bugtask.priority.title
@@ -852,7 +848,7 @@ def notify_bug_comment_added(bugmessage, event):
     msg = ""
 
     if bug.duplicateof is not None:
-        msg += u"*** This bug is a duplicate of %d\n\n" % (
+        msg += u"** This bug is a duplicate of %d\n\n" % (
             bug.duplicateof.id)
 
     subject, body = generate_bug_comment_email(bugmessage)
