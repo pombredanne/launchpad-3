@@ -330,7 +330,7 @@ class ProductView:
 
     @property
     def branches(self):
-        branches = [getView(branch, '+index', request)
+        branches = [getView(branch, '+index', self.request)
                     for branch in self.context.branches]
         return branches
 
