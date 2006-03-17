@@ -11,11 +11,10 @@ __all__ = [
     'DistroArchReleaseBinariesView',
     ]
 
-from canonical.lp.batching import BatchNavigator
-
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
     GetitemNavigation, enabled_with_permission)
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 

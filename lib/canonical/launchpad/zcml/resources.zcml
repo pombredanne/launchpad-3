@@ -83,6 +83,7 @@
     <resource name="product" file="../images/product_icon.gif" />
     <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="red-bar.png" file="../images/red-bar.png" />
+    <resource name="remove" file="../images/remove.gif" />
     <resource name="required.gif" file="../images/required.gif" />
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search_icon.gif" />

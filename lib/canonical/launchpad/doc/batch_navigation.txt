@@ -7,7 +7,7 @@ of results.
 
 Imports:
 
-  >>> from canonical.lp.batching import BatchNavigator
+  >>> from canonical.launchpad.webapp.batching import BatchNavigator
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> def build_request(arg=None):
