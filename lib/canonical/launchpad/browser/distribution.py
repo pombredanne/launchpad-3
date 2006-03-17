@@ -114,12 +114,14 @@ class DistributionOverviewMenu(ApplicationMenu):
              'editbugcontact', 'reassign', 'addrelease', 'builds',
              'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editbugcontact(self):
-        text = 'Edit Bug Contact'
+        text = 'Change Bug Contact'
         return Link('+editbugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -143,10 +145,12 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'List All Packages'
         return Link('+allpackages', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def milestone_add(self):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
@@ -164,6 +168,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'View Builds'
         return Link('+builds', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
         return Link('+launchpad', text, icon='edit')
