@@ -194,7 +194,7 @@ class TranslationImportQueueView(LaunchpadView):
             self.status = None
         else:
             # Get the DBSchema entry.
-            self.status = RosettaImportStatus.items[status]
+            self.status = RosettaImportStatus.items[self.status]
         if self.type == 'all':
             # Selected all types, so the type is None to get all values.
             self.type = None
