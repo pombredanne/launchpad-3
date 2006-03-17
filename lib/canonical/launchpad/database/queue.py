@@ -154,15 +154,26 @@ class DistroReleaseQueue(SQLBase):
     @cachedproperty
     def queue_icons(self):
         """See IDistroReleaseQueue"""
-        possible_nature = {
-            self.sources: '/@@/package-source',
-            self.builds: '/@@/package-binary',
-            self.customfiles: '/@@/file',
-            }
         icons = []
-        for nature, icon in possible_nature.iteritems():
-            if nature:
-                icons.append(icon)
+
+        if self.sources:
+            icons.append('/@@/package-source')
+
+        if self.builds:
+            icons.append('/@@/package-binary')
+
+        custom_set = set()
+        for custom in self.customfiles:
+            custom_set.add(custom.customformat)
+
+        custom_icons = {
+            DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER: '/@@/ubuntu.gif',
+            DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS: '/@@/translations',
+            DistroReleaseQueueCustomFormat.DIST_UPGRADER: '/@@/topic_icon.gif',
+            }
+
+        for custom_format in custom_set:
+            icons.append(custom_icons[custom_format])
 
         if not icons:
             raise NotFoundError('Queue Icon not found for %s' % self.id)
@@ -214,10 +225,7 @@ class DistroReleaseQueue(SQLBase):
         if self.builds:
             return self.builds[0].build.sourcepackagerelease.name
         if self.customfiles:
-            custom = self.customfiles[0]
-            custom_displayname = '%s - %s' % (custom.customformat.name,
-                                              custom.libraryfilealias.filename)
-            return custom_displayname
+            return self.customfiles[0].libraryfilealias.filename
 
         raise NotFoundError('Can not find displayname for %s' % self.id)
 

@@ -207,10 +207,10 @@ But the more generic attribute 'displayname' still working and return
 the librarian filename in question.
 
   >>> custom_item.displayname
-  u'ROSETTA_TRANSLATIONS - netapplet-1.0.0.tar.gz'
+  u'netapplet-1.0.0.tar.gz'
 
   >>> custom_item.queue_icons
-  ['/@@/file']
+  ['/@@/translations']
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list

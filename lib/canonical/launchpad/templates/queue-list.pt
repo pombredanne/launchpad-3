@@ -31,7 +31,7 @@
                  tal:attributes="value view/text"
            />
 
-          <input title="Update List" type="submit" value="Update" />
+          <input title="Search" type="submit" value="Search" />
 
           </form>
          </td>
