@@ -19,7 +19,7 @@ from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet,
-    IBuildSet)
+    IBuildSet, IBinaryPackageNameSet)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
@@ -100,9 +100,9 @@ class DistroArchRelease(SQLBase):
         """See IDistroArchRelease"""
         if not pocket:
             pocket = dbschema.PackagePublishingPocket.RELEASE
-
+        # XXX cprov 20060210: no security proxy for dbschema is annoying
         pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
-                                           pocket=pocket)
+                                           pocket=pocket.value)
         if pchroot:
             # return the librarianfilealias of the chroot
             return pchroot.chroot
@@ -151,32 +151,52 @@ class DistroArchRelease(SQLBase):
         # use facility provided by IBuildSet to retrieve the records
         return getUtility(IBuildSet).getBuildsByArchIds([self.id], status)
 
-    def getReleasedPackages(self, name, pocket=None):
+    def getReleasedPackages(self, binary_name, pocket=None,
+                            include_pending=False, exclude_pocket=None):
         """See IDistroArchRelease."""
-        if not IBinaryPackageName.providedBy(name):
-            name = BinaryPackageName.byName(name)
-        pocketclause = ""
+        queries = []
+
+        if not IBinaryPackageName.providedBy(binary_name):
+            binname_set = getUtility(IBinaryPackageNameSet)
+            binary_name = binname_set.getOrCreateByName(binary_name)
+
+        queries.append("""
+        binarypackagerelease=binarypackagerelease.id AND
+        binarypackagerelease.binarypackagename=%s AND
+        distroarchrelease=%s
+        """ % sqlvalues(binary_name.id, self.id))
+
         if pocket is not None:
-            pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
-        published = BinaryPackagePublishing.select((
-            """
-            distroarchrelease = %s AND
-            status = %s AND
-            binarypackagerelease = binarypackagerelease.id AND
-            binarypackagerelease.binarypackagename = %s
-            """ % sqlvalues(self.id,
-                            dbschema.PackagePublishingStatus.PUBLISHED,
-                            name.id))+pocketclause,
+            queries.append("pocket=%s" % sqlvalues(pocket.value))
+
+        if exclude_pocket is not None:
+            queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
+
+        if include_pending:
+            queries.append("status in (%s, %s)" % sqlvalues(
+                dbschema.PackagePublishingStatus.PUBLISHED,
+                dbschema.PackagePublishingStatus.PENDING))
+        else:
+            queries.append("status=%s" % sqlvalues(
+                dbschema.PackagePublishingStatus.PUBLISHED))
+
+        published = BinaryPackagePublishing.select(
+            " AND ".join(queries),
             clauseTables = ['BinaryPackageRelease'])
+
         return shortlist(published)
 
     def findDepCandidateByName(self, name):
         """See IPublishedSet."""
-        return PublishedPackage.selectOneBy(
+        return PublishedPackage.selectFirstBy(
             binarypackagename=name, distroarchreleaseID=self.id,
-            packagepublishingstatus=dbschema.PackagePublishingStatus.PUBLISHED
-            )
+            packagepublishingstatus=dbschema.PackagePublishingStatus.PUBLISHED,
+            orderBy=['-id'])
 
+    def getAllReleasesByStatus(self, status):
+        """See IDistroArchRelease."""
+        return BinaryPackagePublishing.selectBy(distroarchreleaseID=self.id,
+                                                status=status)
 
 class DistroArchReleaseSet:
     """This class is to deal with DistroArchRelease related stuff"""
