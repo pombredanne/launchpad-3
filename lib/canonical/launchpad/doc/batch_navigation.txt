@@ -7,15 +7,22 @@ of results.
 
 Imports:
 
-  >>> from canonical.lp.z3batching import Batch
-  >>> from canonical.lp.batching import BatchNavigator
+  >>> from canonical.launchpad.webapp.batching import BatchNavigator
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+  >>> def build_request(arg=None):
+  ...   # XXX: this is a big fat hack; see bug XXX for details 
+  ...   #      -- kiko, 2006-03-13
+  ...   if arg is None:
+  ...       arg = {}
+  ...   else:
+  ...       query = "&".join(["%s=%s" % (k,v) for k,v in arg.items()])
+  ...       arg["QUERY_STRING"] = query
+  ...   request = LaunchpadTestRequest(SERVER_URL='http://www.example.com/foo',
+  ...                                  environ=arg)
+  ...   return request
 
 A dummy request object:
-
-  >>> class DummyRequest:
-  ...     URL = "http://www.example.com/foo"
-  ...     def __init__(self, query_string):
-  ...         self.environment = {'QUERY_STRING': query_string}
 
 Some sample data.
 
@@ -24,9 +31,8 @@ Some sample data.
 
 You can create a batch and a batch navigator like so:
 
-  >>> reindeer_batch = Batch(list=reindeer, size=3)
   >>> reindeer_batch_navigator = BatchNavigator(
-  ...     batch=reindeer_batch, request=DummyRequest(''))
+  ...     reindeer, build_request(), size=3)
 
 You can ask the navigator for the chunk of results currently being shown (e.g.
 to iterate over them for rendering in ZPT):
@@ -43,38 +49,22 @@ You can ask for the previous and next results' links:
 
 The next link will be empty when there are no further results:
 
-  >>> last_reindeer_batch = reindeer_batch.nextBatch().nextBatch()
-  >>> last_reindeer_batch_navigator = BatchNavigator(
-  ...     batch=last_reindeer_batch, request=DummyRequest(''))
+  >>> request = build_request({"batch_start": "3", "batch_end": "6"})
+  >>> last_reindeer_batch_navigator = BatchNavigator(reindeer, request=request)
   >>> last_reindeer_batch_navigator.nextBatchURL()
   ''
 
 This all works with query strings in the URLs, too:
 
-  >>> request = DummyRequest('fnorb=bar')
+  >>> request = build_request({'fnorb': 'bar',
+  ...                          'batch_start': '3',
+  ...                          'batch_end': '6'})
   >>> reindeer_batch_navigator_with_qs = BatchNavigator(
-  ...     batch=reindeer_batch.nextBatch(), request=request)
+  ...     reindeer, request, size=3)
   >>> reindeer_batch_navigator_with_qs.prevBatchURL()
   'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
   >>> reindeer_batch_navigator_with_qs.nextBatchURL()
   'http://www.example.com/foo?fnorb=bar&batch_start=6&batch_end=9'
-
-If the batch_start and batch_end is already in the query string, it will use
-those values:
-
-  >>> request = DummyRequest('fnorb=bar&batch_start=3&batch_end=6')
-  >>> reindeer_batch_navigator_with_qs_after_next = BatchNavigator(
-  ...     batch=reindeer_batch.nextBatch(), request=request)
-  >>> reindeer_batch_navigator_with_qs_after_next.prevBatchURL()
-  'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
-
-This works regardless of how the parts of the query string are ordered:
-
-  >>> request = DummyRequest('batch_start=3&fnorb=bar&batch_end=6')
-  >>> reindeer_batch_navigator_with_qs_after_next = BatchNavigator(
-  ...     batch=reindeer_batch.nextBatch(), request=request)
-  >>> reindeer_batch_navigator_with_qs_after_next.prevBatchURL()
-  'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
 
 Finally, you can ask for the links for each of the result pages:
 
@@ -91,11 +81,16 @@ Empty Batches
 -------------
 
 You can also create an empty batch that will not have any items:
-  
-  >>> items = None
-  >>> null_batch = Batch(list=items, size=3)
+
   >>> null_batch_navigator = BatchNavigator(
-  ...     batch=null_batch, request=DummyRequest(''))
+  ...     None, build_request(), size=3)
+  >>> null_batch_navigator.nextBatchURL()
+  ''
+  >>> null_batch_navigator.prevBatchURL()
+  ''
+
+  >>> null_batch_navigator = BatchNavigator(
+  ...     [], build_request(), size=3)
   >>> null_batch_navigator.nextBatchURL()
   ''
   >>> null_batch_navigator.prevBatchURL()
@@ -103,6 +98,7 @@ You can also create an empty batch that will not have any items:
 
 TODO:
 
+  - blowing up when start is beyond end
   - orphans
   - overlap
 
@@ -123,7 +119,9 @@ Imports and database setup:
 Prepare a query, and create a batch of the results:
 
   >>> select_results = EmailAddress.select(orderBy='id')
-  >>> email_batch = Batch(list=select_results, size=10)
+  >>> batch_nav = BatchNavigator(select_results, build_request(),
+  ...                            size=10)
+  >>> email_batch = batch_nav.currentBatch()
   >>> batch_items = list(email_batch)
 
 Because we're only looking at the first batch, the database is only asked for

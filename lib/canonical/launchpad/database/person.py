@@ -790,7 +790,7 @@ class Person(SQLBase):
         """See IPerson."""
         preferredemail = self.preferredemail
         if preferredemail:
-            return sha.new(preferredemail.email).hexdigest().upper()
+            return sha.new('mailto:' + preferredemail.email).hexdigest().upper()
         else:
             return None
 
