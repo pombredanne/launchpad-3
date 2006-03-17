@@ -46,7 +46,7 @@ class ImportProcess:
                 if removed_entries > 0:
                     self.logger.info('Removed %d entries from the queue.' %
                         removed_entries)
-                    zmt.commit()
+                    self.ztm.commit()
                 # Exit the loop.
                 break
 
