@@ -15,8 +15,8 @@
 """
 import unittest
 
-from canonical.lp.z3batching import _Batch
-from canonical.lp.z3batching.interfaces import IBatch
+from canonical.launchpad.webapp.z3batching import _Batch
+from canonical.launchpad.webapp.z3batching.interfaces import IBatch
 
 class BatchTest(unittest.TestCase):
 

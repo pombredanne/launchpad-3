@@ -58,7 +58,6 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy)
-from canonical.lp.batching import BatchNavigator
 
 from canonical.cachedproperty import cachedproperty
 
@@ -82,6 +81,7 @@ from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
@@ -503,14 +503,15 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editemblem(self):
         target = '+editemblem'
-        text = 'Edit Emblem'
+        text = 'Change Emblem'
         return Link(target, text, icon='edit')
 
     def members(self):
         target = '+members'
-        text = 'Edit Members'
+        text = 'Members'
         return Link(target, text, icon='people')
 
     def polls(self):

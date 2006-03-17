@@ -136,10 +136,12 @@ and set the expiration date to `today`.
   Location: http://localhost:9000/people/name17/+members
   ...
 
-Now check to see if everybody's looking good.
+Now check to see if everybody's looking good. Only team admins see inactive
+members.
 
   >>> print http(r"""
   ... GET /people/name17/+members/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
