@@ -338,7 +338,8 @@ class Distribution(SQLBase, BugTargetBase):
         if binary:
             candidate = BinaryPackageFilePublishing.selectFirstBy(
                 distribution=self.id,
-                libraryfilealiasfilename=filename)
+                libraryfilealiasfilename=filename,
+                orderBy=["-id"])
 
         if candidate is not None:
             return LibraryFileAlias.get(candidate.libraryfilealias)

@@ -142,6 +142,7 @@ Both got rescued, as expected.
 
 Let's create a bunch of mock slaves for testing the Builder State Handler:
 
+  >>> import xmlrpclib
   >>> class BrokenSlave:
   ...     def status(self):
   ...         raise xmlrpclib.Fault
@@ -158,7 +159,7 @@ slave has the requested file in cache.
   ...         print info
   ...         return (True, info)
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         info = 'OkSlaves BUILDING'
+  ...         info = 'Okscripts/Slaves BUILDING'
   ...         print info
   ...         return ('BuildStatus.Building', info)
 
