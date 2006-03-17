@@ -16,7 +16,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.lp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
 from canonical.launchpad.validators.cve import valid_cve

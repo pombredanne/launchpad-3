@@ -210,14 +210,14 @@ template. Remember, we need to tell the system that this po file is a
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
 
-The guessed IPOFile should be the same we already had.
+The guess IPOFile should be the same we already had.
 
-    >>> entry.guessed_pofile.id == pofile.id
+    >>> entry.guess_pofile.id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.pofile = entry.guess_pofile
 
 We must approve the entry to be able to import it.
 
@@ -352,14 +352,14 @@ Here are the contents of another file we'll be importing. It has no errors.
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
 
-The guessed IPOFile should be the same we already had.
+The guess IPOFile should be the same we already had.
 
-    >>> entry.guessed_pofile.id == pofile.id
+    >>> entry.guess_pofile.id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.pofile = entry.guess_pofile
 
 We must approve the entry to be able to import it.
 
@@ -453,14 +453,14 @@ Another test, try to import a .po file that is older than previous import...
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
 
-The guessed IPOFile should be the same we already had.
+The guess IPOFile should be the same we already had.
 
-    >>> entry.guessed_pofile.id == pofile.id
+    >>> entry.guess_pofile.id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.pofile = entry.guess_pofile
 
 We must approve the entry to be able to import it.
 
@@ -518,7 +518,7 @@ the msgid
     ...     pofile.path, pofile_content, True, rosetta_experts,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.pofile = entry.guess_pofile
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> pofile.importFromQueue(FakeLogger())

@@ -140,7 +140,11 @@ special = {
             setUp=importdSetUp, tearDown=importdTearDown),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
-            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown)
+            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
+    'translationimportqueue.txt': FunctionalDocFileSuite(
+            '../doc/translationimportqueue.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            )
     }
 
 def test_suite():
