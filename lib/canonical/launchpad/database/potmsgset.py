@@ -12,7 +12,8 @@ from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IPOTMsgSet, ILanguageSet, NotFoundError, NameNotAvailable)
+    IPOTMsgSet, ILanguageSet, NotFoundError, NameNotAvailable, BrokenTextError
+    )
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet
@@ -192,10 +193,10 @@ class POTMsgSet(SQLBase):
 
         # Fix the visual point that users copy & paste from the web interface.
         new_text = self.convertDotToSpace(text)
-        # Now, set the same whitespaces at the start/end of the string.
-        new_text = self.normalizeWhitespaces(new_text)
-        # And finally, fix the new line chars.
+        # Now, fix the newline chars.
         new_text = self.normalizeNewLines(new_text)
+        # And finally, set the same whitespaces at the start/end of the string.
+        new_text = self.normalizeWhitespaces(new_text)
 
         return new_text
 
@@ -253,15 +254,17 @@ class POTMsgSet(SQLBase):
             msgid_style = windows_style
 
         if mac_style in stripped_msgid:
-            assert msgid_style is None, (
-                "Broken msgid (%r), it's mixing different new line markers"
-                    % msgid)
+            if msgid_style is not None:
+                raise BrokenTextError(
+                    "Broken msgid (%r), it's mixing different newline markers"
+                        % msgid)
             msgid_style = mac_style
 
         if unix_style in stripped_msgid:
-            assert msgid_style is None, (
-                "Broken msgid (%r), it's mixing different new line markers"
-                    % msgid)
+            if msgid_style is not None:
+                raise BrokenTextError(
+                    "Broken msgid (%r), it's mixing different newline markers"
+                        % msgid)
             msgid_style = unix_style
 
         # Get the style that uses the given text.
@@ -270,15 +273,17 @@ class POTMsgSet(SQLBase):
             text_style = windows_style
 
         if mac_style in stripped_text:
-            assert text_style is None, (
-                "Broken text (%r), it's mixing different new line markers"
-                    % text)
+            if text_style is not None:
+                raise BrokenTextError(
+                    "Broken text (%r), it's mixing different newline markers"
+                        % text)
             text_style = mac_style
 
         if unix_style in stripped_text:
-            assert text_style is None, (
-                "Broken text (%r), it's mixing different new line markers"
-                    % text)
+            if text_style is not None:
+                raise BrokenTextError(
+                    "Broken text (%r), it's mixing different newline markers"
+                        % text)
             text_style = unix_style
 
         if msgid_style is None or text_style is None:

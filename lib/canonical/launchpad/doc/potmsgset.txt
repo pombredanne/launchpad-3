@@ -140,12 +140,33 @@ every test.
     >>> potmsgset_windows.normalizeNewLines(text_mac+text_windows)
     Traceback (most recent call last):
     ...
-    AssertionError: ...
+    BrokenTextError: ...
     >>> potmsgset_windows.normalizeNewLines(text_unix+text_windows)
     Traceback (most recent call last):
     ...
-    AssertionError: ...
+    BrokenTextError: ...
     >>> potmsgset_windows.normalizeNewLines(text_unix+text_mac)
     Traceback (most recent call last):
     ...
-    AssertionError: ...
+    BrokenTextError: ...
+
+POTMsgSet.applySanityFixes
+--------------------------
+
+This function applies all checks we know to fix broken input
+
+As this test is too specific, we are going to change a msgid as we need for
+every test.
+
+For this test, we are going to use a msgid with a leading and a trailing
+newlines.
+
+    >>> potmsgset = potemplate.createMessageSetFromText(
+    ...     u'\nnormal string with\nleading and trailing newlines\n')
+
+And the text we are going to check will have them too, but we are going to
+use '\r\n' like when we get a form submission.
+
+    >>> text = u'\r\nTranslation\r\nto test\r\n'
+    >>> potmsgset.applySanityFixes(text)
+    u'\nTranslation\nto test\n'
