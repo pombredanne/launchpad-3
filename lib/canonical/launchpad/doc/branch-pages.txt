@@ -19,15 +19,6 @@ of the owner and product of the branch.
 >>> gterm_view.supermirror_url()
 u'http://bazaar.launchpad.net/~name12/gnome-terminal/main'
 
-A Branch has a display name that is the Branch.title if it's provided, or a
-unique name based on the Supermirror URL for that branch.
-
->>> gterm_view.display_name()
-u'GNOME Terminal Mainline'
->>> assert pushed_view.context.title is None
->>> pushed_view.display_name()
-u'~name12/gnome-terminal/pushed'
-
 The branch view generates an appropriate notice when a branch is missing a
 title or summary.
 
