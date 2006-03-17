@@ -2,6 +2,9 @@
 
 __metaclass__ = type
 
+from urlparse import urlparse
+
+
 def valid_absolute_url(name):
     """validate an absolute URL.
 
@@ -18,7 +21,6 @@ def valid_absolute_url(name):
     >>> valid_absolute_url('whatever://example.com/blah')
     False
     """
-    from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(name)
     if scheme == 'sftp':
         return True
