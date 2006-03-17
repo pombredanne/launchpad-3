@@ -690,6 +690,11 @@ class DistroRelease(SQLBase, BugTargetBase):
             AND distrorelease = %s
             AND status = %s""" % sqlvalues(self.id, status)]
 
+        custom_where_clauses = ["""
+            distroreleasequeue.id = distroreleasequeuecustom.distroreleasequeue
+            AND distrorelease = %s
+            AND status = %s""" % sqlvalues(self.id, status)]
+
         # modify source clause to lookup on sourcepackagerelease
         source_where_clauses.append("""
             distroreleasequeuesource.sourcepackagerelease =
@@ -703,10 +708,17 @@ class DistroRelease(SQLBase, BugTargetBase):
         build_where_clauses.append(
             "binarypackagerelease.binarypackagename = binarypackagename.id")
 
-        # attempt to exact or similar names in both, builds and sources
+        # modify custom clause to lookup on libraryfilealias
+        custom_where_clauses.append(
+            "distroreleasequeuecustom.libraryfilealias = "
+            "libraryfilealias.id")
+
+        # attempt to exact or similar names in builds, sources and custom
         if exact_match:
             source_where_clauses.append("sourcepackagename.name = '%s'" % name)
             build_where_clauses.append("binarypackagename.name = '%s'" % name)
+            custom_where_clauses.append(
+                "libraryfilealias.filename='%s'" % name)
         else:
             source_where_clauses.append(
                 "sourcepackagename.name LIKE '%%' || %s || '%%'"
@@ -716,7 +728,11 @@ class DistroRelease(SQLBase, BugTargetBase):
                 "binarypackagename.name LIKE '%%' || %s || '%%'"
                 % quote_like(name))
 
-        # attempt for given version argument
+            custom_where_clauses.append(
+                "libraryfilealias.filename LIKE '%%' || %s || '%%'"
+                % quote_like(name))
+
+        # attempt for given version argument, except by custom
         if version:
             # exact or similar matches
             if exact_match:
@@ -746,6 +762,12 @@ class DistroRelease(SQLBase, BugTargetBase):
             ]
         build_orderBy = ['-binarypackagerelease.datecreated']
 
+        custom_clauseTables = [
+            'DistroReleaseQueueCustom',
+            'LibraryFileAlias',
+            ]
+        custom_orderBy = ['-LibraryFileAlias.id']
+
         source_where_clause = " AND ".join(source_where_clauses)
         source_results = DistroReleaseQueue.select(
             source_where_clause, clauseTables=source_clauseTables,
@@ -756,7 +778,12 @@ class DistroRelease(SQLBase, BugTargetBase):
             build_where_clause, clauseTables=build_clauseTables,
             orderBy=build_orderBy)
 
-        return source_results.union(build_results)
+        custom_where_clause = " AND ".join(custom_where_clauses)
+        custom_results = DistroReleaseQueue.select(
+            custom_where_clause, clauseTables=custom_clauseTables,
+            orderBy=custom_orderBy)
+
+        return source_results.union(build_results.union(custom_results))
 
     def createBug(self, owner, title, comment, private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""

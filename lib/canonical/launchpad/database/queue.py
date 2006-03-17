@@ -205,6 +205,7 @@ class DistroReleaseQueue(SQLBase):
 
     @cachedproperty
     def displayname(self):
+        """See IDistroReleaseQueue"""
         if self.sources:
             return self.sources[0].sourcepackagerelease.name
         if self.builds:

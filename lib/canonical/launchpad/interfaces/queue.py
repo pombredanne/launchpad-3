@@ -297,12 +297,14 @@ class IHasQueueItems(Interface):
     """An Object that has queue items"""
 
     def getQueueItems(status=None, name=None, version=None, exact_match=False):
-        """Get the union of build and source queue items for this distrorelease
+        """Get the union of builds, sources and custom queue items.
 
-        Returns build and source queue items in a given state, matching
-        a give name and version terms. If 'status' is not supplied, return
-        all items in the queues. if 'name' and 'version'
-        are supplied return only items which the sourcepackage name and
-        binarypackage name match (SQL LIKE). 'name' doesn't require 'version'.
+        Returns builds, sources and custom queue items in a given state,
+        matching a give name and version terms. If 'status' is not supplied,
+        return all items in the queues. if 'name' and 'version'
+        are supplied return only items which the sourcepackage name or
+        binarypackage name or the filename match (SQL LIKE).
+        'name' doesn't require 'version'
+        'version' doesn't has effect on custom queue items
         Use 'exact_match' argument for precise results.
         """
