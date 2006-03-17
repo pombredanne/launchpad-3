@@ -23,9 +23,10 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
+
 from canonical.lp.dbschema import RosettaImportStatus
-from canonical.lp.batching import BatchNavigator
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 

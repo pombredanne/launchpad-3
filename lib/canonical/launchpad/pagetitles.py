@@ -41,11 +41,6 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
 
-class BugPageTitle:
-    def __call__(self, context, view):
-        return smartquote('Bug #%d: "%s"') % (context.id, context.title)
-
-
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return smartquote('Bug #%d in %s: "%s"') % (
@@ -134,15 +129,13 @@ def bug_attachment_edit(context, view):
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = BugPageTitle()
+bug_edit = ContextTitle('%s')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):
     return smartquote('Bug #%d - Edit Web link "%s"') % (
         context.bug.id, context.title)
-
-bug_index = BugPageTitle()
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 

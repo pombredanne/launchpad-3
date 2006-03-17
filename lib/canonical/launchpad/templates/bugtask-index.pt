@@ -71,12 +71,6 @@
     </tal:notloggedin>
   </div>
 
-  <p class="documentDescription"
-     tal:condition="context/bug/summary"
-     tal:content="context/bug/summary">
-     $bug.summary
-  </p>
-
   <div tal:replace="structure context/@@+headline-tasks" />
 
     <tal:description
