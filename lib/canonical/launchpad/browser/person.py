@@ -928,23 +928,27 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
         return canonical_url(self.context) + "/+subscribedbugs"
 
 
-class PersonView:
+class PersonView(LaunchpadView):
     """A View class used in almost all Person's pages."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         self.message = None
-        self.user = getUtility(ILaunchBag).user
         self._karma_categories = None
-        if context.isTeam():
-            # These methods are called here because their return values are
-            # going to be used in some other places (including
-            # self.hasCurrentPolls()).
-            pollsubset = IPollSubset(self.context)
-            self.openpolls = pollsubset.getOpenPolls()
-            self.closedpolls = pollsubset.getClosedPolls()
-            self.notyetopenedpolls = pollsubset.getNotYetOpenedPolls()
+
+    @cachedproperty
+    def openpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getOpenPolls()
+
+    @cachedproperty
+    def closedpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getClosedPolls()
+
+    @cachedproperty
+    def notyetopenedpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getNotYetOpenedPolls()
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
