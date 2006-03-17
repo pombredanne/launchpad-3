@@ -1,0 +1,72 @@
+<div class="queue_list" tal:condition="not: view/setupQueueList">
+
+  <tal:batch define="batch view/batchnav/currentBatch">
+
+     <table>
+       <tr>
+         <th><label>Queue state and name:</label></th>
+         <td>
+          <form name="queue_items_state" action="" method="GET">
+
+          <select title="Queue state" name="queue_state" size="1">
+
+            <option tal:attributes="selected python: view.state == 'new'"
+                    value="new">New</option>
+
+            <option tal:attributes="selected python: view.state == 'unapproved'"
+                    value="unapproved">Unapproved</option>
+
+            <option tal:attributes="selected python: view.state == 'accepted'"
+                    value="accepted">Accepted</option>
+
+            <option tal:attributes="selected python: view.state == 'rejected'"
+                    value="rejected">Rejected</option>
+
+            <option tal:attributes="selected python: view.state == 'done'"
+                    value="done">Done</option>
+
+          </select>
+
+	  <input title="Package Name" size="20" type="text" name="queue_text"/>
+
+          <input title="Update List" type="submit" value="Update" />
+
+          </form>
+         </td>
+       </tr>
+     </table>
+
+     <tal:navigation
+          tal:condition="batch"
+          replace="structure view/batchnav/@@+navigation-links" />
+
+     <table class="listing" tal:condition="batch">
+       <tbody>
+         <tal:batch repeat="queue batch">
+           <tr>
+              <td class="left icon">
+                 <img tal:attributes="
+                      alt queue/sourcepackagename/name;
+                      src queue/queue_icon
+                 " />
+              </td>
+              <td tal:content="queue/sourcepackagename/name" />
+              <td tal:content="queue/sourceversion" />
+              <td tal:content="queue/age" />
+           </tr>
+         </tal:batch>
+       </tbody>
+     </table>
+
+     <div tal:condition="not: batch">
+       <img src="/@@/alert" />
+       No <span tal:replace="view/state" /> queue items for
+       <span tal:replace="context/title" />.
+     </div>
+
+     <tal:navigation
+          tal:condition="batch"
+          replace="structure view/batchnav/@@+navigation-links" />
+
+  </tal:batch>
+</div>

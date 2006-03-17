@@ -671,12 +671,10 @@ class DistroRelease(SQLBase, BugTargetBase):
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False):
         """See IDistroRelease."""
-
         if not status:
             assert not version and not exact_match and not status
             return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
                                                orderBy=['-id'])
-
         if not name:
             assert not version and not exact_match
             return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
