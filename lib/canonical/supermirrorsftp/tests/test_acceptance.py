@@ -102,8 +102,9 @@ class AcceptanceTests(BzrTestCase):
 
         # Create a local branch with one revision
         self.local_branch = ScratchDir(files=['foo']).open_branch()
-        self.local_branch.working_tree().add('foo')
-        self.local_branch.working_tree().commit('Added foo')
+        wt = self.local_branch.bzrdir.open_workingtree()
+        wt.add('foo')
+        wt.commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
         self.userHome = os.path.abspath(tempfile.mkdtemp())
@@ -233,10 +234,15 @@ class AcceptanceTests(BzrTestCase):
 
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.selectOneBy(name='test-branch')
+        testuser = database.Person.byName('testuser')
+        branch = database.Branch.selectOneBy(
+            ownerID=testuser.id, name='test-branch')
         branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
+        # XXX: force bzrlib to make a new SFTP connection. use getattr to
+        # protect against this attr going away.
+        sftp._connected_hosts.clear()
         remote_branch = bzrlib.branch.Branch.open(
             self.server_base + '~testuser/+junk/renamed-branch')
         self.assertEqual(
