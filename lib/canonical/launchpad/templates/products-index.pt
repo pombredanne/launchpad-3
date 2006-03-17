@@ -40,31 +40,30 @@
 
   <tal:searching condition="view/searchrequested">
 
-    <table class="data" tal:define="results view/searchresults">
+    <table
+      tal:condition="view/matches"
+      tal:define="results view/searchresults"
+    >
       <thead>
         <tr class="results">
-          <th colspan="0">
+          <td>
             <span tal:replace="view/matches">3</span>
             <span tal:condition="python: view.matches == 1">result</span>
             <span tal:condition="python: view.matches != 1">results</span>
-          </th>
+          </td>
         </tr>
       </thead>
       <tbody>
-        <tr tal:condition="view/matches"
-            tal:repeat="product results">
+        <tr tal:repeat="product results">
           <td tal:content="structure product/@@+listing-detailed" />
-        </tr>
-        <tr tal:condition="not: view/matches">
-          <td>
-            <img src="/@@/alert" /> No products matching
-            &#8220;<span tal:replace="view/text">moz</span>&#8221;
-            were found.
-            You can <a href="+new">register a new product</a>.
-          </td>
         </tr>
       </tbody>
     </table>
+        <p tal:condition="not: view/matches">
+          No products matching
+          &#8220;<span tal:replace="view/text">moz</span>&#8221;
+          were found.
+        </p>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">

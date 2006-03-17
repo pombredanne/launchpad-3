@@ -10,7 +10,7 @@ from zope.component import getUtility
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.helpers import (
-    getRawFileData, join_lines, RosettaWriteTarFile)
+    join_lines, RosettaWriteTarFile)
 from canonical.launchpad.components.poexport import MOCompiler
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet)
@@ -59,11 +59,7 @@ class POFormatHandler(Handler):
 
     def get_contents(self):
         """Return the contents of the exported file."""
-
-        if is_potemplate(self.obj):
-            return getRawFileData(self.obj)
-        else:
-            return self.obj.export()
+        return self.obj.export()
 
     def get_librarian_url(self):
         """Return a Librarian URL from which the exported file can be

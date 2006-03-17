@@ -8,8 +8,6 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import email
-from email.Utils import make_msgid
 import subprocess
 import gettextpo
 import os
@@ -35,18 +33,12 @@ from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
 import canonical
-from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
-    RosettaImportStatus, SourcePackageFileType,
-    BinaryPackageFormat, BinaryPackageFileType)
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed, DownloadFailed)
+    SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IHasOwner, IRequestPreferredLanguages,
-    IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed,
-    TranslationConstants)
-from canonical.launchpad.components.poparser import (
-    POSyntaxError, POInvalidInputError, POParser)
+    ILaunchBag, IOpenLaunchBag, IRequestPreferredLanguages,
+    IRequestLocalLanguages, ITeam, TranslationConstants)
+from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
 def text_replaced(text, replacements, _cache={}):
@@ -467,51 +459,6 @@ def shortlist(sequence, longest_expected=15):
               (longest_expected, len(L)),
               stacklevel=2)
     return L
-
-
-def uploadRosettaFile(filename, contents):
-    client = getUtility(ILibrarianClient)
-
-    try:
-        size = len(contents)
-        file = StringIO(contents)
-
-        alias = client.addFile(
-            name=filename,
-            size=size,
-            file=file,
-            contentType='application/x-po')
-    except UploadFailed, e:
-        raise RawFileAttachFailed(str(e))
-
-    return alias
-
-
-def attachRawFileDataByFileAlias(raw_file_data, alias, importer,
-    date_imported):
-    """Attach the contents of a file to a raw file data object."""
-    raw_file_data.rawfile = alias
-    raw_file_data.daterawimport = date_imported
-    raw_file_data.rawimporter = importer
-    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
-
-
-def attachRawFileData(raw_file_data, filename, contents, importer,
-    date_imported):
-    """Attach the contents of a file to a raw file data object."""
-    alias = uploadRosettaFile(filename, contents)
-    attachRawFileDataByFileAlias(raw_file_data, alias, importer, date_imported)
-
-
-def getRawFileData(raw_file_data):
-    client = getUtility(ILibrarianClient)
-
-    try:
-        file = client.getFileByAlias(raw_file_data.rawfile.id)
-    except DownloadFailed, e:
-        raise RawFileFetchFailed(str(e))
-
-    return file.read()
 
 
 def count_lines(text):
@@ -1007,3 +954,4 @@ def capture_state(obj, *fields):
         setattr(state, field, getattr(obj, field))
 
     return state
+

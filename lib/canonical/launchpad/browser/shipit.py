@@ -23,12 +23,11 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import ShipItFlavour, ShipItArchitecture
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -292,8 +291,6 @@ class RedirectToOldestPendingRequest:
         self.request.response.redirect(canonical_url(oldest_pending))
 
 
-BATCH_SIZE = 50
-
 class ShippingRequestsView:
     """The view to list ShippingRequests that match a given criteria."""
 
@@ -350,10 +347,8 @@ class ShippingRequestsView:
             orderBy=orderby)
         self.batchNavigator = self._getBatchNavigator(results)
 
-    def _getBatchNavigator(self, list):
-        start = int(self.request.get('batch_start', 0))
-        batch = Batch(list=list, start=start, size=BATCH_SIZE)
-        return BatchNavigator(batch=batch, request=self.request)
+    def _getBatchNavigator(self, results):
+        return BatchNavigator(results, self.request)
 
 
 class StandardShipItRequestsView:
