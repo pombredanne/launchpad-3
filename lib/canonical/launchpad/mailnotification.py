@@ -307,12 +307,12 @@ def generate_bug_edit_email(bug_delta):
             change_info += (
                 u"** This bug is no longer a duplicate of bug %d\n" %
                     old_bug_dupe.id)
-            change_info += u'"%4s"\n\n' % old_bug_dupe.title
+            change_info += u'   %s\n\n' % old_bug_dupe.title
         if new_bug_dupe is not None:
             change_info += (
                 u"** This bug has been marked a duplicate of bug %d\n" %
                     new_bug_dupe.id)
-            change_info += '"%4s"\n\n' % new_bug_dupe.title
+            change_info += '   %s\n\n' % new_bug_dupe.title
 
     if bug_delta.title is not None:
         change_info += u"** Summary changed:\n\n"
@@ -569,16 +569,10 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
 
     headers["X-Launchpad-Bug"] = x_launchpad_bug_values
 
-    if bug.private:
-        signature = get_email_template('bug-signature-private.txt') % {
-            'contents': contents,
-            'bug_title': bug.title,
-            'bug_url': canonical_url(bug)}
-    else:
-        signature = get_email_template('bug-signature.txt') % {
-            'contents': contents,
-            'bug_title': bug.title,
-            'bug_url': canonical_url(bug)}
+    signature = get_email_template('bug-signature.txt') % {
+        'contents': contents,
+        'bug_title': bug.title,
+        'bug_url': canonical_url(bug)}
 
     body = "%s\n%s" % (contents, signature)
 
@@ -614,7 +608,7 @@ def send_bug_duplicate_notification(duplicate_bug, user):
         return
     subject = u"[Bug %d] %s" % (bug.id, bug.title)
 
-    body = u"*** Bug %d has been marked a duplicate of this bug" % (
+    body = u"** Bug %d has been marked a duplicate of this bug" % (
         duplicate_bug.id,)
 
     send_bug_notification(bug, user, subject, body)
