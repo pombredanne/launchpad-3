@@ -50,9 +50,13 @@
                  <img tal:repeat="icon queue/queue_icons"
                       tal:attributes="alt queue/displayname; src icon" />
               </td>
-              <td tal:content="queue/displayname" />
-              <td tal:content="queue/sourceversion" />
-              <td tal:content="queue/age" />
+           </tr>
+           <tr class="secondary">
+  	      <td tal:content="queue/displayname" />
+           </tr>
+           <tr class="secondary">
+              <td>Version: <span tal:replace="queue/sourceversion" /></td>
+              <td>Age: <span tal:replace="queue/age" /> </td>
            </tr>
          </tal:batch>
        </tbody>
