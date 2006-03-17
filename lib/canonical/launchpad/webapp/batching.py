@@ -49,7 +49,7 @@ class BatchNavigator:
         return url
 
     def getBatches(self):
-        batch = _Batch(self.batch.list, size = self.batch.size)
+        batch = self.batch.firstBatch()
         batches = [batch]
         while 1:
             batch = batch.nextBatch()
@@ -95,9 +95,9 @@ class BatchNavigator:
             this_batch = batches[start]
             url = self.generateBatchURL(this_batch)
             if (start+1) == current:
-                urls.append({ '['+str(start + 1)+']' : url })
+                urls.append({'['+str(start + 1)+']' : url})
             else:
-                urls.append({ start + 1 : url })
+                urls.append({start + 1 : url})
             start += 1
 
         if current != 1:
