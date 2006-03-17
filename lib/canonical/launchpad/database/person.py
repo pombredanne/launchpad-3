@@ -839,30 +839,40 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def maintainedPackages(self):
+    def latestMaintainedPackages(self):
         """See IPerson."""
-        querystr = """
-            sourcepackagerelease.maintainer = %d AND
-            sourcepackagerelease.sourcepackagename = sourcepackagename.id
-            """ % self.id
+        querystr = self._latestReleaseQuery()
         return SourcePackageRelease.select(
             querystr,
             orderBy=['-dateuploaded'],
-            prejoins=['sourcepackagename'],
-            clauseTables=['SourcePackageName'])
+            prejoins=['sourcepackagename', 'maintainer'])
 
-    def uploadedButNotMaintainedPackages(self):
+    def latestUploadedButNotMaintainedPackages(self):
         """See IPerson."""
-        querystr = """
-            sourcepackagerelease.creator = %d AND
-            sourcepackagerelease.maintainer != %d AND
-            sourcepackagerelease.sourcepackagename = sourcepackagename.id
-            """ % (self.id, self.id)
+        querystr = self._latestReleaseQuery(uploader_only=True)
         return SourcePackageRelease.select(
             querystr,
             orderBy=['-dateuploaded'],
-            prejoins=['sourcepackagename'],
-            clauseTables=['SourcePackageName'])
+            prejoins=['sourcepackagename', 'maintainer'])
+
+    def _latestReleaseQuery(self, uploader_only=False):
+        # Returns a special query that returns the most recent
+        # sourcepackagereleases that were maintained/uploaded to
+        # distribution releases by this person.
+        if uploader_only:
+            extra = """sourcepackagerelease.creator = %d AND
+                       sourcepackagerelease.maintainer != %d""" % (
+                       self.id, self.id)
+        else:
+            extra = "sourcepackagerelease.maintainer = %d" % self.id
+        query = """
+            SourcePackageRelease.id IN (
+                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename) 
+                       sourcepackagerelease.id
+                  FROM sourcepackagerelease
+                 WHERE %s)
+              """ % extra
+        return query
 
     @property
     def is_ubuntero(self):
