@@ -18,8 +18,7 @@
 
   <h1>All registered CVEs</h1>
 
-  <tal:navigation condition="batch"
-                  replace="structure batchnav/@@+navigation-links" />
+  <tal:navigation replace="structure batchnav/@@+navigation-links" />
 
   <div tal:repeat="cve batch"
        tal:replace="structure cve/@@+listing-detailed" />
