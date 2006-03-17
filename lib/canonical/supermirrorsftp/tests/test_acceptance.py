@@ -12,7 +12,7 @@ import os
 import shutil
 import gc
 
-from bzrlib.branch import ScratchBranch
+from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
 from bzrlib.tests import TestCase as BzrTestCase
 from bzrlib.errors import NoSuchFile, NotBranchError
@@ -106,7 +106,7 @@ class AcceptanceTests(BzrTestCase):
         self.authserver.setUp()
 
         # Create a local branch with one revision
-        self.local_branch = ScratchBranch(files=['foo'])
+        self.local_branch = ScratchDir(files=['foo']).open_branch()
         self.local_branch.working_tree().add('foo')
         self.local_branch.working_tree().commit('Added foo')
 
