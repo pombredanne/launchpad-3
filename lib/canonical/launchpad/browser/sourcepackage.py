@@ -189,7 +189,6 @@ class SourcePackageView(BuildRecordsView):
 
     def binaries(self):
         """Format binary packages into binarypackagename and archtags"""
-
         all_arch = [] # all archtag in this distrorelease
         for arch in self.context.distrorelease.architectures:
             all_arch.append(arch.architecturetag)

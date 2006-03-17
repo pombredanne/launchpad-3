@@ -401,7 +401,7 @@ class BugTaskSet:
                 searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
 
         if params.subscriber is not None:
-            clauseTables = ['Bug', 'BugSubscription']
+            clauseTables.append('BugSubscription')
             extra_clauses.append("""Bug.id = BugSubscription.bug AND
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
@@ -431,7 +431,7 @@ class BugTaskSet:
 
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
-            query, prejoins=["bug"], clauseTables=clauseTables,
+            query, prejoinClauseTables=["Bug"], clauseTables=clauseTables,
             orderBy=orderby_arg)
 
         return bugtasks

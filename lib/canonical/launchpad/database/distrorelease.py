@@ -125,8 +125,9 @@ class DistroRelease(SQLBase, BugTargetBase):
             "Packaging.sourcepackagename = SourcePackageName.id "
             "AND DistroRelease.id = Packaging.distrorelease "
             "AND DistroRelease.id = %d" % self.id,
+            prejoinClauseTables=["SourcePackageName", "DistroRelease"],
             clauseTables=["SourcePackageName", "DistroRelease"],
-            prejoins=["sourcepackagename", "distrorelease", "productseries"],
+            prejoins=["productseries"],
             orderBy=["SourcePackageName.name"]
             )
         return packagings
@@ -136,8 +137,9 @@ class DistroRelease(SQLBase, BugTargetBase):
         result = DistroReleaseLanguage.select(
             "DistroReleaseLanguage.language = Language.id "
             "AND DistroReleaseLanguage.distrorelease = %d" % self.id,
+            prejoinClauseTables=["Language"],
             clauseTables=["Language"],
-            prejoins=["language", "distrorelease"],
+            prejoins=["distrorelease"],
             orderBy=["Language.englishname"])
         return result
 
