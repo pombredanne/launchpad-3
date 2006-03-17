@@ -195,7 +195,9 @@ class SourcePackageRelease(SQLBase):
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
                  ' AND BinaryPackageRelease.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
-        return BinaryPackageRelease.select(query, clauseTables=clauseTables)
+        return BinaryPackageRelease.select(query,
+                                           prejoinClauseTables=['Build'],
+                                           clauseTables=clauseTables)
 
     @property
     def meta_binaries(self):
