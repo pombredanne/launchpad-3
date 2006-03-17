@@ -36,7 +36,7 @@ list of emails to send:
     ...     notifications):
     ...     print 'To: %s' % ', '.join(sorted(to_addresses))
     ...     print email_notification
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -94,7 +94,7 @@ Let's add a few changes and see how it looks like:
     ...     pending_notifications):
     ...     print 'To: %s' % ', '.join(sorted(to_addresses))
     ...     print email_notification
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -135,7 +135,7 @@ in the order they were added:
     ...     pending_notifications):
     ...     print 'To: %s' % ', '.join(sorted(to_addresses))
     ...     print email_notification
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -172,7 +172,7 @@ If we insert yet another comment, it will be sent as a separate email:
     ...     pending_notifications):
     ...     print 'To: %s' % ', '.join(sorted(to_addresses))
     ...     print email_notification
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -194,7 +194,7 @@ If we insert yet another comment, it will be sent as a separate email:
       Firefox does not support SVG
       http://localhost:8086/malone/bugs/1
     <BLANKLINE>
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -237,7 +237,7 @@ change in between, three notifications will be sent:
     ...     pending_notifications):
     ...     print 'To: %s' % ', '.join(sorted(to_addresses))
     ...     print email_notification
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -251,7 +251,7 @@ change in between, three notifications will be sent:
       Firefox does not support SVG
       http://localhost:8086/malone/bugs/1
     <BLANKLINE>
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -265,7 +265,7 @@ change in between, three notifications will be sent:
       Firefox does not support SVG
       http://localhost:8086/malone/bugs/1
     <BLANKLINE>
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -356,7 +356,7 @@ well:
     ...     pending_notifications):
     ...     print 'To: %s' % ', '.join(sorted(to_addresses))
     ...     print email_notification
-    To: test@canonical.com
+    To: dilys@muse.19inch.net, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     References: foo@example.com-332342--1231
@@ -374,7 +374,7 @@ well:
       Blackhole Trash folder
       http://localhost:8086/malone/bugs/2
     <BLANKLINE>
-    To: test@canonical.com
+    To: dilys@muse.19inch.net, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     References: foo@example.com-332342--1231
@@ -388,7 +388,7 @@ well:
       Blackhole Trash folder
       http://localhost:8086/malone/bugs/2
     <BLANKLINE>
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
@@ -406,7 +406,7 @@ well:
       Firefox does not support SVG
       http://localhost:8086/malone/bugs/1
     <BLANKLINE>
-    To: mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd

@@ -9,7 +9,8 @@ import email
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import format_address
-from canonical.launchpad.mailnotification import get_bugmail_replyto_address
+from canonical.launchpad.mailnotification import (
+    get_bugmail_replyto_address, GLOBAL_NOTIFICATION_EMAIL_ADDRS)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -53,7 +54,11 @@ def construct_email_notification(bug_notifications):
         'body': body, 'bug_title': bug.title,
         'bug_url': canonical_url(bug)}
 
-    return bug.notificationRecipientAddresses(), raw_email
+    notified_addresses = bug.notificationRecipientAddresses()
+    if not bug.private:
+        notified_addresses = (
+            notified_addresses + GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+    return notified_addresses, raw_email
 
 
 def get_email_notifications(bug_notifications):
