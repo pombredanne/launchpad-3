@@ -16,6 +16,7 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
@@ -183,6 +184,12 @@ class DistroReleaseView(BuildRecordsView):
         if self.text:
             self.searchrequested = True
 
+    @cachedproperty
+    def cached_packagings(self):
+        # +packaging hits this many times, so avoid redoing the query
+        # multiple times, in particular because it's gnarly.
+        return list(self.context.packagings)
+
     @property
     def languages(self):
         return helpers.request_languages(self.request)
@@ -253,14 +260,19 @@ class DistroReleaseView(BuildRecordsView):
 
         return sorted(drlangs, key=lambda a: a.language.englishname)
 
+    @cachedproperty
     def unlinked_translatables(self):
-        """Return a list of sourcepackage that don't have a link to a product.
-        """
+        """Return the sourcepackages that lack a link to a productseries."""
         result = []
         for sp in self.context.translatable_sourcepackages:
-            if sp.productseries is None:
+            # We check direct_packaging below because we only want to
+            # indicate if this source package is unlinked in this
+            # distribution release (and not all of them); this is a
+            # slight performance improvement.
+            if (sp.direct_packaging is None or
+                sp.direct_packaging.productseries is None):
                 result.append(sp)
-        return result
+        return list(result)
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
@@ -304,3 +316,4 @@ class DistroReleaseAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
+

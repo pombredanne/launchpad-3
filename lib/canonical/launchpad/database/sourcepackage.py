@@ -11,6 +11,7 @@ apt_pkg.InitSystem()
 
 from warnings import warn
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
@@ -24,7 +25,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords)
+    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -94,14 +95,6 @@ class SourcePackage(BugTargetBase):
             return None
         return DistroReleaseSourcePackageRelease(
             self.distrorelease, pkg.sourcepackagerelease)
-
-    def _get_ubuntu(self):
-        """This is a temporary measure while
-        getUtility(IlaunchpadCelebrities) is bustificated here."""
-        # XXX: fix and get rid of this and clean up callsites
-        #   -- kiko, 2005-09-23
-        from canonical.launchpad.database.distribution import Distribution
-        return Distribution.byName('ubuntu')
 
     @property
     def displayname(self):
@@ -244,15 +237,22 @@ class SourcePackage(BugTargetBase):
             sourcepackagenameID=self.sourcepackagename.id,
             distroreleaseID=self.distrorelease.id,
             orderBy='packaging')
-        # now, return any Primary Packaging's found
+        packagings = packagings.prejoin(['sourcepackagename', 'distrorelease'])
+
+        # Use the has_packaging variable to avoid needing to slice into
+        # the results returned by selectBy()
+        has_packaging = None
         for pkging in packagings:
             if pkging.packaging == PackagingType.PRIME:
                 return pkging
+            if not has_packaging:
+                has_packaging = pkging
+
         # ok, we're scraping the bottom of the barrel, send the first
         # packaging we have
-        if packagings.count() > 0:
-            return packagings[0]
-        # capitulate
+        if has_packaging:
+            return has_packaging
+
         return None
 
     @property
@@ -269,15 +269,12 @@ class SourcePackage(BugTargetBase):
         if result is not None:
             return result
 
-        # ubuntu is used as a special case below
-        #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        ubuntu = self._get_ubuntu()
-
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         # if we are an ubuntu sourcepackage, try the previous release of
         # ubuntu
         if self.distribution == ubuntu:
             ubuntureleases = self.distrorelease.previous_releases
-            if ubuntureleases.count() > 0:
+            if ubuntureleases:
                 previous_ubuntu_release = ubuntureleases[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distrorelease=previous_ubuntu_release)
@@ -299,10 +296,7 @@ class SourcePackage(BugTargetBase):
         revision control is in place and working.
         """
 
-        # ubuntu is used as a special case below
-        #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        ubuntu = self._get_ubuntu()
-
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if self.distribution != ubuntu:
             return False
         ps = self.productseries

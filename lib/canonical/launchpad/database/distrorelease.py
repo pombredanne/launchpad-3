@@ -18,6 +18,8 @@ from sqlobject import (
     StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
     RelatedJoin)
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import (
     SQLBase, sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -116,8 +118,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         # We join through sourcepackagename to be able to ORDER BY it,
         # and this code also uses prejoins to avoid fetching data later
         # on.
-        # XXX: it would be ideal to prejoin on productseries.title when
-        # possible, avoiding another host of queries in
+        # XXX: it would be ideal to prejoin on productseries.product
+        # when it is possible, avoiding another host of queries in
         # distrorelease-packaging -- kiko, 2006-03-16
         packagings = Packaging.select(
             "Packaging.sourcepackagename = SourcePackageName.id "
@@ -150,18 +152,22 @@ class DistroRelease(SQLBase, BugTargetBase):
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
-    @property
+    @cachedproperty('_previous_releases_cached')
     def previous_releases(self):
         """See IDistroRelease."""
+        # This property is cached because it is used intensely inside
+        # sourcepackage.py; avoiding regeneration reduces a lot of
+        # count(*) queries.
         datereleased = self.datereleased
         # if this one is unreleased, use the last released one
         if not datereleased:
             datereleased = 'NOW'
-        return DistroRelease.select('''
+        results = DistroRelease.select('''
                 distribution = %s AND
                 datereleased < %s
                 ''' % sqlvalues(self.distribution.id, datereleased),
                 orderBy=['-datereleased'])
+        return list(results)
 
     @property
     def parent(self):
