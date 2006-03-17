@@ -48,6 +48,7 @@ def construct_email_notification(bug_notifications):
         'bug_title': bug.title,
         'bug_url': canonical_url(bug)}
 
+    # Set the references header.
     if comment:
         references = []
         reference = comment.parent
@@ -67,6 +68,10 @@ def construct_email_notification(bug_notifications):
     msg['Sender'] = config.bounce_address
     msg['Message-Id'] = msgid
     msg['Subject'] = "[Bug %d] %s" % (bug.id, subject)
+
+    # Add X-Launchpad-Bug headers.
+    for bugtask in bug.bugtasks:
+        msg['X-Launchpad-Bug'] = bugtask.asEmailHeaderValue()
 
     notified_addresses = bug.notificationRecipientAddresses()
     if not bug.private:

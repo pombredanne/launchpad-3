@@ -372,3 +372,11 @@ well:
     Bug Details:
       Firefox does not support SVG
       http://localhost:8086/malone/bugs/1
+
+If we take a closer look at a notification, we can see that
+X-Launchpad-Bug headers were added:
+
+    >>> sorted(email_notification.get_all('X-Launchpad-Bug'))
+    [u'distribution=debian; sourcepackage=mozilla-firefox; component=None;...',
+     u'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
+     u'product=firefox; status=Unconfirmed; priority=Wontfix;...']
