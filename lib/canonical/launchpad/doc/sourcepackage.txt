@@ -181,7 +181,7 @@ XXX cprov 20060125: it's still very primitive test but it's better
 than nothing ... bug # 29659
 
     >>> sp.manifest.uuid
-    u'e0451064-b405-4f52-b387-ebfc1a7ee297'
+    u'e0451064-b405-4f52-b387-ebfc1a7ee298'
 
     >>> len(sp.releases)
     2

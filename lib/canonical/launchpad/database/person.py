@@ -32,14 +32,16 @@ from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IPOTemplateSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet)
+    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaAction, Karma
+from canonical.launchpad.database.potemplate import POTemplateSet
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -755,7 +757,8 @@ class Person(SQLBase):
         #   -- kiko, 2006-03-17
         results = list(results)
         ids = set(pofile.potemplate.id for pofile in results)
-        list(getUtility(IPOTemplateSet).getByIDs(ids))
+        if ids:
+            list(POTemplateSet.getByIDs(ids))
         return results
 
     def validateAndEnsurePreferredEmail(self, email):
