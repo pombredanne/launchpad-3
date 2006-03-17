@@ -179,7 +179,7 @@ class QueueAction:
             if '/' in term:
                 term, version = term.strip().split('/')
 
-            self.items = self.distrorelease.getFancyQueueItems(
+            self.items = self.distrorelease.getQueueItems(
                 status=self.queue, name=term, version=version,
                 exact_match=self.exact_match)
             self.items_size = self.items.count()

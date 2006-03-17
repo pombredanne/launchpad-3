@@ -28,14 +28,14 @@ INFO
   Running: "info *"
   Listing ubuntu/breezy-autotest (NEW) 4/4
   ---------|----|----------------------|----------------------|---------------
-         1 | -B | mozilla-firefox      | 0.9                  | ...
-           | mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
-         2 | -B | pmount               | 0.1-1                | ...
-           | pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
-         3 | S- | netapplet            | 0.99.6-1             | ...
-           | netapplet/0.99.6-1 Component: main Section: web
-         4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
+         4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | 33 weeks
            | alsa-utils/1.0.9a-4ubuntu1 Component: main Section: base
+         3 | S- | netapplet            | 0.99.6-1             | 53 weeks
+           | netapplet/0.99.6-1 Component: main Section: web
+         2 | -B | pmount               | 0.1-1                | 21 weeks
+           | pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
+         1 | -B | mozilla-firefox      | 0.9                  | 21 weeks
+           | mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
   ---------|----|----------------------|----------------------|---------------
                                                                4/4
 							       total

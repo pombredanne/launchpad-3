@@ -14,6 +14,7 @@ __all__ = [
     'IDistroReleaseQueueSource',
     'IDistroReleaseQueueCustom',
     'IDistroReleaseQueueSet',
+    'IHasQueueItems',
     ]
 
 from zope.schema import Int
@@ -89,6 +90,7 @@ class IDistroReleaseQueue(Interface):
     sourcepackagerelease = Attribute("The source package release for this item")
 
     age = Attribute("The age of this queue item.")
+    queue_icon = Attribute("Queue icon for this entry")
 
     def setNew():
         """Set queue state to NEW."""
@@ -288,4 +290,18 @@ class IDistroReleaseQueueSet(Interface):
         If status is ommitted return the number of all entries.
         'distrorelease' is optional and restrict the results in given
         distrorelease.
+        """
+
+class IHasQueueItems(Interface):
+    """An Object that has queue items"""
+
+    def getQueueItems(status=None, name=None, version=None, exact_match=False):
+        """Get the union of build and source queue items for this distrorelease
+
+        Returns build and source queue items in a given state, matching
+        a give name and version terms. If 'status' is not supplied, return
+        all items in the queues. if 'name' and 'version'
+        are supplied return only items which the sourcepackage name and
+        binarypackage name match (SQL LIKE). 'name' doesn't require 'version'.
+        Use 'exact_match' argument for precise results.
         """

@@ -334,6 +334,8 @@ distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
 
 distrorelease_builds = ContextTitle('Builds for %s')
 
+distrorelease_queue = ContextTitle('Queue for %s')
+
 distroreleasebinarypackage_index = ContextTitle('%s')
 
 distroreleaselanguage = ContextTitle('%s')

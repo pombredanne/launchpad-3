@@ -32,7 +32,8 @@ from canonical.launchpad.interfaces import (
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
     ISourcePackage, ISourcePackageNameSet, IComponentSet, ISectionSet,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
+    IHasQueueItems)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -71,7 +72,7 @@ from canonical.launchpad.helpers import shortlist
 
 class DistroRelease(SQLBase, BugTargetBase):
     """A particular release of a distribution."""
-    implements(IDistroRelease, IHasBuildRecords)
+    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -667,18 +668,19 @@ class DistroRelease(SQLBase, BugTargetBase):
                                   pocket=pocket,
                                   changesfile=changes_file.id)
 
-    def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
+    def getQueueItems(self, status=None, name=None, version=None,
+                      exact_match=False):
         """See IDistroRelease."""
-        return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                           status=status)
 
-    def getFancyQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
-                            name=None, version=None, exact_match=False):
-        """See IDistroRelease."""
+        if not status:
+            assert not version and not exact_match and not status
+            return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
+                                               orderBy=['-id'])
 
         if not name:
             assert not version and not exact_match
-            return self.getQueueItems(status)
+            return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
+                                               status=status, orderBy=['-id'])
 
         source_where_clauses = ["""
             distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
