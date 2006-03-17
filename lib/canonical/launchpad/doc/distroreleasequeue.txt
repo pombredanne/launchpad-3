@@ -124,6 +124,7 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   3
   4
   5
+  6
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -136,7 +137,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  5
+  6
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -152,7 +153,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  4
+  5
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -181,12 +182,32 @@ Check the behaviour of @cachedproperty  attributes:
   >>> qitem.sourcepackagename.name
   u'mozilla-firefox'
 
+  >>> qitem.displayname
+  u'mozilla-firefox'
+
   >>> qitem.sourceversion
   u'0.9'
 
   >>> qitem.sourcepackagerelease
   <SourcePackageRelease at ...>
 
+
+Let's check the behaviour of 'name' attributes in a custom upload:
+
+  >>> custom_item = qset.get(5)
+
+It fails by trying to access 'sourcepackagename' in a custom upload:
+
+  >>> custom_item.sourcepackagename
+  Traceback (most recent call last):
+    ...
+  AssertionError
+
+But the more generic attribute 'displayname' still working and return
+the librarian filename in question.
+
+  >>> custom_item.displayname
+  u'ROSETTA_TRANSLATIONS - netapplet-1.0.0.tar.gz'
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list

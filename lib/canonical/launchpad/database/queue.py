@@ -157,7 +157,7 @@ class DistroReleaseQueue(SQLBase):
         possible_nature = {
             self.sources: '/@@/package-source',
             self.builds: '/@@/package-binary',
-            self.customfiles: '/@@/file_icon',
+            self.customfiles: '/@@/file',
             }
 
         for nature, icon in possible_nature.iteritems():
@@ -194,11 +194,28 @@ class DistroReleaseQueue(SQLBase):
         when we created it. This is heuristic for now but may be made into
         a column at a later date.
         """
-        assert self.sources or self.builds
         if self.sources:
             return self.sources[0].sourcepackagerelease.dateuploaded
         if self.builds:
             return self.builds[0].build.binarypackages[0].datecreated
+        if self.customfiles:
+            return self.customfiles[0].libraryfilealias.content.datecreated
+
+        raise NotFoundError('Can not find datecreated for %s' % self.id)
+
+    @cachedproperty
+    def displayname(self):
+        if self.sources:
+            return self.sources[0].sourcepackagerelease.name
+        if self.builds:
+            return self.builds[0].build.sourcepackagerelease.name
+        if self.customfiles:
+            custom = self.customfiles[0]
+            custom_displayname = '%s - %s' % (custom.customformat.name,
+                                              custom.libraryfilealias.filename)
+            return custom_displayname
+
+        raise NotFoundError('Can not find displayname for %s' % self.id)
 
     @cachedproperty
     def sourcepackagename(self):
@@ -219,11 +236,14 @@ class DistroReleaseQueue(SQLBase):
 
         This is currently heuristic but may be more easily calculated later.
         """
-        assert self.sources or self.builds
         if self.sources:
             return self.sources[0].sourcepackagerelease.version
         if self.builds:
             return self.builds[0].build.sourcepackagerelease.version
+        if self.customfiles:
+            return '-'
+
+        raise NotFoundError('Can not find version for %s' % self.id)
 
     @cachedproperty
     def sourcepackagerelease(self):
@@ -378,7 +398,7 @@ class DistroReleaseQueueSource(SQLBase):
         # XXX: dsilvers: 20051020: What do we do here to support embargoed
         # sources? bug 3408
         debug(logger, "Publishing source %s/%s to %s/%s" % (
-            self.sourcepackagerelease.sourcepackagename.name,
+            self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.distroreleasequeue.distrorelease.distribution.name,
             self.distroreleasequeue.distrorelease.name))

@@ -27,7 +27,9 @@
 
           </select>
 
-	  <input title="Package Name" size="20" type="text" name="queue_text"/>
+	  <input title="Package Name" size="20" type="text" name="queue_text"
+                 tal:attributes="value view/text"
+           />
 
           <input title="Update List" type="submit" value="Update" />
 
@@ -46,11 +48,11 @@
            <tr>
               <td class="left icon">
                  <img tal:attributes="
-                      alt queue/sourcepackagename/name;
+                      alt queue/displayname;
                       src queue/queue_icon
                  " />
               </td>
-              <td tal:content="queue/sourcepackagename/name" />
+              <td tal:content="queue/displayname" />
               <td tal:content="queue/sourceversion" />
               <td tal:content="queue/age" />
            </tr>

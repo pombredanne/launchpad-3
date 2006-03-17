@@ -37,6 +37,7 @@ class QueueItemsView(LaunchpadView):
 
         # map state text tag back to dbschema
         state_map = {
+            '': DistroReleaseQueueStatus.NEW,
             'new': DistroReleaseQueueStatus.NEW,
             'unapproved': DistroReleaseQueueStatus.UNAPPROVED,
             'accepted': DistroReleaseQueueStatus.ACCEPTED,

@@ -91,6 +91,7 @@ class IDistroReleaseQueue(Interface):
 
     age = Attribute("The age of this queue item.")
     queue_icon = Attribute("Queue icon for this entry")
+    displayname = Attribute("Generic displayname for a queue item")
 
     def setNew():
         """Set queue state to NEW."""
