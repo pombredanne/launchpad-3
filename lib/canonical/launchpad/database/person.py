@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
+    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IPOTemplateSet,
     KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
@@ -725,14 +725,38 @@ class Person(SQLBase):
 
     @property
     def touched_pofiles(self):
-        return POFile.select('''
+        results = POFile.select('''
             POSubmission.person = %s AND
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = POFile.id
             ''' % sqlvalues(self.id),
-            orderBy=['datecreated'],
-            clauseTables=['POMsgSet', 'POSubmission'],
+            orderBy=['POFile.datecreated'],
+            prejoins=['language', 'potemplate'],
+            clauseTables=['POMsgSet', 'POFile', 'POSubmission'],
             distinct=True)
+        # XXX: Because of a template reference to
+        # pofile.potemplate.displayname, it would be ideal to also
+        # prejoin above:
+        #   potemplate.potemplatename
+        #   potemplate.productseries
+        #   potemplate.productseries.product
+        #   potemplate.distrorelease
+        #   potemplate.distrorelease.distribution
+        #   potemplate.sourcepackagename
+        # However, a list this long may be actually suggesting that
+        # displayname be cached in a table field; particularly given the
+        # fact that it won't be altered very often. At any rate, the
+        # code below works around this by caching all the templates in
+        # one shot. The list() ensures that we materialize the query
+        # before passing it on to avoid reissuing it; the template code
+        # only hits this callsite once and iterates over all the results
+        # anyway. When we have deep prejoining we can just ditch all of
+        # this and either use cachedproperty or cache in the view code.
+        #   -- kiko, 2006-03-17
+        results = list(results)
+        ids = set(pofile.potemplate.id for pofile in results)
+        list(getUtility(IPOTemplateSet).getByIDs(ids))
+        return results
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""
@@ -881,7 +905,7 @@ class Person(SQLBase):
               """ % extra
         return query
 
-    @property
+    @cachedproperty
     def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)

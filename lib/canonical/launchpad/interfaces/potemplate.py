@@ -348,6 +348,13 @@ class IPOTemplateSet(Interface):
     def __getitem__(name):
         """Get a PO template by its name."""
 
+    def getByIDs(ids):
+        """Return a set of POTemplates with the specified IDs
+
+        Implemented by issuing a single query that prefetches all the
+        relevant foreign keys.
+        """
+
     def getSubset(distrorelease=None, sourcepackagename=None,
                   productseries=None):
         """Return a POTemplateSubset object depending on the given arguments.
