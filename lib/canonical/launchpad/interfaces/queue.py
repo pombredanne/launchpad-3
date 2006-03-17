@@ -90,7 +90,7 @@ class IDistroReleaseQueue(Interface):
     sourcepackagerelease = Attribute("The source package release for this item")
 
     age = Attribute("The age of this queue item.")
-    queue_icon = Attribute("Queue icon for this entry")
+    queue_icons = Attribute("List icons path for this queue entry")
     displayname = Attribute("Generic displayname for a queue item")
 
     def setNew():

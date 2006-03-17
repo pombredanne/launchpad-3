@@ -152,19 +152,22 @@ class DistroReleaseQueue(SQLBase):
     # XXX cprov 20060314: following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
-    def queue_icon(self):
+    def queue_icons(self):
         """See IDistroReleaseQueue"""
         possible_nature = {
             self.sources: '/@@/package-source',
             self.builds: '/@@/package-binary',
             self.customfiles: '/@@/file',
             }
-
+        icons = []
         for nature, icon in possible_nature.iteritems():
             if nature:
-                return icon
+                icons.append(icon)
 
-        raise NotFoundError('Queue Icon not found for %s' % self.id)
+        if not icons:
+            raise NotFoundError('Queue Icon not found for %s' % self.id)
+
+        return icons
 
     @cachedproperty
     def changesfilename(self):

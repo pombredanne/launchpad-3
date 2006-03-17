@@ -167,8 +167,8 @@ Retrieve some data from DB to play more with counter.
 Check the behaviour of @cachedproperty  attributes:
   >>> qitem = qset.get(1)
 
-  >>> qitem.queue_icon
-  '/@@/package-binary'
+  >>> qitem.queue_icons
+  ['/@@/package-binary']
 
   >>> qitem.datecreated
   datetime.datetime(...)
@@ -208,6 +208,9 @@ the librarian filename in question.
 
   >>> custom_item.displayname
   u'ROSETTA_TRANSLATIONS - netapplet-1.0.0.tar.gz'
+
+  >>> custom_item.queue_icons
+  ['/@@/file']
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list

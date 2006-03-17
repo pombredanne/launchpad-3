@@ -46,11 +46,9 @@
        <tbody>
          <tal:batch repeat="queue batch">
            <tr>
-              <td class="left icon">
-                 <img tal:attributes="
-                      alt queue/displayname;
-                      src queue/queue_icon
-                 " />
+              <td colspan="3">
+                 <img tal:repeat="icon queue/queue_icons"
+                      tal:attributes="alt queue/displayname; src icon" />
               </td>
               <td tal:content="queue/displayname" />
               <td tal:content="queue/sourceversion" />
