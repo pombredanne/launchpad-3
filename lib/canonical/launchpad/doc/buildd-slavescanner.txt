@@ -145,7 +145,7 @@ Let's create a bunch of mock slaves for testing the Builder State Handler:
   >>> import xmlrpclib
   >>> class BrokenSlave:
   ...     def status(self):
-  ...         raise xmlrpclib.Fault
+  ...         raise xmlrpclib.Fault(8001, "Broken slave")
 
 
 Make ensurePresent() always return True, it teoretically means the
@@ -159,7 +159,7 @@ slave has the requested file in cache.
   ...         print info
   ...         return (True, info)
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         info = 'Okscripts/Slaves BUILDING'
+  ...         info = 'OkSlaves BUILDING'
   ...         print info
   ...         return ('BuildStatus.Building', info)
 
