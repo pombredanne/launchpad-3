@@ -64,6 +64,18 @@
             <tal:requested
               content="build/datecreated/fmt:datetime"
             />
+            in pocket <tal:buildpocket
+              content="build/pocket/name"
+            />
+          </td>
+        </tr>
+        <tr class="secondary" tal:condition="build/dependencies">
+          <td></td>
+          <td>
+	    Missing Dependencies
+            <tal:dependencies
+              content="build/dependencies"
+            />
           </td>
         </tr>
         <tr class="secondary" tal:condition="build/was_built">
