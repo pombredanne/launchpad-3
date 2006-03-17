@@ -473,10 +473,7 @@ class ShippingRequestApproveOrDenyView(
             for arch in self.quantity_fields_mapping[flavour]:
                 field_name = self.quantity_fields_mapping[flavour][arch]
                 requested_cds = requested[flavour][arch]
-                if requested_cds.quantityapproved is not None:
-                    initial[field_name] = requested_cds.quantityapproved
-                else:
-                    initial[field_name] = requested_cds.quantity
+                initial[field_name] = requested_cds.quantityapproved
         return initial
 
     def recipientHasOtherShippedRequests(self):
@@ -541,10 +538,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             for arch in self.quantity_fields_mapping[flavour]:
                 field_name = self.quantity_fields_mapping[flavour][arch]
                 requested_cds = requested[flavour][arch]
-                if requested_cds.quantityapproved is not None:
-                    initial[field_name] = requested_cds.quantityapproved
-                else:
-                    initial[field_name] = requested_cds.quantity
+                initial[field_name] = requested_cds.quantityapproved
 
         for field in self.shipping_details_fields:
             initial[field] = getattr(order, field)
@@ -610,7 +604,12 @@ class ShipItExportsView:
 
         for key, value in self.request.form.items():
             if key.isdigit() and value == 'Yes':
-                shippingrun_id = int(key)
+                try:
+                    shippingrun_id = int(key)
+                except ValueError:
+                    # The form can only be mangled by the end-user, so
+                    # just ignore any poisoning issue if it exists.
+                    continue
                 shippingrun = getUtility(IShippingRunSet).get(shippingrun_id)
                 shippingrun.sentforshipping = True
                 break

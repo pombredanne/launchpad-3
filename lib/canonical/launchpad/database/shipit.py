@@ -122,9 +122,7 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         total = 0
         for requested_cds in self.getAllRequestedCDs():
-            # RequestedCDs.quantityapproved is None when a request hasn't been
-            # reviewed by a shipit admin, so we need to use intOrZero() here.
-            total += intOrZero(requested_cds.quantityapproved)
+            total += requested_cds.quantityapproved
         return total
 
     @property
@@ -174,22 +172,24 @@ class ShippingRequest(SQLBase):
     def setApprovedQuantities(self, quantities):
         """See IShippingRequestSet"""
         assert self.isApproved()
-        self._setQuantities(quantities, approved=True)
+        self._setQuantities(quantities, only_approved=True)
 
     def setQuantities(self, quantities):
         """See IShippingRequestSet"""
         self._setQuantities(quantities)
 
-    def _setQuantities(self, quantities, approved=False):
-        attrname = 'quantity'
-        if approved:
-            attrname = 'quantityapproved'
+    def _setQuantities(self, quantities, only_approved=False):
+#         attrname = 'quantity'
+#         if approved:
+#             attrname = 'quantityapproved'
         for flavour, arches_and_quantities in quantities.items():
             for arch, quantity in arches_and_quantities.items():
                 assert quantity >= 0
                 requested_cds = self._getRequestedCDsByFlavourAndArch(
                     flavour, arch)
-                setattr(requested_cds, attrname, quantity)
+                if not only_approved:
+                    setattr(requested_cds, 'quantity', quantity)
+                setattr(requested_cds, 'quantityapproved', quantity)
 
     def highlightColour(self):
         """See IShippingRequest"""
@@ -222,8 +222,6 @@ class ShippingRequest(SQLBase):
         assert self.isApproved()
         self.approved = None
         self.whoapproved = None
-        for requested_cds in self.getAllRequestedCDs():
-            requested_cds.quantityapproved = None
 
     def approve(self, whoapproved=None):
         """See IShippingRequest"""
@@ -343,7 +341,6 @@ class ShippingRequestSet:
         query = " AND ".join(queries)
         return ShippingRequest.select(query, distinct=True, orderBy=orderBy)
 
-    # XXX: This needs fixing!!!
     def _getTypeBasedQuery(self, request_type, standard_type=None):
         """Return the SQL query to get all requests of a given type.
 
@@ -362,7 +359,9 @@ class ShippingRequestSet:
                   ReqPPC.architecture = %s AND
                   ReqX86.request = ShippingRequest.id AND
                   ReqAMD64.request = ShippingRequest.id AND
-                  ReqPPC.request = ShippingRequest.id
+                  ReqPPC.request = ShippingRequest.id AND
+                  ReqX86.flavour = ReqAMD64.flavour AND
+                  ReqPPC.flavour = ReqAMD64.flavour
         """ % sqlvalues(arch.X86, arch.AMD64, arch.PPC)
 
         if request_type == 'custom':
@@ -370,28 +369,48 @@ class ShippingRequestSet:
                 raise AssertionError(
                     'standard_type must be None if request_type is custom.')
             query += """
-                AND (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity)
-                NOT IN (SELECT quantityx86, quantityamd64, quantityppc
-                            FROM StandardShipItRequest)
+                AND ReqX86.quantity != 0 AND ReqAMD64.quantity != 0
+                AND ReqPPC.quantity != 0
+                AND (ReqX86.flavour, ReqX86.quantity, ReqAMD64.quantity,
+                     ReqPPC.quantity)
+                NOT IN (SELECT flavour, quantityx86, quantityamd64, quantityppc
+                        FROM StandardShipItRequest)
                 """
         elif request_type == 'standard' and standard_type is None:
             query += """
-                AND (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity)
-                IN (SELECT quantityx86, quantityamd64, quantityppc 
-                        FROM StandardShipItRequest)
+                AND (ReqX86.flavour, ReqX86.quantity, ReqAMD64.quantity,
+                     ReqPPC.quantity)
+                IN (SELECT flavour, quantityx86, quantityamd64, quantityppc
+                    FROM StandardShipItRequest)
                 """
         else:
             query += """
-                AND ReqX86.quantity = %d AND
-                ReqAMD64.quantity = %d AND
-                ReqPPC.quantity = %d
-                """ % (standard_type.quantityx86, standard_type.quantityamd64,
-                       standard_type.quantityppc)
+                AND ReqX86.flavour = %s
+                AND ReqX86.quantity = %s
+                AND ReqAMD64.quantity = %s
+                AND ReqPPC.quantity = %s
+                """ % sqlvalues(standard_type.flavour, 
+                                standard_type.quantityx86,
+                                standard_type.quantityamd64, 
+                                standard_type.quantityppc)
 
         return query
 
+    def _sumRequestedCDCount(self, quantities):
+        """Sum the values of a dictionary mapping flavour and architectures 
+        to quantities of requested CDs.
+
+        This dictionary must be of the same format of the one returned by
+        _getRequestedCDCount().
+        """
+        total = 0
+        for flavour in quantities:
+            for arch in quantities[flavour]:
+                total += quantities[flavour][arch]
+        return total
+
     def _getRequestedCDCount(self, country=None, approved=False):
-        """Return the number of Requested CDs for each architecture.
+        """Return the number of Requested CDs for each flavour and architecture.
         
         If country is not None, then consider only CDs requested by people on
         that country.
@@ -403,30 +422,44 @@ class ShippingRequestSet:
         if approved:
             attr_to_sum_on = 'quantityapproved'
         quantities = {}
-        for arch in ShipItArchitecture.items:
-            query_str = """
-                shippingrequest.id = shipment.request AND
-                shippingrequest.id = requestedcds.request AND
-                requestedcds.architecture = %s""" % sqlvalues(arch)
-            if country is not None:
-                query_str += (" AND shippingrequest.country = %s" 
-                              % sqlvalues(country.id))
-            requests = ShippingRequest.select(
-                query_str, clauseTables=['RequestedCDs', 'Shipment'])
-            quantities[arch] = intOrZero(requests.sum(attr_to_sum_on))
+        for flavour in ShipItFlavour.items:
+            quantities[flavour] = {}
+            for arch in ShipItArchitecture.items:
+                query_str = """
+                    shippingrequest.id = shipment.request AND
+                    shippingrequest.id = requestedcds.request AND
+                    requestedcds.flavour = %s AND
+                    requestedcds.architecture = %s""" % sqlvalues(flavour, arch)
+                if country is not None:
+                    query_str += (" AND shippingrequest.country = %s" 
+                                  % sqlvalues(country.id))
+                requests = ShippingRequest.select(
+                    query_str, clauseTables=['RequestedCDs', 'Shipment'])
+                quantities[flavour][arch] = requests.sum(attr_to_sum_on)
         return quantities
 
     def generateCountryBasedReport(self):
         """See IShippingRequestSet"""
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file)
-        header = ['Country', 'Shipped x86 CDs', 'Shipped AMD64 CDs',
-                  'Shipped PPC CDs', 'Normal-prio shipments',
-                  'High-prio shipments', 'Average request size',
-                  'Percentage of requested CDs that were approved',
-                  'Percentage of total shipped CDs', 'Continent']
+        header = [
+            'Country', 'Shipped Ubuntu x86 CDs', 'Shipped Ubuntu AMD64 CDs',
+            'Shipped Ubuntu PPC CDs', 'Shipped KUbuntu x86 CDs',
+            'Shipped KUbuntu AMD64 CDs', 'Shipped KUbuntu PPC CDs',
+            'Shipped EdUbuntu x86 CDs', 'Shipped EdUbuntu AMD64 CDs',
+            'Shipped EdUbuntu PPC CDs', 'Normal-prio shipments',
+            'High-prio shipments', 'Average request size',
+            'Percentage of requested CDs that were approved',
+            'Percentage of total shipped CDs', 'Continent']
         csv_writer.writerow(header)
-        all_shipped_cds = sum(self._getRequestedCDCount(approved=True).values())
+        all_shipped_cds = self._sumRequestedCDCount(
+            self._getRequestedCDCount(approved=True))
+        ubuntu = ShipItFlavour.UBUNTU
+        kubuntu = ShipItFlavour.KUBUNTU
+        edubuntu = ShipItFlavour.EDUBUNTU
+        x86 = ShipItArchitecture.X86
+        amd64 = ShipItArchitecture.AMD64
+        ppc = ShipItArchitecture.PPC
         for country in Country.select():
             base_query = (
                 "shippingrequest.country = %s AND "
@@ -439,8 +472,6 @@ class ShippingRequestSet:
             
             shipped_cds_per_arch = self._getRequestedCDCount(
                 country=country, approved=True)
-            requested_cds_per_arch = self._getRequestedCDCount(
-                country=country, approved=False)
 
             high_prio_orders = ShippingRequest.select(
                 base_query + " AND highpriority IS TRUE",
@@ -452,8 +483,9 @@ class ShippingRequestSet:
                 clauseTables=clauseTables)
             normal_prio_count = intOrZero(normal_prio_orders.count())
 
-            shipped_cds = sum(shipped_cds_per_arch.values())
-            requested_cds = sum(requested_cds_per_arch.values())
+            shipped_cds = self._sumRequestedCDCount(shipped_cds_per_arch)
+            requested_cds = self._sumRequestedCDCount(
+                self._getRequestedCDCount(country=country, approved=False))
             average_request_size = shipped_cds / total_shipped_requests
             percentage_of_approved = float(shipped_cds) / float(requested_cds)
             percentage_of_total = float(shipped_cds) / float(all_shipped_cds)
@@ -462,9 +494,16 @@ class ShippingRequestSet:
             # unicode because we're using StringIO.
             country_name = country.name.encode('utf-8')
             continent_name = country.continent.name.encode('utf-8')
-            row = [country_name, shipped_cds_per_arch[ShipItArchitecture.X86],
-                   shipped_cds_per_arch[ShipItArchitecture.AMD64],
-                   shipped_cds_per_arch[ShipItArchitecture.PPC],
+            row = [country_name,
+                   shipped_cds_per_arch[ubuntu][x86],
+                   shipped_cds_per_arch[ubuntu][amd64],
+                   shipped_cds_per_arch[ubuntu][ppc],
+                   shipped_cds_per_arch[kubuntu][x86],
+                   shipped_cds_per_arch[kubuntu][amd64],
+                   shipped_cds_per_arch[kubuntu][ppc],
+                   shipped_cds_per_arch[edubuntu][x86],
+                   shipped_cds_per_arch[edubuntu][amd64],
+                   shipped_cds_per_arch[edubuntu][ppc],
                    normal_prio_count, high_prio_count,
                    average_request_size,
                    "%.2f%%" % (percentage_of_approved * 100),
@@ -478,31 +517,95 @@ class ShippingRequestSet:
         """See IShippingRequestSet"""
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file)
-        header = ['Year', 'Week number', 'Requests', 'Requested X86 CDs',
-                  'Requested AMD64 CDs', 'Requested PPC CDs']
+        header = ['Year', 'Week number', 'Requests', 
+                  'Ubuntu Requested X86 CDs',
+                  'Ubuntu Requested AMD64 CDs', 
+                  'Ubuntu Requested PPC CDs',
+                  'KUbuntu Requested X86 CDs',
+                  'KUbuntu Requested AMD64 CDs', 
+                  'KUbuntu Requested PPC CDs',
+                  'EdUbuntu Requested X86 CDs',
+                  'EdUbuntu Requested AMD64 CDs', 
+                  'EdUbuntu Requested PPC CDs']
         csv_writer.writerow(header)
+
+        replacements = {'x86': ShipItArchitecture.X86, 
+                        'amd64': ShipItArchitecture.AMD64, 
+                        'ppc': ShipItArchitecture.PPC,
+                        'ubuntu': ShipItFlavour.UBUNTU,
+                        'kubuntu': ShipItFlavour.KUBUNTU,
+                        'edubuntu': ShipItFlavour.EDUBUNTU}
 
         base_query = """
             SELECT 
               COUNT(shippingrequest.id), 
+              -- Ubuntu requested CDs
               SUM(r1.quantity),
               SUM(r2.quantity), 
-              SUM(r3.quantity)
+              SUM(r3.quantity),
+
+              -- KUbuntu requested CDs
+              SUM(r4.quantity),
+              SUM(r5.quantity), 
+              SUM(r6.quantity),
+
+              -- EdUbuntu requested CDs
+              SUM(r7.quantity),
+              SUM(r8.quantity), 
+              SUM(r9.quantity)
             FROM 
               shippingrequest, 
+              -- Ubuntu requested CDs
               requestedcds AS r1, 
               requestedcds AS r2,
-              requestedcds AS r3 
+              requestedcds AS r3,
+
+              -- KUbuntu requested CDs
+              requestedcds AS r4, 
+              requestedcds AS r5,
+              requestedcds AS r6,
+
+              -- EdUbuntu requested CDs
+              requestedcds AS r7, 
+              requestedcds AS r8,
+              requestedcds AS r9 
             WHERE 
               r1.request = r2.request AND 
               r2.request = r3.request AND 
-              r3.request = shippingrequest.id AND
-              r1.architecture = %s AND
-              r2.architecture = %s AND
-              r3.architecture = %s AND
-              shippingrequest.cancelled = FALSE
-            """ % sqlvalues(ShipItArchitecture.X86, ShipItArchitecture.AMD64,
-                            ShipItArchitecture.PPC)
+              r3.request = r4.request AND
+              r4.request = r5.request AND 
+              r5.request = r6.request AND 
+              r6.request = r7.request AND
+              r7.request = r8.request AND 
+              r8.request = r9.request AND 
+              r9.request = shippingrequest.id AND
+              shippingrequest.cancelled = FALSE AND
+
+              -- Ubuntu requested CDs
+              r1.architecture = %(x86)s AND
+              r2.architecture = %(amd64)s AND
+              r3.architecture = %(ppc)s AND
+              r1.flavour = r2.flavour AND
+              r2.flavour = r3.flavour AND
+              r3.flavour = %(ubuntu)s AND
+
+              -- KUbuntu requested CDs
+              r4.architecture = %(x86)s AND
+              r5.architecture = %(amd64)s AND
+              r6.architecture = %(ppc)s AND
+              r4.flavour = r5.flavour AND
+              r5.flavour = r6.flavour AND
+              r6.flavour = %(kubuntu)s AND
+
+              -- EdUbuntu requested CDs
+              r7.architecture = %(x86)s AND
+              r8.architecture = %(amd64)s AND
+              r9.architecture = %(ppc)s AND
+              r7.flavour = r8.flavour AND
+              r8.flavour = r9.flavour AND
+              r9.flavour = %(edubuntu)s
+            """ % sqlvalues(**replacements)
+
         cur = cursor()
         for monday_date in make_mondays_between(start_date, end_date):
             date_filter = (
@@ -510,9 +613,10 @@ class ShippingRequestSet:
                 % sqlvalues(monday_date, monday_date + timedelta(days=7)))
             query_str = base_query + date_filter
             cur.execute(query_str)
-            requests, x86cds, amdcds, ppccds = cur.fetchone()
+            #requests, x86cds, amdcds, ppccds = cur.fetchone()
             year, weeknum, weekday = monday_date.isocalendar()
-            row = [year, weeknum, requests, x86cds, amdcds, ppccds]
+            row = [year, weeknum]
+            row.extend(cur.fetchone())
             csv_writer.writerow(row)
 
         csv_file.seek(0)
@@ -771,14 +875,7 @@ class ShippingRun(SQLBase):
             # extra_fields.
             for flavour in [ubuntu, kubuntu, edubuntu]:
                 for arch in [x86, amd64, ppc]:
-                    # For requests that don't need approval, we don't set the
-                    # approved quantities, in order to not overwrite the
-                    # approved quantities set by a shipit admin if an user
-                    # changes his order. That's why we use quantity here in
-                    # case quantityapproved is None.
                     quantity = requested_cds[flavour][arch].quantityapproved
-                    if quantity is None:
-                        quantity = requested_cds[flavour][arch].quantity
                     row.append(quantity)
 
             row.append(request.shipment.logintoken)

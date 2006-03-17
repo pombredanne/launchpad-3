@@ -8,6 +8,7 @@ these CDs are sent to the user.
   >>> from datetime import date
   >>> from zope.component import getUtility
   >>> from zope.interface.verify import verifyObject
+  >>> from canonical.lp.dbschema import ShipItFlavour, ShipItArchitecture
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.interfaces import (
@@ -19,26 +20,28 @@ these CDs are sent to the user.
 
 Let's create a new request for foo.bar@canonical.com.
 
+  >>> UBUNTU = ShipItFlavour.UBUNTU
+  >>> X86 = ShipItArchitecture.X86
+  >>> AMD64 = ShipItArchitecture.AMD64
+  >>> PPC = ShipItArchitecture.PPC
   >>> recipient = foobar
-  >>> quantityx86 = 30
-  >>> quantityamd64 = 5
-  >>> quantityppc = 2
   >>> country = 31 # Brazil
   >>> city = 'some city'
   >>> addressline1 = 'address1'
   >>> name = 'the name'
+  >>> phone = '+551635015218'
   >>> reason = ("I'm going to give away some CDs in the next meeting of my "
   ...           "city's LUG.")
-  >>> request = requestset.new(recipient, quantityx86, quantityamd64,
-  ...                          quantityppc, name, country, city,
-  ...                          addressline1, reason=reason)
+  >>> request = requestset.new(recipient, name, country, city,
+  ...                          addressline1, phone, reason=reason)
+  >>> quantities = {UBUNTU: {X86: 30, AMD64: 5, PPC: 2}}
+  >>> request.setQuantities(quantities)
 
 We're not allowed to add a second request for the same recipient, while the
 existing one is not yet exported.
 
-  >>> request = requestset.new(recipient, quantityx86, quantityamd64,
-  ...                          quantityppc, name, country, city,
-  ...                          addressline1, reason=reason)
+  >>> request = requestset.new(recipient, name, country, city,
+  ...                          addressline1, phone, reason=reason)
   Traceback (most recent call last):
   ...
   AssertionError
@@ -62,38 +65,37 @@ approved, then approved will be True.
 The number of CDs can be altered by the user, if he wants.
 
   >>> login('foo.bar@canonical.com')
-  >>> request.quantityx86 = 10
-  >>> request.quantityppc = 1
-  >>> request.quantityamd64 = 3
+  >>> quantities = {UBUNTU: {X86: 10, AMD64: 3, PPC: 1}}
+  >>> request.setQuantities(quantities)
   >>> request.totalCDs
   14
 
 When a request is approved, you must specify the approved quantities.
 
   >>> login('marilize@hbd.com')
-  >>> request.approve(request.quantityx86, request.quantityamd64,
-  ...                 request.quantityppc,
-  ...                 whoapproved=getUtility(ILaunchBag).user)
+  >>> request.approve(whoapproved=getUtility(ILaunchBag).user)
   >>> request.approved
   True
   >>> request.whoapproved.displayname
   u'Marilize Coetzee'
-  >>> request.quantityx86approved
+  >>> quantities = request.getRequestedCDsGroupedByFlavourAndArch()
+  >>> quantities[UBUNTU][X86].quantityapproved
   10
-  >>> request.quantityamd64approved
+  >>> quantities[UBUNTU][AMD64].quantityapproved
   3
-  >>> request.quantityppcapproved
+  >>> quantities[UBUNTU][PPC].quantityapproved
   1
 
 The approved quantities can be changed only if the request is approved.
 
-  >>> request.setApprovedTotals(quantityx86approved=5, quantityamd64approved=3,
-  ...                           quantityppcapproved=2)
-  >>> request.quantityx86approved
+  >>> quantities = {UBUNTU: {X86: 5, AMD64: 3, PPC: 2}}
+  >>> request.setApprovedQuantities(quantities)
+  >>> quantities = request.getRequestedCDsGroupedByFlavourAndArch()
+  >>> quantities[UBUNTU][X86].quantityapproved
   5
-  >>> request.quantityamd64approved
+  >>> quantities[UBUNTU][AMD64].quantityapproved
   3
-  >>> request.quantityppcapproved
+  >>> quantities[UBUNTU][PPC].quantityapproved
   2
 
 If a request is approved but hasn't been exported yet, it can still be denied.
@@ -110,12 +112,6 @@ quantity*approved will be set back to None.
   True
   >>> request.whocancelled.displayname
   u'Marilize Coetzee'
-  >>> request.quantityx86approved is None
-  True
-  >>> request.quantityamd64approved is None
-  True
-  >>> request.quantityppcapproved is None
-  True
   >>> flush_database_updates()
 
 When a request is cancelled it'll not show up as the recipient's current
@@ -133,35 +129,35 @@ Instead, it'll be part of the past requests of that recipient.
 Searching for requests
 ----------------------
 
-We have thirteen custom requests. Two of them are cancelled.
+We have 12 custom requests. Two of them are cancelled.
 
   >>> [r.recipient.name 
   ...  for r in requestset.search(request_type='custom', omit_cancelled=False)]
-  [u'lifeless', u'cprov', u'ddaa', u'debonzi', u'kurem', u'ddaa', u'carlos',
-   u'daf', u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv', u'name16']
+  [u'cprov', u'ddaa', u'debonzi', u'kurem', u'ddaa', u'carlos', u'daf', 
+   u'tsukimi', u'jdub', u'marilize', u'jblack', u'name16']
 
   >>> [r.recipient.name for r in requestset.search(request_type='custom')]
-  [u'lifeless', u'ddaa', u'debonzi', u'kurem', u'ddaa', u'carlos', u'daf',
-   u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv']
+  [u'ddaa', u'debonzi', u'kurem', u'ddaa', u'carlos', u'daf', u'tsukimi',
+   u'jdub', u'marilize', u'jblack']
 
-From the ten non-cancelled, one is approved.
+From the ten non-cancelled, two are approved.
 
-  >>> approved = status=ShippingRequestStatus.APPROVED
+  >>> approved = ShippingRequestStatus.APPROVED
   >>> [r.recipient.name 
   ...  for r in requestset.search(request_type='custom', status=approved)]
-  [u'ddaa', u'jblack', u'no-priv']
+  [u'ddaa', u'jblack']
 
-We have also two non-cancelled standard requests:
+We have also four non-cancelled standard requests:
 
   >>> [r.recipient.name for r in
   ...  requestset.search(request_type='standard', omit_cancelled=False)]
-  [u'kreutzm', u'stub']
+  [u'lifeless', u'kreutzm', u'no-priv', u'stub']
 
 And all standard requests are approved automatically.
 
   >>> [r.recipient.name for r in
   ...       requestset.search(request_type='standard', status=approved)]
-  [u'kreutzm', u'stub']
+  [u'lifeless', u'kreutzm', u'no-priv', u'stub']
 
 
 It's also possible to search for standard requests of a specific type.
@@ -171,11 +167,12 @@ It's also possible to search for standard requests of a specific type.
   ...                              standard_type=standardrequest)
   >>> requests.count()
   1
-  >>> requests[0].quantityx86 == standardrequest.quantityx86
+  >>> quantities = requests[0].getRequestedCDsGroupedByFlavourAndArch()
+  >>> quantities[UBUNTU][X86].quantity == standardrequest.quantityx86
   True
-  >>> requests[0].quantityamd64 == standardrequest.quantityamd64
+  >>> quantities[UBUNTU][AMD64].quantity == standardrequest.quantityamd64
   True
-  >>> requests[0].quantityppc == standardrequest.quantityppc
+  >>> quantities[UBUNTU][PPC].quantity == standardrequest.quantityppc
   True
 
 Another way of searching is by using any part of the recipient's name or the
@@ -203,7 +200,7 @@ approved yet, with a given priority. This is done using the
 getUnshippedRequests method of ShippingRequestSet.
 
   >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
-  3
+  4
 
 Now we do an export of all normal priority orders that are ready to be
 shipped.
@@ -241,13 +238,13 @@ to each country.
     >>> csv_file = requestset.generateCountryBasedReport()
     >>> for line in csv_file.readlines():
     ...     line
-    'Country,Shipped x86 CDs,Shipped AMD64 CDs,Shipped PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent\r\n'
-    'Bermuda,10,9,3,1,0,22,104.76%,23.16%,North America\r\n'
-    'British Indian Ocean Territory,9,6,9,1,0,24,100.00%,25.26%,Asia\r\n'
-    'Burkina Faso,5,3,2,1,0,10,100.00%,10.53%,Africa\r\n'
-    'Heard Island and McDonald Islands,10,3,2,1,0,15,100.00%,15.79%,Antarctica\r\n'
-    '\xc3\x85land Islands,9,6,9,0,1,24,100.00%,25.26%,Europe\r\n'
-
+    'Country,Shipped Ubuntu x86 CDs,Shipped Ubuntu AMD64 CDs,Shipped Ubuntu PPC CDs,Shipped KUbuntu x86 CDs,Shipped KUbuntu AMD64 CDs,Shipped KUbuntu PPC CDs,Shipped EdUbuntu x86 CDs,Shipped EdUbuntu AMD64 CDs,Shipped EdUbuntu PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent\r\n'
+    'Bermuda,5,3,2,0,0,0,0,0,0,1,0,10,100.00%,12.35%,North America\r\n'
+    'British Indian Ocean Territory,9,6,9,0,0,0,0,0,0,1,0,24,100.00%,29.63%,Asia\r\n'
+    'Burkina Faso,10,3,2,0,0,0,0,0,0,1,0,15,100.00%,18.52%,Africa\r\n'
+    'China,0,3,0,0,0,0,0,0,0,1,0,3,100.00%,3.70%,Asia\r\n'
+    'Heard Island and McDonald Islands,5,0,0,0,0,0,0,0,0,1,0,5,100.00%,6.17%,Antarctica\r\n'
+    '\xc3\x85land Islands,9,6,9,0,0,0,0,0,0,0,1,24,100.00%,29.63%,Europe\r\n'
 
 There's another report which gives us the number of shipments of all shipment
 sizes we had.
@@ -256,11 +253,11 @@ sizes we had.
     >>> for line in csv_file.readlines():
     ...     line
     'Number of CDs,Number of Shipments\r\n'
+    '3,1\r\n'
+    '5,1\r\n'
     '10,1\r\n'
     '15,1\r\n'
-    '22,1\r\n'
     '24,2\r\n'
-
 
 There's also a report of requests by week.
 
@@ -269,20 +266,20 @@ There's also a report of requests by week.
     >>> csv_file = requestset.generateWeekBasedReport(start_date, end_date)
     >>> for line in csv_file.readlines():
     ...     line
-    'Year,Week number,Requests,Requested X86 CDs,Requested AMD64 CDs,Requested PPC CDs\r\n'
-    '2005,14,0,,,\r\n'
-    '2005,15,0,,,\r\n'
-    '2005,16,0,,,\r\n'
-    '2005,17,4,36,23,31\r\n'
-    '2005,18,4,36,18,46\r\n'
-    '2005,19,1,9,6,9\r\n'
-    '2005,20,1,9,6,9\r\n'
-    '2005,21,0,,,\r\n'
-    '2005,22,0,,,\r\n'
-    '2005,23,0,,,\r\n'
-    '2005,24,0,,,\r\n'
-    '2005,25,0,,,\r\n'
-    '2005,26,1,5,3,2\r\n'
+    'Year,Week number,Requests,Ubuntu Requested X86 CDs,Ubuntu Requested AMD64 CDs,Ubuntu Requested PPC CDs,KUbuntu Requested X86 CDs,KUbuntu Requested AMD64 CDs,KUbuntu Requested PPC CDs,EdUbuntu Requested X86 CDs,EdUbuntu Requested AMD64 CDs,EdUbuntu Requested PPC CDs\r\n'
+    '2005,14,0,,,,,,,,,\r\n'
+    '2005,15,0,,,,,,,,,\r\n'
+    '2005,16,0,,,,,,,,,\r\n'
+    '2005,17,4,36,23,31,0,0,0,0,0,0\r\n'
+    '2005,18,4,36,18,46,0,0,0,0,0,0\r\n'
+    '2005,19,1,9,6,9,0,0,0,0,0,0\r\n'
+    '2005,20,1,9,6,9,0,0,0,0,0,0\r\n'
+    '2005,21,0,,,,,,,,,\r\n'
+    '2005,22,0,,,,,,,,,\r\n'
+    '2005,23,0,,,,,,,,,\r\n'
+    '2005,24,0,,,,,,,,,\r\n'
+    '2005,25,0,,,,,,,,,\r\n'
+    '2005,26,1,10,3,2,0,0,0,0,0,0\r\n'
 
 All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.
