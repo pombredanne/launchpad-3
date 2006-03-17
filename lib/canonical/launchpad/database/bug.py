@@ -25,9 +25,10 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugcve import BugCve
+from canonical.launchpad.database.bugnotification import BugNotification
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
-    Message, MessageChunk)
+    MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
     BugTask, BugTaskSet, bugtask_sort_key)
@@ -152,6 +153,20 @@ class Bug(SQLBase):
                     emails.update(contactEmailAddresses(task.assignee))
 
         return sorted(emails)
+
+    def addChangeNotification(self, text, person, when=None):
+        """See IBug."""
+        if when is None:
+            when = UTC_NOW
+        message = MessageSet().fromText(
+            self.followup_subject(), text, owner=person, datecreated=when)
+        BugNotification(
+            bug=self, is_comment=False, message=message, date_emailed=None)
+
+    def addCommentNotification(self, message):
+        """See IBug."""
+        BugNotification(
+            bug=self, is_comment=True, message=message, date_emailed=None)
 
     # XXX, Brad Bollenbach, 2006-01-13: Setting publish_create_event to False
     # allows us to suppress the create event when we *don't* want to have a

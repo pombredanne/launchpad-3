@@ -602,7 +602,8 @@ def send_bug_edit_notification(bug_delta):
             repr(bug_delta))
 
     subject, body = generate_bug_edit_email(bug_delta)
-    send_bug_notification(bug_delta.bug, bug_delta.user, subject, body)
+    bug_delta.bug.addChangeNotification(body, person=bug_delta.user)
+    #send_bug_notification(bug_delta.bug, bug_delta.user, subject, body)
 
 
 def send_bug_duplicate_notification(duplicate_bug, user):
@@ -621,7 +622,8 @@ def send_bug_duplicate_notification(duplicate_bug, user):
     body = u"*** Bug %d has been marked a duplicate of this bug" % (
         duplicate_bug.id,)
 
-    send_bug_notification(bug, user, subject, body)
+    bug.addChangeNotification(body, person=user)
+    #send_bug_notification(bug, user, subject, body)
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
@@ -750,10 +752,7 @@ def notify_bug_added(bug, event):
     """
 
     subject, body = generate_bug_add_email(bug)
-
-    send_bug_notification(
-        bug, event.user, subject, body,
-        headers={'Message-Id': bug.initial_message.rfc822msgid})
+    bug.addCommentNotification(bug.initial_message)
 
 
 def notify_bug_modified(modified_bug, event):
@@ -794,8 +793,9 @@ def notify_bugtask_added(bugtask, event):
         added_bugtasks=bugtask)
 
     subject, body = generate_bug_edit_email(bug_delta)
+    bugtask.bug.addChangeNotification(body, person=bug_delta.user)
 
-    send_bug_notification(bugtask.bug, event.user, subject, body)
+    #send_bug_notification(bugtask.bug, event.user, subject, body)
 
 
 def notify_bugtask_edited(modified_bugtask, event):
@@ -827,6 +827,8 @@ def notify_bug_comment_added(bugmessage, event):
     comment will also be sent to the dup target's subscribers.
     """
     bug = bugmessage.bug
+    bug.addCommentNotification(bugmessage.message)
+    return
     to_addrs = get_cc_list(bug)
 
     if ((bug.duplicateof is not None) and (not bug.private)):

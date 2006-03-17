@@ -170,8 +170,8 @@ priority, etc.
     >>> test_emails.sort(by_to_addrs)
 
     >>> len(test_emails)
-    4
-    >>> from_addr, to_addr, raw_message = test_emails.pop(1)
+    1
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
     >>> print to_addr
@@ -240,15 +240,6 @@ The Ubuntu Gnome team was subscribed to the bug:
     ...     [subscription.person.displayname for subscription in
     ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
     [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team']
-
-And since the team didn't have a contact address, a notification was
-sent to each member:
-
-    >>> print [
-    ...    to_addrs
-    ...    for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
-    [['dilys@muse.19inch.net'], ['foo.bar@canonical.com'],
-     ['mark@hbd.com'], ['test@canonical.com']]
 
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package. So, if Mark Shuttleworth
@@ -340,8 +331,8 @@ report:
     >>> test_emails.sort(by_to_addrs)
 
     >>> len(test_emails)
-    3
-    >>> from_addr, to_addr, raw_message = test_emails.pop(1)
+    1
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
     >>> print to_addr

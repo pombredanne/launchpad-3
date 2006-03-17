@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugcve import *
 from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
+from canonical.launchpad.interfaces.bugnotification import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugtask import *
 from canonical.launchpad.interfaces.bugtarget import *

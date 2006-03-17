@@ -30,6 +30,7 @@
                         unlinkCVE findCvesInText newMessage linkMessage" />
         <require
             permission="launchpad.Edit"
+            attributes="addChangeNotification addCommentNotification"
             set_attributes="datecreated name title summary description ownerID
                             owner duplicateof communityscore communitytimestamp
                             hits hitstimestamp activityscore activitytimestamp

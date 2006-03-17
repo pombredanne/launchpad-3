@@ -1,0 +1,409 @@
+Sending the Bug Notifications
+=============================
+
+As explained in bugnotifications.txt, a changed to a bug causes a bug
+notification to be added. These notifications should be assembled to an
+email notification, and sent to the appropriate people. Let's start by
+adding a comment to a bug:
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> ten_minutes_ago = (
+    ...     datetime.now(pytz.timezone('UTC')) - timedelta(minutes=10))
+    >>> from canonical.launchpad.interfaces import IBugNotificationSet
+    >>> len(getUtility(IBugNotificationSet).getNotificationsToSend())
+    0
+
+    >>> login('test@canonical.com')
+    >>> from canonical.launchpad.interfaces import IBugSet, IMessageSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+
+    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+If we pass these notifications to get_email_notifications, we get a
+list of emails to send:
+
+    >>> from canonical.launchpad.scripts.bugnotification import (
+    ...     get_email_notifications)
+    >>> for to_addresses, email_notification in get_email_notifications(
+    ...     notifications):
+    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
+    ...     print email_notification
+    To: mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] subject
+    <BLANKLINE>
+    a comment.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+
+You can see that the message above contains the bug's initial comment's
+message id as its reference, in order to make it thread properly in the
+email client.
+
+    >>> print bug_one.initial_message.rfc822msgid
+    sdsdfsfd
+
+The notification is still pending to be sent, since date_emailed is
+still None:
+
+    >>> notifications[0].date_emailed is None
+    True
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> list(pending_notifications) == list(notifications)
+    True
+
+Setting date_emailed to some date causes it not to be pending anymore:
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> notifications[0].date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    0
+
+Let's add a few changes and see how it looks like:
+
+    >>> bug_one.addChangeNotification(
+    ...     '** Summary changed to: New summary.', sample_person,
+    ...     when=ten_minutes_ago)
+    >>> bug_one.addChangeNotification(
+    ...     '** Visibility changed to: Private.', sample_person,
+    ...     when=ten_minutes_ago)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    2
+
+    >>> for to_addresses, email_notification in get_email_notifications(
+    ...     pending_notifications):
+    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
+    ...     print email_notification
+    To: mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    <BLANKLINE>
+    ** Summary changed to: New summary.
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+
+If we insert a comment and some more changes, they will be included in
+the constructed email:
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a new comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+    >>> bug_one.addChangeNotification(
+    ...     '** Summary changed to: Another summary.', sample_person,
+    ...     when=ten_minutes_ago)
+    >>> bug_one.addChangeNotification(
+    ...     '** Visibility changed to: Public.', sample_person,
+    ...     when=ten_minutes_ago)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    5
+
+Notice how the comment is in the top of the email, and the changes are
+in the order they were added:
+
+    >>> for to_addresses, email_notification in get_email_notifications(
+    ...     pending_notifications):
+    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
+    ...     print email_notification
+    To: mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    <BLANKLINE>
+    a new comment.
+    <BLANKLINE>
+    ** Summary changed to: New summary.
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    <BLANKLINE>
+    ** Summary changed to: Another summary.
+    <BLANKLINE>
+    ** Visibility changed to: Public.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+
+If we insert yet another comment, it will be sent as a separate email:
+
+    >>> new_comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'another comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(new_comment)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    6
+
+    >>> for to_addresses, email_notification in get_email_notifications(
+    ...     pending_notifications):
+    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
+    ...     print email_notification
+    To: mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    <BLANKLINE>
+    a new comment.
+    <BLANKLINE>
+    ** Summary changed to: New summary.
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    <BLANKLINE>
+    ** Summary changed to: Another summary.
+    <BLANKLINE>
+    ** Visibility changed to: Public.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+    <BLANKLINE>
+    To: mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] subject
+    <BLANKLINE>
+    another comment.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+
+    >>> for notification in pending_notifications:
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+If Sample Person does a few changes, and Foo Bar steps in a does a
+change in between, three notifications will be sent:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+    >>> bug_one.addChangeNotification(
+    ...     '** Summary changed to: New summary.', foo_bar,
+    ...     when=ten_minutes_ago)
+    >>> bug_one.addChangeNotification(
+    ...     '** Visibility changed to: Private.', sample_person,
+    ...     when=ten_minutes_ago)
+
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    3
+
+    >>> for to_addresses, email_notification in get_email_notifications(
+    ...     pending_notifications):
+    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
+    ...     print email_notification
+    To: mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] subject
+    <BLANKLINE>
+    a comment.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+    <BLANKLINE>
+    To: mark@hbd.com, test@canonical.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    <BLANKLINE>
+    ** Summary changed to: New summary.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+    <BLANKLINE>
+    To: mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+
+    >>> for notification in pending_notifications:
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+We send the notification only if the user hasn't done any other changes
+for the last 5 minutes:
+
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> for minutes_ago in reversed(range(10)):
+    ...     bug_one.addChangeNotification(
+    ...         '** Visibility changed to: Private.', sample_person,
+    ...         when=now - timedelta(minutes=minutes_ago))
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    0
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+A more complicated example, Sample Person does a change every minute,
+but Foo Bar does a change in between:
+
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> for minutes_ago in reversed(range(10)):
+    ...     if minutes_ago == 6:
+    ...         bug_one.addChangeNotification(
+    ...             '** Visibility changed to: Public.', foo_bar,
+    ...             when=now - timedelta(minutes=minutes_ago))
+    ...     bug_one.addChangeNotification(
+    ...         '** Visibility changed to: Private.', sample_person,
+    ...         when=now - timedelta(minutes=minutes_ago))
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    4
+    >>> for notification in pending_notifications:
+    ...     print notification.id, notification.message.owner.displayname
+    21 Sample Person
+    22 Sample Person
+    23 Sample Person
+    24 Foo Bar
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+Let's take a more complete example, where we edit different bugs as
+well:
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> for minutes_ago in reversed(range(10)):
+    ...     if minutes_ago == 6:
+    ...         bug_one.addChangeNotification(
+    ...             '** Visibility changed to: Public.', foo_bar,
+    ...             when=now - timedelta(minutes=minutes_ago))
+    ...         bug_two.addChangeNotification(
+    ...             '** Visibility changed to: Public.', foo_bar,
+    ...             when=now - timedelta(minutes=minutes_ago))
+    ...     bug_one.addChangeNotification(
+    ...         '** Visibility changed to: Private.', sample_person,
+    ...         when=now - timedelta(minutes=minutes_ago))
+    ...     bug_two.addChangeNotification(
+    ...         '** Visibility changed to: Private.', sample_person,
+    ...         when=now - timedelta(minutes=minutes_ago))
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    8
+
+    >>> for to_addresses, email_notification in get_email_notifications(
+    ...     pending_notifications):
+    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
+    ...     print email_notification
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 2 <2@bugs.launchpad.net>
+    References: foo@example.com-332342--1231
+    Message-Id: ...
+    Subject: [Bug 2] Re: Blackhole Trash folder
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    --
+    Bug Details:
+      Blackhole Trash folder
+      http://localhost:8086/malone/bugs/2
+    <BLANKLINE>
+    To: test@canonical.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Reply-To: Bug 2 <2@bugs.launchpad.net>
+    References: foo@example.com-332342--1231
+    Message-Id: ...
+    Subject: [Bug 2] Re: Blackhole Trash folder
+    <BLANKLINE>
+    ** Visibility changed to: Public.
+    --
+    Bug Details:
+      Blackhole Trash folder
+      http://localhost:8086/malone/bugs/2
+    <BLANKLINE>
+    To: mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    <BLANKLINE>
+    ** Visibility changed to: Private.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1
+    <BLANKLINE>
+    To: mark@hbd.com, test@canonical.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    References: sdsdfsfd
+    Message-Id: ...
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    <BLANKLINE>
+    ** Visibility changed to: Public.
+    --
+    Bug Details:
+      Firefox does not support SVG
+      http://localhost:8086/malone/bugs/1

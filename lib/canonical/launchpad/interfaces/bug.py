@@ -137,6 +137,12 @@ class IBug(IMessageTarget):
         addresses.
         """
 
+    def addChangeNotification(text, person):
+        """Add a bug change notification."""
+
+    def addChangeNotification(message):
+        """Add a bug comment notification."""
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
