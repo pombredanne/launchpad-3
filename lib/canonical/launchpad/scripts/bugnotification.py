@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 import email
+from email.MIMEText import MIMEText
 
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
@@ -41,24 +42,37 @@ def construct_email_notification(bug_notifications):
         text_notifications.insert(0, comment.text_contents)
         msgid = comment.rfc822msgid
 
-    body = '\n\n'.join(text_notifications)
-    raw_email = get_email_template('bug-notification.txt') % {
-        'from_header': format_address(
-            person.displayname, person.preferredemail.email),
-        'bug_address': get_bugmail_replyto_address(bug),
-        'references': bug.initial_message.rfc822msgid,
-        'message_id': msgid,
-        'sender_address': config.bounce_address,
-        'subject': subject,
-        'bug_id': bug.id,
-        'body': body, 'bug_title': bug.title,
+    content = '\n\n'.join(text_notifications)
+    body = get_email_template('bug-notification.txt') % {
+        'content': content,
+        'bug_title': bug.title,
         'bug_url': canonical_url(bug)}
+
+    if comment:
+        references = []
+        reference = comment.parent
+        while reference is not None:
+            references.insert(0, reference.rfc822msgid)
+            reference = reference.parent
+    else:
+        references = []
+    if bug.initial_message.rfc822msgid not in references:
+        references.insert(0, bug.initial_message.rfc822msgid)
+
+    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+    msg['From'] = format_address(
+        person.displayname, person.preferredemail.email)
+    msg['Reply-To'] = get_bugmail_replyto_address(bug)
+    msg['References'] = ' '.join(references)
+    msg['Sender'] = config.bounce_address
+    msg['Message-Id'] = msgid
+    msg['Subject'] = "[Bug %d] %s" % (bug.id, subject)
 
     notified_addresses = bug.notificationRecipientAddresses()
     if not bug.private:
         notified_addresses = (
             notified_addresses + GLOBAL_NOTIFICATION_EMAIL_ADDRS)
-    return notified_addresses, raw_email
+    return notified_addresses, msg
 
 
 def get_email_notifications(bug_notifications):

@@ -1,11 +1,4 @@
-From: %(from_header)s
-Reply-To: %(bug_address)s
-References: %(references)s
-Message-Id: %(message_id)s
-Sender: %(sender_address)s
-Subject: [Bug %(bug_id)s] %(subject)s
-
-%(body)s
+%(content)s
 -- 
 Bug Details:
   %(bug_title)s

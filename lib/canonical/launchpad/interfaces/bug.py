@@ -140,7 +140,7 @@ class IBug(IMessageTarget):
     def addChangeNotification(text, person):
         """Add a bug change notification."""
 
-    def addChangeNotification(message):
+    def addCommentNotification(message):
         """Add a bug comment notification."""
 
     def addWatch(bugtracker, remotebug, owner):

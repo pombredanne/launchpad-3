@@ -30,18 +30,20 @@ adding a comment to a bug:
 If we pass these notifications to get_email_notifications, we get a
 list of emails to send:
 
+    >>> def print_notification(to_addrs, email_notification):
+    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
+    ...     for header in ['From', 'Subject']:
+    ...         print "%s: %s" % (header, email_notification[header])
+    ...     print
+    ...     print email_notification.get_payload(decode=True)
+
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
     >>> for to_addresses, email_notification in get_email_notifications(
     ...     notifications):
-    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
-    ...     print email_notification
+    ...     print_notification(to_addresses, email_notification)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
@@ -92,14 +94,9 @@ Let's add a few changes and see how it looks like:
 
     >>> for to_addresses, email_notification in get_email_notifications(
     ...     pending_notifications):
-    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
-    ...     print email_notification
+    ...     print_notification(to_addresses, email_notification)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Summary changed to: New summary.
@@ -133,14 +130,9 @@ in the order they were added:
 
     >>> for to_addresses, email_notification in get_email_notifications(
     ...     pending_notifications):
-    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
-    ...     print email_notification
+    ...     print_notification(to_addresses, email_notification)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     a new comment.
@@ -170,14 +162,9 @@ If we insert yet another comment, it will be sent as a separate email:
 
     >>> for to_addresses, email_notification in get_email_notifications(
     ...     pending_notifications):
-    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
-    ...     print email_notification
+    ...     print_notification(to_addresses, email_notification)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     a new comment.
@@ -196,10 +183,6 @@ If we insert yet another comment, it will be sent as a separate email:
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] subject
     <BLANKLINE>
     another comment.
@@ -235,14 +218,9 @@ change in between, three notifications will be sent:
 
     >>> for to_addresses, email_notification in get_email_notifications(
     ...     pending_notifications):
-    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
-    ...     print email_notification
+    ...     print_notification(to_addresses, email_notification)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
@@ -253,10 +231,6 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Summary changed to: New summary.
@@ -267,10 +241,6 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Private.
@@ -354,14 +324,9 @@ well:
 
     >>> for to_addresses, email_notification in get_email_notifications(
     ...     pending_notifications):
-    ...     print 'To: %s' % ', '.join(sorted(to_addresses))
-    ...     print email_notification
+    ...     print_notification(to_addresses, email_notification)
     To: dilys@muse.19inch.net, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 2 <2@bugs.launchpad.net>
-    References: foo@example.com-332342--1231
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 2] Re: Blackhole Trash folder
     <BLANKLINE>
     ** Visibility changed to: Private.
@@ -376,10 +341,6 @@ well:
     <BLANKLINE>
     To: dilys@muse.19inch.net, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
-    Reply-To: Bug 2 <2@bugs.launchpad.net>
-    References: foo@example.com-332342--1231
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 2] Re: Blackhole Trash folder
     <BLANKLINE>
     ** Visibility changed to: Public.
@@ -390,10 +351,6 @@ well:
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Private.
@@ -408,10 +365,6 @@ well:
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
-    Reply-To: Bug 1 <1@bugs.launchpad.net>
-    References: sdsdfsfd
-    Message-Id: ...
-    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Public.
