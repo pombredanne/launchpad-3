@@ -117,9 +117,6 @@ class Person(SQLBase):
                             otherColumn='language',
                             intermediateTable='PersonLanguage')
 
-    # relevant joins
-    authored_branches = SQLMultipleJoin(
-        'Branch', joinColumn='author',orderBy='-id')
     subscribed_branches = RelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', orderBy='-id')
@@ -332,15 +329,25 @@ class Person(SQLBase):
         S = set(self.authored_branches)
         S.update(self.registered_branches)
         S.update(self.subscribed_branches)
-        def by_reverse_id(branch):
-            return -branch.id
-        return sorted(S, key=by_reverse_id)
+        return sorted(S, key=lambda x: -x.id)
 
     @property
     def registered_branches(self):
         """See IPerson."""
-        return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
-                             % (self.id, self.id), orderBy='-id')
+        q = 'Branch.owner=%d AND (Branch.author!=%d OR Branch.author is NULL)'
+        return Branch.select(q % (self.id, self.id),
+                             prejoins=["product"],
+                             orderBy='-Branch.id')
+
+
+    @property
+    def authored_branches(self):
+        """See IPerson."""
+        # XXX: this should be moved back to SQLMultipleJoin when we
+        # support prejoins in that -- kiko, 2006-03-17
+        return Branch.select('Branch.author = %d' % self.id,
+                             prejoins=["product"],
+                             orderBy='-Branch.id')
 
     def getBugContactPackages(self):
         """See IPerson."""

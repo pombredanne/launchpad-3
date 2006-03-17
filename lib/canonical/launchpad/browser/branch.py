@@ -17,6 +17,7 @@ import pytz
 
 from zope.component import getUtility
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -79,7 +80,13 @@ class BranchView(LaunchpadView):
             return False
         return self.context.has_subscription(self.user)
 
-    def count_revisions(self, days=30):
+    @cachedproperty
+    def revision_count(self):
+        # Avoid hitting the database multiple times, which is expensive
+        # because it issues a COUNT
+        return self.context.revision_count()
+
+    def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
