@@ -41,6 +41,7 @@ list of emails to send:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
@@ -98,6 +99,7 @@ Let's add a few changes and see how it looks like:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Summary changed to: New summary.
@@ -138,6 +140,7 @@ in the order they were added:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     a new comment.
@@ -174,6 +177,7 @@ If we insert yet another comment, it will be sent as a separate email:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     a new comment.
@@ -195,6 +199,7 @@ If we insert yet another comment, it will be sent as a separate email:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] subject
     <BLANKLINE>
     another comment.
@@ -237,6 +242,7 @@ change in between, three notifications will be sent:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
@@ -250,6 +256,7 @@ change in between, three notifications will be sent:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Summary changed to: New summary.
@@ -263,6 +270,7 @@ change in between, three notifications will be sent:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Private.
@@ -353,6 +361,7 @@ well:
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     References: foo@example.com-332342--1231
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 2] Re: Blackhole Trash folder
     <BLANKLINE>
     ** Visibility changed to: Private.
@@ -370,6 +379,7 @@ well:
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     References: foo@example.com-332342--1231
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 2] Re: Blackhole Trash folder
     <BLANKLINE>
     ** Visibility changed to: Public.
@@ -383,6 +393,7 @@ well:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Private.
@@ -400,6 +411,7 @@ well:
     Reply-To: Bug 1 <1@bugs.launchpad.net>
     References: sdsdfsfd
     Message-Id: ...
+    Sender: bounces@canonical.com
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Public.

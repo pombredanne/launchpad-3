@@ -603,7 +603,6 @@ def send_bug_edit_notification(bug_delta):
 
     subject, body = generate_bug_edit_email(bug_delta)
     bug_delta.bug.addChangeNotification(body, person=bug_delta.user)
-    #send_bug_notification(bug_delta.bug, bug_delta.user, subject, body)
 
 
 def send_bug_duplicate_notification(duplicate_bug, user):
@@ -623,7 +622,6 @@ def send_bug_duplicate_notification(duplicate_bug, user):
         duplicate_bug.id,)
 
     bug.addChangeNotification(body, person=user)
-    #send_bug_notification(bug, user, subject, body)
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
@@ -794,8 +792,6 @@ def notify_bugtask_added(bugtask, event):
 
     subject, body = generate_bug_edit_email(bug_delta)
     bugtask.bug.addChangeNotification(body, person=bug_delta.user)
-
-    #send_bug_notification(bugtask.bug, event.user, subject, body)
 
 
 def notify_bugtask_edited(modified_bugtask, event):

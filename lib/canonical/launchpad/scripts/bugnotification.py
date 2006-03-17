@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import email
 
+from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import get_bugmail_replyto_address
@@ -46,6 +47,7 @@ def construct_email_notification(bug_notifications):
         'bug_address': get_bugmail_replyto_address(bug),
         'references': bug.initial_message.rfc822msgid,
         'message_id': msgid,
+        'sender_address': config.bounce_address,
         'subject': subject,
         'bug_id': bug.id,
         'body': body, 'bug_title': bug.title,
