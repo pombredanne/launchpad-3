@@ -100,17 +100,13 @@ class AcceptanceTests(BzrTestCase):
             """)
         connection.commit()
 
-        # Start authserver.
-        self.userHome = os.path.abspath(tempfile.mkdtemp())
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
-
         # Create a local branch with one revision
         self.local_branch = ScratchDir(files=['foo']).open_branch()
         self.local_branch.working_tree().add('foo')
         self.local_branch.working_tree().commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
+        self.userHome = os.path.abspath(tempfile.mkdtemp())
         os.makedirs(os.path.join(self.userHome, '.ssh'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa'), 
@@ -126,6 +122,10 @@ class AcceptanceTests(BzrTestCase):
         # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
         self.realSshVendor = sftp._ssh_vendor
         sftp._ssh_vendor = 'none'
+
+        # Start authserver.
+        self.authserver = AuthserverTacTestSetup()
+        self.authserver.setUp()
 
         # Start the SFTP server
         self.server = SFTPSetup()
