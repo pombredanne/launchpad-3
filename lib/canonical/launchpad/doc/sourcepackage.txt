@@ -174,7 +174,6 @@ Test the Changelog concatenation process:
     <BLANKLINE>
     <BLANKLINE>
 
-
 Checking handy Sourcepackage properties:
 
 XXX cprov 20060125: it's still very primitive test but it's better
@@ -203,6 +202,18 @@ Lastly, note that sourcepackages know how to compare to each other:
     True
     >>> hoary_firefox_one != warty_firefox
     True
+    >>> hoary_firefox_one == warty_firefox
+    False
+
+Direct Packagings
+-----------------
+
+    >>> print sp.direct_packaging
+    None
+    >>> print hoary_firefox_one.direct_packaging.productseries.title
+    Mozilla Firefox Series: Mozilla Firefox
+    >>> print warty_firefox.direct_packaging.productseries.title
+    Mozilla Firefox Series: Milestone Releases
 
 releasehistory
 --------------

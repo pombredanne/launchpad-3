@@ -233,27 +233,10 @@ class SourcePackage(BugTargetBase):
     def direct_packaging(self):
         """See ISourcePackage."""
         # get any packagings matching this sourcepackage
-        packagings = Packaging.selectBy(
+        return Packaging.selectFirstBy(
             sourcepackagenameID=self.sourcepackagename.id,
             distroreleaseID=self.distrorelease.id,
             orderBy='packaging')
-        packagings = packagings.prejoin(['sourcepackagename', 'distrorelease'])
-
-        # Use the has_packaging variable to avoid needing to slice into
-        # the results returned by selectBy()
-        has_packaging = None
-        for pkging in packagings:
-            if pkging.packaging == PackagingType.PRIME:
-                return pkging
-            if not has_packaging:
-                has_packaging = pkging
-
-        # ok, we're scraping the bottom of the barrel, send the first
-        # packaging we have
-        if has_packaging:
-            return has_packaging
-
-        return None
 
     @property
     def packaging(self):

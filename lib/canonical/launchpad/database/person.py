@@ -336,8 +336,9 @@ class Person(SQLBase):
     @property
     def registered_branches(self):
         """See IPerson."""
-        q = 'Branch.owner=%d AND (Branch.author!=%d OR Branch.author is NULL)'
-        return Branch.select(q % (self.id, self.id),
+        query = """Branch.owner = %d AND
+                   (Branch.author != %d OR Branch.author is NULL)"""
+        return Branch.select(query % (self.id, self.id),
                              prejoins=["product"],
                              orderBy='-Branch.id')
 
@@ -758,7 +759,7 @@ class Person(SQLBase):
         results = list(results)
         ids = set(pofile.potemplate.id for pofile in results)
         if ids:
-            list(POTemplateSet.getByIDs(ids))
+            list(POTemplateSet().getByIDs(ids))
         return results
 
     def validateAndEnsurePreferredEmail(self, email):

@@ -119,7 +119,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # and this code also uses prejoins to avoid fetching data later
         # on.
         # XXX: it would be ideal to prejoin on productseries.product
-        # when it is possible, avoiding another host of queries in
+        # when it becomes possible, avoiding another host of queries in
         # distrorelease-packaging -- kiko, 2006-03-16
         packagings = Packaging.select(
             "Packaging.sourcepackagename = SourcePackageName.id "

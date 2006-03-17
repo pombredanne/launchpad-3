@@ -797,3 +797,4 @@ class POTemplateSet:
             raise AssertionError(
                 'Either productseries or sourcepackagename arguments must be'
                 ' not None.')
+

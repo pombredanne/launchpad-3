@@ -317,9 +317,7 @@ latestMaintainedPackages() and latestUploadedButNotMaintainedPackages()
 methods of IPersonSet. The former will return the latest
 SourcePackageReleases a person uploaded in which he is listed as the
 Maintainer. The latter will return the latest SourcePackageReleases a
-person uploaded (without being the Maintainer).
-
-(u'pmount', u'Ubuntu Hoary', u'0.1-1')
+person uploaded (where he isn't the maintainer).
 
 >>> sabdfl = personset.getByName('sabdfl')
 >>> for sprelease in sabdfl.latestMaintainedPackages():
