@@ -13,8 +13,6 @@ __all__ = [
     'TranslationImportQueueView',
     ]
 
-import urllib
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
@@ -159,15 +157,64 @@ class TranslationImportQueueView(LaunchpadView):
 
     DEFAULT_LENGTH = 50
 
+    def _validateFilteringOptions(self):
+        """Validate the filtering options for this form.
+
+        This method initialize self.status and self.file_extension depending
+        on the form values.
+
+        Raise UnexpectedFormData if we get something wrong.
+        """
+        # Get the filtering arguments.
+        self.status = str(self.form.get('status', 'all'))
+        # but the file_extension must be in lower case.
+        self.type = str(self.form.get('type', 'all'))
+
+        # Fix the case to our needs.
+        if self.status:
+            self.status = self.status.upper()
+        if self.type:
+            self.type = self.type.lower()
+
+        # Prepare the list of available status.
+        available_status = [
+            status.name
+            for status in RosettaImportStatus.items
+            ]
+        available_status.append('ALL')
+
+        # Sanity checks so we don't accept broken input.
+        if (not (self.status and self.type) or
+            (self.status not in available_status) or
+            (self.type not in ('all', 'po', 'pot'))):
+            raise UnexpectedFormData(
+                'The queue filtering got an unexpected value.')
+
+        # Set to None status and type if they have the default value.
+        if self.status == 'ALL':
+            # Selected all status, the status is None to get all values.
+            self.status = None
+        else:
+            # Get the DBSchema entry.
+            self.status = RosettaImportStatus.items[status]
+        if self.type == 'all':
+            # Selected all types, so the type is None to get all values.
+            self.type = None
+
     def initialize(self):
         """Useful initialization for this view class."""
+        # Get the filtering arguments.
         self.form = self.request.form
+
+        # Validate the filtering arguments.
+        self._validateFilteringOptions()
 
         # Setup the batching for this page.
         self.start = int(self.request.get('batch_start', 0))
         self.batch = Batch(
-            self.context.getAllEntries(), self.start,
-            size=self.DEFAULT_LENGTH)
+            self.context.getAllEntries(
+                status=self.status, file_extension=self.type),
+            self.start, size=self.DEFAULT_LENGTH)
         self.batchnav = BatchNavigator(self.batch, self.request)
 
         # Flag to control whether the view page should be rendered.
@@ -271,9 +318,51 @@ class TranslationImportQueueView(LaunchpadView):
 
         # We do a redirect so the submit doesn't breaks if the rendering of
         # the page takes too much time.
-        self.request.response.redirect(
-            '%s?batch_start=%d' % (self.request.getURL(), self.start))
+        url_string = self.request.getURL()
+        query_string = self.request.environment.get("QUERY_STRING")
+        if query_string:
+            url_string = "%s?%s" % (url_string, query_string)
+        self.request.response.redirect(url_string)
         self.redirecting = True
+
+    def renderOption(self, status, selected=False, check_status=None,
+                     empty_if_check_fails=False):
+        """Render an option for a certain status
+
+        When check_status is supplied, check if the supplied status
+        matches the check_status. If empty_if_check_fails is
+        additionally set to True, and the check fails, return an empty
+        string.
+        """
+        if check_status is not None:
+            if check_status == status:
+                selected = True
+            elif empty_if_check_fails:
+                return ''
+
+        # We need to supply selected as a dictionary because it can't
+        # appear at all in the argument list for renderElement -- if it
+        # does it is included in the HTML output
+        if selected:
+            selected = {'selected': 'yes'}
+        else:
+            selected = {}
+        html = renderElement('option',
+            value=status.name,
+            contents=status.title,
+            **selected)
+
+        return html
+
+    def getStatusFilteringSelect(self):
+        """Return a select html tag with all status for filtering purposes."""
+        selected_status = self.form.get('status', 'all')
+        html = ''
+        for status in RosettaImportStatus.items:
+            selected = (status.name.lower() == selected_status.lower())
+            html = '%s\n%s' % (
+                html, self.renderOption(status, selected=selected))
+        return html
 
     def getStatusSelect(self, entry):
         """Return a select html tag with the possible status for entry

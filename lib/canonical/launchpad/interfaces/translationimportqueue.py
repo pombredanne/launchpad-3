@@ -78,11 +78,11 @@ class ITranslationImportQueueEntry(Interface):
 
     sourcepackage = Attribute("The sourcepackage associated with this entry.")
 
-    guessed_potemplate = Attribute(
+    guess_potemplate = Attribute(
         "The IPOTemplate that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 
-    guessed_pofile = Attribute(
+    guess_pofile = Attribute(
         "The IPOFile that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 
@@ -175,11 +175,27 @@ class ITranslationImportQueue(Interface):
         """Return the ITranslationImportQueueEntry with the given id or None.
         """
 
-    def getAllEntries():
-        """Return all entries this import queue has."""
+    def getAllEntries(status=None, file_extension=None):
+        """Return all entries this import queue has
+
+        :arg status: RosettaImportStatus entry.
+        :arg file_extension: String with the file type extension, usually 'po'
+            or 'pot'.
+
+        If either status or file_extension are given, the returned entries are
+        filtered based on those values.
+        """
 
     def getFirstEntryToImport():
         """Return the first entry of the queue ready to be imported."""
+
+    def getEntriesWithPOTExtension(
+        distrorelease=None, sourcepackagename=None, productseries=None):
+        """Return all entries with the '.pot' extension in the path field.
+
+        distrorelease, sourcepackagename and productseries can be used for
+        filtering purposes.
+        """
 
     def executeAutomaticReviews(ztm):
         """Try to move entries from the Needs Review status to Approved one.
