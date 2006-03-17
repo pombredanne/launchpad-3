@@ -477,12 +477,11 @@ Next, a functional/integration test of the overridden directive.
     yet_another_mister_lizard
 
 
-== Overriding the browser:generalform directive ==
+== Applying facets to the browser:generalform directive ==
 
-We override browser:generalform to let us specify the facet that the
-form is associated with.
+browser:generalform lets us specify a facet for the form.
 
-First, a unit test of the overridden directive.
+First, a unit test of the directive.
 
     >>> from canonical.launchpad.webapp.metazcml import GeneralFormDirective
     >>> context = Context()
@@ -529,7 +528,7 @@ its __launchpad_facetname__ attribute.
     >>> print cls.__launchpad_facetname__
     FACET
 
-Next, a functional/integration test of the overridden directive.
+Next, a functional/integration test of the directive.
 
     >>> print queryView(fooobject, '+somegeneralform', request)
     None
