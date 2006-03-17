@@ -29,16 +29,35 @@ INFO
   Listing ubuntu/breezy-autotest (NEW) 4/4
   ---------|----|----------------------|----------------------|---------------
          4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | 33 weeks
-           | alsa-utils/1.0.9a-4ubuntu1 Component: main Section: base
+           | * alsa-utils/1.0.9a-4ubuntu1 Component: main Section: base
          3 | S- | netapplet            | 0.99.6-1             | 53 weeks
-           | netapplet/0.99.6-1 Component: main Section: web
-         2 | -B | pmount               | 0.1-1                | 21 weeks
-           | pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
-         1 | -B | mozilla-firefox      | 0.9                  | 21 weeks
-           | mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
+           | * netapplet/0.99.6-1 Component: main Section: web
+         2 | -B | pmount (i386)        | 0.1-1                | 21 weeks
+           | * pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
+         1 | -B | mozilla-firefox (i38 | 0.9                  | 21 weeks
+           | * mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
   ---------|----|----------------------|----------------------|---------------
                                                                4/4
 							       total
+
+Check the custom uploads presentation:
+
+  >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",
+  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue unapproved
+  Running: "info *"
+  Listing ubuntu/breezy-autotest (UNAPPROVED) 1/1
+  ---------|----|----------------------|----------------------|---------------
+         5 | -- | netapplet-1.0.0.tar. | -                    | 49 weeks
+           | * netapplet-1.0.0.tar.gz Format: ROSETTA_TRANSLATIONS
+  ---------|----|----------------------|----------------------|---------------
+  1/1 total
+  <BLANKLINE>
 
 
 SOURCE OVERRIDE
@@ -55,7 +74,7 @@ SOURCE OVERRIDE
   Running: "override netapplet source universe/base"
   Overriding ubuntu/breezy-autotest (NEW) 1/4
   ---------------------------------------------------------------------------
-           | netapplet/0.99.6-1 Component: universe Section: base
+           | * netapplet/0.99.6-1 Component: universe Section: base
   DRY RUN requested, not committing.
   <BLANKLINE>
 
@@ -75,7 +94,7 @@ BINARY OVERRIDE
   Overriding ubuntu/breezy-autotest (NEW) 1/4
   ---------------------------------------------------------------------------
   Overriding pmount_0.1-1 (main/base/IMPORTANT)
-           | pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
+           | * pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
   DRY RUN requested, not committing.
   <BLANKLINE>
 

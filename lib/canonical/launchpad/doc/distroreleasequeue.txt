@@ -183,7 +183,7 @@ Check the behaviour of @cachedproperty  attributes:
   u'mozilla-firefox'
 
   >>> qitem.displayname
-  u'mozilla-firefox'
+  u'mozilla-firefox (i386)'
 
   >>> qitem.sourceversion
   u'0.9'
