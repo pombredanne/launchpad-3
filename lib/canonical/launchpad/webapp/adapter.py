@@ -26,6 +26,7 @@ __all__ = [
     'set_request_started',
     'clear_request_started',
     'get_request_statements',
+    'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
@@ -143,6 +144,19 @@ def get_request_statements():
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
+
+
+def get_request_duration(now=None):
+    """Get the duration of the current request in seconds.
+
+    """
+    starttime = getattr(_local, 'request_start_time', None)
+    if starttime is None:
+        return -1
+
+    if now is None:
+        now = time.time()
+    return now - starttime
 
 
 def _log_statement(starttime, endtime, statement):
