@@ -209,10 +209,8 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         from canonical.launchpad.database.distroreleasesourcepackagerelease \
             import DistroReleaseSourcePackageRelease
-        return[DistroReleaseSourcePackageRelease(
-            publishing.distrorelease,
-            self) for publishing in self.publishings]
-
+        return [DistroReleaseSourcePackageRelease(pub.distrorelease, self)
+                for pub in self.publishings]
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.

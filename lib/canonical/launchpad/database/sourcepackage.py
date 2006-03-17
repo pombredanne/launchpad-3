@@ -62,29 +62,24 @@ class SourcePackage(BugTargetBase):
 
     @property
     def currentrelease(self):
-        # XXX: jamesh, please check this.
-        #      from stevea, 2006-01-28
-        package = SourcePackagePublishing.selectFirst("""
+        pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease = 
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distrorelease.id),
-            orderBy='datepublished',
+            orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
-        if package is None:
+        if pkg is None:
             return None
         currentrelease = DistroReleaseSourcePackageRelease(
             distrorelease=self.distrorelease,
-            sourcepackagerelease=SourcePackageRelease.get(
-                package.sourcepackagerelease.id))
+            sourcepackagerelease=pkg.sourcepackagerelease)
         return currentrelease
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        # XXX: 20051219 jamesh
-        # Is the orderBy clause here correct, or just to avoid the warning?
         pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -93,7 +88,7 @@ class SourcePackage(BugTargetBase):
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(version, self.sourcepackagename.id,
                             self.distrorelease.id),
-            orderBy='id',
+            orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
         if pkg is None:
             return None
