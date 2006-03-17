@@ -70,6 +70,9 @@ class ICveSet(Interface):
     def new(sequence, description, cvestate=CveStatus.CANDIDATE):
         """Create a new ICve."""
 
+    def getAll():
+        """Return all ICVEs"""
+
     def latest(quantity=5):
         """Return the most recently created CVE's, newest first, up to the
         number given in quantity."""
@@ -83,7 +86,7 @@ class ICveSet(Interface):
 
     def inText(text):
         """Find one or more Cve's by analysing the given text.
-        
+
         This will look for references to CVE or CAN numbers, and return the
         CVE references. It will create any CVE's that it sees which are
         already not in the database. It returns the list of all the CVE's it

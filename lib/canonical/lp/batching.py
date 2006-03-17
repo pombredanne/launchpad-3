@@ -67,7 +67,7 @@ class BatchNavigator:
         urls = []
         size = len(batches)
 
-        nextb = self.batch.nextBatch() 
+        nextb = self.batch.nextBatch()
 
         # Find the current page
         if nextb:
