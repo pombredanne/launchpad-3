@@ -71,7 +71,7 @@
       <form name="entries_to_import" action="" method="POST">
         <tal:navigation replace="structure view/batchnav/@@+navigation-links" />
         <table class="listing" width="100%">
-          <tal:loop repeat="entry view/batch">
+          <tal:loop repeat="entry view/batchnav/currentBatch">
             <tr>
               <tal:comment replace="nothing">
                 XXX: CarlosPerelloMarin 20060309:
