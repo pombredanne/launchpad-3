@@ -166,10 +166,11 @@ class DistroReleaseQueue(SQLBase):
         for custom in self.customfiles:
             custom_set.add(custom.customformat)
 
+        supported = DistroReleaseQueueCustomFormat
         custom_icons = {
-            DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER: '/@@/ubuntu.gif',
-            DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS: '/@@/translations',
-            DistroReleaseQueueCustomFormat.DIST_UPGRADER: '/@@/topic_icon.gif',
+            supported.DEBIAN_INSTALLER: '/@@/ubuntu.gif',
+            supported.ROSETTA_TRANSLATIONS: '/@@/translations',
+            supported.DIST_UPGRADER: '/@@/topic_icon.gif',
             }
 
         for custom_format in custom_set:
@@ -223,7 +224,9 @@ class DistroReleaseQueue(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease.name
         if self.builds:
-            return self.builds[0].build.sourcepackagerelease.name
+            source_name = self.builds[0].build.sourcepackagerelease.name
+            arch_tag = self.builds[0].build.distroarchrelease.architecturetag
+            return '%s (%s)' % (source_name, arch_tag)
         if self.customfiles:
             return self.customfiles[0].libraryfilealias.filename
 
