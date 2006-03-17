@@ -113,23 +113,39 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     @property
     def packagings(self):
-        packagings = list(Packaging.selectBy(distroreleaseID=self.id))
-        packagings.sort(key=lambda a:a.sourcepackagename.name)
+        # We join through sourcepackagename to be able to ORDER BY it,
+        # and this code also uses prejoins to avoid fetching data later
+        # on.
+        # XXX: it would be ideal to prejoin on productseries.title when
+        # possible, avoiding another host of queries in
+        # distrorelease-packaging -- kiko, 2006-03-16
+        packagings = Packaging.select(
+            "Packaging.sourcepackagename = SourcePackageName.id "
+            "AND DistroRelease.id = Packaging.distrorelease "
+            "AND DistroRelease.id = %d" % self.id,
+            clauseTables=["SourcePackageName", "DistroRelease"],
+            prejoins=["sourcepackagename", "distrorelease", "productseries"],
+            orderBy=["SourcePackageName.name"]
+            )
         return packagings
 
     @property
     def distroreleaselanguages(self):
-        result = DistroReleaseLanguage.selectBy(distroreleaseID=self.id)
-        return sorted(result, key=lambda a: a.language.englishname)
+        result = DistroReleaseLanguage.select(
+            "DistroReleaseLanguage.language = Language.id "
+            "AND DistroReleaseLanguage.distrorelease = %d" % self.id,
+            clauseTables=["Language"],
+            prejoins=["language", "distrorelease"],
+            orderBy=["Language.englishname"])
+        return result
 
     @property
     def translatable_sourcepackages(self):
         """See IDistroRelease."""
-        result = SourcePackageName.select("""
+        query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
-            POTemplate.distrorelease = %s
-            """ % sqlvalues(self.id),
-            clauseTables=['POTemplate'],
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
+        result = SourcePackageName.select(query, clauseTables=['POTemplate'],
             orderBy=['name'])
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]

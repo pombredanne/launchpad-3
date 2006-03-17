@@ -175,7 +175,6 @@ class DistroReleaseView(BuildRecordsView):
     def initialize(self):
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
-        self.languages = helpers.request_languages(self.request)
         self.text = self.request.form.get('text')
         self.matches = 0
         self._results = None
@@ -183,6 +182,10 @@ class DistroReleaseView(BuildRecordsView):
         self.searchrequested = False
         if self.text:
             self.searchrequested = True
+
+    @property
+    def languages(self):
+        return helpers.request_languages(self.request)
 
     def searchresults(self):
         """Try to find the packages in this distro release that match

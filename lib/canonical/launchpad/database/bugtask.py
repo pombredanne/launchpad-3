@@ -82,7 +82,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _defaultOrder = ['distribution', 'product', 'distrorelease',
                      'milestone', 'sourcepackagename']
 
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
         notNull=False, default=None)
@@ -450,7 +450,8 @@ class BugTaskSet:
 
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
-            query, clauseTables=clauseTables, orderBy=orderby_arg)
+            query, prejoins=["bug"], clauseTables=clauseTables,
+            orderBy=orderby_arg)
 
         return bugtasks
 

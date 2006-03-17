@@ -57,7 +57,13 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
             POTemplate.distrorelease = %s
             ''' % sqlvalues(self.language.id, self.distrorelease.id),
             clauseTables=['POTemplate'],
-            orderBy=['id'])
+            # the language listings include information from a number of
+            # places; attempt to prejoin as much as possible.
+            # XXX: would also benefit from potemplate.sourcepackagename,
+            # potemplate.potemplatename, latestsubmission.datecreated
+            # and latestsubmission.person -- kiko, 2006-03-16
+            prejoins=["potemplate", "language", "latestsubmission"],
+            orderBy=['POFile.id'])
 
     @property
     def translators(self):

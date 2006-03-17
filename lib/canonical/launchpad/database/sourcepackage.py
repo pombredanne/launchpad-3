@@ -60,6 +60,8 @@ class SourcePackage(BugTargetBase):
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
+    @property
+    def currentrelease(self):
         # XXX: jamesh, please check this.
         #      from stevea, 2006-01-28
         package = SourcePackagePublishing.selectFirst("""
@@ -72,12 +74,12 @@ class SourcePackage(BugTargetBase):
             orderBy='datepublished',
             clauseTables=['SourcePackageRelease'])
         if package is None:
-            self.currentrelease = None
-        else:
-            self.currentrelease = DistroReleaseSourcePackageRelease(
-                distrorelease=self.distrorelease,
-                sourcepackagerelease=SourcePackageRelease.get(
-                    package.sourcepackagerelease.id))
+            return None
+        currentrelease = DistroReleaseSourcePackageRelease(
+            distrorelease=self.distrorelease,
+            sourcepackagerelease=SourcePackageRelease.get(
+                package.sourcepackagerelease.id))
+        return currentrelease
 
     def __getitem__(self, version):
         """See ISourcePackage."""

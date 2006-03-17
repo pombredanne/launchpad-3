@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.searchbuilder import any
@@ -66,7 +67,7 @@ class SourcePackageRelease(SQLBase):
         dbName='uploaddistrorelease')
 
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
-        orderBy=['-datecreated'])
+                             orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease')
     publishings = SQLMultipleJoin('SourcePackagePublishing',
@@ -74,24 +75,30 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def latest_build(self):
-        builds = self.builds
+        builds = self._cached_builds
         if len(builds) > 0:
             return builds[0]
         return None
 
-    @property
     def failed_builds(self):
-        return [build for build in self.builds
+        return [build for build in self._cached_builds
                 if build.buildstate == BuildStatus.FAILEDTOBUILD]
 
     @property
     def needs_building(self):
-        for build in self.builds:
+        for build in self._cached_builds:
             if build.buildstate in [BuildStatus.NEEDSBUILD,
                                     BuildStatus.MANUALDEPWAIT,
                                     BuildStatus.CHROOTWAIT]:
                 return True
         return False
+
+    @cachedproperty
+    def _cached_builds(self):
+        # The reason we have this as a cachedproperty is that all the
+        # *build* methods here need access to it; better not to
+        # recalculate it multiple times.
+        return list(self.builds)
 
     @property
     def name(self):
@@ -100,12 +107,18 @@ class SourcePackageRelease(SQLBase):
     @property
     def sourcepackage(self):
         """See ISourcePackageRelease."""
-        return self.uploaddistrorelease.getSourcePackage(self.name)
+        # By supplying the sourcepackagename instead of its string name,
+        # we avoid doing an extra query doing getSourcepackage
+        release = self.uploaddistrorelease
+        return release.getSourcePackage(self.sourcepackagename)
 
     @property
     def distrosourcepackage(self):
         """See ISourcePackageRelease."""
-        return self.uploaddistrorelease.distribution.getSourcePackage(self.name)
+        # By supplying the sourcepackagename instead of its string name,
+        # we avoid doing an extra query doing getSourcepackage
+        distribution = self.uploaddistrorelease.distribution
+        return distribution.getSourcePackage(self.sourcepackagename)
 
     @property
     def title(self):
@@ -186,7 +199,7 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def meta_binaries(self):
-        """See ISourcePackageRelease."""        
+        """See ISourcePackageRelease."""
         return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
                                     binary.binarypackagename)
                 for binary in self.binaries]
@@ -287,5 +300,4 @@ class SourcePackageRelease(SQLBase):
                 filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
                 distrorelease=self.uploaddistrorelease)
-
 

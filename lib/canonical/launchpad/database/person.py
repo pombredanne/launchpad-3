@@ -848,6 +848,7 @@ class Person(SQLBase):
         return SourcePackageRelease.select(
             querystr,
             orderBy=['-dateuploaded'],
+            prejoins=['sourcepackagename'],
             clauseTables=['SourcePackageName'])
 
     def uploadedButNotMaintainedPackages(self):
@@ -860,6 +861,7 @@ class Person(SQLBase):
         return SourcePackageRelease.select(
             querystr,
             orderBy=['-dateuploaded'],
+            prejoins=['sourcepackagename'],
             clauseTables=['SourcePackageName'])
 
     @property
