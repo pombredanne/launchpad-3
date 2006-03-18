@@ -149,7 +149,7 @@ class BranchEditView(SQLObjectEditView):
         # remove 'url' from it. This is to prevent users from converting
         # push/import branches to pull branches.
 
-        if context.url is None:
+        if request.method == 'POST' and context.url is None:
             self.fieldNames = list(self.fieldNames)
             self.fieldNames.remove('url')
 
@@ -161,11 +161,11 @@ class BranchEditView(SQLObjectEditView):
 
 class BranchAddView(SQLObjectAddView):
 
-    _nextURL = None    
+    _nextURL = None
 
     def create(self, name, owner, author, product, url, title,
                lifecycle_status, summary, home_page):
-        """Handle a request to create a new branch for this product."""        
+        """Handle a request to create a new branch for this product."""
         branch_set = getUtility(IBranchSet)
         branch = branch_set.new(
             name=name, owner=owner, author=author, product=product, url=url,
@@ -177,7 +177,7 @@ class BranchAddView(SQLObjectAddView):
         assert self._nextURL is not None, 'nextURL was called before create()'
         return self._nextURL
 
-        
+
 class BranchPullListing(LaunchpadView):
     """Listing of all the branches that the Supermirror should pull soon.
 
