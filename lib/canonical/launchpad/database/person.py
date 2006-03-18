@@ -876,19 +876,11 @@ class Person(SQLBase):
 
     def latestMaintainedPackages(self):
         """See IPerson."""
-        querystr = self._latestReleaseQuery()
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy=['-dateuploaded'],
-            prejoins=['sourcepackagename', 'maintainer'])
+        return self._latestReleaseQuery()
 
     def latestUploadedButNotMaintainedPackages(self):
         """See IPerson."""
-        querystr = self._latestReleaseQuery(uploader_only=True)
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy=['-dateuploaded'],
-            prejoins=['sourcepackagename', 'maintainer'])
+        return self._latestReleaseQuery(uploader_only=True)
 
     def _latestReleaseQuery(self, uploader_only=False):
         # Returns a special query that returns the most recent
@@ -907,7 +899,11 @@ class Person(SQLBase):
                   FROM sourcepackagerelease
                  WHERE %s)
               """ % extra
-        return query
+        return SourcePackageRelease.select(
+            query,
+            orderBy=['-SourcePackageRelease.dateuploaded', 
+                     'SourcePackageRelease.id'],
+            prejoins=['sourcepackagename', 'maintainer'])
 
     @cachedproperty
     def is_ubuntero(self):

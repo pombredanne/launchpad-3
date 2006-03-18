@@ -328,15 +328,15 @@ person uploaded (where he isn't the maintainer).
 (u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
 (u'netapplet', u'Ubuntu Hoary', u'1.0-1')
 (u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
-(u'evolution', u'Ubuntu Hoary', u'1.0')
 (u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
+(u'evolution', u'Ubuntu Hoary', u'1.0')
 
 >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
 (u'libstdc++', u'Ubuntu Hoary', u'b8p')
-(u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
 (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
+(u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
 (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
@@ -352,3 +352,4 @@ alphabetically (A to Z) by package name.
 
 >>> [package.name for package in foobar.getBugContactPackages()]
 [u'mozilla-firefox', u'pmount']
+
