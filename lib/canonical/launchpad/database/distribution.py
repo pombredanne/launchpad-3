@@ -10,6 +10,8 @@ from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
     SQLObjectNotFound)
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
@@ -110,8 +112,10 @@ class Distribution(SQLBase, BugTargetBase):
     def enabled_mirrors(self):
         return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
 
-    @property
+    @cachedproperty
     def releases(self):
+        # This is used in a number of places and given it's already
+        # listified, why not spare the trouble of regenerating?
         ret = DistroRelease.selectBy(distributionID=self.id)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
@@ -181,6 +185,9 @@ class Distribution(SQLBase, BugTargetBase):
 
     @property
     def currentrelease(self):
+        # XXX: this should be just a selectFirst with a case in its
+        # order by clause -- kiko, 2006-03-18
+
         # If we have a frozen one, return that.
         for rel in self.releases:
             if rel.releasestatus == DistributionReleaseStatus.FROZEN:
