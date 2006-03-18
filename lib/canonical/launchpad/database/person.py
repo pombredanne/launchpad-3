@@ -883,7 +883,7 @@ class Person(SQLBase):
         return self._latestReleaseQuery(uploader_only=True)
 
     def _latestReleaseQuery(self, uploader_only=False):
-        # Returns a special query that returns the most recent
+        # Issues a special query that returns the most recent
         # sourcepackagereleases that were maintained/uploaded to
         # distribution releases by this person.
         if uploader_only:
@@ -894,15 +894,17 @@ class Person(SQLBase):
             extra = "sourcepackagerelease.maintainer = %d" % self.id
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename) 
+                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
                        sourcepackagerelease.id
                   FROM sourcepackagerelease
-                 WHERE %s)
+                 WHERE %s
+              ORDER BY uploaddistrorelease, sourcepackagename, 
+                       dateuploaded DESC
+              )
               """ % extra
         return SourcePackageRelease.select(
             query,
-            orderBy=['-SourcePackageRelease.dateuploaded', 
-                     'SourcePackageRelease.id'],
+            orderBy=['-SourcePackageRelease.dateuploaded'],
             prejoins=['sourcepackagename', 'maintainer'])
 
     @cachedproperty
