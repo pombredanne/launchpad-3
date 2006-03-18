@@ -827,6 +827,7 @@ def filenameToContentType(fname):
              ".deb":      "application/x-debian-package",
              ".udeb":     "application/x-debian-package",
              ".txt":      "text/plain",
+             ".txt.gz":   "text/plain", # For the build master logs
              }
     for ending in ftmap:
         if fname.endswith(ending):

@@ -6,6 +6,8 @@ __all__ = ['SourcePackageRelease']
 import sets
 import tarfile
 from StringIO import StringIO
+import datetime
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -71,7 +73,7 @@ class SourcePackageRelease(SQLBase):
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease')
     publishings = SQLMultipleJoin('SourcePackagePublishing',
-        joinColumn='sourcepackagerelease')
+        joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
     @property
     def latest_build(self):
@@ -248,30 +250,67 @@ class SourcePackageRelease(SQLBase):
                                         libraryfile=file.id)
 
     def createBuild(self, distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=BuildStatus.NEEDSBUILD,
+                    pocket=None):
         """See ISourcePackageRelease."""
+        # ensure pocket can't be ommited
+        assert pocket is not None
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchrelease.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
-        return Build(distroarchrelease=distroarchrelease.id,
-                     sourcepackagerelease=self.id,
-                     processor=processor.id, buildstate=status)
+        # force the current timestamp instead of the default
+        # UTC_NOW for the transaction, avoid several row with
+        # same datecreated.
+        datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
+        return Build(distroarchrelease=distroarchrelease,
+                     sourcepackagerelease=self,
+                     processor=processor,
+                     buildstate=status,
+                     datecreated=datecreated,
+                     pocket=pocket)
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
-        return Build.selectOneBy(sourcepackagereleaseID=self.id,
-                                 distroarchreleaseID=distroarchrelease.id)
+        query = """
+        build.id = binarypackagerelease.build AND
+        binarypackagerelease.id =
+            binarypackagepublishing.binarypackagerelease AND
+        binarypackagepublishing.distroarchrelease = %s AND
+        build.sourcepackagerelease = %s AND
+        binarypackagerelease.architecturespecific = true
+        """  % sqlvalues(distroarchrelease.id, self.id)
+
+        tables = ['binarypackagerelease', 'binarypackagepublishing']
+
+        builds = Build.select(query, clauseTables=tables)
+
+        if builds.count() == 0:
+            builds = Build.selectBy(distroarchreleaseID=distroarchrelease.id,
+                                    sourcepackagereleaseID=self.id)
+            if builds.count() == 0:
+                return None
+
+        return shortlist(builds)[0]
+
+    def override(self, component=None, section=None, urgency=None):
+        """See ISourcePackageRelease."""
+        if component is not None:
+            self.component = component
+        if section is not None:
+            self.section = section
+        if urgency is not None:
+            self.urgency = urgency
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):
         """See ISourcePackageRelease."""
         client = getUtility(ILibrarianClient)
 
-        tarball_file = client.getFileByAlias(tarball_alias)
+        tarball_file = client.getFileByAlias(tarball_alias.id)
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
@@ -289,6 +328,9 @@ class SourcePackageRelease(SQLBase):
         for filename in filenames:
             # Fetch the file
             content = tarball.extractfile(filename).read()
+            if len(content) == 0:
+                # The file is empty, we ignore it.
+                continue
             if filename.startswith('source/'):
                 # Remove the special 'source/' prefix for the path.
                 filename = filename[len('source/'):]

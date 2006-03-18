@@ -25,8 +25,8 @@ cd "build-$BUILDID/chroot-autobuild/etc/apt"
 echo "Attempting OGRE for $COMPONENT in build-$BUILDID"
 
 if [ -e "sources.list.$COMPONENT" ]; then
-  if [ -h "sources.list"]; then
-    ln -sf "sources.list.$COMPONENT" sources.list
+  if [ -h "sources.list" ]; then
+    $SUDO ln -sf "sources.list.$COMPONENT" sources.list
   else
     echo "OGRE sources.list found, but sources.list is not a symlink"
   fi

@@ -9,15 +9,14 @@ __all__ = [
     'ICveSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
 
-from canonical.launchpad.validators.cve import valid_cve
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.validation import valid_cve_sequence
 from canonical.launchpad.interfaces.buglink import IBugLinkTarget
 from canonical.lp.dbschema import CveStatus
 
-_ = MessageIDFactory('launchpad')
 
 class ICve(IBugLinkTarget):
     """A single CVE database entry."""
@@ -26,7 +25,7 @@ class ICve(IBugLinkTarget):
     sequence = TextLine(
         title=_('CVE Sequence Number'),
         description=_('Should take the form XXXX-XXXX, all digits.'),
-        required=True, readonly=False, constraint=valid_cve)
+        required=True, readonly=False, constraint=valid_cve_sequence)
     status = Choice(title=_('Current CVE State'), 
         default=CveStatus.CANDIDATE, description=_("Whether or not the "
         "vulnerability has been reviewed and assigned a full CVE number, "
