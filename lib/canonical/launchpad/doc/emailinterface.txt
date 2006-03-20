@@ -124,13 +124,8 @@ A notification was added:
     >>> print bug_notification.message.owner.displayname
     Foo Bar
 
-    >>> print bug_notification.message.text_contents
-    Public bug reported:
-    <BLANKLINE>
-    Affects: firefox (upstream)
-    ...
-    There is a bug in Firefox.
-    ...
+    >>> bug_notification.message == bug.initial_message
+    True
 
 Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed since he's the owner of the product.
@@ -165,19 +160,14 @@ this:
     >>> print distrotask.sourcepackagename.name
     mozilla-firefox
 
-A notification was addedt:
+A notification was added:
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print bug_notification.message.owner.displayname
     Sample Person
 
-    >>> print bug_notification.message.text_contents
-    Public bug reported:
-    <BLANKLINE>
-    Affects: mozilla-firefox (Ubuntu)
-    ...
-    There's a bug in Ubuntu.
-    ...
+    >>> bug_notification.message == bug.initial_message
+    True
 
 Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed since he's a bug contact for the mozilla package:

@@ -27,7 +27,7 @@ Let's add add change notification and see how it works:
     >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
     >>> emails = [
     ...     email_notification
-    ...     for to_addrs, email_notification in get_email_notifications(
+    ...     for dummy, dummy, email_notification in get_email_notifications(
     ...         notifications)]
     >>> len(emails)
     1
@@ -55,7 +55,7 @@ id:
     >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
     >>> emails = [
     ...     email_notification
-    ...     for to_addrs, email_notification in get_email_notifications(
+    ...     for dummy, dummy, email_notification in get_email_notifications(
     ...         notifications)]
     >>> len(emails)
     1
@@ -85,7 +85,7 @@ XXX
     >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
     >>> emails = [
     ...     email_notification
-    ...     for to_addrs, email_notification in get_email_notifications(
+    ...     for dummy, dummy, email_notification in get_email_notifications(
     ...         notifications)]
     >>> len(emails)
     1

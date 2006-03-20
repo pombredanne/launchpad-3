@@ -3,15 +3,10 @@ the goal of solving the problem at hand. Any logged in user can add a
 comment to a bug.
 
 In this case, let's add a simple comment to bug #2 as user Foo
-Bar. Before we do, let's pull out our test mailer, to demonstrate that
-submitting a comment through the web UI generates a notification
-email.
+Bar. First, let's clear out the notification table:
 
-  >>> from canonical.launchpad.mail import stub
-
-  >>> stub.test_emails = []
-  >>> len(stub.test_emails)
-  0
+  >>> from canonical.launchpad.database import BugNotification
+  >>> BugNotification.clearTable()
 
   >>> print http(r"""
   ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+addmessage HTTP/1.1
@@ -31,7 +26,7 @@ email.
   HTTP/1.1 200 Ok
   ...Blackhole Trash folder...
 
-After the comment has been submitted, the notification email is sent:
+After the comment has been submitted, a notification is added:
 
-  >>> len(stub.test_emails)
-  2
+  >>> BugNotification.select().count()
+  1
