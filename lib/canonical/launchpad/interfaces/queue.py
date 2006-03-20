@@ -90,8 +90,15 @@ class IDistroReleaseQueue(Interface):
     sourcepackagerelease = Attribute("The source package release for this item")
 
     age = Attribute("The age of this queue item.")
-    queue_icons = Attribute("List icons path for this queue entry")
     displayname = Attribute("Generic displayname for a queue item")
+    isSource = Attribute("whether or not this upload contains sources")
+    isBuild = Attribute("whether or not this upload contains binaries")
+    isInstaller = Attribute(
+        "whether or not this upload contains installers images")
+    isTranslation = Attribute(
+        "whether or not this upload contains translations")
+    isUpgrader = Attribute(
+        "wheter or not this upload contains upgrader images")
 
     def setNew():
         """Set queue state to NEW."""

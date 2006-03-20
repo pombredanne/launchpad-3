@@ -152,34 +152,37 @@ class DistroReleaseQueue(SQLBase):
     # XXX cprov 20060314: following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
-    def queue_icons(self):
-        """See IDistroReleaseQueue"""
-        icons = []
+    def isSource(self):
+        """See IDistroReleaseQueue."""
+        return self.sources
 
-        if self.sources:
-            icons.append('/@@/package-source')
+    @cachedproperty
+    def isBuild(self):
+        """See IDistroReleaseQueue."""
+        return self.builds
 
-        if self.builds:
-            icons.append('/@@/package-binary')
+    @cachedproperty
+    def _customFormats(self):
+        """Return the custom upload formats contained in this upload."""
+        return [custom.customformat for custom in self.customfiles]
 
-        custom_set = set()
-        for custom in self.customfiles:
-            custom_set.add(custom.customformat)
+    @cachedproperty
+    def isInstaller(self):
+        """See IDistroReleaseQueue."""
+        return (DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER
+                in self._customFormats)
 
-        supported = DistroReleaseQueueCustomFormat
-        custom_icons = {
-            supported.DEBIAN_INSTALLER: '/@@/ubuntu.gif',
-            supported.ROSETTA_TRANSLATIONS: '/@@/translations',
-            supported.DIST_UPGRADER: '/@@/topic_icon.gif',
-            }
+    @cachedproperty
+    def isTranslation(self):
+        """See IDistroReleaseQueue."""
+        return (DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS
+                in self._customFormats)
 
-        for custom_format in custom_set:
-            icons.append(custom_icons[custom_format])
-
-        if not icons:
-            raise NotFoundError('Queue Icon not found for %s' % self.id)
-
-        return icons
+    @cachedproperty
+    def isUpgrader(self):
+        """See IDistroReleaseQueue."""
+        return (DistroReleaseQueueCustomFormat.DIST_UPGRADER
+                in self._customFormats)
 
     @cachedproperty
     def changesfilename(self):

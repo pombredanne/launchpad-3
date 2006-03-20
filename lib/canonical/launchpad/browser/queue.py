@@ -7,13 +7,17 @@ __metaclass__ = type
 __all__ = [
     'QueueItemsView',
     ]
+from zope.component import getUtility
+from canonical.database.sqlbase import flush_database_updates
+
+from canonical.launchpad.webapp import LaunchpadView
 
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
-from canonical.launchpad.interfaces import IHasQueueItems
+from canonical.launchpad.interfaces import (
+    IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError)
 
-from canonical.launchpad.webapp import LaunchpadView
 
 class QueueItemsView(LaunchpadView):
     """Base class used to present objects that contains queue items.
@@ -49,3 +53,43 @@ class QueueItemsView(LaunchpadView):
         queue_items = self.context.getQueueItems(
             status=state_map[self.state], name=self.text)
         self.batchnav = BatchNavigator(queue_items, self.request)
+
+    def performQueueAction(self):
+        """Execute the designed action over the selected queue items.
+
+        Return a message describing the action executed or None if nothing
+        was done.
+        """
+        if self.request.method != "POST":
+            return
+
+        action = self.request.form.get('queue_action', '')
+        queue_ids = self.request.form.get('QUEUE_ID', '')
+
+        if not action or not queue_ids:
+            return
+
+        if not isinstance(queue_ids, list):
+            queue_ids = [queue_ids]
+
+        queue_set = getUtility(IDistroReleaseQueueSet)
+
+        action_map = {
+            'accept': 'setAccepted',
+            'reject': 'setRejected',
+            }
+
+        success = []
+        failure = []
+        for queue_id in queue_ids:
+            queue = queue_set.get(int(queue_id))
+            try:
+                getattr(queue, action_map[action])()
+            except QueueInconsistentStateError, info:
+                failure.append('FAILED: %s (%s)' %(queue.displayname, info))
+            else:
+                success.append('OK: %s' % queue.displayname)
+
+        flush_database_updates()
+
+        return "<br>".join(success + failure)

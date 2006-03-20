@@ -1,3 +1,6 @@
+<p class="portalMessage" tal:define="message view/performQueueAction"
+   tal:condition="message" tal:content="structure message" />
+
 <div class="queue_list" tal:condition="not: view/setupQueueList">
 
   <tal:batch define="batch view/batchnav/currentBatch">
@@ -42,25 +45,52 @@
           tal:condition="batch"
           replace="structure view/batchnav/@@+navigation-links" />
 
+     <form name="queue_items_action" action="" method="POST">
      <table class="listing" tal:condition="batch">
        <tbody>
          <tal:batch repeat="queue batch">
            <tr>
-              <td colspan="3">
-                 <img tal:repeat="icon queue/queue_icons"
-                      tal:attributes="alt queue/displayname; src icon" />
+              <td class="icon left">
+                 <input type="checkbox" name="QUEUE_ID"
+                        tal:attributes="value queue/id"/>
+              </td>
+  	      <td> <span tal:replace="queue/displayname"/>
+                 <img tal:condition="queue/isSource"
+                      alt="[Source]" src="/@@/package-source" title="Source"/>
+                 <img tal:condition="queue/isBuild"
+                      alt="[Build]" src="/@@/package-binary" title="Binary"/>
+                 <img tal:condition="queue/isInstaller"
+                      alt="[Installer]" src="/@@/ubuntu.gif"
+                      title="Installer"/>
+                 <img tal:condition="queue/isTranslation"
+                      alt="[Translation]" src="/@@/translations"
+                      title="Translation"/>
+                 <img tal:condition="queue/isUpgrader"
+                      alt="[Build]" src="/@@/topic_icon.gif"
+                      title="Upgrader"/>
               </td>
            </tr>
-           <tr class="secondary">
-  	      <td tal:content="queue/displayname" />
-           </tr>
-           <tr class="secondary">
-              <td>Version: <span tal:replace="queue/sourceversion" /></td>
-              <td>Age: <span tal:replace="queue/age" /> </td>
+           <tr class="secondary discreet">
+              <td></td>
+              <td>Version: <span tal:replace="queue/sourceversion" />
+                  Age: <span tal:replace="queue/age" /> </td>
            </tr>
          </tal:batch>
        </tbody>
+       <tfoot>
+         <tr>
+           <td colspan="2">
+               <select title="Action" name="queue_action" size="1">
+                 <option value="">--</option>
+                 <option value="accept">Accept</option>
+                 <option value="reject">Reject</option>
+               </select>
+               <input title="Update" type="submit" value="Update" />
+           </td>
+         </tr>
+       </tfoot>
      </table>
+     </form>
 
      <div tal:condition="not: batch">
        <img src="/@@/alert" />
