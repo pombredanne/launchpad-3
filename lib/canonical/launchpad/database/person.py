@@ -904,7 +904,8 @@ class Person(SQLBase):
               """ % extra
         return SourcePackageRelease.select(
             query,
-            orderBy=['-SourcePackageRelease.dateuploaded'],
+            orderBy=['-SourcePackageRelease.dateuploaded',
+                     'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer'])
 
     @cachedproperty

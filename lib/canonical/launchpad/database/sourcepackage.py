@@ -61,6 +61,18 @@ class SourcePackage(BugTargetBase):
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
+    def _get_ubuntu(self):
+        # XXX: Ideally, it would be possible to just do 
+        # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        # and not need this method. However, importd currently depends
+        # on SourcePackage methods that require the ubuntu celebrity,
+        # and given it does not execute_zcml_for_scripts, we are forced
+        # here to do this hack instead of using components. Ideally,
+        # imports is rewritten to not use SourcePackage, or it
+        # initializes the component architecture correctly.
+        from canonical.launchpad.database.distribution import Distribution
+        return Distribution.byName("ubuntu")
+
     @property
     def currentrelease(self):
         pkg = SourcePackagePublishing.selectFirst("""
@@ -252,7 +264,7 @@ class SourcePackage(BugTargetBase):
         if result is not None:
             return result
 
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ubuntu = self._get_ubuntu()
         # if we are an ubuntu sourcepackage, try the previous release of
         # ubuntu
         if self.distribution == ubuntu:
@@ -279,7 +291,7 @@ class SourcePackage(BugTargetBase):
         revision control is in place and working.
         """
 
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ubuntu = self._get_ubuntu()
         if self.distribution != ubuntu:
             return False
         ps = self.productseries
