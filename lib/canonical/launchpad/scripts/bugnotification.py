@@ -27,6 +27,16 @@ def construct_email_notification(bug_notifications):
     msgid = bug_notifications[0].message.rfc822msgid
     subject = bug_notifications[0].message.subject
     comment = None
+
+    notified_addresses = bug.notificationRecipientAddresses()
+    if not bug.private:
+        notified_addresses = (
+            notified_addresses + GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+
+    notified_addresses = bug.notificationRecipientAddresses()
+    if not bug.private:
+        notified_addresses = (
+            notified_addresses + GLOBAL_NOTIFICATION_EMAIL_ADDRS)
     for notification in bug_notifications:
         assert notification.bug == bug
         assert notification.message.owner == person
@@ -47,6 +57,29 @@ def construct_email_notification(bug_notifications):
             text = comment.text_contents
         text_notifications.insert(0, text)
         msgid = comment.rfc822msgid
+
+    if bug.duplicateof is not None:
+        text_notifications.insert(
+            0, '*** This bug is a duplicate of %d ***' % bug.duplicateof.id)
+        if not bug.private:
+            # This bug is a duplicate of another bug, so include the dup
+            # target's subscribers in the recipient list, for comments
+            # only.
+            #
+            # NOTE: if the dup is private, the dup target will not receive
+            # notifications from the dup.
+            #
+            # Even though this use case seems highly contrived, I'd rather
+            # be paranoid and not reveal anything unexpectedly about a
+            # private bug.
+            #
+            # -- Brad Bollenbach, 2005-04-19
+            duplicate_target_emails = \
+                bug.duplicateof.notificationRecipientAddresses()
+            # Merge the duplicate's notification recipient addresses with
+            # those belonging to the dup target.
+            notified_addresses = list(
+                set(notified_addresses + duplicate_target_emails))
 
     content = '\n\n'.join(text_notifications)
     body = get_email_template('bug-notification.txt') % {
@@ -79,10 +112,6 @@ def construct_email_notification(bug_notifications):
     for bugtask in bug.bugtasks:
         msg['X-Launchpad-Bug'] = bugtask.asEmailHeaderValue()
 
-    notified_addresses = bug.notificationRecipientAddresses()
-    if not bug.private:
-        notified_addresses = (
-            notified_addresses + GLOBAL_NOTIFICATION_EMAIL_ADDRS)
     return notified_addresses, msg
 
 

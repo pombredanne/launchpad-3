@@ -429,3 +429,41 @@ initial message of the bug, it will result in a bug filed notification:
       new bug
       http://localhost:8086/malone/bugs/10
     <BLANKLINE>
+
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+Duplicates
+----------
+
+If the bug is a duplicate of another bug, a marker gets inserted at the
+top of the email:
+
+    >>> new_bug.duplicateof = bug_one
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> new_bug.addCommentNotification(comment)
+    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+    >>> for to_addresses, email_notification in get_email_notifications(
+    ...     notifications):
+    ...     print_notification(to_addresses, email_notification)
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 10] subject
+    <BLANKLINE>
+    *** This bug is a duplicate of 1 ***
+    <BLANKLINE>
+    a comment.
+    --
+    Bug Details:
+      new bug
+      http://localhost:8086/malone/bugs/10
+    <BLANKLINE>
+
+Also note that notification was sent to Mark as well, since he's a
+subscriber of bug one.
