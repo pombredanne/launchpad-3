@@ -18,6 +18,7 @@ from canonical.lp.dbschema import DistroReleaseQueueStatus
 from canonical.launchpad.interfaces import (
     IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError)
 
+QUEUE_SIZE = 20
 
 class QueueItemsView(LaunchpadView):
     """Base class used to present objects that contains queue items.
@@ -52,7 +53,8 @@ class QueueItemsView(LaunchpadView):
         # request context queue items according the selected state
         queue_items = self.context.getQueueItems(
             status=state_map[self.state], name=self.text)
-        self.batchnav = BatchNavigator(queue_items, self.request)
+        self.batchnav = BatchNavigator(queue_items, self.request,
+                                       size=QUEUE_SIZE)
 
     def performQueueAction(self):
         """Execute the designed action over the selected queue items.
