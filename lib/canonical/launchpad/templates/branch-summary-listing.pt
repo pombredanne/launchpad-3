@@ -17,11 +17,12 @@
   </span>
 </tal:has_summary>
 
-<br tal:condition="python:context.revision_count() or context.home_page" />
+<br tal:condition="python:view.revision_count or context.home_page" />
 
-<tal:has_revisions condition="context/revision_count">
-  <span tal:replace="context/revision_count">35</span> revisions,
-  <span tal:replace="view/count_revisions">31</span> in the past month.<br />
+<tal:has_revisions condition="view/revision_count">
+  <span tal:replace="view/revision_count">35</span> revisions,
+  <span tal:replace="view/recent_revision_count">31</span> in the past
+  month.<br />
 </tal:has_revisions>
 
 <tal:has_homepage condition="context/home_page">

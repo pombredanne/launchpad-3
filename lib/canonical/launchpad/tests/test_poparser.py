@@ -8,7 +8,7 @@ from canonical.launchpad.components import poparser as pofile
 DEFAULT_HEADER = '''
 msgid ""
 msgstr ""
-"Content-Type: text/plain; charset=us-ascii\\n"
+"Content-Type: text/plain; charset=ASCII\\n"
 '''
 
 class POBasicTestCase(unittest.TestCase):
@@ -211,7 +211,7 @@ class POBasicTestCase(unittest.TestCase):
             u'msgid ""\n'
             u'msgstr ""\n'
             u'"foo: bar\\n"\n'
-            u'"Content-Type: text/plain; charset=us-ascii\\n"\n'
+            u'"Content-Type: text/plain; charset=ASCII\\n"\n'
             u'"plural-forms: nplurals=2; plural=random()\\n"')
 
 
