@@ -2,8 +2,10 @@
 
 __metaclass__ = type
 
+import re
+
+
 def valid_cve(name):
-    import re
     pat = r"^(19|20)\d\d-\d{4}$"
     if re.match(pat, name):
         return True

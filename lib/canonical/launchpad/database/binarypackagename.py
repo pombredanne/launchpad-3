@@ -46,10 +46,9 @@ class BinaryPackageNameSet:
         except SQLObjectNotFound:
             raise NotFoundError(name)
 
-    def __iter__(self):
+    def getAll(self):
         """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
-        for binarypackagename in BinaryPackageName.select():
-            yield binarypackagename
+        return BinaryPackageName.select()
 
     def findByName(self, name):
         """Find binarypackagenames by its name or part of it."""
@@ -65,7 +64,7 @@ class BinaryPackageNameSet:
     def getOrCreateByName(self, name):
         try:
             return self[name]
-        except KeyError:
+        except NotFoundError:
             return self.new(name)
 
     def ensure(self, name):
