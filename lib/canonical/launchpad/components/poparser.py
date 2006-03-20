@@ -322,12 +322,11 @@ class POHeader(dict, POMessage):
 
         # the charset is not known til the header has been parsed.
         # Scan for the charset in the same way that gettext does.
-        self.charset = 'US-ASCII'
+        self.charset = 'CHARSET'
         if 'msgstr' in kw:
-            pos = kw['msgstr'].find('charset=')
-            if pos >= 0:
-                rest = kw['msgstr'][pos + len('charset='):]
-                self.charset = rest.split(None, 1)[0]
+            match = re.search(r'charset=([^\s]+)', kw['msgstr'])
+            if match:
+                self.charset = match.group(1)
         if self.charset == 'CHARSET':
             self.charset = 'US-ASCII'
 
