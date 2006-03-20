@@ -26,18 +26,18 @@
     -->
   </tal:x>
 
-  <p tal:condition="not:context/tickets">
+  <p tal:condition="not: view/tickets">
     No support requests have been made for
     <span tal:replace="context/displayname">Ubuntu 5.04</span>.
   </p>
 
-  <tal:block condition="context/tickets" repeat="category view/categories">
+  <tal:block condition="view/tickets" repeat="category view/categories">
 
     <h2 tal:content="category/status/title">Approved</h2>
 
     <table>
       <tbody>
-      
+
         <tr tal:repeat="ticket category/tickets"
          tal:replace="structure ticket/@@+listing-detailed" />
 

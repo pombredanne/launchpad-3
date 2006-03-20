@@ -163,9 +163,10 @@ class Product(SQLBase, BugTargetBase):
     def tickets(self, quantity=None):
         """See ITicketTarget."""
         return Ticket.select("""
-            product = %s
+            Ticket.product = %s
             """ % sqlvalues(self.id),
-            orderBy='-datecreated',
+            orderBy='-Ticket.datecreated',
+            prejoins=['product', 'owner'],
             limit=quantity)
 
     def newTicket(self, owner, title, description):

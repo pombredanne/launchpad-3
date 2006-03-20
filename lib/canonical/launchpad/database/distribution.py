@@ -288,9 +288,10 @@ class Distribution(SQLBase, BugTargetBase):
     def tickets(self, quantity=None):
         """See ITicketTarget."""
         return Ticket.select("""
-            distribution = %s
+            Ticket.distribution = %s
             """ % sqlvalues(self.id),
-            orderBy='-datecreated',
+            orderBy='-Ticket.datecreated',
+            prejoins=['distribution', 'owner', 'sourcepackagename'],
             limit=quantity)
 
     def newTicket(self, owner, title, description):
