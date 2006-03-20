@@ -4,19 +4,20 @@ __metaclass__ = type
 
 import logging
 import tempfile
+import textwrap
 from StringIO import StringIO
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.components.poexport import MOCompiler
+from canonical.launchpad.components.poexport import (
+    MOCompiler, RosettaWriteTarFile)
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
     ILaunchpadCelebrities)
-
-ERROR_ADDRESS = 'launchpad-error-reports@lists.canonical.com'
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -180,13 +181,11 @@ class ExportResult:
         # Prepare the list of warnings to give some input about it to the
         # users.
         if warnings:
-            warning_text = '\n'.join([
-                '',
-                'The following files where exported but had warnings:',
-                '',
-                warnings,
-                ''
-                ])
+            warning_text = textwrap.dedent('''
+                The following files where exported but had warnings:
+
+                %s
+                ''' % warnings)
         else:
             # There are no warnings.
             warning_text = ''
@@ -195,16 +194,17 @@ class ExportResult:
 
     def _notify_failure(self, person):
         """Send an email notification about the export failing."""
-        body = helpers.join_lines(
-            '',
-            'Hello %s,' % person.browsername,
-            '',
-            'Rosetta encountered problems exporting the files you',
-            'requested. The Rosetta team has been notified of this',
-            'problem. Please reply to this email for further assistance.')
+        body = textwrap.dedent('''
+            Hello %s,
+
+            Rosetta encountered problems exporting the files you
+            requested. The Rosetta team has been notified of this
+            problem. Please reply to this email for further assistance.''' %
+                person.browsername)
 
         recipients = list(helpers.contactEmailAddresses(person))
-        recipients.append(ERROR_ADDRESS)
+        # Add the errors mailing list.
+        recipients.append(config.launchpad.errors_address)
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
@@ -220,30 +220,31 @@ class ExportResult:
             ' * %s' % failure
             for failure in self.failures])
 
-        body = helpers.join_lines(
-            '',
-            'Hello %s,' % person.browsername,
-            '',
-            'Rosetta has finished exporting your requested files.',
-            'However, problems were encountered exporting the',
-            'following files:',
-            '',
-            failure_list,
-            '',
-            'The Rosetta team has been notified of this problem. Please',
-            'reply to this email for further assistance.',
-            self._getWarningsLines(),
-            'Of the %d files you requested, Rosetta successfully exported',
-            '%d, which can be downloaded from the following location:',
-            '',
-            '    %s')
-
         success_count = len(self.successes)
         total_count = success_count + len(self.failures)
-        body %= (total_count, success_count, self.url)
+
+        body = textwrap.dedent('''
+            Hello %s,
+
+            Rosetta has finished exporting your requested files.
+            However, problems were encountered exporting the
+            following files:
+
+            %s
+
+            The Rosetta team has been notified of this problem. Please
+            reply to this email for further assistance.
+            %s
+            Of the %d files you requested, Rosetta successfully exported
+            %d, which can be downloaded from the following location:
+
+            \t%s''' % (
+                person.browsername, failure_list, self._getWarningsLines(),
+                total_count, success_count, self.url))
 
         recipients = list(helpers.contactEmailAddresses(person))
-        recipients.append(ERROR_ADDRESS)
+        # Add the errors mailing list.
+        recipients.append(config.launchpad.errors_address)
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
@@ -254,14 +255,14 @@ class ExportResult:
 
     def _notify_success(self, person):
         """Send an email notification about the export working."""
-        body = helpers.join_lines(
-            '',
-            'Hello %s,' % person.browsername,
-            self._getWarningsLines(),
-            'The files you requested from Rosetta are ready for download',
-            'from the following location:',
-            '',
-            '    %s' % self.url)
+        body = textwrap.dedent('''
+            Hello %s,
+            %s
+            The files you requested from Rosetta are ready for download
+            from the following location:
+
+            \t%s''' % (person.browsername, self._getWarningsLines(), self.url)
+            )
 
         recipients = list(helpers.contactEmailAddresses(person))
 
@@ -375,7 +376,7 @@ def process_multi_object_request(objects, format):
 
     name = get_handler(format, objects[0]).get_name()
     filehandle = tempfile.TemporaryFile()
-    archive = helpers.RosettaWriteTarFile(filehandle)
+    archive = RosettaWriteTarFile(filehandle)
     result = ExportResult(name)
 
     for obj in objects:

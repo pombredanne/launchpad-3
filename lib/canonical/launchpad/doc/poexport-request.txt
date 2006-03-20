@@ -88,7 +88,6 @@ Let's read our mail.
   > from the following location:
   > 
   >     http://localhost:58000/.../rosetta-pmount.tar.gz
-  > 
 
 The mail has a URL in it.
 
@@ -154,7 +153,6 @@ another to the person who made the request.
   > 1, which can be downloaded from the following location:
   > 
   >     http://localhost:58000/.../rosetta-pmount.tar.gz
-  > 
 
 We should get a slightly different email if we didn't manage to export any
 files:
@@ -176,7 +174,6 @@ files:
   > Rosetta encountered problems exporting the files you
   > requested. The Rosetta team has been notified of this
   > problem. Please reply to this email for further assistance.
-  > 
 
 Let's try requesting an export in MO format:
 
