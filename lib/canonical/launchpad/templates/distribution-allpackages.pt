@@ -28,10 +28,9 @@
 
   <p>
   <tal:per_item repeat="result batch">
-    <tal:pkg define="package result/distributionsourcepackage">
-      <a tal:content="package/name"
-         tal:attributes="href package/fmt:url">apache2</a>
-    </tal:pkg>
+    <a tal:content="result/name"
+       tal:attributes="href result/distributionsourcepackage/fmt:url"
+       >apache2</a>
   </tal:per_item>
   </p>
 
