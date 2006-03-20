@@ -135,3 +135,30 @@ correctly, despite the backslash in the second multibyte sequence:
 
   >>> parser.messages[0].msgstr
   u'\u6210\u529f'
+
+
+Newline Formats
+---------------
+
+Not everyone is using UNIX systems, so some submitted PO files will
+not use standard UNIX newlines.
+
+Windows style '\r\n' newlines don't cause much trouble since those
+files just appear to have some additional whitespace at the end of
+lines.
+
+Macintosh style '\r' newlines don't contain a '\n' character at all,
+which would cause problems if we naively use '\n' as a line separator.
+
+Change the last PO file to use Mac-style newlines:
+
+  >>> content = content.replace('\n', '\r')
+
+Verify that it still parses:
+
+  >>> parser = POParser()
+  >>> parser.write(content)
+  >>> parser.finish()
+
+  >>> parser.messages[0].msgstr
+  u'\u6210\u529f'

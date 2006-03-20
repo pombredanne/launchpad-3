@@ -7,7 +7,7 @@
 # soon. https://launchpad.ubuntu.com/malone/bugs/403
 
 import sys
-import sets
+import re
 import textwrap
 import codecs
 import logging
@@ -76,7 +76,7 @@ class POMessage(object):
         self.commentText = kw.get('commentText', '')
         self.sourceComment = kw.get('sourceComment', '')
         self.fileReferences = kw.get('fileReferences', '').strip()
-        self.flags = kw.get('flags', sets.Set())
+        self.flags = kw.get('flags', set())
         self.msgstrPlurals = kw.get('msgstrPlurals', [])
         self.obsolete = kw.get('obsolete', False)
         self._lineno = kw.get('_lineno')
@@ -473,7 +473,7 @@ class POHeader(dict, POMessage):
         # Update msgstr
         if update_msgstr:
             text = []
-            printed = sets.Set()
+            printed = set()
             for l in self.msgstr.strip().split('\n'):
                 l = l.strip()
                 if not l:
@@ -633,17 +633,19 @@ class POParser(object):
     def _get_line(self):
         # do we know what charset the data is in yet?
         if self.header:
-            if u'\n' in self._pending_unichars:
-                line, self._pending_unichars = self._pending_unichars.split(u'\n', 1)
-                return line
-            else:
+            parts = re.split(r'\n|\r\n|\r', self._pending_unichars, 1)
+            if len(parts) == 1:
+                # only one line
                 return None
+            line, self._pending_unichars = parts
+            return line
         else:
-            if '\n' in self._pending_chars:
-                line, self._pending_chars = self._pending_chars.split('\n', 1)
-                return line
-            else:
+            parts = re.split(r'\n|\r\n|\r', self._pending_chars, 1)
+            if len(parts) == 1:
+                # only one line
                 return None
+            line, self._pending_chars = parts
+            return line
 
     def write(self, string):
         """Parse string as a PO file fragment."""
@@ -662,7 +664,7 @@ class POParser(object):
         self._partial_transl['commentText'] = ''
         self._partial_transl['sourceComment'] = ''
         self._partial_transl['fileReferences'] = ''
-        self._partial_transl['flags'] = sets.Set()
+        self._partial_transl['flags'] = set()
         self._partial_transl['msgstrPlurals'] = []
         self._partial_transl['obsolete'] = False
         self._partial_transl['_lineno'] = self._lineno
