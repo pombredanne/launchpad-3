@@ -13,6 +13,9 @@ class TestGenericBranch(unittest.TestCase):
 
     def setUp(self):
         self.testdir = tempfile.mkdtemp()
+        # Change the HOME environment variable in order to ignore existing
+        # user config files.
+        os.environ.update({'HOME': self.testdir})
 
     def tearDown(self):
         shutil.rmtree(self.testdir)

@@ -18,6 +18,9 @@ class TestJobManager(unittest.TestCase):
     def setUp(self):
         self.testdir = tempfile.mkdtemp()
         self.masterlock = os.path.join(self.testdir, 'master.lock')
+        # Change the HOME environment variable in order to ignore existing
+        # user config files.
+        os.environ.update({'HOME': self.testdir})
 
     def tearDown(self):
         shutil.rmtree(self.testdir)
