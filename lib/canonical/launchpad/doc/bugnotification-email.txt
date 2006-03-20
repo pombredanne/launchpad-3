@@ -17,13 +17,11 @@ You need to be logged in to edit bugs in Malone, so let's get started:
     >>> login("test@canonical.com")
 
 To avoid having one gargantuan super function that formats any kind of
-object it gets passed, the formatting logic has been cut into three
-pieces: generate_bug_edit_email, generate_bug_add_email and
-generate_bug_comment_email:
+object it gets passed, the formatting logic has been cut into two
+pieces: generate_bug_edit_email and generate_bug_add_email.
 
     >>> from canonical.launchpad.mailnotification import (
-    ...     generate_bug_add_email, generate_bug_edit_email,
-    ...     generate_bug_comment_email)
+    ...     generate_bug_add_email, generate_bug_edit_email)
 
 Let's demonstrate what the bugmails will look like, by going through
 the various events that can happen that would cause a notification to
@@ -64,25 +62,6 @@ Let's take a look at what the notification email looks like:
     Malone pages that use more complex layouts with portlets and fancy CSS are
     sometimes not getting properly reflowed after rendering.
 
-
-Adding a bug comment
---------------------
-
-generate_bug_comment_email accepts an object that provides
-IBugMessage. Let's borrow the first comment on bug four, just to
-demonstrate how the comment notification is formatted:
-
-    >>> bugmessage = getUtility(IBugMessageSet).get(4)
-    >>> subject, body = generate_bug_comment_email(bugmessage)
-    >>> subject
-    u'[Bug 2] Blackhole Trash folder'
-    >>> print body
-    This would be a real killer feature. If there is already code to
-    make it possible, why aren't there tons of press announcements
-    about the secuirty possibilities. Imagine - no more embarrassing
-    emails for Mr Gates... everything they delete would actually
-    disappear! I'm sure Redmond will switch over as soon as they hear
-    about this. It's not a bug, it's a feature!
 
 Editing a bug
 -------------
@@ -249,14 +228,11 @@ bugmail when a bug task is edited.
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
-    ...     bugtask_deltas=bugtask_delta,
-    ...     comment_on_change="this is indeed a bug")
+    ...     bugtask_deltas=bugtask_delta)
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    this is indeed a bug
-    <BLANKLINE>
     ** Changed in: ubuntu (upstream)
          Assignee: (unassigned) => Sample Person
            Status: Unconfirmed => Confirmed
@@ -275,14 +251,11 @@ edited:
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
-    ...     bugtask_deltas=bugtask_delta,
-    ...     comment_on_change="I don't have time to work on this.")
+    ...     bugtask_deltas=bugtask_delta)
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    I don't have time to work on this.
-    <BLANKLINE>
     ** Changed in: mozilla-firefox (Debian)
          Assignee: Sample Person => (unassigned)
 

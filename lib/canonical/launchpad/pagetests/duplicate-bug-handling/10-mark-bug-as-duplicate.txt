@@ -43,7 +43,7 @@ One regarding bug 1:
     >>> notification.bug.id
     1
     >>> print notification.message.text_contents
-    *** Bug 2 has been marked a duplicate of this bug
+    ** Bug 2 has been marked a duplicate of this bug
 
 And one regarding bug 2:
 
@@ -51,5 +51,5 @@ And one regarding bug 2:
     >>> notification.bug.id
     2
     >>> print notification.message.text_contents
-    *** This bug has been marked a duplicate of bug 1
+    ** This bug has been marked a duplicate of bug 1
     ...

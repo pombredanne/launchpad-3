@@ -455,39 +455,7 @@ def generate_bug_edit_email(bug_delta):
 
     change_info = change_info.rstrip()
 
-    if bug_delta.comment_on_change:
-        comment_wrapper = MailWrapper(width=72)
-        comment = comment_wrapper.format(bug_delta.comment_on_change)
-        if change_info:
-            contents = get_email_template(
-                'bug-edit-notification-contents.txt') % {
-                    'visibility': visibility, 'change_info': change_info,
-                    'comment': comment}
-        else:
-            contents = comment
-    else:
-        contents = get_email_template(
-            'bug-edit-notification-contents-no-comment.txt') % {
-                'visibility': visibility, 'change_info': change_info}
-
-    contents = contents.rstrip()
-
-    return (subject, contents)
-
-
-def generate_bug_comment_email(bug_comment):
-    """Generate a bug comment notification from bug_comment.
-
-    bug_comment is expected to provide IBugMessage. The return value is
-    (subject, body).
-    """
-    # Generate an empty delta in order to reuse the edit notification
-    # code.
-    bug_delta = BugDelta(
-        bug_comment.bug, bugurl=canonical_url(bug_comment.bug),
-        user=bug_comment.message.owner,
-        comment_on_change=bug_comment.message.text_contents)
-    return generate_bug_edit_email(bug_delta)
+    return (subject, change_info)
 
 
 def _get_task_change_row(label, oldval_display, newval_display):
@@ -802,8 +770,7 @@ def notify_bugtask_edited(modified_bugtask, event):
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
         bugtask_deltas=bugtask_delta,
-        user=event.user,
-        comment_on_change=event.comment_on_change)
+        user=event.user)
 
     send_bug_edit_notification(bug_delta)
 
@@ -819,51 +786,6 @@ def notify_bug_comment_added(bugmessage, event):
     """
     bug = bugmessage.bug
     bug.addCommentNotification(bugmessage.message)
-    return
-    to_addrs = get_cc_list(bug)
-
-    if ((bug.duplicateof is not None) and (not bug.private)):
-        # This bug is a duplicate of another bug, so include the dup
-        # target's subscribers in the recipient list, for comments
-        # only.
-        #
-        # NOTE: if the dup is private, the dup target will not receive
-        # notifications from the dup.
-        #
-        # Even though this use case seems highly contrived, I'd rather
-        # be paranoid and not reveal anything unexpectedly about a
-        # private bug.
-        #
-        # -- Brad Bollenbach, 2005-04-19
-        duplicate_target_emails = \
-            bug.duplicateof.notificationRecipientAddresses()
-        # Merge the duplicate's notification recipient addresses with
-        # those belonging to the dup target.
-        to_addrs = list(sets.Set(to_addrs + duplicate_target_emails))
-        to_addrs.sort()
-
-    msg = ""
-
-    if bug.duplicateof is not None:
-        msg += u"** This bug is a duplicate of %d\n\n" % (
-            bug.duplicateof.id)
-
-    subject, body = generate_bug_comment_email(bugmessage)
-    msg += body
-
-    message = bugmessage.message
-    headers = {'Message-Id': message.rfc822msgid}
-
-    references = []
-    reference = message.parent
-    while reference is not None:
-        references.insert(0, reference.rfc822msgid)
-        reference = reference.parent
-
-    headers['References'] = ' '.join(references)
-    send_bug_notification(
-        bug, event.user, subject, body,
-        to_addrs=to_addrs, headers=headers)
 
 
 def notify_bug_external_ref_added(ext_ref, event):

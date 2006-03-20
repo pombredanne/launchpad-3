@@ -168,15 +168,8 @@ class Bug(SQLBase):
         BugNotification(
             bug=self, is_comment=True, message=message, date_emailed=None)
 
-    # XXX, Brad Bollenbach, 2006-01-13: Setting publish_create_event to False
-    # allows us to suppress the create event when we *don't* want to have a
-    # separate email generated containing just the comment, e.g., when the user
-    # adds a comment on +editstatus. This is hackish though. See:
-    #
-    # https://launchpad.net/products/malone/+bug/25724
-    def newMessage(self, owner=None, subject=None, content=None,
-                   parent=None, publish_create_event=True):
-        """Create a new Message and link it to this ticket."""
+    def newMessage(self, owner=None, subject=None, content=None, parent=None):
+        """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
@@ -184,8 +177,7 @@ class Bug(SQLBase):
 
         bugmsg = BugMessage(bug=self, message=msg)
 
-        if publish_create_event:
-            notify(SQLObjectCreatedEvent(bugmsg, user=owner))
+        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
 
         return bugmsg.message
 
