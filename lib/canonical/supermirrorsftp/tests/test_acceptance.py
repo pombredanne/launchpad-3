@@ -240,9 +240,12 @@ class AcceptanceTests(BzrTestCase):
         branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
-        # XXX: force bzrlib to make a new SFTP connection. use getattr to
-        # protect against this attr going away.
-        sftp._connected_hosts.clear()
+
+        # XXX Andrew Bennetts 2006-04-20: Force bzrlib to make a new SFTP
+        # connection.  We use getattr to protect against this private attr going
+        # away in a later version of bzrlib.
+        getattr(sftp, '_connected_hosts', {}).clear()
+        
         remote_branch = bzrlib.branch.Branch.open(
             self.server_base + '~testuser/+junk/renamed-branch')
         self.assertEqual(
