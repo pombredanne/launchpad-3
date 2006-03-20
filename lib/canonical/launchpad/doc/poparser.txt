@@ -1,26 +1,54 @@
 Tests for our PO parser.
 ========================
 
+The core of Rosetta is the PO parser, it allows to communicate with the
+external world importing files and exporting them.
+
+POParser
+========
+
+First we get the needed imports.
+
+    >>> from canonical.launchpad.components.poparser import POParser
+
+We should be completely sure that a .po file with an empty header is reported.
+
+    >>> parser = POParser()
+    >>> parser.write('msgid "foo"\nmsgstr ""\n')
+    >>> parser.finish()
+    Traceback (most recent call last):
+    ...
+    POSyntaxError:...
+
+
+POHeader
+========
+
+A POHeader is a representation of a special message that all .po files have.
+That first message has as the msgid the empty string ("") and as the
+translation of it some metadata.
+
+First we get the needed imports.
+
+    >>> from canonical.launchpad.components.poparser import POHeader
 
 POHeader.getPORevisionDate
 --------------------------
 
 Test that the function does not fails if the date field has unicode chars:
 
->>> from canonical.launchpad.components.poparser import POHeader
->>> header = POHeader(msgstr="""
-... Project-Id-Version: foo
-... Report-Msgid-Bugs-To: foo@bar.com
-... POT-Creation-Date: 2005-01-26 01:01+0100
-... PO-Revision-Date: \xc3\xa1 2004-03-06 20:06+0100
-... Last-Translator: Foo translator <footranslator@bar.com>
-... MIME-Version: 1.0
-... Content-Type: text/plain; charset=UTF-8
-... Content-Transfer-Encoding: 8bit
-... """)
->>> header.updateDict()
->>> header.getPORevisionDate()
-(u'\xe1 2004-03-06 20:06+0100', None)
->>> header.getPluralFormExpression() == None
-True
-
+    >>> header = POHeader(msgstr="""
+    ... Project-Id-Version: foo
+    ... Report-Msgid-Bugs-To: foo@bar.com
+    ... POT-Creation-Date: 2005-01-26 01:01+0100
+    ... PO-Revision-Date: \xc3\xa1 2004-03-06 20:06+0100
+    ... Last-Translator: Foo translator <footranslator@bar.com>
+    ... MIME-Version: 1.0
+    ... Content-Type: text/plain; charset=UTF-8
+    ... Content-Transfer-Encoding: 8bit
+    ... """)
+    >>> header.updateDict()
+    >>> header.getPORevisionDate()
+    (u'\xe1 2004-03-06 20:06+0100', None)
+    >>> header.getPluralFormExpression() == None
+    True

@@ -790,10 +790,7 @@ class POParser(object):
                 # only happen when the file is empty
                 self._make_header()
         if not self.header:
-            # XXX kiko: it may be that we need to run a _make_header() here
-            # to ensure we have one, but I'm not guessing.
-            logging.warning(POSyntaxWarning(self._lineno,
-                                            'No header found in this pofile'))
+            raise POSyntaxError(msg='No header found in this pofile')
 
 
 # convenience function to parse "assignment" expressions like
