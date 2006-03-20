@@ -5,8 +5,10 @@ __metaclass__ = type
 import cgi, urllib
 
 from zope.interface import implements
-from canonical.lp.z3batching import _Batch
-from canonical.lp.interfaces import IBatchNavigator, ITableBatchNavigator
+from canonical.launchpad.webapp.z3batching import _Batch
+from canonical.launchpad.webapp.interfaces import (
+    IBatchNavigator, ITableBatchNavigator,
+    )
 
 class BatchNavigator:
 
@@ -47,7 +49,7 @@ class BatchNavigator:
         return url
 
     def getBatches(self):
-        batch = _Batch(self.batch.list, size = self.batch.size)
+        batch = self.batch.firstBatch()
         batches = [batch]
         while 1:
             batch = batch.nextBatch()
@@ -67,7 +69,7 @@ class BatchNavigator:
         urls = []
         size = len(batches)
 
-        nextb = self.batch.nextBatch() 
+        nextb = self.batch.nextBatch()
 
         # Find the current page
         if nextb:
@@ -93,9 +95,9 @@ class BatchNavigator:
             this_batch = batches[start]
             url = self.generateBatchURL(this_batch)
             if (start+1) == current:
-                urls.append({ '['+str(start + 1)+']' : url })
+                urls.append({'['+str(start + 1)+']' : url})
             else:
-                urls.append({ start + 1 : url })
+                urls.append({start + 1 : url})
             start += 1
 
         if current != 1:

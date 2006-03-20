@@ -36,7 +36,6 @@ from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
-from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
     IBugTaskSet, IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch,
@@ -51,6 +50,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.webapp.batching import TableBatchNavigator
 
 
 def get_sortorder_from_request(request):

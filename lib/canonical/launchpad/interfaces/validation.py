@@ -1,3 +1,4 @@
+# Copyright 2004-2006 Canonical Ltd. All rights reserved.
 
 __all__ = [
     'validate_url',
@@ -7,6 +8,7 @@ __all__ = [
     'valid_webref',
     'non_duplicate_bug',
     'valid_bug_number',
+    'valid_cve_sequence',
     'valid_emblem',
     'valid_hackergotchi',
     'valid_unregistered_email',
@@ -29,8 +31,14 @@ from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.cve import valid_cve
+from canonical.launchpad.validators.url import valid_absolute_url
 from canonical.lp.dbschema import MirrorPulseType
 
+#XXX matsubara 2006-03-15: The validations functions that deals with URLs
+# should be in validators/ and we should have them as separete constraints in
+# trusted.sql.  
+# https://launchpad.net/products/launchpad/+bug/35077
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
 
@@ -63,8 +71,7 @@ def validate_url(url, valid_schemes):
     scheme, host = urllib.splittype(url)
     if not scheme in valid_schemes:
         return False
-    host, path = urllib.splithost(host)
-    if not host:
+    if not valid_absolute_url(url):
         return False
     return True
 
@@ -160,9 +167,17 @@ def valid_bug_number(value):
     try:
         bugset.get(value)
     except NotFoundError:
-        return False
+        raise LaunchpadValidationError(_(
+            "Bug %i doesn't exist." % value))
     return True
 
+def valid_cve_sequence(value):
+    """Check if the given value is a valid CVE otherwise raise an exception."""
+    if valid_cve(value):
+        return True
+    else:
+        raise LaunchpadValidationError(_(
+            "%s is not a valid CVE number" % value))
 
 def _valid_image(image, max_size, max_dimensions):
     """Check that the given image is under the given constraints.

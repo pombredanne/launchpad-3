@@ -11,6 +11,7 @@ from canonical.launchpad.interfaces import IGeoIP, ICountrySet, \
 
 __all__ = ['GeoIP', 'RequestLocalLanguages', 'RequestPreferredLanguages']
 
+
 class GeoIP:
 
     implements(IGeoIP)
@@ -56,11 +57,7 @@ class RequestLocalLanguages(object):
         if country in [None, 'A0', 'A1', 'A2']:
             return []
 
-        return [
-            language
-            for language in country.languages
-            if language.visible
-            ]
+        return [language for language in country.languages if language.visible]
 
 
 class RequestPreferredLanguages(object):
@@ -79,14 +76,10 @@ class RequestPreferredLanguages(object):
 
         for code in codes:
             code = languageset.canonicalise_language_code(code)
-
             try:
                 languages.append(languageset[code])
             except KeyError:
                 pass
 
-        return [
-            language
-            for language in languages
-            if language.visible
-            ]
+        return [language for language in languages if language.visible]
+

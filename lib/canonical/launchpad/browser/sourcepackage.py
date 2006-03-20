@@ -16,8 +16,8 @@ from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
+
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
@@ -27,6 +27,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
@@ -188,28 +189,19 @@ class SourcePackageView(BuildRecordsView):
 
     def binaries(self):
         """Format binary packages into binarypackagename and archtags"""
-
-        all_arch = [] # all archtag in this distrorelease
-        for arch in self.context.distrorelease.architectures:
-            all_arch.append(arch.architecturetag)
-        all_arch.sort()
-
-        bins = self.context.currentrelease.binaries
-
         results = {}
+        all_arch = sorted([arch.architecturetag for arch in
+                           self.context.distrorelease.architectures])
+        for bin in self.context.currentrelease.binaries:
+            distroarchrelease = bin.build.distroarchrelease
+            if bin.name not in results:
+                results[bin.name] = []
 
-        for bin in bins:
-            if bin.name not in results.keys():
-                if not bin.architecturespecific:
-                    results[bin.name] = all_arch
-                else:
-                    results[bin.name] = \
-                             [bin.build.distroarchrelease.architecturetag]
+            if bin.architecturespecific:
+                results[bin.name].append(distroarchrelease.architecturetag)
             else:
-                if bin.architecturespecific:
-                    results[bin.name].append(\
-                                bin.build.distroarchrelease.architecturetag)
-                    results[bin.name].sort()
+                results[bin.name] = all_arch
+            results[bin.name].sort()
 
         return results
 

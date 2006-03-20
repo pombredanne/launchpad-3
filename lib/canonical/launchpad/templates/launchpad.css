@@ -881,6 +881,9 @@ ul.products>li, li.products {
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/@@/user.gif);
 }
+ul.remove>li, li.remove {
+  list-style-image: url(/@@/remove);
+}
 ul.spec>li, li.spec {
     list-style-image: url(/@@/spec);
 }

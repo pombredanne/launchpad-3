@@ -481,12 +481,8 @@ def request_languages(request):
     '''Turn a request into a list of languages to show.'''
 
     user = getUtility(ILaunchBag).user
-
-    # If the user is authenticated, try seeing if they have any languages set.
-    if user is not None:
-        languages = user.languages
-        if languages:
-            return languages
+    if user is not None and user.languages:
+        return user.languages
 
     # If the user is not authenticated, or they are authenticated but have no
     # languages set, try looking at the HTTP headers for clues.
@@ -831,6 +827,7 @@ def filenameToContentType(fname):
              ".deb":      "application/x-debian-package",
              ".udeb":     "application/x-debian-package",
              ".txt":      "text/plain",
+             ".txt.gz":   "text/plain", # For the build master logs
              }
     for ending in ftmap:
         if fname.endswith(ending):
