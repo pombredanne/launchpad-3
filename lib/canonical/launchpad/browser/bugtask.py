@@ -10,6 +10,7 @@ __all__ = [
     'BugTaskSetNavigation',
     'BugTaskContextMenu',
     'BugTaskEditView',
+    'BugTaskPortletView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'BugTargetView',
@@ -51,7 +52,7 @@ from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-
+from canonical.database.sqlbase import flush_database_updates
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
@@ -190,6 +191,42 @@ class BugTaskView(LaunchpadView):
 
         self.notices = []
 
+    def process(self):
+        """Process changes to the bug page.
+
+        These include potentially changing bug branch statuses and
+        adding a comment.
+        """
+        if not "save" in self.request:
+            return
+
+        # Process the comment, if one was added.
+        form = self.request.form
+        comment = form.get("comment")
+        subject = form.get("subject")
+
+        if comment:
+            self.context.bug.newMessage(
+                subject=subject, content=comment, owner=self.user,
+                publish_create_event=False)
+
+        branch_statuses_updated = False
+        vocab_registry = getVocabularyRegistry()
+        bug_branch_status_vocab = vocab_registry.get(
+            None, "BugBranchStatus")
+        for bug_branch in self.context.bug.bug_branches:
+            field_name = "branch.%d.status" % bug_branch.id
+            new_branch_status = form.get(field_name)
+            if new_branch_status:
+                status = bug_branch_status_vocab.getTermByToken(
+                    new_branch_status)
+                if bug_branch.status != status.value:
+                    bug_branch.status = status.value
+                    branch_statuses_updated = True
+
+        if branch_statuses_updated:
+            self.notices.append("Branch statuses successfully updated.")
+
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
         # establish if a subscription form was posted
@@ -242,6 +279,21 @@ class BugTaskView(LaunchpadView):
         """
         return self.context.datecreated is not None
 
+    def isReleaseTargetableContext(self):
+        """Is the context something that supports release targeting?
+
+        Returns True or False.
+        """
+        return (
+            IDistroBugTask.providedBy(self.context) or
+            IDistroReleaseBugTask.providedBy(self.context))
+
+    def getBranchStatusVocabulary(self):
+        vocabulary_registry = getVocabularyRegistry()
+        return vocabulary_registry.get(None, "BugBranchStatus")
+
+
+class BugTaskPortletView:
     def alsoReportedIn(self):
         """Return a list of IUpstreamBugTasks in which this bug is reported.
 
@@ -251,15 +303,6 @@ class BugTaskView(LaunchpadView):
         return [
             task for task in self.context.bug.bugtasks
             if task.id is not self.context.id]
-
-    def isReleaseTargetableContext(self):
-        """Is the context something that supports release targeting?
-
-        Returns True or False.
-        """
-        return (
-            IDistroBugTask.providedBy(self.context) or
-            IDistroReleaseBugTask.providedBy(self.context))
 
 
 class BugTaskBackportView:
@@ -391,8 +434,8 @@ class BugTaskEditView(GeneralFormView):
         GeneralFormView.__init__(self, context, request)
 
         # A simple hack, which avoids the mind-bending Z3 form/widget
-        # complexity, to provide the user a useful error message if they make a
-        # change comment but don't change anything.
+        # complexity, to provide the user a useful error message if
+        # they make a change comment but don't change anything.
         self.comment_on_change_error = ""
 
     @property
@@ -458,9 +501,9 @@ class BugTaskEditView(GeneralFormView):
     def process(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        # Save the field names we extract from the form in a separate list,
-        # because we modify this list of names later if the bugtask is
-        # reassigned to a different product.
+        # Save the field names we extract from the form in a separate
+        # list, because we modify this list of names later if the
+        # bugtask is reassigned to a different product.
         field_names = list(self.fieldNames)
         new_values = getWidgetsData(self, self.schema, field_names)
 

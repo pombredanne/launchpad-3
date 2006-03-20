@@ -77,6 +77,7 @@
           </a>
         </tal:has_watch>
         <tal:has_no_watch condition="not: bugtask/bugwatch">
+
           <tal:has_assignee condition="bugtask/assignee">
             <a
               style="display: block; text-decoration: none;"
@@ -98,7 +99,7 @@
           </td>
 
         </tr>
-      
+
         <tr
           id="editform"
           style="display: none"

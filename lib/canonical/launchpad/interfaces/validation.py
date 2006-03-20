@@ -7,6 +7,7 @@ __all__ = [
     'valid_rsync_url',
     'valid_webref',
     'non_duplicate_bug',
+    'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
     'valid_emblem',
@@ -160,6 +161,19 @@ def non_duplicate_bug(value):
             % current_bug.id))) 
     else:
         return True
+
+
+def non_duplicate_branch(value):
+    """Ensure that this branch hasn't already been linked to this bug."""
+    current_bug = getUtility(ILaunchBag).bug
+
+    if current_bug.hasBranch(value):
+        raise LaunchpadValidationError(_(dedent("""
+            This branch is already registered on this bug.
+            """)))
+
+    return True
+
 
 def valid_bug_number(value):
     from canonical.launchpad.interfaces.bug import IBugSet

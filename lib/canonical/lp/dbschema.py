@@ -34,6 +34,7 @@ __all__ = (
 'BranchRelationships',
 'BranchLifecycleStatus',
 'BranchReviewStatus',
+'BugBranchStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -716,6 +717,37 @@ class GPGKeyAlgorithm(DBSchema):
         G
 
         ElGamal, compromised""")
+
+
+class BugBranchStatus(DBSchema):
+    """The status of a bugfix branch."""
+
+    ABANDONED = Item(10, """
+        Abandoned
+
+        This branch is no longer being worked on, and should no longer
+        be considered to contain a useful fix for this bug.
+        """)
+
+    UNDERDEVELOPMENT = Item(20, """
+        Under Development
+
+        Development to fix this bug is currently going on in this
+        branch.
+        """)
+
+    CONSIDEREDGOOD = Item(30, """
+        Considered Good
+
+        This branch contains a potentially useful fix for this bug.
+        """)
+
+    BESTAVAILABLE = Item(40, """
+        Best Available
+
+        This branch contains a fix agreed upon by the community as
+        being the best available.
+        """)
 
 
 class BranchRelationships(DBSchema):

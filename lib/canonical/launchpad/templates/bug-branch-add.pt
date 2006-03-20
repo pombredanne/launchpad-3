@@ -1,0 +1,40 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+
+    <h1 tal:condition="view/label"
+        tal:content="view/label"
+        metal:fill-slot="heading">Add a branch</h1>
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      <div tal:condition="context/bug/private"
+           style="background-color: red; color: white; padding: 5px;
+                  font-weight: normal">
+        Warning: If you link a branch to this bug that is hosted by
+        Launchpad, the branch is publically accessible!
+       </div>
+
+      Adding a bzr branch to a bug allows you to notify others
+      about where work is going on to fix this bug.
+    </div>
+
+    <legend metal:fill-slot="form_legend">Add a Branch</legend>
+
+  </div>
+
+</div>
+</body>
+
+</html>
+

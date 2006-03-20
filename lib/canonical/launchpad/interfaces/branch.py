@@ -128,6 +128,10 @@ class IBranch(IHasOwner):
                          "Canonical-internal path, so we don't display this "
                          "on the main website.")
 
+    related_bugs = Attribute(
+        "The bugs related to this branch, likely branches on which "
+        "some work has been done to fix this bug.")
+
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
     revision_count = Attribute("The number of revisions in that branch.")

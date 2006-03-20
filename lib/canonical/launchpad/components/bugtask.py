@@ -15,6 +15,7 @@ from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
+from canonical.lp import decorates
 from canonical.launchpad.interfaces import (
     IBugTaskDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     INullBugTask)

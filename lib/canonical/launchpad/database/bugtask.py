@@ -10,7 +10,7 @@ import urllib
 import cgi
 import datetime
 
-from sqlobject import ForeignKey, StringCol
+from sqlobject import (ForeignKey, StringCol, SQLMultipleJoin)
 from sqlobject import SQLObjectNotFound
 
 import pytz
@@ -275,7 +275,7 @@ class BugTask(SQLBase, BugTaskMixin):
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (dbschema.BugTaskStatus.REJECTED, 
+            if status in (dbschema.BugTaskStatus.REJECTED,
                           dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
             else:

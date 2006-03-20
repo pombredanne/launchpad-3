@@ -128,7 +128,7 @@ class IBugTask(IHasDateCreated):
         severity.
         """
 
-    def updateTargetNameCache(self):
+    def updateTargetNameCache():
         """Update the targetnamecache field in the database.
 
         This method is meant to be called when an IBugTask is created or
@@ -137,7 +137,7 @@ class IBugTask(IHasDateCreated):
         example, an IDistribution is renamed.
         """
 
-    def asEmailHeaderValue(self):
+    def asEmailHeaderValue():
         """Return a value suitable for an email header value for this bugtask.
 
         The return value is a single line of arbitrary length, so header folding

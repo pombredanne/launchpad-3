@@ -25,15 +25,16 @@
 
 <div metal:fill-slot="main">
 
+  <tal:block condition="view/process" />
   <tal:block condition="view/reportBugInContext" />
   <tal:block condition="view/handleSubscriptionRequest" />
 
-  <p class="portalMessage"
+  <div class="notice-notification"
      tal:condition="view/notices"
      tal:repeat="notice view/notices"
      tal:content="notice">
      Reported this bug as also occurring in upstream firefox
-  </p>
+  </div>
 
   <p class="portalMessage" tal:condition="context/bug/duplicateof"
      style="margin-bottom: 1em">
@@ -77,10 +78,47 @@
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
-    <tal:description
-      content="structure context/bug/description/fmt:text-to-html">
-      $Bug.description
-    </tal:description>
+  <tal:description
+    content="structure context/bug/description/fmt:text-to-html">
+    $Bug.description
+  </tal:description>
+
+  <form action="."
+      tal:attributes="action request/URL"
+      method="POST">
+
+  <tal:branches define="bug_branches context/bug/bug_branches"
+                condition="bug_branches">
+    <strong>Branches:</strong>
+    <div tal:condition="context/bug/private"
+         style="background-color: red; color: white; padding: 5px">
+      Warning: If any of the branches below are hosted by Launchpad,
+      they are publically accessible, and therefore should not be used
+      to fix private bugs!
+    </div>
+
+    <ul class="branch">
+      <li tal:repeat="bug_branch bug_branches">
+        <a href="#"
+           tal:content="bug_branch/branch/name"
+           tal:attributes="href bug_branch/branch/fmt:url">
+          malone-smallfixes
+        </a>
+        <div>
+        <tal:editwidget tal:condition="view/user">
+          <select tal:attributes="name string:branch.${bug_branch/id}.status">
+            <option tal:repeat="branch_status_term view/getBranchStatusVocabulary"
+                    tal:content="branch_status_term/token"
+                    tal:attributes="selected python:branch_status_term.value == bug_branch.status"></option>
+          </select>
+        </tal:editwidget>
+        <tal:displayvalue tal:condition="not:view/user"
+                          tal:content="bug_branch/status/title">
+        </tal:displayvalue>
+        </div>
+      </li>
+    </ul>
+  </tal:branches>
 
   <tal:message repeat="message context/bug/messages">
     <div class="boardComment"
@@ -117,20 +155,20 @@
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">
       <legend>Add comment to this bug</legend>
-        <form action="+addmessage" method="post">
           <b>Subject:</b>
-          <input name="field.subject" type="text" size="50"
+          <input name="subject" type="text" size="50"
                  tal:attributes="value context/bug/followup_subject" /><br />
-          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
-        <input type="submit" name="UPDATE_SUBMIT" value="Post Comment" />
-        </form>
+          <b>Comment:</b> <textarea name="comment" rows="10"></textarea>
     </fieldset>
+    <br />
+    <input type="submit" name="save" value="Confirm Changes" />
   </tal:logged-in>
   <tal:not-logged-in condition="not: request/lp:person">
     <div align="center">
       To post a comment you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
+  </form>
 
 </div>
 </body>

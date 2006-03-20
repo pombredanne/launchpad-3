@@ -1,0 +1,15 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- IBugBranch -->
+    <content class="canonical.launchpad.database.BugBranch">
+      <allow interface="canonical.launchpad.interfaces.IBugBranch" />
+      <require
+          permission="launchpad.AnyPerson"
+          set_attributes="fixed_in_revision_id status" />
+    </content>
+</configure>
