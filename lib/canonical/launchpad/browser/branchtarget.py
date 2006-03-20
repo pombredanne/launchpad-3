@@ -8,7 +8,7 @@ __all__ = [
     'BranchTargetView',
     ]
 
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import IPerson, IProduct
 from canonical.lp.dbschema import BranchLifecycleStatus
 
 # XXX This stuff was cargo-culted from ITicketTarget, that needs to be factored
@@ -35,6 +35,14 @@ class BranchTargetView:
             return "subscribed to by"
         else:
             return "related to"
+
+    def in_person_context(self):
+        """Whether the context object is a person."""
+        return IPerson.providedBy(self.context)
+
+    def in_product_context(self):
+        """Whether the context object is a product."""
+        return IProduct.providedBy(self.context)
 
     def categories(self):
         """This organises the branches related to this target by
