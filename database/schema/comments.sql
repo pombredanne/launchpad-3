@@ -1273,10 +1273,6 @@ COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the impor
 COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';
 COMMENT ON COLUMN PersonalPackageArchive.person IS 'Owner of this personal archive.';
 COMMENT ON COLUMN PersonalPackageArchive.distrorelease IS 'Target Distrorelease for this personal archive.';
-COMMENT ON COLUMN PersonalPackageArchive.packages IS 'Cache of the generated Packages file.';
-COMMENT ON COLUMN PersonalPackageArchive.sources IS 'Cache of the generated Sources file.';
-COMMENT ON COLUMN PersonalPackageArchive.release IS 'Cache of the generated Release file.';
-COMMENT ON COLUMN PersonalPackageArchive.release_gpg IS 'Cache of the detached GPG signature of the cached Release file.';
 COMMENT ON COLUMN PersonalPackageArchive.datelastupdated IS 'Time when cache of the archive files was last updated.';
 
 -- PersonalSourcepackagePublication
