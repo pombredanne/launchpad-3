@@ -80,7 +80,7 @@ errors occur:
   >>> parser.write(chunk2)
   Traceback (most recent call last):
     ...
-  POInvalidInputError: could not decode input from us-ascii
+  POInvalidInputError: could not decode input from ASCII
 
 
 Split Multibyte Sequences
