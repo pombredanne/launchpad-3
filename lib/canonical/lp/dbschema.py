@@ -1792,6 +1792,13 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         import queue to be incorporated into that package's translations.
         """)
 
+    DIST_UPGRADER = Item(2, """
+        raw-dist-upgrader
+
+        A raw-dist-upgrader file is a tarball. It is simply published into
+        the archive.
+        """)
+
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
 
@@ -2764,6 +2771,15 @@ class BuildStatus(DBSchema):
         to be damaged or bad in some way. The buildd maintainer will have to
         reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
         has been fixed.
+        """)
+
+    SUPERSEDED = Item(5, """
+        Build for superseded Source.
+
+        Build record represents a build which never got to happen because the
+        source package release for the build was superseded before the job
+        was scheduled to be run on a builder. Builds which reach this state
+        will rarely if ever be reset to any other state.
         """)
 
 

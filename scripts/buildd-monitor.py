@@ -5,10 +5,14 @@
 
 Buildd-Slave monitor, support multiple slaves and requires LPDB access.
 """
+import urlparse
+import _pythonpath
+
 from string import join
 from sqlobject import SQLObjectNotFound
 
 from canonical.lp import initZopeless
+from canonical.config import config
 from canonical.launchpad.database import Builder
 
 from twisted.internet import stdio
@@ -41,7 +45,7 @@ class BuilddSlaveMonitorApp:
             d = defer.maybeDeferred(meth, args)
             d.addCallbacks(self._printResult).addErrback(self._printError)
             return
-        
+
         elif len(request) > 1:
             try:
                 builder_id = request.pop(1)
@@ -52,7 +56,9 @@ class BuilddSlaveMonitorApp:
             except SQLObjectNotFound:
                 self.write('Builder Not Found: %s' % bid)
             else:
-                slave = Proxy(builder.url.encode('ascii'))
+                urlbase = builder.url.encode('ascii')
+                rpcurl = urlparse.urljoin(urlbase, '/rpc/')
+                slave = Proxy(rpcurl)
                 d = slave.callRemote(*request)
                 d.addCallbacks(self._printResult).addErrback(self._printError)
                 return
@@ -61,13 +67,13 @@ class BuilddSlaveMonitorApp:
 
         self.prompt()
         return
-    
+
     def prompt(self):
         """Simple display a prompt according with current state."""
         self.write('\nbuildd-monitor>>> ')
-            
+
     def cmd_quit(self, data=None):
-        """Ohh my ! stops the reactor, i.e., QUIT, if requested.""" 
+        """Ohh my ! stops the reactor, i.e., QUIT, if requested."""
         reactor.stop()
 
     def cmd_builders(self, data=None):
@@ -97,7 +103,7 @@ class BuilddSlaveMonitorApp:
     def cmd_clear(self, data=None):
         """Simply returns the VT100 reset string."""
         return '\033c'
-        
+
     def cmd_help(self, data=None):
         return ('Command Help\n'
                 'clear - clear screen'
@@ -105,14 +111,14 @@ class BuilddSlaveMonitorApp:
                 'reset <BUILDERID> - reset builder\n'
                 'quit - exit the program\n'
                 'Usage: <CMD> <BUILDERID> <ARGS>\n')
-            
+
     def _printResult(self, result):
         """Callback for connections."""
         if result is None:
             return
         self.write('Got: %s' % str(result).strip())
         self.prompt()
-            
+
     def _printError(self, error):
         """ErrBack for normal RPC transactions."""
         self.write('Error: ' + repr(error))
@@ -144,9 +150,9 @@ def main(tm):
     proto.tm = tm
     stdio.StandardIO(proto)
     reactor.run()
-    
+
 if __name__ == '__main__':
     # for main, the only think to setup is the initZopeless
-    # environment and the application wrapper. 
-    tm = initZopeless()
+    # environment and the application wrapper.
+    tm = initZopeless(dbuser=config.builddmaster.dbuser)
     main(tm)

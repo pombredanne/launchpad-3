@@ -68,6 +68,7 @@
 
     <browser:generalform
         name="+addarchrelease"
+        facet="overview"
         for="canonical.launchpad.interfaces.IDistributionMirror"
         schema="canonical.launchpad.interfaces.IMirrorDistroArchRelease"
         permission="launchpad.Edit"
@@ -80,6 +81,7 @@
 
     <browser:generalform
         name="+addsourcerelease"
+        facet="overview"
         for="canonical.launchpad.interfaces.IDistributionMirror"
         schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource"
         permission="launchpad.Edit"

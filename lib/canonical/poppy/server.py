@@ -2,22 +2,26 @@
 
 __metaclass__ = type
 
-import zope.server.ftp.server as ftp
-from zope.interface import implements
-from zope.server.interfaces.ftp import IFileSystem
-from zope.server.interfaces.ftp import IFileSystemAccess
-
-import zope.server.ftp.tests.demofs as demofs
-from zope.server.ftp.server import FTPServerChannel
-from zope.server.ftp.server import STORChannel as OriginalSTORChannel
-from zope.server.taskthreads import ThreadedTaskDispatcher
-import ThreadedAsync
+import tempfile
 import logging
 import os
 import sys
-from zope.server.serverbase import ServerBase
-from canonical.poppy.filesystem import UploadFileSystem
+
 from time import time
+
+from zope.interface import implements
+from zope.server.interfaces.ftp import IFileSystem
+from zope.server.interfaces.ftp import IFileSystemAccess
+from zope.server.ftp.server import FTPServerChannel
+from zope.server.ftp.server import STORChannel as OriginalSTORChannel
+from zope.server.ftp import server as ftp
+from zope.server.taskthreads import ThreadedTaskDispatcher
+from zope.server.serverbase import ServerBase
+from zope.server.ftp.tests import demofs
+
+import ThreadedAsync
+
+from canonical.poppy.filesystem import UploadFileSystem
 
 
 class Channel(FTPServerChannel):
@@ -107,31 +111,24 @@ class Server(ServerBase):
 
     channel_class = Channel
 
-    def __init__(self, ip, port, root, startcount,
+    def __init__(self, ip, port,
                  new_client_hook, client_done_hook, auth_verify_hook,
                  *args, **kw):
         ServerBase.__init__(self, ip, port, *args, **kw)
-        self.clientcount = startcount
-        self.rootpath = root
         self.new_client_hook = new_client_hook
         self.client_done_hook = client_done_hook
         self.auth_verify_hook = auth_verify_hook
 
     def newClient(self, channel):
-        root = '/'  # sentinel
-        while os.path.exists(root):
-            self.clientcount += 1
-            root = os.path.join(self.rootpath,
-                                'upload-%06.f' % self.clientcount)
-        os.mkdir(root)
-        uploadfilesystem = UploadFileSystem(root)
+        fsroot = tempfile.mkdtemp("-poppy")
+        uploadfilesystem = UploadFileSystem(fsroot)
         clienthost, clientport = channel.peername
         try:
-            self.new_client_hook(root, clienthost, clientport)
+            self.new_client_hook(fsroot, clienthost, clientport)
         except Exception:
             # Almost bare except, result logged, to keep server running.
             self.logger.exception("Exception during new client hook")
-        return uploadfilesystem, root
+        return uploadfilesystem, fsroot
 
     def clientFinished(self, channel):
         clienthost, clientport = channel.peername
@@ -142,11 +139,11 @@ class Server(ServerBase):
             self.logger.exception("Exception during client done hook")
 
 
-def run_server(rootdir, host, port, ident, numthreads,
+def run_server(host, port, ident, numthreads,
                new_client_hook, client_done_hook, auth_verify_hook = None):
     task_dispatcher = ThreadedTaskDispatcher()
     task_dispatcher.setThreadCount(numthreads)
-    server = Server(host, port, rootdir, 0,
+    server = Server(host, port,
                     new_client_hook, client_done_hook, auth_verify_hook,
                     task_dispatcher=task_dispatcher)
     server.SERVER_IDENT = ident
@@ -159,10 +156,10 @@ def run_server(rootdir, host, port, ident, numthreads,
 
 def main():
     args = sys.argv[1:]
-    if len(args) != 2:
-        print "usage: server.py rootuploaddirectory port"
+    if len(args) != 1:
+        print "usage: server.py port"
         return 1
-    root, port = args
+    port = args
     host = "127.0.0.1"
     ident = "lucille upload server"
     numthreads = 4
@@ -184,7 +181,7 @@ def main():
         print "Auth Verification hook:", fsroot, user, passw
         return True
 
-    run_server(root, host, int(port), ident, numthreads,
+    run_server(host, int(port), ident, numthreads,
                new_client_hook, client_done_hook,
                auth_verify_hook)
     return 0

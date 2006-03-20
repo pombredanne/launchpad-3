@@ -1474,10 +1474,6 @@ class PersonEditView(SQLObjectEditView):
 
 class PersonEmblemView(GeneralFormView):
 
-    # XXX: This is a workaround, while https://launchpad.net/malone/bugs/5792
-    # isn't fixed. -- Guilherme Salgado, 2005-12-14
-    __launchpad_facetname__ = 'overview'
-
     def process(self, emblem=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if emblem is not None:
@@ -1492,10 +1488,6 @@ class PersonEmblemView(GeneralFormView):
 
 
 class PersonHackergotchiView(GeneralFormView):
-
-    # XXX: This is a workaround, while https://launchpad.net/malone/bugs/5792
-    # isn't fixed. -- Guilherme Salgado, 2005-12-14
-    __launchpad_facetname__ = 'overview'
 
     def process(self, hackergotchi=None):
         # XXX use Bjorn's nice file upload widget when he writes it
