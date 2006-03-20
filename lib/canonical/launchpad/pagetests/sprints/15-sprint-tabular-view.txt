@@ -2,7 +2,7 @@
 We should be able to see the workload of a sprint:
 
   >>> print http(r"""
-  ... GET /sprints/ubz/+workload HTTP/1.1
+  ... GET /sprints/ubz/+assignments HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -11,17 +11,16 @@ And we should be able to see the workload page of a sprint even when there's
 no spec assigned to people.
 
   >>> print http(r"""
-  ... GET /sprints/ltsponsteroids/+workload HTTP/1.1
+  ... GET /sprints/ltsponsteroids/+assignments HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...No specifications are currently assigned to people for...    
-  ...
+  ...No specifications to display...
 
 We should be able to see the spec assignment table of a sprint:
 
   >>> print http(r"""
-  ... GET /sprints/ubz/+specstable HTTP/1.1
+  ... GET /sprints/ubz/+assignments HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

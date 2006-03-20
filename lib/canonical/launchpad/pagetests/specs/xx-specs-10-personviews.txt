@@ -15,7 +15,7 @@ First, the overall view of all specs:
 Now, the view of all specs this person must approve.
 
   >>> print http(r"""
-  ... GET /people/name16/+approverspecs HTTP/1.1
+  ... GET /people/name16/+specs?role=approver HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -23,7 +23,7 @@ Now, the view of all specs this person must approve.
 And all the specs this person is assigned to.
 
   >>> print http(r"""
-  ... GET /people/name16/+assignedspecs HTTP/1.1
+  ... GET /people/name16/+specs?role=assigned HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -31,7 +31,7 @@ And all the specs this person is assigned to.
 And all the specs this person created.
 
   >>> print http(r"""
-  ... GET /people/name16/+createdspecs HTTP/1.1
+  ... GET /people/name16/+specs?role=created HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -39,15 +39,17 @@ And all the specs this person created.
 And all the specs this person has been asked to review.
 
   >>> print http(r"""
-  ... GET /people/name16/+reviewspecs HTTP/1.1
+  ... GET /people/name16/+specs?role=feedback HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
+  ...
+  ...1 specification(s) listed...
   ...
 
 And all the specs this person has subscribed to.
 
   >>> print http(r"""
-  ... GET /people/name16/+subscribedspecs HTTP/1.1
+  ... GET /people/name16/+specs?role=subscribed HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -55,7 +57,7 @@ And all the specs this person has subscribed to.
 And finally, all the specs this person drafted.
 
   >>> print http(r"""
-  ... GET /people/name16/+draftedspecs HTTP/1.1
+  ... GET /people/name16/+specs?role=drafted HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

@@ -32,7 +32,7 @@
 
 
       <table width="100%"
-             tal:define="currentBatch python:list(bn.currentBatch())">
+             tal:define="currentBatch bn/currentBatch">
         <tr>
           <th tal:condition="currentBatch">
             <span tal:condition="request/name|nothing">

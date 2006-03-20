@@ -119,7 +119,7 @@ Now let's see what happens if one of the PO files is broken.
   >>> hr.export()
   Traceback (most recent call last):
   ...
-  LookupError: unknown encoding: broken
+  POInvalidInputError: Unknown charset u'broken'
 
   >>> test_emails[:] = []
   >>> request_set.addRequest(person, None, [hr, ca])
@@ -128,7 +128,7 @@ Now let's see what happens if one of the PO files is broken.
   log> PO export failed for pmount/hr.po
   log> Traceback (most recent call last):
   ...
-  log> LookupError: unknown encoding: broken
+  log> POInvalidInputError: Unknown charset u'broken'
 
   >>> transaction.commit()
 
@@ -169,7 +169,7 @@ files:
   log> PO export failed for pmount/hr.po
   log> Traceback (most recent call last):
   ...
-  log> LookupError: unknown encoding: broken
+  log> POInvalidInputError: Unknown charset u'broken'
 
   >>> transaction.commit()
 

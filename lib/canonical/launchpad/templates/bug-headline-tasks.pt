@@ -1,10 +1,23 @@
+<script type="text/javascript">
+  function toggleFormVisibility(row, expander) {
+    if (row.style.display=="none") {
+      expander.setAttribute('src', '/@@/treeExpanded.gif');
+      row.style.display = "table-row";
+    } else {
+      expander.setAttribute('src', '/@@/treeCollapsed.gif');
+      row.style.display = "none";
+    }
+    return false;
+  }
+</script>
+
 <table class="listing"
        cellpadding="0" cellspacing="0"
        style="width: 100%; margin-bottom: 1px; margin-top: 2px;
               font-size: 90%;">
   <thead>
     <tr>
-      <th>Fix Requested In</th>
+      <th colspan="2">Affects</th>
       <th>Status</th>
       <th>Severity</th>
       <th>Assigned To</th>
@@ -13,41 +26,46 @@
 
   <tbody>
     <tal:request repeat="bugtask context/bugtasks">
-    <tr tal:define="tasklink python: view.taskLink(bugtask)"
-        tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(bugtask)">
-      <td style="margin: 0; padding: 0">
-        <a style="display: block; text-decoration: none; padding: 3px"
-           tal:attributes="href tasklink"
-           tal:content="bugtask/targetname"
-        />
-      </td>
+      <tal:whatever define="shouldExpand python:bugtask == view.currentBugTask() and view.user">
+        <tr tal:define="tasklink python: view.taskLink(bugtask)"
+            tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(bugtask)">
+          <td class="icon left">
+            <a
+              tal:condition="shouldExpand"
+              tal:attributes="href tasklink"
+              onclick="return toggleFormVisibility(document.getElementById('editform'), document.getElementById('editexpander')); return false"
+            ><img id="editexpander" alt="" src="/@@/treeCollapsed.gif" /></a>
+          </td>
+          <td style="margin: 0; padding: 0">
+            <a
+              tal:condition="shouldExpand"
+              tal:attributes="href tasklink"
+              tal:content="bugtask/targetname"
+              onclick="return toggleFormVisibility(document.getElementById('editform'), document.getElementById('editexpander'))"
+              style="display: block; padding: 3px"
+            />
+            <a
+              tal:condition="not:shouldExpand"
+              tal:attributes="href tasklink"
+              tal:content="bugtask/targetname"
+              style="display: block; padding: 3px"
+            />
+          </td>
 
-      <td style="margin: 0; padding: 0">
-        <a style="display: block; text-decoration: none; padding: 3px"
-           tal:attributes="href tasklink;
-                           class string:status${bugtask/status/title}"
+      <td tal:attributes="class string:status${bugtask/status/title}"
            tal:content="bugtask/status/title">
           $BugTask.status
-        <img tal:condition="bugtask/statusexplanation"
-             src="/@@/text"
-             />
-        </a>
       </td>
 
-      <td style="margin: 0; padding: 0"
-          tal:attributes="class string:severity${bugtask/severity/title}">
-        <a style="display: block; text-decoration: none; padding: 3px"
-           tal:attributes="href tasklink;
-                           class string:status${bugtask/status/title}"
+      <td tal:attributes="class string:severity${bugtask/severity/title}"
            tal:content="bugtask/severity/title">
           Critical
-        </a>
       </td>
 
       <td style="margin: 0; padding: 0; vertical-align: middle">
         <tal:has_watch condition="bugtask/bugwatch">
           <a style="display: block; text-decoration: none; padding: 3px"
-             tal:attributes="href tasklink">
+             tal:attributes="href bugtask/bugwatch/url">
             <img tal:condition="bugtask/assignee"
                  src="/@@/user.gif" alt="" />
             <img
@@ -58,27 +76,38 @@
             #<span tal:replace="bugtask/bugwatch/remotebug">123</span>
           </a>
         </tal:has_watch>
-
         <tal:has_no_watch condition="not: bugtask/bugwatch">
-          <a style="display: block; text-decoration: none;"
-             tal:attributes="href tasklink">
-            <tal:has_assignee condition="bugtask/assignee">
+          <tal:has_assignee condition="bugtask/assignee">
+            <a
+              style="display: block; text-decoration: none;"
+              tal:attributes="href string:${bugtask/assignee/fmt:url}/+assignedbugs"
+            >
               <img src="/@@/user.gif"
                    style="padding-bottom: 2px"
                    alt="" />
               <span tal:replace="bugtask/assignee/browsername">
                 assignee.browsername
               </span>
-            </tal:has_assignee>
-            <tal:no_assignee condition="not: bugtask/assignee">
-              &mdash;
-            </tal:no_assignee>
-          </a>
+            </a>
+          </tal:has_assignee>
+          <tal:no_assignee condition="not: bugtask/assignee">
+            &mdash;
+          </tal:no_assignee>
         </tal:has_no_watch>
 
-      </td>
+          </td>
 
-    </tr>
+        </tr>
+      
+        <tr
+          id="editform"
+          style="display: none"
+          tal:condition="shouldExpand"
+          tal:define="current_task view/currentBugTask"
+        >
+          <td colspan="5" tal:content="structure current_task/@@+edit-form" />
+        </tr>
+      </tal:whatever>
     </tal:request>
   </tbody>
 
@@ -87,7 +116,7 @@
 <div style="font-size: 80%; text-align: right; margin-bottom: 1em;"
      tal:define="current_bugtask view/currentBugTask">
 
-  Request fix:
+  Also affects:
   <span style="white-space: nowrap">
       <img src="/@@/add.gif" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+upstreamtask"
@@ -100,7 +129,7 @@
       <img src="/@@/add.gif" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
          title="Mark this bug as occurring in a distro package">
-        In Distribution&hellip;
+        Distribution&hellip;
       </a>
   </span>
 

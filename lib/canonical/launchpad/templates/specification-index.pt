@@ -63,20 +63,29 @@
   >Whiteboard text goes here</div>
 
   <p class="lesser">
-    <b>Priority:</b>
+    <b>Priority:
     <span tal:attributes="class string:specpriority${context/priority/name}"
-          tal:content="context/priority/title">Approved</span>.
+          tal:content="context/priority/title">Approved</span></b>.
     <tal:priority_description content="context/priority/description">
-      This status means that.
+      This priority means that.
     </tal:priority_description>
   </p>
 
   <p class="lesser">
-    <b>Status:</b>
+    <b>Specification Status:
     <span tal:attributes="class string:specstatus${context/status/name}"
-          tal:content="context/status/title">Approved</span>.
+          tal:content="context/status/title">Approved</span></b>.
     <tal:status_description content="context/status/description">
-      This status means that.
+      This specification status means that.
+    </tal:status_description>
+  </p>
+
+  <p class="lesser">
+    <b>Implementation Status:
+    <span tal:attributes="class string:specdelivery${context/delivery/name}"
+          tal:content="context/delivery/title">Approved</span></b>.
+    <tal:status_description content="context/delivery/description">
+      This implementation status means that.
     </tal:status_description>
   </p>
 

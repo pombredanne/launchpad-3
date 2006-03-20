@@ -16,8 +16,8 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import IDistroReleaseBinaryPackage
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
-    GetitemNavigation)
+    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation
+    )
 
 
 class DistroReleaseBinaryPackageFacets(StandardLaunchpadFacets):
@@ -33,7 +33,7 @@ class DistroReleaseBinaryPackageOverviewMenu(ApplicationMenu):
     links = []
 
 
-class DistroReleaseBinaryPackageNavigation(GetitemNavigation):
+class DistroReleaseBinaryPackageNavigation(Navigation):
 
     usedfor = IDistroReleaseBinaryPackage
 
