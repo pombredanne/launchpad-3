@@ -1,3 +1,0 @@
--- 
-%(bug_title)s
-%(bug_url)s

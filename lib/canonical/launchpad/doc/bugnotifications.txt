@@ -269,7 +269,6 @@ this document:
     >>> bug = Bug.get(1)
     >>> bugcve = cve.linkBug(bug) # note this creates the event and notifies
 
-<<<<<<< TREE
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
     Sample Person

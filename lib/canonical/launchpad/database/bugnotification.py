@@ -37,6 +37,8 @@ class BugNotificationSet:
             """date_emailed IS NULL""", orderBy=['bug', '-id']).distinct()
         pending_notifications = list(notifications)
         omitted_notifications = []
+        #XXX: We should make the interval a configuration option.
+        #     -- Bjorn Tillenius, 2006-03-20
         interval = timedelta(minutes=5)
         time_limit = (
             datetime.now(pytz.timezone('UTC')) - interval)
@@ -51,13 +53,11 @@ class BugNotificationSet:
                        last_omitted_notification.message.owner and
                     notification.bug == last_omitted_notification.bug and
                     last_omitted_notification.message.datecreated -
-                    notification.message.datecreated <
-                    interval):
+                    notification.message.datecreated < interval):
                     omitted_notifications.append(notification)
                     last_omitted_notification = notification
             if last_omitted_notification != notification:
                 last_omitted_notification = None
-
 
         pending_notifications = [
             notification
@@ -66,10 +66,3 @@ class BugNotificationSet:
             ]
         pending_notifications.reverse()
         return pending_notifications
-
-        return BugNotification.select(
-            "BugNotification.date_emailed IS NULL"
-            " AND Message.id = BugNotification.message"
-            " AND Message.datecreated < NOW() - interval '5 minutes'",
-            clauseTables=['Message'], orderBy=['id'])
-
