@@ -257,10 +257,9 @@ bugmail when a bug task is edited.
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     this is indeed a bug
     <BLANKLINE>
-    ** ubuntu (upstream) changed:
-    <BLANKLINE>
-           Assignee: (unassigned) => Sample Person
-             Status: Unconfirmed => Confirmed
+    ** Changed in: ubuntu (upstream)
+         Assignee: (unassigned) => Sample Person
+           Status: Unconfirmed => Confirmed
 
 Let's take a look at how it looks like when a distribution task is
 edited:
@@ -284,9 +283,8 @@ edited:
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     I don't have time to work on this.
     <BLANKLINE>
-    ** mozilla-firefox (Debian) changed:
-    <BLANKLINE>
-           Assignee: Sample Person => (unassigned)
+    ** Changed in: mozilla-firefox (Debian)
+         Assignee: Sample Person => (unassigned)
 
 Adding and editing web links
 ----------------------------
@@ -375,7 +373,7 @@ generated when a bug watch is added:
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     ** Bug watch added: The Mozilla.org Bug Tracker #123
-    ** https://bugzilla.mozilla.org/show_bug.cgi?id=123
+       https://bugzilla.mozilla.org/show_bug.cgi?id=123
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -396,10 +394,33 @@ Let's demonstrate with an example:
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     ** Bug watch removed: The Mozilla.org Bug Tracker #123
-    ** https://bugzilla.mozilla.org/show_bug.cgi?id=123
+       https://bugzilla.mozilla.org/show_bug.cgi?id=123
     <BLANKLINE>
     ** Bug watch added: The Mozilla.org Bug Tracker #12
-    ** https://bugzilla.mozilla.org/show_bug.cgi?id=12
+       https://bugzilla.mozilla.org/show_bug.cgi?id=12
+
+We can also add a bugwatch while adding a new bugtask.
+    
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> mozilla_bug_watch = getUtility(IBugWatchSet).get(1)
+    >>> mozilla_bugtask = getUtility(IBugTaskSet).get(15)
+    >>> mozilla_bugtask.bugwatch = mozilla_bug_watch 
+
+    >>> bug_delta = BugDelta(
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     added_bugtasks=mozilla_bugtask)
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    ** Also affects: firefox (upstream) via
+       https://bugzilla.mozilla.org//show_bug.cgi?id=42
+         Severity: Major
+         Priority: Medium
+           Status: Unconfirmed
+
 
 Adding and editing CVE relationships
 ------------------------------------
@@ -482,4 +503,4 @@ Adding an attachment will generate a notification that looks as follows:
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     ** Attachment added: "A screenshot of the problem"
-    ** http://foo.com/screenshot.png
+       http://foo.com/screenshot.png

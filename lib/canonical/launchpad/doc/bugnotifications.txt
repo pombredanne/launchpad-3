@@ -389,7 +389,7 @@ task Fixed, and assigns himself to it.
      'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    ** mozilla-firefox (Debian) changed:
+    ** Changed in: mozilla-firefox (Debian)
     ...
     -- 
     firefox crashes all the time
