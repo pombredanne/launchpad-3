@@ -11,7 +11,8 @@ from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import (
-    get_bugmail_replyto_address, GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+    get_bugmail_replyto_address, generate_bug_add_email,
+    GLOBAL_NOTIFICATION_EMAIL_ADDRS)
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -39,7 +40,12 @@ def construct_email_notification(bug_notifications):
         if notification.message != comment
         ]
     if comment is not None:
-        text_notifications.insert(0, comment.text_contents)
+        if comment == bug.initial_message:
+            # It's a bug filed notifications.
+            dummy, text = generate_bug_add_email(bug)
+        else:
+            text = comment.text_contents
+        text_notifications.insert(0, text)
         msgid = comment.rfc822msgid
 
     content = '\n\n'.join(text_notifications)
