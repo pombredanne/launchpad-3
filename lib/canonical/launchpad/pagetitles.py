@@ -786,7 +786,9 @@ specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
-specificationgoal_index = ContextTitle('Specification acceptance for %s')
+specificationgoal_specs = ContextTitle('List goals for %s')
+
+specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 

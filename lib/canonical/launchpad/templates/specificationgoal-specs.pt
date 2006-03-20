@@ -34,7 +34,7 @@
           Assignee
         </th>
         <th>
-          Goal
+          Milestone
         </th>
       </tr>
     </thead>
@@ -58,11 +58,9 @@
           </a>
         </td>
         <td>
-          <a tal:condition="spec/has_release_goal"
-             tal:attributes="href spec/goal/fmt:url"
-             tal:content="spec/goal/name">
-            Ubuntu 6.04
-          </a>
+          <a tal:condition="spec/milestone"
+             tal:attributes="href spec/milestone/fmt:url"
+             tal:content="spec/milestone/name">dapperflight4</a>
         </td>
       </tr>
     </tbody>
@@ -74,6 +72,15 @@
 
   <p tal:condition="view/specs" class="discreet">
     <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
+  </p>
+
+  <p class="discreet">
+    This page shows all specifications that have been accepted as goals for
+    <span tal:replace="context/title">Mozilla Firefox 1.0</span>. You can
+    see goals that were declined using the "Show Declined" link to the left,
+    and if you are a driver of <span tal:replace="context/name">1.0</span>
+    then you can accept goals that have been proposed using the "Set Goals"
+    link.
   </p>
 
 </div>

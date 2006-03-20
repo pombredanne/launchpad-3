@@ -184,9 +184,8 @@ class Specification(SQLBase):
     @property
     def has_release_goal(self):
         """See ISpecification."""
-        if self.distrorelease is not None:
-            return True
-        if self.productseries is not None:
+        if self.goal is not None and \
+            self.goalstatus == SpecificationGoalStatus.ACCEPTED:
             return True
         return False
 
