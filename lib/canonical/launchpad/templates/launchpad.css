@@ -1189,3 +1189,38 @@ dl.faq dd {
 dl.faq ol {
     margin: 0.5em 3em;
 }
+
+.message {
+  background: 5px 0.5em no-repeat;
+  font-size: smaller;
+  font-weight: bold;
+  margin: 1em 0 0.5em;
+  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
+}
+.error .message, .warning .message, .informational .message {
+  margin: 0;
+  padding: 0;
+}
+.error {
+  background-color: #f0cccc;
+  background-image: url(/@@/stop);
+  color: black;
+}
+.warning {
+  background-color: #fcdd99;
+  background-image: url(/@@/alert_icon.gif);
+}
+.informational {
+  background-color: #fcfc99;
+  background-image: url(/@@/info_icon.gif);
+}
+
+/*
+Things to get rid of:
+<span class="error">
+.portalError
+.portalMessage
+.notice-notification,
+.info-notification,
+.debug-notification,
+*/
