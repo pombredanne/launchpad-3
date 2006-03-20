@@ -8,7 +8,6 @@ for publishing as appropriate.
 
 import _pythonpath
 
-import os
 import sys
 
 from optparse import OptionParser
@@ -32,10 +31,8 @@ def main():
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
                       help="Whether to treat this as a dry-run or not.")
-    global options
     (options, args) = parser.parse_args()
 
-    global log
     log = logger(options, "process-accepted")
 
     if len(args) != 1:
@@ -46,11 +43,11 @@ def main():
     distro_name = args[0]
 
     log.debug("Acquiring lock")
-    lock = GlobalLock('/var/lock/launchpad-process-accepted.lock')
+    lock = GlobalLock('/var/lock/launchpad-upload-queue.lock')
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    global ztm
+
     ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
 
     execute_zcml_for_scripts()
@@ -65,12 +62,16 @@ def main():
             for queue_item in queue_items:
                 try:
                     queue_item.realiseUpload(log)
-                    ztm.commit()
-                except: # Re-raised after logging.
-                    log.error("Failure processing queue_item %d" % (
-                        queue_item.id))
+                except:
+                    log.error("Failure processing queue_item %d"
+                              % (queue_item.id), exc_info=True)
                     raise
-                
+
+        if not options.dryrun:
+            ztm.commit()
+        else:
+            log.debug("Dry Run mode.")
+
     finally:
         log.debug("Rolling back any remaining transactions.")
         ztm.abort()

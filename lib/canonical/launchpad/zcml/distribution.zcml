@@ -57,6 +57,7 @@
 
     <browser:generalform
         name="+newmirror"
+        facet="overview"
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionMirrorAddView"
         schema="canonical.launchpad.interfaces.IDistributionMirror"

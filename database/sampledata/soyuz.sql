@@ -11,11 +11,48 @@
 
 
 -- Component
-INSERT INTO Component (name) VALUES ('default_component');
+INSERT INTO Component (name) VALUES ('main');
+INSERT INTO Component (name) VALUES ('restricted');
+INSERT INTO Component (name) VALUES ('universe');
 
 -- Section
 
-INSERT INTO Section (name) VALUES ('default_section');
+INSERT INTO Section (name) VALUES ('base');
+INSERT INTO Section (name) VALUES ('web');
+INSERT INTO Section (name) VALUES ('editors');
+INSERT INTO Section (name) VALUES ('admin');
+INSERT INTO Section (name) VALUES ('comm');
+INSERT INTO Section (name) VALUES ('debian-installer');
+INSERT INTO Section (name) VALUES ('devel');
+INSERT INTO Section (name) VALUES ('doc');
+INSERT INTO Section (name) VALUES ('games');
+INSERT INTO Section (name) VALUES ('gnome');
+INSERT INTO Section (name) VALUES ('graphics');
+INSERT INTO Section (name) VALUES ('interpreters');
+INSERT INTO Section (name) VALUES ('kde');
+INSERT INTO Section (name) VALUES ('libdevel');
+INSERT INTO Section (name) VALUES ('libs');
+INSERT INTO Section (name) VALUES ('mail');
+INSERT INTO Section (name) VALUES ('math');
+INSERT INTO Section (name) VALUES ('misc');
+INSERT INTO Section (name) VALUES ('net');
+INSERT INTO Section (name) VALUES ('news');
+INSERT INTO Section (name) VALUES ('oldlibs');
+INSERT INTO Section (name) VALUES ('otherosfs');
+INSERT INTO Section (name) VALUES ('perl');
+INSERT INTO Section (name) VALUES ('python');
+INSERT INTO Section (name) VALUES ('shells');
+INSERT INTO Section (name) VALUES ('sound');
+INSERT INTO Section (name) VALUES ('tex');
+INSERT INTO Section (name) VALUES ('text');
+INSERT INTO Section (name) VALUES ('translations');
+INSERT INTO Section (name) VALUES ('utils');
+INSERT INTO Section (name) VALUES ('x11');
+INSERT INTO Section (name) VALUES ('electronics');
+INSERT INTO Section (name) VALUES ('embedded');
+INSERT INTO Section (name) VALUES ('hamradio');
+INSERT INTO Section (name) VALUES ('science');
+
 
 -- Schema
 INSERT INTO schema (name, title, description, owner, extensible) VALUES
