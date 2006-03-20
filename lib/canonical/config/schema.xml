@@ -576,6 +576,8 @@
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
+        <key name="branchlistsource" datatype="string" 
+             default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
     </sectiontype>
 
     <sectiontype name="canonical">

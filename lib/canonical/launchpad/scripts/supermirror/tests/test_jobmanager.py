@@ -3,6 +3,7 @@ import shutil
 import signal
 import tempfile
 import unittest
+from StringIO import StringIO
 
 from canonical.launchpad.scripts.supermirror.bzr_5_6 import BZR_5_6
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
@@ -27,6 +28,20 @@ class TestJobManager(unittest.TestCase):
     def testExistance(self):
         from canonical.launchpad.scripts.supermirror.jobmanager import (
             JobManager)
+
+    def testEmptyBranchStreamToBranchList(self):
+        falsestdin = StringIO("")
+        manager = jobmanager.JobManager()
+        self.assertEqual([], manager.branchStreamToBranchList(falsestdin))
+
+    def testSingleBranchStreamToBranchList(self):
+        """Get a list of branches and ensure that it can add a branch object."""
+        bzr56branch = self._makeAndMirrorBranch("managersingle", 0)
+        falsestdin = StringIO("0 %s\n" % (bzr56branch.source))
+        manager = jobmanager.JobManager()
+        branches = manager.branchStreamToBranchList(falsestdin)
+        # this is better because it ensures the entire output is the same.
+        self.assertEqual([bzr56branch], branches) 
 
     def testNotHandledObjected(self):
         """Make sure jobmanager does the right thing when it gets told that 

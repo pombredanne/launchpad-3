@@ -5,6 +5,8 @@ import os
 
 from canonical.config import config
 from canonical.launchpad.scripts import lockfile
+from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
+from canonical.launchpad.scripts.supermirror.branchfactory import BranchFactory
 
 
 class JobManager:
@@ -69,6 +71,30 @@ class JobManager:
         # However, its not implemented yet as there is no test case written
         # for it yet. -jblack 2006-03-13
         raise NotImplementedError
+
+    def branchStreamToBranchList(self, inputstream):
+        """Convert a stream of branch URLS to list of branch objects.
+        
+        This function takes a file handle associated with a text file of
+        the form:
+            
+            LAUNCHPAD_ID URL_FOR_BRANCH
+            ...
+            LAUNCHPAD_ID URL_FOR_BRANCH
+
+        This series of urls is converted into a python list of branch
+        objects of the appropriate type.
+        """
+        branches = []
+        branchfactory = BranchFactory()
+        destination = config.supermirror.branchesdest
+        for line in inputstream.readlines():
+            branchnum, branchsrc = line.split(" ")
+            branchsrc = branchsrc.strip()
+            path = branchtarget(branchnum)
+            branchdest = os.path.join(destination, path)
+            branches.append(branchfactory.produce(branchsrc, branchdest))
+        return branches
 
     def lock(self, lockfilename=config.supermirror.masterlock):
         self.actualLock = lockfile.LockFile(lockfilename)
