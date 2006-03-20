@@ -30,11 +30,9 @@
       Distribution Summary
   </p>
 
-  <div class="highlighted" style="font-size: 80%;">
-    <p tal:replace="structure context/description/fmt:text-to-html">
-        Distribution description
-    </p>
-  </div>
+  <tal:description replace="structure context/description/fmt:text-to-html">
+    Distribution description
+  </tal:description>
 
   <h2>Source packages in <span tal:replace="context/title"/></h2>
 

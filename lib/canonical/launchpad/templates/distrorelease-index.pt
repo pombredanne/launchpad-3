@@ -21,11 +21,8 @@
 
     <div class="documentDescription"
          tal:content="structure context/summary/fmt:text-to-html"/>
-            
-    <div class="highlighted" style="font-size: 80%;">
-      <p tal:replace="structure context/description/fmt:text-to-html"/>
-    </div>
 
+    <tal:description replace="structure context/description/fmt:text-to-html"/>
 
     <tal:block tal:define="sourcecount context/sourcecount"
                tal:condition="sourcecount" tal:omit-tag>

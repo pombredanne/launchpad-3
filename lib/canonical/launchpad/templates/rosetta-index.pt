@@ -25,25 +25,42 @@
 
     <h2>Translations in Ubuntu</h2>
 
-    <p>Rosetta is the primary translation system for the Ubuntu Project. You
-    can help to translate any application in Ubuntu, or any of the Ubuntu
-    derivative distributions, using this web interface. Select a release
-    to start translating.</p>
-    
-    <div style="margin-left: 50px;">
-
-      <p tal:repeat="distrorelease context/translatable_distroreleases">
-        <img src="/@@/product_icon.gif">
-        <b><span tal:replace="distrorelease/version" />: "<span
-        tal:replace="distrorelease/title">distrorelease
-        title</span>"</b>&nbsp;[&nbsp;<a tal:attributes="href
-        string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/+translations">Translate</a>&nbsp;]
-        <br />
-        <span tal:replace="distrorelease/summary">product
-        summary</span>
+      <p>
+        Rosetta is the primary translation system for the Ubuntu distribution.
+        You can help translate any application in Ubuntu, or any of the Ubuntu
+        derivative distributions, using this Web interface. Select a release
+        to start translating.
       </p>
-
-    </div> <!-- indent -->
+      <table>
+        <tbody>
+          <tal:release
+            repeat="distrorelease context/translatable_distroreleases"
+          >
+            <tr>
+              <td class="icon left">
+                <img alt="" src="/@@/product_icon.gif" />
+              </td>
+              <td>
+                <a
+                  tal:attributes="href string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/+translations"
+                >
+                  <span tal:replace="distrorelease/version">5.04</span>:
+                  <span tal:replace="distrorelease/title">Hoary Hedgehog</span>
+                </a>
+              </td>
+            </tr>
+            <tr class="secondary">
+              <td></td>
+              <td>
+                <p
+                  class="discreet"
+                  tal:content="distrorelease/summary"
+                >Summary here.</p>
+              </td>
+            </tr>
+          </tal:release>
+        </tbody>
+      </table>
 
     <h2>Translatable applications</h2>
 
