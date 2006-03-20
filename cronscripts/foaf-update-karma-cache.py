@@ -77,9 +77,9 @@ def update_karma_cache():
     # removed even as more events are added or scoring tweaked.
     totals = {} # Total points per category
     for person, category, points in results:
-        try:
+        if category in totals:
             totals[category] += points
-        except KeyError:
+        else:
             totals[category] = points
     largest_total = max(totals.values())
     scaling = {} # Scaling factor to apply per category
