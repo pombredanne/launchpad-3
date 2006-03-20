@@ -37,7 +37,11 @@ def https_post_form_with_auth(host, path, form, auth):
     return connection.getresponse()
 
 if __name__ == '__main__':
-    form = (('title', sys.argv[1]), ('content', sys.stdin.read()))
+    if len(sys.argv) > 1:
+        title = sys.argv[1]
+    else:
+        title = "The loser %s didn't even add a title" % os.environ.get("USER")
+    form = (('title', title), ('content', sys.stdin.read()))
     username, password = read_auth_file(auth_file)
     auth = make_basic_auth_header(username, password)
     response = https_post_form_with_auth(paste_host, paste_path, form, auth)

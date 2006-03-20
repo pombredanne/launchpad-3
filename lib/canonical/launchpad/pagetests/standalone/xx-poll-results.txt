@@ -1,7 +1,7 @@
-  First we check all polls of 'name17'.
+  First we check all polls of 'ubuntu-team'.
 
   >>> print http(r"""
-  ... GET /people/name17/+polls HTTP/1.1
+  ... GET /people/ubuntu-team/+polls HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -17,7 +17,7 @@
   Check the results of a closed simple-style poll.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/leader-2004 HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/leader-2004 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -47,7 +47,7 @@
   Check the results of a closed condorcet-style poll.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/director-2004 HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/director-2004 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

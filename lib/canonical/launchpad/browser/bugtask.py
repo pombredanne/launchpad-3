@@ -36,7 +36,6 @@ from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
-from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
     IBugTaskSet, IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch,
@@ -51,6 +50,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.webapp.batching import TableBatchNavigator
 
 
 def get_sortorder_from_request(request):
@@ -176,24 +176,22 @@ class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
 
 
-class BugTaskView:
+class BugTaskView(LaunchpadView):
     """View class for presenting information about an IBugTask."""
 
     def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+
         # Make sure we always have the current bugtask.
         if not IBugTask.providedBy(context):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
 
-        self.request = request
         self.notices = []
 
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
-
         # establish if a subscription form was posted
         newsub = self.request.form.get('subscribe', None)
         if newsub and self.user and self.request.method == 'POST':
