@@ -167,7 +167,7 @@ table.listing {
   font-size: 85%;
   margin: 1em 0;
 }
-table.listing, table.listing tbody {
+table.listing, table.listing>tbody {
   border-bottom: 1px solid #8cacbb;
 }
 table.listing>thead, table.listing>thead>tr>th {
@@ -880,6 +880,9 @@ ul.products>li, li.products {
 }
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/@@/user.gif);
+}
+ul.remove>li, li.remove {
+  list-style-image: url(/@@/remove);
 }
 ul.spec>li, li.spec {
     list-style-image: url(/@@/spec);

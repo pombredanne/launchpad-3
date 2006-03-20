@@ -70,3 +70,25 @@ Policies can think about distroreleases...
   >>> buildd_policy.distrorelease.name
   u'hoary'
   >>> buildd_policy.announcelist
+
+Policies can make decisions based on whether or not they want to
+approve an upload automatically (I.E. move it straight to ACCEPTED
+instead of UNAPPROVED)
+
+Uploads to the RELEASE pocket are approved by the insecure policy
+
+  >>> insecure_policy.setDistroReleaseAndPocket('hoary')
+  >>> insecure_policy.autoApprove(None)
+  True
+
+Reset the policy so that we can try again...
+
+  >>> insecure_policy.policy = None
+  >>> insecure_policy.distrorelease = None
+
+Uploads to the UPDATES pocket are not auto-approved by the insecure policy
+
+  >>> insecure_policy.setDistroReleaseAndPocket('hoary-updates')
+  >>> insecure_policy.autoApprove(None)
+  False
+

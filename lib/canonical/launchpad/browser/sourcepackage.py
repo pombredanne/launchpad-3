@@ -11,15 +11,13 @@ __all__ = [
 # Python standard library imports
 import cgi
 import re
-import sets
 
 from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
+
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
@@ -29,14 +27,13 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
     structured, GetitemNavigation, stepto, redirection)
 
 from apt_pkg import ParseSrcDepends
-
-BATCH_SIZE = 40
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -268,15 +265,8 @@ class SourcePackageView(BuildRecordsView):
         return templateview_list
 
     def potemplatenames(self):
-        potemplatenames = []
-
-        for potemplate in self.context.potemplates:
-            potemplatenames.append(potemplate.potemplatename)
-
-        # Remove the duplicates
-        S = sets.Set(potemplatenames)
-        potemplatenames = list(S)
-
+        potemplates = self.context.potemplates
+        potemplatenames = set([p.potemplatename for p in potemplates])
         return sorted(potemplatenames, key=lambda item: item.name)
 
 
@@ -285,9 +275,9 @@ class SourcePackageBugsView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.batch = Batch(
-            list(self.bugtask_search()), int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
+
+        results = self.bugtask_search()
+        self.batchnav = BatchNavigator(results, request)
 
     def bugtask_search(self):
         return self.context.bugs

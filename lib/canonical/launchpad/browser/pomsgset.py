@@ -45,7 +45,7 @@ class POMsgSetView(LaunchpadView):
         self._suggested_submissions = None
         self._second_language_submissions = None
 
-        self.msgids = list(self.potmsgset.getPOMsgIDs())
+        self.msgids = helpers.shortlist(self.potmsgset.getPOMsgIDs())
 
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
@@ -260,7 +260,7 @@ class POMsgSetView(LaunchpadView):
             return self._suggested_submissions
 
         sugg = self.context.getSuggestedSubmissions(index)
-        self._suggested_submissions = list(sugg[:3])
+        self._suggested_submissions = helpers.shortlist(sugg[:3])
         return self._suggested_submissions
 
     def get_alternate_language_submissions(self, index):
