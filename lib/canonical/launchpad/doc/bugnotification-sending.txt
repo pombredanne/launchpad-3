@@ -48,9 +48,8 @@ list of emails to send:
     <BLANKLINE>
     a comment.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
 
 You can see that the message above contains the bug's initial comment's
 message id as its reference, in order to make it thread properly in the
@@ -103,9 +102,8 @@ Let's add a few changes and see how it looks like:
     <BLANKLINE>
     ** Visibility changed to: Private.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
 
 If we insert a comment and some more changes, they will be included in
 the constructed email:
@@ -145,9 +143,8 @@ in the order they were added:
     <BLANKLINE>
     ** Visibility changed to: Public.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
 
 If we insert yet another comment, it will be sent as a separate email.
 
@@ -177,9 +174,8 @@ If we insert yet another comment, it will be sent as a separate email.
     <BLANKLINE>
     ** Visibility changed to: Public.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -187,9 +183,8 @@ If we insert yet another comment, it will be sent as a separate email.
     <BLANKLINE>
     another comment.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -225,9 +220,8 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     a comment.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
@@ -235,9 +229,8 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     ** Summary changed to: New summary.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -245,9 +238,8 @@ change in between, three notifications will be sent:
     <BLANKLINE>
     ** Visibility changed to: Private.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -335,9 +327,8 @@ well:
     <BLANKLINE>
     ** Visibility changed to: Private.
     --
-    Bug Details:
-      Blackhole Trash folder
-      http://localhost:8086/malone/bugs/2
+    Blackhole Trash folder
+    http://localhost:8086/malone/bugs/2
     <BLANKLINE>
     To: dilys@muse.19inch.net, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
@@ -345,9 +336,8 @@ well:
     <BLANKLINE>
     ** Visibility changed to: Public.
     --
-    Bug Details:
-      Blackhole Trash folder
-      http://localhost:8086/malone/bugs/2
+    Blackhole Trash folder
+    http://localhost:8086/malone/bugs/2
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -359,9 +349,8 @@ well:
     <BLANKLINE>
     ** Visibility changed to: Private.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
@@ -369,9 +358,8 @@ well:
     <BLANKLINE>
     ** Visibility changed to: Public.
     --
-    Bug Details:
-      Firefox does not support SVG
-      http://localhost:8086/malone/bugs/1
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
 
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
@@ -425,9 +413,8 @@ initial message of the bug, it will result in a bug filed notification:
     Description:
     a description of the bug.
     --
-    Bug Details:
-      new bug
-      http://localhost:8086/malone/bugs/10
+    new bug
+    http://localhost:8086/malone/bugs/10
     <BLANKLINE>
 
     >>> for notification in BugNotification.select():
@@ -460,9 +447,8 @@ top of the email:
     <BLANKLINE>
     a comment.
     --
-    Bug Details:
-      new bug
-      http://localhost:8086/malone/bugs/10
+    new bug
+    http://localhost:8086/malone/bugs/10
     <BLANKLINE>
 
 Also note that notification was sent to Mark as well, since he's a

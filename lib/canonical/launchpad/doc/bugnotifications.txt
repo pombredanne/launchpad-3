@@ -36,7 +36,8 @@ those notifications look like.
 
     >>> firefox_crashes = getUtility(IBugSet).createBug(
     ...     product=firefox, title="firefox crashes all the time",
-    ...     comment="this is a comment", owner=bug_submitter)
+    ...     comment="this is a comment", owner=bug_submitter, 
+    ...     summary="some summary")
     >>> notify(SQLObjectCreatedEvent(firefox_crashes))
 
     >>> from canonical.launchpad.database import BugNotification
@@ -74,7 +75,7 @@ those notifications look like.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Short description changed:
+    ** Short description changed:
     ...
 
 3. Filing a new task on an existing bug
@@ -105,9 +106,8 @@ bug. Let's take a look at each type.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Also affects: mozilla-firefox (Debian)
+    ** Also affects: mozilla-firefox (Debian)
     ...
-
 
   3.2 Distro Release Task
 
@@ -129,7 +129,7 @@ bug. Let's take a look at each type.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Also affects: mozilla-firefox (Debian Sid)
+    ** Also affects: mozilla-firefox (Debian Sid)
     ...
 
   3.3 Upstream Task
@@ -155,7 +155,7 @@ bug. Let's take a look at each type.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Also affects: evolution (upstream)
+    ** Also affects: evolution (upstream)
     ...
 
 
@@ -204,7 +204,7 @@ task Fixed, and assigns himself to it.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Changed in: mozilla-firefox (Debian)
+    ** Changed in: mozilla-firefox (Debian)
     ...
 
 6. Adding and editing a bug watch.
@@ -226,7 +226,7 @@ pretending we've just added a watch to a bug.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Bug watch added: The Mozilla.org Bug Tracker #2000
+    ** Bug watch added: The Mozilla.org Bug Tracker #2000
     ...
 
 If the bug watch is modified, a notification is sent out describing
@@ -251,7 +251,7 @@ the changes made:
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Bug watch removed: The Mozilla.org Bug Tracker #2000
+    ** Bug watch removed: The Mozilla.org Bug Tracker #2000
     ...
 
 7. Adding and editing a CVE ref.
@@ -269,6 +269,7 @@ this document:
     >>> bug = Bug.get(1)
     >>> bugcve = cve.linkBug(bug) # note this creates the event and notifies
 
+<<<<<<< TREE
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
     Sample Person
@@ -276,8 +277,7 @@ this document:
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** CVE added: CVE-2004-0276 (Entry)
-    ...
+    ** CVE added: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2004-0276
 
 8. Adding an external URL reference.
 
@@ -300,8 +300,7 @@ publishing an object created event.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Web link added: "test"
-    ...
+    ** Web link added: http://www.example.com
 
 When a link is edited, the notification will look as follows:
 
@@ -323,8 +322,9 @@ When a link is edited, the notification will look as follows:
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    *** Web link removed: "test"
-    ...
+    ** Web link removed: http://www.example.com
+    <BLANKLINE>
+    ** Web link added: http://www.example.com/somewhere.html
 
 9. Marking a bug as a duplicate
 
@@ -352,7 +352,7 @@ duplicate.
     >>> latest_notification.bug.id
     1
     >>> print latest_notification.message.text_contents
-    *** Bug 2 has been marked a duplicate of this bug
+    ** Bug 2 has been marked a duplicate of this bug
 
     >>> latest_notification = BugNotification.select(orderBy='-id')[1]
     >>> print latest_notification.message.owner.displayname
@@ -363,8 +363,8 @@ duplicate.
     >>> latest_notification.bug.id
     2
     >>> print latest_notification.message.text_contents
-    *** This bug has been marked a duplicate of bug 1
-    *** "Firefox does not support SVG"
+    ** This bug has been marked a duplicate of bug 1
+       Firefox does not support SVG
 
 Now we change the target of a bug that's already marked as a dupe and
 check if the correct notification message is sent.
@@ -386,11 +386,11 @@ check if the correct notification message is sent.
     >>> latest_notification.bug.id
     6
     >>> print latest_notification.message.text_contents
-    *** This bug is no longer a duplicate of bug 5
-    *** "Firefox install instructions should be complete"
+    ** This bug is no longer a duplicate of bug 5
+       Firefox install instructions should be complete
     <BLANKLINE>
-    *** This bug has been marked a duplicate of bug 3
-    *** "Bug Title Test"
+    ** This bug has been marked a duplicate of bug 3
+       Bug Title Test
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print latest_notification.message.owner.displayname
@@ -401,7 +401,7 @@ check if the correct notification message is sent.
     >>> latest_notification.bug.id
     3
     >>> print latest_notification.message.text_contents
-    *** Bug 6 has been marked a duplicate of this bug
+    ** Bug 6 has been marked a duplicate of this bug
 
 Now we unduplicate the above bug and check if the correct notification message is sent.
 
@@ -421,5 +421,5 @@ Now we unduplicate the above bug and check if the correct notification message i
     >>> latest_notification.bug.id
     6
     >>> print latest_notification.message.text_contents
-    *** This bug is no longer a duplicate of bug 3
-    *** "Bug Title Test"
+    ** This bug is no longer a duplicate of bug 3
+       Bug Title Test
