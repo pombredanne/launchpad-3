@@ -620,8 +620,8 @@ class POParser(object):
             # a real error, rather than a partial read.
             # I don't know what the longest multibyte sequence in the
             # encodings we need to support, but it shouldn't be more
-            # than 20 bytes ...
-            if len(self._pending_chars) - exc.start > 20:
+            # than 10 bytes ...
+            if len(self._pending_chars) - exc.start > 10:
                 raise POInvalidInputError(self._lineno,
                                           "could not decode input from %s"
                                           % self.header.charset)
@@ -714,6 +714,10 @@ class POParser(object):
           u'abc'
           >>> parser._parse_quoted_string(u'\"abc\\ndef\"')
           u'abc\ndef'
+          >>> parser._parse_quoted_string(u'\"ab\x63\"')
+          u'abc'
+          >>> parser._parse_quoted_string(u'\"ab\143\"')
+          u'abc'
           >>> parser._parse_quoted_string(u'abc')
           Traceback (most recent call last):
             ...
@@ -734,7 +738,6 @@ class POParser(object):
         escape_map = {
             'a': '\a',
             'b': '\b',
-            'c': '\c',
             'f': '\f',
             'n': '\n',
             'r': '\r',
@@ -749,6 +752,22 @@ class POParser(object):
                 if string[1] in escape_map:
                     output += escape_map[string[1]]
                     string = string[2:]
+                elif string[1] == 'x':
+                    # hexadecimal escape
+                    output += chr(int(string[2:4], 16))
+                    string = string[4:]
+                elif string[1].isdigit():
+                    # octal escape
+                    digits = string[1]
+                    string = string[2:]
+                    # up to two more octal digits
+                    for i in range(2):
+                        if string[0].isdigit():
+                            digits += string[0]
+                            string = string[1:]
+                        else:
+                            break
+                    output += chr(int(digits, 8))
                 else:
                     raise POSyntaxError(self._lineno,
                                         "unknown escape sequence %s"
@@ -879,15 +898,17 @@ class POParser(object):
         Throws an exception if the parser was in the
         middle of a message."""
         # handle remaining buffered data:
-        if self._pending_unichars:
-            logging.warning(POSyntaxWarning(
-                self._lineno, 'No newline at end of file'))
-            self.parse_line(self._pending_unichars)
-        if self._pending_chars:
-            if self.header:
-                logger.warning(POSyntaxWarning(
-                    self._lineno, 'Unconvertable data at end of file'))
-            else:
+        if self.header:
+            if self._pending_chars:
+                raise POInvalidInputError(self._lineno,
+                                          'could not decode input from %s'
+                                          % self.header.charset)
+            if self._pending_unichars:
+                logging.warning(POSyntaxWarning(
+                    self._lineno, 'No newline at end of file'))
+                self.parse_line(self._pending_unichars)
+        else:
+            if self._pending_chars:
                 logging.warning(POSyntaxWarning(
                     self._lineno, 'No newline at end of file'))
                 self.parse_line(self._pending_chars)

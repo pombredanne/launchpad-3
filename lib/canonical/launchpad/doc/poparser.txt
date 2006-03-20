@@ -62,6 +62,26 @@ Parsing a PO template:
   >>> print parser.messages[0].msgid
   Foo
 
+PO templates, and other PO files that do not specify their encoding,
+are parsed as ASCII text.  If they contain 8 bit characters, parsing
+errors occur:
+
+  >>> chunk2 = """
+  ... #:foo/bar.c:42
+  ... msgid "Bar"
+  ... msgstr "ab\xc5"
+  ... #:foo/baz.c:42
+  ... msgid "Baz"
+  ... msgstr "abcdef"
+  ... """
+
+  >>> parser = POParser()
+  >>> parser.write(content)
+  >>> parser.write(chunk2)
+  Traceback (most recent call last):
+    ...
+  POInvalidInputError: could not decode input from us-ascii
+
 
 Split Multibyte Sequences
 -------------------------
@@ -162,3 +182,30 @@ Verify that it still parses:
 
   >>> parser.messages[0].msgstr
   u'\u6210\u529f'
+
+
+Escape Characters in Strings
+----------------------------
+
+Message strings in PO files can contain C string escape sequences:
+
+  >>> content = """
+  ... msgid ""
+  ... msgstr ""
+  ... "POT-Creation-Date: 2004-05-11 20:22+0800\\n"
+  ... "PO-Revision-Date: 2004-05-11 20:22+0800\\n"
+  ... "Content-Type: text/plain; charset=UTF-8\\n"
+  ... "Content-Transfer-Encoding: 8bit\\n"
+  ... #: foo/bar.c: 42
+  ... msgid "Foo\\n"
+  ... "Bar\\n"
+  ... msgstr "\\a\\b\\v\\f\\t\\v\\\\\\"\\'\\n"
+  ... "\\70 \\070 \\0700 \\x70\\n"
+  ... """
+
+  >>> parser = POParser()
+  >>> parser.write(content)
+  >>> parser.finish()
+
+  >>> parser.messages[0].msgstr
+  u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n'
