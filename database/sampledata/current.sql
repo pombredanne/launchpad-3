@@ -495,6 +495,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -3101,6 +3107,20 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
+
+
+ALTER TABLE personalpackagearchive DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE personalpackagearchive ENABLE TRIGGER ALL;
+
+
+ALTER TABLE personalsourcepackagepublication DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE personalsourcepackagepublication ENABLE TRIGGER ALL;
 
 
 ALTER TABLE personlabel DISABLE TRIGGER ALL;
@@ -6407,6 +6427,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (3, 'netapplet', 'Main translation domain for netapplet', 'This is the description about netapplet''s POTemplateName', 'netapplet');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (4, 'pkgconf-mozilla', 'pkgconf-mozilla', NULL, 'pkgconf-mozilla');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (5, 'evolution-2.2-test', 'Another template for Evolution', NULL, 'evolution-2.2-test');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (6, 'alsa-utils', 'Alsa Utils', NULL, 'alsa-utils');
 
 
 ALTER TABLE potemplatename ENABLE TRIGGER ALL;

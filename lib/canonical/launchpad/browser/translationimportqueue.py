@@ -63,13 +63,27 @@ class TranslationImportQueueEntryView(GeneralFormView):
     def initial_values(self):
         """Initialize some values on the form, when it's possible."""
         field_values = {}
+        # Fill the know values.
         if self.context.sourcepackagename is not None:
             field_values['sourcepackagename'] = self.context.sourcepackagename
-        (language, variant) = self.context.guessed_language_and_variant
-        if language is not None:
-            field_values['language'] = language
-        if variant is not None:
-            field_values['variant'] = variant
+        if self.context.potemplate is not None:
+            field_values['potemplatename'] = (
+                self.context.potemplate.potemplatename.name)
+        if self.context.pofile is not None:
+            field_values['language'] = self.context.pofile.language
+            field_values['variant'] = self.context.pofile.variant
+        else:
+            # We try to guess the values.
+            (language, variant) = self.context.guessed_language_and_variant
+            if language is not None:
+                field_values['language'] = language
+                # Need to warn the user that we guessed the language information.
+                self.request.response.addWarningNotification(
+                    "Review the language selection as we guessed it and could"
+                    " not be accurated.")
+            if variant is not None:
+                field_values['variant'] = variant
+
         return field_values
 
     def initialize(self):
