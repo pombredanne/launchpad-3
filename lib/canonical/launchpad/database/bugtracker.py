@@ -8,8 +8,7 @@ import urllib
 from zope.interface import implements
 
 from sqlobject import (
-        ForeignKey, StringCol, MultipleJoin, RelatedJoin, SQLObjectNotFound
-        )
+    ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
 from canonical.launchpad.helpers import shortlist
@@ -41,22 +40,24 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     contactdetails = StringCol(notNull=False)
-    watches = MultipleJoin('BugWatch', joinColumn='bugtracker',
-        orderBy='remotebug')
     projects = RelatedJoin('Project', intermediateTable='ProjectBugTracker',
         joinColumn='bugtracker', otherColumn='project',
         orderBy='name')
 
     @property
-    def watches(self):
-        """See IBugTracker"""
-        return BugWatch.selectBy(bugtrackerID=self.id, orderBy="remotebug")
-
-    @property
     def latestwatches(self):
         """See IBugTracker"""
-        return BugWatch.selectBy(
-            bugtrackerID=self.id, orderBy="-datecreated")[:10]
+        return self.watches[:10]
+
+    @property
+    def watches(self):
+        """See IBugTracker"""
+        # XXX: this should move back to being an SQLMultipleJoin as soon
+        # as prejoins works there.
+        #   -- kiko, 2006-03-16
+        bugwatches = BugWatch.selectBy(bugtrackerID=self.id, 
+            orderBy=["-BugWatch.datecreated"])
+        return bugwatches.prejoin(["bug"])
 
     def getBugsWatching(self, remotebug):
         """See IBugTracker"""

@@ -322,7 +322,7 @@ class POHeader(dict, POMessage):
         POMessage.__init__(self, **kw)
         self._casefold = {}
         self.header = self
-        self.charset = kw.get('charset', 'utf8')
+        self.charset = kw.get('charset', 'UTF-8')
         self.messages = kw.get('messages', [])
         self.nplurals = None
         self.pluralExpr = '0'
@@ -364,7 +364,7 @@ class POHeader(dict, POMessage):
         if 'content-type' not in self:
             logging.warning(POSyntaxWarning(
                 msg='PO file header entry has no content-type field'))
-            self['Content-Type'] = 'text/plain; charset=us-ascii'
+            self['Content-Type'] = 'text/plain; charset=ASCII'
 
     def _decode(self, v):
         try:
@@ -424,7 +424,7 @@ class POHeader(dict, POMessage):
                 if parts['charset'] != 'CHARSET':
                     self.charset = parts['charset']
                 else:
-                    self.charset = 'us-ascii'
+                    self.charset = 'ASCII'
             # Convert attributes to unicode
             for attr in ('msgid', 'msgstr', 'commentText', 'sourceComment'):
                 v = getattr(self, attr)

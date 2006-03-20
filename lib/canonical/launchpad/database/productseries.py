@@ -14,7 +14,7 @@ from warnings import warn
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
+from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -75,9 +75,9 @@ class ProductSeries(SQLBase):
     dateprocessapproved = UtcDateTimeCol(default=None)
     datesyncapproved = UtcDateTimeCol(default=None)
 
-    releases = MultipleJoin('ProductRelease', joinColumn='productseries',
+    releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])
-    packagings = MultipleJoin('Packaging', joinColumn='productseries',
+    packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
 
     @property

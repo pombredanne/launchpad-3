@@ -315,10 +315,6 @@ COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set 
 
 -- POTemplate
 COMMENT ON TABLE POTemplate IS 'This table stores a pot file for a given product.';
-COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself encoded as a base64 string.';
-COMMENT ON COLUMN POTemplate.rawimporter IS 'The person that attached the rawfile.';
-COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was attached.';
-COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackage name from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
@@ -337,10 +333,6 @@ COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain na
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
-COMMENT ON COLUMN POFile.rawfile IS 'The Library file alias of the PO file as imported.';
-COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the raw file.';
-COMMENT ON COLUMN POFile.daterawimport IS 'The date when the raw file was attached.';
-COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the RosettaImportStatus schema.';
 COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
@@ -538,6 +530,8 @@ COMMENT ON COLUMN DistroReleaseQueue.status IS 'This is an integer field contain
 COMMENT ON COLUMN DistroReleaseQueue.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
 
 COMMENT ON COLUMN DistroReleaseQueue.pocket IS 'This is the pocket the upload is targeted at.';
+
+COMMENT ON COLUMN DistroReleaseQueue.changesfile IS 'The changes file associated with this upload.';
 
 -- DistroReleaseQueueSource
 COMMENT ON TABLE DistroReleaseQueueSource IS 'An upload queue source package. This table stores information pertaining to the source files in an in-progress package upload.';
@@ -1268,7 +1262,46 @@ COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp whe
 COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueueEntry.is_blocked IS 'If this flag is set, the row should be blocked and not imported.';
 COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
 COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
+COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
+COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
+
+
+-- PersonalPackageArchive
+COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';
+COMMENT ON COLUMN PersonalPackageArchive.person IS 'Owner of this personal archive.';
+COMMENT ON COLUMN PersonalPackageArchive.distrorelease IS 'Target Distrorelease for this personal archive.';
+COMMENT ON COLUMN PersonalPackageArchive.packages IS 'Cache of the generated Packages file.';
+COMMENT ON COLUMN PersonalPackageArchive.sources IS 'Cache of the generated Sources file.';
+COMMENT ON COLUMN PersonalPackageArchive.release IS 'Cache of the generated Release file.';
+COMMENT ON COLUMN PersonalPackageArchive.release_gpg IS 'Cache of the detached GPG signature of the cached Release file.';
+COMMENT ON COLUMN PersonalPackageArchive.datelastupdated IS 'Time when cache of the archive files was last updated.';
+
+-- PersonalSourcepackagePublication
+COMMENT ON TABLE PersonalSourcePackagePublication IS 'Contains the information about which sourcepackagerelease is included in a Personal Package Archive.';
+COMMENT ON COLUMN PersonalSourcePackagePublication.personalpackagearchive IS 'Target Personal Package Archive.';
+COMMENT ON COLUMN PersonalSourcePackagePublication.sourcepackagerelease IS 'Target Sourcepackagerelease.';
+
+
+-- Component
+COMMENT ON TABLE Component IS 'Known components in Launchpad';
+COMMENT ON COLUMN Component.name IS 'Component name text';
+
+
+-- Section
+COMMENT ON TABLE Section IS 'Known sections in Launchpad';
+COMMENT ON COLUMN Section.name IS 'Section name text';
+
+
+-- ComponentSelection
+COMMENT ON TABLE ComponentSelection IS 'Allowed components in a given distrorelease.';
+COMMENT ON COLUMN ComponentSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON COLUMN ComponentSelection.component IS 'Refers to the component in qestion.';
+
+
+-- SectionSelection
+COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distrorelease.';
+COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';

@@ -1,4 +1,5 @@
 <div class="builds_list" tal:condition="not: view/setupBuildList">
+  <tal:batch define="batch view/batchnav/currentBatch">
 
      <table>
        <tr>
@@ -37,12 +38,12 @@
      </table>
 
      <tal:navigation
-          replace="structure view/batchnav/@@+navigation-links"
-          tal:condition="view/batch"/>
+          tal:condition="batch"
+          replace="structure view/batchnav/@@+navigation-links" />
 
-  <table class="listing" tal:condition="view/batch">
+  <table class="listing" tal:condition="batch">
     <tbody>
-      <tal:batch repeat="build view/batch">
+      <tal:batch repeat="build batch">
         <tr>
           <td class="left icon">
             <img tal:attributes="
@@ -62,6 +63,18 @@
             Requested
             <tal:requested
               content="build/datecreated/fmt:datetime"
+            />
+            in pocket <tal:buildpocket
+              content="build/pocket/name"
+            />
+          </td>
+        </tr>
+        <tr class="secondary" tal:condition="build/dependencies">
+          <td></td>
+          <td>
+	    Missing Dependencies
+            <tal:dependencies
+              content="build/dependencies"
             />
           </td>
         </tr>
@@ -104,14 +117,15 @@
     </tbody>
   </table>
 
-      <div tal:condition="not: view/batch">
+      <div tal:condition="not: batch">
         <img src="/@@/alert" />
-        No <span tal:replace="view/state"/> builds for
-        <span tal:replace="context/title"/>.
+        No <span tal:replace="view/state" /> builds for
+        <span tal:replace="context/title" />.
       </div>
 
       <tal:navigation
-           replace="structure view/batchnav/@@+navigation-links"
-           tal:condition="view/batch"/>
+           tal:condition="batch"
+           replace="structure view/batchnav/@@+navigation-links" />
 
+  </tal:batch>
 </div>

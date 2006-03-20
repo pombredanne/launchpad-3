@@ -1,0 +1,77 @@
+TranslationImportQueue
+======================
+
+The translation import queue is the place where the new translation imports
+end before being imported into Rosetta.
+
+
+TranslationImportQueueEntry
+===========================
+
+The TranslationImportQueueEntry is an entry of the queue that will be imported
+into Rosetta.
+
+guess_pofile
+------------
+
+This property gives us the IPOFile where we think we should import this entry.
+
+To test it, we need to add an entry to the queue.
+
+Here we have some imports and utility fetch.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.database import ProductSeries
+    >>> from canonical.launchpad.database import DistroRelease
+    >>> from canonical.launchpad.database import SourcePackageName
+    >>> translationimportqueue = getUtility(ITranslationImportQueue)
+    >>> rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+First, we are going to try to do the guess against the Evolution product. That
+means that we are going to use the ProductSeries.id = 3
+
+    >>> evolution_productseries = ProductSeries.get(3)
+
+Attach the file to the product series, without associate it with any potemplate.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/sr.po', 'foo', True, rosetta_expert,
+    ...      productseries=evolution_productseries)
+
+This entry has no information about the IPOFile where it should be attached to:
+
+    >>> entry.import_into == None
+    True
+
+And the guessing algorithm will not be able to guess anything as there is no
+IPOFiles on the same path and we have two IPOTemplates on the same path where
+this IPOFile is located ('po/')
+
+    >>> entry.guess_pofile == None
+    True
+
+Now let's try the same against the evolution sourcepackage that only has an
+IPOTemplate.
+
+    >>> hoary_distrorelease = DistroRelease.get(3)
+    >>> evolution_sourcepackagename = SourcePackageName.get(9)
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/sr.po', 'foo', True, rosetta_expert,
+    ...      distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=evolution_sourcepackagename)
+
+This entry has no information about the IPOFile where it should be attached to:
+
+    >>> entry.import_into == None
+    True
+
+And the guessing algorithm is able to give us an IPOFile where it should be
+imported.
+
+    >>> entry.guess_pofile == None
+    False
+
+    >>> entry.guess_pofile.title
+    u'Serbian (sr) translation of evolution-2.2 in Ubuntu Hoary package "evolution"'
