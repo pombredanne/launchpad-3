@@ -1,14 +1,4 @@
-<p
-  class="portalMessage"
-  tal:define="status view/process_form"
-  tal:condition="status"
-  tal:content="status"
-/>
-<div class="portalError"
-  tal:repeat="top_of_page_error view/top_of_page_errors"
-  tal:content="structure top_of_page_error">
-  Schema validation errors.
-</div>
+<tal:process define="status view/process_form" />
 <p tal:condition="context/bug/duplicateof" class="portalMessage">
   This bug is a duplicate of
   <a
@@ -24,7 +14,7 @@
   <p
     tal:define="errors view/errors|nothing"
     tal:condition="errors"
-    class="portalMessage"
+    class="error message"
     i18n:translate=""
   >
     There are
@@ -166,7 +156,7 @@
     </div>
   </div>
   <div class="field">
-    <div tal:attributes="class python:view.comment_on_change_error and 'portalError' or ''">
+    <div tal:attributes="class python:view.comment_on_change_error and 'error' or ''">
       <label for="comment_on_change">Comment on this change (optional)</label>
       <textarea
         cols="62"
@@ -175,13 +165,12 @@
         rows="4"
         tal:content="request/comment_on_change|nothing"
       ></textarea>
+      <div
+        tal:condition="view/comment_on_change_error"
+        class="message"
+        tal:content="view/comment_on_change_error"
+      >An error on comment on change.</div>
     </div>
-    <tal:haserror condition="view/comment_on_change_error">
-      <img src="/@@/info_icon.gif" />
-      <span class="error" tal:content="view/comment_on_change_error">
-        An error on comment on change.
-      </span>
-    </tal:haserror>
   </div>
   <div class="actions" tal:condition="context/required:launchpad.Edit">
     <input

@@ -562,16 +562,6 @@ ins {
    margin: 1em 0 0 0; 
 }
 
-.error {
-    /* Class for error indication in forms */
-    background-color: #ffce7b;
-    border: 1px solid #ffa500;
-    padding: 1em;
-    margin: 0 0 1em 0;
-    width: 95% !important;
-}
-
-
 .discreet {
     color: #76797c;
     font-size: 85%;
@@ -1190,6 +1180,9 @@ dl.faq ol {
     margin: 0.5em 3em;
 }
 
+.error, .warning, .informational {
+  padding: 0.5em;
+}
 .message {
   background: 5px 0.5em no-repeat;
   font-size: smaller;
@@ -1198,26 +1191,25 @@ dl.faq ol {
   padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
 }
 .error .message, .warning .message, .informational .message {
-  margin: 0;
-  padding: 0;
+  margin: 0.25em 0 0;
+  padding: 0 0 0 25px;
+  background: 0 0 no-repeat;
 }
-.error {
-  background-color: #f0cccc;
+.error {background-color: #f0cccc; color: black;}
+.error.message, .error .message {
   background-image: url(/@@/stop);
-  color: black;
 }
-.warning {
-  background-color: #fcdd99;
+.warning {background-color: #fcdd99; color: black;}
+.warning.message, .warning .message {
   background-image: url(/@@/alert_icon.gif);
 }
-.informational {
-  background-color: #fcfc99;
+.informational {background-color: #fcfc99; color: black;}
+.informational.message, .informational .message {
   background-image: url(/@@/info_icon.gif);
 }
 
 /*
 Things to get rid of:
-<span class="error">
 .portalError
 .portalMessage
 .notice-notification,

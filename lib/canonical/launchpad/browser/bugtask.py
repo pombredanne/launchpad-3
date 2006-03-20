@@ -442,6 +442,7 @@ class BugTaskEditView(GeneralFormView):
             if not changed:
                 self.comment_on_change_error = (
                     "You provided a change comment without changing anything.")
+                self.errors.append(self.comment_on_change_error)
                 # Pass the comment_on_change_error as a list here, because
                 # WidgetsError expects a list of errors.
                 raise WidgetsError([self.comment_on_change_error])
