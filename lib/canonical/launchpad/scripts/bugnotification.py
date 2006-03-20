@@ -4,8 +4,9 @@
 
 __metaclass__ = type
 
-import email
+import time
 from email.MIMEText import MIMEText
+from email.Utils import formatdate
 
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
@@ -22,10 +23,11 @@ def construct_email_notification(bug_notifications):
     The person and bug has to be the same for all notifications, and
     there can be only one comment.
     """
-    bug = bug_notifications[0].bug
-    person = bug_notifications[0].message.owner
-    msgid = bug_notifications[0].message.rfc822msgid
-    subject = bug_notifications[0].message.subject
+    first_notification = bug_notifications[0]
+    bug = first_notification.bug
+    person = first_notification.message.owner
+    msgid = first_notification.message.rfc822msgid
+    subject = first_notification.message.subject
     comment = None
 
     notified_addresses = bug.notificationRecipientAddresses()
@@ -87,14 +89,16 @@ def construct_email_notification(bug_notifications):
         'bug_title': bug.title,
         'bug_url': canonical_url(bug)}
 
-    # Set the references header.
+    # Set the references and date header.
     if comment:
+        email_date = comment.datecreated
         references = []
         reference = comment.parent
         while reference is not None:
             references.insert(0, reference.rfc822msgid)
             reference = reference.parent
     else:
+        email_date = first_notification.message.datecreated
         references = []
     if bug.initial_message.rfc822msgid not in references:
         references.insert(0, bug.initial_message.rfc822msgid)
@@ -105,6 +109,7 @@ def construct_email_notification(bug_notifications):
     msg['Reply-To'] = get_bugmail_replyto_address(bug)
     msg['References'] = ' '.join(references)
     msg['Sender'] = config.bounce_address
+    msg['Date'] = formatdate(time.mktime(email_date.utctimetuple()))
     msg['Message-Id'] = msgid
     msg['Subject'] = "[Bug %d] %s" % (bug.id, subject)
 
@@ -112,10 +117,10 @@ def construct_email_notification(bug_notifications):
     for bugtask in bug.bugtasks:
         msg['X-Launchpad-Bug'] = bugtask.asEmailHeaderValue()
 
-    return notified_addresses, msg
+    return bug_notifications, notified_addresses, msg
 
 
-def get_email_notifications(bug_notifications):
+def get_email_notifications(bug_notifications, date_emailed=None):
     """Return the email notifications pending to be sent."""
     bug_notifications = list(bug_notifications)
     while bug_notifications:
@@ -131,6 +136,8 @@ def get_email_notifications(bug_notifications):
         has_comment = False
         notifications_to_send = []
         for notification in person_bug_notifications:
+            if date_emailed is not None:
+                notification.date_emailed = date_emailed
             if notification.is_comment and has_comment:
                 yield construct_email_notification(notifications_to_send)
                 has_comment = False

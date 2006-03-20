@@ -8,8 +8,8 @@ adding a comment to a bug:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> ten_minutes_ago = (
-    ...     datetime.now(pytz.timezone('UTC')) - timedelta(minutes=10))
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> ten_minutes_ago = now - timedelta(minutes=10)
     >>> from canonical.launchpad.interfaces import IBugNotificationSet
     >>> len(getUtility(IBugNotificationSet).getNotificationsToSend())
     0
@@ -39,9 +39,9 @@ list of emails to send:
 
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
-    >>> for to_addresses, email_notification in get_email_notifications(
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     notifications):
-    ...     print_notification(to_addresses, email_notification)
+    ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
@@ -92,9 +92,9 @@ Let's add a few changes and see how it looks like:
     >>> len(pending_notifications)
     2
 
-    >>> for to_addresses, email_notification in get_email_notifications(
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
-    ...     print_notification(to_addresses, email_notification)
+    ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
@@ -128,9 +128,9 @@ the constructed email:
 Notice how the comment is in the top of the email, and the changes are
 in the order they were added:
 
-    >>> for to_addresses, email_notification in get_email_notifications(
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
-    ...     print_notification(to_addresses, email_notification)
+    ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
@@ -149,7 +149,7 @@ in the order they were added:
       Firefox does not support SVG
       http://localhost:8086/malone/bugs/1
 
-If we insert yet another comment, it will be sent as a separate email:
+If we insert yet another comment, it will be sent as a separate email.
 
     >>> new_comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'another comment.', sample_person,
@@ -160,9 +160,9 @@ If we insert yet another comment, it will be sent as a separate email:
     >>> len(pending_notifications)
     6
 
-    >>> for to_addresses, email_notification in get_email_notifications(
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
-    ...     print_notification(to_addresses, email_notification)
+    ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
@@ -216,9 +216,9 @@ change in between, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for to_addresses, email_notification in get_email_notifications(
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
-    ...     print_notification(to_addresses, email_notification)
+    ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
@@ -322,9 +322,9 @@ well:
     >>> len(pending_notifications)
     8
 
-    >>> for to_addresses, email_notification in get_email_notifications(
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
-    ...     print_notification(to_addresses, email_notification)
+    ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
@@ -376,7 +376,7 @@ well:
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
 
-    >>> sorted(email_notification.get_all('X-Launchpad-Bug'))
+    >>> sorted(email.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; sourcepackage=mozilla-firefox; component=None;...',
      u'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
      u'product=firefox; status=Unconfirmed; priority=Wontfix;...']
@@ -408,9 +408,9 @@ initial message of the bug, it will result in a bug filed notification:
     >>> len(notifications)
     1
 
-    >>> for to_addresses, email_notification in get_email_notifications(
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     notifications):
-    ...     print_notification(to_addresses, email_notification)
+    ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 10] subject
@@ -449,9 +449,9 @@ top of the email:
     >>> len(notifications)
     1
 
-    >>> for to_addresses, email_notification in get_email_notifications(
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     notifications):
-    ...     print_notification(to_addresses, email_notification)
+    ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 10] subject
@@ -467,3 +467,99 @@ top of the email:
 
 Also note that notification was sent to Mark as well, since he's a
 subscriber of bug one.
+
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+The cronscript
+--------------
+
+There's a cronsript which does the sending of the email. Let's add a
+few notifications to show that it works.
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+    >>> bug_one.addChangeNotification(
+    ...     '** Summary changed to: New summary.', sample_person,
+    ...     when=ten_minutes_ago)
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'another comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+    >>> bug_one.addChangeNotification(
+    ...     '** Summary changed to: Old summary.', sample_person,
+    ...     when=ten_minutes_ago)
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_two.addCommentNotification(comment)
+    >>> bug_two.addChangeNotification(
+    ...     '** Summary changed to: New summary.', sample_person,
+    ...     when=ten_minutes_ago)
+
+    >>> notifications = getUtility(IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    6
+
+We need to commit the transaction so that the cronscript will see the
+notifications.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+Now, let's run the cronscript and look at the output. Passing -v to it
+makes it write out the emails it sends.
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/send-bug-notifications.py -v', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> process.returncode
+    0
+    >>> print err
+    INFO creating lockfile
+    INFO    Notifying test@canonical.com about bug 2.
+    INFO    Notifying dilys@muse.19inch.net about bug 2.
+    ...
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 2 <2@bugs.launchpad.net>
+    ...
+    a comment.
+    <BLANKLINE>
+    ** Summary changed to: New summary.
+    ...
+    INFO    Notifying mark@hbd.com about bug 1.
+    INFO    Notifying test@canonical.com about bug 1.
+    INFO    Notifying dilys@muse.19inch.net about bug 1.
+    ...
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    ...
+    a comment.
+    <BLANKLINE>
+    ** Summary changed to: New summary.
+    ...
+    INFO    Notifying mark@hbd.com about bug 1.
+    INFO    Notifying test@canonical.com about bug 1.
+    INFO    Notifying dilys@muse.19inch.net about bug 1.
+    ...
+    From: Sample Person <test@canonical.com>
+    Reply-To: Bug 1 <1@bugs.launchpad.net>
+    ...
+    another comment.
+    <BLANKLINE>
+    ** Summary changed to: Old summary.
+    ...
+
+
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
