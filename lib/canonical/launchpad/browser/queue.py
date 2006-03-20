@@ -92,4 +92,6 @@ class QueueItemsView(LaunchpadView):
 
         flush_database_updates()
 
-        return "<br>".join(success + failure)
+        report = '%s result<br>%s'% (action.upper(),
+                                     '<br>'.join(success + failure))
+        return report

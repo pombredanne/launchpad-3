@@ -9,7 +9,7 @@
        <tr>
          <th><label>Queue state and name:</label></th>
          <td>
-          <form name="queue_items_state" action="" method="GET">
+          <form name="queue_items_state" action="" method="POST">
 
           <select title="Queue state" name="queue_state" size="1">
 
