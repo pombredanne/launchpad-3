@@ -706,7 +706,7 @@ class POParser(object):
         self._convert_chars()
 
     def _parse_quoted_string(self, string):
-        """Parse a quoted string, interpreting escape sequences.
+        r"""Parse a quoted string, interpreting escape sequences.
 
           >>> parser = POParser()
           >>> parser._parse_quoted_string(u'\"abc\"')
