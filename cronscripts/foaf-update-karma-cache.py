@@ -65,9 +65,34 @@ def update_karma_cache():
 
     log.info("Got %d (person, category) scores", len(results))
 
+    # Get a list of categories, which we will need shortly.
+    categories = {}
+    cur.execute("SELECT id, name from KarmaCategory")
+    for id, name in cur.fetchall():
+        categories[id] = name
+
+    # Calculate normalization factor for each category. We currently have
+    # category bloat, where translators dominate the top karma rankings.
+    # By calculating a scaling factor automatically, this slant will be
+    # removed even as more events are added or scoring tweaked.
+    totals = {} # Total points per category
+    for person, category, points in results:
+        try:
+            totals[category] += points
+        except KeyError:
+            totals[category] = points
+    largest_total = max(totals.values())
+    scaling = {} # Scaling factor to apply per category
+    for category, total in totals.items():
+        scaling[category] = float(largest_total) / float(total)
+        log.info('Scaling %s by a factor of %0.4f' % (
+            categories[category], scaling[category]
+            ))
+
     # Note that we don't need to commit each iteration because we are running
     # in autocommit mode.
     for person, category, points in results:
+        points *= scaling[category] # Scaled
         log.debug(
             "Setting person=%(person)d, category=%(category)d, "
             "points=%(points)d", vars()
