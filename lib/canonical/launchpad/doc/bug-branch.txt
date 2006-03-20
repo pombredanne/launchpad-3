@@ -32,11 +32,11 @@ BugBranch links a bug and a branch.
     ...  bug.bug_branches]
     [u'mozilla@arch.ubuntu.com_mozilla--release--0.9.2']
 
-By default, a branch is in the state BugBranchStatus.UNDERDEVELOPMENT.
+By default, a branch is in the state BugBranchStatus.INPROGRESS.
 
     >>> from canonical.lp.dbschema import BugBranchStatus
 
-    >>> bug_branch.status == BugBranchStatus.UNDERDEVELOPMENT
+    >>> bug_branch.status == BugBranchStatus.INPROGRESS
     True
 
 Trying to add a branch that is already linked to a bug will simply
@@ -54,6 +54,16 @@ You can check if a branch is linked to a bug:
     >>> bug_two = bugset.get(2)
     >>> bug_two.hasBranch(branch)
     False
+
+A bug branch also has an associated whiteboard, to allow the developer
+to specify things that may be of interest to others looking at that
+branch:
+
+    >>> branch = getUtility(IBranchSet).get(1)
+    >>> bug_branch_three = bug.addBranch(
+    ...     branch, "I should have this fixed today")
+    >>> bug_branch_three.whiteboard
+    u'I should have this fixed today'
 
 Bugs Related to Branches
 ------------------------

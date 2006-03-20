@@ -202,13 +202,14 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, status=None):
+    def addBranch(self, branch, whiteboard=None):
         """See canonical.launchpad.interfaces.IBug."""
         for bug_branch in shortlist(self.bug_branches):
             if bug_branch.branch == branch:
                 return bug_branch
 
-        return BugBranch(branch=branch, bug=self)
+        return BugBranch(
+            branch=branch, bug=self, whiteboard=whiteboard)
 
     def linkCVE(self, cve, user=None):
         """See IBug."""

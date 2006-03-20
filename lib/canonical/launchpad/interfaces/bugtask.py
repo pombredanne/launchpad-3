@@ -30,7 +30,7 @@ from canonical.lp import dbschema
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 
@@ -51,7 +51,7 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 
-class IBugTask(IHasDateCreated):
+class IBugTask(IHasDateCreated, IHasBug):
     """A description of a bug needing fixing in a particular product
     or package."""
     id = Int(title=_("Bug Task #"))

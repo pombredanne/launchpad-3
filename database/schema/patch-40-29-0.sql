@@ -6,7 +6,8 @@ CREATE TABLE BugBranch (
     bug INTEGER NOT NULL REFERENCES Bug(id),
     branch INTEGER NOT NULL REFERENCES Branch(id),
     fixed_in_revision_id INTEGER REFERENCES Revision(id),
-    status INTEGER NOT NULL);
+    status INTEGER NOT NULL,
+    whiteboard TEXT);
 
 ALTER TABLE BugBranch ADD CONSTRAINT bug_branch_unique UNIQUE (bug, branch);
 

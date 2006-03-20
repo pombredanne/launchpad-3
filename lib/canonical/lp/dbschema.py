@@ -723,30 +723,31 @@ class BugBranchStatus(DBSchema):
     """The status of a bugfix branch."""
 
     ABANDONED = Item(10, """
-        Abandoned
+        Abandoned Attempt
 
         This branch is no longer being worked on, and should no longer
         be considered to contain a useful fix for this bug.
         """)
 
-    UNDERDEVELOPMENT = Item(20, """
-        Under Development
+    INPROGRESS = Item(20, """
+        Fix In Progress
 
         Development to fix this bug is currently going on in this
         branch.
         """)
 
-    CONSIDEREDGOOD = Item(30, """
-        Considered Good
+    FIXAVAILABLE = Item(30, """
+        Fix Available
 
         This branch contains a potentially useful fix for this bug.
         """)
 
-    BESTAVAILABLE = Item(40, """
-        Best Available
+    BESTFIX = Item(40, """
+        Best Fix Available
 
         This branch contains a fix agreed upon by the community as
-        being the best available.
+        being the best available branch from which to merge to fix
+        this bug.
         """)
 
 

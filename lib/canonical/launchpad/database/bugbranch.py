@@ -26,4 +26,5 @@ class BugBranch(SQLBase):
     fixed_in_revision_id = StringCol(default=None)
     status = EnumCol(
         dbName="status", schema=BugBranchStatus, notNull=False,
-        default=BugBranchStatus.UNDERDEVELOPMENT)
+        default=BugBranchStatus.INPROGRESS)
+    whiteboard = StringCol(notNull=False, default=None)

@@ -151,6 +151,8 @@ bug_subscription = ContextId('Subscription to bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
+bugbranch_status = "Edit branch fix status"
+
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")

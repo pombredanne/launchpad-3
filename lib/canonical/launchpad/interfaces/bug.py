@@ -9,16 +9,16 @@ __all__ = [
     'IBug',
     'IBugSet',
     'IBugDelta',
-    'IBugAddForm',
-    ]
+    'IBugAddForm']
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    non_duplicate_bug, IMessageTarget, NotFoundError)
+from canonical.launchpad.interfaces.validation import non_duplicate_bug
+from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     ContentNameField, Title, Summary, BugField)

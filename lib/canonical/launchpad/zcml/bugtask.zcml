@@ -242,12 +242,12 @@
 
     <browser:generalform
         name="+addbranch"
-        schema="canonical.launchpad.interfaces.IBugBranchAddForm"
+        schema="canonical.launchpad.interfaces.IBugBranch"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugBranchAddView"
         label="Add a branch"
-        fields="branch comment"
-        keyword_arguments="branch comment"
+        fields="branch whiteboard"
+        keyword_arguments="branch whiteboard"
         permission="launchpad.AnyPerson"
         template="../templates/bug-branch-add.pt"
         lp:url="malone/bugs/$Bug.id/+addbranch" />

@@ -45,7 +45,8 @@
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
 
-  <div class="portalMessage" tal:condition="not:view/isReportedInContext" 
+  <div class="portalMessage"
+       tal:condition="not:view/isReportedInContext"
        style="margin-bottom: 1em">
 
         <form name="alsooccursin" method="POST">
@@ -89,35 +90,36 @@
 
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
-    <strong>Branches:</strong>
+    <strong>Related Branches</strong>
     <div tal:condition="context/bug/private"
-         style="background-color: red; color: white; padding: 5px">
+         class="portalMessage">
       Warning: If any of the branches below are hosted by Launchpad,
       they are publically accessible, and therefore should not be used
       to fix private bugs!
     </div>
 
-    <ul class="branch">
-      <li tal:repeat="bug_branch bug_branches">
-        <a href="#"
-           tal:content="bug_branch/branch/name"
-           tal:attributes="href bug_branch/branch/fmt:url">
-          malone-smallfixes
-        </a>
-        <div>
-        <tal:editwidget tal:condition="view/user">
-          <select tal:attributes="name string:branch.${bug_branch/id}.status">
-            <option tal:repeat="branch_status_term view/getBranchStatusVocabulary"
-                    tal:content="branch_status_term/token"
-                    tal:attributes="selected python:branch_status_term.value == bug_branch.status"></option>
-          </select>
-        </tal:editwidget>
-        <tal:displayvalue tal:condition="not:view/user"
-                          tal:content="bug_branch/status/title">
-        </tal:displayvalue>
-        </div>
-      </li>
-    </ul>
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>Bugfix Status</th>
+          <th>Developer</th>
+          <th>Fix Revision</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bug_branch bug_branches">
+          <td>
+            <a href="#"
+               tal:attributes="href string:${bug_branch/fmt:url}/+status"
+               tal:content="bug_branch/status/title">
+              Under Development
+            </a>
+          </td>
+          <td tal:content="bug_branch/branch/owner/displayname"></td>
+          <td tal:content="bug_branch/fixed_in_revision_id"></td>
+        </tr>
+      </tbody>
+    </table>
   </tal:branches>
 
   <tal:message repeat="message context/bug/messages">
@@ -159,9 +161,8 @@
           <input name="subject" type="text" size="50"
                  tal:attributes="value context/bug/followup_subject" /><br />
           <b>Comment:</b> <textarea name="comment" rows="10"></textarea>
+          <input type="submit" name="save" value="Add Comment" />
     </fieldset>
-    <br />
-    <input type="submit" name="save" value="Confirm Changes" />
   </tal:logged-in>
   <tal:not-logged-in condition="not: request/lp:person">
     <div align="center">
