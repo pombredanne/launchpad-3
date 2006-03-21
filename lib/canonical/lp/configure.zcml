@@ -3,7 +3,8 @@
     xmlns:browser="http://namespaces.zope.org/browser">
 
   <class class="canonical.lp.dbschema.Item">
-      <allow attributes="name title value description schema __sqlrepr__" />
+      <allow attributes="name title value description schema
+                         sortkey __sqlrepr__" />
   </class>
 
   <browser:pages for="*" permission="zope.Public" >

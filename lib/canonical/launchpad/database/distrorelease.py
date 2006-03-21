@@ -18,6 +18,8 @@ from sqlobject import (
     StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
     RelatedJoin)
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import (quote_like, SQLBase, sqlvalues,
     flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -116,39 +118,61 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     @property
     def packagings(self):
-        packagings = list(Packaging.selectBy(distroreleaseID=self.id))
-        packagings.sort(key=lambda a:a.sourcepackagename.name)
+        # We join through sourcepackagename to be able to ORDER BY it,
+        # and this code also uses prejoins to avoid fetching data later
+        # on.
+        # XXX: it would be ideal to prejoin on productseries.product
+        # when it becomes possible, avoiding another host of queries in
+        # distrorelease-packaging -- kiko, 2006-03-16
+        packagings = Packaging.select(
+            "Packaging.sourcepackagename = SourcePackageName.id "
+            "AND DistroRelease.id = Packaging.distrorelease "
+            "AND DistroRelease.id = %d" % self.id,
+            prejoinClauseTables=["SourcePackageName", "DistroRelease"],
+            clauseTables=["SourcePackageName", "DistroRelease"],
+            prejoins=["productseries"],
+            orderBy=["SourcePackageName.name"]
+            )
         return packagings
 
     @property
     def distroreleaselanguages(self):
-        result = DistroReleaseLanguage.selectBy(distroreleaseID=self.id)
-        return sorted(result, key=lambda a: a.language.englishname)
+        result = DistroReleaseLanguage.select(
+            "DistroReleaseLanguage.language = Language.id "
+            "AND DistroReleaseLanguage.distrorelease = %d" % self.id,
+            prejoinClauseTables=["Language"],
+            clauseTables=["Language"],
+            prejoins=["distrorelease"],
+            orderBy=["Language.englishname"])
+        return result
 
     @property
     def translatable_sourcepackages(self):
         """See IDistroRelease."""
-        result = SourcePackageName.select("""
+        query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
-            POTemplate.distrorelease = %s
-            """ % sqlvalues(self.id),
-            clauseTables=['POTemplate'],
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
+        result = SourcePackageName.select(query, clauseTables=['POTemplate'],
             orderBy=['name'])
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
-    @property
+    @cachedproperty('_previous_releases_cached')
     def previous_releases(self):
         """See IDistroRelease."""
+        # This property is cached because it is used intensely inside
+        # sourcepackage.py; avoiding regeneration reduces a lot of
+        # count(*) queries.
         datereleased = self.datereleased
         # if this one is unreleased, use the last released one
         if not datereleased:
             datereleased = 'NOW'
-        return DistroRelease.select('''
+        results = DistroRelease.select('''
                 distribution = %s AND
                 datereleased < %s
                 ''' % sqlvalues(self.distribution.id, datereleased),
                 orderBy=['-datereleased'])
+        return list(results)
 
     @property
     def parent(self):

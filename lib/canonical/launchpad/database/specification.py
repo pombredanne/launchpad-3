@@ -325,23 +325,25 @@ class Specification(SQLBase):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def all_deps(self, higher=[]):
+    def all_deps(self, higher=None):
+        if higher is None:
+            higher = []
         deps = set(higher)
         for dep in self.dependencies:
             if dep not in deps:
                 deps.add(dep)
                 deps = deps.union(dep.all_deps(higher=deps))
-        return sorted(deps, key=lambda a: (a.status, a.priority,
-            a.title))
+        return sorted(deps, key=lambda s: (s.status, s.priority, s.title))
 
-    def all_blocked(self, higher=[]):
+    def all_blocked(self, higher=None):
+        if higher is None:
+            higher = []
         blocked = set(higher)
         for block in self.blocked_specs:
             if block not in blocked:
                 blocked.add(block)
                 blocked = blocked.union(block.all_blocked(higher=blocked))
-        return sorted(blocked, key=lambda a: (a.status, a.priority,
-            a.title))
+        return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
 
 class SpecificationSet:
