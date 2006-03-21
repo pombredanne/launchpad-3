@@ -2,6 +2,8 @@
 # 
 # arch-tag: fbcb5758-d345-4610-8e57-8cc664a376bc
 
+from canonical.encoding import guess as guess_encoding, ascii_smash
+
 from canonical.archivepublisher.tagfiles import TagFileParseError
 
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):
@@ -172,3 +174,15 @@ contains '.' or ',', (1) and (2) are switched to 'email (name)' format."""
     return (rfc822_maint, rfc2047_maint, name, email)
 
 
+def safe_fix_maintainer(content, fieldname):
+    """Wrapper for fix_maintainer() to handle unicode and string argument.
+
+    It verifies the content type and transform it in a unicode with guess()
+    before call ascii_smash(). Then we can safelly call fix_maintainer().
+    """
+    if type(content) != unicode:
+        content = guess_encoding(content)
+
+    content = ascii_smash(content)
+
+    return fix_maintainer(content, fieldname)

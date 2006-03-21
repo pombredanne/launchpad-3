@@ -8,6 +8,7 @@ __all__ = [
     'BranchTargetView',
     ]
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import IPerson, IProduct
 from canonical.lp.dbschema import BranchLifecycleStatus
 
@@ -55,14 +56,14 @@ class BranchTargetView:
         which does have a IPerson.branches. In this case, it will also
         detect which set of branches you want to see. The options are:
 
-         - all branches (self.context.branches)
+         - all branches (self.branches)
          - authored by this person (self.context.authored_branches)
          - registered by this person (self.context.registered_branches)
          - subscribed by this person (self.context.subscribed_branches)
         """
         categories = {}
         if not IPerson.providedBy(self.context):
-            branches = self.context.branches
+            branches = self.branches
         else:
             url = self.request.getURL()
             if '+authoredbranches' in url:
@@ -72,7 +73,7 @@ class BranchTargetView:
             elif '+subscribedbranches' in url:
                 branches = self.context.subscribed_branches
             else:
-                branches = self.context.branches
+                branches = self.branches
         for branch in branches:
             if categories.has_key(branch.lifecycle_status):
                 category = categories[branch.lifecycle_status]
@@ -96,3 +97,10 @@ class BranchTargetView:
             BranchLifecycleStatus.NEW,
             ]
         return display_order.index(category['status'])
+
+    @cachedproperty
+    # A cache to avoid repulling data from the database, which can be
+    # particularly expensive
+    def branches(self):
+        return self.context.branches
+

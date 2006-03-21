@@ -57,6 +57,31 @@ If there isn't one, that should return None.
    >>> print SourcePackageRelease.get(20).productrelease
    None
 
+
+Check ISourcePackageRelease.override() behaviour:
+
+   >>> spr.component.name, spr.section.name
+   (u'main', u'editors')
+
+   >>> from canonical.launchpad.interfaces import (
+   ...     IComponentSet, ISectionSet)
+   >>> new_comp = getUtility(IComponentSet)['universe']
+   >>> new_sec = getUtility(ISectionSet)['mail']
+
+Override the current sourcepackagerelease with new component/section
+pair:
+
+   >>> spr.override(component=new_comp, section=new_sec)
+
+   >>> spr.component.name, spr.section.name
+   (u'universe', u'mail')
+
+Abort transaction to avoid error propagation of the new attributes:
+
+   >>> import transaction
+   >>> transaction.abort()
+
+
 Verify the 'meta_binary' attribute:
 
    >>> spr_test = SourcePackageRelease.get(20)
@@ -64,7 +89,7 @@ Verify the 'meta_binary' attribute:
    u'pmount'
 
    >>> from canonical.launchpad.interfaces import (
-   ...    IDistroReleaseBinaryPackage) 
+   ...    IDistroReleaseBinaryPackage)
 
    >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
    True
@@ -130,9 +155,13 @@ Before the upload, the queue should be empty.
    >>> len(translation_import_queue)
    0
 
-Now we do the upload.
+Now we do the upload. It's necessary to retrive an ILibraryFileAlias
+correspondent to the alias (long) we already have.
 
-   >>> spr_test.attachTranslationFiles(alias, True)
+   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+   >>> file_alias = getUtility(ILibraryFileAliasSet)[alias]
+
+   >>> spr_test.attachTranslationFiles(file_alias, True)
 
 The commit is needed to see the new entries
 
