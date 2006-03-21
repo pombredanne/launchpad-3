@@ -60,7 +60,7 @@ timeout by sleeping for 200ms with a 100ms statement timeout:
     >>> cursor.execute('SELECT sleep_for_testing(0.200)')
     Traceback (most recent call last):
       ...
-    RequestQueryTimedOut: ('SELECT sleep_for_testing(0.200)', 'ERROR:  canceling query due to user request\n\nSELECT sleep_for_testing(0.200)')
+    RequestStatementTimedOut: SELECT sleep_for_testing(0.200)
     >>> da.disconnect()
 
 
