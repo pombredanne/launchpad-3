@@ -104,8 +104,7 @@ Then he changes the poll's name from poll1 to poll2.
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/people/name18/+poll/poll2
-  ...
-  
+
 Now we check if poll2 is there.
 
   >>> print http(r"""

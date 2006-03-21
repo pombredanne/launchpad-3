@@ -37,12 +37,17 @@ You can run a single story by doing:
 
   ./test.py lib pagetests.$dirname
 
-The 'lib pagetests.' is a dead check that will be addressed at some point.
+The 'lib pagetests.' is a dead chicken that will be addressed at some point (bug
+#31287).
 
 Running a single page test is not supported except for the standalone pagetests
 which can be run individually:
 
-  ./test.py lib $testname.txt
+  ./test.py lib $testname-without-txt
+
+e.g.
+
+  ./test.py lib xx-bug-index
 
 This will run that and only that standalone pagetest.
 

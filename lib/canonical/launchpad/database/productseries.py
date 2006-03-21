@@ -14,7 +14,7 @@ from warnings import warn
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
+from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
 
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort)
+    SpecificationSort, SpecificationGoalStatus)
 
 
 class ProductSeries(SQLBase):
@@ -75,9 +75,9 @@ class ProductSeries(SQLBase):
     dateprocessapproved = UtcDateTimeCol(default=None)
     datesyncapproved = UtcDateTimeCol(default=None)
 
-    releases = MultipleJoin('ProductRelease', joinColumn='productseries',
+    releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])
-    packagings = MultipleJoin('Packaging', joinColumn='productseries',
+    packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
 
     @property
@@ -93,15 +93,12 @@ class ProductSeries(SQLBase):
         return sorted(result, key=lambda x: x.potemplatename.name)
 
     def getPOTemplate(self, name):
-        template = POTemplate.selectOne(
+        """See IProductSeries."""
+        return POTemplate.selectOne(
             "POTemplate.productseries = %s AND "
             "POTemplate.potemplatename = POTemplateName.id AND "
             "POTemplateName.name = %s" % sqlvalues(self.id, name),
-            clauseTables=['ProductRelease', 'POTemplateName'])
-
-        if template is None:
-            raise NotFoundError(name)
-        return template
+            clauseTables=['POTemplateName'])
 
     @property
     def title(self):
@@ -206,6 +203,17 @@ class ProductSeries(SQLBase):
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
+
+    def acceptSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.productseries = self
+        spec.goalstatus = SpecificationGoalStatus.ACCEPTED
+
+    def declineSpecificationGoal(self, spec):
+        """See ISpecificationGoal."""
+        spec.productseries = self
+        spec.goalstatus = SpecificationGoalStatus.DECLINED
+
 
 # XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
 # https://launchpad.net/products/launchpad/+bug/5247

@@ -1,5 +1,5 @@
-Distro Arch Release
-^^^^^^^^^^^^^^^^^^^
+Distro Arch Release Binary Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
   >>> from canonical.launchpad.database.binarypackagename import (
   ...     BinaryPackageName)
@@ -10,7 +10,8 @@ Distro Arch Release
   >>> hoary_i386 = DistroArchRelease.get(6)
   >>> pmount_name = BinaryPackageName.selectOneBy(name="pmount")
   >>> firefox_name = BinaryPackageName.selectOneBy(name="mozilla-firefox")
-  >>> pmount_hoary_i386 = DistroArchReleaseBinaryPackage(hoary_i386, pmount_name)
+  >>> pmount_hoary_i386 = DistroArchReleaseBinaryPackage(hoary_i386,
+  ...                                                    pmount_name)
 
 First, we create a new version of pmount, and a version of
 mozilla-firefox that coincides with pmount's. We're hitch-hiking on two
@@ -52,6 +53,7 @@ existing builds that are in sampledata!
   ...   copyright=None,
   ...   licence=None,
   ...   architecturespecific=False)
+
   >>> pe = SecureBinaryPackagePublishingHistory(
   ...   binarypackagerelease=bpr.id,
   ...   component=main_component.id,
@@ -70,7 +72,7 @@ existing builds that are in sampledata!
 
   >>> bpr = Build.get(9).createBinaryPackageRelease(
   ...   binarypackagename=firefox_name.id,
-  ...   version="0.1-1",
+  ...   version="120.6-0",
   ...   summary="Firefox loves lollies",
   ...   description="Lolly-pop loving application",
   ...   binpackageformat=binpackageformat,
@@ -89,6 +91,7 @@ existing builds that are in sampledata!
   ...   copyright=None,
   ...   licence=None,
   ...   architecturespecific=False)
+
   >>> pe = SecureBinaryPackagePublishingHistory(
   ...   binarypackagerelease=bpr.id,
   ...   component=main_component.id,
@@ -108,14 +111,27 @@ Then, we ensure that grabbing the current release of pmount and the old release
 both are sane.
 
   >>> current_release = pmount_hoary_i386.currentrelease
-  >>> print current_release.version
-  cr98.34
-  >>> print current_release.name
-  pmount
+  >>> current_release.version
+  u'cr98.34'
+  >>> current_release.name
+  u'pmount'
 
-  >>> old_release = pmount_hoary_i386["0.1-1"]
-  >>> print old_release.version
-  0.1-1
-  >>> print old_release.name
-  pmount
+  >>> old_release = pmount_hoary_i386['0.1-1']
+  >>> old_release.version
+  u'0.1-1'
+  >>> old_release.name
+  u'pmount'
+
+Check the publishing record of packages returned by 'currentrelease'
+and '__getitem__', they are different and in 'Published' state:
+
+  >>> current_pubrec = current_release.current_publishing_record
+  >>> (current_pubrec.id, current_pubrec.status.title,
+  ...  current_pubrec.distroarchrelease.architecturetag)
+  (16, 'Published', u'i386')
+
+  >>> old_pubrec = old_release.current_publishing_record
+  >>> (old_pubrec.id , old_pubrec.status.title,
+  ...  old_pubrec.distroarchrelease.architecturetag)
+  (12, 'Published', u'i386')
 

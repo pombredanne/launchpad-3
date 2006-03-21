@@ -11,7 +11,8 @@
        <!-- XXX cprov 20051027: we need a autobuild celebrity, bug #3580 -->
        <require
             permission="zope.Public"
-            set_attributes="buildlog datebuilt buildduration builder buildstate"/>
+            set_attributes="buildlog datebuilt buildduration builder
+                            buildstate dependencies"/>
     </content>
 
     <browser:defaultView 
@@ -40,16 +41,6 @@
         name="+index"
         facet="overview"
         template="../templates/build-index.pt"
-        />
-      <browser:page 
-        name="+changes"
-        facet="overview"
-        template="../templates/build-changes.pt"
-        />
-      <browser:page 
-        name="+buildlog"
-        facet="overview"
-        template="../templates/build-buildlog.pt"
         />
       <browser:page
         name="+portlet-binaries"

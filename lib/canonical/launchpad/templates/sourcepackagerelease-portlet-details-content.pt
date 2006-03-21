@@ -3,12 +3,12 @@
   distr*sourcepackagerelease classes
 </tal:comment>
 <b>Creator:</b>
-<img src="/++resource++user">
+<img src="/@@/user">
 <a tal:content="context/creator/browsername"
    tal:attributes="href context/creator/fmt:url">Foo Bar</a><br />
 
 <b>Maintainer:</b>
-<img src="/++resource++user">
+<img src="/@@/user">
 <a tal:content="context/maintainer/browsername"
    tal:attributes="href context/maintainer/fmt:url">Foo Bar</a><br />
 
@@ -29,5 +29,9 @@ are just the package defaults.
 </div>
 
 <b>Initially uploaded to:</b><br />
-<span tal:replace="context/uploaddistrorelease/displayname">Warty</span>
-<br />
+<a tal:content="context/uploaddistrorelease/distribution/displayname"
+   tal:attributes="href context/uploaddistrorelease/distribution/fmt:url"
+   >Ubuntu</a>
+<a tal:content="context/uploaddistrorelease/displayname"
+   tal:attributes="href context/uploaddistrorelease/fmt:url"
+   >Warty</a>

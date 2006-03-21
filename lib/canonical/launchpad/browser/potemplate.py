@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
-    'POTemplateAdminView', 'POTemplateAddView', 'POTemplateExportView',
+    'POTemplateAdminView', 'POTemplateExportView',
     'POTemplateSubsetURL', 'POTemplateURL', 'POTemplateSetNavigation',
     'POTemplateSubsetNavigation', 'POTemplateNavigation'
     ]
@@ -17,14 +17,13 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
-from zope.app.form.browser.add import AddView
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
-    IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
-    ILaunchBag, IPOFileSet, IPOTemplateSubset, ITranslationImportQueue)
+    ICanonicalUrlData, ILaunchpadCelebrities, ILaunchBag, IPOFileSet,
+    IPOTemplateSubset, ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -40,7 +39,7 @@ class POTemplateNavigation(Navigation):
     def traverse(self, name):
         user = getUtility(ILaunchBag).user
         if self.request.method in ['GET', 'HEAD']:
-            # IF it's just a query, get a real IPOFile or use a fake one so we
+            # If it's just a query, get a real IPOFile or use a fake one so we
             # don't create new IPOFiles just because someone is browsing the
             # web.
             return self.context.getPOFileOrDummy(name, owner=user)
@@ -90,6 +89,10 @@ class POTemplateAppMenus(POFileAppMenus):
         text = 'Download Translations'
         return Link('+export', text, icon='download')
 
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
         text = 'Admin Edit'
@@ -135,13 +138,11 @@ class POTemplateView(LaunchpadView):
         """
         # Languages the template has been translated into.
         translated_languages = set(self.context.languages())
-
         # The user's languages.
         prefered_languages = set(self.request_languages)
-
         # Merge the sets, convert them to a list, and sort them.
-        languages = list(translated_languages | prefered_languages)
-        languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
+        languages = sorted(translated_languages | prefered_languages,
+                           key=lambda x: x.englishname)
 
         for language in languages:
             pofile = self.context.getPOFileByLang(language.code)
@@ -194,17 +195,20 @@ class POTemplateView(LaunchpadView):
 
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot'):
+        if filename.endswith('.pot') or filename.endswith('.po'):
             # Add it to the queue.
             translation_import_queue.addOrUpdateEntry(
                 self.context.path, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
-                productseries=self.context.productseries)
+                productseries=self.context.productseries,
+                potemplate=self.context)
 
             self.request.response.addInfoNotification(
-                "Your upload worked. The template's content will appear in"
-                " Rosetta in a few minutes.")
+                'Thank you for your upload. The file content will be imported'
+                ' soon into Rosetta. You can track its status from the'
+                ' <a href="%s">Translation Import Queue</a>' %
+                    canonical_url(translation_import_queue))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -212,12 +216,17 @@ class POTemplateView(LaunchpadView):
                 content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
-                productseries=self.context.productseries)
+                productseries=self.context.productseries,
+                potemplate=self.context)
 
             if num > 0:
                 self.request.response.addInfoNotification(
-                    'Your upload worked. %d files from the tarball'
-                    ' will be imported into Rosetta in a few minutes.' % num)
+                    'Thank you for your upload. %d files from the tarball'
+                    ' will be imported soon into Rosetta. You can track its'
+                    ' status from the <a href="%s">Translation Import Queue'
+                    '</a>' % (num, canonical_url(translation_import_queue)
+                        )
+                    )
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"
@@ -264,40 +273,6 @@ class POTemplateEditView(POTemplateView, SQLObjectEditView):
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""
 
-
-class POTemplateAddView(AddView):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # retrieve submitted values from the form
-        potemplatename = data.get('potemplatename')
-        description = data.get('description')
-        iscurrent = data.get('iscurrent')
-        owner = data.get('owner')
-        path = data.get('path')
-        content = data.get('content')
-
-        potemplateset = getUtility(IPOTemplateSet)
-        potemplatesubset = potemplateset.getSubset(
-            productseries=self.context)
-        # Create the new POTemplate
-        potemplate = potemplatesubset.new(
-            potemplatename=potemplatename, contents=content,
-            owner=owner)
-
-        # Update the other fields
-        potemplate.description = description
-        potemplate.iscurrent = iscurrent
-        potemplate.path = path
-
-        self._nextURL = canonical_url(potemplate)
-
-    def nextURL(self):
-        return self._nextURL
 
 class POTemplateExportView(BaseExportView):
     def __init__(self, context, request):

@@ -157,7 +157,6 @@ class TicketContextMenu(ContextMenu):
         'linkbug',
         'unlinkbug',
         'makebug',
-        'seeothers',
         'administer',
         ]
 
@@ -172,11 +171,11 @@ class TicketContextMenu(ContextMenu):
     def editsourcepackage(self):
         enabled = (
             self.is_not_resolved and self.context.distribution is not None)
-        text = 'Edit Source Package'
+        text = 'Change Source Package'
         return Link('+sourcepackage', text, icon='edit', enabled=enabled)
 
     def editpriority(self):
-        text = 'Edit Priority & Assignee'
+        text = 'Change Priority/Assignee'
         return Link('+priority', text, icon='edit',
                     enabled=self.is_not_resolved)
 
@@ -187,8 +186,9 @@ class TicketContextMenu(ContextMenu):
 
     def reopen(self):
         text = 'Reopen Request'
-        return Link('+reopen', text, icon='edit',
-                    enabled=self.context.can_be_reopened)
+        enabled = (
+            self.context.can_be_reopened and self.user == self.context.owner)
+        return Link('+reopen', text, icon='edit', enabled=enabled)
 
     def history(self):
         text = 'History'
@@ -221,11 +221,6 @@ class TicketContextMenu(ContextMenu):
         text = 'Create Bug Report'
         summary = 'Create a bug report from this support request.'
         return Link('+makebug', text, summary, icon='add', enabled=enabled)
-
-    def seeothers(self):
-        text = 'Other Support Requests'
-        linktarget = '%s/%s' % (canonical_url(self.context.target), '+tickets')
-        return Link(linktarget, text, icon='ticket')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):

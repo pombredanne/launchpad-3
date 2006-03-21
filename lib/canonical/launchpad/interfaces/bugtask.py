@@ -8,8 +8,7 @@ __all__ = [
     'IBugTask',
     'INullBugTask',
     'IBugTaskSearch',
-    'IUpstreamBugTaskSearch',
-    'IDistroBugTaskSearch',
+    'IAddBugTaskForm',
     'IPersonBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
@@ -21,7 +20,6 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'RESOLVED_BUGTASK_STATUSES']
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List)
@@ -29,26 +27,29 @@ from zope.schema import (
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
+from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
-_ = MessageIDFactory('launchpad')
 
 # XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
 # UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
 # break if it were added to the list below. See
 # <https://launchpad.net/malone/bugs/5320>
+# XXX: matsubara, 2006-02-02: I added the NEEDSINFO as a short-term solution
+# to bug https://launchpad.net/products/malone/+bug/4201
 UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.UNCONFIRMED,
     dbschema.BugTaskStatus.CONFIRMED,
-    dbschema.BugTaskStatus.INPROGRESS)
+    dbschema.BugTaskStatus.INPROGRESS,
+    dbschema.BugTaskStatus.NEEDSINFO)
 
 RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXCOMMITTED,
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
-
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -181,33 +182,37 @@ class IBugTaskSearch(Interface):
         title=_('Severity:'),
         value_type=IBugTask['severity'],
         required=False)
+    priority = List(
+        title=_('Priority:'),
+        value_type=IBugTask['priority'],
+        required=False)
     assignee = Choice(
         title=_('Assignee:'), vocabulary='ValidAssignee', required=False)
-    unassigned = Bool(title=_('Unassigned bugs only'), required=False)
-    include_dupes = Bool(title=_('Include duplicate bugs'), required=False)
+    owner = Choice(
+        title=_('Reporter:'), vocabulary='ValidAssignee', required=False)
+    omit_dupes = Bool(
+        title=_('Omit duplicate bugs'), required=False,
+        default=True)
     statusexplanation = TextLine(
         title=_("Status notes:"), required=False)
-    attachmenttype = List(
-        title=_('Attachment:'),
-        value_type=IBugAttachment['type'],
-        required=False)
-
-
-class IUpstreamBugTaskSearch(IBugTaskSearch):
-    """The schema used by the bug task search form of a product."""
+    has_patch = Bool(
+        title=_('Show only bugs with patches available'), required=False,
+        default=False)
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
         title=_('Target:'), value_type=IBugTask['milestone'], required=False)
 
 
-class IDistroBugTaskSearch(IBugTaskSearch):
-    """The schema used by the bug task search form of a distribution or
-    distribution release."""
-
-
 class IPersonBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a person."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
+        vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
 
 
 class IBugTaskDelta(Interface):
@@ -450,6 +455,9 @@ class IBugTaskSet(Interface):
                    milestone=None):
         """Create a bug task on a bug and return it.
 
+        If the bug is public, bug contacts will be automatically
+        subscribed.
+
         Exactly one of product, distribution or distrorelease must be provided.
         """
 
@@ -474,4 +482,20 @@ class IBugTaskSet(Interface):
         bugtask of a private bug for which the user is not subscribed. If
         <user> is None, no private bugtasks will be returned.
         """
+
+
+class IAddBugTaskForm(Interface):
+    """Form for adding an upstream bugtask."""
+    product = IUpstreamBugTask['product']
+    distribution = IDistroBugTask['distribution']
+    sourcepackagename = IDistroBugTask['sourcepackagename']
+    bugtracker = Choice(
+        title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
+        description=_("The bug tracker in which the remote bug is found. "
+            "Choose from the list. You can register additional bug trackers "
+            "from the Malone home page."))
+    remotebug = TextLine(
+        title=_('Remote Bug'), required=False, description=_(
+            "The bug number of this bug in the remote bug tracker."))
+
 

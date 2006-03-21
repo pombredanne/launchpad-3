@@ -175,7 +175,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual('gnome-terminal', gnomeTermName)
         self.assertEqual(
             [(15, 'main'), (16, '2.6'), (17, '2.4'), (18, 'klingon'), 
-             (19, 'slowness')],
+             (19, 'slowness'), (25, 'pushed')],
             sorted(gnomeTermBranches)
         )
     
@@ -471,7 +471,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # and testing Spanish team.
         self.assertEqual(
             [{'displayname': u'Mark Shuttleworth', 'id': 1, 'name': u'sabdfl'},
-             {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'name17'},
+             {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'ubuntu-team'},
              {'displayname': u'Launchpad Administrators',
               'id': 25,
               'name': u'admins'},

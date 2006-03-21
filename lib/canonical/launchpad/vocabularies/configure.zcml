@@ -6,11 +6,6 @@
     />
 
   <vocabulary
-    name="BinaryPackage"
-    factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
-    />
-
-  <vocabulary
     name="BinaryPackageName"
     factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
     />
@@ -98,6 +93,11 @@
   <vocabulary
     name="Distribution"
     factory="canonical.launchpad.vocabularies.DistributionVocabulary"
+    />
+
+  <vocabulary
+    name="DistributionUsingMalone"
+    factory="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
     />
 
   <vocabulary
@@ -258,6 +258,11 @@
   <vocabulary
     name="SpecificationStatus"
     factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
+    />
+
+  <vocabulary
+    name="SpecificationGoalStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationGoalStatusVocabulary"
     />
 
   <vocabulary

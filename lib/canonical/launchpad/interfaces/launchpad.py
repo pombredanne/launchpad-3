@@ -17,7 +17,7 @@ from persistent import IPersistent
 _ = MessageIDFactory('launchpad')
 
 __all__ = [
-    'NotFoundError', 'NameNotAvailable',
+    'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
     'ILaunchpadRoot', 'ILaunchpadApplication',
     'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
     'IBazaarApplication', 'IFOAFApplication', 'IPasswordEncryptor',
@@ -42,17 +42,18 @@ __all__ = [
 class NotFoundError(zope.exceptions.NotFoundError):
     """Launchpad object not found."""
 
-
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose is not available."""
 
+class UnexpectedFormData(AssertionError):
+    """Got form data that is not what is expected by a form handler."""
 
 class ILaunchpadCelebrities(Interface):
     """Well known things.
 
     Celebrities are SQLBase instances that have a well known name.
     """
-    buttsource = Attribute("The 'buttsource' team.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
     admin = Attribute("The 'admins' team.")
     ubuntu = Attribute("The ubuntu Distribution.")
     debian = Attribute("The debian Distribution.")

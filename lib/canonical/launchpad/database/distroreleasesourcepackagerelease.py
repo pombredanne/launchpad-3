@@ -10,13 +10,17 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IDistroReleaseSourcePackageRelease
+from canonical.lp.dbschema import PackagePublishingStatus
 
+from canonical.launchpad.interfaces import (IDistroReleaseSourcePackageRelease,
+                                            NotFoundError)
+
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
+    SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 
 
 class DistroReleaseSourcePackageRelease:
@@ -177,3 +181,62 @@ class DistroReleaseSourcePackageRelease:
     def sourcepackagename(self):
         """See ISourcePackageRelease."""
         return self.sourcepackagerelease.sourcepackagename
+
+    @property
+    def manifest(self):
+        """See ISourcePackageRelease."""
+        return self.sourcepackagerelease.manifest
+
+    @property
+    def current_published(self):
+        """See IDistroArchReleaseSourcePackage."""
+
+        # Retrieve current publishing info
+        current = self.publishing_history.selectFirstBy(
+            status = PackagePublishingStatus.PUBLISHED)
+        if current is None:
+            raise NotFoundError("Source package %s not published in %s/%s"
+                                % (self.sourcepackagename.name,
+                                   self.distrorelease.name))
+
+        return current
+
+    def changeOverride(self, new_component=None, new_section=None):
+        """See IDistroReleaseSourcePackageRelease."""
+
+        # Check we have been asked to do something
+        if new_component is None and new_section is None:
+            raise AssertionError("changeOverride must be passed either a"
+                                 " new component or new section.")
+
+        # Retrieve current publishing info
+        current = self.current_published
+
+        # Check there is a change to make
+        if new_component is None:
+            new_component = current.component
+        if new_section is None:
+            new_section = current.section
+
+        if (new_component == current.component and
+            new_section == current.section):
+            return
+
+        SecureSourcePackagePublishingHistory(
+            distrorelease=current.distrorelease,
+            sourcepackagerelease=current.sourcepackagerelease,
+            component=new_component,
+            section=new_section,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=current.pocket,
+            embargo=False,
+        )
+
+    def supersede(self):
+        """See IDistroReleaseSourcePackageRelease."""
+
+        current = self.current_published
+        current = SecureSourcePackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.SUPERSEDED
+        current.datesuperseded = UTC_NOW

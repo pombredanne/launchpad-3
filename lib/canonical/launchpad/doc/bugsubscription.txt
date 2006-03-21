@@ -23,7 +23,7 @@ IBug.subscriptions attribute:
     >>> from zope.component import getUtility
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
-    >>> len(bug.subscriptions)
+    >>> bug.subscriptions.count()
     2
 
 This is slightly misleading though, because this only gives us the
@@ -126,6 +126,16 @@ Another example, this time for an upstream:
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'mark@hbd.com']
+
+If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
+contact will be subscribed:
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
+    ...     bug=new_bug, distribution=ubuntu, owner=sabdfl)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    ['foo.bar@canonical.com', 'mark@hbd.com', 'test@canonical.com']
 
 When an upstream does *not* have a specific bug contact set, the
 product.owner is used instead. So, if Firefox's bugcontact is unset,

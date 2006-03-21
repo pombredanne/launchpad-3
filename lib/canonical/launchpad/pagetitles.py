@@ -41,20 +41,15 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
 
-class BugPageTitle:
-    def __call__(self, context, view):
-        return smartquote('Bug #%d: "%s"') % (context.id, context.title)
-
-
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return smartquote('Bug #%d in %s: "%s"') % (
             context.bug.id, context.targetname, context.bug.title)
 
 
-class BugTaskTargetingTitle:
+class BugTaskBackportingTitle:
     def __call__(self, context, view):
-        return "Bug #%d in %s - Target fix to releases" % (
+        return "Bug #%d in %s - Backport fix to releases" % (
             context.bug.id, context.targetname)
 
 
@@ -126,21 +121,6 @@ branchtarget_branches = ContextTitle('Branches for %s')
 
 bug_activity = ContextId('Bug #%s - Activity log')
 
-def bug_add(context, view):
-    # XXX, Brad Bollenbach, 2005-07-15: This is a hack until our fancy
-    # new page title machinery allows for two different pages that use
-    # the same template to have different titles (the way ZCML does.)
-    # See https://launchpad.ubuntu.com/malone/bugs/1376
-    product_context = IProduct(context, None)
-    distro_context = IDistribution(context, None)
-    distrorelease_context = IDistroRelease(context, None)
-
-    if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Report a bug about %s')
-        return context_title(context, view)
-    else:
-        return "Report a bug"
-
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
 bug_attachment_add = LaunchbagBugID('Bug #%d - Add an attachment')
@@ -151,15 +131,13 @@ def bug_attachment_edit(context, view):
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = BugPageTitle()
+bug_edit = ContextTitle('%s')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):
     return smartquote('Bug #%d - Edit Web link "%s"') % (
         context.bug.id, context.title)
-
-bug_index = BugPageTitle()
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
@@ -189,13 +167,19 @@ def bugs_assigned(context, view):
     else:
         return 'No-one to display bugs for'
 
-bugtask_index = BugTaskPageTitle()
+bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
-bugtask_release_targeting = BugTaskTargetingTitle()
+bugtarget_filebug = ContextTitle('Report a bug about %s')
 
-bugtask_view = BugTaskPageTitle()
+bugtask_backport_fixing = BugTaskBackportingTitle()
 
 bugtask_edit = BugTaskPageTitle()
+
+bugtask_index = BugTaskPageTitle()
+
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request fix in a product')
+
+bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
@@ -225,6 +209,8 @@ builder_index = ContextTitle(smartquote('Build machine "%s"'))
 builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 
 builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
+
+builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
 
 calendar_index = ContextTitle('%s')
 
@@ -283,6 +269,8 @@ distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
+distribution_edit = ContextTitle('Edit %s')
+
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle(
@@ -332,6 +320,8 @@ distrorelease_bugs = ContextTitle('Bugs in %s')
 
 distrorelease_cvereport = ContextDisplayName('CVE report for %s')
 
+distrorelease_edit = ContextTitle('Edit details of %s')
+
 def distrorelease_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
@@ -359,6 +349,8 @@ errorservice_entry = 'Error log entry'
 errorservice_index = 'Error log report'
 
 errorservice_tbentry = 'Traceback entry'
+
+faq = 'Launchpad Frequently Asked Questions'
 
 foaf_adminrequestmerge = 'Merge Launchpad accounts'
 
@@ -407,11 +399,7 @@ launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Error: Page not found'
 
-launchpad_oops = 'Error: Oops'
-
 launchpad_requestexpired = 'Error: Timeout'
-
-launchpad_faq = 'Launchpad Frequently Asked Questions'
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -439,6 +427,8 @@ malone_distros_index = 'Report a bug about a distribution'
 
 malone_index = 'Malone: the Launchpad bug tracker'
 
+malone_filebug = "Report a bug"
+
 # malone_people_index is a redirect
 
 # malone_template is a means to include the mainmaster template
@@ -461,6 +451,8 @@ object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
 
+oops = 'Oops!'
+
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
@@ -482,7 +474,7 @@ person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editgpgkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
+person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
 
@@ -504,11 +496,17 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
-person_packagebugs = ContextDisplayName('Bugs on software %s maintains')
+person_packagebugs = ContextDisplayName("%s's package bug reports")
+
+person_packagebugs_overview = person_packagebugs
+
+person_packagebugs_search = person_packagebugs
 
 person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
 person_review = ContextDisplayName("Review %s")
+
+person_specworkload = ContextDisplayName('Specification workload for %s')
 
 person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
@@ -644,7 +642,9 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Product and group registration in Launchpad'
 
-registry_listall = 'Launchpad: Complete list' # bug 3508
+products_all = 'All Upstream Products registered in Launchpad'
+
+projects_all = 'All Projects registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
@@ -677,6 +677,8 @@ shipit_exports = 'ShipIt exports'
 
 shipit_myrequest = "Your ShipIt order"
 
+shipit_oops = 'Error: Oops'
+
 shipit_reports = 'ShipIt reports'
 
 shipitrequests_index = 'ShipIt requests'
@@ -686,8 +688,6 @@ shipitrequests_search = 'Search ShipIt requests'
 shipitrequest_edit = 'Edit ShipIt request'
 
 shipit_notfound = 'Error: Page not found'
-
-shipit_default_error = 'Error: Oops'
 
 signedcodeofconduct_index = ContextDisplayName('%s')
 
@@ -702,8 +702,6 @@ signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 sourcepackage = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
-
-sourcepackage_buildlog = ContextTitle('Build log for %s')
 
 sourcepackage_builds = ContextTitle('Builds for %s')
 
@@ -726,13 +724,6 @@ sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_translations = ContextTitle(
     'Rosetta translation templates for %s')
-
-sourcepackagebuild_buildlog = 'Source package build log'
-
-sourcepackagebuild_changes = 'Source package changes'
-
-def sourcepackagebuild_index(context, view):
-    return 'Builds of %s' % context.sourcepackagerelease.sourcepackage.summary
 
 sourcepackagenames_index = 'Source package name set'
 
@@ -795,9 +786,15 @@ specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
+specificationgoal_index = ContextTitle('Specification acceptance for %s')
+
+specificationtarget_index = ContextTitle('Specification Listing for %s')
+
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
-specificationtarget_specplan = ContextTitle('Project plan for %s')
+specificationtarget_roadmap = ContextTitle('Project plan for %s')
+
+specificationtarget_assignments = ContextTitle('Specification assignments for %s')
 
 specificationtarget_workload = ContextTitle('Feature workload in %s')
 
@@ -811,7 +808,7 @@ sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
 
-sprint_table = ContextTitle('Table of specifications for %s')
+sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 

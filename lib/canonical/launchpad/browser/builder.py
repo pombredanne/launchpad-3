@@ -25,9 +25,6 @@ from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-
 from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.interfaces import (
@@ -96,7 +93,7 @@ class BuilderOverviewMenu(ApplicationMenu):
     """Overview Menu for IBuilder."""
     usedfor = IBuilder
     facet = 'overview'
-    links = ['edit', 'mode', 'cancel']
+    links = ['edit', 'mode', 'cancel', 'admin']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -112,6 +109,11 @@ class BuilderOverviewMenu(ApplicationMenu):
     def cancel(self):
         text = 'Cancel Current Job'
         return Link('+cancel', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        text = 'Administer Builder'
+        return Link('+admin', text, icon='edit')
 
 
 class CommonBuilderView:

@@ -1,22 +1,31 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
+__all__ = ['Distribution', 'DistributionSet']
 
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
+    BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
+    SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+
 from canonical.launchpad.components.bugtarget import BugTargetBase
+
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.distrorelease import DistroRelease
+from canonical.launchpad.database.publishedpackage import PublishedPackage
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
-from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (
@@ -25,26 +34,20 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishing)
-from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.librarian import LibraryFileAlias
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus,
     TranslationPermission, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
@@ -81,12 +84,15 @@ class Distribution(SQLBase, BugTargetBase):
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
-    milestones = MultipleJoin('Milestone', joinColumn='distribution')
-    uploaders = MultipleJoin('DistroComponentUploader',
+    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution')
+    uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
-    source_package_caches = MultipleJoin('DistributionSourcePackageCache',
+    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
         joinColumn='distribution', orderBy='name')
+    official_malone = BoolCol(dbName='official_malone', notNull=True,
+        default=False)
+    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
+        default=False)
 
     @property
     def enabled_official_mirrors(self):
@@ -198,14 +204,13 @@ class Distribution(SQLBase, BugTargetBase):
     def bugCounter(self):
         counts = []
 
-        severities = [
-            BugTaskStatus.NEW,
-            BugTaskStatus.ACCEPTED,
-            BugTaskStatus.REJECTED,
-            BugTaskStatus.FIXED]
+        severities = [BugTaskStatus.NEW,
+                      BugTaskStatus.ACCEPTED,
+                      BugTaskStatus.REJECTED,
+                      BugTaskStatus.FIXED]
 
-        query = ("bugtask.distribution = %s AND "
-                 "bugtask.bugstatus = %i")
+        query = ("BugTask.distribution = %s AND "
+                 "BugTask.bugstatus = %i")
 
         for severity in severities:
             query = query % (quote(self.id), severity)
@@ -326,17 +331,19 @@ class Distribution(SQLBase, BugTargetBase):
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
         if source:
-            candidate = SourcePackageFilePublishing.selectOneBy(
-                distribution=self.id,
-                libraryfilealiasfilename=filename)
-            if candidate is not None:
-                return LibraryFileAlias.get(candidate.libraryfilealias)
+            candidate = SourcePackageFilePublishing.selectFirstBy(
+                distribution=self.id, libraryfilealiasfilename=filename,
+                orderBy=['id'])
+
         if binary:
-            candidate = BinaryPackageFilePublishing.selectOneBy(
+            candidate = BinaryPackageFilePublishing.selectFirstBy(
                 distribution=self.id,
-                libraryfilealiasfilename=filename)
-            if candidate is not None:
-                return LibraryFileAlias.get(candidate.libraryfilealias)
+                libraryfilealiasfilename=filename,
+                orderBy=["-id"])
+
+        if candidate is not None:
+            return LibraryFileAlias.get(candidate.libraryfilealias)
+
         raise NotFoundError(filename)
 
 
@@ -474,33 +481,36 @@ class Distribution(SQLBase, BugTargetBase):
         if not valid_name(pkgname):
             raise NotFoundError('Invalid package name: %s' % pkgname)
 
+        if self.currentrelease is None:
+            # This distribution has no releases; there can't be anything
+            # published in it.
+            raise NotFoundError('Distribution has no releases; %r was never '
+                                'published in it' % pkgname)
+
         # First, we try assuming it's a binary package. let's try and find
         # a binarypackagename for it.
         binarypackagename = BinaryPackageName.selectOneBy(name=pkgname)
         if binarypackagename is None:
             # Is it a sourcepackagename?
             sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
-            if sourcepackagename is not None:
+            if sourcepackagename is None:
+                # It's neither a sourcepackage, nor a binary package name.
+                raise NotFoundError('Unknown package: %s' % pkgname)
 
-                # It's definitely only a sourcepackagename. Let's make sure it
-                # is published in the current distro release.
-                publishing = SourcePackagePublishing.select('''
-                    SourcePackagePublishing.distrorelease = %s AND
-                    SourcePackagePublishing.sourcepackagerelease =
-                        SourcePackageRelease.id AND
-                    SourcePackageRelease.sourcepackagename = %s
-                    ''' % sqlvalues(self.currentrelease.id,
-                        sourcepackagename.id),
-                    clauseTables=['SourcePackageRelease'],
-                    distinct=True).count()
-                if publishing == 0:
-                    # Yes, it's a sourcepackage, but we don't know about it in
-                    # this distro.
-                    raise NotFoundError('Unpublished source package: %s'
-                                        % pkgname)
-                return (sourcepackagename, None)
-            # It's neither a sourcepackage, nor a binary package name.
-            raise NotFoundError('Unknown package: %s' % pkgname)
+            # It's definitely only a sourcepackagename. Let's make sure it
+            # is published in the current distro release.
+            publishing = SourcePackagePublishing.select('''
+                SourcePackagePublishing.distrorelease = %s AND
+                SourcePackagePublishing.sourcepackagerelease =
+                    SourcePackageRelease.id AND
+                SourcePackageRelease.sourcepackagename = %s
+                ''' % sqlvalues(self.currentrelease.id, sourcepackagename.id),
+                clauseTables=['SourcePackageRelease'], distinct=True)
+            if publishing.count() == 0:
+                # Yes, it's a sourcepackage, but we don't know about it in
+                # this distro.
+                raise NotFoundError('Unpublished source package: %s' % pkgname)
+            return (sourcepackagename, None)
 
         # Ok, so we have a binarypackage with that name. let's see if it's
         # published, and what its sourcepackagename is.
@@ -571,10 +581,4 @@ class DistributionSet:
             members=members,
             owner=owner)
 
-class DistroPackageFinder:
 
-    implements(IDistroPackageFinder)
-
-    def __init__(self, distribution=None, processorfamily=None):
-        self.distribution = distribution
-        # XXX kiko: and what about processorfamily?

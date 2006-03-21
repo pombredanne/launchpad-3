@@ -28,7 +28,10 @@
     <resource name="arrowDownAlternative.gif" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
     <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
+    <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
+    <resource name="build-depwait" file="../images/build-depwait.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
+    <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
     <resource name="up" file="../images/arrowUp.gif" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
@@ -75,10 +78,12 @@
     <resource name="phone_icon.gif" file="../images/phone_icon.gif" />
     <resource name="print.gif" file="../images/print.gif" />
     <resource name="product_icon.gif" file="../images/product_icon.gif" />
+    <resource name="project_icon.gif" file="../images/product_icon.gif" />
     <resource name="progress" file="../images/progress.gif" />
     <resource name="product" file="../images/product_icon.gif" />
     <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="red-bar.png" file="../images/red-bar.png" />
+    <resource name="remove" file="../images/remove.gif" />
     <resource name="required.gif" file="../images/required.gif" />
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search_icon.gif" />

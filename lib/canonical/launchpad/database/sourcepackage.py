@@ -5,6 +5,10 @@ __all__ = [
     'SourcePackage',
     ]
 
+import apt_pkg
+# apt_pkg requires this sillyness
+apt_pkg.InitSystem()
+
 from warnings import warn
 
 from zope.interface import implements
@@ -16,12 +20,12 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket,
-    BuildStatus)
+    PackagingType, PackagePublishingPocket, BuildStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords)
+from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
@@ -34,12 +38,15 @@ from canonical.launchpad.database.distributionsourcepackagerelease import \
     DistributionSourcePackageRelease
 from canonical.launchpad.database.distroreleasesourcepackagerelease import \
     DistroReleaseSourcePackageRelease
-
 from canonical.launchpad.database.build import Build
-from sourcerer.deb.version import Version
 
 
-class SourcePackage:
+def compare_version(a, b):
+    """Safely compares the version of two source packages"""
+    return apt_pkg.VersionCompare(a.version, b.version)
+
+
+class SourcePackage(BugTargetBase):
     """A source package, e.g. apache2, in a distrorelease.  This object
     implements the MagicSourcePackage specification. It is not a true
     database object, but rather attempts to represent the concept of a
@@ -76,8 +83,6 @@ class SourcePackage:
         """See ISourcePackage."""
         # XXX: 20051219 jamesh
         # Is the orderBy clause here correct, or just to avoid the warning?
-        # I've changed this to selectOne() with a limit to avoid the
-        # len() usage.
         pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -176,7 +181,7 @@ class SourcePackage:
 
         # sort by version number
         releases = sorted(shortlist(ret, longest_expected=15),
-            key=lambda item: Version(item.version))
+                          cmp=compare_version)
         return [DistributionSourcePackageRelease(
             distribution=self.distribution,
             sourcepackagerelease=release) for release in releases]
@@ -188,24 +193,18 @@ class SourcePackage:
             SourcePackageRelease.sourcepackagename = %d AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            DistroRelease.distribution = %d
+            DistroRelease.distribution = %d AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % (self.sourcepackagename.id, self.distribution.id),
-            clauseTables=['SourcePackagePublishingHistory'])
+            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
 
         # sort by debian version number
-        return sorted(list(ret), key=lambda item: Version(item.version))
+        return sorted(list(ret), cmp=compare_version)
 
     @property
     def name(self):
         return self.sourcepackagename.name
-
-    @property
-    def bugtasks(self):
-        querystr = "distribution=%s AND sourcepackagename=%s" % sqlvalues(
-            self.distribution.id, self.sourcepackagename.id)
-        return BugTask.select(querystr)
 
     @property
     def potemplates(self):
@@ -371,35 +370,6 @@ class SourcePackage:
         # and make sure this change is immediately available
         flush_database_updates()
 
-    def bugsCounter(self):
-        # XXX: where does self.bugs come from?
-        #   -- kiko, 2005-09-23
-        ret = [len(self.bugs)]
-        severities = [
-            BugTaskSeverity.CRITICAL,
-            BugTaskSeverity.MAJOR,
-            BugTaskSeverity.NORMAL,
-            BugTaskSeverity.MINOR,
-            BugTaskSeverity.WISHLIST,
-            BugTaskStatus.FIXED,
-            BugTaskStatus.ACCEPTED,
-            ]
-        for severity in severities:
-            n = BugTask.selectBy(
-                severity=int(severity),
-                sourcepackagenameID=self.sourcepackagename.id,
-                distributionID=self.distribution.id).count()
-            ret.append(n)
-        return ret
-
-    def getVersion(self, version):
-        """See ISourcePackage."""
-        # XXX: untested and broken
-        dsp = DistributionSourcePackage(
-            self.distribution,
-            self.sourcepackagename)
-        return dsp.getVersion(version)
-
     # ticket related interfaces
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -446,23 +416,39 @@ class SourcePackage:
 
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
-        query = """
-            Build.sourcepackagerelease = SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id
-            """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
+        clauseTables = ['SourcePackageRelease',
+                        'SourcePackagePublishingHistory']
+        orderBy = ["-datebuilt"]
+
+        condition_clauses = ["""
+        Build.sourcepackagerelease = SourcePackageRelease.id AND
+        SourcePackageRelease.sourcepackagename = %s AND
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease =
+        SourcePackageRelease.id
+        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)]
 
         # exclude gina-generated builds
         # buildstate == FULLYBUILT && datebuilt == null
-        query += (" AND NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
-                  % sqlvalues(BuildStatus.FULLYBUILT))
+        condition_clauses.append(
+            "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
+            % sqlvalues(BuildStatus.FULLYBUILT))
+
+        # XXX cprov 20060214: still not ordering ALL results (empty status)
+        # properly, the pending builds will pre presented in the DESC
+        # 'datebuilt' order. bug # 31392
 
         if status is not None:
-            query += "AND Build.buildstate=%s" % sqlvalues(status)
+            condition_clauses.append("Build.buildstate=%s"
+                                     % sqlvalues(status))
 
-        return Build.select(
-            query, clauseTables=['SourcePackageRelease',
-                                 'SourcePackagePublishingHistory'],
-            orderBy="-datebuilt")
+        # Order NEEDSBUILD by lastscore, it should present the build
+        # in a more natural order.
+        if status == BuildStatus.NEEDSBUILD:
+            orderBy = "-BuildQueue.lastscore"
+            clauseTables.append('BuildQueue')
+            condition_clauses.append('BuildQueue.build = Build.id')
+
+
+        return Build.select(' AND '.join(condition_clauses),
+                            clauseTables=clauseTables, orderBy=orderBy)

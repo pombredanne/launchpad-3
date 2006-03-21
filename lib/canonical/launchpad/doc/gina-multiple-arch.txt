@@ -243,3 +243,7 @@ Check that we publishing bdftopcf into the correct distroarchrelease:
     libgadu-dev 1:1.5-4ubuntu1.2
     libgadu3 1:1.5-4ubuntu1.2
 
+Be proper and clean up after ourselves and stop Librarian.
+
+    >>> os.remove('/tmp/gina_test_archive')
+    >>> LibrarianTestSetup().tearDown()

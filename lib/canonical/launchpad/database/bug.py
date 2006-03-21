@@ -14,7 +14,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
@@ -24,18 +24,16 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugcve import BugCve
-from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
-from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
+from canonical.launchpad.database.bugtask import (
+    BugTask, BugTaskSet, bugtask_sort_key)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
-from zope.i18n import MessageIDFactory
-_ = MessageIDFactory("launchpad")
 
 
 class Bug(SQLBase):
@@ -67,25 +65,27 @@ class Bug(SQLBase):
     private = BoolCol(notNull=True, default=False)
 
     # useful Joins
-    activity = MultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
+    activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
     messages = RelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            orderBy='datecreated')
-    productinfestations = MultipleJoin(
+    productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
-    packageinfestations = MultipleJoin(
+    packageinfestations = SQLMultipleJoin(
             'BugPackageInfestation', joinColumn='bug', orderBy='id')
-    watches = MultipleJoin('BugWatch', joinColumn='bug')
-    externalrefs = MultipleJoin(
+    watches = SQLMultipleJoin(
+        'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
+    externalrefs = SQLMultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
     cves = RelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
-    cve_links = MultipleJoin('BugCve', joinColumn='bug', orderBy='id')
-    subscriptions = MultipleJoin(
+    cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
-    duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = MultipleJoin('BugAttachment', joinColumn='bug', orderBy='id')
+    duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
+    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
+        orderBy='id')
     specifications = RelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
@@ -234,7 +234,11 @@ class BugSet:
                 raise NotFoundError(
                     "Unable to locate bug with ID %s" % str(bugid))
         else:
-            bug = self.get(bugid)
+            try:
+                bug = self.get(bugid)
+            except ValueError:
+                raise NotFoundError(
+                    "Unable to locate bug with nickname %s" % str(bugid))
         return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
@@ -246,8 +250,9 @@ class BugSet:
         admins = getUtility(ILaunchpadCelebrities).admin
         if user:
             if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users, so that
-                # they can only see the private bugs that they're allowed to see.
+                # Enforce privacy-awareness for logged-in, non-admin users, 
+                # so that they can only see the private bugs that they're 
+                # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
                       Bug.id in (
@@ -337,37 +342,15 @@ class BugSet:
 
         # Create the task on a product if one was passed.
         if product:
-            BugTask(bug=bug, product=product, owner=owner)
-
-            # If a product bug contact has been provided, subscribe that contact
-            # to all public bugs. Otherwise subscribe the product owner to all
-            # public bugs.
-            if not bug.private:
-                if product.bugcontact:
-                    bug.subscribe(product.bugcontact)
-                else:
-                    bug.subscribe(product.owner)
+            BugTaskSet().createTask(bug=bug, product=product, owner=owner)
 
         # Create the task on a source package name if one was passed.
         if distribution:
-            BugTask(
+            BugTaskSet().createTask(
                 bug=bug,
                 distribution=distribution,
                 sourcepackagename=sourcepackagename,
                 binarypackagename=binarypackagename,
                 owner=owner)
-
-            # If a distribution bug contact has been provided, subscribe that
-            # contact to all public bugs.
-            if distribution.bugcontact and not bug.private:
-                bug.subscribe(distribution.bugcontact)
-
-            # Subscribe package bug contacts to public bugs, if package
-            # information was provided.
-            if sourcepackagename:
-                package = distribution.getSourcePackage(sourcepackagename)
-                if package.bugcontacts and not bug.private:
-                    for pkg_bugcontact in package.bugcontacts:
-                        bug.subscribe(pkg_bugcontact.bugcontact)
 
         return bug

@@ -1,14 +1,15 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BinaryPackageName', 'BinaryPackageNameSet']
+__all__ = ['BinaryPackageName', 'BinaryPackageNameSet',
+           'BinaryAndSourcePackageName']
 
 # Zope imports
 from zope.interface import implements
 
 # SQLObject/SQLBase
 from sqlobject import (
-    SQLObjectNotFound, StringCol, MultipleJoin, CONTAINSSTRING)
+    SQLObjectNotFound, StringCol, SQLMultipleJoin, CONTAINSSTRING)
 
 # launchpad imports
 from canonical.database.sqlbase import SQLBase
@@ -16,7 +17,8 @@ from canonical.database.sqlbase import SQLBase
 
 # interfaces and database 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError)
+    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError,
+    IBinaryAndSourcePackageName)
 
 
 class BinaryPackageName(SQLBase):
@@ -26,7 +28,7 @@ class BinaryPackageName(SQLBase):
     name = StringCol(dbName='name', notNull=True, unique=True,
                      alternateID=True)
 
-    binarypackages = MultipleJoin(
+    binarypackages = SQLMultipleJoin(
         'BinaryPackage', joinColumn='binarypackagename'
         )
 
@@ -44,10 +46,9 @@ class BinaryPackageNameSet:
         except SQLObjectNotFound:
             raise NotFoundError(name)
 
-    def __iter__(self):
+    def getAll(self):
         """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""
-        for binarypackagename in BinaryPackageName.select():
-            yield binarypackagename
+        return BinaryPackageName.select()
 
     def findByName(self, name):
         """Find binarypackagenames by its name or part of it."""
@@ -63,7 +64,7 @@ class BinaryPackageNameSet:
     def getOrCreateByName(self, name):
         try:
             return self[name]
-        except KeyError:
+        except NotFoundError:
             return self.new(name)
 
     def ensure(self, name):
@@ -76,3 +77,18 @@ class BinaryPackageNameSet:
             return BinaryPackageName.byName(name)
         except SQLObjectNotFound:
             return BinaryPackageName(name=name)
+
+
+class BinaryAndSourcePackageName(SQLBase):
+    """See IBinaryAndSourcePackageName"""
+
+    implements(IBinaryAndSourcePackageName)
+
+    _table = 'BinaryAndSourcePackageNameView'
+    _idName = 'name'
+    _idType = str
+    _defaultOrder = 'name'
+
+    name = StringCol(dbName='name', notNull=True, unique=True,
+                     alternateID=True)
+

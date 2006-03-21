@@ -11,15 +11,13 @@ __all__ = [
 # Python standard library imports
 import cgi
 import re
-import sets
 
 from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
+
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
@@ -29,14 +27,13 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     PackageRelationship)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
     structured, GetitemNavigation, stepto, redirection)
 
 from apt_pkg import ParseSrcDepends
-
-BATCH_SIZE = 40
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -64,20 +61,15 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
 
 def linkify_changelog(changelog, sourcepkgnametxt):
-    # XXX: salgado: No bugtracker URL should be hardcoded.
     if changelog is None:
         return changelog
     changelog = cgi.escape(changelog)
-    deb_bugs = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug='
-    warty_bugs = 'https://bugzilla.ubuntu.com/show_bug.cgi?id='
-    changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgnametxt,
-                       r'%s (<a href="../\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    changelog = re.sub(r'(([Ww]arty|[Uu]buntu) *#)([0-9]+)',
-                       r'<a href="%s\3">\1\3</a>' % warty_bugs,
-                       changelog)
-    changelog = re.sub(r'[^(W|w)arty]#([0-9]+)',
-                       r'<a href="%s\1">#\1</a>' % deb_bugs,
+    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
+    # url builder. Also we need an specification describing the syntax for
+    # changelog linkification and processing (mostly bug interface),
+    # bug # 30817
+    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
+                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
                        changelog)
     return changelog
 
@@ -97,7 +89,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['hct', 'changelog', 'buildlog', 'builds']
+    links = ['hct', 'changelog', 'builds']
 
     def hct(self):
         text = structured(
@@ -107,15 +99,12 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     def changelog(self):
         return Link('+changelog', 'Change Log', icon='list')
 
-    def buildlog(self):
-        return Link('+buildlog', 'Build Log', icon='build-success')
-
     def upstream(self):
         return Link('+packaging', 'Edit Upstream Link', icon='edit')
 
     def builds(self):
         text = 'View Builds'
-        return Link('+builds', text, icon='info')        
+        return Link('+builds', text, icon='info')
 
 
 class SourcePackageBugsMenu(ApplicationMenu):
@@ -276,15 +265,8 @@ class SourcePackageView(BuildRecordsView):
         return templateview_list
 
     def potemplatenames(self):
-        potemplatenames = []
-
-        for potemplate in self.context.potemplates:
-            potemplatenames.append(potemplate.potemplatename)
-
-        # Remove the duplicates
-        S = sets.Set(potemplatenames)
-        potemplatenames = list(S)
-
+        potemplates = self.context.potemplates
+        potemplatenames = set([p.potemplatename for p in potemplates])
         return sorted(potemplatenames, key=lambda item: item.name)
 
 
@@ -293,9 +275,9 @@ class SourcePackageBugsView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.batch = Batch(
-            list(self.bugtask_search()), int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
+
+        results = self.bugtask_search()
+        self.batchnav = BatchNavigator(results, request)
 
     def bugtask_search(self):
         return self.context.bugs

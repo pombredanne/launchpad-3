@@ -6,14 +6,17 @@ __all__ = ['SourcePackageRelease']
 import sets
 import tarfile
 from StringIO import StringIO
+import datetime
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin
+from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.searchbuilder import any
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
@@ -21,7 +24,9 @@ from canonical.lp.dbschema import (
     SourcePackageFileType, BuildStatus, TicketStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue)
+    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
+    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    )
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
@@ -62,12 +67,12 @@ class SourcePackageRelease(SQLBase):
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
 
-    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease',
+    builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
         orderBy=['-datecreated'])
-    files = MultipleJoin('SourcePackageReleaseFile',
+    files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease')
-    publishings = MultipleJoin('SourcePackagePublishing',
-        joinColumn='sourcepackagerelease')
+    publishings = SQLMultipleJoin('SourcePackagePublishing',
+        joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
     @property
     def latest_build(self):
@@ -77,6 +82,20 @@ class SourcePackageRelease(SQLBase):
         return None
 
     @property
+    def failed_builds(self):
+        return [build for build in self.builds
+                if build.buildstate == BuildStatus.FAILEDTOBUILD]
+
+    @property
+    def needs_building(self):
+        for build in self.builds:
+            if build.buildstate in [BuildStatus.NEEDSBUILD,
+                                    BuildStatus.MANUALDEPWAIT,
+                                    BuildStatus.CHROOTWAIT]:
+                return True
+        return False
+
+    @property
     def name(self):
         return self.sourcepackagename.name
 
@@ -84,6 +103,11 @@ class SourcePackageRelease(SQLBase):
     def sourcepackage(self):
         """See ISourcePackageRelease."""
         return self.uploaddistrorelease.getSourcePackage(self.name)
+
+    @property
+    def distrosourcepackage(self):
+        """See ISourcePackageRelease."""
+        return self.uploaddistrorelease.distribution.getSourcePackage(self.name)
 
     @property
     def title(self):
@@ -130,16 +154,28 @@ class SourcePackageRelease(SQLBase):
             return None
 
     @property
-    def open_tickets_count(self):
+    def open_ticket_count(self):
         """See ISourcePackageRelease."""
         results = Ticket.select("""
-            status IN (%s, %s) AND
+            status = %s AND
             distribution = %s AND
             sourcepackagename = %s
-            """ % sqlvalues(TicketStatus.NEW, TicketStatus.OPEN,
+            """ % sqlvalues(TicketStatus.OPEN,
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()
+
+    def countOpenBugsInUploadedDistro(self, user):
+        """See ISourcePackageRelease."""
+        upload_distro = self.uploaddistrorelease.distribution
+        params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
+            user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        # XXX: we need to omit duplicates here or else our bugcounts are
+        # inconsistent. This is a wart, and we need to stop spreading
+        # these things over the code.
+        #   -- kiko, 2006-03-07
+        params.omit_dupes = True
+        return upload_distro.searchTasks(params).count()
 
     @property
     def binaries(self):
@@ -152,7 +188,7 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def meta_binaries(self):
-        """See ISourcePackageRelease."""        
+        """See ISourcePackageRelease."""
         return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
                                     binary.binarypackagename)
                 for binary in self.binaries]
@@ -201,30 +237,67 @@ class SourcePackageRelease(SQLBase):
                                         libraryfile=file.id)
 
     def createBuild(self, distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=BuildStatus.NEEDSBUILD,
+                    pocket=None):
         """See ISourcePackageRelease."""
+        # ensure pocket can't be ommited
+        assert pocket is not None
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchrelease.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
-        return Build(distroarchrelease=distroarchrelease.id,
-                     sourcepackagerelease=self.id,
-                     processor=processor.id, buildstate=status)
+        # force the current timestamp instead of the default
+        # UTC_NOW for the transaction, avoid several row with
+        # same datecreated.
+        datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
+        return Build(distroarchrelease=distroarchrelease,
+                     sourcepackagerelease=self,
+                     processor=processor,
+                     buildstate=status,
+                     datecreated=datecreated,
+                     pocket=pocket)
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
-        return Build.selectOneBy(sourcepackagereleaseID=self.id,
-                                 distroarchreleaseID=distroarchrelease.id)
+        query = """
+        build.id = binarypackagerelease.build AND
+        binarypackagerelease.id =
+            binarypackagepublishing.binarypackagerelease AND
+        binarypackagepublishing.distroarchrelease = %s AND
+        build.sourcepackagerelease = %s AND
+        binarypackagerelease.architecturespecific = true
+        """  % sqlvalues(distroarchrelease.id, self.id)
+
+        tables = ['binarypackagerelease', 'binarypackagepublishing']
+
+        builds = Build.select(query, clauseTables=tables)
+
+        if builds.count() == 0:
+            builds = Build.selectBy(distroarchreleaseID=distroarchrelease.id,
+                                    sourcepackagereleaseID=self.id)
+            if builds.count() == 0:
+                return None
+
+        return shortlist(builds)[0]
+
+    def override(self, component=None, section=None, urgency=None):
+        """See ISourcePackageRelease."""
+        if component is not None:
+            self.component = component
+        if section is not None:
+            self.section = section
+        if urgency is not None:
+            self.urgency = urgency
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):
         """See ISourcePackageRelease."""
         client = getUtility(ILibrarianClient)
 
-        tarball_file = client.getFileByAlias(tarball_alias)
+        tarball_file = client.getFileByAlias(tarball_alias.id)
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
@@ -242,6 +315,9 @@ class SourcePackageRelease(SQLBase):
         for filename in filenames:
             # Fetch the file
             content = tarball.extractfile(filename).read()
+            if len(content) == 0:
+                # The file is empty, we ignore it.
+                continue
             if filename.startswith('source/'):
                 # Remove the special 'source/' prefix for the path.
                 filename = filename[len('source/'):]
@@ -253,5 +329,3 @@ class SourcePackageRelease(SQLBase):
                 filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
                 distrorelease=self.uploaddistrorelease)
-
-

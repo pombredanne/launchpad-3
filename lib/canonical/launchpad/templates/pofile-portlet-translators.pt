@@ -4,34 +4,31 @@
 
   <div class="portletBody portletContent">
 
-      <ul>
-        <tal:block repeat="translator context/translators">
-          <li class="languages">
-            <b tal:content="translator/translationgroup/title">Ubuntu
-            Translation Group</b>:</li>
-          <li class="person">
-            <a tal:content="translator/translator/browsername"
-               tal:attributes="href
-                 string:/people/${translator/translator/name}/">Ubuntu
-            Afrikaans Team</a></li>
-          <tal:block condition="translator/translator/isTeam">
-            <ul>
-              <li class="person"
-                  tal:repeat="person translator/translator/allmembers">
-                <a tal:content="person/browsername"
-                   tal:attributes="href string:/people/${person/name}/"
-                   >Mark Shuttleworth</a>
-              </li>
-            </ul>
-          </tal:block>
-        </tal:block>
-      </ul>
-
-      <tal:block condition="not: view/has_translators">
-        No translators currently designated for this PO file. Learn more
-        about <a href="/rosetta/groups/">translation groups</a> and
-        permissions.
-      </tal:block>  
+    <tal:block repeat="translator context/translators">
+      <h5 class="languages">
+        <a tal:content="translator/translationgroup/title"
+           tal:attributes="href translator/translationgroup/fmt:url">
+           Ubuntu Translation Group</a>:
+      </h5>
+      <h6 class="person">
+        <a tal:content="translator/translator/browsername"
+           tal:attributes="href translator/translator/fmt:url">Ubuntu
+           Afrikaans Team</a>
+      </h6>
+      <tal:block condition="translator/translator/isTeam">
+        <ul>
+          <li class="person"
+              tal:repeat="person translator/translator/allmembers">
+            <a tal:content="person/browsername"
+               tal:attributes="href person/fmt:url">Mark Shuttleworth</a>
+          </li>
+        </ul>
+      </tal:block>
+    </tal:block>
+    <tal:block condition="not: context/translators">
+      No translators currently designated for this PO file. Learn more about
+      <a href="/rosetta/groups/">translation groups</a> and permissions.
+    </tal:block>
 
   </div>
 </div>

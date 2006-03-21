@@ -9,8 +9,8 @@
     <a tal:attributes="href context/distribution/fmt:url">
     <span tal:replace="context/distribution/displayname" /></a><br />
 
-    <b>Admin:</b><br />
-    <img src="/++resource++user.gif">
+    <b>Drivers:</b><br />
+    <img src="/@@/user.gif">
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">owner name</a><br />
 
@@ -35,13 +35,6 @@
       <a tal:attributes="href context/parentrelease/fmt:url">
       <span tal:replace="context/parentrelease/distribution/name" />
       <span tal:replace="context/parentrelease/name" /></a> <br />
-    </span> 
-
-    <span tal:condition="context/nominatedarchindep" tal:omit-tag>
-      <b>Nominated Independent Architecture:</b><br />
-      <img src="/++resource++architecture">
-      <a tal:attributes="href context/nominatedarchindep/fmt:url"
-         tal:content="context/nominatedarchindep/architecturetag" /> <br />
     </span> 
 
     <span tal:condition="context/architectures" tal:omit-tag>

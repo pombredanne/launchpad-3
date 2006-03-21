@@ -321,6 +321,12 @@ class ForgottenPasswordPage:
                               "address and try again.")
             return
 
+        if person.isTeam():
+            self.errortext = ("The email address <strong>%s</strong> "
+                              "belongs to a team, and teams cannot log in to "
+                              "Launchpad." % email)
+            return
+
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)

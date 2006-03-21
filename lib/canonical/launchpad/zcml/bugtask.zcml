@@ -33,7 +33,7 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <allow attributes="id bug target" />
+        <allow attributes="id bug bugID target" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
@@ -77,7 +77,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugTaskView"
-        permission="zope.Public">
+        permission="launchpad.View">
       <browser:page
         name="+index"
         template="../templates/bugtask-index.pt" />
@@ -173,7 +173,7 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="30" />
     </browser:editform>
 
     <browser:editform
@@ -262,7 +262,7 @@
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"
-            displayWidth="60" />
+            displayWidth="30" />
     </browser:addform>
 
     <browser:addform
@@ -276,25 +276,29 @@
         keyword_arguments="bugtracker remotebug"
         permission="launchpad.AnyPerson"
         template="../templates/bug-watch-add.pt"
-        lp:url="malone/bugs/$Bugs.id/watches/+new" />
+        lp:url="malone/bugs/$Bugs.id/+addwatch" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         name="+index" />
 
-    <browser:addform
+    <browser:page
         name="+upstreamtask"
-        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request fix in a product"
-        fields="product"
-        arguments=""
-        keyword_arguments="product"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        attribute="render_upstreamtask"
         lp:url="malone/bugs/$Bug.id/+upstreamtask">
-    </browser:addform>
+    </browser:page>
+
+    <browser:page
+        name="+distrotask"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
+        permission="launchpad.AnyPerson"
+        attribute="render_distrotask"
+        lp:url="malone/bugs/$Bug.id/+distrotask"
+        />
 
     <browser:generalform
         name="+editstatus-page"
@@ -306,6 +310,21 @@
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt">
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
+    </browser:generalform>
+
+    <browser:generalform
+        name="+edit-form"
+        for="canonical.launchpad.interfaces.IUpstreamBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
+        fields="product milestone status priority severity assignee
+                bugwatch statusexplanation"
+        label="Edit fix request"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit-form.pt">
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
@@ -327,20 +346,7 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         name="+index" />
 
-    <browser:addform
-        name="+distrotask"
-        schema="canonical.launchpad.interfaces.IDistroBugTask"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request fix in a distribution"
-        fields="distribution sourcepackagename"
-        keyword_arguments="distribution sourcepackagename"
-        permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/+distrotask">
-    </browser:addform>
-
-    <browser:editform
+    <browser:generalform
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
@@ -348,7 +354,7 @@
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit fix request"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
@@ -358,7 +364,27 @@
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:editform>
+    </browser:generalform>
+
+    <browser:generalform
+        name="+edit-form"
+        for="canonical.launchpad.interfaces.IDistroBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="sourcepackagename binarypackagename milestone
+                status priority severity assignee bugwatch statusexplanation"
+        label="Edit fix request"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit-form.pt"
+        lp:url="malone/tasks/$BugTask.id/+edit">
+        <browser:widget
+          field="statusexplanation"
+          class="zope.app.form.browser.TextAreaWidget"
+          height="2" />
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
+    </browser:generalform>
 
     <browser:schemadisplay
         name="+viewstatus-page"
@@ -373,18 +399,18 @@
     </browser:schemadisplay>
 
     <browser:page
-        name="+target"
+        name="+backport"
         for="canonical.launchpad.interfaces.IDistroBugTask"
-        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+        class="canonical.launchpad.browser.BugTaskBackportView"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-release-targeting.pt"
+        template="../templates/bugtask-backport-fixing.pt"
         />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         name="+index" />
 
-    <browser:editform
+    <browser:generalform
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
@@ -392,7 +418,7 @@
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit fix request"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
@@ -402,14 +428,34 @@
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:editform>
+    </browser:generalform>
+
+    <browser:generalform
+        name="+edit-form"
+        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="sourcepackagename binarypackagename milestone
+                status priority severity assignee bugwatch statusexplanation"
+        label="Edit fix request"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit-form.pt"
+        lp:url="malone/tasks/$BugTask.id/+edit">
+        <browser:widget
+          field="statusexplanation"
+          class="zope.app.form.browser.TextAreaWidget"
+          height="2" />
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
+    </browser:generalform>
 
     <browser:schemadisplay
         name="+viewstatus-page"
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename status priority severity
-                assignee bugwatch statusexplanation"
+                assignee bugwatch statusexplanation milestone"
         label="Source package fix request"
         permission="zope.Public"
         template="../templates/bugtask-view.pt"
@@ -417,11 +463,11 @@
     </browser:schemadisplay>
 
     <browser:page
-      name="+target"
+      name="+backport"
       for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
-      class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+      class="canonical.launchpad.browser.BugTaskBackportView"
       permission="launchpad.AnyPerson"
-      template="../templates/bugtask-release-targeting.pt"
+      template="../templates/bugtask-backport-fixing.pt"
       />
 
     <browser:page
