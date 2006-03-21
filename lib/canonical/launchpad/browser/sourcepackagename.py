@@ -10,10 +10,9 @@ __all__ = [
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
-from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     ISourcePackageName, ISourcePackageNameSet)
-
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 class SourcePackageNameSetView(object):
 

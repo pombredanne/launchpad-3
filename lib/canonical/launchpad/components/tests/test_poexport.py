@@ -4,6 +4,8 @@ __metaclass__ = type
 
 import pytz
 import unittest
+import logging
+from StringIO import StringIO
 from datetime import datetime
 
 from canonical.launchpad.components.poexport import export_rows
@@ -73,6 +75,22 @@ class TestRow:
 
 class ExportTest(unittest.TestCase):
     """Base class for export tests."""
+
+    def setUp(self):
+        """Set up the logger."""
+        logger = logging.getLogger('poexport-user-warnings')
+        # Disable the propagation of logging messages so we only use our
+        # handler.
+        logger.propagate = 0
+        # Here we are going to store the warning output.
+        self.warnings_stream = StringIO()
+        self.warnings_handler = logging.StreamHandler(self.warnings_stream)
+        logger.addHandler(self.warnings_handler)
+
+    def tearDown(self):
+        """Tear down the logger."""
+        logger = logging.getLogger('poexport-user-warnings')
+        logger.removeHandler(self.warnings_handler)
 
     def test_export(self, rows, expected_pofiles):
         """Export a set of rows and compare the generated PO files to expected
@@ -265,6 +283,48 @@ class EncodingExportTest(ExportTest):
 
         self.test_export(rows, expected_pofiles)
 
+class BrokenEncodingExportTest(ExportTest):
+    """Test what happens when the content and the encoding don't agree.
+
+    If an IPOFile fails to encode using the character set specified in the
+    header, the header should be changed to specify to UTF-8 and the IPOFile
+    exported accordingly.
+    """
+
+    def runTest(self):
+        prototype1 = TestRow(language='es', potsequence=1, posequence=1,
+            msgidpluralform=0, translationpluralform=0, msgid="a",
+            translation=u'\u00e1', potemplate=TestPOTemplate(),
+            pofile=TestPOFile())
+
+        rows = [
+            prototype1.clone(potemplate=TestPOTemplate(),
+                poheader='Content-Type: text/plain; charset=ASCII\n'),
+        ]
+
+        expected_pofiles = [[
+            'msgid ""',
+            'msgstr ""',
+            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
+            '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
+            '',
+            'msgid "a"',
+            'msgstr "\xc3\xa1"',
+        ]]
+
+        self.test_export(rows, expected_pofiles)
+
+        # Flush the logger.
+        self.warnings_handler.flush()
+
+        # Check that we got the warning.
+        self.assertEqual(
+            u'Had to recode the file as UTF-8 as it has characters that'
+            u' cannot be represented using the ASCII charset\n',
+            self.warnings_stream.getvalue())
+
+
 class IncompletePluralMessageTest(ExportTest):
     """Test that plural message sets which are missing some translations are
     correctly exported.
@@ -433,6 +493,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(BasicExportTest())
     suite.addTest(EncodingExportTest())
+    suite.addTest(BrokenEncodingExportTest())
     suite.addTest(IncompletePluralMessageTest())
     suite.addTest(InactiveTranslationTest())
     suite.addTest(HeaderUpdateTest())

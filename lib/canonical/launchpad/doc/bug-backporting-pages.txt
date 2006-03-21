@@ -61,7 +61,7 @@ BugDistroReleaseTargetDetails.
   True
 
   >>> release_target_details[1].release.name
-  u'warty'
+  u'grumpy'
   >>> release_target_details[1].istargeted == False
   True
   >>> release_target_details[1].sourcepackage.sourcepackagename == spnameset.get(1)

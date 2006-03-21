@@ -28,7 +28,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="pofile context/touched_pofiles">
+          <tr tal:repeat="pofile pofiles">
             <td tal:content="pofile/language/englishname">Spanish</td>
             <td><a tal:content="pofile/potemplate/title"
                    tal:attributes="href pofile/fmt:url">
