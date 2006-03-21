@@ -1,0 +1,190 @@
+FTPMASTER Tools
+
+Queue Tool is a script designed to handle queue content.
+This test  will check its output, since the script itself would
+open a new connection, let's invoke it in dry-run mode.
+
+  >>> import subprocess
+  >>> import os
+  >>> import sys
+  >>> from canonical.config import config
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
+
+
+  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+  ...                       "queue")
+
+INFO
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "breezy-autotest", "info", "*"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "info *"
+  Listing ubuntu/breezy-autotest (NEW) 4/4
+  ---------|----|----------------------|----------------------|---------------
+         1 | -B | mozilla-firefox      | 0.9                  | ...
+           | mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
+         2 | -B | pmount               | 0.1-1                | ...
+           | pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
+         3 | S- | netapplet            | 0.99.6-1             | ...
+           | netapplet/0.99.6-1 Component: main Section: web
+         4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
+           | alsa-utils/1.0.9a-4ubuntu1 Component: main Section: base
+  ---------|----|----------------------|----------------------|---------------
+                                                               4/4
+							       total
+
+
+SOURCE OVERRIDE
+
+  >>> process = subprocess.Popen([sys.executable, script, "-N",
+  ...                             "-R", "breezy-autotest",
+  ...                             "override", "netapplet", "source",
+  ...                             "universe/base"], stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "override netapplet source universe/base"
+  Overriding ubuntu/breezy-autotest (NEW) 1/4
+  ---------------------------------------------------------------------------
+           | netapplet/0.99.6-1 Component: universe Section: base
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
+BINARY OVERRIDE
+
+  >>> process = subprocess.Popen([sys.executable, script, "-N",
+  ...                             "-R", "breezy-autotest",
+  ...                             "override", "pmount", "binary",
+  ...                             "universe/web/extra"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "override pmount binary universe/web/extra"
+  Overriding ubuntu/breezy-autotest (NEW) 1/4
+  ---------------------------------------------------------------------------
+  Overriding pmount_0.1-1 (main/base/IMPORTANT)
+           | pmount/0.1-1/i386 Component: universe Section: web Priority: EXTRA
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
+
+ACCEPT
+
+  >>> libpath = '/var/tmp/fatsam.test/'
+  >>> for directory in ['00', '00', '00']:
+  ...     libpath = os.path.join(libpath, directory)
+  ...     os.mkdir(libpath)
+
+  >>> libpath = os.path.join(libpath, '01')
+  >>> libfile = open(libpath, 'wb')
+  >>> libfile.write('Fake Changesfile')
+  >>> libfile.close()
+
+  >>> process = subprocess.Popen([sys.executable, script, "-NM", "accept",
+  ...                             "-R", "breezy-autotest",
+  ...                             "alsa-utils", "-A", "foo@bar.com"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "accept alsa-utils"
+  Accepting ubuntu/breezy-autotest (NEW) 1/4
+  ---------------------------------------------------------------------------
+  Accepting alsa-utils
+  Would be sending a mail:
+     Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
+     Sender: Root <root@localhost>
+     Recipients: Root <root@localhost>, foo@bar.com
+     Body:
+  Accepted:
+  alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
+  ...Component: main Section: base
+  <BLANKLINE>
+  Fake Changesfile
+  <BLANKLINE>
+  ---------------------------------------------------------------------------
+                                                                1/4 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
+
+REJECT
+
+  >>> process = subprocess.Popen([sys.executable, script, "-NM", "reject",
+  ...                             "-R", "breezy-autotest", "alsa-utils"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "reject alsa-utils"
+  Rejecting ubuntu/breezy-autotest (NEW) 1/4
+  ---------------------------------------------------------------------------
+  Rejecting alsa-utils
+  Would be sending a mail:
+     Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
+     Sender: Root <root@localhost>
+     Recipients: Root <root@localhost>
+     Body:
+  Rejected:
+  alsa-utils 1.0.9a-4ubuntu1 was REJECTED.
+  ...Component: main Section: base
+  <BLANKLINE>
+  Fake Changesfile
+  <BLANKLINE>
+  ===
+  <BLANKLINE>
+  If you don't understand why your files were rejected, or if the
+  override file requires editing, reply to this email.
+  <BLANKLINE>
+  ---------------------------------------------------------------------------
+                                                                1/4 total
+  DRY RUN requested, not committing.
+  <BLANKLINE>
+
+
+
+FETCH CHANGES
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "breezy-autotest", "fetch", "pmount"],
+  ...                            stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "fetch pmount"
+  Fetching ubuntu/breezy-autotest (NEW) 1/4
+  ---------------------------------------------------------------------------
+  Constructing pmount_0.1-1_i386.changes
+  ---------------------------------------------------------------------------
+                                                                1/4 total
+  <BLANKLINE>
+
+  >>> changesfile = open('pmount_0.1-1_i386.changes')
+  >>> print "'%s'" % changesfile.read()
+  'Fake Changesfile'
+
+  >>> os.remove('pmount_0.1-1_i386.changes')
+
+
+  >>> LibrarianTestSetup().tearDown()
+
+  >>> import shutil
+  >>> shutil.rmtree('/var/tmp/fatsam.test/00')
