@@ -12,7 +12,7 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.webapp import LaunchpadView
 
-from canonical.lp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 from canonical.launchpad.interfaces import (

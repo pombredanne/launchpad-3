@@ -13,10 +13,10 @@
 
             <option tal:attributes="selected python: view.state == 'new'"
                     value="new">New</option>
-
+            <tal:admin condition="context/required:launchpad.Admin">
             <option tal:attributes="selected python: view.state == 'unapproved'"
                     value="unapproved">Unapproved</option>
-
+            </tal:admin>
             <option tal:attributes="selected python: view.state == 'accepted'"
                     value="accepted">Accepted</option>
 
@@ -76,6 +76,7 @@
            </tr>
          </tal:batch>
        </tbody>
+       <tal:admin condition="context/required:launchpad.Admin">
        <tfoot tal:condition="view/availableActions">
          <tr>
            <td colspan="2">
@@ -85,6 +86,7 @@
            </td>
          </tr>
        </tfoot>
+       </tal:admin>
      </table>
      </form>
 
