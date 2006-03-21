@@ -77,10 +77,10 @@
   <p class="discreet">
     This page shows all specifications that have been accepted as goals for
     <span tal:replace="context/title">Mozilla Firefox 1.0</span>. You can
-    see goals that were declined using the "Show Declined" link to the left,
+    <a href="+specs?show=declined">Show Declined</a> feature goals,
     and if you are a driver of <span tal:replace="context/name">1.0</span>
-    then you can accept goals that have been proposed using the "Set Goals"
-    link.
+    then you can accept goals that have been proposed using the 
+    <a href="+setgoals">Set Goals</a> action.
   </p>
 
 </div>

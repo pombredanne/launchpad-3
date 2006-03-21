@@ -180,8 +180,8 @@ class ISpecification(IHasOwner):
         'which is still incomplete.')
 
     has_release_goal = Attribute('Is true if this specification has been '
-        'targetted to a specific distro release or product series and the '
-        'drivers of that release/series have accepted the goal.')
+        'proposed as a goal for a specific distro release or product '
+        'and the drivers of that release/series have accepted the goal.')
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of

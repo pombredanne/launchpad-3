@@ -16,13 +16,13 @@
 
   <h1>Specification workload</h1>
 
-  <p class="documentDescription">
+  <div tal:replace="structure context/@@+table-specworkload" />
+
+  <p class="discreet">
     This page lists the specifications which are related to this person -
     either they were created by them, or they are in some way expected to
     work on the specs. The cross marks [x] identify specific roles.
   </p>
-
-  <div tal:replace="structure context/@@+table-specworkload" />
 
   <tal:is_team condition="context/isTeam">
 
