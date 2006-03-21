@@ -9,6 +9,7 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchRelease',
 
 from datetime import datetime, timedelta
 import pytz
+import urlparse
 import warnings
 
 from zope.interface import implements
@@ -26,7 +27,8 @@ from canonical.lp.dbschema import (
     PackagePublishingPocket, EnumCol, PackagePublishingStatus)
 from canonical.launchpad.interfaces import (
     IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
-    IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL)
+    IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL,
+    IDistroRelease, IDistroArchRelease)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import getBinaryPackageExtension
@@ -120,6 +122,7 @@ class DistributionMirror(SQLBase):
     def ensureMirrorDistroArchRelease(self, distro_arch_release, pocket,
                                       component):
         """See IDistributionMirror"""
+        assert IDistroArchRelease.providedBy(distro_arch_release)
         mirror = MirrorDistroArchRelease.selectOneBy(
             distribution_mirrorID=self.id,
             distro_arch_releaseID=distro_arch_release.id,
@@ -134,6 +137,7 @@ class DistributionMirror(SQLBase):
     def ensureMirrorDistroReleaseSource(self, distro_release, pocket,
                                         component):
         """See IDistributionMirror"""
+        assert IDistroRelease.providedBy(distro_release)
         mirror = MirrorDistroReleaseSource.selectOneBy(
             distribution_mirrorID=self.id, distro_releaseID=distro_release.id,
             pocket=pocket, componentID=component.id)
@@ -217,12 +221,88 @@ class DistributionMirrorSet:
         return DistributionMirror.select(query)
 
 
-class MirrorDistroArchRelease(SQLBase):
+class MirrorReleaseMixIn:
+
+    _publishing_class = None
+
+    @property
+    def _base_query(self):
+        raise NotImplementedError
+
+    def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
+        raise NotImplementedError
+
+    def getURLsToCheckUpdateness(self, when=None):
+        """ """
+        base_query = self._base_query
+        publishing_class = self._publishing_class
+        assert base_query is not None and publishing_class is not None
+
+        if when is None:
+            when = datetime.now(pytz.timezone('UTC'))
+            
+        # Check if there was any recent upload on this distro release.
+        status, threshold = STATUS_TIMES[-1]
+        oldest_status_time = when - timedelta(hours=threshold)
+        query = (base_query + " AND datepublished > %s" 
+                 % sqlvalues(oldest_status_time))
+        # XXX: SQLBase.selectFirst() shouldn't require an orderBy argument, so
+        # this can be removed as soon as Andrew merge his fix for that.
+        recent_upload = publishing_class.selectFirst(
+            query, orderBy='-datepublished')
+        if not recent_upload:
+            # No recent uploads, so we only need the URL of the last package
+            # uploaded here. If that URL is accessible, we know the mirror is
+            # up-to-date. Otherwise we mark it as UNKNOWN.
+            latest_upload = publishing_class.selectFirst(
+                base_query, orderBy='-datepublished')
+
+            if latest_upload is None:
+                # This should not happen when running on production because
+                # the publishing records are correctly filled. But that's not
+                # true when it comes to our sampledata.
+                warnings.warn(
+                    "No published uploads were found for DistroArchRelease "
+                    "'%s %s', Pocket '%s' and Component '%s'" 
+                    % (self.distro_arch_release.distrorelease.name,
+                       self.distro_arch_release.architecturetag,
+                       self.pocket.name, self.component.name))
+                return {}
+
+            url = self._getPackageReleaseURLFromPublishingRecord(
+                latest_upload)
+            return {MirrorStatus.UP: url}
+
+        urls = {}
+        last_threshold = timedelta()
+        for status, threshold in STATUS_TIMES:
+            end = when - last_threshold
+            start = when - timedelta(hours=threshold)
+            last_threshold = timedelta(hours=threshold)
+
+            query = (base_query + " AND datepublished BETWEEN %s AND %s"
+                     % sqlvalues(start, end))
+            upload = publishing_class.selectFirst(
+                query, orderBy='-datepublished')
+
+            if upload is None:
+                # No uploads that would allow us to know the mirror was in
+                # this status, so we better skip it.
+                continue
+
+            url = self._getPackageReleaseURLFromPublishingRecord(upload)
+            urls.update({status: url})
+
+        return urls
+
+
+class MirrorDistroArchRelease(SQLBase, MirrorReleaseMixIn):
     """See IMirrorDistroArchRelease"""
 
     implements(IMirrorDistroArchRelease)
     _table = 'MirrorDistroArchRelease'
     _defaultOrder = 'id'
+    _publishing_class = SecureBinaryPackagePublishingHistory
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
@@ -237,11 +317,20 @@ class MirrorDistroArchRelease(SQLBase):
     pocket = EnumCol(
         notNull=True, schema=PackagePublishingPocket)
 
-    def _getBinaryPackageReleaseURL(self, binary_package_release):
-        """Given a BinaryPackageRelease, return the URL on this mirror from
-        where that BinaryPackageRelease file can be downloaded.
+    @property
+    def _base_query(self):
+        return """
+            pocket = %s AND component = %s AND distroarchrelease = %s
+            AND status = %s
+            """ % sqlvalues(self.pocket, self.component.id, 
+                            self.distro_arch_release.id,
+                            PackagePublishingStatus.PUBLISHED)
+
+    def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
+        """Given a SecureBinaryPackagePublishingHistory, return the URL on 
+        this mirror from where the BinaryPackageRelease file can be downloaded.
         """
-        bpr = binary_package_release
+        bpr = publishing_record.binarypackagerelease
         base_url = self.distribution_mirror.http_base_url
         path = Poolifier().poolify(bpr.sourcepackagename, self.component.name)
         name = '%s_%s_' % (bpr.name, bpr.version)
@@ -250,83 +339,17 @@ class MirrorDistroArchRelease(SQLBase):
         else:
             name += 'all'
         name += getBinaryPackageExtension(bpr.binpackageformat)
-        return '%s/pool/%s/%s' % (base_url, path, name)
-
-    def getURLsToCheckUpdateness(self, when=None):
-        """See IMirrorDistroArchRelease"""
-        if when is not None:
-            when = datetime.now(pytz.timezone('UTC'))
-            
-        base_query = """
-            pocket = %s AND component = %s AND distroarchrelease = %s
-            AND status = %s
-            """ % sqlvalues(self.pocket, self.component.id, 
-                            self.distro_arch_release.id,
-                            PackagePublishingStatus.PUBLISHED)
-
-        # Check if there was any recent upload on this distro release.
-        status, interval = STATUS_TIMES.items()[-1]
-        oldest_status_time = when - timedelta(hours=interval[1])
-        query = (base_query + " AND datepublished > %s" 
-                 % sqlvalues(oldest_status_time))
-        recent_uploads = SecureBinaryPackagePublishingHistory.select(
-            query, limit=1)
-        if not recent_uploads:
-            # No recent uploads, so we only need the URL of the last package
-            # uploaded here. If that URL is accessible, we know the mirror is
-            # up-to-date. Otherwise we mark it as UNKNOWN.
-            results = SecureBinaryPackagePublishingHistory.select(
-                base_query, orderBy='-datepublished', limit=1)
-
-            results = list(results)
-            if not len(results):
-                # This should not happen when running on production because
-                # the publishing records are correctly filled. But that's not
-                # true when it comes to our sampledata.
-                warnings.warn(
-                    "No published uploads were found for DistroArchRelease "
-                    "'%s %s', Pocket '%s' and Component '%s'" 
-                    % (self.distro_arch_release.distrorelease.name,
-                       self.distro_arch_release.architecturetag,
-                       self.pocket.name, self.component.name))
-                return {}
-
-            assert len(results) == 1
-            sourcepackagerelease = results[0].binarypackagerelease
-            url = self._getBinaryPackageReleaseURL(sourcepackagerelease)
-            return {MirrorStatus.UP: url}
-
-        urls = {}
-        for status, interval in STATUS_TIMES.items():
-            end, start = interval
-            start = when - timedelta(hours=start)
-            end = when - timedelta(hours=end)
-
-            query = (base_query + " AND datepublished BETWEEN %s AND %s"
-                     % sqlvalues(start, end))
-            results = SecureBinaryPackagePublishingHistory.select(
-                query, orderBy='-datepublished', limit=1)
-
-            results = list(results)
-            if not len(results):
-                # No uploads that would allow us to know the mirror was in
-                # this status, so we better skip it.
-                continue
-
-            assert len(results) == 1
-            item = results[0]
-            url = self._getBinaryPackageReleaseURL(item.binarypackagerelease)
-            urls.update({status: url})
-
-        return urls
+        full_path = 'pool/%s/%s' % (path, name)
+        return urlparse.urljoin(base_url, full_path)
 
 
-class MirrorDistroReleaseSource(SQLBase):
+class MirrorDistroReleaseSource(SQLBase, MirrorReleaseMixIn):
     """See IMirrorDistroReleaseSource"""
 
     implements(IMirrorDistroReleaseSource)
     _table = 'MirrorDistroReleaseSource'
     _defaultOrder = 'id'
+    _publishing_class = SecureSourcePackagePublishingHistory
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
@@ -341,85 +364,27 @@ class MirrorDistroReleaseSource(SQLBase):
     pocket = EnumCol(
         notNull=True, schema=PackagePublishingPocket)
 
-    def _getSourcePackageReleaseDscURL(self, source_package_release):
-        """Given a SourcePackageRelease, return the URL on this mirror from
-        where that SourcePackageRelease's dsc file can be downloaded.
-        """
-        base_url = self.distribution_mirror.http_base_url
-        sourcename = source_package_release.name
-        path = Poolifier().poolify(sourcename, self.component.name)
-        version = source_package_release.version
-        return '%s/pool/%s/%s_%s.dsc' % (base_url, path, sourcename, version)
-
-    # XXX: Yes, this method is almost identical to its MirrorDistroArchRelease
-    # variant. I'm going to refactor them before merging this, but I can't do
-    # it right now.
-    # -- Guilherme Salgado, 2006-02-15
-    def getURLsToCheckUpdateness(self, when=None):
-        """See IMirrorDistroReleaseSource"""
-        now = datetime.now(pytz.timezone('UTC'))
-        if when is not None:
-            now = when
-            
-        base_query = """
+    @property
+    def _base_query(self):
+        return """
             pocket = %s AND component = %s AND distrorelease = %s
             AND status = %s
             """ % sqlvalues(self.pocket, self.component.id, 
                             self.distro_release.id,
                             PackagePublishingStatus.PUBLISHED)
 
-        # Check if there was any recent upload on this distro release.
-        status, interval = STATUS_TIMES.items()[-1]
-        oldest_status_time = now - timedelta(hours=interval[1])
-        query = (base_query + " AND datepublished > %s" 
-                 % sqlvalues(oldest_status_time))
-        recent_uploads = SecureSourcePackagePublishingHistory.select(
-            query, limit=1)
-        if not recent_uploads:
-            # No recent uploads, so we only need the URL of the last package
-            # uploaded here. If that URL is accessible, we know the mirror is
-            # up-to-date. Otherwise we mark it as UNKNOWN.
-            results = SecureSourcePackagePublishingHistory.select(
-                base_query, orderBy='-datepublished', limit=1)
-
-            if not results:
-                # This should not happen when running on production because
-                # the publishing records are correctly filled. But that's not
-                # true when it comes to our sampledata.
-                warnings.warn(
-                    "No published uploads were found for DistroRelease '%s', "
-                    "Pocket '%s' and Component '%s'" 
-                    % (self.distro_release.name, self.pocket.name,
-                       self.component.name))
-                return {}
-
-            assert results.count() == 1
-            sourcepackagerelease = results[0].sourcepackagerelease
-            url = self._getSourcePackageReleaseDscURL(sourcepackagerelease)
-            return {MirrorStatus.UP: url}
-
-        urls = {}
-        for status, interval in STATUS_TIMES.items():
-            end, start = interval
-            start = now - timedelta(hours=start)
-            end = now - timedelta(hours=end)
-
-            query = (base_query + " AND datepublished BETWEEN %s AND %s"
-                     % sqlvalues(start, end))
-            results = SecureSourcePackagePublishingHistory.select(
-                query, orderBy='-datepublished', limit=1)
-
-            if not results:
-                # No uploads that would allow us to know the mirror was in
-                # this status, so we better skip it.
-                continue
-
-            assert results.count() == 1
-            item = results[0]
-            url = self._getSourcePackageReleaseDscURL(item.sourcepackagerelease)
-            urls.update({status: url})
-
-        return urls
+    def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
+        """Given a SecureSourcePackagePublishingHistory, return the URL on 
+        this mirror from where the SourcePackageRelease file can be downloaded.
+        """
+        spr = publishing_record.sourcepackagerelease
+        base_url = self.distribution_mirror.http_base_url
+        sourcename = spr.name
+        path = Poolifier().poolify(sourcename, self.component.name)
+        version = spr.version
+        filename = "%s_%s.dsc" % (sourcename, version)
+        full_path = 'pool/%s/%s' % (path, filename)
+        return urlparse.urljoin(base_url, full_path)
 
 
 class MirrorProbeRecord(SQLBase):

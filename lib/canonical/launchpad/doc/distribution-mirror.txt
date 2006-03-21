@@ -197,9 +197,9 @@ that mirror's last sync was in the last one or two days.
     >>> urls = warty_mirror.getURLsToCheckUpdateness(when=datetime(2005, 9, 17))
     >>> [(status.name, url) for (status, url) in urls.items()]
     [('ONEDAYBEHIND',
-      u'http://foo.bar.com/pub//pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc'),
+      u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc'),
      ('TWODAYSBEHIND',
-      u'http://foo.bar.com/pub//pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
+      u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 But if we were to check that mirror today, we could only check if the last
 upload was mirrored and then mark the mirror as up-to-date. This is because
@@ -207,7 +207,7 @@ there were no recent uploads there.
 
     >>> urls = warty_mirror.getURLsToCheckUpdateness()
     >>> [(status.name, url) for (status, url) in urls.items()]
-    [('UP', u'http://foo.bar.com/pub//pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc')]
+    [('UP', u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc')]
 
 
 The same goes for the warty i386 mirror, in which we had one upload on
@@ -216,37 +216,34 @@ The same goes for the warty i386 mirror, in which we had one upload on
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=datetime(2005, 6, 22))
     >>> [(status.name, url) for (status, url) in urls.items()]
     [('TWODAYSBEHIND',
-      u'http://foo.bar.com/pub//pool/main/p/pmount/pmount_0.1-1_all.deb'),
+      u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_0.1-1_all.deb'),
      ('ONEWEEKBEHIND',
-      u'http://foo.bar.com/pub//pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
+      u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
 
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=datetime(2005, 6, 20))
     >>> [(status.name, url) for (status, url) in urls.items()]
     [('UP', 
-      u'http://foo.bar.com/pub//pool/main/p/pmount/pmount_0.1-1_all.deb'),
+      u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_0.1-1_all.deb'),
      ('TWODAYSBEHIND',
-      u'http://foo.bar.com/pub//pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
+      u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
 
 
 Running the prober script
 -------------------------
 
-    >>> import subprocess, time
-
 First we need to run our http server, that's going to answer our requests.
 
-XXX: Okay, this doesn't seem to work. How should I test the prober script?
--- Guilherme Salgado 2006-02-15
+    >>> from canonical.launchpad.daemons.tachandler import TacTestSetup
+    >>> from canonical.launchpad.scripts.ftests.test_distributionmirror_prober \
+    ...     import HTTPServerTestSetup
+    >>> http_server = HTTPServerTestSetup()
+    >>> http_server.setUp()
 
-    >>> easygoing = subprocess.Popen(
-    ...     'lib/canonical/launchpad/scripts/ftests/easygoing_http.py')
-    >>> time.sleep(1)
-
+    >>> import subprocess
     >>> prober = subprocess.Popen(
     ...     'cronscripts/distributionmirror-prober.py', shell=True,
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
     ...     stderr=subprocess.PIPE)
-    >> prober.communicate()
+    >>> prober.communicate()
 
-    >>> import os, signal
-    >>> os.kill(easygoing.pid, signal.SIGINT)
+    >>> http_server.tearDown()

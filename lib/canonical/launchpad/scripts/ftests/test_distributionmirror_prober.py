@@ -5,92 +5,98 @@ __metaclass__ = type
 
 
 import os
-import time
-import signal
 import httplib
 from StringIO import StringIO
-from subprocess import Popen
-from unittest import TestCase, TestSuite, makeSuite
+from unittest import TestCase, TestLoader
 
 from twisted.internet import reactor
+from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
+from twisted.trial.unittest import TestCase as TwistedTestCase
+from twisted.web import server
 
+from sqlobject import SQLObjectNotFound
+
+import canonical
 from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    ProberFactory, ProberTimeout, MirrorProberCallbacks)
+    ProberFactory, ProberTimeout, MirrorProberCallbacks,
+    BadResponseCodeException)
+from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
+    DistributionMirrorTestHTTPServer)
 
 
-class TestDistributionMirrorProber(TestCase):
+class HTTPServerTestSetup(TacTestSetup):
+
+    def setUpRoot(self):
+        pass
+
+    @property
+    def root(self):
+        return '/var/tmp'
+
+    @property
+    def tacfile(self):
+        return os.path.abspath(os.path.join(
+            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
+            'daemons/distributionmirror_http_server.tac'
+            ))
+
+    @property
+    def pidfile(self):
+        return os.path.join(self.root, 'distributionmirror_http_server.pid')
+
+    @property
+    def logfile(self):
+        return os.path.join(self.root, 'distributionmirror_http_server.log')
+
+
+class TestDistributionMirrorProber(TwistedTestCase):
 
     def setUp(self):
-        self.urls = {'timeout': u'http://foo.fdafdabar.fds/pub/ubuntu',
-                     '200': u'http://localhost:11375/valid-mirror/',
-                     '404': u'http://localhost:11375/invalid-mirror/'}
+        self.urls = {'timeout': u'http://localhost:11375/timeout',
+                     '200': u'http://localhost:11375/valid-mirror',
+                     '500': u'http://localhost:11375/error',
+                     '404': u'http://localhost:11375/invalid-mirror'}
         self.unchecked_urls = self.urls.values()
-        self.easygoing = Popen(
-            'lib/canonical/launchpad/scripts/ftests/easygoing_http.py')
-        # Wait two second to make sure the easygoing http server will be
-        # running when we need it.
-        # XXX: This is not reliable at all. We need a way to check that the
-        # script is actually running.
-        time.sleep(2)
+        root = DistributionMirrorTestHTTPServer()
+        site = server.Site(root)
+        site.displayTracebacks = False
+        self.port = reactor.listenTCP(11375, site)
 
-    def _createProberAndConnect(self, url, callback=None, errback=None):
+    def tearDown(self):
+        return self.port.stopListening()
+
+    def _createProberAndConnect(self, url):
         prober = ProberFactory(url)
-        if callback is not None:
-            prober.deferred.addCallback(callback)
-        if errback is not None:
-            prober.deferred.addErrback(errback)
-        prober.deferred.addBoth(self.finish, url)
         reactor.connectTCP(prober.host, prober.port, prober)
+        return prober.deferred
 
-    def finish(self, result, url):
-        self.unchecked_urls.remove(url)
-        if not len(self.unchecked_urls):
-            reactor.callLater(0, reactor.stop)
+    def test_200(self):
+        d = self._createProberAndConnect(self.urls['200'])
+        def got_result(result):
+            self.failUnless(
+                result == str(httplib.OK),
+                "Expected a '200' status but got '%s'" % result)
+        return d.addCallback(got_result)
 
-    def timeout_errback(self, reason):
-        self.timeout_reason = reason
+    def test_notfound(self):
+        d = self._createProberAndConnect(self.urls['404'])
+        return self.assertFailure(d, BadResponseCodeException)
 
-    def okay_callback(self, status):
-        self.okay_status = status
+    def test_500(self):
+        d = self._createProberAndConnect(self.urls['500'])
+        return self.assertFailure(d, ProberTimeout)
+        return self.assertFailure(d, BadResponseCodeException)
 
-    def notfound_callback(self, status):
-        self.notfound_status = status
-
-    def test_everything(self):
-        reactor.callLater(0, self.t_timeout)
-        reactor.callLater(0, self.t_200)
-        reactor.callLater(0, self.t_notfound)
-        reactor.run()
-        os.kill(self.easygoing.pid, signal.SIGINT)
-        self.failUnless(self.timeout_reason.type is ProberTimeout,
-                        "Expected a timeout but got %r" % self.timeout_reason)
-        self.failUnless(
-            self.okay_status == str(httplib.OK), 
-            "Expected a '200' status but got '%s'" % self.okay_status)
-        self.failUnless(
-            self.notfound_status == str(httplib.NOT_FOUND),
-            "Expected a '404' status but got '%s'" % self.notfound_status)
-
-    def t_200(self):
-        self.okay_status = None
-        url = self.urls['200']
-        self._createProberAndConnect(url, callback=self.okay_callback)
-
-    def t_notfound(self):
-        self.notfound_status = None
-        url = self.urls['404']
-        self._createProberAndConnect(url, callback=self.notfound_callback)
-
-    def t_timeout(self):
-        self.timeout_reason = None
-        url = self.urls['timeout']
-        self._createProberAndConnect(url, errback=self.timeout_errback)
+    def test_timeout(self):
+        d = self._createProberAndConnect(self.urls['timeout'])
+        return self.assertFailure(d, ProberTimeout)
 
 
 class TestDistributionMirrorProberCallbacks(TestCase):
@@ -117,10 +123,17 @@ class TestDistributionMirrorProberCallbacks(TestCase):
         self.failUnless(
             reason is None, "A timeout shouldn't be propagated.")
 
-        reason = callbacks.deleteMirrorRelease(Failure())
-        self.failUnless(
-            reason is not None, 
-            "Any failure that's not a timeout should be propagated.")
+        d = Deferred()
+        d.addErrback(callbacks.deleteMirrorRelease)
+        def got_result(result):
+            self.fail(
+                "Any failure that's not a timeout should be propagated.")
+        ok = []
+        def got_failure(failure):
+            ok.append(1)
+        d.addCallbacks(got_result, got_failure)
+        d.errback(Failure(ZeroDivisionError()))
+        self.assertEqual([1], ok)
 
         mirror_distro_release_source = None
         mirror_distro_release_source = callbacks.ensureOrDeleteMirrorRelease(
@@ -131,17 +144,14 @@ class TestDistributionMirrorProberCallbacks(TestCase):
             "MirrorDistroReleaseSource/MirrorDistroArchRelease should be "
             "created.")
 
-        mirror_distro_release_source = callbacks.ensureOrDeleteMirrorRelease(
-            str(httplib.NOT_FOUND))
-        self.failUnless(
-            mirror_distro_release_source is None,
-            "If the prober gets a 404 status, we need to make sure there's no "
-            "MirrorDistroReleaseSource/MirrorDistroArchRelease referent to "
-            "that url")
+        callbacks.deleteMirrorRelease(
+            Failure(BadResponseCodeException(str(httplib.NOT_FOUND))))
+        # If the prober gets a 404 status, we need to make sure there's no
+        # MirrorDistroReleaseSource/MirrorDistroArchRelease referent to
+        # that url
+        self.assertRaises(
+            SQLObjectNotFound, mirror_distro_release_source.sync)
 
 
 def test_suite():
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestDistributionMirrorProber))
-    suite.addTest(makeSuite(TestDistributionMirrorProberCallbacks))
-    return suite
+    return TestLoader().loadTestsFromName(__name__)

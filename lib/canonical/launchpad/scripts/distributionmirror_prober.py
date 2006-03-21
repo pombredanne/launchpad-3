@@ -5,7 +5,7 @@ import urlparse
 
 from twisted.internet import defer, protocol, reactor
 from twisted.web.http import HTTPClient
-from twisted.web import error
+from twisted.python.failure import Failure
 
 from canonical.launchpad.interfaces import IDistroArchRelease, IDistroRelease
 from canonical.lp.dbschema import MirrorStatus
@@ -54,13 +54,17 @@ class ProberFactory(protocol.ClientFactory):
         self.setTimeout(timeout)
         self.setURL(url.encode('ascii'))
         self.timedOut = False
-        
+
+    def startedConnecting(self, connector):
+        self.connector = connector
+
     def setTimeout(self, timeout):
         self.timeoutCall = reactor.callLater(timeout, self.timeOut)
 
     def timeOut(self):
         self.timedOut = True
         self.deferred.errback(ProberTimeout('TIMEOUT'))
+        self.connector.disconnect()
 
     def _parse(self, url, defaultPort=80):
         scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
@@ -84,7 +88,20 @@ class ProberFactory(protocol.ClientFactory):
         if self.timeoutCall.active():
             self.timeoutCall.cancel()
         if not self.timedOut:
-            self.deferred.callback(status)
+            # According to http://lists.debian.org/deity/2001/10/msg00046.html,
+            # apt intentionally handles only '200 OK' responses, so we do the
+            # same here.
+            if status == str(httplib.OK):
+                self.deferred.callback(status)
+            else:
+                self.deferred.errback(Failure(BadResponseCodeException(status)))
+
+
+class BadResponseCodeException(Exception):
+
+    def __init__(self, status, *args):
+        Exception.__init__(self, *args)
+        self.status = status
 
 
 class MirrorProberCallbacks(object):
@@ -118,27 +135,16 @@ class MirrorProberCallbacks(object):
         msg = ('Deleted %s with url %s because of %s.'
                % (self.mirror_class_name, self.url, failure.getErrorMessage()))
         self.log_file.write(msg)
-        if failure.type != ProberTimeout:
-            return failure
-        return None
+        failure.trap(ProberTimeout, BadResponseCodeException)
 
     def ensureOrDeleteMirrorRelease(self, http_status):
-        """If http_status is httplib.OK, then make sure we have a mirror for
-        self.release, self.pocket and self.component.
-
-        If http_status is anything other than httplib.OK, we delete the
-        mirror.
+        """Make sure we have a mirror for self.release, self.pocket and 
+        self.component.
         """
-        if http_status == str(httplib.OK):
-            msg = ('Ensuring %s with url %s exists in the database.'
-                   % (self.mirror_class_name, self.url))
-            mirror = self.ensureMethod(
-                self.release, self.pocket, self.component)
-        else:
-            msg = ('Deleted %s with url %s because we got a "%s" response.'
-                   % (self.mirror_class_name, self.url, http_status))
-            self.deleteMethod(self.release, self.pocket, self.component)
-            mirror = None
+        msg = ('Ensuring %s with url %s exists in the database.'
+               % (self.mirror_class_name, self.url))
+        mirror = self.ensureMethod(
+            self.release, self.pocket, self.component)
 
         self.log_file.write(msg)
         return mirror
@@ -151,8 +157,6 @@ class MirrorProberCallbacks(object):
         packages the mirror contains and when these packages were published,
         we can have an idea of when that mirror was last updated.
         """
-        if arch_or_source_mirror is None:
-            return
         # We start setting the status to unknown, and then we move on trying to
         # find one of the recently published packages mirrored there.
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
@@ -167,11 +171,9 @@ class MirrorProberCallbacks(object):
     def setMirrorStatus(self, http_status, arch_or_source_mirror, status):
         """Update the status of the given arch or source mirror.
 
-        The status is changed only if http_status is a '200 OK' and if the
-        given status refers to a more recent date than the current one.
+        The status is changed only if the given status refers to a more 
+        recent date than the current one.
         """
-        if http_status != str(httplib.OK):
-            return
         if arch_or_source_mirror.status > status:
             arch_or_source_mirror.status = status
 
