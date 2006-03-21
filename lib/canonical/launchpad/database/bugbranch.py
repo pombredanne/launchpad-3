@@ -6,15 +6,16 @@ __metaclass__ = type
 
 __all__ = ["BugBranch"]
 
-from zope.interface import implements
-
 from sqlobject import ForeignKey, StringCol
 
-from canonical.lp.dbschema import EnumCol, BugBranchStatus
-from canonical.database.sqlbase import SQLBase
-from canonical.database.datetimecol import UtcDateTimeCol
+from zope.interface import implements
+
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IBugBranch
+from canonical.lp.dbschema import EnumCol, BugBranchStatus
+
 
 class BugBranch(SQLBase):
     """See canonical.launchpad.interfaces.IBugBranch."""

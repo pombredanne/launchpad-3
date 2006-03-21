@@ -278,6 +278,7 @@ class IHasProduct(Interface):
 
 class IHasBug(Interface):
     """An object linked to a bug, e.g., a bugtask or a bug branch."""
+
     bug = Int(title=_("Bug #"))
 
 

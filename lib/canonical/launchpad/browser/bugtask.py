@@ -210,23 +210,6 @@ class BugTaskView(LaunchpadView):
                 subject=subject, content=comment, owner=self.user,
                 publish_create_event=False)
 
-        branch_statuses_updated = False
-        vocab_registry = getVocabularyRegistry()
-        bug_branch_status_vocab = vocab_registry.get(
-            None, "BugBranchStatus")
-        for bug_branch in self.context.bug.bug_branches:
-            field_name = "branch.%d.status" % bug_branch.id
-            new_branch_status = form.get(field_name)
-            if new_branch_status:
-                status = bug_branch_status_vocab.getTermByToken(
-                    new_branch_status)
-                if bug_branch.status != status.value:
-                    bug_branch.status = status.value
-                    branch_statuses_updated = True
-
-        if branch_statuses_updated:
-            self.notices.append("Branch statuses successfully updated.")
-
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
         # establish if a subscription form was posted
@@ -287,10 +270,6 @@ class BugTaskView(LaunchpadView):
         return (
             IDistroBugTask.providedBy(self.context) or
             IDistroReleaseBugTask.providedBy(self.context))
-
-    def getBranchStatusVocabulary(self):
-        vocabulary_registry = getVocabularyRegistry()
-        return vocabulary_registry.get(None, "BugBranchStatus")
 
 
 class BugTaskPortletView:

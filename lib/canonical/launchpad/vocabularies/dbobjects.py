@@ -333,6 +333,11 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
 
 
 class ProductBranchVocabulary(SQLObjectVocabularyBase):
+    """The set of branches associated with a product.
+
+    Perhaps this should be renamed to BranchVocabulary.
+    """
+
     implements(IHugeVocabulary)
 
     _table = Branch

@@ -93,9 +93,7 @@
     <strong>Related Branches</strong>
     <div tal:condition="context/bug/private"
          class="portalMessage">
-      Warning: If any of the branches below are hosted by Launchpad,
-      they are publically accessible, and therefore should not be used
-      to fix private bugs!
+      This bug is private. All branches below should be private.
     </div>
 
     <table class="listing">

@@ -15,11 +15,12 @@ from warnings import warn
 from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
-from canonical.lp import decorates
 from canonical.launchpad.interfaces import (
     IBugTaskDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     INullBugTask)
+from canonical.lp import decorates
 from canonical.lp.dbschema import BugTaskStatus
+
 
 class BugTaskDelta:
     """See canonical.launchpad.interfaces.IBugTaskDelta."""

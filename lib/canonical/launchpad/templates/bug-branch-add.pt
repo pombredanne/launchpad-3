@@ -19,11 +19,10 @@
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       <div tal:condition="context/bug/private"
-           style="background-color: red; color: white; padding: 5px;
-                  font-weight: normal">
-        Warning: If you link a branch to this bug that is hosted by
-        Launchpad, the branch is publically accessible!
-       </div>
+           class="portalMessage">
+        This bug is private. Only private branches should be linked to
+        this bug.
+     </div>
 
       Adding a bzr branch to a bug allows you to notify others
       about where work is going on to fix this bug.

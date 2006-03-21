@@ -9,12 +9,15 @@ __all__ = ["IBugBranch"]
 from zope.interface import Interface
 from zope.schema import Int, Text, TextLine, Choice
 
-from canonical.lp.dbschema import BugBranchStatus
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IHasDateCreated, non_duplicate_branch, IHasBug)
-from canonical.launchpad import _
+from canonical.lp.dbschema import BugBranchStatus
+
 
 class IBugBranch(IHasDateCreated, IHasBug):
+    """A branch linked to a bug."""
+
     id = Int(title=_("Bug Branch #"))
     bug = Int(title=_("Bug"))
     branch = Choice(
@@ -27,4 +30,5 @@ class IBugBranch(IHasDateCreated, IHasBug):
     whiteboard = Text(
         title=_('Status Whiteboard'), required=False,
         description=_(
-            'Extra information about the work going on in this branch'))
+            'Additional information about the status of the bugfix '
+            'in this branch.'))

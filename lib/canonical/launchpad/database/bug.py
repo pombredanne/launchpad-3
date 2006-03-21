@@ -93,11 +93,7 @@ class Bug(SQLBase):
     tickets = RelatedJoin('Ticket', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
-
-    @property
-    def bug_branches(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        return BugBranch.selectBy(bugID=self.id)
+    bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
 
     @property
     def displayname(self):

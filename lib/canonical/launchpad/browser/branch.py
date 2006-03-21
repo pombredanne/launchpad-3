@@ -19,16 +19,17 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, ILaunchBag, IBugSet)
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
-
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepthrough)
 
+
 class BranchNavigation(Navigation):
+
     usedfor = IBranch
 
     @stepthrough("+bug")

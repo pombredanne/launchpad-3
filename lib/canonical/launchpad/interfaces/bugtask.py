@@ -52,8 +52,8 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.REJECTED)
 
 class IBugTask(IHasDateCreated, IHasBug):
-    """A description of a bug needing fixing in a particular product
-    or package."""
+    """A bug needing fixing in a particular product or package."""
+
     id = Int(title=_("Bug Task #"))
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')

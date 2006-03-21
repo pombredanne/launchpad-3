@@ -10,15 +10,15 @@ __all__ = [
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget
 from zope.app.form.utility import setUpWidgets
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp import canonical_url
+
 
 class BugBranchAddView:
     """Browser view for linking a bug to a branch."""
-    def process(self, branch, whiteboard):
-        bug = self.context.bug
 
-        bug.addBranch(branch, whiteboard)
+    def process(self, branch, whiteboard):
+        self.context.bug.addBranch(branch, whiteboard)
 
         self.request.response.addNotification(
             "Successfully registered branch %s for this bug." %
@@ -30,6 +30,7 @@ class BugBranchAddView:
 
 class BugBranchStatusView:
     """Browser view for editing branch status."""
+
     @property
     def initial_values(self):
         return {
@@ -37,6 +38,13 @@ class BugBranchStatusView:
             'whiteboard': self.context.whiteboard}
 
     def _setUpWidgets(self):
+        # The same form is reused for both viewing and editing the
+        # branch, so render the form with edit widgets when the user
+        # can edit the form values, otherwise render a read-only form.
+        #
+        # XXX, Brad Bollenbach, 2006-03-21: When Zope 3.2 lands, this
+        # form should be redone if the new form machinery can make it
+        # simpler.
         if check_permission("launchpad.Edit", self.context):
             interface = IInputWidget
         else:
@@ -48,6 +56,7 @@ class BugBranchStatusView:
 
     def process(self, status, whiteboard):
         bug_branch = self.context
+        # If either field has changed, update both for simplicity.
         if ((status != bug_branch.status) or
             (whiteboard != bug_branch.whiteboard)):
             bug_branch.status = status

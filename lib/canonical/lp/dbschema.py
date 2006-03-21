@@ -725,8 +725,8 @@ class BugBranchStatus(DBSchema):
     ABANDONED = Item(10, """
         Abandoned Attempt
 
-        This branch is no longer being worked on, and should no longer
-        be considered to contain a useful fix for this bug.
+        A fix for this bug is no longer being worked on in this
+        branch.
         """)
 
     INPROGRESS = Item(20, """

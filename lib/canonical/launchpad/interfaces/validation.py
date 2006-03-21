@@ -166,7 +166,6 @@ def non_duplicate_bug(value):
 def non_duplicate_branch(value):
     """Ensure that this branch hasn't already been linked to this bug."""
     current_bug = getUtility(ILaunchBag).bug
-
     if current_bug.hasBranch(value):
         raise LaunchpadValidationError(_(dedent("""
             This branch is already registered on this bug.
@@ -185,6 +184,7 @@ def valid_bug_number(value):
             "Bug %i doesn't exist." % value))
     return True
 
+
 def valid_cve_sequence(value):
     """Check if the given value is a valid CVE otherwise raise an exception."""
     if valid_cve(value):
@@ -192,6 +192,7 @@ def valid_cve_sequence(value):
     else:
         raise LaunchpadValidationError(_(
             "%s is not a valid CVE number" % value))
+
 
 def _valid_image(image, max_size, max_dimensions):
     """Check that the given image is under the given constraints.

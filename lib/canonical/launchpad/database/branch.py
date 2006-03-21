@@ -85,11 +85,12 @@ class Branch(SQLBase):
         'Person', joinColumn='branch', otherColumn='person',
         intermediateTable='BranchSubscription', orderBy='name')
 
+    bug_branches = SQLMultipleJoin(
+        'BugBranch', joinColumn='branch', orderBy='id')
+
     @property
     def related_bugs(self):
-        bug_branches = BugBranch.selectBy(branchID=self.id)
-
-        return [bug_branch.bug for bug_branch in bug_branches]
+        return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
     def product_name(self):

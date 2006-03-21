@@ -9,7 +9,8 @@ __all__ = [
     'IBug',
     'IBugSet',
     'IBugDelta',
-    'IBugAddForm']
+    'IBugAddForm',
+    ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute

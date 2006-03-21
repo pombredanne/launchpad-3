@@ -10,8 +10,8 @@ import urllib
 import cgi
 import datetime
 
-from sqlobject import (ForeignKey, StringCol, SQLMultipleJoin)
-from sqlobject import SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 import pytz
 
