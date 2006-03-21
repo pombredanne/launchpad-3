@@ -260,6 +260,8 @@ class SourcePackageView(BuildRecordsView):
         potemplatenames = set([p.potemplatename for p in potemplates])
         return sorted(potemplatenames, key=lambda item: item.name)
 
+    def searchName(self):
+        return False
 
 class SourcePackageBugsView:
 

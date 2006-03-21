@@ -200,6 +200,8 @@ build_index = ContextTitle('Build details for %s')
 
 build_reset = ContextTitle('Reset %s')
 
+build_rescore = ContextTitle('Rescore %s')
+
 builders = 'Launchpad build farm'
 
 builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
