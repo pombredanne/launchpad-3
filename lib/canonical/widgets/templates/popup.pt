@@ -9,10 +9,11 @@
                     style view/style;
                     class view/cssClass" />
 
-<select
-    tal:define="matches view/matches"
-    tal:condition="python:len(matches) > 0"
-    tal:attributes="disabled python:len(matches) == 1">
+<tal:search_results tal:condition="not: view/hasValidInput">
+  <select
+      tal:define="matches view/matches"
+      tal:condition="python:len(matches) > 0"
+      >
     <option
         tal:repeat="match matches"
         tal:attributes="value match/token;
@@ -20,6 +21,7 @@
             onclick string:this.form['${view/name}'].value = this.value"
         tal:content="match/title"
         />
-</select>
+  </select>
+</tal:search_results>
 
 (<a tal:attributes="href view/popupHref">Choose&hellip;</a>)

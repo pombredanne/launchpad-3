@@ -12,7 +12,7 @@ from canonical.archivepublisher.publishing import Publisher
 # Dominator
 from canonical.archivepublisher.domination import Dominator
 # Configuration management
-from canonical.archivepublisher.config import Config
+from canonical.archivepublisher.config import Config, LucilleConfigError
 # Librarian wrapper
 from canonical.archivepublisher.library import Librarian
 # Tag files

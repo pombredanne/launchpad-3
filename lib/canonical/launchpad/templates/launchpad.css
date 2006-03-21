@@ -36,7 +36,7 @@ kbd {
   border: 1px solid;
   border-color: white gray gray white;
   color: black;
-  background-color: #ccc;
+  background-color: #ddd;
   min-width: 1em;
 }
 label {
@@ -85,7 +85,7 @@ body {
   padding: 0;
 }
 .body {
-  margin: 0 1em 1em;
+  margin: 0.75em 0.75em 0;
 }
 
 :visited {
@@ -132,6 +132,10 @@ h3, h4, h5, h6 {
   font-size: 1em;
   margin-bottom: 0;
 }
+h5.languages {
+  background-image: url(/@@/languages.gif);
+  background-repeat: no-repeat;
+}
 label {
   font-weight: bold;
 }
@@ -163,7 +167,7 @@ table.listing {
   font-size: 85%;
   margin: 1em 0;
 }
-table.listing, table.listing tbody {
+table.listing, table.listing>tbody {
   border-bottom: 1px solid #8cacbb;
 }
 table.listing>thead, table.listing>thead>tr>th {
@@ -214,12 +218,12 @@ table.sortable img.sortarrow {
   padding-left: 2px;
 }
 th.ascending {
-  background-image: url(/++resource++arrowDown.gif);
+  background-image: url(/@@/arrowDown.gif);
   background-position: center right;
   background-repeat: no-repeat;
 }
 th.descending {
-  background-image: url(/++resource++arrowUp.gif);
+  background-image: url(/@@/arrowUp.gif);
   background-position: center right;
   background-repeat: no-repeat;
 }
@@ -248,7 +252,7 @@ ol {
   font-weight: normal;
 }
 .portlet h4 { /* the base portlet heading */
-  padding: 0em 0.3em 0em 1em;
+  padding: 0em 0.3em 0em 0.75em;
   display: block;
   font-size: 1em;
 }
@@ -271,7 +275,7 @@ ol {
   border: 1px solid #8cacbb;
 }
 .portletContent {
-  padding: 1em;
+  padding: 0.75em;
 }
 
 /* -- Form controls: -- */
@@ -279,6 +283,8 @@ textarea {
   border: 1px solid #8cacbb;  
   color: black;
   background-color: white;
+  font-family: sans-serif;
+  font-family: caption;
   width: 100%;
 }
 .fieldRequired {
@@ -389,10 +395,7 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
-/* Column definitions: */
-#portal-columns {
-  margin-top: 1em;
-}
+/* Column definitions for old layout: */
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
@@ -410,6 +413,20 @@ ul.app>li.current {
   width: 24%; /* = 25% - 1% whitespace */
 }
 #portal-column-one {
+  display: inline;
+  float: left;
+  margin-left: -100%; /* flush with the left edge of the page */
+  width: 24%; /* = 25% - 1% whitespace */
+}
+
+/* Column definitions for 2col layout: */
+#layout2col-main {
+  display: inline;
+  float: left;
+  margin-left: 25%;
+  width: 75%;
+}
+#layout2col-portlets {
   display: inline;
   float: left;
   margin-left: -100%; /* flush with the left edge of the page */
@@ -672,7 +689,7 @@ tr.highlight {
 }
 
 /* Bug Status, Severity, Priority markers */
-.statusUnconfirmed { color: Orange; }
+.statusUnconfirmed { color: #993300; }
 .statusConfirmed   { color: Red; }
 .statusFixed       { color: Black; }
 .statusReleased    { color: Green; }
@@ -700,9 +717,9 @@ tr.highlight {
 .specstatusIMPLEMENTED     { color: Green; }
 .specstatusINFORMATIONAL   { color: Green; }
 .specstatusAPPROVED        { color: Black; }
-.specstatusPENDINGAPPROVAL { color: Yellow; }
-.specstatusPENDINGREVIEW   { color: Yellow; }
-.specstatusDRAFT           { color: Orange; }
+.specstatusPENDINGAPPROVAL { color: #f09; }
+.specstatusPENDINGREVIEW   { color: #f09; }
+.specstatusDRAFT           { color: #930; }
 .specstatusBRAINDUMP       { color: Red; }
 .specstatusSUPERSEDED      { color: Gray; }
 .specstatusOBSOLETE        { color: Gray; }
@@ -713,6 +730,18 @@ tr.highlight {
 .specpriorityMEDIUM        { color: Orange; }
 .specpriorityHIGH          { color: Red; }
 .specpriorityESSENTIAL     { color: Red; }
+
+.specdeliveryUNKNOWN            {color: Gray; }
+.specdeliveryDEFERRED           {color: Red; }
+.specdeliveryNEEDSINFRASTUCTURE {color: Red; }
+.specdeliveryBLOCKED            {color: Red; }
+.specdeliverySTARTED            {color: Blue; }
+.specdeliverySLOW               {color: Red; }
+.specdeliveryGOOD               {color: Blue; }
+.specdeliveryBETA               {color: Orange; }
+.specdeliveryNEEDSREVIEW        {color: Purple; }
+.specdeliveryAWAITINGDEPLOYMENT {color: Red; }
+.specdeliveryIMPLEMENTED        {color: Green; }
 
 /* Board-like comment CSS */
 
@@ -769,115 +798,118 @@ tr.highlight {
 }
 /* Various custom list formats: */
 ul.add>li, li.add {
-  list-style-image: url(/++resource++add.gif);
+  list-style-image: url(/@@/add.gif);
 }
 ul.alert>li, li.alert {
-  list-style-image: url(/++resource++alert_icon.gif);
+  list-style-image: url(/@@/alert_icon.gif);
 }
 ul.architecture>li, li.architecture {
   list-style-image: url(/@@/architecture);
 }
 ul.bounty>li, li.bounty {
-  list-style-image: url(/++resource++bounty);
+  list-style-image: url(/@@/bounty);
 }
 ul.bug>li, li.bug {
-  list-style-image: url(/++resource++bug);
+  list-style-image: url(/@@/bug);
 }
 ul.bug.high>li, li.bug.high {
-  list-style-image: url(/++resource++bug-high);
+  list-style-image: url(/@@/bug-high);
 }
 ul.bug.medium>li, li.bug.medium {
-  list-style-image: url(/++resource++bug-medium);
+  list-style-image: url(/@@/bug-medium);
 }
 ul.bug.low>li, li.bug.low {
-  list-style-image: url(/++resource++bug-low);
+  list-style-image: url(/@@/bug-low);
 }
 ul.bug.remote>li, li.bug.remote {
-  list-style-image: url(/++resource++bug-remote);
+  list-style-image: url(/@@/bug-remote);
 }
 ul.bugs>li, li.bugs {
-  list-style-image: url(/++resource++bugs);
+  list-style-image: url(/@@/bugs);
 }
 ul.build-success>li, li.build-success {
   list-style-image: url(/@@/build-success);
 }
 ul.cve>li, li.cve {
-  list-style-image: url(/++resource++cve);
+  list-style-image: url(/@@/cve);
 }
 ul.document>li, li.document {
-  list-style-image: url(/++resource++document_icon.gif);
+  list-style-image: url(/@@/document_icon.gif);
 }
 ul.download>li, li.download {
-  list-style-image: url(/++resource++download.png);
+  list-style-image: url(/@@/download.png);
 }
 ul.edit>li, li.edit {
-  list-style-image: url(/++resource++edit.gif);
+  list-style-image: url(/@@/edit.gif);
 }
 ul.file>li, li.file {
-  list-style-image: url(/++resource++file);
+  list-style-image: url(/@@/file);
 }
 ul.info>li, li.info {
-  list-style-image: url(/++resource++info_icon.gif);
+  list-style-image: url(/@@/info_icon.gif);
 }
 ul.languages>li, li.languages {
-  list-style-image: url(/++resource++languages.gif);
+  list-style-image: url(/@@/languages.gif);
 }
 ul.list>li, li.list {
-  list-style-image: url(/++resource++list);
+  list-style-image: url(/@@/list);
 }
 ul.locked>li, li.locked {
-  list-style-image: url(/++resource++lock_icon.gif);
+  list-style-image: url(/@@/lock_icon.gif);
 }
 ul.mail>li, li.mail {
-  list-style-image: url(/++resource++mail_icon.gif);
+  list-style-image: url(/@@/mail_icon.gif);
 }
 ul.menu>li, li.menu {
-  list-style-image: url(/++resource++favorite_icon.gif);
+  list-style-image: url(/@@/favorite_icon.gif);
 }
 ul.milestone>li, li.milestone {
-  list-style-image: url(/++resource++target);
+  list-style-image: url(/@@/target);
 }
 ul.news>li, li.news {
-  list-style-image: url(/++resource++news);
+  list-style-image: url(/@@/news);
 }
 ul.packages>li, li.packages {
-  list-style-image: url(/++resource++package-binary);
+  list-style-image: url(/@@/package-binary);
 }
 ul.sources>li, li.sources {
-  list-style-image: url(/++resource++package-source);
+  list-style-image: url(/@@/package-source);
 }
 ul.products>li, li.products {
-  list-style-image: url(/++resource++product_icon.gif);
+  list-style-image: url(/@@/product_icon.gif);
 }
 ul.person>li, li.person, ul.people>li, li.people {
-  list-style-image: url(/++resource++user.gif);
+  list-style-image: url(/@@/user.gif);
+}
+ul.remove>li, li.remove {
+  list-style-image: url(/@@/remove);
 }
 ul.spec>li, li.spec {
-    list-style-image: url(/++resource++spec);
+    list-style-image: url(/@@/spec);
 }
 ul.sprint>li, li.sprint {
-    list-style-image: url(/++resource++sprint);
+    list-style-image: url(/@@/sprint);
 }
 ul.statistic>li, ul.statistics, li.statistic {
-    list-style-image: url(/++resource++statistic);
+    list-style-image: url(/@@/statistic);
 }
 ul.ticket>li, li.ticket {
-    list-style-image: url(/++resource++ticket);
+    list-style-image: url(/@@/ticket);
 }
 ul.up>li, li.up {
-    list-style-image: url(/++resource++up);
+    list-style-image: url(/@@/up);
 }
 ul.webref>li, li.webref {
-    list-style-image: url(/++resource++link_icon.gif);
+    list-style-image: url(/@@/link_icon.gif);
 }
 ul.translations>li, li.translations {
-  list-style-image: url(/++resource++translations);
+  list-style-image: url(/@@/translations);
 }
 dl.products>dt:before {
-  content: url(/++resource++product_icon.gif);
+  content: url(/@@/product_icon.gif);
 }
 ul.search>li, li.search {
-  list-style-image: url(/++resource++search_icon.gif);
+  list-style-image: url(/@@/search_icon.gif);
 }
 
 /* Used for source and translator comments on the translation page. */
@@ -941,7 +973,7 @@ input[type="image"] {
   text-align: left;
 }
 .required:after {
-  background: url(/++resource++required.gif) center left no-repeat;
+  background: url(/@@/required.gif) center left no-repeat;
   color: #999999;
   content: '(Required)';
   font-weight: normal;  
@@ -1117,7 +1149,7 @@ Calendar stuff.
   background-color: #ff9070;
   border: 1px solid #ddb0b0;
   color: Black;
-  background-image: url(/++resource++alert_icon.gif);
+  background-image: url(/@@/alert_icon.gif);
   font-size: 85%;
   font-weight: bold;
   margin: 1em 0em 0em 0em;
@@ -1133,7 +1165,7 @@ Calendar stuff.
   background-color: #ffffcc;
   border: 1px solid #eeee00;
   color: Black;
-  background-image: url(/++resource++info_icon.gif);
+  background-image: url(/@@/info_icon.gif);
   font-size: 85%;
   font-weight: bold;
   margin: 1em 0em;
@@ -1144,4 +1176,16 @@ Calendar stuff.
 .oopsid {
   font-weight: bold;
   color: #cc0000;
+}
+
+dl.faq dt {
+    font-weight: bold;
+}
+
+dl.faq dd {
+    margin: 0.5em 1em;
+}
+
+dl.faq ol {
+    margin: 0.5em 3em;
 }

@@ -53,7 +53,7 @@
                 <tr>
                     <th></th>
                     <td>
-                        <input name="UPLOAD" type="submit" value="Upload" />
+                        <input name="pofile_upload" type="submit" value="Upload" />
                     </td>
                 </tr>
             </table>

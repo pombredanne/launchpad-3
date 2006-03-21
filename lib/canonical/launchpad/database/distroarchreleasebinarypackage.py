@@ -11,21 +11,31 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IDistroArchReleaseBinaryPackage
+from canonical.lp.dbschema import PackagePublishingStatus
 
+from canonical.launchpad.interfaces import (IDistroArchReleaseBinaryPackage,
+                                            NotFoundError)
+
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.distroarchreleasebinarypackagerelease import \
     DistroArchReleaseBinaryPackageRelease
 from distroreleasepackagecache import DistroReleasePackageCache
-from canonical.launchpad.database.publishing import \
-    BinaryPackagePublishingHistory
+from canonical.launchpad.database.publishing import (BinaryPackagePublishingHistory,
+                                                     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.binarypackagerelease import \
     BinaryPackageRelease
-from sourcerer.deb.version import Version
 
+from canonical.lp.dbschema import PackagePublishingStatus
 
 class DistroArchReleaseBinaryPackage:
+    """A Binary Package in the context of a Distro Arch Release. 
+
+    Binary Packages are "magic": they don't really exist in the
+    database. Instead, they are synthesized based on information from
+    the publishing and binarypackagerelease tables.
+    """
 
     implements(IDistroArchReleaseBinaryPackage)
 
@@ -91,19 +101,25 @@ class DistroArchReleaseBinaryPackage:
 
     def __getitem__(self, version):
         """See IDistroArchReleaseBinaryPackage."""
-        bpph = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease = 
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.version = %s
-            """ % sqlvalues(self.distroarchrelease.id, version),
-            orderBy='-datecreated',
-            clauseTables=['binarypackagerelease'])
-        if bpph.count() == 0:
+        query = """
+        BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.binarypackagerelease =
+            BinaryPackageRelease.id AND
+        BinaryPackageRelease.version = %s AND
+        BinaryPackageRelease.binarypackagename = %s
+        """ % sqlvalues(self.distroarchrelease.id, version,
+                        self.binarypackagename.id)
+
+        bpph = BinaryPackagePublishingHistory.selectFirst(
+            query, clauseTables=['binarypackagerelease'],
+            orderBy=["-datecreated"])
+
+        if bpph is None:
             return None
+
         return DistroArchReleaseBinaryPackageRelease(
             distroarchrelease=self.distroarchrelease,
-            binarypackagerelease=bpph[0].binarypackagerelease)
+            binarypackagerelease=bpph.binarypackagerelease)
 
     @property
     def releases(self):
@@ -132,20 +148,22 @@ class DistroArchReleaseBinaryPackage:
     @property
     def currentrelease(self):
         """See IDistroArchReleaseBinaryPackage."""
-        bprs = BinaryPackageRelease.select("""
+        releases = BinaryPackageRelease.select("""
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackageRelease.id =
                 BinaryPackagePublishing.binarypackagerelease AND
-            BinaryPackagePublishing.distroarchrelease = %s
+            BinaryPackagePublishing.distroarchrelease = %s AND
+            BinaryPackagePublishing.status = %s
             """ % sqlvalues(self.binarypackagename.id,
-                            self.distroarchrelease.id),
+                            self.distroarchrelease.id,
+                            PackagePublishingStatus.PUBLISHED,
+                            ),
             orderBy='datecreated',
             distinct=True,
             clauseTables=['BinaryPackagePublishing',])
-        
+
         # sort by version
-        releases = sorted(list(bprs), key=lambda item: Version(item.version))
-        if len(releases) == 0:
+        if releases.count() == 0:
             return None
         return DistroArchReleaseBinaryPackageRelease(
             distroarchrelease=self.distroarchrelease,
@@ -165,4 +183,67 @@ class DistroArchReleaseBinaryPackage:
             clauseTables=['BinaryPackageRelease'],
             orderBy='-datecreated')
 
+    @property
+    def current_published(self):
+        """See IDistroArchReleaseBinaryPackage."""
 
+        current = self.publishing_history.selectFirstBy(
+            status = PackagePublishingStatus.PUBLISHED)
+        if current is None:
+            raise NotFoundError("Binary package %s not published in %s/%s"
+                                % (self.binarypackagename.name,
+                                   self.distroarchrelease.distrorelease.name,
+                                   self.distroarchrelease.architecturetag))
+
+        return current
+
+    def changeOverride(self, new_component=None, new_section=None,
+                       new_priority=None):
+        """See IDistroArchReleaseBinaryPackage."""
+
+        # Check we have been asked to do something
+        if (new_component is None and new_section is None 
+            and new_priority is None):
+            raise AssertionError("changeOverride must be passed a new"
+                                 "component, section or priority.")
+
+        # Retrieve current publishing info
+        current = self.current_published
+
+        # Check there is a change to make
+        if new_component is None:
+            new_component = current.component
+        if new_section is None:
+            new_section = current.section
+        if new_priority is None:
+            new_priority = current.priority
+
+        if (new_component == current.component and
+            new_section == current.section and
+            new_priority == current.priority):
+            return
+
+        # Append the modified package publishing entry
+        SecureBinaryPackagePublishingHistory(
+            binarypackagerelease=current.binarypackagerelease,
+            distroarchrelease=current.distroarchrelease,
+            component=new_component,
+            section=new_section,
+            priority=new_priority,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=current.pocket,
+            embargo=False,
+            )
+        
+    def supersede(self):
+        """See IDistroArchReleaseBinaryPackage."""
+
+        # Retrieve current publishing info
+        current = self.current_published
+
+        current = SecureBinaryPackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.SUPERSEDED
+        current.datesuperseded = UTC_NOW
+
+        return current

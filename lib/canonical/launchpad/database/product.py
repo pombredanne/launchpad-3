@@ -11,7 +11,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin,
+    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
     SQLObjectNotFound, AND)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -19,9 +19,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
-    SpecificationSort)
-
+    EnumCol, TranslationPermission, SpecificationSort)
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -38,7 +37,7 @@ from canonical.launchpad.interfaces import (
     )
 
 
-class Product(SQLBase):
+class Product(SQLBase, BugTargetBase):
     """A Product."""
 
     implements(IProduct, ICalendarOwner)
@@ -98,11 +97,9 @@ class Product(SQLBase):
                 revision=0)
         return self.calendar
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='product',
+    branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
-    branches = MultipleJoin('Branch', joinColumn='product',
-        orderBy='id')
-    serieslist = MultipleJoin('ProductSeries', joinColumn='product',
+    serieslist = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
     @property
@@ -121,7 +118,7 @@ class Product(SQLBase):
             orderBy=['version']
             )
 
-    milestones = MultipleJoin('Milestone', joinColumn = 'product')
+    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product')
 
     bounties = RelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
@@ -296,33 +293,6 @@ class Product(SQLBase):
             )
         return distros
 
-    def bugsummary(self):
-        """Return a matrix of the number of bugs for each status and severity.
-        """
-        # XXX: This needs a comment that gives an example of the structure
-        #      within a typical dict that is returned.
-        #      The code is hard to read when you can't picture exactly
-        #      what it is doing.
-        # - Steve Alexander, Tue Nov 30 16:49:40 UTC 2004
-        bugmatrix = {}
-        for severity in BugTaskSeverity.items:
-            bugmatrix[severity] = {}
-            for status in BugTaskStatus.items:
-                bugmatrix[severity][status] = 0
-        for bugtask in self.bugtasks:
-            bugmatrix[bugtask.severity][bugtask.bugstatus] += 1
-        resultset = [['']]
-        for status in BugTaskStatus.items:
-            resultset[0].append(status.title)
-        severities = BugTaskSeverity.items
-        for severity in severities:
-            statuses = BugTaskStatus.items
-            statusline = [severity.title]
-            for status in statuses:
-                statusline.append(bugmatrix[severity][status])
-            resultset.append(statusline)
-        return resultset
-
     def ensureRelatedBounty(self, bounty):
         """See IProduct."""
         for curr_bounty in self.bounties:
@@ -339,7 +309,6 @@ class Product(SQLBase):
             product=self, name=name, title=title, url=url, home_page=home_page,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)
-        
 
 
 class ProductSet:
@@ -350,7 +319,9 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(Product.selectBy(active=True))
+        results = Product.selectBy(active=True, orderBy="-Product.datecreated")
+        # The main product listings include owner, so we prejoin it in
+        return iter(results.prejoin(["owner"]))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -360,7 +331,7 @@ class ProductSet:
         return item
 
     def latest(self, quantity=5):
-        return Product.select(Product.q.active==True,
+        return Product.select(Product.q.active == True, 
                               orderBy='-datecreated',
                               limit=quantity)
 
@@ -373,7 +344,7 @@ class ProductSet:
                                 str(productid))
 
         return product
-    
+
     def getByName(self, name, default=None, ignore_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         if ignore_inactive:
@@ -389,7 +360,8 @@ class ProductSet:
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
-                      sourceforgeproject=None, programminglang=None):
+                      sourceforgeproject=None, programminglang=None,
+                      reviewed=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product(
             owner=owner, name=name, displayname=displayname,
@@ -398,7 +370,7 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang)
+            programminglang=programminglang, reviewed=reviewed)
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""

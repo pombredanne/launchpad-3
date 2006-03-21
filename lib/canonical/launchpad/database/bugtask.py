@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'BugTaskFactory',
     'bugtask_sort_key']
 
 import urllib
@@ -14,17 +13,13 @@ import datetime
 from sqlobject import ForeignKey, StringCol
 from sqlobject import SQLObjectNotFound
 
-from sqlos.interfaces import ISQLObject
-
 import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.lp.dbschema import (
-    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity)
-
+from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -32,22 +27,22 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open': BugTaskStatus.UNCONFIRMED,
-                    'forwarded': BugTaskStatus.CONFIRMED,
-                    'done': BugTaskStatus.FIXRELEASED}
+debbugsstatusmap = {'open':      dbschema.BugTaskStatus.UNCONFIRMED,
+                    'forwarded': dbschema.BugTaskStatus.CONFIRMED,
+                    'done':      dbschema.BugTaskStatus.FIXRELEASED}
 
-debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
-                      'minor': BugTaskSeverity.MINOR,
-                      'normal': BugTaskSeverity.NORMAL,
-                      None: BugTaskSeverity.NORMAL,
-                      'important': BugTaskSeverity.MAJOR,
-                      'serious': BugTaskSeverity.MAJOR,
-                      'grave': BugTaskSeverity.MAJOR,
-                      'critical': BugTaskSeverity.CRITICAL}
+debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
+                      'minor':     dbschema.BugTaskSeverity.MINOR,
+                      'normal':    dbschema.BugTaskSeverity.NORMAL,
+                      None:        dbschema.BugTaskSeverity.NORMAL,
+                      'important': dbschema.BugTaskSeverity.MAJOR,
+                      'serious':   dbschema.BugTaskSeverity.MAJOR,
+                      'grave':     dbschema.BugTaskSeverity.MAJOR,
+                      'critical':  dbschema.BugTaskSeverity.CRITICAL}
 
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
@@ -86,7 +81,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _defaultOrder = ['distribution', 'product', 'distrorelease',
                      'milestone', 'sourcepackagename']
 
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
         notNull=False, default=None)
@@ -102,17 +97,17 @@ class BugTask(SQLBase, BugTaskMixin):
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
-    status = EnumCol(
+    status = dbschema.EnumCol(
         dbName='status', notNull=True,
-        schema=BugTaskStatus,
-        default=BugTaskStatus.UNCONFIRMED)
+        schema=dbschema.BugTaskStatus,
+        default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
-    priority = EnumCol(
-        dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
-    severity = EnumCol(
+    priority = dbschema.EnumCol(
+        dbName='priority', notNull=False, schema=dbschema.BugTaskPriority, default=None)
+    severity = dbschema.EnumCol(
         dbName='severity', notNull=True,
-        schema=BugTaskSeverity,
-        default=BugTaskSeverity.NORMAL)
+        schema=dbschema.BugTaskSeverity,
+        default=dbschema.BugTaskSeverity.NORMAL)
     binarypackagename = ForeignKey(
         dbName='binarypackagename', foreignKey='BinaryPackageName',
         notNull=False, default=None)
@@ -274,29 +269,19 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            # The statuses REJECTED, FIXCOMMITTED, and CONFIRMED will
-            # display with the assignee information as well. Showing
-            # assignees with other status would just be confusing
-            # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
-                '<img src="/++resource++user.gif" /> '
-                '<a href="/malone/assigned?name=%s">%s</a>' % (
+                '<img src="/@@/user.gif" /> '
+                '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXCOMMITTED):
+            if status in (dbschema.BugTaskStatus.REJECTED, 
+                          dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
-            elif  status == BugTaskStatus.CONFIRMED:
+            else:
                 return '%s, assigned to %s' % (status.title.lower(), assignee_html)
-
-        # The status is something other than REJECTED, FIXCOMMITTED or
-        # CONFIRMED (whether assigned to someone or not), so we'll
-        # show only the status.
-        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED,
-                      BugTaskStatus.FIXRELEASED):
-            return status.title.lower()
-
-        return status.title.lower() + ' (unassigned)'
+        else:
+            return status.title.lower() + ' (unassigned)'
 
 
 class BugTaskSet:
@@ -369,27 +354,28 @@ class BugTaskSet:
         # * an sqlobject
         # * a dbschema item
         # * None (meaning no filter criteria specified for that arg_name)
+        #
+        # XXX: is this a good candidate for becoming infrastructure in
+        # canonical.database.sqlbase?
+        #   -- kiko, 2006-03-16
         for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
+            clause = "BugTask.%s " % arg_name
             if zope_isinstance(arg_value, any):
-                # The argument value is a list of acceptable
-                # filter values.
-                arg_values = sqlvalues(*arg_value.query_values)
-                where_arg = ", ".join(arg_values)
-                clause = "BugTask.%s IN (%s)" % (arg_name, where_arg)
-            elif arg_value is NULL:
+                # When an any() clause is provided, the argument value
+                # is a list of acceptable filter values.
+                if not arg_value.query_values:
+                    continue
+                where_arg = ",".join(sqlvalues(*arg_value.query_values))
+                clause += "IN (%s)" % where_arg
+            elif arg_value is not NULL:
+                clause += "= %s" % sqlvalues(arg_value)
+            else:
                 # The argument value indicates we should match
                 # only NULL values for the column named by
                 # arg_name.
-                clause = "BugTask.%s IS NULL" % arg_name
-            else:
-                # We have either an ISQLObject, or a dbschema value.
-                is_sqlobject = ISQLObject(arg_value, None)
-                if is_sqlobject:
-                    clause = "BugTask.%s = %d" % (arg_name, arg_value.id)
-                else:
-                    clause = "BugTask.%s = %d" % (arg_name, int(arg_value.value))
+                clause += "IS NULL"
             extra_clauses.append(clause)
 
         if params.omit_dupes:
@@ -414,43 +400,15 @@ class BugTaskSet:
                 " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
                 searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
 
-        if params.statusexplanation:
-            # XXX: This clause relies on the fact that the Bugtask's fti is
-            # generated using only the values of the statusexplanation column,
-            # which is not true. Unfortunately, there's no way to fix this
-            # right now, and as this doesn't seem to be a big deal, we'll
-            # leave it as is for now. More info:
-            # https://launchpad.net/products/launchpad/+bug/4066
-            # -- Guilherme Salgado, 2005-11-09
-            extra_clauses.append("BugTask.fti @@ ftq(%s)" %
-                                 sqlvalues(params.statusexplanation))
-        
         if params.subscriber is not None:
-            clauseTables = ['Bug', 'BugSubscription']
+            clauseTables.append('BugSubscription')
             extra_clauses.append("""Bug.id = BugSubscription.bug AND
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
 
-        # Filter the search results for privacy-awareness.
-        if params.user:
-            # A subselect is used here because joining through
-            # TeamParticipation is only relevant to the "user-aware"
-            # part of the WHERE condition (i.e. the bit below.) The
-            # other half of this condition (see code above) does not
-            # use TeamParticipation at all.
-            clause = ("""
-                     (Bug.private = FALSE OR Bug.id in (
-                          SELECT Bug.id
-                          FROM Bug, BugSubscription, TeamParticipation
-                          WHERE Bug.id = BugSubscription.bug AND
-                                TeamParticipation.person = %(personid)s AND
-                                BugSubscription.person =
-                                  TeamParticipation.team))
-                                  """ %
-                      sqlvalues(personid=params.user.id))
-        else:
-            clause = "Bug.private = FALSE"
-        extra_clauses.append(clause)
+        clause = self._getPrivacyFilter(params.user)
+        if clause:
+            extra_clauses.append(clause)
 
         orderby = params.orderby
         if orderby is None:
@@ -473,7 +431,8 @@ class BugTaskSet:
 
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
-            query, clauseTables=clauseTables, orderBy=orderby_arg)
+            query, prejoinClauseTables=["Bug"], clauseTables=clauseTables,
+            orderBy=orderby_arg)
 
         return bugtasks
 
@@ -485,6 +444,35 @@ class BugTaskSet:
                    severity=IBugTask['severity'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        if product:
+            assert distribution is None, (
+                "Can't pass both distribution and product.")
+            # If a product bug contact has been provided, subscribe that
+            # contact to all public bugs. Otherwise subscribe the
+            # product owner to all public bugs.
+            if not bug.private:
+                if product.bugcontact:
+                    bug.subscribe(product.bugcontact)
+                else:
+                    bug.subscribe(product.owner)
+        elif distribution:
+            # If a distribution bug contact has been provided, subscribe
+            # that contact to all public bugs.
+            if distribution.bugcontact and not bug.private:
+                bug.subscribe(distribution.bugcontact)
+
+            # Subscribe package bug contacts to public bugs, if package
+            # information was provided.
+            if sourcepackagename:
+                package = distribution.getSourcePackage(sourcepackagename)
+                if package.bugcontacts and not bug.private:
+                    for pkg_bugcontact in package.bugcontacts:
+                        bug.subscribe(pkg_bugcontact.bugcontact)
+        else:
+            assert distrorelease is not None, 'Got no bugtask target'
+            assert distrorelease != distrorelease.distribution.currentrelease, (
+                'Bugtasks cannot be opened on the current release.')
+
         return BugTask(
             bug=bug,
             product=product,
@@ -501,61 +489,48 @@ class BugTaskSet:
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
                            showclosed=False, orderBy=None, user=None):
-        if showclosed:
-            showclosed = ""
-        else:
-            showclosed = (
-                ' AND BugTask.status < %s' %
-                sqlvalues(BugTaskStatus.FIXCOMMITTED))
+        filters = ['BugTask.bug = Bug.id',
+                   'BugTask.product = Product.id',
+                   'Product.owner = TeamParticipation.team',
+                   'TeamParticipation.person = %s' % person.id]
 
-        priority_severity_filter = ""
+        if not showclosed:
+            committed = dbschema.BugTaskStatus.FIXCOMMITTED
+            filters.append('BugTask.status < %s' % sqlvalues(committed))
+
         if minpriority is not None:
-            priority_severity_filter = (
-                ' AND BugTask.priority >= %s' % sqlvalues(minpriority))
+            filters.append('BugTask.priority >= %s' % sqlvalues(minpriority))
         if minseverity is not None:
-            priority_severity_filter += (
-                ' AND BugTask.severity >= %s' % sqlvalues(minseverity))
+            filters.append('BugTask.severity >= %s' % sqlvalues(minseverity))
 
-        admin_team = getUtility(ILaunchpadCelebrities).admin
-        privacy_filter = None
-        if user:
-            if user.inTeam(admin_team):
-                # No privacy filtering for admin needed, so just insert the SQL
-                # needed to do a proper join.
-                privacy_filter = " AND BugTask.bug = Bug.id"
-            else:
-                # Include privacy filtering.
-                privacy_filter = " AND "
-                privacy_filter += ("""
-                    (BugTask.bug = Bug.id AND
-                    (Bug.private = FALSE OR
-                     Bug.id in (
-                       SELECT Bug.id FROM Bug, BugSubscription
-                       WHERE (Bug.id = BugSubscription.bug) AND
-                             (BugSubscription.person = TeamParticipation.team) AND
-                             (TeamParticipation.person = %d))))""" % user.id)
-        else:
-            # Anonymous user, therefore filter to only return public bugs.
-            privacy_filter = " AND BugTask.bug = Bug.id AND Bug.private = FALSE"
+        privacy_filter = self._getPrivacyFilter(user)
+        if privacy_filter:
+            filters.append(privacy_filter)
 
-        filters = priority_severity_filter + showclosed
-        if privacy_filter is not None:
-            filters += privacy_filter
+        # We shouldn't show duplicate bug reports.
+        filters.append('Bug.duplicateof IS NULL')
 
-        # Don't show duplicate bug reports.
-        filters += ' AND Bug.duplicateof IS NULL'
-
-        maintainedProductBugTasksQuery = ('''
-            BugTask.product = Product.id AND
-            Product.owner = TeamParticipation.team AND
-            TeamParticipation.person = %s''' % person.id)
-
-        return BugTask.select(
-            maintainedProductBugTasksQuery + filters,
+        return BugTask.select(" AND ".join(filters),
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
 
-
-def BugTaskFactory(context, **kw):
-    # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
-    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
+    def _getPrivacyFilter(self, user):
+        """An SQL filter for search results that adds privacy-awareness."""
+        if user is None:
+            return "Bug.private = FALSE"
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admin_team):
+            return ""
+        # A subselect is used here because joining through
+        # TeamParticipation is only relevant to the "user-aware"
+        # part of the WHERE condition (i.e. the bit below.) The
+        # other half of this condition (see code above) does not
+        # use TeamParticipation at all.
+        return """
+            (Bug.private = FALSE OR Bug.id in (
+                 SELECT Bug.id
+                 FROM Bug, BugSubscription, TeamParticipation
+                 WHERE Bug.id = BugSubscription.bug AND
+                       TeamParticipation.person = %(personid)s AND
+                       BugSubscription.person = TeamParticipation.team))
+                         """ % sqlvalues(personid=user.id)
 

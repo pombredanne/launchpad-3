@@ -42,6 +42,15 @@ class IPOTemplateExporter(Interface):
         :force_utf8: Whether the exported string should be encoded as UTF-8.
         """
 
+    def export_potemplate():
+        """Export a single PO template.
+
+        Return the contents of the PO template as a string.
+        """
+
+    def export_potemplate_to_file(filehandle):
+        """Export a single PO template to a file handle."""
+
     def export_tarball():
         """Export all translations in a tarball.
 

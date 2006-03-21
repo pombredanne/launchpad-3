@@ -10,35 +10,67 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistribution)
+    ILaunchBag, IDistribution, IProduct, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 class FileBugView(SQLObjectAddView):
-    """The view class that handles filing a bug on an IBugTarget."""
+    """Browser view for filebug forms.
+
+    This class handles bugs filed on an IBugTarget, and the 'generic' bug
+    filing, where a distribution argument is passed with the form.
+    """
+
+    notification = "Thank you for your bug report."
 
     def create(self, title=None, comment=None, private=False,
-               sourcepackagename=None):
+               packagename=None, distribution=None):
         """Add a bug to this IBugTarget."""
         current_user = getUtility(ILaunchBag).user
+        context = self.context
+        if distribution is not None:
+            # We're being called from the generic bug filing form, so manually
+            # set the chosen distribution as the context.
+            context = distribution
 
-        if IDistribution.providedBy(self.context) and sourcepackagename:
-            # This is a bug filed on a distribution, but a specific package name
-            # was provided, so let's get a reference to that package as the bug
-            # target.
-            bugtarget = self.context.getSourcePackage(sourcepackagename)
+        if IDistribution.providedBy(context) and packagename:
+            # We don't know if the package name we got was a source or binary
+            # package name, so let the Soyuz API figure it out for us.
+            packagename = str(packagename)
+            try:
+                sourcepackagename, binarypackagename = (
+                    context.getPackageNames(packagename))
+            except NotFoundError:
+                # getPackageNames may raise NotFoundError. It would be
+                # nicer to allow people to indicate a package even if
+                # never published, but the quick fix for now is to note
+                # the issue and move on.
+                self.notification += ("<br /><br />Note that the package %r "
+                                      "is not published in %s; the bug "
+                                      "has therefore been targeted to the "
+                                      "distribution only."
+                                      % (packagename, context.displayname))
+                comment += ("\r\n\r\nNote: the original reporter indicated "
+                            "the bug was in package %r; however, that package "
+                            "was not published in %s."
+                            % (packagename, context.displayname))
+                bug = context.createBug(
+                    title=title, comment=comment, private=private, owner=current_user)
+            else:
+                bugtarget = context.getSourcePackage(sourcepackagename.name)
+                bug = bugtarget.createBug(
+                    title=title, comment=comment, private=private, owner=current_user,
+                    binarypackagename=binarypackagename)
         else:
-            bugtarget = self.context
-
-        bug = bugtarget.createBug(
-            title=title, comment=comment, private=private, owner=current_user)
+            bug = context.createBug(
+                title=title, comment=comment, private=private, owner=current_user)
 
         self.addedBug = bug
         return self.addedBug
 
     def nextURL(self):
         # Give the user some feedback on the bug just opened.
-        self.request.response.addNotification(
-            "Thank you for your bug report.")
+        self.request.response.addNotification(self.notification)
 
         task = self.addedBug.bugtasks[0]
         return canonical_url(task)
+

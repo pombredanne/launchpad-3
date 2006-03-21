@@ -8,6 +8,7 @@ __docformat__ = 'restructuredtext'
 __all__ = [
     'GeneralFormView',
     'GeneralFormViewFactory',
+    'NoRenderingOnRedirect',
     ]
 
 from transaction import get_transaction
@@ -23,12 +24,30 @@ from zope.app.form.interfaces import WidgetsError
 from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.pagetemplate.simpleviewclass import SimpleViewClass
-from zope.app.publisher.browser import BrowserView
-
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
-class GeneralFormView(BrowserView):
+class NoRenderingOnRedirect:
+    """Mix-in for not rendering the page on redirects."""
+
+    def __call__(self):
+        # Call update() here instead of from the template to avoid
+        # rendering the page on redirects.
+        self.update()
+        if self.request.response.getStatus() in [302, 303]:
+            # Don't render the page on redirects.
+            return u''
+        else:
+            page_attribute = getattr(self, '__page_attribute__', None)
+            if page_attribute is not None:
+                output = getattr(self, page_attribute)
+            else:
+                output = self.index
+            return output()
+
+
+class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
     """Simple Generalised Form Base Class
 
     Subclasses should provide a `schema` attribute defining the schema
@@ -39,16 +58,15 @@ class GeneralFormView(BrowserView):
     (E.g. ``view.title_widget for the title widget``)
     """
 
-    errors = ()
     top_of_page_errors = ()
-    process_status = None
     label = ''
     _arguments = []
     _keyword_arguments = []
     _nextURL = None
 
-    # Fall-back field names computes from schema
+    # Fall-back field names computed from schema
     fieldNames = property(lambda self: getFieldNamesInOrder(self.schema))
+
     # Fall-back template
     generated_form = ViewPageTemplateFile('../templates/launchpad-generalform.pt')
 
@@ -66,12 +84,13 @@ class GeneralFormView(BrowserView):
         """
         return self._nextURL
 
-    def doSchemaValidation(self, data):
-        """Override this to do any validation that must take into account the
-        value of multiple widgets.
+    def validate(self, data):
+        """Validate the form.
 
-        To indicate any problem, this method should raise WidgetError(errors),
-        where errors is a list with the encountered problems.
+        If errors are encountered, a WidgetsError exception is raised.
+
+        Returns a dict of fieldname:value pairs if all form data
+        submitted is valid.
         """
         pass
 
@@ -84,7 +103,11 @@ class GeneralFormView(BrowserView):
 
     # internal methods, should not be overridden
     def __init__(self, context, request):
-        super(GeneralFormView, self).__init__(context, request)
+        LaunchpadView.__init__(self, context, request)
+
+        self.errors = {}
+        self.process_status = None
+
         self._setUpWidgets()
 
     def _setUpWidgets(self):
@@ -104,9 +127,8 @@ class GeneralFormView(BrowserView):
         then calls self.process(), passing the contents of the form. You
         should override self.process() in your own View class.
         """
-
         if self.process_status is not None:
-            # We've been called before. Just return the status we previously
+            # We've been called before, so just return the status we previously
             # computed.
             return self.process_status
 
@@ -116,7 +138,7 @@ class GeneralFormView(BrowserView):
                 self.process_status = 'Please fill in the form.'
             return self.process_status
 
-        # extract the posted data, and validate with form widgets
+        # Extract and validate the POSTed data.
         try:
             data = getWidgetsData(self, self.schema, names=self.fieldNames)
         except WidgetsError, errors:
@@ -124,15 +146,18 @@ class GeneralFormView(BrowserView):
             self._abortAndSetStatus()
             return self.process_status
 
-        # now we can do schema validation, in case our subclass wants.
+        # Do custom validation defined in subclasses. This would generally
+        # include form-level validation, or validation of fields shown on the
+        # form that don't map to schema fields, and thus don't have "widgets" in
+        # the Zope 3 sense.
         try:
-            self.doSchemaValidation(data)
+            self.validate(data)
         except WidgetsError, errors:
             self.top_of_page_errors = errors
             self._abortAndSetStatus()
             return self.process_status
 
-        # pass the resulting validated data to the form's self.process() and
+        # Pass the validated data to the form's self.process().
         args = []
         if self._arguments:
             for name in self._arguments:
@@ -146,16 +171,33 @@ class GeneralFormView(BrowserView):
 
         self.process_status = self.process(*args, **kw)
 
-        # if we have a nextURL() then go there
+        # Go to the nextURL(), if we have one.
         if self.nextURL():
             self.request.response.redirect(self.nextURL())
 
         return self.process_status
 
+    def update(self):
+        """NoRenderingOnRedirect class calls this method."""
+        return self.process_form()
+
     def _abortAndSetStatus(self):
         """Abort the current transaction and set self.process_status."""
         self.process_status = _("Please fix the problems below and try again.")
         get_transaction().abort()
+
+    def __call__(self):
+        #XXX: BrowserView doesn't define __call__(), but somehow
+        #     NoRenderingOnRedirect.__call__() won't be called unless we
+        #     define this method and call it explicitly. It's probably
+        #     due to some ZCML magic which should be removed.
+        #     -- Bjorn Tillenius, 2006-02-22
+
+        # We call initialize explicitly here (it's normally called by
+        # GeneralFormView.__call__), because of the hack Bjorn mentions above.
+        self.initialize()
+
+        return NoRenderingOnRedirect.__call__(self)
 
 
 def GeneralFormViewFactory(name, schema, label, permission, layer,

@@ -18,15 +18,16 @@
       <thead>
         <tr>
           <th>Malone bug</th>
-          <th>Remote #</th>
+          <th>Remote bug</th>
           <th>Status</th>
+          <th>Date created</th>
         </tr>
       </thead>
 
       <tbody>
         <tr tal:repeat="watch watches">
           <td>
-            <img alt="" src="/++resource++bug" />
+            <img alt="" src="/@@/bug" />
             <a href="#" tal:attributes="href watch/bug/fmt:url">
               #<span tal:replace="watch/bug/id">34</span>:
                <span tal:replace="watch/bug/title">Malone Bug Title</span>
@@ -37,6 +38,7 @@
               </a>
           </td>
           <td tal:content="watch/remotestatus" />
+          <td tal:content="watch/datecreated/fmt:datetime" />
         </tr>
       </tbody>
     </table>

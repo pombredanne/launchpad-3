@@ -3,9 +3,7 @@ Introduction
 
 Vocabularies are lists of terms. In Launchpad's Component Architecture (CA), a
 vocabulary is a list of terms that a widget (normally a selection style widget)
-"speaks", i.e. its allowed values.
-
-This document is about some of the vocabularies found in Launchpad.
+"speaks", i.e., its allowed values.
 
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
@@ -17,24 +15,22 @@ Values, Tokens, and Titles
 ==========================
 
 In Launchpad, we generally use "tokenized vocabularies." Each term in a
-vocabulary has a value, token and title. In human terms, a term would be
-rendered in a select widget like this:
+vocabulary has a value, token and title. A term is rendered in a select widget
+like this:
 
 <option value="$token">$title</option>
 
-The Value is probably the data you would store in your DB. The Token is used to
+The $token is probably the data you would store in your DB. The Token is used to
 uniquely identify a Term, and the Title is the thing you display to the user.
-
-Have a look at a few of the vocabularies below for clarification.
 
 Launchpad Vocabularies
 ======================
 
 There are two kinds of vocabularies in Launchpad: enumerable and
-non-enumerable. In human terms, enumerable vocabularies are short and sweet
-enough to render in a select widget, where non-enumerable vocabularies require
-a special query interface to make it easy to choose just one or a couple of
-options from several hundred, or several thousand, or more.
+non-enumerable. Enumerable vocabularies are short enough to render in a select
+widget. Non-enumerable vocabularies require a query interface to make it easy to
+choose just one or a couple of options from several hundred, several thousand,
+or more.
 
 Vocabularies should not be imported - they can be retrieved from the
 vocabulary registry.
@@ -43,6 +39,8 @@ vocabulary registry.
     >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+    >>> product_vocabulary.displayname
+    'Select a Product'
 
 Enumerable Vocabularies
 =======================
@@ -77,31 +75,129 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
     9 guadalinex/2k5       Guada 2005
     4 redhat/7.0           Seven
     2 redhat/six           Six Six Six
+    10 ubuntu/breezy-autotest Breezy Badger Autotest
     5 ubuntu/grumpy        The Grumpy Groundhog Release
     3 ubuntu/hoary         The Hoary Hedgehog Release
     1 ubuntu/warty         The Warty Warthog Release
+    11 ubuntutest/breezy-autotest Breezy Badger Autotest
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value
     3
-    >>> [term.token for term in distrorelease_vocabulary.search('woody')]
+    >>> def getTerms(vocab, search_text):
+    ...     [vocab.toTerm(item) for item in vocab.search(search_text)]
+
+    >>> getTerms(distrorelease_vocabulary, 'woody')
+    >>> getTerms(distrorelease_vocabulary, 'debian')
+    >>> getTerms(distrorelease_vocabulary, 'invalid')
+    >>> getTerms(distrorelease_vocabulary, '')
+
+    >> [term.token for term in distrorelease_vocabulary.search('woody')]
     ['debian/woody']
-    >>> [term.token for term in distrorelease_vocabulary.search('debian')]
+    >> [term.token for term in distrorelease_vocabulary.search('debian')]
     ['debian/sarge', 'debian/sid', 'debian/woody']
-    >>> [term.token for term in distrorelease_vocabulary.search('invalid')]
+    >> [term.token for term in distrorelease_vocabulary.search('invalid')]
     []
-    >>> [term.token for term in distrorelease_vocabulary.search('')]
+    >> [term.token for term in distrorelease_vocabulary.search('')]
     []
+
+o DistributionUsingMaloneVocabulary - all the distributions that use
+  Malone as their main bug tracker.
+
+    >>> using_malone_vocabulary = vocabulary_registry.get(
+    ...     None, 'DistributionUsingMalone')
+    >>> len(using_malone_vocabulary)
+    2
+    >>> for term in using_malone_vocabulary:
+    ...     print term.token, term.value.displayname, term.title
+    gentoo Gentoo Gentoo
+    ubuntu Ubuntu Ubuntu
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ubuntu in using_malone_vocabulary
+    True
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian in using_malone_vocabulary
+    False
+
+    >>> using_malone_vocabulary.getQuery() is None
+    True
+
+    >>> term = using_malone_vocabulary.getTerm(ubuntu)
+    >>> print term.token, term.value.displayname, term.title
+    ubuntu Ubuntu Ubuntu
+
+    >>> term = using_malone_vocabulary.getTerm(debian)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> term = using_malone_vocabulary.getTermByToken('ubuntu')
+    >>> print term.token, term.value.displayname, term.title
+    ubuntu Ubuntu Ubuntu
+
+    >>> term = using_malone_vocabulary.getTermByToken('debian')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+
 
 Non-Enumerable Vocabularies
 ===========================
 
-Although you technically *could* iterate over these, in launchpad it
-would be stupid to do so due to their expected size on the production
-database.
+Iterating over non-enumerable vocabularies, while possible, will
+probably kill the database. Instead, these vocabularies are
+search-driven.
+
+o BinaryAndSourcePackageNameVocabulary - the list of binary and source
+  package names, ordered by name.
+
+    >>> package_name_vocabulary = vocabulary_registry.get(
+    ...     None, "BinaryAndSourcePackageName")
+    >>> package_name_vocabulary.displayname
+    'Select a Package'
+
+When a package name matches both a binary package name and a source
+package of the exact same name, the binary package name is
+returned. This allows us, in bug reporting for example, to collect the
+most specific information possible.
+
+Let's demonstrate by searching for "mozilla-firefox", for which there is
+both a source and binary package of that name.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackageName, IBinaryPackageName)
+
+    >>> package_name_terms = package_name_vocabulary.search("mozilla-firefox")
+    >>> package_name_terms.count()
+    1
+    >>> package_name_terms[0].name
+    u'mozilla-firefox'
+
+Searching for "mozilla" should return the binary package name above, and
+the source package named "mozilla".
+
+    >>> package_name_terms = package_name_vocabulary.search("mozilla")
+    >>> package_name_terms.count()
+    2
+    >>> [package_name_term.name for package_name_term in package_name_terms]
+    [u'mozilla', u'mozilla-firefox']
+
+The search does a case-insensitive, substring match.
+
+    >>> package_name_terms = package_name_vocabulary.search("mOzIl")
+    >>> package_name_terms.count()
+    2
+    >>> [package_name_term.name for package_name_term in package_name_terms]
+    [u'mozilla', u'mozilla-firefox']
 
 o ProjectVocabulary - the list of selectable projects. The results are
   ordered by displayname.
 
     >>> project_vocabulary = vocabulary_registry.get(None, "Project")
+    >>> project_vocabulary.displayname
+    'Select a Project'
+
     >>> [p.title for p in project_vocabulary.search('mozilla')]
     [u'The Mozilla Project']
     >>> mozilla = project_vocabulary.getTermByToken('mozilla')
@@ -131,7 +227,10 @@ o ProductVocabulary - the list of selectable products. Results are
   ordered by displayname.
 
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
-    >>> product_vocabulary.search(None)
+    >>> product_vocabulary.displayname
+    'Select a Product'
+
+    >>> list(product_vocabulary.search(None))
     []
     >>> gnome_products = product_vocabulary.search("gnome")
     >>> l = [product_term.title for product_term in gnome_products]
@@ -168,6 +267,9 @@ o ProductReleaseVocabulary - the list of selectable products releases.
 
     >>> productrelease_vocabulary = vocabulary_registry.get(None,
     ...                                                     "ProductRelease")
+    >>> productrelease_vocabulary.displayname
+    'Select a Product Release'
+
     >>> list(productrelease_vocabulary.search(None))
     []
     >>> evolution_releases = productrelease_vocabulary.search("evolution")
@@ -181,53 +283,49 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
   is meant to be used only in the people merge form.
 
     >>> vocab = vocabulary_registry.get(None, "PersonAccountToMerge")
+    >>> vocab.displayname
+    'Select a Person to Merge'
 
     Searching for None returns an empty list.
-    >>> vocab.search(None)
+    >>> list(vocab.search(None))
     []
 
     Searching for 'team' will return an empty list, because teams are not part
     of this vocabulary.
-    >>> vocab.search('team')
+    >>> list(vocab.search('team'))
     []
 
     A search using part of the email address of a team will also return an 
     empty list.
-    >>> [t.token for t in vocab.search('support')]
+    >>> list(vocab.search('support'))
     []
 
     Searching for a person without a preferred email will return that person's
     name.
-    >>> [t.token for t in vocab.search('salgado')]
-    ['salgado']
+    >>> [person.name for person in vocab.search('salgado')]
+    [u'salgado']
 
     A search using the beginning of a person's preferred email will return 
-    that person's preferred email.
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    that person that owns that email.
+    >>> [(person.name, person.preferredemail.email) 
+    ...  for person in vocab.search('foo.bar')]
+    [(u'name16', u'foo.bar@canonical.com')]
 
     A search using part of the host of an email address will not return
     anything, as we only match against the beginning of an email address.
-    >>> [t.token for t in vocab.search('canonical')]
+    >>> list(vocab.search('canonical'))
     []
 
-    Any person without a single email address is not part of the vocabulary.
+    A person with a single and unvalidated email address can be merged.
     >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
     ...     'foobaz@bar.com', name='foobaz', displayname='foo baz')
+    >>> fooperson in vocab
+    True
+
+    But any person without a single email address can't.
     >>> email.destroySelf()
     >>> fooperson in vocab
     False
-    >>> [t.token for t in vocab.search('foobaz')]
-    []
-
-    Adding an email address to this person will make him part of the
-    vocabulary.
-    >>> email = getUtility(IEmailAddressSet).new('foo@bar.com', fooperson.id)
-    >>> flush_database_updates()
-    >>> fooperson in vocab
-    True
-    >>> [t.token for t in vocab.search('foobaz')]
-    ['foobaz']
 
     Any person that's already merged is not part of this vocabulary:
     # XXX: Here we cheat because IPerson.merged is a readonly attribute.
@@ -242,44 +340,50 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
   (Person.merged is None) or any team.
 
     >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
-    >>> vocab.search(None)
+    >>> vocab.displayname
+    'Select a Person or Team'
+
+    >>> list(vocab.search(None))
     []
 
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
-    >>> [t.token for t in vocab.search('team')]
-    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
 
     A search for 'support' will give us only the persons which have support
     as part of their name/displayname/givenname/familyname or the beginning of
     one of its email addresses.
-    >>> [t.token for t in vocab.search('support')]
-    ['support@ubuntu.com']
+    >>> sorted(person.name for person in vocab.search('support'))
+    [u'ubuntu-team']
 
     Dave hasn't validated his email address; he's not a valid Person.
-    >>> [t.token for t in vocab.search('dave.miller')]
+    >>> sorted(person.name for person in vocab.search('dave.miller'))
     []
 
     'foo.bar@canonical.com' is a valid Person.
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    >>> [person.name for person in vocab.search('foo.bar')]
+    [u'name16']
 
 o ValidOwner - all valid persons and teams are also valid owners.
 
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")
-    >>> vocab.search(None)
+    >>> vocab.displayname
+    'Select a Person or Team'
+
+    >>> list(vocab.search(None))
     []
 
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
-    >>> [t.token for t in vocab.search('team')]
-    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
 
 o ValidTeamMember - With the exception of all teams that have this team as a
   member and the team itself, all valid persons and teams are valid
   members.
 
-    >>> team = getUtility(IPersonSet).getByName('name17')
+    >>> team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> team2 = getUtility(IPersonSet).getByName('guadamen')
     >>> person = getUtility(IPersonSet).getByName('name16')
 
@@ -294,29 +398,32 @@ o ValidTeamMember - With the exception of all teams that have this team as a
     Traceback (most recent call last):
     ...
     AssertionError: ...
- 
-    'name16' is a valid member for 'name17'
+
+    'name16' is a valid member for 'ubuntu-team'
     >>> vocab = vocabulary_registry.get(team, "ValidTeamMember")
+    >>> vocab.displayname
+    'Select a Person or Team'
+
     >>> person in vocab
     True
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    >>> [person.name for person in vocab.search('foo.bar')]
+    [u'name16']
 
-    'name17' is not a valid member for itself
+    'ubuntu-team' is not a valid member for itself
     >>> team in vocab
     False
-    >>> [t.token for t in vocab.search('name17')]
-    []
+    >>> [person.name for person in vocab.search('ubuntu-team')]
+    [u'name18']
 
-    'name17' is a member of 'guadamen', so 'guadamen' can't be a member of
-    'name17'.
+    'ubuntu-team' is a member of 'guadamen', so 'guadamen' can't be a member of
+    'ubuntu-team'.
     >>> team2 in vocab
     False
-    >>> [t.token for t in vocab.search('guadamen')]
+    >>> [person.name for person in vocab.search('guadamen')]
     []
 
 o ValidTeamOwner - With the exception of the team itself and all teams owned
-  by that team, all valid persons and teams are valid owners for the team 
+  by that team, all valid persons and teams are valid owners for the team
   in context.
 
     ValidTeamOwner needs a context.
@@ -326,39 +433,47 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
     AssertionError: ...
 
     ValidTeamOwner's context must be a team.
+
+    >>> person = getUtility(IPersonSet).getByName('name16')
     >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
     AssertionError: ...
 
-    'name17' is not a valid owner for itself.
+    'ubuntu-team' is not a valid owner for itself.
     >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+    >>> vocab.displayname
+    'Select a Person or Team'
+
     >>> team in vocab
     False
-    >>> [t.token for t in vocab.search('name17')]
-    []
+    >>> [person.name for person in vocab.search('ubuntu-team')]
+    [u'name18']
 
-    'name16' is a valid owner for 'name17'.
+    'name16' is a valid owner for 'ubuntu-team'.
     >>> person in vocab
     True
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    >>> [person.name for person in vocab.search('foo.bar')]
+    [u'name16']
 
 o Processor - all processors type available in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "Processor")
-    >>> stuff = vocab.search('386')
-    >>> [t.token for t in stuff]
-    ['386']
+    >>> vocab.displayname
+    'Select a Processor'
+
+    >>> [processor.name for processor in vocab.search('386')]
+    [u'386']
 
 o SchemaVocabulary - launchpad Schema Vocabulary..
 
     >>> vocabulary = vocabulary_registry.get(None,"Schema")
+    >>> vocabulary.displayname
+    'Select a Schema'
+
     >>> list(vocabulary.search(None))
     []
-    >>> schemas_vocabulary = vocabulary.search("m")
-    >>> schemas = [schema.title for schema in schemas_vocabulary]
-    >>> schemas
+    >>> [schema.name for schema in vocabulary.search("m")]
     [u'enema', u'mark', u'schema', u'trema']
 
 XXX: document more vocabularies here, particularly when they break!

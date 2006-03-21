@@ -3,21 +3,30 @@
 __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
+from urlparse import urljoin
+
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin)
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
+    SQLObjectNotFound)
+
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import IBranch, IBranchSet
+from canonical.launchpad.interfaces import (IBranch, IBranchSet,
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
@@ -25,8 +34,8 @@ class Branch(SQLBase):
     implements(IBranch)
 
     _table = 'Branch'
-    name = StringCol(notNull=True)
-    title = StringCol(notNull=True)
+    name = StringCol(notNull=False)
+    title = StringCol(notNull=False)
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
@@ -63,13 +72,15 @@ class Branch(SQLBase):
 
     cache_url = StringCol(default=None)
 
-    revision_history = MultipleJoin('RevisionNumber', joinColumn='branch',
+    revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
         orderBy='-sequence')
 
-    subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
-    objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
+    subjectRelations = SQLMultipleJoin(
+        'BranchRelationship', joinColumn='subject')
+    objectRelations = SQLMultipleJoin(
+        'BranchRelationship', joinColumn='object')
 
-    subscriptions = MultipleJoin(
+    subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
     subscribers = RelatedJoin(
         'Person', joinColumn='branch', otherColumn='person',
@@ -125,6 +136,23 @@ class Branch(SQLBase):
             personID=person.id, branchID=self.id)
         return subscription is not None
 
+    @property
+    def pull_url(self):
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        if self.url is not None:
+            # This is a pull branch, hosted externally.
+            return self.url
+        elif self.owner == vcs_imports:
+            # This is an import branch, imported into bzr from another RCS
+            # system such as CVS.
+            prefix = config.launchpad.bzr_imports_root_url
+            return urljoin(prefix, '%08x' % (self.id,))
+        else:
+            # This is a push branch, hosted on the supermirror (pushed there by
+            # users via SFTP).
+            prefix = config.launchpad.bzr_push_root_url
+            return urljoin(prefix, split_branch_id(self.id))
+
 
 class BranchSet:
     """The set of all branches."""
@@ -149,7 +177,7 @@ class BranchSet:
         """See IBranchSet."""
         return iter(Branch.select())
 
-    def new(self, name, owner, product, url, title,
+    def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
         """See IBranchSet."""
@@ -162,10 +190,9 @@ class BranchSet:
 
     def get_supermirror_pull_queue(self):
         """See IBranchSet.get_supermirror_pull_queue."""
-        return Branch.select(
-            "(last_mirror_attempt is NULL "
-            " OR (%s - last_mirror_attempt > '1 day')) "
-            "AND NOT (url ILIKE 'http://bazaar.ubuntu.com/%%')" % UTC_NOW)
+        return Branch.select("(last_mirror_attempt is NULL "
+                             " OR (%s - last_mirror_attempt > '1 day'))"
+                             % UTC_NOW)
 
 
 class BranchRelationship(SQLBase):

@@ -6,7 +6,10 @@ __all__ = [
     'DistributionNavigation',
     'DistributionSetNavigation',
     'DistributionFacets',
+    'DistributionSpecificationsMenu',
     'DistributionView',
+    'DistributionAllPackagesView',
+    'DistributionEditView',
     'DistributionSetView',
     'DistributionSetAddView',
     'DistributionBugContactEditView'
@@ -17,8 +20,6 @@ from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
@@ -27,8 +28,10 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepthrough, stepto, canonical_url, redirection)
+    StandardLaunchpadFacets, Link, ApplicationMenu, LaunchpadView,
+    enabled_with_permission, GetitemNavigation, stepthrough, stepto,
+    canonical_url, redirection)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -109,14 +112,16 @@ class DistributionOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
              'editbugcontact', 'reassign', 'addrelease', 'builds',
-             'officialmirrors', 'allmirrors', 'newmirror']
+             'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editbugcontact(self):
-        text = 'Edit Bug Contact'
+        text = 'Change Bug Contact'
         return Link('+editbugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -140,10 +145,12 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'List All Packages'
         return Link('+allpackages', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def milestone_add(self):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
@@ -160,6 +167,12 @@ class DistributionOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'View Builds'
         return Link('+builds', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def launchpad_usage(self):
+        text = 'Define Launchpad Usage'
+        return Link('+launchpad', text, icon='edit')
+
 
 class DistributionBugsMenu(ApplicationMenu):
 
@@ -183,7 +196,7 @@ class DistributionBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register New Bounty'
+        text = 'New Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -195,18 +208,22 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
 
     def roadmap(self):
-        text = 'Show Roadmap'
-        return Link('+specplan', text, icon='info')
+        text = 'Roadmap'
+        return Link('+roadmap', text, icon='info')
 
     def table(self):
-        text = 'Show Assignments'
-        return Link('+specstable', text, icon='info')
+        text = 'Assignments'
+        return Link('+assignments', text, icon='info')
 
     def workload(self):
-        text = 'Show Workload'
+        text = 'Workload'
         return Link('+workload', text, icon='info')
 
     def new(self):
@@ -253,31 +270,22 @@ class DistributionView(BuildRecordsView):
         """
         # initialize control fields
         self.matches = 0
-        self.detailed = True
-        self.search_requested = False
 
         # check if the user invoke search, if not dismiss
         self.text = self.request.form.get('text', None)
         if not self.text:
+            self.search_requested = False
             return
-
-        # setup a batched list with the results
         self.search_requested = True
-        results = self.search_results()
-        start = int(self.request.get('batch_start', 0))
-        # store the results list length
-        self.matches = len(results)
-        # check if detailed list view is allowed for this result set.
-        self.check_detailed_view()
-        # since we are using the results length in the layout, we can save
-        # one query by passing this number to Batch initialization
-        self.batch = Batch(results, start, _listlength=self.matches)
-        self.batchnav = BatchNavigator(self.batch, self.request)
 
-    def check_detailed_view(self):
-        """Enable detailed list view only for sets smaller than 5 matches."""
+        results = self.search_results()
+        self.matches = len(results)
         if self.matches > 5:
             self.detailed = False
+        else:
+            self.detailed = True
+
+        self.batchnav = BatchNavigator(results, self.request)
 
     def search_results(self):
         """Return IDistributionSourcePackages according given a text.
@@ -286,6 +294,23 @@ class DistributionView(BuildRecordsView):
         the given text.
         """
         return self.context.searchSourcePackages(self.text)
+
+
+class DistributionAllPackagesView(LaunchpadView):
+    def initialize(self):
+        results = self.context.source_package_caches
+        self.batchnav = BatchNavigator(results, self.request)
+
+
+class DistributionEditView(SQLObjectEditView):
+    """View class that lets you edit a Distribution object.
+
+    It redirects to the main distribution page after a successful edit.
+    """
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
 
 class DistributionSetView:
 

@@ -27,8 +27,8 @@ class LibrarianTestSetup(TacTestSetup):
     
     Make sure the server is running.
 
-    >>> urlopen('http://%s:%d/' % (host, port)).readline()
-    'Copyright 2004-2005 Canonical Ltd.\n'
+    >>> 'Copyright' in urlopen('http://%s:%d/' % (host, port)).read()
+    True
 
     >>> LibrarianTestSetup().tearDown()
 
@@ -41,8 +41,8 @@ class LibrarianTestSetup(TacTestSetup):
     And again for luck.
 
     >>> LibrarianTestSetup().setUp()
-    >>> urlopen('http://%s:%d/' % (host, port)).readline()
-    'Copyright 2004-2005 Canonical Ltd.\n'
+    >>> 'Copyright' in urlopen('http://%s:%d/' % (host, port)).read()
+    True
 
     Tidy up.
     

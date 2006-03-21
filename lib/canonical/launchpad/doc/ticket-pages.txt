@@ -8,17 +8,17 @@ start with +index, it's the most complex one.
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ticket_seven = ubuntu.getTicket(7)
-    >>> index = getView(ticket_seven, '+index', TestRequest())
+    >>> ticket_three = ubuntu.getTicket(3)
+    >>> index = getView(ticket_three, '+index', TestRequest())
 
 We can subscribe to a ticket:
 
     >>> login('test@canonical.com')
     >>> request = TestRequest(form={'subscribe': 'Subscribe'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+index', request)
+    >>> index = getView(ticket_three, '+index', request)
     >>> getUtility(ILaunchBag).user in [
-    ...     subscription.person for subscription in ticket_seven.subscriptions]
+    ...     subscription.person for subscription in ticket_three.subscriptions]
     True
     >>> for notice in index.notices:
     ...     print notice
@@ -28,9 +28,9 @@ As well as unsubscribe:
 
     >>> request = TestRequest(form={'subscribe': 'Unsubscribe'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+index', request)
+    >>> index = getView(ticket_three, '+index', request)
     >>> getUtility(ILaunchBag).user in [
-    ...     subscription.person for subscription in ticket_seven.subscriptions]
+    ...     subscription.person for subscription in ticket_three.subscriptions]
     False
     >>> for notice in index.notices:
     ...     print notice
@@ -50,7 +50,7 @@ sent:
     >>> login('foo.bar@canonical.com')
     >>> request = TestRequest(form={'reopen': ''})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+index', request)
+    >>> index = getView(ticket_three, '+index', request)
     >>> for notice in index.notices:
     ...     print notice
     You have reopened this request.
@@ -65,9 +65,9 @@ sent:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> print notifications[0].get_payload(decode=True)
-    Support request #7...
+    Support request #3...
     ...
-        Status: Answered => Open
+        Status: Rejected => Open
     <BLANKLINE>
 
     >>> stub.test_emails = []
@@ -77,7 +77,7 @@ As well as if we reject it:
     >>> login('foo.bar@canonical.com')
     >>> request = TestRequest(form={'reject': ''})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+index', request)
+    >>> index = getView(ticket_three, '+index', request)
     >>> for notice in index.notices:
     ...     print notice
     You have rejected this request.
@@ -91,7 +91,7 @@ As well as if we reject it:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> print notifications[0].get_payload(decode=True)
-    Support request #7...
+    Support request #3...
     ...
         Status: Open => Rejected
     <BLANKLINE>
@@ -102,10 +102,10 @@ If we create a bug, a "Linked to bug" notification is sent:
 
     >>> request = TestRequest(form={'makebug': ''})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+index', request)
+    >>> index = getView(ticket_three, '+index', request)
     >>> for notice in index.notices:
     ...     print notice
-    Thank you! Bug #9 created.
+    Thank you! Bug #10 created.
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
@@ -116,22 +116,22 @@ If we create a bug, a "Linked to bug" notification is sent:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> print notifications[0].get_payload(decode=True)
-    Support request #7...
+    Support request #3...
     ...
-        Linked to bug: #9
+        Linked to bug: #10
     ...
 
     >>> stub.test_emails = []
 
 Now, let's take a look at the '+linkbug' page. If we use that one to
-line a bug, we'll get a similar notification like above:
+link to a bug, we'll get a similar notification like above:
 
     >>> request = TestRequest(form={'UPDATE_SUBMIT': '', 'field.bug': '2'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+linkbug', request)
+    >>> index = getView(ticket_three, '+linkbug', request)
     >>> index.update()
     ''
-    >>> 2 in [bug.id for bug in ticket_seven.bugs]
+    >>> 2 in [bug.id for bug in ticket_three.bugs]
     True
 
     >>> transaction.commit()
@@ -143,7 +143,7 @@ line a bug, we'll get a similar notification like above:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> print notifications[0].get_payload(decode=True)
-    Support request #7...
+    Support request #3...
     ...
         Linked to bug: #2
     ...
@@ -154,10 +154,10 @@ Let's take a look at the '+unlinkbug' page as well:
 
     >>> request = TestRequest(form={'UPDATE_SUBMIT': '', 'field.bug': '2'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+unlinkbug', request)
+    >>> index = getView(ticket_three, '+unlinkbug', request)
     >>> index.update()
     ''
-    >>> 2 in [bug.id for bug in ticket_seven.bugs]
+    >>> 2 in [bug.id for bug in ticket_three.bugs]
     False
 
     >>> transaction.commit()
@@ -169,7 +169,7 @@ Let's take a look at the '+unlinkbug' page as well:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> print notifications[0].get_payload(decode=True)
-    Support request #7...
+    Support request #3...
     ...
         Removed link to bug: #2
     ...
@@ -183,12 +183,12 @@ To edit the title and description of a bug, +edit is used.
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+edit', request)
+    >>> index = getView(ticket_three, '+edit', request)
     >>> index.update()
     u'Updated...'
-    >>> ticket_seven.title
+    >>> ticket_three.title
     u'Better Title'
-    >>> ticket_seven.description
+    >>> ticket_three.description
     u'A better description.'
 
     >>> transaction.commit()
@@ -200,7 +200,7 @@ To edit the title and description of a bug, +edit is used.
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> print notifications[0].get_payload(decode=True)
-    Support request #7...
+    Support request #3...
     ...
     Summary changed to:
     Better Title
@@ -211,32 +211,27 @@ To edit the title and description of a bug, +edit is used.
 
     >>> stub.test_emails = []
 
-Lastly, let's take a look at +addmessage. It's just to add a comment to
-the ticket, as well as changing it's state to Answered or Closed. First
-we change it to Answered.
+Lastly, let's take a look at +addmessage. It's used to add a comment to
+the ticket, as well as changing it's state to Answered, which only the
+submitter can do.
 
 It needs to be open, for us to changed it to Answered:
 
-    >>> ticket_seven.reopen(getUtility(ILaunchBag).user)
+    >>> ticket_three.reopen(getUtility(ILaunchBag).user)
     <TicketReopening...>
-
-Currently we're logged in as Foo Bar, the submitter of the ticket. He
-can't set it to Answered, so we login as Sample Person instead:
-
-    >>> login('test@canonical.com')
 
 And now we can change the status to Answered:
 
     >>> request = TestRequest(form={
     ...     'UPDATE_SUBMIT': '',
     ...     'field.subject': 'Re: Better Title',
-    ...     'field.content': 'An answer.',
+    ...     'field.content': 'Thanks!',
     ...     'field.resolved': 'on'})
     >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+addmessage', request)
+    >>> index = getView(ticket_three, '+addmessage', request)
     >>> index.update()
     ''
-    >>> ticket_seven.status.title
+    >>> ticket_three.status.title
     'Answered'
 
     >>> transaction.commit()
@@ -248,45 +243,11 @@ And now we can change the status to Answered:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> print notifications[0].get_payload(decode=True)
-    Support request #7...
+    Support request #3...
     ...
         Status: Open => Answered
     <BLANKLINE>
     Comment:
-    An answer.
-
-    >>> stub.test_emails = []
-
-And if we log in as Foo Bar again, we can close the ticket using the
-same view:
-
-    >>> login('foo.bar@canonical.com')
-    >>> request = TestRequest(form={
-    ...     'UPDATE_SUBMIT': '',
-    ...     'field.subject': 'Re: Better Title',
-    ...     'field.content': 'Good answer!',
-    ...     'field.resolved': 'on'})
-    >>> request.method = 'POST'
-    >>> index = getView(ticket_seven, '+addmessage', request)
-    >>> index.update()
-    ''
-    >>> ticket_seven.status.title
-    'Closed'
-
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
-    1
-
-    >>> notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    >>> print notifications[0].get_payload(decode=True)
-    Support request #7...
-    ...
-        Status: Answered => Closed
-    <BLANKLINE>
-    Comment:
-    Good answer!
+    Thanks!
 
     >>> stub.test_emails = []

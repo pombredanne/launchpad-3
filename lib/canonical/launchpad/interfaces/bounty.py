@@ -9,19 +9,18 @@ __all__ = [
     'IBountySet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.fields import Summary, Title, TimeInterval
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad import _
+from canonical.launchpad.fields import Summary, Title 
+from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import BountyDifficulty, BountyStatus
 
-_ = MessageIDFactory('launchpad')
 
 class IBounty(IHasOwner, IMessageTarget):
     """The core bounty description."""
@@ -34,7 +33,7 @@ class IBounty(IHasOwner, IMessageTarget):
             description=_("""Keep this name very short, unique, and
             descriptive, because it will be used in URLs. Examples:
             mozilla-type-ahead-find, postgres-smart-serial."""),
-            constraint=valid_name,
+            constraint=name_validator,
             )
     title = Title(
             title=_('Title'), required=True
@@ -68,16 +67,23 @@ class IBounty(IHasOwner, IMessageTarget):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
+    owner = Choice(
+        title=_('Owner'),
+        required=True,
+        vocabulary='ValidOwner',
+        description=_("""Owner (registrant) of Bounty."""))
+    # XXX is this really necessary? IDs shouldn't be exposed in
+    # interfaces. -- kiko, 2005-01-14
     ownerID = Int(
             title=_('Owner'), required=True, readonly=True
             )
-    owner = Attribute("The owner's IPerson")
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this bounty.')
     projects = Attribute('The projects which this bounty is related to.')
     products = Attribute('The products to which this bounty is related.')
-    distributions = Attribute('The distributions to which this bounty is related.')
+    distributions = Attribute(
+        'The distributions to which this bounty is related.')
 
     # subscription-related methods
     def subscribe(person):

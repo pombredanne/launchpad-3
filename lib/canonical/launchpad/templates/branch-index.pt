@@ -5,6 +5,10 @@
 
 <body>
 
+<metal:main_template fill-slot="titleheader">
+   <tal:display_name replace="view/display_name" />
+</metal:main_template>
+
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -17,17 +21,28 @@
     notice goes here
   </p>
 
-  <p tal:content="context/summary">
+  <p tal:condition="context/summary"
+     tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
+  </p>
+  <p tal:condition="not:context/summary">
+    <tal:comment condition="nothing">
+      <!-- XXX: That duplicates the 'edit' link from the action portlet and
+           should be changed when bug #5313 is fixed to comply with DNRY.
+           -- DavidAllouche 2005-12-02 -->
+    </tal:comment>
+    <img src="/++resource++edit.gif" />
+    <a tal:attributes="href view/edit_link_url">Edit branch details</a>.
+    This branch has no summary. 
   </p>
 
   <table>
     <tbody>
       <tr>
-        <th>Branch URL:</th>
-        <td><tt><a tal:attributes="href context/url"
-                   tal:content="context/url"
+        <th>URL:</th>
+        <td><tt><a tal:attributes="href view/url"
+                   tal:content="view/url"
           >http://example.com/software/hello.devel</a></tt></td>
       </tr>
       <tr>
@@ -41,7 +56,7 @@
     </tbody>
   </table>
 
-  <h2>Recent history:</h2>
+  <h2>Recent revisions</h2>
 
   <p tal:condition="not:context/revision_count">
     This branch has not been scanned for revisions yet, or no revisions were
@@ -49,12 +64,10 @@
   </p>
 
   <tal:history_available condition="context/revision_count">
-  <p>Summary of the 10 latest revisions on that branch.</p>
   <table class="listing">
     <thead>
       <tr>
-        <td></td>
-        <th>Date</th>
+        <th colspan="2">Revision</th>
         <th tal:condition="view/user">Author</th>
         <th>Message</th>
       </tr>
@@ -70,6 +83,21 @@
   </table>
   </tal:history_available>
 
+      <h1>Nearby</h1>
+      <ul>
+        <li tal:condition="context/product">
+          <a tal:attributes="href string:${context/product/fmt:url}/+branches">
+            Other <tal:product replace="context/product/displayname" />
+            branches
+          </a>
+        </li>
+        <li>
+          <a tal:attributes="href string:${context/owner/fmt:url}/+branches">
+            Other branches by
+            <tal:person replace="context/owner/displayname" />
+          </a>
+        </li>
+      </ul>
 </div>
 </body>
 </html>

@@ -7,7 +7,7 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, StringCol, AND, SQLObjectNotFound, BoolCol, DateCol,
-    MultipleJoin)
+    SQLMultipleJoin)
 
 from canonical.launchpad.interfaces import (
     IMilestone, IMilestoneSet, NotFoundError)
@@ -25,9 +25,9 @@ class Milestone(SQLBase):
     visible = BoolCol(notNull=True, default=True)
 
     # joins
-    bugtasks = MultipleJoin('BugTask', joinColumn='milestone',
+    bugtasks = SQLMultipleJoin('BugTask', joinColumn='milestone',
         orderBy=['-priority', '-datecreated', '-severity'])
-    specifications = MultipleJoin('Specification', joinColumn='milestone',
+    specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
         orderBy=['-priority', 'status', 'title'])
 
     @property
@@ -41,7 +41,7 @@ class Milestone(SQLBase):
     @property
     def displayname(self):
         """See IMilestone."""
-        return 'Milestone %s' % self.name
+        return "%s: %s" % (self.target.displayname, self.name)
 
     @property
     def title(self):
@@ -57,7 +57,8 @@ class MilestoneSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""
-        raise NotImplementedError
+        for ms in Milestone.select():
+            yield ms
 
     def get(self, milestoneid):
         """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""
@@ -67,6 +68,24 @@ class MilestoneSet:
             raise NotFoundError(
                 "Milestone with ID %d does not exist" % milestoneid)
 
+    def getByNameAndProduct(self, name, product, default=None):
+        """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""
+        query = AND(Milestone.q.name==name,
+                    Milestone.q.productID==product.id)
+        milestone = Milestone.selectOne(query)
+        if milestone is None:
+            return default
+        return milestone
+
+    def getByNameAndDistribution(self, name, distribution, default=None):
+        """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""
+        query = AND(Milestone.q.name==name,
+                    Milestone.q.distributionID==distribution.id)
+        milestone = Milestone.selectOne(query)
+        if milestone is None:
+            return default
+        return milestone
+            
     def new(self, name, product=None, distribution=None, dateexpected=None,
         visible=True):
         """See IMilestoneSet."""

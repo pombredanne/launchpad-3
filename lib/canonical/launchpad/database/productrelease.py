@@ -5,7 +5,7 @@ __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin
+from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, AND
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -43,9 +43,9 @@ class ProductRelease(SQLBase):
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
                           default=None)
 
-    files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
+    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
-    files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
+    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
     # properties
     @property
@@ -104,4 +104,13 @@ class ProductReleaseSet(object):
                               description=description,
                               changelog=changelog)
 
+
+    def getBySeriesAndVersion(self, productseries, version, default=None):
+        """See IProductReleaseSet"""
+        query = AND(ProductRelease.q.version==version,
+                    ProductRelease.q.productseriesID==productseries.id)
+        productrelease = ProductRelease.selectOne(query)
+        if productrelease is None:
+            return default
+        return productrelease
 

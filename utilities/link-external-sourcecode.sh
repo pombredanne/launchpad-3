@@ -10,12 +10,29 @@ if [ "x$1" == "x" ]; then
     exit 2
 fi
 
-LAUNCHPAD_BASE=$1
+if [ ! -e "./sourcecode" ]; then
+    echo -n "Error: Couldn't find ./sourcecode/; run me from the "
+    echo "top-level of your launchpad tree"
+    exit 1
+fi
 
-for dir in sourcecode lib; do
-    for f in $LAUNCHPAD_BASE/$dir/*; do
-        target=$dir/`basename $f`
-        test ! -e $target && ln -sv $f $target;
-    done
+# Use this to obtain the actual absolute path to the tree, so relative
+# links don't break
+LAUNCHPAD_BASE=$(readlink -f "$1")
+if [ ! -e "$LAUNCHPAD_BASE/sourcecode" ]; then
+    echo -n "Error: Couldn't find $1/sourcecode; "
+    echo "point me at the top level directory of your prebuilt launchpad tree"
+    exit 1
+fi
+echo "Linking sourcecode/ subdirectories to $LAUNCHPAD_BASE/sourcecode"
+
+for f in $LAUNCHPAD_BASE/sourcecode/*; do
+    target=sourcecode/`basename $f`
+    if [ ! -e "$f" ]; then
+        echo -n "Error: Couldn't find $f; point me at the top level "
+        echo "directory of your prebuilt launchpad tree"
+        exit 1
+    fi
+    test ! -e $target && ln -svf $f $target;
 done
 

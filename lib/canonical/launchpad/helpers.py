@@ -8,7 +8,6 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import email
 import subprocess
 import gettextpo
 import os
@@ -16,7 +15,6 @@ import random
 import re
 import sha
 import tarfile
-import time
 import warnings
 from StringIO import StringIO
 from math import ceil
@@ -34,19 +32,12 @@ from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
 import canonical
-from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
-    RosettaImportStatus, SourcePackageFileType,
-    BinaryPackageFormat, BinaryPackageFileType)
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed, DownloadFailed)
+    SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IHasOwner, IRequestPreferredLanguages,
-    IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed,
-    TranslationConstants)
-from canonical.launchpad.components.poparser import (
-    POSyntaxError, POInvalidInputError, POParser)
-
+    ILaunchBag, IOpenLaunchBag, IRequestPreferredLanguages,
+    IRequestLocalLanguages, ITeam, TranslationConstants)
+from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
 def text_replaced(text, replacements, _cache={}):
@@ -54,6 +45,9 @@ def text_replaced(text, replacements, _cache={}):
 
     The keys of the dict are substrings to find, the values are what to replace
     found substrings with.
+
+    :arg text: An unicode or str to do the replacement.
+    :arg replacements: A dictionary with the replacements that should be done
 
     >>> text_replaced('', {'a':'b'})
     ''
@@ -63,6 +57,11 @@ def text_replaced(text, replacements, _cache={}):
     'fX bAr bAz'
     >>> text_replaced('1 2 3 4', {'1': '2', '2': '1'})
     '2 1 3 4'
+
+    Unicode strings work too.
+
+    >>> text_replaced(u'1 2 3 4', {u'1': u'2', u'2': u'1'})
+    u'2 1 3 4'
 
     The argument _cache is used as a cache of replacements that were requested
     before, so we only compute regular expressions once.
@@ -74,16 +73,22 @@ def text_replaced(text, replacements, _cache={}):
     cachekey = tuple(replacements.items())
     if cachekey not in _cache:
         L = []
+        if isinstance(text, unicode):
+            list_item = u'(%s)'
+            join_char = u'|'
+        else:
+            list_item = '(%s)'
+            join_char = '|'
         for find, replace in sorted(replacements.items(),
                                     key=lambda (key, value): len(key),
                                     reverse=True):
-            L.append('(%s)' % re.escape(find))
+            L.append(list_item % re.escape(find))
         # Make a copy of the replacements dict, as it is mutable, but we're
         # keeping a cached reference to it.
         replacements_copy = dict(replacements)
         def matchobj_replacer(matchobj):
             return replacements_copy[matchobj.group()]
-        regexsub = re.compile('|'.join(L)).sub
+        regexsub = re.compile(join_char.join(L)).sub
         def replacer(s):
             return regexsub(matchobj_replacer, s)
         _cache[cachekey] = replacer
@@ -129,6 +134,7 @@ class Snapshot:
         if providing is not None:
             directlyProvides(self, providing)
 
+
 def get_attribute_names(ob):
     """Gets all the attribute names ob provides.
 
@@ -155,112 +161,12 @@ def get_attribute_names(ob):
         names.update(iface.names(all=True))
     return list(names)
 
-class RosettaWriteTarFile:
-    """Convenience wrapper around the tarfile module.
-
-    This class makes it convenient to generate tar files in various ways.
-    """
-
-    def __init__(self, stream):
-        self.tarfile = tarfile.open('', 'w:gz', stream)
-        self.closed = False
-
-    @classmethod
-    def files_to_stream(cls, files):
-        """Turn a dictionary of files into a data stream."""
-        buffer = StringIO()
-        archive = cls(buffer)
-        archive.add_files(files)
-        archive.close()
-        buffer.seek(0)
-        return buffer
-
-    @classmethod
-    def files_to_string(cls, files):
-        """Turn a dictionary of files into a data string."""
-        return cls.files_to_stream(files).read()
-
-    @classmethod
-    def files_to_tarfile(cls, files):
-        """Turn a dictionary of files into a tarfile object."""
-        return tarfile.open('', 'r', cls.files_to_stream(files))
-
-    def close(self):
-        """Close the archive.
-
-        After the archive is closed, the data written to the filehandle will
-        be complete. The archive may not be appended to after it has been
-        closed.
-        """
-
-        self.tarfile.close()
-        self.closed = True
-
-    def add_file(self, path, contents):
-        """Add a file to the archive."""
-
-        if self.closed:
-            raise RuntimeError("Can't add a file to a closed archive")
-
-        now = int(time.time())
-        path_bits = path.split(os.path.sep)
-
-        # Ensure that all the directories in the path are present in the
-        # archive.
-
-        for i in range(1, len(path_bits)):
-            joined_path = os.path.join(*path_bits[:i])
-
-            try:
-                self.tarfile.getmember(joined_path + os.path.sep)
-            except KeyError:
-                tarinfo = tarfile.TarInfo(joined_path)
-                tarinfo.type = tarfile.DIRTYPE
-                tarinfo.mtime = now
-                tarinfo.mode = 0755
-                tarinfo.uname = 'rosetta'
-                tarinfo.gname = 'rosetta'
-                self.tarfile.addfile(tarinfo)
-
-        tarinfo = tarfile.TarInfo(path)
-        tarinfo.time = now
-        tarinfo.mtime = now
-        tarinfo.mode = 0644
-        tarinfo.size = len(contents)
-        tarinfo.uname = 'rosetta'
-        tarinfo.gname = 'rosetta'
-        self.tarfile.addfile(tarinfo, StringIO(contents))
-
-    def add_files(self, files):
-        """Add a number of files to the archive.
-
-        :files: A dictionary mapping file names to file contents.
-        """
-
-        for filename in sorted(files.keys()):
-            self.add_file(filename, files[filename])
-
-
-def is_maintainer(owned_object, person=None):
-    """Is the person the maintainer of this thing?
-
-    If no person is provided, the logged in user is used.
-    owned_object provides IHasOwner.
-    """
-    if not IHasOwner.providedBy(owned_object):
-        raise TypeError(
-            "Object %r doesn't provide IHasOwner" % repr(owned_object))
-    if person is None:
-        person = getUtility(ILaunchBag).user
-    if person is not None:
-        return person.inTeam(owned_object.owner)
-    else:
-        return False
 
 def join_lines(*lines):
     """Concatenate a list of strings, adding a newline at the end of each."""
 
     return ''.join([ x + '\n' for x in lines ])
+
 
 def string_to_tarfile(s):
     """Convert a binary string containing a tar file into a tar file obj."""
@@ -292,6 +198,7 @@ def shortest(sequence):
 
     return shortest_list
 
+
 def getRosettaBestBinaryPackageName(sequence):
     """Return the best binary package name from a list.
 
@@ -304,6 +211,7 @@ def getRosettaBestBinaryPackageName(sequence):
     """
     return shortest(sequence)[0]
 
+
 def getRosettaBestDomainPath(sequence):
     """Return the best path for a concrete .pot file from a list of paths.
 
@@ -314,6 +222,7 @@ def getRosettaBestDomainPath(sequence):
     more than one, usually, we will have only one element.
     """
     return shortest(sequence)[0]
+
 
 def getValidNameFromString(invalid_name):
     """Return a valid name based on a string.
@@ -328,9 +237,11 @@ def getValidNameFromString(invalid_name):
     # All chars should be lower case, underscores and spaces become dashes.
     return text_replaced(invalid_name.lower(), {'_': '-', ' ':'-'})
 
+
 def browserLanguages(request):
     """Return a list of Language objects based on the browser preferences."""
     return IRequestPreferredLanguages(request).getPreferredLanguages()
+
 
 def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     """Run a command, give it input on its standard input, and capture its
@@ -355,6 +266,7 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
             )
     (output, nothing) = p.communicate(input)
     return output
+
 
 def contactEmailAddresses(person):
     """Return a Set of email addresses to contact this Person.
@@ -393,6 +305,7 @@ replacements = {0: {'.': ' |dot| ',
                     '@': ' {at} '}
                 }
 
+
 def obfuscateEmail(emailaddr, idx=None):
     """Return an obfuscated version of the provided email address.
 
@@ -409,6 +322,7 @@ def obfuscateEmail(emailaddr, idx=None):
         idx = random.randint(0, len(replacements) - 1)
     return text_replaced(emailaddr, replacements[idx])
 
+
 def convertToHtmlCode(text):
     """Return the given text converted to HTML codes, like &#103;.
 
@@ -416,6 +330,7 @@ def convertToHtmlCode(text):
     in a form that a 'normal' person can read.
     """
     return ''.join(["&#%s;" % ord(c) for c in text])
+
 
 def validate_translation(original, translation, flags):
     """Check with gettext if a translation is correct or not.
@@ -439,6 +354,7 @@ def validate_translation(original, translation, flags):
     # Check the msg.
     msg.check_format()
 
+
 def shortlist(sequence, longest_expected=15):
     """Return a listified version of sequence.
 
@@ -451,51 +367,13 @@ def shortlist(sequence, longest_expected=15):
     """
     L = list(sequence)
     if len(L) > longest_expected:
-        warnings.warn("shortlist() should not be used here. It's meant to "
-              "listify sequences with no more than %d items." %
-              longest_expected)
+        warnings.warn(
+            "shortlist() should not be used here. It's meant to listify"
+            " sequences with no more than %d items.  There were %s items." %
+              (longest_expected, len(L)),
+              stacklevel=2)
     return L
 
-def uploadRosettaFile(filename, contents):
-    client = getUtility(ILibrarianClient)
-
-    try:
-        size = len(contents)
-        file = StringIO(contents)
-
-        alias = client.addFile(
-            name=filename,
-            size=size,
-            file=file,
-            contentType='application/x-po')
-    except UploadFailed, e:
-        raise RawFileAttachFailed(str(e))
-
-    return alias
-
-def attachRawFileDataByFileAlias(raw_file_data, alias, importer,
-    date_imported):
-    """Attach the contents of a file to a raw file data object."""
-    raw_file_data.rawfile = alias
-    raw_file_data.daterawimport = date_imported
-    raw_file_data.rawimporter = importer
-    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
-
-def attachRawFileData(raw_file_data, filename, contents, importer,
-    date_imported):
-    """Attach the contents of a file to a raw file data object."""
-    alias = uploadRosettaFile(filename, contents)
-    attachRawFileDataByFileAlias(raw_file_data, alias, importer, date_imported)
-
-def getRawFileData(raw_file_data):
-    client = getUtility(ILibrarianClient)
-
-    try:
-        file = client.getFileByAlias(raw_file_data.rawfile.id)
-    except DownloadFailed, e:
-        raise RawFileFetchFailed(str(e))
-
-    return file.read()
 
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least
@@ -512,16 +390,13 @@ def count_lines(text):
 
     return count
 
+
 def request_languages(request):
     '''Turn a request into a list of languages to show.'''
 
     user = getUtility(ILaunchBag).user
-
-    # If the user is authenticated, try seeing if they have any languages set.
-    if user is not None:
-        languages = user.languages
-        if languages:
-            return languages
+    if user is not None and user.languages:
+        return user.languages
 
     # If the user is not authenticated, or they are authenticated but have no
     # languages set, try looking at the HTTP headers for clues.
@@ -534,6 +409,7 @@ def request_languages(request):
 class UnrecognisedCFormatString(ValueError):
     """Exception raised when a string containing C format sequences can't be
     parsed."""
+
 
 def parse_cformat_string(string):
     """Parse a printf()-style format string into a sequence of interpolations
@@ -578,44 +454,35 @@ def parse_cformat_string(string):
 
     return segments
 
-def normalize_newlines(text):
-    r"""Convert newlines to Unix form.
 
-    >>> normalize_newlines('foo')
-    'foo'
-    >>> normalize_newlines('foo\n')
-    'foo\n'
-    >>> normalize_newlines('foo\r')
-    'foo\n'
-    >>> normalize_newlines('foo\r\n')
-    'foo\n'
-    >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
-    'foo\nbar\n\nbaz'
+def convert_newlines_to_web_form(unicode_text):
+    r"""Convert an Unicode text from any newline style to the one used on web
+    forms, that's the Windows style ('\r\n').
+
+    >>> convert_newlines_to_web_form(u'foo')
+    u'foo'
+    >>> convert_newlines_to_web_form(u'foo\n')
+    u'foo\r\n'
+    >>> convert_newlines_to_web_form(u'foo\nbar\n\nbaz')
+    u'foo\r\nbar\r\n\r\nbaz'
+    >>> convert_newlines_to_web_form(u'foo\r\nbar')
+    u'foo\r\nbar'
+    >>> convert_newlines_to_web_form(u'foo\rbar')
+    u'foo\r\nbar'
     """
-    return text_replaced(text, {'\r\n': '\n', '\r': '\n'})
+    assert isinstance(unicode_text, unicode), (
+        "The given text must be unicode instead of %s" % type(unicode_text))
 
-def unix2windows_newlines(text):
-    r"""Convert Unix form new lines to Windows ones.
-
-    Raise ValueError if 'text' is already using Windows newlines format.
-
-    >>> unix2windows_newlines('foo')
-    'foo'
-    >>> unix2windows_newlines('foo\n')
-    'foo\r\n'
-    >>> unix2windows_newlines('foo\nbar\n\nbaz')
-    'foo\r\nbar\r\n\r\nbaz'
-    >>> unix2windows_newlines('foo\r\nbar')
-    Traceback (most recent call last):
-    ...
-    ValueError: ''foo\r\nbar'' is already converted
-    """
-    if text is None:
+    if unicode_text is None:
         return None
-    elif '\r\n' in text:
-        raise ValueError('\'%r\' is already converted' % text)
+    elif u'\r\n' in unicode_text:
+        # The text is already using the windows newline chars
+        return unicode_text
+    elif u'\n' in unicode_text:
+        return text_replaced(unicode_text, {u'\n': u'\r\n'})
+    else:
+        return text_replaced(unicode_text, {u'\r': u'\r\n'})
 
-    return text_replaced(text, {'\n': '\r\n'})
 
 def contract_rosetta_tabs(text):
     r"""Replace Rosetta representation of tab characters with their native form.
@@ -649,89 +516,39 @@ def contract_rosetta_tabs(text):
     """
     return text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
 
-def expand_rosetta_tabs(text):
+
+def expand_rosetta_tabs(unicode_text):
     r"""Replace tabs with their Rosetta representation.
 
     Normal strings get passed through unmolested.
 
-    >>> expand_rosetta_tabs('foo')
-    'foo'
-    >>> expand_rosetta_tabs('foo\\nbar')
-    'foo\\nbar'
+    >>> expand_rosetta_tabs(u'foo')
+    u'foo'
+    >>> expand_rosetta_tabs(u'foo\\nbar')
+    u'foo\\nbar'
 
-    Tabs get converted to '[tab]'.
+    Tabs get converted to u'[tab]'.
 
-    >>> expand_rosetta_tabs('foo\tbar')
-    'foo[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\tbar')
+    u'foo[tab]bar'
 
-    Literal occurrences of '[tab]' get escaped.
+    Literal occurrences of u'[tab]' get escaped.
 
-    >>> expand_rosetta_tabs('foo[tab]bar')
-    'foo\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo[tab]bar')
+    u'foo\\[tab]bar'
 
     Escaped ocurrences themselves get escaped.
 
-    >>> expand_rosetta_tabs('foo\\[tab]bar')
-    'foo\\\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\\[tab]bar')
+    u'foo\\\\[tab]bar'
 
     And so on...
 
-    >>> expand_rosetta_tabs('foo\\\\[tab]bar')
-    'foo\\\\\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\\\\[tab]bar')
+    u'foo\\\\\\[tab]bar'
     """
-    return text_replaced(text, {'\t': '[tab]', '[tab]': r'\[tab]'})
+    return text_replaced(unicode_text, {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
 
-def parse_translation_form(form):
-    """Parse a form submitted to the translation widget.
-
-    Returns a dictionary keyed on the sequence number of the message set,
-    where each value is a structure of the form
-
-        {
-            'msgid': '...',
-            'translations': ['...', '...'],
-            'fuzzy': False,
-        }
-    """
-
-    messageSets = {}
-
-    # Extract message IDs.
-
-    for key in form:
-        match = re.match('set_(\d+)_msgid$', key)
-
-        if match:
-            id = int(match.group(1))
-            messageSets[id] = {}
-            messageSets[id]['msgid'] = id
-            messageSets[id]['translations'] = {}
-            messageSets[id]['fuzzy'] = False
-
-    # Extract translations.
-    for key in form:
-        match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
-            key)
-
-        if match:
-            id = int(match.group(1))
-            pluralform = int(match.group(3))
-
-            if not id in messageSets:
-                raise AssertionError("Orphaned translation in form.")
-
-            messageSets[id]['translations'][pluralform] = (
-                contract_rosetta_tabs(normalize_newlines(form[key])))
-
-    # Extract fuzzy statuses.
-    for key in form:
-        match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
-
-        if match:
-            id = int(match.group(1))
-            messageSets[id]['fuzzy'] = True
-
-    return messageSets
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
@@ -792,6 +609,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
         })
     return html
 
+
 def check_po_syntax(s):
     parser = POParser()
 
@@ -802,6 +620,7 @@ def check_po_syntax(s):
         return False
 
     return True
+
 
 def is_tar_filename(filename):
     '''
@@ -827,6 +646,7 @@ def test_diff(lines_a, lines_b):
         tofile='actual',
         lineterm='',
         )))
+
 
 def sanitiseFingerprint(fpr):
     """Returns sanitised fingerprint if fpr is well-formed,
@@ -921,6 +741,7 @@ def filenameToContentType(fname):
              ".deb":      "application/x-debian-package",
              ".udeb":     "application/x-debian-package",
              ".txt":      "text/plain",
+             ".txt.gz":   "text/plain", # For the build master logs
              }
     for ending in ftmap:
         if fname.endswith(ending):
@@ -936,6 +757,7 @@ def get_filename_from_message_id(message_id):
     return '%s.msg' % (
             canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
 
+
 def getFileType(fname):
     if fname.endswith(".deb"):
         return BinaryPackageFileType.DEB
@@ -950,6 +772,7 @@ def getFileType(fname):
     if fname.endswith(".tar.gz"):
         return SourcePackageFileType.TARBALL
 
+
 def getBinaryPackageFormat(fname):
     if fname.endswith(".deb"):
         return BinaryPackageFormat.DEB
@@ -958,9 +781,10 @@ def getBinaryPackageFormat(fname):
     if fname.endswith(".rpm"):
         return BinaryPackageFormat.RPM
 
+
 def intOrZero(value):
     """Return int(value) or 0 if the conversion fails.
-    
+
     >>> intOrZero('1.23')
     0
     >>> intOrZero('1.ab')
@@ -978,6 +802,7 @@ def intOrZero(value):
         return int(value)
     except (ValueError, TypeError):
         return 0
+
 
 def positiveIntOrZero(value):
     """Return 0 if int(value) fails or if int(value) is less than 0.
@@ -1002,6 +827,7 @@ def positiveIntOrZero(value):
         return 0
     return value
 
+
 def get_email_template(filename):
     """Returns the email template with the given file name.
 
@@ -1010,6 +836,7 @@ def get_email_template(filename):
     base = os.path.dirname(canonical.launchpad.__file__)
     fullpath = os.path.join(base, 'emailtemplates', filename)
     return open(fullpath).read()
+
 
 def is_ascii_only(string):
     """Ensure that the string contains only ASCII characters.
@@ -1029,4 +856,13 @@ def is_ascii_only(string):
         return False
     else:
         return True
+
+
+def capture_state(obj, *fields):
+    class State: pass
+    state = State()
+    for field in fields:
+        setattr(state, field, getattr(obj, field))
+
+    return state
 

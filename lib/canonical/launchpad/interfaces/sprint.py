@@ -1,8 +1,8 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+"""Interfaces for a Sprint (a meeting, conference or hack session).
 
-"""Interfaces for a Sprint (a meeting, conference or hack session). A Sprint
-basically consists of a bunch of people getting together to discuss some
-specific issues.
+A Sprint basically consists of a bunch of people getting together to discuss
+some specific issues.
 """
 
 __metaclass__ = type
@@ -12,17 +12,14 @@ __all__ = [
     'ISprintSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Interface, Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
-
-
-_ = MessageIDFactory('launchpad')
 
 
 class ISprint(IHasOwner, IHasSpecifications):
@@ -32,7 +29,7 @@ class ISprint(IHasOwner, IHasSpecifications):
         title=_('Name'), required=True, description=_('A unique name '
         'for this sprint, or conference, or meeting. This will part of '
         'the URL so pick something short. A single word is all you get.'),
-        constraint=valid_name)
+        constraint=name_validator)
     title = TextLine(
         title=_('Title'), required=True, description=_("Please provide "
         "a title for this meeting. This will be shown in listings of "
@@ -74,6 +71,13 @@ class ISprint(IHasOwner, IHasSpecifications):
         """Return the SprintSpecification records matching the status given,
         or all of them if no status is passed. They should be in order of
         priority, highest first.
+        """
+
+    def getSpecificationLink(id):
+        """Return the specification link for this sprint that has the given
+        ID. We use the naked ID because there is no unique name for a spec
+        outside of a single product or distro, and a sprint can cover
+        multiple products and distros.
         """
 
     # subscription-related methods

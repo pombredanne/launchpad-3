@@ -6,8 +6,6 @@ __metaclass__ = type
 # Please DO NOT put interfaces in this file. Put them in the correct
 # file, one file for each interface type: person, project, bug, etc.
 
-from zope.interface import Interface, Attribute
-
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.validation import *
 
@@ -32,6 +30,7 @@ from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugtask import *
+from canonical.launchpad.interfaces.bugtarget import *
 from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
@@ -56,7 +55,6 @@ from canonical.launchpad.interfaces.distroreleaselanguage import *
 from canonical.launchpad.interfaces.distroreleasepackagecache import *
 from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
 from canonical.launchpad.interfaces.files import *
-from canonical.launchpad.interfaces.general import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
@@ -77,6 +75,7 @@ from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.package import *
+from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *
@@ -103,7 +102,6 @@ from canonical.launchpad.interfaces.projectbounty import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.queue import *
-from canonical.launchpad.interfaces.rawfiledata import *
 from canonical.launchpad.interfaces.rosetta import *
 from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *

@@ -18,7 +18,7 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
-from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, RelatedJoin
 
 import pytz
 
@@ -57,9 +57,9 @@ class Message(SQLBase):
         intermediateTable='BugMessage')
     tickets = RelatedJoin('Ticket', joinColumn='message',
         otherColumn='ticket', intermediateTable='TicketMessage')
-    chunks = MultipleJoin('MessageChunk', joinColumn='message')
+    chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
-    bugattachments = MultipleJoin('BugAttachment', joinColumn='message')
+    bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='message')
 
     def __iter__(self):
         """See IMessage.__iter__"""
@@ -83,9 +83,9 @@ class Message(SQLBase):
         return self.owner
 
     @property
-    def contents(self):
+    def text_contents(self):
         """See IMessage."""
-        bits = [unicode(chunk) for chunk in self]
+        bits = [unicode(chunk) for chunk in self if chunk.content]
         return '\n\n'.join(bits)
 
 

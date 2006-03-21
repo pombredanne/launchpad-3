@@ -2,14 +2,29 @@
 
 __metaclass__ = type
 
+from urlparse import urlparse
+
+
 def valid_absolute_url(name):
     """validate an absolute URL.
 
+    It looks like this function has been deprecated by
+    canonical.launchpad.interfaces.validation.
+
     We define this as something that can be parsed into a URL that has both
     a protocol and a network address.
+
+    >>> valid_absolute_url('sftp://chinstrap.ubuntu.com/foo/bar')
+    True
+    >>> valid_absolute_url('http://www.example.com')
+    True
+    >>> valid_absolute_url('whatever://example.com/blah')
+    False
     """
-    import re
-    pat = r"^[A-Za-z0-9\\+:\\.\\-\\~]+$"
-    if name is None or re.match(pat, name):
+    (scheme, netloc, path, params, query, fragment) = urlparse(name)
+    if scheme == 'sftp':
         return True
-    return False
+    if not (scheme and netloc):
+        return False
+    return True
+

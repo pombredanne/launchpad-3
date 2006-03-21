@@ -12,9 +12,10 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
+    IUpstreamBugTask, )
 from canonical.launchpad.mail import (
-    simple_sendmail, simple_sendmail_from_person)
+    simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
@@ -88,6 +89,57 @@ class MailWrapper:
         # We added one line too much, remove it.
         wrapped_lines = wrapped_lines[:-1]
         return '\n'.join(wrapped_lines)
+
+
+def update_bug_contact_subscriptions(modified_bugtask, event):
+    """Modify the bug Cc list when a bugtask is retargeted."""
+    bugtask_before_modification = event.object_before_modification
+    bugtask_after_modification = event.object
+
+    # We don't make any changes to subscriber lists on private bugs.
+    if bugtask_after_modification.bug.private:
+        return
+
+    # Calculate the list of new bug contacts, if any.
+    new_bugcontacts = []
+    if IUpstreamBugTask.providedBy(modified_bugtask):
+        if (bugtask_before_modification.product !=
+            bugtask_after_modification.product):
+            if bugtask_after_modification.product.bugcontact:
+                new_bugcontacts.append(
+                    bugtask_after_modification.product.bugcontact)
+    elif (IDistroBugTask.providedBy(modified_bugtask) or
+          IDistroReleaseBugTask.providedBy(modified_bugtask)):
+        if bugtask_after_modification.sourcepackagename is None:
+            # No new bug contacts to be subscribed.
+            return
+        if (bugtask_before_modification.sourcepackagename !=
+            bugtask_after_modification.sourcepackagename):
+            new_sourcepackage = (
+                bugtask_after_modification.distribution.getSourcePackage(
+                bugtask_after_modification.sourcepackagename.name))
+            for package_bug_contact in new_sourcepackage.bugcontacts:
+                new_bugcontacts.append(package_bug_contact.bugcontact)
+
+    # Subscribe all the new bug contacts for the new package or product if they
+    # aren't already subscribed to this bug.
+    bug = bugtask_after_modification.bug
+    old_cc_list = get_cc_list(bug)
+    new_bugcontact_addresses = set()
+    for bugcontact in new_bugcontacts:
+        if not bug.isSubscribed(bugcontact):
+            bug.subscribe(bugcontact)
+            new_bugcontact_addresses.update(contactEmailAddresses(bugcontact))
+
+    # Send a notification to the new bug contacts that weren't
+    # subscribed to the bug before, which looks identical to a new bug
+    # report.
+    subject, body = generate_bug_add_email(bug)
+    new_bugcontact_addresses.difference_update(old_cc_list)
+    if new_bugcontact_addresses:
+        send_bug_notification(
+            bug=bug, user=bug.owner, subject=subject, body=body,
+            to_addrs=new_bugcontact_addresses)
 
 
 def get_bugmail_replyto_address(bug):
@@ -179,21 +231,9 @@ def generate_bug_add_email(bug):
         body += u"         Status: %s\n" % bugtask.status.title
 
     # Add the description.
-    #
-    # XXX, Brad Bollenbach, 2005-06-29: A hack to workaround some data
-    # migration issues; many older bugs don't have descriptions
-    # set. The bug filed for this is at:
-    #
-    # https://launchpad.ubuntu.com/malone/bugs/1187
-    if bug.description:
-        description = bug.description
-    else:
-        # This bug is in need of some data migration love.
-        description = bug.messages[0].contents
-
     body += u"\n"
     mailwrapper = MailWrapper(width=72)
-    body += u"Description:\n%s" % mailwrapper.format(description)
+    body += u"Description:\n%s" % mailwrapper.format(bug.description)
 
     body = body.rstrip()
 
@@ -234,7 +274,6 @@ def generate_bug_edit_email(bug_delta):
             body += (
                 u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
                 new_bug_dupe.id)
-
 
     if bug_delta.title is not None:
         body += u"Summary changed to:\n"
@@ -369,14 +408,6 @@ def generate_bug_edit_email(bug_delta):
                     body += _get_task_change_row(
                         fieldname, oldval_display, newval_display)
 
-            if bugtask_delta.statusexplanation is not None:
-                status_exp_line = u"%15s: %s" % (
-                    u"Explanation", bugtask_delta.statusexplanation)
-                status_exp_wrapper = MailWrapper(
-                    width=72, indent=u" " * 17, indent_first_line=False)
-                body += status_exp_wrapper.format(status_exp_line)
-                body += u"\n"
-
     if bug_delta.added_bugtasks is not None:
         if not body[-2:] == u"\n\n":
             body += u"\n"
@@ -404,6 +435,11 @@ def generate_bug_edit_email(bug_delta):
 
     body = body.rstrip()
 
+    if bug_delta.comment_on_change:
+        comment_wrapper = MailWrapper(width=72)
+        body += "\n\nComment:\n"
+        body += comment_wrapper.format(bug_delta.comment_on_change)
+
     return (subject, body)
 
 
@@ -430,7 +466,7 @@ def generate_bug_comment_email(bug_comment):
             u"%(comment)s"
             % {'visibility' : visibility, 'bugurl' : canonical_url(bug),
                'comment' : comment_wrapper.format(
-                    bug_comment.message.contents)})
+                    bug_comment.message.text_contents)})
 
     body = body.rstrip()
 
@@ -681,9 +717,6 @@ def get_task_delta(old_task, new_task):
             changes[field_name]["old"] = old_val
             changes[field_name]["new"] = new_val
 
-    if old_task.statusexplanation != new_task.statusexplanation:
-        changes["statusexplanation"] = new_task.statusexplanation
-
     if changes:
         changes["bugtask"] = old_task
         return BugTaskDelta(**changes)
@@ -759,9 +792,12 @@ def notify_bugtask_edited(modified_bugtask, event):
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
         bugtask_deltas=bugtask_delta,
-        user=event.user)
+        user=event.user,
+        comment_on_change=event.comment_on_change)
 
     send_bug_edit_notification(bug_delta)
+
+    update_bug_contact_subscriptions(modified_bugtask, event)
 
 
 def notify_bug_comment_added(bugmessage, event):
@@ -945,7 +981,7 @@ def notify_join_request(event):
         to_addrs.update(contactEmailAddresses(person))
 
     if to_addrs:
-        url = "%s/people/%s/+members/%s" % (event.appurl, team.name, user.name)
+        url = '%s/+member/%s' % (canonical_url(team), user.name)
         replacements = {'browsername': user.browsername,
                         'name': user.name,
                         'teamname': team.browsername,
@@ -967,8 +1003,13 @@ def send_ticket_notification(ticket_event, subject, body):
     for notified_person in subscribers:
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
-                simple_sendmail_from_person(
-                    ticket_event.user, address, subject, body)
+                from_address = format_address(
+                    ticket_event.user.displayname,
+                    'ticket%s@%s' % (
+                        ticket_event.object.id,
+                        config.tickettracker.email_domain))
+                simple_sendmail(
+                    from_address, address, subject, body)
                 sent_addrs.add(address)
 
 
@@ -1029,7 +1070,7 @@ def notify_ticket_modified(ticket, event):
             # There should be a blank line between the changes and the
             # comment.
             body += '\n\n'
-        body += 'Comment:\n%s' % comment.contents
+        body += 'Comment:\n%s' % comment.text_contents
     else:
         raise AssertionError(
             "There shouldn't be more than one comment for a notification.")
@@ -1047,3 +1088,75 @@ def notify_ticket_modified(ticket, event):
         'ticket_url': canonical_url(ticket),
         'body': body}
     send_ticket_notification(event, subject, body)
+
+
+def notify_specification_modified(spec, event):
+    """Notify the related people that a specification has been modifed."""
+    spec_delta = spec.getDelta(event.object_before_modification, event.user)
+    if spec_delta is None:
+        #XXX: Ideally, if an ISQLObjectModifiedEvent event is generated,
+        #     spec_delta shouldn't be None. I'm not confident that we
+        #     have enough test yet to assert this, though.
+        #     -- Bjorn Tillenius, 2006-03-08
+        return
+
+    subject = '[Spec %s] %s' % (spec.name, spec.title)
+    indent = ' '*4
+    info_lines = []
+    for dbitem_name in ('status', 'priority'):
+        title = ISpecification[dbitem_name].title
+        assert ISpecification[dbitem_name].required, (
+            "The mail notification assumes %s can't be None" % dbitem_name)
+        dbitem_delta = getattr(spec_delta, dbitem_name)
+        if dbitem_delta is not None:
+            old_item = dbitem_delta['old']
+            new_item = dbitem_delta['new']
+            info_lines.append("%s%s: %s => %s" % (
+                indent, title, old_item.title, new_item.title))
+
+    for person_attrname in ('approver', 'assignee', 'drafter'):
+        title = ISpecification[person_attrname].title
+        person_delta = getattr(spec_delta, person_attrname)
+        if person_delta is not None:
+            old_person = person_delta['old']
+            if old_person is None:
+                old_value = "(none)"
+            else:
+                old_value = old_person.displayname
+            new_person = person_delta['new']
+            if new_person is None:
+                new_value = "(none)"
+            else:
+                new_value = new_person.displayname
+            info_lines.append(
+                "%s%s: %s => %s" % (indent, title, old_value, new_value))
+
+    mail_wrapper = MailWrapper(width=72)
+    if spec_delta.whiteboard is not None:
+        if info_lines:
+            info_lines.append('')
+        info_lines.append('Whiteboard changed to:')
+        info_lines.append('')
+        info_lines.append(mail_wrapper.format(spec_delta.whiteboard))
+
+    if not info_lines:
+        # The specification was modified, but we don't yet support
+        # sending notification for the change.
+        return
+    body = get_email_template('specification-modified.txt') % {
+        'editor': event.user.displayname,
+        'info_fields': '\n'.join(info_lines),
+        'spec_title': spec.title,
+        'spec_url': canonical_url(spec)}
+
+    sent_addrs = set()
+    related_people = [spec.owner, spec.assignee, spec.approver, spec.drafter]
+    related_people = [
+        person for person in related_people if person is not None]
+    subscribers = [subscription.person for subscription in spec.subscriptions]
+
+    for notified_person in related_people + subscribers:
+        for address in contactEmailAddresses(notified_person):
+            if address not in sent_addrs:
+                simple_sendmail_from_person(event.user, address, subject, body)
+                sent_addrs.add(address)

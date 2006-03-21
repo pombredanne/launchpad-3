@@ -17,7 +17,7 @@
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">
     
-  <h1><span tal:replace="context/title" /> overview</h1> 
+  <h1>Release overview</h1> 
 
     <div class="documentDescription"
          tal:content="structure context/summary/fmt:text-to-html"/>

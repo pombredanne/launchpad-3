@@ -24,6 +24,7 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
     IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll)
+from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import PollAlgorithm, PollSecrecy
 
 
@@ -178,7 +179,9 @@ class PollView(BasePollView):
 
     def getPairwiseMatrixWithHeaders(self):
         """Return the pairwise matrix with headers being the option's names."""
-        # Get a mutable matrix.
+        # XXX: The list() call here is necessary because, lo and behold,
+        # it gives us a non-security-proxied list object! Someone come
+        # in and fix this! -- kiko, 2006-03-13
         pairwise_matrix = list(self.context.getPairwiseMatrix())
         headers = [None]
         for idx, option in enumerate(self.context.getAllOptions()):
@@ -263,7 +266,7 @@ class PollVoteView(BasePollView):
         """Process the condorcet-voting form to change a user's vote or 
         register a new one."""
         form = self.request.form
-        activeoptions = self.context.getActiveOptions()
+        activeoptions = shortlist(self.context.getActiveOptions())
         newvotes = {}
         for option in activeoptions:
             try:

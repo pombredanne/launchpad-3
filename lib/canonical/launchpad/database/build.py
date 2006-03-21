@@ -3,33 +3,27 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-from urllib2 import URLError
 
 from zope.interface import implements
-from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol, MultipleJoin)
+    StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.helpers import shortlist
-
 from canonical.launchpad.interfaces import (
-    IBuild, IBuildSet)
+    IBuild, IBuildSet, NotFoundError)
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
-
-from canonical.librarian.interfaces import ILibrarianClient
-
-
-from canonical.lp.dbschema import EnumCol, BuildStatus
+from canonical.launchpad.database.queue import DistroReleaseQueueBuild
+from canonical.lp.dbschema import (
+    EnumCol, BuildStatus, PackagePublishingPocket)
 
 
 class Build(SQLBase):
@@ -50,9 +44,9 @@ class Build(SQLBase):
         default=None)
     builder = ForeignKey(dbName='builder', foreignKey='Builder',
         default=None)
-    gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey',
-        default=None)
-    changes = StringCol(dbName='changes', default=None)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
+                     notNull=True)
+    dependencies = StringCol(dbName='dependencies', default=None)
 
     @property
     def buildqueue_record(self):
@@ -61,6 +55,14 @@ class Build(SQLBase):
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
         # instead, see bug # 3424
         return BuildQueue.selectOneBy(buildID=self.id)
+
+    @property
+    def changesfile(self):
+        """See IBuild"""
+        queue_item = DistroReleaseQueueBuild.selectOneBy(buildID=self.id)
+        if queue_item is None:
+            return None
+        return queue_item.distroreleasequeue.changesfile
 
     @property
     def distrorelease(self):
@@ -83,21 +85,30 @@ class Build(SQLBase):
             self.distroarchrelease.distrorelease.name)
 
     @property
+    def was_built(self):
+        """See IBuild"""
+        return self.buildstate is not BuildStatus.NEEDSBUILD
+
+    @property
     def build_icon(self):
         """See IBuild"""
 
         icon_map = {
-            BuildStatus.NEEDSBUILD: "",
-            BuildStatus.FULLYBUILT: "/++resource++build-success",
-            BuildStatus.FAILEDTOBUILD: "/++resource++build-failure",
-            BuildStatus.MANUALDEPWAIT: "",
-            BuildStatus.CHROOTWAIT: "",
+            BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            BuildStatus.FULLYBUILT: "/@@/build-success",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             }
         return icon_map[self.buildstate]
 
     @property
     def distributionsourcepackagerelease(self):
         """See IBuild."""
+        from canonical.launchpad.database.distributionsourcepackagerelease \
+             import (
+            DistributionSourcePackageRelease)
+
         return DistributionSourcePackageRelease(
             distribution=self.distroarchrelease.distrorelease.distribution,
             sourcepackagerelease=self.sourcepackagerelease)
@@ -105,7 +116,8 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See IBuild."""
-        bpklist = shortlist(BinaryPackageRelease.selectBy(buildID=self.id))
+        bpklist = BinaryPackageRelease.selectBy(buildID=self.id,
+                                                orderBy=['id'])
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
@@ -121,10 +133,8 @@ class Build(SQLBase):
         self.datebuilt = None
         self.buildduration = None
         self.builder = None
-        self.gpgsigningkey = None
-        self.changes = None
         self.buildlog = None
-        
+        self.dependencies = None
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -134,7 +144,7 @@ class Build(SQLBase):
         for binpkg in self.binarypackages:
             if binpkg.name == name:
                 return binpkg
-        raise IndexError, 'No binary package "%s" in build' % name
+        raise NotFoundError, 'No binary package "%s" in build' % name
 
     def createBinaryPackageRelease(self, binarypackagename, version,
                                    summary, description,
@@ -145,9 +155,7 @@ class Build(SQLBase):
                                    essential, installedsize,
                                    copyright, licence,
                                    architecturespecific):
-
         """See IBuild."""
-
         return BinaryPackageRelease(buildID=self.id,
                                     binarypackagenameID=binarypackagename,
                                     version=version,
@@ -218,6 +226,9 @@ class BuildSet:
         if not arch_ids:
             return None
 
+        clauseTables = []
+        orderBy=["-datebuilt"]
+
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
             condition_clauses = [('distroarchrelease=%s'
@@ -226,9 +237,27 @@ class BuildSet:
             condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
+        # exclude gina-generated builds
+        # buildstate == FULLYBUILT && datebuilt == null
+        condition_clauses.append(
+            "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
+            % sqlvalues(BuildStatus.FULLYBUILT))
+
+        # XXX cprov 20060214: still not ordering ALL results (empty status)
+        # properly, the pending builds will pre presented in the DESC
+        # 'datebuilt' order. bug # 31392
+
         # attempt to given status
-        if status:
+        if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
 
+        # Order NEEDSBUILD by lastscore, it should present the build
+        # in a more natural order.
+        if status == BuildStatus.NEEDSBUILD:
+            orderBy = ["-BuildQueue.lastscore"]
+            clauseTables.append('BuildQueue')
+            condition_clauses.append('BuildQueue.build = Build.id')
+
         return Build.select(' AND '.join(condition_clauses),
-                            orderBy="-datebuilt")
+                            clauseTables=clauseTables,
+                            orderBy=orderBy)

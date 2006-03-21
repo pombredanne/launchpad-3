@@ -72,27 +72,27 @@ Let's see some examples of how this works:
   >>> high_priority_task.assignee = foobar
   >>> high_priority_task.status = BugTaskStatus.UNCONFIRMED
   >>> high_priority_task.statusdisplayhtml
-  'unconfirmed'
+  u'unconfirmed, assigned to <img src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> high_priority_task.status = BugTaskStatus.CONFIRMED
   >>> high_priority_task.statusdisplayhtml
-  u'confirmed, assigned to <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  u'confirmed, assigned to <img src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> high_priority_task.status = BugTaskStatus.REJECTED
   >>> high_priority_task.statusdisplayhtml
-  u'rejected by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  u'rejected by <img src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
   >>> high_priority_task.assignee = None
   >>> high_priority_task.statusdisplayhtml
-  'rejected'
+  'rejected (unassigned)'
 
   >>> high_priority_task.status = BugTaskStatus.FIXRELEASED
   >>> high_priority_task.statusdisplayhtml
-  'fix released'
+  'fix released (unassigned)'
 
   >>> high_priority_task.assignee = foobar
   >>> high_priority_task.statusdisplayhtml
-  'fix released'
+  u'fix released, assigned to <img src="/@@/user.gif" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
 
 Lastly, some cleanup:
 
@@ -121,7 +121,7 @@ Let's see some examples:
   'filed in 2 other places'
 
   >>> low_priority_task.statuselsewhere
-  'filed in 2 other places'
+  'filed in 3 other places'
 
 Let's take a random task related to wontfix_priority_task, mark it
 Fixed, and see how the statuselsewhere value is affected:

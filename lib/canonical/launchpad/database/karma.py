@@ -8,7 +8,8 @@ __all__ = [
     'KarmaActionSet',
     'KarmaCache',
     'KarmaCacheSet',
-    'KarmaCategory'
+    'KarmaTotalCache',
+    'KarmaCategory',
     ]
 
 from datetime import datetime, timedelta
@@ -21,13 +22,14 @@ from zope.interface import implements
 # SQLObject imports
 from sqlobject import (
     DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
-    MultipleJoin)
+    SQLMultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaSet,
-    IKarmaCacheSet, IKarmaCategory)
+    IKarmaCacheSet, IKarmaCategory, IKarmaTotalCache,
+    )
 
 
 class Karma(SQLBase):
@@ -168,12 +170,6 @@ class KarmaCacheSet:
     """See IKarmaCacheSet."""
     implements(IKarmaCacheSet)
 
-    def new(self, person, category, karmavalue):
-        """See IKarmaCacheSet."""
-        return KarmaCache(
-                personID=person.id, categoryID=category.id,
-                karmavalue=karmavalue)
-
     def getByPersonAndCategory(self, person, category, default=None):
         """See IKarmaCacheSet."""
         cache = KarmaCache.selectOneBy(
@@ -181,6 +177,17 @@ class KarmaCacheSet:
         if cache is None:
             cache = default
         return cache
+
+
+class KarmaTotalCache(SQLBase):
+    """A cached value of the total of a person's karma (all categories)."""
+    implements(IKarmaTotalCache)
+
+    _table = 'KarmaTotalCache'
+    _defaultOrder = ['id']
+
+    person = ForeignKey(dbName='person', notNull=True)
+    karma_total = IntCol(dbName='karma_total', notNull=True)
 
 
 class KarmaCategory(SQLBase):
@@ -193,6 +200,6 @@ class KarmaCategory(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
 
-    karmaactions = MultipleJoin('KarmaAction', joinColumn='category',
+    karmaactions = SQLMultipleJoin('KarmaAction', joinColumn='category',
         orderBy='name')
 

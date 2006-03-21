@@ -315,10 +315,6 @@ COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set 
 
 -- POTemplate
 COMMENT ON TABLE POTemplate IS 'This table stores a pot file for a given product.';
-COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself encoded as a base64 string.';
-COMMENT ON COLUMN POTemplate.rawimporter IS 'The person that attached the rawfile.';
-COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was attached.';
-COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackage name from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
@@ -337,10 +333,6 @@ COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain na
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
-COMMENT ON COLUMN POFile.rawfile IS 'The Library file alias of the PO file as imported.';
-COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the raw file.';
-COMMENT ON COLUMN POFile.daterawimport IS 'The date when the raw file was attached.';
-COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the RosettaImportStatus schema.';
 COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
@@ -511,6 +503,8 @@ COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically subscribed to every bug targeted to this distribution.';
+COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
+COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
 
 /* DistroRelease */
 
@@ -536,6 +530,8 @@ COMMENT ON COLUMN DistroReleaseQueue.status IS 'This is an integer field contain
 COMMENT ON COLUMN DistroReleaseQueue.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
 
 COMMENT ON COLUMN DistroReleaseQueue.pocket IS 'This is the pocket the upload is targeted at.';
+
+COMMENT ON COLUMN DistroReleaseQueue.changesfile IS 'The changes file associated with this upload.';
 
 -- DistroReleaseQueueSource
 COMMENT ON TABLE DistroReleaseQueueSource IS 'An upload queue source package. This table stores information pertaining to the source files in an in-progress package upload.';
@@ -672,6 +668,8 @@ COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the
 COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem or icon whenever we are referring to that person.';
 COMMENT ON COLUMN Person.hackergotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
 
+COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
+
 -- PersonLanguage
 COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
 COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
@@ -793,6 +791,11 @@ COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itse
 COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
 COMMENT ON COLUMN Specification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
+COMMENT ON COLUMN Specification.delivery IS 'The implementation status of this
+specification. This field is used to track the actual delivery of the feature
+(implementing the spec), as opposed to the definition of expected behaviour
+(writing the spec).';
+COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
@@ -953,6 +956,20 @@ COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
+
+-- Build
+COMMENT ON TABLE Builder IS 'Build: This table stores the build procedure information of a sourcepackagerelease and its results (binarypackagereleases) for a given distroarchrelease.';
+COMMENT ON COLUMN Build.datecreated IS 'When the build record was created.';
+COMMENT ON COLUMN Build.datebuilt IS 'When the build record was processed.';
+COMMENT ON COLUMN Build.buildduration IS 'How long this build took to be processed.';
+COMMENT ON COLUMN Build.distroarchrelease IS 'Points the target Distroarchrelease for this build.';
+COMMENT ON COLUMN Build.processor IS 'Points to the Distroarchrelease available processor target for this build.';
+COMMENT ON COLUMN Build.sourcepackagerelease IS 'Sourcepackagerelease which originated this build.';
+COMMENT ON COLUMN Build.buildstate IS 'Stores the current build procedure state.';
+COMMENT ON COLUMN Build.buildlog IS 'Points to the buildlog file stored in librarian.';
+COMMENT ON COLUMN Build.builder IS 'Points to the builder which has once processed it.';
+COMMENT ON COLUMN Build.pocket IS 'Stores the target pocket identifier for this build.';
+COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
@@ -1245,7 +1262,46 @@ COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp whe
 COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueueEntry.is_blocked IS 'If this flag is set, the row should be blocked and not imported.';
 COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
 COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
+COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
+COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
+
+
+-- PersonalPackageArchive
+COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';
+COMMENT ON COLUMN PersonalPackageArchive.person IS 'Owner of this personal archive.';
+COMMENT ON COLUMN PersonalPackageArchive.distrorelease IS 'Target Distrorelease for this personal archive.';
+COMMENT ON COLUMN PersonalPackageArchive.packages IS 'Cache of the generated Packages file.';
+COMMENT ON COLUMN PersonalPackageArchive.sources IS 'Cache of the generated Sources file.';
+COMMENT ON COLUMN PersonalPackageArchive.release IS 'Cache of the generated Release file.';
+COMMENT ON COLUMN PersonalPackageArchive.release_gpg IS 'Cache of the detached GPG signature of the cached Release file.';
+COMMENT ON COLUMN PersonalPackageArchive.datelastupdated IS 'Time when cache of the archive files was last updated.';
+
+-- PersonalSourcepackagePublication
+COMMENT ON TABLE PersonalSourcePackagePublication IS 'Contains the information about which sourcepackagerelease is included in a Personal Package Archive.';
+COMMENT ON COLUMN PersonalSourcePackagePublication.personalpackagearchive IS 'Target Personal Package Archive.';
+COMMENT ON COLUMN PersonalSourcePackagePublication.sourcepackagerelease IS 'Target Sourcepackagerelease.';
+
+
+-- Component
+COMMENT ON TABLE Component IS 'Known components in Launchpad';
+COMMENT ON COLUMN Component.name IS 'Component name text';
+
+
+-- Section
+COMMENT ON TABLE Section IS 'Known sections in Launchpad';
+COMMENT ON COLUMN Section.name IS 'Section name text';
+
+
+-- ComponentSelection
+COMMENT ON TABLE ComponentSelection IS 'Allowed components in a given distrorelease.';
+COMMENT ON COLUMN ComponentSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON COLUMN ComponentSelection.component IS 'Refers to the component in qestion.';
+
+
+-- SectionSelection
+COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distrorelease.';
+COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';

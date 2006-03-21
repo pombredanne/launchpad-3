@@ -8,7 +8,9 @@ __all__ = [
     'BranchTargetView',
     ]
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import IPerson
+from canonical.lp.dbschema import BranchLifecycleStatus
 
 # XXX This stuff was cargo-culted from ITicketTarget, that needs to be factored
 # out. See bug 4011. -- David Allouche 2005-09-09
@@ -29,7 +31,7 @@ class BranchTargetView:
         if '+authoredbranches' in url:
             return "authored by"
         elif '+registeredbranches' in url:
-            return "registered by"
+            return "registered but not authored by"
         elif '+subscribedbranches' in url:
             return "subscribed to by"
         else:
@@ -46,14 +48,14 @@ class BranchTargetView:
         which does have a IPerson.branches. In this case, it will also
         detect which set of branches you want to see. The options are:
 
-         - all branches (self.context.branches)
+         - all branches (self.branches)
          - authored by this person (self.context.authored_branches)
          - registered by this person (self.context.registered_branches)
          - subscribed by this person (self.context.subscribed_branches)
         """
         categories = {}
         if not IPerson.providedBy(self.context):
-            branches = self.context.branches
+            branches = self.branches
         else:
             url = self.request.getURL()
             if '+authoredbranches' in url:
@@ -63,7 +65,7 @@ class BranchTargetView:
             elif '+subscribedbranches' in url:
                 branches = self.context.subscribed_branches
             else:
-                branches = self.context.branches
+                branches = self.branches
         for branch in branches:
             if categories.has_key(branch.lifecycle_status):
                 category = categories[branch.lifecycle_status]
@@ -74,6 +76,23 @@ class BranchTargetView:
                 categories[branch.lifecycle_status] = category
             category['branches'].append(branch)
         categories = categories.values()
-        def by_status(category):
-            return category['status'].value
-        return sorted(categories, key=by_status)
+        return sorted(categories, key=self.category_display_order)
+
+    @staticmethod
+    def category_display_order(category):
+        display_order = [
+            BranchLifecycleStatus.MATURE,
+            BranchLifecycleStatus.DEVELOPMENT,
+            BranchLifecycleStatus.EXPERIMENTAL,
+            BranchLifecycleStatus.MERGED,
+            BranchLifecycleStatus.ABANDONED,
+            BranchLifecycleStatus.NEW,
+            ]
+        return display_order.index(category['status'])
+
+    @cachedproperty
+    # A cache to avoid repulling data from the database, which can be
+    # particularly expensive
+    def branches(self):
+        return self.context.branches
+

@@ -8,13 +8,16 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
+import apt_pkg
+apt_pkg.InitSystem()
+
 from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
-
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -29,12 +32,11 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.ticket import Ticket
-from sourcerer.deb.version import Version, BadUpstreamError
 from canonical.launchpad.helpers import shortlist
 
 _arg_not_provided = object()
 
-class DistributionSourcePackage:
+class DistributionSourcePackage(BugTargetBase):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -103,16 +105,9 @@ class DistributionSourcePackage:
             orderBy='datecreated',
             clauseTables=['SourcePackagePublishing', 'DistroRelease'])
 
-        # sort by version
-        try:
-            releases = sorted(shortlist(sprs),
-                              key=lambda item: Version(item.version))
-        # XXX cprov : Sourcerer Version model doesn't cope with
-        # version containing letters, so if it happens we rely
-        # on DB order (datecreated) -> bug # 6040
-        except BadUpstreamError:
-            releases = shortlist(sprs)
-
+        # safely sort by version
+        compare = lambda a,b: apt_pkg.VersionCompare(a.version, b.version)
+        releases = sorted(shortlist(sprs), cmp=compare)
         if len(releases) == 0:
             return None
 
@@ -281,10 +276,12 @@ class DistributionSourcePackage:
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, private=False,
+                  binarypackagename=None):
         """See IBugTarget."""
         return BugSet().createBug(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
+            binarypackagename=binarypackagename,
             owner=owner, title=title, comment=comment,
             private=private)

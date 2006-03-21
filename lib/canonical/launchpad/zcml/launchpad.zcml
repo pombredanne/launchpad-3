@@ -1,6 +1,7 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
 <!-- Error pages -->
@@ -8,7 +9,7 @@
   <browser:page
       for="zope.interface.common.interfaces.IException"
       name="index.html"
-      template="../templates/launchpad-oops.pt"
+      template="../templates/oops.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
@@ -40,7 +41,6 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
-
 <facet facet="overview">
 
   <utility
@@ -53,6 +53,13 @@
       name="+maintenancemessage"
       template="../templates/launchpad-maintenance.pt"
       class="canonical.launchpad.browser.MaintenanceMessage"
+      permission="zope.Public"
+      />
+
+  <browser:page
+      for="*"
+      name="+main-template-macros"
+      template="../templates/main-template-macros.pt"
       permission="zope.Public"
       />
 
@@ -147,5 +154,13 @@
       permission="zope.Public"
       />
 </facet>
+
+<!-- self-test xmlrpc api -->
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.ILaunchpadRoot"
+  interface="canonical.launchpad.xmlrpc.ISelfTest"
+  class="canonical.launchpad.xmlrpc.SelfTest"
+  permission="zope.Public"
+  />
 
 </configure>

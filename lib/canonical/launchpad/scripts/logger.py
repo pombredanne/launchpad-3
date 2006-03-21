@@ -16,6 +16,7 @@ import logging
 import re
 import sha
 import sys
+import traceback
 import time
 from optparse import OptionParser
 from cStringIO import StringIO
@@ -115,7 +116,7 @@ def logger_options(parser, default=logging.INFO):
                 )
         # Reset the global log
         global log
-        log._log = _logger(parser.values.loglevel)
+        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
             "-v", "--verbose", dest="loglevel", default=default,
@@ -127,10 +128,14 @@ def logger_options(parser, default=logging.INFO):
             action="callback", callback=counter, callback_args=(10, ),
             help="Decrease verbosity. May be specified multiple times."
             )
+    parser.add_option(
+            "--log-file", action="store", type="string",
+            help="Send log to the given file, rather than stderr."
+            )
 
     # Set the global log
     global log
-    log._log = _logger(default)
+    log._log = _logger(default, out_stream=sys.stderr)
 
 
 def logger(options=None, name=None):
@@ -154,8 +159,11 @@ def logger(options=None, name=None):
         logger_options(parser)
         options, args = parser.parse_args()
 
-    return _logger(options.loglevel, name)
+    if options.log_file:
+        out_stream = open(options.log_file, 'a')
+        return _logger(options.loglevel, out_stream=out_stream, name=name)
 
+    return _logger(options.loglevel, out_stream=sys.stderr, name=name)
 
 def reset_root_logger():
     root_logger = logging.getLogger()
@@ -164,12 +172,12 @@ def reset_root_logger():
         hdlr.close()
         root_logger.removeHandler(hdlr)
 
-def _logger(level, name=None):
+def _logger(level, out_stream, name=None):
     """Create the actual logger instance, logging at the given level
 
     if name is None, it will get args[0] without the extension (e.g. gina).
+    'out_stream must be passed, the recommended value is sys.stderr'
     """
-
     if name is None:
         # Determine the logger name from the script name
         name = sys.argv[0]
@@ -192,7 +200,7 @@ def _logger(level, name=None):
     # Make it print output in a standard format, suitable for 
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
-    hdlr = logging.StreamHandler(strm=sys.stderr)
+    hdlr = logging.StreamHandler(strm=out_stream)
     if config.default_section == 'testrunner':
         # Don't output timestamps in the test environment
         fmt = '%(levelname)-7s %(message)s'
@@ -241,6 +249,17 @@ class _LogWrapper:
         else:
             return setattr(self._log, key, value)
 
+    def shortException(self, msg, *args):
+        """Like Logger.exception, but does not print a traceback."""
+        exctype, value = sys.exc_info()[:2]
+        report = ''.join(traceback.format_exception_only(exctype, value))
+        # _log.error interpolates msg, so we need to escape % chars
+        msg += '\n' + report.rstrip('\n').replace('%', '%%')
+        self._log.error(msg, *args)
+
+
 log = _LogWrapper(logging.getLogger())
+
+
 
 

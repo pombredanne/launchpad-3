@@ -12,6 +12,7 @@ messaging settings -- stub 2004-10-21
 """
 
 __all__ = [
+    'format_address',
     'sendmail',
     'simple_sendmail',
     'simple_sendmail_from_person',
@@ -63,6 +64,27 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
 
+def format_address(name, address):
+    r"""Formats a name and address to be used as an email header.
+
+        >>> format_address('Name', 'foo@bar.com')
+        'Name <foo@bar.com>'
+        >>> format_address('', 'foo@bar.com')
+        'foo@bar.com'
+
+    It handles unicode and characters that need quoting as well.
+
+        >>> format_address(u'F\xf4\xf4 Bar', 'foo.bar@canonical.com')
+        '=?utf-8?b?RsO0w7QgQmFy?= <foo.bar@canonical.com>'
+
+        >>> format_address('Foo [Baz] Bar', 'foo.bar@canonical.com')
+        '"Foo \\[Baz\\] Bar" <foo.bar@canonical.com>'
+    """
+    if not name:
+        return address
+    name = str(Header(name))
+    return str(formataddr((name, address)))
+
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     """Send an email from from_addr to to_addrs with the subject and body
@@ -79,6 +101,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     # It's the caller's responsibility to encode the address fields to
     # ASCII strings.
+    # XXX CarlosPerelloMarin 20060320: Spiv is working on fixing this so we
+    # can provide a Unicode string and get the right encoding.
     for address in [from_addr] + list(to_addrs):
         if not isinstance(address, str) or not is_ascii_only(address):
             raise AssertionError(
@@ -109,8 +133,7 @@ def simple_sendmail_from_person(person, to_addrs, subject, body, headers={}):
     It works just like simple_sendmail, excepts that it ensures that the
     From header is properly encoded.
     """
-    name = str(Header(person.displayname))
-    from_addr = str(formataddr((name, person.preferredemail.email)))
+    from_addr = format_address(person.displayname, person.preferredemail.email)
     return simple_sendmail(from_addr, to_addrs, subject, body, headers=headers)
 
 

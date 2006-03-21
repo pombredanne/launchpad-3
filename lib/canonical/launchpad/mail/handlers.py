@@ -2,22 +2,27 @@
 
 __metaclass__ = type
 
+import re
+
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
 from zope.exceptions import NotFoundError
+from zope.security.management import queryInteraction
 
-from canonical.launchpad.helpers import Snapshot, is_maintainer
+from canonical.config import config
+from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask)
+    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal, ITicket, ITicketSet)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -30,7 +35,7 @@ def get_main_body(signed_msg):
     msg = signed_msg.signedMessage
     if msg is None:
         # The email wasn't signed.
-        return None
+        msg = signed_msg
     if msg.is_multipart():
         for part in msg.get_payload():
             if part.get_content_type() == 'text/plain':
@@ -91,7 +96,7 @@ def guess_bugtask(bug, person):
         for bugtask in bug.bugtasks:
             if IUpstreamBugTask.providedBy(bugtask):
                 # Is the person an upstream maintainer?
-                if is_maintainer(bugtask.product, person):
+                if person.inTeam(bugtask.product.owner):
                     return bugtask
             elif IDistroBugTask.providedBy(bugtask):
                 # Is the person a member of the distribution?
@@ -105,6 +110,17 @@ def guess_bugtask(bug, person):
                         return bugtask
 
     return None
+
+
+def get_current_principal():
+    """Get the principal from the current interaction."""
+    interaction = queryInteraction()
+    principals = [
+        participation.principal
+        for participation in interaction.participations]
+    assert len(principals) == 1, (
+        "There should be only one principal in the current interaction.")
+    return principals[0]
 
 
 class IncomingEmailError(Exception):
@@ -128,12 +144,8 @@ class MaloneHandler:
         commands = []
         content = get_main_body(signed_msg)
         if content is None:
-            # The email wasn't signed, don't process any commands.
-            #XXX: We should provide an error message if the user tries to
-            #     give commands in an unsigned email.
-            #     -- Bjorn Tillenius, 2005-06-06
             return []
-        # First extract all commands from the email.   
+        # First extract all commands from the email.
         command_names = emailcommands.names()
         for line in content.splitlines():  
             # All commands have to be indented.
@@ -148,11 +160,28 @@ class MaloneHandler:
 
 
     def process(self, signed_msg, to_addr, filealias=None):
+        """See IMailHandler."""
         commands = self.getCommands(signed_msg)
         user, host = to_addr.split('@')
         add_comment_to_bug = False
 
         try:
+            if len(commands) > 0:
+                current_principal = get_current_principal()
+                # The security machinery doesn't know about
+                # IWeaklyAuthenticatedPrincipal yet, so do a manual
+                # check. Later we can rely on the security machinery to
+                # cause Unauthorized errors.
+                if IWeaklyAuthenticatedPrincipal.providedBy(current_principal):
+                    if signed_msg.signature is None:
+                        error_message = get_error_message('not-signed.txt')
+                    else:
+                        import_url = canonical_url(
+                            getUtility(ILaunchBag).user) + '/+editpgpkeys'
+                        error_message = get_error_message(
+                            'key-not-registered.txt', import_url=import_url)
+                    raise IncomingEmailError(error_message)
+
             if user.lower() == 'new':
                 # A submit request.
                 commands.insert(0, emailcommands.get('bug', ['new']))
@@ -198,7 +227,9 @@ class MaloneHandler:
                             add_comment_to_bug = False
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
-                            notify(bugtask_event)
+                            if not ISQLObjectCreatedEvent.providedBy(
+                                bug_event):
+                                notify(bugtask_event)
                             bugtask_event = None
                         bugtask, bugtask_event = command.execute(bug)
                     elif IBugEditEmailCommand.providedBy(command):
@@ -226,7 +257,8 @@ class MaloneHandler:
                     raise IncomingEmailError(
                         get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:
-                notify(bugtask_event)
+                if not ISQLObjectCreatedEvent.providedBy(bug_event):
+                    notify(bugtask_event)
 
         except IncomingEmailError, error:
             transaction.abort()
@@ -236,3 +268,82 @@ class MaloneHandler:
                 error.message, error.failing_command)
 
         return True
+
+
+class SupportTrackerHandler:
+    """Handles emails sent to the support tracker."""
+
+    implements(IMailHandler)
+
+    _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
+
+    def process(self, signed_msg, to_addr, filealias=None):
+        """See IMailHandler."""
+        match = self._ticket_address.match(to_addr)
+        if match:
+            ticket_id = int(match.group('id'))
+            ticket = getUtility(ITicketSet).get(ticket_id)
+            if ticket is None:
+                # No such ticket, don't process the email.
+                return False
+
+            unmodified_ticket = Snapshot(ticket, providing=ITicket)
+            messageset = getUtility(IMessageSet)
+            message = messageset.fromEmail(
+                signed_msg.parsed_string,
+                owner=getUtility(ILaunchBag).user,
+                filealias=filealias,
+                parsed_message=signed_msg)
+            ticket.linkMessage(message)
+            notify(SQLObjectModifiedEvent(
+                ticket, unmodified_ticket, ['messages']))
+            return True
+        else:
+            return False
+
+
+class MailHandlers:
+    """All the registered mail handlers."""
+
+    def __init__(self):
+        self._handlers = {
+            config.launchpad.bugs_domain: MaloneHandler(),
+            config.tickettracker.email_domain: SupportTrackerHandler()
+            }
+
+    def get(self, domain):
+        """Return the handler for the given email domain.
+
+        Return None if no such handler exists.
+
+            >>> handlers = MailHandlers()
+            >>> handlers.get('bugs.launchpad.net') #doctest: +ELLIPSIS
+            <...MaloneHandler...>
+            >>> handlers.get('no.such.domain') is None
+            True
+        """
+        return self._handlers.get(domain)
+
+    def add(self, domain, handler):
+        """Adds a handler for a domain.
+
+            >>> handlers = MailHandlers()
+            >>> handlers.get('some.domain') is None
+            True
+            >>> handler = object()
+            >>> handlers.add('some.domain', handler)
+            >>> handlers.get('some.domain') is handler
+            True
+
+        If there already is a handler for the domain, the old one will
+        get overwritten:
+
+            >>> new_handler = object()
+            >>> handlers.add('some.domain', new_handler)
+            >>> handlers.get('some.domain') is new_handler
+            True
+        """
+        self._handlers[domain] = handler
+
+
+mail_handlers = MailHandlers()

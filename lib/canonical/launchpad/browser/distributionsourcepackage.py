@@ -5,21 +5,18 @@ __metaclass__ = type
 __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
-    'DistributionSourcePackageView',
-    'DistributionSourcePackageBugsView',
+    'DistributionSourcePackageView'
     ]
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, UNRESOLVED_BUGTASK_STATUSES, ILaunchBag,
-    DuplicateBugContactError, DeleteBugContactError, IPersonSet)
-from canonical.launchpad.browser.bugtask import (
-    BugTargetTraversalMixin, BugTaskSearchListingView)
+    IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
+    DeleteBugContactError, IPersonSet)
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
-    GetitemNavigation, canonical_url)
-from canonical.launchpad.searchbuilder import any
+    GetitemNavigation, canonical_url, redirection)
 
 
 class DistributionSourcePackageFacets(StandardLaunchpadFacets):
@@ -59,6 +56,8 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
 
     usedfor = IDistributionSourcePackage
 
+    redirection("+editbugcontact", "+subscribe")
+
     def breadcrumb(self):
         return self.context.sourcepackagename.name
 
@@ -76,43 +75,11 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
         return Link('+addticket', 'Request Support', icon='add')
 
 
-class DistributionSourcePackageBugsView(BugTaskSearchListingView):
-    """View class for the buglist for an IDistributionSourcePackage."""
-
-    def _distributionContext(self):
-        """Return the source package's distribution."""
-        return self.context.distribution
-
-    def showTableView(self):
-        """Should the search results be displayed as a table?"""
-        return False
-
-    def showListView(self):
-        """Should the search results be displayed as a list?"""
-        return True
-
-    def showBatchedListing(self):
-        """Is the listing batched?"""
-        return False
-
-    @property
-    def task_columns(self):
-        """Return the columns that should be displayed in the bug listing."""
-        return ["assignedto", "id", "priority", "severity", "status", "title"]
-
-    def getExtraSearchParams(self):
-        """Search for all unresolved bugs on this package."""
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}
-
-
 class DistributionSourcePackageView:
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def latest_bugtasks(self):
-        return self.context.bugtasks(quantity=5)
 
     def latest_tickets(self):
         return self.context.tickets(quantity=5)

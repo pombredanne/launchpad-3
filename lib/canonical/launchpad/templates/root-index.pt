@@ -22,7 +22,8 @@
     Launchpad is a collection of services for
     projects in the open source universe. You can register your
     project, and then collaborate with the open source community on
-    translations, bug tracking and code.
+    translations, bug tracking and code. For more information, see our <a
+    href="faq">Frequently Asked Questions</a>.
   </p>
 
   <form action="/products/" method="get">
@@ -31,7 +32,7 @@
     <table>
       <tr>
         <td>
-          <input id="text" size="30" />
+          <input type="text" name="text" size="30" />
           <input type="submit" value="Search" />
         </td>
       </tr>
@@ -45,7 +46,7 @@
     <tbody>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/distros/ubuntu">The Ubuntu Distribution</a></b>
@@ -58,7 +59,7 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/products/gnomebaker">GnomeBaker</a></b>
@@ -71,7 +72,7 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/products/bzr">Bazaar-NG</a></b>

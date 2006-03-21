@@ -6,7 +6,6 @@ __all__ = [
     'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
     'JabberIDSet', 'IrcID', 'IrcIDSet']
 
-import itertools
 import sets
 from datetime import datetime, timedelta
 import pytz
@@ -18,8 +17,8 @@ from zope.component import getUtility
 
 # SQL imports
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
-    SQLObjectNotFound)
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin, 
+    RelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
@@ -27,25 +26,33 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
+from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet)
+    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.karma import (
-    KarmaAction, Karma, KarmaCategory)
+from canonical.launchpad.database.karma import KarmaAction, Karma
+from canonical.launchpad.database.potemplate import POTemplateSet
+from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specificationfeedback import (
+    SpecificationFeedback)
+from canonical.launchpad.database.specificationsubscription import (
+    SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
-    TeamMembership, TeamParticipation)
+    TeamMembership, TeamParticipation, TeamMembershipSet)
 
 from canonical.launchpad.database.branch import Branch
 
@@ -55,6 +62,7 @@ from canonical.lp.dbschema import (
     SpecificationSort)
 
 from canonical.foaf import nickname
+from canonical.cachedproperty import cachedproperty
 
 
 class Person(SQLBase):
@@ -66,7 +74,6 @@ class Person(SQLBase):
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
-    karma = IntCol(dbName='karma', notNull=True, default=0)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
@@ -90,7 +97,9 @@ class Person(SQLBase):
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None)
 
-    sshkeys = MultipleJoin('SSHKey', joinColumn='person')
+    sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
+
+    karma_total_cache = SQLMultipleJoin('KarmaTotalCache', joinColumn='person')
 
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
@@ -103,57 +112,78 @@ class Person(SQLBase):
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    hide_email_addresses = BoolCol(notNull=True, default=False)
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = RelatedJoin('Language', joinColumn='person',
                             otherColumn='language',
                             intermediateTable='PersonLanguage')
 
-    # relevant joins
-    authored_branches = MultipleJoin(
-        'Branch', joinColumn='author',orderBy='-id')
     subscribed_branches = RelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', orderBy='-id')
-    ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
+    ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
-    reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
+    reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
+    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute 
+    # 'claimant' in the Bounty database class or interface, but the column 
+    # exists in the database. 
+    # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = MultipleJoin('KarmaCache', joinColumn='person',
+    karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
         orderBy='category')
-    signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
-    ircnicknames = MultipleJoin('IrcID', joinColumn='person')
-    jabberids = MultipleJoin('JabberID', joinColumn='person')
+    signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
+    ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
+    jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
     # specification-related joins
-    approver_specs = MultipleJoin('Specification', joinColumn='approver',
-        orderBy=['-datecreated'])
-    assigned_specs = MultipleJoin('Specification', joinColumn='assignee',
-        orderBy=['-datecreated'])
-    created_specs = MultipleJoin('Specification', joinColumn='owner',
-        orderBy=['-datecreated'])
-    drafted_specs = MultipleJoin('Specification', joinColumn='drafter',
-        orderBy=['-datecreated'])
-    feedback_specs = RelatedJoin('Specification', joinColumn='reviewer',
-        otherColumn='specification',
-        intermediateTable='SpecificationFeedback',
-        orderBy=['-datecreated'])
-    subscribed_specs = RelatedJoin('Specification', joinColumn='person',
-        otherColumn='specification',
-        intermediateTable='SpecificationSubscription',
-        orderBy=['-datecreated'])
+    @property
+    def approver_specs(self):
+        return shortlist(Specification.selectBy(approverID=self.id,
+                                      orderBy=['-datecreated']))
+
+    @property
+    def assigned_specs(self):
+        return shortlist(Specification.selectBy(assigneeID=self.id,
+                                      orderBy=['-datecreated']))
+
+    @property
+    def created_specs(self):
+        return shortlist(Specification.selectBy(ownerID=self.id,
+                                      orderBy=['-datecreated']))
+
+    @property
+    def drafted_specs(self):
+        return shortlist(Specification.selectBy(drafterID=self.id,
+                                      orderBy=['-datecreated']))
+
+    @property
+    def feedback_specs(self):
+        return shortlist(Specification.select(
+            AND(Specification.q.id == SpecificationFeedback.q.specificationID,
+                SpecificationFeedback.q.reviewerID == self.id),
+            clauseTables=['SpecificationFeedback'],
+            orderBy=['-datecreated']))
+
+    @property
+    def subscribed_specs(self):
+        return shortlist(Specification.select(
+            AND(Specification.q.id == SpecificationSubscription.q.specificationID,
+                SpecificationSubscription.q.personID == self.id),
+            clauseTables=['SpecificationSubscription'],
+            orderBy=['-datecreated']))
 
     # ticket related joins
-    answered_tickets = MultipleJoin('Ticket', joinColumn='answerer',
+    answered_tickets = SQLMultipleJoin('Ticket', joinColumn='answerer',
         orderBy='-datecreated')
-    assigned_tickets = MultipleJoin('Ticket', joinColumn='assignee',
+    assigned_tickets = SQLMultipleJoin('Ticket', joinColumn='assignee',
         orderBy='-datecreated')
-    created_tickets = MultipleJoin('Ticket', joinColumn='owner',
+    created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
         orderBy='-datecreated')
     subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
         otherColumn='ticket', intermediateTable='TicketSubscription',
@@ -260,22 +290,31 @@ class Person(SQLBase):
             return self.name
 
     def specifications(self, quantity=None, sort=None):
-        ret = set(self.created_specs)
-        ret = ret.union(self.approver_specs)
-        ret = ret.union(self.assigned_specs)
-        ret = ret.union(self.drafted_specs)
-        ret = ret.union(self.feedback_specs)
-        ret = ret.union(self.subscribed_specs)
+        query = """
+            Specification.owner = %(my_id)d
+            OR Specification.approver = %(my_id)d
+            OR Specification.assignee = %(my_id)d
+            OR Specification.drafter = %(my_id)d
+            OR Specification.id IN (
+                SELECT SpecificationFeedback.specification
+                FROM SpecificationFeedback
+                WHERE SpecificationFeedback.reviewer = %(my_id)s
+                UNION
+                SELECT SpecificationSubscription.specification
+                FROM SpecificationSubscription
+                WHERE SpecificationSubscription.person = %(my_id)d
+                )
+            """ % {'my_id': self.id}
+
         if sort is None or sort == SpecificationSort.DATE:
-            sortkey = lambda a: a.datecreated
-            reverse = True
+            order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
-            sortkey = lambda a: a.priority
-            reverse = False
+            order = ['-priority', 'status', 'name']
         else:
             raise AssertionError('Unknown sort %s' % sort)
-        ret = sorted(ret, reverse=reverse, key=sortkey)
-        return ret[:quantity]
+
+        return shortlist(Specification.select(
+                    query, orderBy=order, limit=quantity))
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -292,15 +331,41 @@ class Person(SQLBase):
         S = set(self.authored_branches)
         S.update(self.registered_branches)
         S.update(self.subscribed_branches)
-        def by_reverse_id(branch):
-            return -branch.id
-        return sorted(S, key=by_reverse_id)
+        return sorted(S, key=lambda x: -x.id)
 
     @property
     def registered_branches(self):
         """See IPerson."""
-        return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
-                             % (self.id, self.id), orderBy='-id')
+        query = """Branch.owner = %d AND
+                   (Branch.author != %d OR Branch.author is NULL)"""
+        return Branch.select(query % (self.id, self.id),
+                             prejoins=["product"],
+                             orderBy='-Branch.id')
+
+
+    @property
+    def authored_branches(self):
+        """See IPerson."""
+        # XXX: this should be moved back to SQLMultipleJoin when we
+        # support prejoins in that -- kiko, 2006-03-17
+        return Branch.select('Branch.author = %d' % self.id,
+                             prejoins=["product"],
+                             orderBy='-Branch.id')
+
+    def getBugContactPackages(self):
+        """See IPerson."""
+        package_bug_contacts = shortlist(
+            PackageBugContact.selectBy(bugcontactID=self.id),
+            longest_expected=25)
+
+        packages_for_bug_contact = [
+            package_bug_contact.distribution.getSourcePackage(
+                package_bug_contact.sourcepackagename)
+            for package_bug_contact in package_bug_contacts]
+
+        packages_for_bug_contact.sort(key=lambda x: x.name)
+
+        return packages_for_bug_contact
 
     def getBranch(self, product_name, branch_name):
         """See IPerson."""
@@ -355,6 +420,14 @@ class Person(SQLBase):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
 
+    @property
+    def karma(self):
+        """See IPerson."""
+        try:
+            return self.karma_total_cache[0].karma_total
+        except IndexError:
+            return 0
+
     def assignKarma(self, action_name):
         """See IPerson."""
         try:
@@ -363,21 +436,6 @@ class Person(SQLBase):
             raise ValueError(
                 "No KarmaAction found with name '%s'." % action_name)
         return Karma(person=self, action=action)
-
-    def updateKarmaCache(self):
-        """See IPerson."""
-        cacheset = getUtility(IKarmaCacheSet)
-        karmaset = getUtility(IKarmaSet)
-        totalkarma = 0
-        for cat in KarmaCategory.select():
-            karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
-            totalkarma += karmavalue
-            cache = cacheset.getByPersonAndCategory(self, cat)
-            if cache is None:
-                cache = cacheset.new(self, cat, karmavalue)
-            else:
-                cache.karmavalue = karmavalue
-        self.karma = totalkarma
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
@@ -491,16 +549,11 @@ class Person(SQLBase):
             return
 
         assert not person.hasMembershipEntryFor(self)
-        assert status in [TeamMembershipStatus.APPROVED,
-                          TeamMembershipStatus.PROPOSED]
 
         expires = self.defaultexpirationdate
-        TeamMembership(personID=person.id, teamID=self.id, status=status,
-                       dateexpires=expires, reviewer=reviewer, 
-                       reviewercomment=comment)
-
-        if status == TeamMembershipStatus.APPROVED:
-            _fillTeamParticipation(person, self)
+        TeamMembershipSet().new(
+            person, self, status, dateexpires=expires, reviewer=reviewer,
+            reviewercomment=comment)
 
     def setMembershipStatus(self, person, status, expires=None, reviewer=None,
                             comment=None):
@@ -511,41 +564,19 @@ class Person(SQLBase):
         #      -- SteveAlexander, 2005-04-23
         assert tm is not None
 
-        approved = TeamMembershipStatus.APPROVED
-        admin = TeamMembershipStatus.ADMIN
-        expired = TeamMembershipStatus.EXPIRED
-        declined = TeamMembershipStatus.DECLINED
-        deactivated = TeamMembershipStatus.DEACTIVATED
-        proposed = TeamMembershipStatus.PROPOSED
-
-        # Make sure the transition from the current status to the given status
-        # is allowed. All allowed transitions are in the TeamMembership spec.
-        if tm.status in [admin, approved]:
-            assert status in [approved, admin, expired, deactivated]
-        elif tm.status in [deactivated]:
-            assert status in [approved]
-        elif tm.status in [expired]:
-            assert status in [approved]
-        elif tm.status in [proposed]:
-            assert status in [approved, declined]
-        elif tm.status in [declined]:
-            assert status in [proposed, approved]
-
         now = datetime.now(pytz.timezone('UTC'))
         if expires is not None and expires <= now:
+            status = TeamMembershipStatus.EXPIRED
+            # XXX: This is a workaround while 
+            # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
             expires = now
-            status = expired
 
-        tm.status = status
+        tm.setStatus(status)
         tm.dateexpires = expires
         tm.reviewer = reviewer
         tm.reviewercomment = comment
 
-        if ((status == approved and tm.status != admin) or
-            (status == admin and tm.status != approved)):
-            _fillTeamParticipation(person, self)
-        elif status in [deactivated, expired]:
-            _cleanTeamParticipation(person, self)
+        tm.syncUpdate()
 
     def _getMembersByStatus(self, status):
         # XXX Needs a system doc test. SteveAlexander 2005-04-23
@@ -586,12 +617,14 @@ class Person(SQLBase):
     @property 
     def allmembers(self):
         """See IPerson."""
-        return _getAllMembers(self)
+        query = ('Person.id = TeamParticipation.person AND '
+                 'TeamParticipation.team = %d' % self.id)
+        return Person.select(query, clauseTables=['TeamParticipation'])
 
     @property
     def all_member_count(self):
         """See IPerson."""
-        return len(self.allmembers)
+        return self.allmembers.count()
 
     @property
     def deactivatedmembers(self):
@@ -631,7 +664,7 @@ class Person(SQLBase):
     @property
     def active_member_count(self):
         """See IPerson."""
-        return len(self.activemembers)
+        return self.activemembers.count()
 
     @property
     def inactivemembers(self):
@@ -665,6 +698,17 @@ class Person(SQLBase):
             orderBy=['Person.displayname'])
 
     @property
+    def teams_participated_in(self):
+        """See IPerson."""
+        return Person.select("""
+            Person.id = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id), clauseTables=['TeamParticipation'],
+            orderBy=['Person.name']
+            )
+
+    @property
     def defaultexpirationdate(self):
         """See IPerson."""
         days = self.defaultmembershipperiod
@@ -684,14 +728,39 @@ class Person(SQLBase):
 
     @property
     def touched_pofiles(self):
-        return POFile.select('''
+        results = POFile.select('''
             POSubmission.person = %s AND
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = POFile.id
             ''' % sqlvalues(self.id),
-            orderBy=['datecreated'],
-            clauseTables=['POMsgSet', 'POSubmission'],
+            orderBy=['POFile.datecreated'],
+            prejoins=['language', 'potemplate'],
+            clauseTables=['POMsgSet', 'POFile', 'POSubmission'],
             distinct=True)
+        # XXX: Because of a template reference to
+        # pofile.potemplate.displayname, it would be ideal to also
+        # prejoin above:
+        #   potemplate.potemplatename
+        #   potemplate.productseries
+        #   potemplate.productseries.product
+        #   potemplate.distrorelease
+        #   potemplate.distrorelease.distribution
+        #   potemplate.sourcepackagename
+        # However, a list this long may be actually suggesting that
+        # displayname be cached in a table field; particularly given the
+        # fact that it won't be altered very often. At any rate, the
+        # code below works around this by caching all the templates in
+        # one shot. The list() ensures that we materialize the query
+        # before passing it on to avoid reissuing it; the template code
+        # only hits this callsite once and iterates over all the results
+        # anyway. When we have deep prejoining we can just ditch all of
+        # this and either use cachedproperty or cache in the view code.
+        #   -- kiko, 2006-03-17
+        results = list(results)
+        ids = set(pofile.potemplate.id for pofile in results)
+        if ids:
+            list(POTemplateSet().getByIDs(ids))
+        return results
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""
@@ -710,11 +779,11 @@ class Person(SQLBase):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self.preferredemail = email
+            self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
 
-    def _setPreferredemail(self, email):
+    def setPreferredEmail(self, email):
         """See IPerson."""
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
@@ -728,29 +797,35 @@ class Person(SQLBase):
             # SQLObject will issue the changes and we can't set the new
             # address to PREFERRED until the old one has been set to VALIDATED
             preferredemail.syncUpdate()
+        # get the non-proxied EmailAddress object, so we can call
+        # syncUpdate() on it:
+        email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
+        email.syncUpdate()
+        # Now we update our cache of the preferredemail
+        setattr(self, '_preferredemail_cached', email)
 
-    def _getPreferredemail(self):
+    @cachedproperty('_preferredemail_cached')
+    def preferredemail(self):
         """See IPerson."""
         emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.
-        emails = list(emails)
+        emails = shortlist(emails)
         length = len(emails)
         assert length <= 1
         if length:
             return emails[0]
         else:
             return None
-    preferredemail = property(_getPreferredemail, _setPreferredemail)
 
     @property
     def preferredemail_sha1(self):
         """See IPerson."""
         preferredemail = self.preferredemail
         if preferredemail:
-            return sha.new(preferredemail.email).hexdigest().upper()
+            return sha.new('mailto:' + preferredemail.email).hexdigest().upper()
         else:
             return None
 
@@ -799,30 +874,41 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def maintainedPackages(self):
+    def latestMaintainedPackages(self):
         """See IPerson."""
-        querystr = """
-            sourcepackagerelease.maintainer = %d AND
-            sourcepackagerelease.sourcepackagename = sourcepackagename.id
-            """ % self.id
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
-            clauseTables=['SourcePackageName'])
+        return self._latestReleaseQuery()
 
-    def uploadedButNotMaintainedPackages(self):
+    def latestUploadedButNotMaintainedPackages(self):
         """See IPerson."""
-        querystr = """
-            sourcepackagerelease.creator = %d AND
-            sourcepackagerelease.maintainer != %d AND
-            sourcepackagerelease.sourcepackagename = sourcepackagename.id
-            """ % (self.id, self.id)
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
-            clauseTables=['SourcePackageName'])
+        return self._latestReleaseQuery(uploader_only=True)
 
-    @property
+    def _latestReleaseQuery(self, uploader_only=False):
+        # Issues a special query that returns the most recent
+        # sourcepackagereleases that were maintained/uploaded to
+        # distribution releases by this person.
+        if uploader_only:
+            extra = """sourcepackagerelease.creator = %d AND
+                       sourcepackagerelease.maintainer != %d""" % (
+                       self.id, self.id)
+        else:
+            extra = "sourcepackagerelease.maintainer = %d" % self.id
+        query = """
+            SourcePackageRelease.id IN (
+                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
+                       sourcepackagerelease.id
+                  FROM sourcepackagerelease
+                 WHERE %s
+              ORDER BY uploaddistrorelease, sourcepackagename, 
+                       dateuploaded DESC
+              )
+              """ % extra
+        return SourcePackageRelease.select(
+            query,
+            orderBy=['-SourcePackageRelease.dateuploaded',
+                     'SourcePackageRelease.id'],
+            prejoins=['sourcepackagename', 'maintainer'])
+
+    @cachedproperty
     def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)
@@ -859,26 +945,17 @@ class PersonSet:
     def topPeople(self):
         """See IPersonSet."""
         # The odd ordering here is to ensure we hit the PostgreSQL
-        # indexes. Ideally we want to order by karma DESC, name but
-        # that will not use the indexes (at least under PostgreSQL 7.4)
-        # and be really slow.
-
-        # This is a simpler implementation, but is triggering Bug 4818
-        # return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
-
+        # indexes. It will not make any real difference outside of tests.
         query = """
             id in (
-                SELECT Person.id
-                FROM Person, EmailAddress
-                WHERE Person.id = EmailAddress.person
-                    AND teamowner IS NULL
-                    AND merged IS NULL
-                    AND EmailAddress.status = %d
-                ORDER BY Person.karma DESC, Person.id DESC
+                SELECT person FROM KarmaTotalCache
+                ORDER BY karma_total DESC, person DESC
                 LIMIT 5
                 )
-            """ % (EmailAddressStatus.PREFERRED.value,)
-        return Person.select(query, orderBy=['-karma', '-id'])
+            """
+        top_people = shortlist(Person.select(query))
+        top_people.sort(key=lambda obj: (obj.karma, obj.id), reverse=True)
+        return top_people
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -904,7 +981,7 @@ class PersonSet:
             except nickname.NicknameGenerationError:
                 return None, None
         else:
-            if self.getByName(name) is not None:
+            if self.getByName(name, ignore_merged=False) is not None:
                 return None, None
 
         if not passwordEncrypted and password is not None:
@@ -924,6 +1001,7 @@ class PersonSet:
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
+        assert self.getByName(name, ignore_merged=False) is None
         person = Person(name=name, displayname=displayname, givenname=givenname,
                         familyname=familyname, password=password)
         wikinameset = getUtility(IWikiNameSet)
@@ -951,9 +1029,17 @@ class PersonSet:
             return default
         return person
 
+    def updateStatistics(self, ztm):
+        """See IPersonSet."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        stats.update('people_count', self.getAllPersons().count())
+        ztm.commit()
+        stats.update('teams_count', self.getAllTeams().count())
+        ztm.commit()
+
     def peopleCount(self):
         """See IPersonSet."""
-        return self.getAllPersons().count()
+        return getUtility(ILaunchpadStatisticSet).value('people_count')
 
     def getAllPersons(self, orderBy=None):
         """See IPersonSet."""
@@ -966,15 +1052,14 @@ class PersonSet:
         """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
-        query = AND(Person.q.teamownerID==None,
-                    Person.q.mergedID==None,
-                    EmailAddress.q.personID==Person.q.id,
-                    EmailAddress.q.status==EmailAddressStatus.PREFERRED)
-        return Person.select(query, orderBy=orderBy)
+        return Person.select(
+            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
+            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
+            )
 
     def teamsCount(self):
         """See IPersonSet."""
-        return self.getAllTeams().count()
+        return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
     def getAllTeams(self, orderBy=None):
         """See IPersonSet."""
@@ -1054,6 +1139,7 @@ class PersonSet:
         emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
         if emailaddress is None:
             return default
+        assert emailaddress.person is not None
         return emailaddress.person
 
     def getUbunteros(self, orderBy=None):
@@ -1092,7 +1178,7 @@ class PersonSet:
         # changes have been flushed to the database
         flush_database_updates()
 
-        if len(getUtility(IEmailAddressSet).getByPerson(from_person)) > 0:
+        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise ValueError('from_person still has email addresses.')
 
         # Get a database cursor.
@@ -1111,6 +1197,7 @@ class PersonSet:
             ('person', 'merged'),
             ('emailaddress', 'person'),
             ('karmacache', 'person'),
+            ('karmatotalcache', 'person'),
             # We don't merge teams, so the poll table can be ignored
             ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
@@ -1119,6 +1206,8 @@ class PersonSet:
             # in a given poll. -- GuilhermeSalgado 2005-07-07
             ('votecast', 'person'),
             ('vote', 'person'),
+            # This table is handled entirely by triggers
+            ('validpersonorteamcache', 'id'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -1437,10 +1526,6 @@ class PersonSet:
         # flush its caches.
         flush_database_caches()
 
-        # And now update the karma cache for both accounts.
-        from_person.updateKarmaCache()
-        to_person.updateKarmaCache()
-
 
 class EmailAddress(SQLBase):
     implements(IEmailAddress)
@@ -1705,76 +1790,4 @@ class IrcIDSet:
 
     def new(self, person, network, nickname):
         return IrcID(personID=person.id, network=network, nickname=nickname)
-
-
-def _getAllMembers(team, orderBy='name'):
-    query = ('Person.id = TeamParticipation.person AND '
-             'TeamParticipation.team = %d' % team.id)
-    return Person.select(query, clauseTables=['TeamParticipation'],
-                         orderBy=orderBy)
-
-
-def _cleanTeamParticipation(person, team):
-    """Remove relevant entries in TeamParticipation for <person> and <team>.
-
-    Remove all tuples "person, team" from TeamParticipation for the given
-    person and team (together with all its superteams), unless this person is
-    an indirect member of the given team. More information on how to use the
-    TeamParticipation table can be found in the TeamParticipationUsage spec or
-    the teammembership.txt system doctest.
-    """
-    # First of all, we remove <person> from <team> (and its superteams).
-    _removeParticipantFromTeamAndSuperTeams(person, team)
-
-    # Then, if <person> is a team, we remove all its participants from <team>
-    # (and its superteams).
-    if person.isTeam():
-        for submember in person.allmembers:
-            if submember not in team.activemembers:
-                _cleanTeamParticipation(submember, team)
-
-
-def _removeParticipantFromTeamAndSuperTeams(person, team):
-    """If <person> is a participant (that is, has a TeamParticipation entry)
-    of any team that is a subteam of <team>, then <person> should be kept as
-    a participant of <team> and (as a consequence) all its superteams.
-    Otherwise, <person> is removed from <team> and we repeat this process for
-    each superteam of <team>.
-    """
-    for subteam in team.getSubTeams():
-        # There's no need to worry for the case where person == subteam because
-        # a team doesn't have a teamparticipation entry for itself and then a
-        # call to team.hasParticipationEntryFor(team) will always return
-        # False.
-        if person.hasParticipationEntryFor(subteam):
-            # This is an indirect member of this team and thus it should
-            # be kept as so.
-            return
-
-    result = TeamParticipation.selectOneBy(personID=person.id, teamID=team.id)
-    if result is not None:
-        result.destroySelf()
-
-    for superteam in team.getSuperTeams():
-        if person not in superteam.activemembers:
-            _removeParticipantFromTeamAndSuperTeams(person, superteam)
-
-
-def _fillTeamParticipation(member, team):
-    """Add relevant entries in TeamParticipation for given member and team.
-
-    Add a tuple "member, team" in TeamParticipation for the given team and all
-    of its superteams. More information on how to use the TeamParticipation 
-    table can be found in the TeamParticipationUsage spec.
-    """
-    members = [member]
-    if member.teamowner is not None:
-        # The given member is, in fact, a team, and in this case we must 
-        # add all of its members to the given team and to its superteams.
-        members.extend(_getAllMembers(member))
-
-    for m in members:
-        for t in itertools.chain(team.getSuperTeams(), [team]):
-            if not m.hasParticipationEntryFor(t):
-                TeamParticipation(personID=m.id, teamID=t.id)
 

@@ -43,6 +43,7 @@ from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.milestone import *
+from canonical.launchpad.browser.packagerelationship import *
 from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.packaging import *
 from canonical.launchpad.browser.person import *
@@ -64,6 +65,7 @@ from canonical.launchpad.browser.specification import *
 from canonical.launchpad.browser.specificationbug import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationfeedback import *
+from canonical.launchpad.browser.specificationgoal import *
 from canonical.launchpad.browser.specificationsubscription import *
 from canonical.launchpad.browser.specificationtarget import *
 from canonical.launchpad.browser.sprint import *

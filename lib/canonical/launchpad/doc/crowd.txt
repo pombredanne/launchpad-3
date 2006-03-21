@@ -19,34 +19,34 @@ The person is in that crowd.
 A team is adaptable to ICrowd, but it gets a different adapter than that used
 for a person.
 
-  >>> buttsource = personset.getByName('buttsource')
-  >>> print buttsource.name
-  buttsource
-  >>> buttsource_crowd = ICrowd(buttsource)
+  >>> vcs_imports = personset.getByName('vcs-imports')
+  >>> print vcs_imports.name
+  vcs-imports
+  >>> vcs_imports_crowd = ICrowd(vcs_imports)
 
 The team is in that crowd.
 
-  >>> buttsource in buttsource_crowd
+  >>> vcs_imports in vcs_imports_crowd
   True
 
-sabdfl is not in that crowd, because he is not in the buttsource team.
+sabdfl is not in that crowd, because he is not in the vcs-imports team.
 
-  >>> sabdfl in buttsource_crowd
+  >>> sabdfl in vcs_imports_crowd
   False
 
-lifeless is in the buttsource team.  So, lifeless is in that crowd.
+lifeless is in the vcs-imports team.  So, lifeless is in that crowd.
 
   >>> lifeless = personset.getByName('lifeless')
   >>> print lifeless.name
   lifeless
-  >>> lifeless in buttsource_crowd
+  >>> lifeless in vcs_imports_crowd
   True
 
-Adding sabdfl_crowd to the buttsource_crowd gives us a crowd that contains
-sabdfl and the buttsource team and lifeless, but not stevea.
+Adding sabdfl_crowd to the vcs_imports_crowd gives us a crowd that contains
+sabdfl and the vcs-imports team and lifeless, but not stevea.
 This tests ICrowd(team).__add__.
 
-  >>> combined_crowd = buttsource_crowd + sabdfl_crowd
+  >>> combined_crowd = vcs_imports_crowd + sabdfl_crowd
   >>> stevea = personset.getByName('stevea')
   >>> stevea not in combined_crowd
   True
@@ -54,18 +54,18 @@ This tests ICrowd(team).__add__.
   True
   >>> sabdfl in combined_crowd
   True
-  >>> buttsource in combined_crowd
+  >>> vcs_imports in combined_crowd
   True
 
-Now, to try it the other way around: adding buttsource_crowd to sabdfl_crowd.
+Now, to try it the other way around: adding vcs_imports_crowd to sabdfl_crowd.
 This tests ICrowd(person).__add__.
 
-  >>> combined_crowd = sabdfl_crowd + buttsource_crowd
+  >>> combined_crowd = sabdfl_crowd + vcs_imports_crowd
   >>> lifeless in combined_crowd
   True
   >>> sabdfl in combined_crowd
   True
-  >>> buttsource in combined_crowd
+  >>> vcs_imports in combined_crowd
   True
 
 There is an AnyPersonCrowd that contains any person or team.
@@ -73,9 +73,9 @@ There is an AnyPersonCrowd that contains any person or team.
   >>> from canonical.launchpad.components.crowd import AnyPersonCrowd
   >>> sabdfl in AnyPersonCrowd()
   True
-  >>> buttsource in AnyPersonCrowd()
+  >>> vcs_imports in AnyPersonCrowd()
   True
-  >>> buttsource_crowd in AnyPersonCrowd()
+  >>> vcs_imports_crowd in AnyPersonCrowd()
   False
 
 Adding an AnyPersonCrowd to some other crowd works as expected.
@@ -100,21 +100,21 @@ The EmptyCrowd doens't contain anything.
   >>> from canonical.launchpad.components.crowd import EmptyCrowd
   >>> sabdfl in EmptyCrowd()
   False
-  >>> buttsource_crowd in EmptyCrowd()
+  >>> vcs_imports_crowd in EmptyCrowd()
   False
 
 Adding a crowd to EmptyCrowd, and vice versa, gives you essentially that crowd.
 
-  >>> combined_crowd = EmptyCrowd() + buttsource_crowd
-  >>> buttsource in combined_crowd
+  >>> combined_crowd = EmptyCrowd() + vcs_imports_crowd
+  >>> vcs_imports in combined_crowd
   True
   >>> sabdfl in combined_crowd
   False
   >>> lifeless in combined_crowd
   True
 
-  >>> combined_crowd = buttsource_crowd + EmptyCrowd()
-  >>> buttsource in combined_crowd
+  >>> combined_crowd = vcs_imports_crowd + EmptyCrowd()
+  >>> vcs_imports in combined_crowd
   True
   >>> sabdfl in combined_crowd
   False

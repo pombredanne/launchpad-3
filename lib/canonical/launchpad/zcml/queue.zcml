@@ -7,6 +7,9 @@
 
     <content class="canonical.launchpad.database.DistroReleaseQueue">
         <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueue" />
+      <require
+          permission="zope.Public"
+          set_schema="canonical.launchpad.interfaces.IDistroReleaseQueue" />
     </content>
 
     <content class="canonical.launchpad.database.DistroReleaseQueueSource">
@@ -20,5 +23,14 @@
     <content class="canonical.launchpad.database.DistroReleaseQueueCustom">
         <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueCustom" />
     </content>
+
+    <!-- DistroReleaseQueueSet -->
+    <securedutility
+        class="canonical.launchpad.database.DistroReleaseQueueSet"
+        provides="canonical.launchpad.interfaces.IDistroReleaseQueueSet">
+        <allow
+          interface="canonical.launchpad.interfaces.IDistroReleaseQueueSet" />
+    </securedutility>
+
 
 </configure>

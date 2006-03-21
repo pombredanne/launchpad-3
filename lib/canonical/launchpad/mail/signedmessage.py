@@ -72,7 +72,8 @@ class SignedMessage(email.Message.Message):
                     # created from.
                     boundary = '--' + self.get_boundary()
                     match = re.search(
-                        multipart_signed_content % {'boundary': boundary},
+                        multipart_signed_content % {
+                            'boundary': re.escape(boundary)},
                         self.parsed_string, re.DOTALL)
                     signed_content = match.group('signed_content')
                     signature = signature_part.get_payload()

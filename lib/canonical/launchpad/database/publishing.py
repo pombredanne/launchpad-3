@@ -363,3 +363,9 @@ class BinaryPackagePublishingHistory(SQLBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
+    @property
+    def hasRemovalRequested(self):
+        """See ISecureBinaryPackagePublishingHistory"""
+        return self.datesuperseded is not None and self.supersededby is None
+

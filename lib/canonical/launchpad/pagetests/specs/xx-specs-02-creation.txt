@@ -85,10 +85,9 @@ distribution.
   ... -----------------------------83093195616674742681104656048--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://.../distros/ubuntu/+spec/networkmagic
+  Content-Length: 0
   ...
+  Location: http://.../distros/ubuntu/+spec/networkmagic
 
 
 OK, that created a new specification. Let's make sure we can see it.
@@ -161,4 +160,131 @@ a spec with the same name.
   HTTP/1.1 200 Ok 
   ...
   ...networkmagic is already in use by another specification...
+  ...
+
+
+And we test again the validator using a invalid name.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+addspec HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Type: multipart/form-data; boundary=---------------------------83093195616674742681104656048
+  ... 
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... NetworkMagic
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Network Magic - Automatic Network Detection
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.specurl"
+  ... 
+  ... http://wiki.ubuntu.com/NetworkMagic
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Users are increasingly using multiple networks. Being able to seamlessly move between networks whilst remembering the correct settings for each network would greatly enhance Ubuntu's usability for mobile professionals.
+  ... Many network dependent services should only be run when the system is positive that it has a network. This would greatly enhance the system's flexibility and responsiveness.
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Approved
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... daf@canonical.com
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.drafter"
+  ... 
+  ... carlos@canonical.com
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.approver"
+  ... 
+  ... tsukimi@quaqua.net
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------83093195616674742681104656048--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...Invalid name 'NetworkMagic'...
+  ...
+
+Now we test the URL field validator trying to register a new spec with the same URL.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+addspec HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Type: multipart/form-data; boundary=---------------------------83093195616674742681104656048
+  ... 
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... dupenetworkmagic
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... This is a dupe Network Magic Spec
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.specurl"
+  ... 
+  ... http://wiki.ubuntu.com/NetworkMagic
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Users are increasingly using multiple networks. Being able to seamlessly move between networks whilst remembering the correct settings for each network would greatly enhance Ubuntu's usability for mobile professionals.
+  ... Many network dependent services should only be run when the system is positive that it has a network. This would greatly enhance the system's flexibility and responsiveness.
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Approved
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... daf@canonical.com
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.drafter"
+  ... 
+  ... carlos@canonical.com
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.approver"
+  ... 
+  ... tsukimi@quaqua.net
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------83093195616674742681104656048--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...http://wiki.ubuntu.com/NetworkMagic is already registered by another specification...
   ...

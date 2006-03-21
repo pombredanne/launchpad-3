@@ -56,13 +56,7 @@ are simple little functions.
   ...     BugPackageInfestation, BugProductInfestation)
   >>> from canonical.launchpad.interfaces import (
   ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugSet, IBugTaskSet)
-
-  >>> def capture_state(obj, *fields):
-  ...     class State: pass
-  ...     state = State()
-  ...     for field in fields:
-  ...         setattr(state, field, getattr(obj, field))
-  ...     return state
+  >>> from canonical.launchpad.helpers import capture_state
 
 Here's a list of events that happen, and the resulting activity
 logged:
@@ -76,8 +70,8 @@ EVENT: user files a bug
   ...     title="a test bug", summary="this is only a test bug",
   ...     comment="this is only a test bug\nplease ignore",
   ...     owner=user)
-  >>> bug.activity
-  []
+  >>> bug.activity.count()
+  0 
   >>> object_created = SQLObjectCreatedEvent(bug)
   >>> notify(object_created)
   >>> latest_activity = bug.activity[-1]
@@ -129,7 +123,7 @@ EVENT: source package assignment edited
   >>> from canonical.launchpad.interfaces import IBugTask
   >>> edit_fields = [
   ...     "distribution", "sourcepackagename", "binarypackagename", "milestone", "status",
-  ...     "priority", "severity", "assignee", "bugwatch", "statusexplanation"]
+  ...     "priority", "severity", "assignee", "bugwatch"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
   >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
@@ -160,8 +154,8 @@ EVENT: bug gets assigned to an upstream product
 EVENT: upstream product assignment edited
 
   >>> edit_fields = [
-  ...     "product", "maintainer_displayname", "milestone", "status",
-  ...     "priority", "severity", "assignee", "bugwatch", "statusexplanation"]
+  ...     "product", "milestone", "status", "assignee", "bugwatch",
+  ...     "priority", "severity"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
   >>> directlyProvides(old_product_assignment, IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED

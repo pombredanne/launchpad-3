@@ -6,22 +6,22 @@ __metaclass__ = type
 
 __all__ = [
     'IBinaryPackageName',
+    'IBinaryAndSourcePackageName',
     'IBinaryPackageNameSet',
     ]
 
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator 
 
-_ = MessageIDFactory('launchpad')
 
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
 
     name = TextLine(title=_('Valid Binary package name'),
-                    required=True, constraint=valid_name)
+                    required=True, constraint=name_validator)
 
     binarypackages = Attribute('binarypackages')
 
@@ -37,16 +37,17 @@ class IBinaryPackageNameSet(Interface):
     def __getitem__(name):
         """Retrieve a binarypackagename by name."""
 
-    def __iter__():
-        """Iterate over names"""
+    def getAll():
+        """return an iselectresults representing all package names"""
 
     def findByName(name):
         """Find binarypackagenames by its name or part of it"""
 
-    def query(name, distribution=None, distrorelease=None,
-              distroarchrelease=None, text=None):
-        """Return the binary package names for packages that match the given
-        criteria."""
+    def queryByName(name):
+        """Return a binary package name.
+
+        If there is no matching binary package name, return None.
+        """
 
     def new(name):
         """Create a new binary package name."""
@@ -60,3 +61,15 @@ class IBinaryPackageNameSet(Interface):
 
         Returns the BinaryPackageName
         """
+
+
+class IBinaryAndSourcePackageName(Interface):
+    """A Binary or SourcePackage name.
+
+    This exists to make it easier for users to find the package they want 
+    to report a bug in.
+    """
+
+    name = TextLine(title=_('Binary or Source package name'),
+                    required=True, constraint=name_validator)
+

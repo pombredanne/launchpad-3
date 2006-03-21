@@ -8,6 +8,7 @@ import unittest
 from zope.testing.doctest import DocFileSuite
 
 from canonical.librarian.libraryprotocol import FileUploadProtocol
+from canonical.librarian.storage import WrongDatabaseError
 
 
 class MockTransport:
@@ -21,6 +22,7 @@ class MockTransport:
 
     def loseConnection(self):
         self.connectionLost = True
+        self.disconnecting = True
 
 
 class MockLibrary:
@@ -33,6 +35,9 @@ class MockLibrary:
 class MockFile:
     bytes = ''
     stored = False
+    databaseName = None
+    debugID = None
+    debugLog = ()
 
     def __init__(self, name):
         self.name = name
@@ -41,6 +46,9 @@ class MockFile:
         self.bytes += bytes
     
     def store(self):
+        databaseName = self.databaseName
+        if databaseName is not None and databaseName != 'right_database':
+            raise WrongDatabaseError(databaseName, 'right_database')
         self.stored = True
         return (987, 654)
 
@@ -84,7 +92,7 @@ def upload_request(request):
     #  * hook _storeFile to dispatch straight to newFile.store without spawning
     #    a thread.
     from twisted.internet import defer
-    server._storeFile = lambda: defer.succeed(server.newFile.store())
+    server._storeFile = lambda: defer.maybeDeferred(server.newFile.store)
 
     #  * give it a fake transport
     server.transport = MockTransport()

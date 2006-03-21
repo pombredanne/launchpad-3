@@ -21,6 +21,7 @@ from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
     NoCanonicalUrl, IBugSet)
@@ -85,6 +86,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(
                 requesturl=self._requesturl(),
                 selectedfacetname=self._selectedfacetname))
@@ -98,6 +100,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(requesturl=self._requesturl()))
 
     def context(self):
@@ -105,6 +108,7 @@ class MenuAPI:
         if menu is None:
             return  []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(requesturl=self._requesturl()))
 
 
@@ -339,7 +343,7 @@ class MilestoneFormatterAPI(ObjectFormatterAPI):
 
     def icon(self):
         """Return the appropriate <img> tag for the milestone icon."""
-        return '<img alt="" src="/++resource++target" />'
+        return '<img alt="" src="/@@/target" />'
 
 
 class DateTimeFormatterAPI:
@@ -668,13 +672,26 @@ class FormattersAPI:
                 url = url[:-1]
             return '<a rel="nofollow" href="%s">%s</a>%s%s' % (
                 url.replace('"', '&quot;'), url, gt, trail)
+        elif match.group('oops') is not None:
+            text = match.group('oops')
+
+            if not getUtility(ILaunchBag).developer:
+                return text
+
+            root_url = config.launchpad.oops_root_url
+
+            if not root_url.endswith('/'):
+                root_url += '/'
+
+            url = root_url + match.group('oopscode')
+            return '<a rel="nofollow" href="%s">%s</a>' % (url, text)
         else:
             raise AssertionError("Unknown pattern matched.")
 
     # match whitespace at the beginning of a line
     _re_leadingspace = re.compile(r'^(\s+)')
 
-    # Match urls or bugs.
+    # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
       (?P<url>
         (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
@@ -684,6 +701,10 @@ class FormattersAPI:
       (?P<bug>
         bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
         0*(?P<bugnum>\d+)
+      ) |
+      (?P<oops>
+        oops\s*-?\s*
+        (?P<oopscode> \d* [a-z]+ \d+)
       )
     ''', re.IGNORECASE | re.VERBOSE)
 
@@ -705,7 +726,6 @@ class FormattersAPI:
              reply quoting in emails).
         """
         paragraph = []
-        continue_logical_line = False
         for line in text.splitlines():
             line = line.rstrip()
 
@@ -714,19 +734,10 @@ class FormattersAPI:
                 if paragraph:
                     yield paragraph
                 paragraph = []
-                continue_logical_line = False
                 continue
 
-            # continue the run of text if the last line was between 60
-            # and 80 characters, and this line doesn't begin with
-            # whitespace.
-            if continue_logical_line and not (line[0].isspace() or
-                                              line[0] == '>'):
-                paragraph[-1] += '\n' + line
-            else:
-                paragraph.append(line)
+            paragraph.append(line)
 
-            continue_logical_line = 60 < len(line) < 80
         if paragraph:
             yield paragraph
 

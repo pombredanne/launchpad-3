@@ -1,12 +1,17 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POFile', 'DummyPOFile', 'POFileSet']
+__all__ = [
+    'POFile',
+    'DummyPOFile',
+    'POFileSet'
+    ]
 
 import StringIO
 import pytz
 import datetime
 import os.path
+import logging
 
 # Zope interfaces
 from zope.interface import implements, providedBy
@@ -22,46 +27,40 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    EnumCol, RosettaImportStatus, TranslationPermission,
-    TranslationValidationStatus)
+    RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
 
 import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    IPOFileSet, IPOFile, IRawFileData, IPOTemplateExporter,
-    ZeroLengthPOExportError, ILibraryFileAliasSet, ILaunchpadCelebrities,
-    NotFoundError, RawFileBusy)
+    IPOFileSet, IPOFile, IPOTemplateExporter, ILibraryFileAliasSet,
+    ILaunchpadCelebrities, ZeroLengthPOExportError, NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
+from canonical.launchpad.database.translationimportqueue import (
+    TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
-from canonical.launchpad.components.poexport import FilePOFileOutput
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-
+from canonical.librarian.interfaces import ILibrarianClient
 
 def _check_translation_perms(permission, translators, person):
-    """This is a utility function that will return True or False depending
-    on whether the person is part of the right group of translators, and the
-    permission on the relevant project or product.
+    """Return True or False dependening on whether the person is part of the
+    right group of translators, and the permission on the relevant project,
+    product or distribution.
+
+    :param permission: The kind of TranslationPermission.
+    :param translators: The list of official translators for the
+        product/project/distribution.
+    :param person: The person that we want to check if has translation
+        permissions.
     """
-
-    if person is None:
-        return False
-
-    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-
-    if person.inTeam(rosetta_experts):
-        # Rosetta experts can edit translations always.
-        return True
-
-    # now, let's determine if the person is part of a designated
-    # translation team
+    # Let's determine if the person is part of a designated translation team
     is_designated_translator = False
     # XXX sabdfl 25/05/05 this code could be improved when we have
     # implemented CrowdControl
@@ -97,9 +96,46 @@ def _check_translation_perms(permission, translators, person):
     # ok, thats all we can check, and so we must assume the answer is no
     return False
 
+def _can_edit_translations(pofile, person):
+    """Say if a person is able to edit existing translations.
+
+    Return True or False indicating whether the person is allowed
+    to edit these translations.
+    """
+    # If the person is None, then they cannot edit
+    if person is None:
+        return False
+
+    # XXX Carlos Perello Marin 20060207: We should not check the
+    # permissions here but use the standard security system. Please, look
+    # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
+    # details.
+
+    # XXX Carlos Perello Marin 20060208: The check person.id ==
+    # rosetta_experts.id must be removed as soon as the bug #30789 is closed.
+
+    # Rosetta experts and admins can always edit translations.
+    admins = getUtility(ILaunchpadCelebrities).admin
+    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    if (person.inTeam(admins) or person.inTeam(rosetta_experts) or
+        person.id == rosetta_experts.id):
+        return True
+
+    # The owner of the product is also able to edit translations.
+    if pofile.potemplate.productseries is not None:
+        product = pofile.potemplate.productseries.product
+        if person.inTeam(product.owner):
+            return True
+
+    translators = [t.translator for t in pofile.translators]
+    return _check_translation_perms(
+        pofile.translationpermission,
+        translators,
+        person)
+
 
 class POFile(SQLBase, RosettaStats):
-    implements(IPOFile, IRawFileData)
+    implements(IPOFile)
 
     _table = 'POFile'
 
@@ -203,21 +239,13 @@ class POFile(SQLBase, RosettaStats):
 
     def canEditTranslations(self, person):
         """See IPOFile."""
-        # If the person is None, then they cannot edit
-        if person is None:
-            return False
-
-        # check based on permissions
-        translators = [t.translator for t in self.translators]
-        perm_result = _check_translation_perms(
-            self.translationpermission,
-            translators,
-            person)
-        if perm_result is True:
+        if _can_edit_translations(self, person):
             return True
-
-        # Finally, check for the owner of the PO file
-        return person.inTeam(self.owner)
+        elif person is not None:
+            # Finally, check for the owner of the PO file
+            return person.inTeam(self.owner)
+        else:
+            return False
 
     def currentMessageSets(self):
         return POMsgSet.select(
@@ -249,16 +277,14 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return iter(self.currentMessageSets())
 
-    def getPOMsgSet(self, msgid_text, onlyCurrent=False):
+    def getPOMsgSet(self, msgid_text, only_current=False):
         """See IPOFile."""
         query = 'potemplate = %d' % self.potemplate.id
-        if onlyCurrent:
+        if only_current:
             query += ' AND sequence > 0'
 
-        if not isinstance(msgid_text, unicode):
-            raise AssertionError(
-                "Can't index with type %s. (Must be unicode.)" %
-                    type(msgid_text))
+        assert isinstance(msgid_text, unicode), (
+            "Can't index with type %s. (Must be unicode.)" % type(msgid_text))
 
         # Find a message ID with the given text.
         try:
@@ -272,6 +298,7 @@ class POFile(SQLBase, RosettaStats):
             (' AND primemsgid = %d' % pomsgid.id))
 
         if potmsgset is None:
+            # There is no IPOTMsgSet for this id.
             return None
 
         pomsgset = POMsgSet.selectOneBy(
@@ -285,7 +312,7 @@ class POFile(SQLBase, RosettaStats):
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
-        pomsgset = self.getPOMsgSet(msgid_text)
+        pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
         if pomsgset is None:
             raise NotFoundError(msgid_text)
         else:
@@ -584,72 +611,41 @@ class POFile(SQLBase, RosettaStats):
         elif old_date > new_date:
             return True
 
-    # ICanAttachRawFileData implementation
-    def attachRawFileData(self, contents, published, importer=None,
-        date_imported=UTC_NOW):
-        """See ICanAttachRawFileData."""
-        rawfile = IRawFileData(self)
+    def getNextToImport(self):
+        """See IPOFile."""
+        return TranslationImportQueueEntry.selectFirstBy(
+                pofileID=self.id,
+                status=RosettaImportStatus.APPROVED,
+                orderBy='dateimported')
 
-        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
-            raise RawFileBusy
+    def importFromQueue(self, logger=None):
+        """See IPOFile."""
+        librarian_client = getUtility(ILibrarianClient)
 
-        if self.variant:
-            filename = '%s@%s.po' % (
-                self.language.code, self.variant.encode('utf8'))
-        else:
-            filename = '%s.po' % self.language.code
+        entry_to_import = self.getNextToImport()
 
-        helpers.attachRawFileData(
-            self, filename, contents, importer, date_imported)
+        if entry_to_import is None:
+            # There is no new import waiting for being imported.
+            return
 
-        rawfile.rawfilepublished = published
+        file = librarian_client.getFileByAlias(entry_to_import.content.id)
 
-    def attachRawFileDataAsFileAlias(self, alias, published, importer=None,
-        date_imported=UTC_NOW):
-        """See ICanAttachRawFileData."""
-        rawfile = IRawFileData(self)
-
-        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
-            raise RawFileBusy
-
-        helpers.attachRawFileDataByFileAlias(
-            self, alias, importer, date_imported)
-
-        rawfile.rawfilepublished = published
-
-    # IRawFileData implementation
-
-    # Any use of this interface should adapt this object as an IRawFileData.
-
-    rawfile = ForeignKey(foreignKey='LibraryFileAlias', dbName='rawfile',
-                         notNull=False, default=None)
-    rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
-                             notNull=False, default=None)
-    daterawimport = UtcDateTimeCol(dbName='daterawimport', notNull=False,
-                                   default=None)
-    rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
-        schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
-
-    rawfilepublished = BoolCol(notNull=False, default=None)
-
-    def doRawImport(self, logger=None):
-        """See IRawFileData."""
-        rawdata = helpers.getRawFileData(self)
-
-        file = StringIO.StringIO(rawdata)
-
-        # Store the object status before the changes.
-        object_before_modification = helpers.Snapshot(
+        # Store the object status before the changes to raise
+        # change notifications later.
+        pofile_before_modification = helpers.Snapshot(
             self, providing=providedBy(self))
+        entry_before_modification = helpers.Snapshot(
+            entry_to_import, providing=providedBy(entry_to_import))
 
         try:
-            errors = import_po(self, file, self.rawfilepublished)
+            errors = import_po(self, file, entry_to_import.importer,
+                               entry_to_import.is_published)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
             # kind of error with the new TranslationValidation feature.
-            self.rawimportstatus = RosettaImportStatus.FAILED
+            entry_to_import.status = RosettaImportStatus.FAILED
             if logger:
                 logger.warning(
                     'Error importing %s' % self.title, exc_info=1)
@@ -657,7 +653,9 @@ class POFile(SQLBase, RosettaStats):
         except OldPOImported:
             # The attached file is older than the last imported one, we ignore
             # it.
-            self.rawimportstatus = RosettaImportStatus.IGNORE
+            # XXX Carlos Perello Marin 2005-06-22: We should intregrate this
+            # kind of error with the new TranslationValidation feature.
+            entry_to_import.status = RosettaImportStatus.FAILED
             if logger:
                 logger.warning('Got an old version for %s' % self.title)
             return
@@ -674,7 +672,8 @@ class POFile(SQLBase, RosettaStats):
         # XXX: Carlos Perello Marin 2005-06-29 This code should be using the
         # solution defined by PresentingLengthsOfTime spec when it's
         # implemented.
-        elapsedtime = datetime.datetime.now(UTC) - self.daterawimport
+        elapsedtime = (
+            datetime.datetime.now(UTC) - entry_to_import.dateimported)
         elapsedtime_text = ''
         hours = elapsedtime.seconds / 3600
         minutes = (elapsedtime.seconds % 3600) / 60
@@ -691,8 +690,8 @@ class POFile(SQLBase, RosettaStats):
             elapsedtime_text = 'just requested'
 
         replacements = {
-            'importer': self.rawimporter.displayname,
-            'dateimport': self.daterawimport.strftime('%F %R%z'),
+            'importer': entry_to_import.importer.displayname,
+            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': elapsedtime_text,
             'numberofmessages': msgsets_imported,
             'language': self.language.displayname,
@@ -733,23 +732,29 @@ class POFile(SQLBase, RosettaStats):
         message = template % replacements
 
         fromaddress = 'Rosetta SWAT Team <rosetta@ubuntu.com>'
-        toaddress = helpers.contactEmailAddresses(self.rawimporter)
+        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
         simple_sendmail(fromaddress, toaddress, subject, message)
 
         # The import has been done, we mark it that way.
-        self.rawimportstatus = RosettaImportStatus.IMPORTED
+        entry_to_import.status = RosettaImportStatus.IMPORTED
 
         # Now we update the statistics after this new import
         self.updateStatistics()
 
         # List of fields that would be updated.
-        fields = ['header', 'topcomment', 'fuzzyheader', 'pluralforms',
-                  'rawimportstatus', 'currentcount', 'updatescount',
-                  'rosettacount']
+        pofile_fields = [
+            'header', 'topcomment', 'fuzzyheader', 'pluralforms',
+            'currentcount', 'updatescount', 'rosettacount'
+            ]
+
+        import_queue_entry_fields = ['status']
 
         # And finally, emit the modified event.
-        notify(SQLObjectModifiedEvent(self, object_before_modification, fields))
+        notify(SQLObjectModifiedEvent(
+            self, pofile_before_modification, pofile_fields))
+        notify(SQLObjectModifiedEvent(
+            entry_to_import, entry_before_modification, import_queue_entry_fields))
 
     def validExportCache(self):
         """See IPOFile."""
@@ -775,6 +780,15 @@ class POFile(SQLBase, RosettaStats):
         size = len(contents)
         file = StringIO.StringIO(contents)
 
+
+        # XXX CarlosPerelloMarin 20060227: Added the debugID argument to help
+        # us to debug bug #1887 on production. This will let us track this
+        # librarian import so we can discover why sometimes, the fetch of it
+        # fails.
+        self.exportfile = alias_set.create(
+            filename, size, file, 'application/x-po',
+            debugID='pofile-id-%d' % self.id)
+
         # Note that UTC_NOW is resolved to the time at the beginning of the
         # transaction. This is significant because translations could be added
         # to the database while the export transaction is in progress, and the
@@ -783,9 +797,6 @@ class POFile(SQLBase, RosettaStats):
         # same transaction -- e.g. in a call to validExportCache(). This is
         # why we call .sync() -- it turns the UTC_NOW reference into an
         # equivalent datetime object.
-
-        self.exportfile = alias_set.create(
-            filename, size, file, 'appliction/x-po')
         self.exporttime = UTC_NOW
         self.sync()
 
@@ -809,17 +820,27 @@ class POFile(SQLBase, RosettaStats):
         if self.validExportCache() and included_obsolete:
             # Only use the cache if the request includes obsolete messages,
             # without them, we always do a full export.
-            return self.fetchExportCache()
-        else:
-            contents = self.uncachedExport()
+            try:
+                return self.fetchExportCache()
+            except LookupError:
+                # XXX: Carlos Perello Marin 20060224 Workaround for bug #1887
+                # Something produces the LookupError exception and we don't
+                # know why. This will allow us to provide an export.
+                logging.warning(
+                    "Error fetching a cached file from librarian", exc_info=1)
 
-            if len(contents) == 0:
-                raise ZeroLengthPOExportError
+        contents = self.uncachedExport()
 
-            if included_obsolete:
-                # Update the cache if the request includes obsolete messages.
-                self.updateExportCache(contents)
-            return contents
+        if len(contents) == 0:
+            # The export is empty, this is completely broken, raised the
+            # exception.
+            raise ZeroLengthPOExportError, "Exporting %s" % self.title
+
+        if included_obsolete:
+            # Update the cache if the request includes obsolete messages.
+            self.updateExportCache(contents)
+
+        return contents
 
     def exportToFileHandle(self, filehandle, included_obsolete=True):
         """See IPOFile."""
@@ -838,17 +859,21 @@ class DummyPOFile(RosettaStats):
     """
     implements(IPOFile)
 
-    def __init__(self, potemplate, language, owner=None,
-        header='Content-Type: text/plain; charset=us-ascii'):
+    def __init__(self, potemplate, language, owner=None):
         self.potemplate = potemplate
         self.language = language
         self.owner = owner
-        self.header = header
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
-        self.translationpermission = self.potemplate.translationpermission
         self.lasttranslator = None
         self.contributors = []
+
+    def __getitem__(self, msgid_text):
+        pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
+        if pomsgset is None:
+            raise NotFoundError(msgid_text)
+        else:
+            return pomsgset
 
     def messageCount(self):
         return len(self.potemplate)
@@ -870,12 +895,41 @@ class DummyPOFile(RosettaStats):
                 ret.append(translator)
         return ret
 
+    @property
+    def translationpermission(self):
+        """See IPOFile."""
+        return self.potemplate.translationpermission
+
     def canEditTranslations(self, person):
-        translators = [t.translator for t in self.translators]
-        return _check_translation_perms(
-            self.translationpermission,
-            translators,
-            person)
+        """See IPOFile."""
+        return _can_edit_translations(self, person)
+
+    def getPOMsgSet(self, key, only_current=False):
+        """See IPOFile."""
+        query = 'potemplate = %d' % self.potemplate.id
+        if only_current:
+            query += ' AND sequence > 0'
+
+        if not isinstance(key, unicode):
+            raise AssertionError(
+                "Can't index with type %s. (Must be unicode.)" % type(key))
+
+        # Find a message ID with the given text.
+        try:
+            pomsgid = POMsgID.byMsgid(key)
+        except SQLObjectNotFound:
+            return None
+
+        # Find a message set with the given message ID.
+
+        potmsgset = POTMsgSet.selectOne(query +
+            (' AND primemsgid = %d' % pomsgid.id))
+
+        if potmsgset is None:
+            # There is no IPOTMsgSet for this id.
+            return None
+
+        return DummyPOMsgSet(self, potmsgset)
 
     def currentCount(self):
         return 0
