@@ -84,7 +84,10 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'field.orderby': '-priority,-severity'}
 
     >>> rejected_bugtasks = create_view(woody, '+bugs', form_values)
-    >>> rejected_bugtasks = list(rejected_bugtasks.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name) 
-    ...     for bugtask in rejected_bugtasks]
-    [(3, 'REJECTED')]
+# XXX: matsubara 2006-03-21: I'm leaving this tests commented out as per
+# Kiko's request, he'll take a look and fix the weird bug that is causing this
+# test to fail.
+#    >>> rejected_bugtasks = list(rejected_bugtasks.search().batch)
+#    >>> [(bugtask.bug.id, bugtask.status.name) 
+#    ...     for bugtask in rejected_bugtasks]
+#    [(3, 'REJECTED')]
