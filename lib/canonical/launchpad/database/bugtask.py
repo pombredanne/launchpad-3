@@ -406,6 +406,24 @@ class BugTaskSet:
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
 
+        if params.component is not None:
+            clauseTables += ["SourcePackagePublishing", "SourcePackageRelease"]
+            distrorelease = None
+            if params.distribution:
+                distrorelease = params.distribution.currentrelease
+            elif params.distrorelease:
+                distrorelease = params.distrorelease
+            assert distrorelease, (
+                "Search by component requires a context with a distribution "
+                "or distrorelease")
+
+            extra_clauses.append(
+                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename AND "
+                "SourcePackageRelease.uploaddistrorelease = %d AND "
+                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease AND "
+                "SourcePackagePublishing.component = %d" % (
+                    distrorelease.id, params.component.id))
+
         clause = self._getPrivacyFilter(params.user)
         if clause:
             extra_clauses.append(clause)
