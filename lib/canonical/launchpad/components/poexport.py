@@ -156,7 +156,7 @@ class OutputPOFile:
             if msgset.obsolete and len(msgset.msgstrs) == 0:
                 continue
 
-            chunks.extend([msgset.export_string(force_utf8)])
+            chunks.append(msgset.export_string(force_utf8))
 
         return '\n\n'.join(chunks)
 
