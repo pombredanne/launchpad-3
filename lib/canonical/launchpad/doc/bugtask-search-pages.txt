@@ -2,7 +2,7 @@ Distribution Search page
 ========================
 
 In the 'Bugs' facet of a distribution we can find a list of
-bugs reported in that distribution and a simple and advanced search forms.
+bugs reported in that distribution and simple and advanced search forms.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> debian = getUtility(IDistributionSet).getByName('debian')
@@ -39,8 +39,8 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'field.searchtext': '',
     ...     'field.orderby': '-priority,-severity'}
 
-    >>> fix_released_bugtasks = create_view(debian, '+bugs', form_values)
-    >>> fix_released_bugtasks = list(fix_released_bugtasks.search().batch)
+    >>> distro_advanced_search_listingview = create_view(debian, '+bugs', form_values)
+    >>> fix_released_bugtasks = list(distro_advanced_search_listingview.search().batch)
     >>> [(bugtask.bug.id, bugtask.status.name) 
     ...     for bugtask in fix_released_bugtasks]
     [(8, 'FIXRELEASED')]
@@ -67,12 +67,15 @@ The simple search form returns only open bugtasks.
 
 And now we'll change the status of one of the bugtasks, but first we need to
 be logged in.
+
     >>> from canonical.launchpad.ftests import login
+    >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> login("test@canonical.com")
 
     >>> from canonical.lp.dbschema import BugTaskStatus 
     >>> open_bugtasks[0].status = BugTaskStatus.REJECTED 
+    >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.
 
@@ -83,11 +86,8 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'field.searchtext': '',
     ...     'field.orderby': '-priority,-severity'}
 
-    >>> rejected_bugtasks = create_view(woody, '+bugs', form_values)
-# XXX: matsubara 2006-03-21: I'm leaving this tests commented out as per
-# Kiko's request, he'll take a look and fix the weird bug that is causing this
-# test to fail.
-#    >>> rejected_bugtasks = list(rejected_bugtasks.search().batch)
-#    >>> [(bugtask.bug.id, bugtask.status.name) 
-#    ...     for bugtask in rejected_bugtasks]
-#    [(3, 'REJECTED')]
+    >>> distrorelease_advanced_search_view = create_view(woody, '+bugs', form_values)
+    >>> rejected_bugtasks = list(distrorelease_advanced_search_view.search().batch)
+    >>> [(bugtask.bug.id, bugtask.status.name) 
+    ...     for bugtask in rejected_bugtasks]
+    [(3, 'REJECTED')]
