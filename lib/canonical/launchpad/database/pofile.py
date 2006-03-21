@@ -811,7 +811,8 @@ class POFile(SQLBase, RosettaStats):
 
     def uncachedExport(self, included_obsolete=True, force_utf8=False):
         """See IPOFile."""
-        exporter = IPOTemplateExporter(self.potemplate, force_utf8=force_utf8)
+        exporter = IPOTemplateExporter(self.potemplate)
+        exporter.force_utf8 = force_utf8
         return exporter.export_pofile(
             self.language, self.variant, included_obsolete)
 

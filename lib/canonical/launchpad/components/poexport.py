@@ -421,11 +421,12 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 msgstr=pot_header_value)
             # PO templates have always the fuzzy flag set on headers.
             pot_header.flags.add('fuzzy')
+            # The parsing finished, we need this to get the header available.
+            pot_header.updateDict()
             if force_utf8:
                 # Change the charset declared for this file.
-                header['Content-Type'] = 'text/plain; charset=UTF-8'
-
-            pot_header.updateDict()
+                pot_header['Content-Type'] = 'text/plain; charset=UTF-8'
+                pot_header.updateDict()
 
             if row.pofile is not None:
                 # Generate the header of the new PO file.
@@ -435,6 +436,9 @@ def export_rows(rows, pofile_output, force_utf8=False):
 
                 if row.pofuzzyheader:
                     header.flags.add('fuzzy')
+
+                # Needed to be sure that the header has the right information.
+                header.updateDict()
 
                 if 'Domain' in pot_header:
                     header['Domain'] = pot_header['Domain']
@@ -450,9 +454,8 @@ def export_rows(rows, pofile_output, force_utf8=False):
                     # Change the charset declared for this file.
                     header['Content-Type'] = 'text/plain; charset=UTF-8'
 
-                # Needed to be sure that the header has the right information.
+                # To be sure that the header is updated..
                 header.updateDict()
-
             else:
                 # We are exporting an IPOTemplate.
                 header = pot_header
@@ -702,9 +705,9 @@ class POTemplateExporter:
 
     implements(IPOTemplateExporter)
 
-    def __init__(self, potemplate, force_utf8=False):
+    def __init__(self, potemplate):
         self.potemplate = potemplate
-        self.force_utf8 = force_utf8
+        self.force_utf8 = False
 
     def export_pofile(self, language, variant=None, included_obsolete=True):
         """See IPOTemplateExporter."""

@@ -288,6 +288,52 @@ And samething with the unprivileged account.
     >>> pofile_es.canEditTranslations(no_priv)
     True
 
+uncachedExport
+--------------
+
+This method serializes an IPOFile as a .po file.
+
+Get a concrete POFile we know doesn't have a UTF-8 encoding.
+
+    >>> pofile = POFile.get(24)
+    >>> print pofile.header
+    Project-Id-Version: PACKAGE VERSION
+    ...
+    Content-Type: text/plain; charset=EUC-JP
+    ...
+
+Now, let's export it with its default encoding.
+
+    >>> stream = pofile.uncachedExport()
+    >>> stream_list = stream.splitlines()
+
+The header is not changed.
+
+    >>> stream_list[23]
+    '"Content-Type: text/plain; charset=EUC-JP\\n"'
+
+And checking one of the translations, we can see that it's using the EUC-JP
+encoding.
+
+    >>> stream_list[29]
+    'msgstr "\xc0\xdf\xc4\xea\xa4\xce\xa5\xab\xa5\xb9\xa5\xbf\xa5\xde\xa5\xa4\xa5\xba\xa4\xcb /etc/mozilla/prefs.js \xa4\xac\xcd\xf8\xcd\xd1\xa4\xc7\xa4\xad\xa4\xde\xa4\xb9\xa1\xa3"'
+
+
+Now, let's force the UTF-8 encoding.
+
+    >>> stream = pofile.uncachedExport(force_utf8=True)
+    >>> stream_list = stream.splitlines()
+
+We can see that the header has been updated to have UTF-8
+
+    >>> stream_list[23]
+    '"Content-Type: text/plain; charset=UTF-8\\n"'
+
+And the encoding used is also using UTF-8 chars.
+
+    >>> stream_list[29]
+    'msgstr "\xe8\xa8\xad\xe5\xae\x9a\xe3\x81\xae\xe3\x82\xab\xe3\x82\xb9\xe3\x82\xbf\xe3\x83\x9e\xe3\x82\xa4\xe3\x82\xba\xe3\x81\xab /etc/mozilla/prefs.js \xe3\x81\x8c\xe5\x88\xa9\xe7\x94\xa8\xe3\x81\xa7\xe3\x81\x8d\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"'
+
 
 Security tests
 ==============
