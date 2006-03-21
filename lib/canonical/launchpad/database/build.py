@@ -100,7 +100,7 @@ class Build(SQLBase):
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             # XXX cprov 20060321: proper icon
-            BuildStatus.CHROOTWAIT: "/@@/topic_icon",
+            BuildStatus.SUPERSEDED: "/@@/topic_icon.gif",
             }
         return icon_map[self.buildstate]
 
