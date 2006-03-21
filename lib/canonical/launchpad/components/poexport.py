@@ -236,10 +236,11 @@ class OutputMsgSet:
 
     def export_unicode_string(self):
         """Return a unicode string representation of this message set."""
+        assert len(self.msgids) < 2, "Too many message IDs for a message set."
+        assert len(self.msgids) > 0, (
+            "Can't export a message set with no message IDs.")
 
-        if len(self.msgids) > 2:
-            raise AssertionError("Too many message IDs for a message set.")
-        elif len(self.msgids) == 2:
+        if len(self.msgids) == 2:
             msgidPlural = self.msgids[1]
 
             # If there are fewer translations than the PO file's header
@@ -247,11 +248,8 @@ class OutputMsgSet:
 
             while len(self.msgstrs) < self.pofile.header.nplurals:
                 self.msgstrs.append('')
-        elif self.msgids:
-            msgidPlural = None
         else:
-            raise AssertionError(
-                "Can't export a message set with no message IDs.")
+            msgidPlural = None
 
         if len(self.msgids) == 2 and self.msgstrs:
             # We have more than one translation
