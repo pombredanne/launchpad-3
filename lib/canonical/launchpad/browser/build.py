@@ -80,6 +80,9 @@ class BuildView(LaunchpadView):
         if self.context.can_be_reset:
             return '<p>Build Record is already processed.</p>'
 
+        if not self.context.buildqueue_record:
+            self.context.createBuildQueueEntry()
+
         # retrieve user score
         self.score = self.request.form.get('SCORE', '')
         self.manual = self.request.form.get('MANUAL', '')
