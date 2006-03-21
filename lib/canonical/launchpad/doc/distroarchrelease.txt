@@ -78,7 +78,7 @@ Entire publishing history:
    >>> pmount_hoary_i386.publishing_history.count()
    2
 
-Most rescent published history row:
+Most recent published history row:
 
    >>> bpph = pmount_hoary_i386.current_published
 
@@ -97,7 +97,7 @@ Perform `post publication` override:
    >>> pub_hist.count()
    3
 
-Overriden information about 'pmount' is pending publication:
+Override information about 'pmount' is pending publication:
 
    >>> pub_hist[0].status.name, pub_hist[0].section.name
    ('PENDING', u'base')
