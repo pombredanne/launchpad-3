@@ -182,10 +182,8 @@ class Ticket(SQLBase):
         intermediateTable='TicketMessage', orderBy='datecreated')
 
     def newMessage(self, owner=None, subject=None, content=None,
-                   when=None):
+                   when=UTC_NOW):
         """Create a new Message and link it to this ticket."""
-        if when is None:
-            when = UTC_NOW
         msg = Message(
             owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
             datecreated=when)
