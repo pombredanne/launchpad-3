@@ -138,7 +138,7 @@ class Bugzilla(ExternalSystem):
         the last part is the resolution. The resolution is optional.
         """
         if ' ' in remote_status:
-            remote_status, resolution = remote_status.split(' ')
+            remote_status, resolution = remote_status.split(' ', 1)
         else:
             resolution = ''
 

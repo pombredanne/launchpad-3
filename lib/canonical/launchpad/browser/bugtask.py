@@ -493,9 +493,9 @@ class BugTaskEditView(GeneralFormView):
         product = bugtask.product
         if distro is not None and sourcename != data['sourcepackagename']:
             valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
-        if product is not None:
-            if 'product' in data and product != data['product']:
-                valid_upstreamtask(bugtask.bug, data['product'])
+        if (product is not None and
+            'product' in data and product != data['product']):
+            valid_upstreamtask(bugtask.bug, data['product'])
 
         return data
 
@@ -747,10 +747,6 @@ class BugTaskSearchListingView(LaunchpadView):
             return ["id", "summary", "packagename", "importance", "status"]
 
     def initialize(self):
-        #XXX: The base class should have a simple schema containing only
-        #     the search form. Sub classes, like
-        #     AdvancedBugTaskSearchView should use a seperate schema if
-        #     they need to. -- Bjorn Tillenius, 2005-09-29
         if self._personContext():
             self.schema = IPersonBugTaskSearch
         else:

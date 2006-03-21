@@ -46,9 +46,7 @@ To demonstrate, let's assign a Firefox task to a Firefox milestone from
 the sample data, then reassign the task to the Ubuntu product and verify
 that the milestone was correctly unset.
 
-    >>> from zope.component import getUtility, getView
     >>> from canonical.launchpad.interfaces import IBugTaskSet, IMilestoneSet
-    >>> from canonical.launchpad.ftests import login
 
     >>> login("foo.bar@canonical.com")
 
@@ -65,8 +63,6 @@ that the milestone was correctly unset.
 
 Now let's change the product, through the bugtask editing browser view,
 to show that the milestone value is cleared.
-
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> form_values = {
     ...     'FORM_SUBMIT': 'Save Changes',

@@ -2364,7 +2364,7 @@ class BugTaskStatus(DBSchema):
         affected software.
         """)
 
-    UNKNOWN = Item(40, """
+    UNKNOWN = Item(999, """
         Unknown
 
         The status of this bug task is unknown.
@@ -2380,7 +2380,7 @@ class BugTaskPriority(DBSchema):
     priorities Malone allows.
     """
 
-    UNKNOWN = Item(50, """
+    UNKNOWN = Item(999, """
         Unknown
 
         The priority of this bug task is unknown.
@@ -2419,7 +2419,7 @@ class BugTaskSeverity(DBSchema):
     the distribution or upstream in which it was reported.
     """
 
-    UNKNOWN = Item(60, """
+    UNKNOWN = Item(999, """
         Unknown
 
         The severity of this bug task is unknown.
