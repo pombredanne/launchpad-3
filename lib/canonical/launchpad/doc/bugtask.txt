@@ -253,7 +253,7 @@ There are now four bugtasks open on packages in Ubuntu main.
     >>> params = BugTaskSearchParams(component=main, user=None)
     >>> main_tasks = ubuntu.searchTasks(params)
     >>> sorted([bugtask.bug.id for bugtask in main_tasks])
-    [1, 1, 1, 9]
+    [1, 1, 9]
 
 And there is the one bug on a "universe" package that we just added:
 
@@ -261,6 +261,14 @@ And there is the one bug on a "universe" package that we just added:
     >>> universe_tasks = ubuntu.searchTasks(params)
     >>> sorted([bugtask.bug.title for bugtask in universe_tasks])
     [u'a bug in a universe package']
+
+Let's get all bugs on either main or universe:
+
+    >>> params = BugTaskSearchParams(
+    ...     component=any(main, universe), user=None)
+    >>> main_or_universe_tasks = ubuntu.searchTasks(params)
+    >>> sorted([bugtask.bug.id for bugtask in main_or_universe_tasks])
+    [1, 1, 9, 10L]
 
 It's also possible to iterate over all the bug tasks:
 

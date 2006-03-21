@@ -406,7 +406,7 @@ class BugTaskSet:
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
 
-        if params.component is not None:
+        if params.component:
             clauseTables += ["SourcePackagePublishing", "SourcePackageRelease"]
             distrorelease = None
             if params.distribution:
@@ -417,12 +417,21 @@ class BugTaskSet:
                 "Search by component requires a context with a distribution "
                 "or distrorelease")
 
+            if zope_isinstance(params.component, any):
+                component_ids = [
+                    str(component.id) for component in
+                    params.component.query_values]
+            else:
+                component_ids = [str(params.component.id)]
+
             extra_clauses.append(
                 "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename AND "
                 "SourcePackageRelease.uploaddistrorelease = %d AND "
                 "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease AND "
-                "SourcePackagePublishing.component = %d" % (
-                    distrorelease.id, params.component.id))
+                "SourcePackagePublishing.component IN (%s) AND "
+                "SourcePackagePublishing.status = %s" % (
+                    distrorelease.id, ', '.join(component_ids),
+                    dbschema.PackagePublishingStatus.PUBLISHED.value))
 
         clause = self._getPrivacyFilter(params.user)
         if clause:

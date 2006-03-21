@@ -30,6 +30,7 @@ from canonical.lp import dbschema
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
+from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
@@ -174,35 +175,36 @@ class IBugTaskSearch(Interface):
     """
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
-        title=_('Status:'),
+        title=_('Status'),
         value_type=IBugTask['status'],
         default=list(UNRESOLVED_BUGTASK_STATUSES),
         required=False)
     severity = List(
-        title=_('Severity:'),
+        title=_('Severity'),
         value_type=IBugTask['severity'],
         required=False)
     priority = List(
-        title=_('Priority:'),
+        title=_('Priority'),
         value_type=IBugTask['priority'],
         required=False)
     assignee = Choice(
-        title=_('Assignee:'), vocabulary='ValidAssignee', required=False)
+        title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     owner = Choice(
-        title=_('Reporter:'), vocabulary='ValidAssignee', required=False)
+        title=_('Reporter'), vocabulary='ValidAssignee', required=False)
     omit_dupes = Bool(
         title=_('Omit duplicate bugs'), required=False,
         default=True)
     statusexplanation = TextLine(
-        title=_("Status notes:"), required=False)
+        title=_("Status notes"), required=False)
     has_patch = Bool(
         title=_('Show only bugs with patches available'), required=False,
         default=False)
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
-        title=_('Target:'), value_type=IBugTask['milestone'], required=False)
-
+        title=_('Target'), value_type=IBugTask['milestone'], required=False)
+    component = List(
+        title=_('Component'), value_type=IComponent['name'], required=False)
 
 class IPersonBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a person."""

@@ -225,13 +225,21 @@
             </th>
           </tr>
           <tr>
-            <td class="section">
+            <td class="section"
+                tal:define="show_component_widget view/shouldShowComponentWidget">
               <table>
                 <tr>
-                  <td>
+                  <td width="28%">
                     <small>
                       <label for="field.milestone">
                         <strong>Target Milestone</strong>
+                      </label>
+                    </small>
+                  </td>
+                  <td tal:condition="show_component_widget">
+                    <small>
+                      <label for="field.component">
+                        <strong>Component</strong>
                       </label>
                     </small>
                   </td>
@@ -258,9 +266,12 @@
                       </span>
                     </small>
                   </td>
+                  <td tal:content="structure view/component_widget"
+                      tal:condition="show_component_widget" />
                 </tr>
               </table>
             </td>
+          </tr>
           <tr>
             <th class="section-header">
               Other
