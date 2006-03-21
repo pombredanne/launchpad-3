@@ -51,13 +51,13 @@ check: build
 lint:
 	@sh ./utilities/lint.sh
 
-lintmerge:
-	@# Thank Stuart, not me!
-	@baz diff -s rocketfuel@canonical.com/launchpad--devel--0 | \
-		grep -v "^*" | \
-		grep -v "{arch}" | \
-		cut -c4- | \
-		xargs sh ./utilities/lint.sh
+#lintmerge:
+#	@# Thank Stuart, not me!
+#	@baz diff -s rocketfuel@canonical.com/launchpad--devel--0 | \
+#		grep -v "^*" | \
+#		grep -v "{arch}" | \
+#		cut -c4- | \
+#		xargs sh ./utilities/lint.sh
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages

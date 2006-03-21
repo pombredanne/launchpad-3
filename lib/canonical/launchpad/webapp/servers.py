@@ -14,7 +14,8 @@ from zope.publisher.xmlrpc import XMLRPCRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
 from zope.app.publication.interfaces import (
-        IBrowserRequestFactory, IRequestPublicationFactory
+        IBrowserRequestFactory, IRequestPublicationFactory,
+        IPublicationRequestFactory,
         )
 from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.app.server.servertype import ServerType

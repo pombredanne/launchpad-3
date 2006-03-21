@@ -5,7 +5,7 @@
 <subscriber
    for="canonical.launchpad.interfaces.ITranslationImportQueueEntry
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.karma.translation_import_queue_entry_modified" />
+   handler="canonical.launchpad.subscribers.karma.translation_import_queue_entry_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IPOTemplate

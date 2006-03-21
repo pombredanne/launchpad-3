@@ -159,9 +159,9 @@ special = {
             setUp=setUp, tearDown=karmaUpdaterTearDown,
             optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
-            )
+            ),
     'translationimportqueue.txt': FunctionalDocFileSuite(
-            '../doc/translationimportqueue.txt',
+            'launchpad/doc/translationimportqueue.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             )
     }
