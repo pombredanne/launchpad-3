@@ -124,6 +124,7 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   3
   4
   5
+  6
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -136,7 +137,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  5
+  6
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -152,7 +153,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  4
+  5
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -166,6 +167,9 @@ Retrieve some data from DB to play more with counter.
 Check the behaviour of @cachedproperty  attributes:
   >>> qitem = qset.get(1)
 
+  >>> qitem.queue_icons
+  ['/@@/package-binary']
+
   >>> qitem.datecreated
   datetime.datetime(...)
 
@@ -178,6 +182,9 @@ Check the behaviour of @cachedproperty  attributes:
   >>> qitem.sourcepackagename.name
   u'mozilla-firefox'
 
+  >>> qitem.displayname
+  u'mozilla-firefox (i386)'
+
   >>> qitem.sourceversion
   u'0.9'
 
@@ -185,11 +192,31 @@ Check the behaviour of @cachedproperty  attributes:
   <SourcePackageRelease at ...>
 
 
+Let's check the behaviour of 'name' attributes in a custom upload:
+
+  >>> custom_item = qset.get(5)
+
+It fails by trying to access 'sourcepackagename' in a custom upload:
+
+  >>> custom_item.sourcepackagename
+  Traceback (most recent call last):
+    ...
+  AssertionError
+
+But the more generic attribute 'displayname' still working and return
+the librarian filename in question.
+
+  >>> custom_item.displayname
+  u'netapplet-1.0.0.tar.gz'
+
+  >>> custom_item.queue_icons
+  ['/@@/translations']
+
 Explore the queue features of a DistroRelease instance, let's check
-some usages of IDistroRelease.getFancyQueueItems, which returns a list
+some usages of IHasQueueItems.getQueueItems, which returns a list
 of IDistroReleaseQueue entries.
 
-  >>> new_items = breezy_autotest.getFancyQueueItems(
+  >>> new_items = breezy_autotest.getQueueItems(
   ...    DistroReleaseQueueStatus.NEW)
   >>> new_items.count()
   4
@@ -198,15 +225,15 @@ Invetigate the queue entries type:
 
   >>> for n in new_items:
   ...     n.builds.count(), n.sources.count()
-  (1, 0)
-  (1, 0)
   (0, 1)
   (0, 1)
+  (1, 0)
+  (1, 0)
 
-Exercises build side of getFancyQueueItems, Retrieve queue entry for a
+Exercises build side of getQueueItems, Retrieve queue entry for a
 name like 'moz':
 
-  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
   ...                                            name='moz')
   >>> items.count()
   1
@@ -220,7 +247,7 @@ Got a distrorelease build queue entry for 'mozilla-firefox_0.9'
 
 Try with version:
 
-  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
   ...                                            name='moz', version='0.9')
   >>> items.count()
   1
@@ -234,7 +261,7 @@ Got the same queue entry.
 
 Let's try another entry where binary package name is LIKE 'pmount'
 
-  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
   ...                                            name='pmount')
   >>> items.count()
   1
@@ -248,7 +275,7 @@ Got 'pmount_0.1-1'.
 
 Look for every queue entry which package name is like 'mo'
 
-  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
   ...                                            name='mo')
   >>> items.count()
   2
@@ -263,18 +290,41 @@ Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
 
 Try 'exact_match' for 'mozil_0.0.1'
 
-  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
   ...                 name='mozil', version='0.0.1', exact_match=True)
   >>> items.count()
   0
 
 There is no match on queue entries.
 
+Try to match custom uploads by filename, there is one sampledata
+custom upload in UNAPPROVED queue.
+
+  >>> items = breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.UNAPPROVED)
+  >>> items.count()
+  1
+
+We can't retrieve it with a 'what' substring:
+
+  >>> items = breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.UNAPPROVED, name='what')
+  >>> items.count()
+  0
+
+But it works with the right substring 'net' from 'netapplet.tar.gz'
+
+  >>> items = breezy_autotest.getQueueItems(
+  ...      DistroReleaseQueueStatus.UNAPPROVED, name='net')
+  >>> items.count()
+  1
+
+
 Check State Machine over DistroReleaseQueueBuilds:
 
 Performing full acceptance:
 
-  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW)
   >>> for item in items:
   ...      try:
   ...          item.setAccepted()
@@ -282,10 +332,10 @@ Performing full acceptance:
   ...          print item.sourcepackagename.name, e
   ...      else:
   ...          print item.sourcepackagename.name, 'ACCEPTED'
-  mozilla-firefox ACCEPTED
-  pmount ACCEPTED
-  netapplet ACCEPTED
   alsa-utils ACCEPTED
+  netapplet ACCEPTED
+  pmount ACCEPTED
+  mozilla-firefox ACCEPTED
 
 Move the DistroReleaseQueue items back to NEW
 
@@ -301,7 +351,7 @@ Check forbidden approval of not selected Section:
 
 Retrieve mozilla-firefox DRQ:
 
-  >>> item = breezy_autotest.getFancyQueueItems(
+  >>> item = breezy_autotest.getQueueItems(
   ...     DistroReleaseQueueStatus.NEW, name='mozilla')[0]
 
 Override the mozilla-firefox component to fresh created 'hell' component.
@@ -324,7 +374,7 @@ Check forbidden approval of not selected Section:
 
 Retrieve pmount:
 
-  >>> item = breezy_autotest.getFancyQueueItems(
+  >>> item = breezy_autotest.getQueueItems(
   ...     DistroReleaseQueueStatus.NEW, name='pmount')[0]
 
 Override the pmount section to fresh created 'heaven' section.

@@ -1444,6 +1444,7 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (2, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (3, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (4, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 0, 1);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1460,7 +1461,7 @@ ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleasequeuecustom DISABLE TRIGGER ALL;
 
-
+INSERT INTO distroreleasequeuecustom (id, distroreleasequeue, customformat, libraryfilealias) VALUES (1, 5, 1, 1);
 
 ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
 
