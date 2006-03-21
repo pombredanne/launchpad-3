@@ -30,7 +30,7 @@
 
           </select>
 
-	  <input title="Package Name" size="20" type="text" name="queue_text"
+	  <input title="Package Name" size="15" type="text" name="queue_text"
                  tal:attributes="value view/text"
            />
 
@@ -50,7 +50,7 @@
        <tbody>
          <tal:batch repeat="queue batch">
            <tr>
-              <td class="icon left">
+              <td class="icon left" tal:condition="view/availableActions">
                  <input type="checkbox" name="QUEUE_ID"
                         tal:attributes="value queue/id"/>
               </td>
@@ -71,19 +71,20 @@
               </td>
            </tr>
            <tr class="secondary discreet">
-              <td></td>
+              <td tal:condition="view/availableActions" />
               <td>Version: <span tal:replace="queue/sourceversion" />
                   Age: <span tal:replace="queue/age" /> </td>
            </tr>
          </tal:batch>
        </tbody>
-       <tfoot>
+       <tfoot tal:condition="view/availableActions">
          <tr>
            <td colspan="2">
                <select title="Action" name="queue_action" size="1">
-                 <option value="">--</option>
-                 <option value="accept">Accept</option>
-                 <option value="reject">Reject</option>
+                 <option value=""> -- </option>
+                 <option tal:repeat="action view/availableActions"
+                         tal:attributes="value action"
+                         tal:content="action"/>
                </select>
                <input title="Update" type="submit" value="Update" />
            </td>

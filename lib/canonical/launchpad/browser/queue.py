@@ -56,6 +56,15 @@ class QueueItemsView(LaunchpadView):
         self.batchnav = BatchNavigator(queue_items, self.request,
                                        size=QUEUE_SIZE)
 
+    def availableActions(self):
+        """Return the avaiables action according selected queue state.
+
+        Return a list of labeled actions or an empty list.
+        """
+        if self.state in ['', 'new', 'unapproved']:
+            return ['accept', 'reject']
+        return []
+
     def performQueueAction(self):
         """Execute the designed action over the selected queue items.
 
