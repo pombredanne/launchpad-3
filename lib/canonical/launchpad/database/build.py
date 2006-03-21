@@ -99,6 +99,8 @@ class Build(SQLBase):
             BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            # XXX cprov 20060321: proper icon
+            BuildStatus.CHROOTWAIT: "/@@/topic_icon",
             }
         return icon_map[self.buildstate]
 
@@ -125,7 +127,8 @@ class Build(SQLBase):
         """See IBuild."""
         return self.buildstate in [BuildStatus.FAILEDTOBUILD,
                                    BuildStatus.MANUALDEPWAIT,
-                                   BuildStatus.CHROOTWAIT]
+                                   BuildStatus.CHROOTWAIT,
+                                   BuildStatus.SUPERSEDED]
 
     def reset(self):
         """See IBuild."""

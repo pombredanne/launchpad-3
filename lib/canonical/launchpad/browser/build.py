@@ -85,15 +85,10 @@ class BuildView(LaunchpadView):
 
         # retrieve user score
         self.score = self.request.form.get('SCORE', '')
-        self.manual = self.request.form.get('MANUAL', '')
         action = self.request.form.get('RESCORE', '')
 
         if not action:
             return None
-
-        if not self.manual:
-            self.context.buildqueue_record.autoScore()
-            return '<p>Auto Scoring.</p>'
 
         # invoke context method to rescore the build record
         self.context.buildqueue_record.manualScore(int(self.score))
@@ -131,6 +126,7 @@ class BuildRecordsView(LaunchpadView):
             'failed': BuildStatus.FAILEDTOBUILD,
             'depwait': BuildStatus.MANUALDEPWAIT,
             'chrootwait': BuildStatus.CHROOTWAIT,
+            'superseded': BuildStatus.SUPERSEDED,
             }
 
         # request context build records according the selected state

@@ -28,6 +28,9 @@
             <option tal:attributes="selected python: view.state == 'chrootwait'"
                     value="chrootwait">Waiting Chroot</option>
 
+            <option tal:attributes="selected python: view.state == 'superseded'"
+                    value="superseded">Superseded</option>
+
           </select>
 	  <tal:searchname condition="view/searchName">
 	      <input title="Package Name" size="15" type="text"

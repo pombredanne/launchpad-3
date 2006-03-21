@@ -154,9 +154,6 @@ class IBuildQueue(Interface):
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
 
-    def autoScore():
-        """Allow the queue item to be scored automatically."""
-
     def destroySelf():
         """Delete this entry from the database."""
 

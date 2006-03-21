@@ -164,10 +164,6 @@ class BuildQueue(SQLBase):
         self.lastscore = value
         self.manual = True
 
-    def autoScore(self):
-        """See IBuildQueue."""
-        self.manual = False
-
     @property
     def archrelease(self):
         """See IBuildQueue"""
