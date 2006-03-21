@@ -1,8 +1,38 @@
 Tests for our PO parser.
 ========================
 
+The core of Rosetta is the PO parser, it allows to communicate with the
+external world importing files and exporting them.
+
+Let's import some needed objects...
+
   >>> from canonical.launchpad.components.poparser import (
   ...     POMessage, POHeader, POParser)
+
+
+POParser
+========
+
+First we get the needed imports.
+
+  >>> from canonical.launchpad.components.poparser import POParser
+
+We should be completely sure that a .po file with an empty header is reported.
+
+  >>> parser = POParser()
+  >>> parser.write('msgid "foo"\nmsgstr ""\n')
+  >>> parser.finish()
+  Traceback (most recent call last):
+  ...
+  POSyntaxError:...
+
+
+POHeader
+========
+
+A POHeader is a representation of a special message that all .po files have.
+That first message has as the msgid the empty string ("") and as the
+translation of it some metadata.
 
 
 POHeader.getPORevisionDate
@@ -209,3 +239,4 @@ Message strings in PO files can contain C string escape sequences:
 
   >>> parser.messages[0].msgstr
   u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n'
+

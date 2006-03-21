@@ -106,7 +106,9 @@ special = {
 
     # And these tests want minimal environments too.
     'enumcol.txt': DocFileSuite('../doc/enumcol.txt'),
-    'poparser.txt': DocFileSuite('../doc/poparser.txt'),
+    'poparser.txt': DocFileSuite(
+            '../doc/poparser.txt', optionflags=default_optionflags
+            ),
 
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distrorelease-(date-)tarball.txt is excluded, since they add

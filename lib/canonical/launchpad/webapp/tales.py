@@ -86,6 +86,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(
                 requesturl=self._requesturl(),
                 selectedfacetname=self._selectedfacetname))
@@ -99,6 +100,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(requesturl=self._requesturl()))
 
     def context(self):
@@ -106,6 +108,7 @@ class MenuAPI:
         if menu is None:
             return  []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(requesturl=self._requesturl()))
 
 
