@@ -83,6 +83,8 @@ class DistroArchReleaseBinariesView:
 
 
     def binaryPackagesBatchNavigator(self):
+        # XXX: this is currently disabled in the template
+        #   -- kiko, 2006-03-17
         if self.text:
             binary_packages = self.context.searchBinaryPackages(self.text)
         else:

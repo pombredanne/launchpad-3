@@ -35,7 +35,7 @@
     -->
   </tal:comment>
 
-  <p tal:condition="not:context/branches">
+  <p tal:condition="not:view/branches">
     <i>There are no branches currently registered for
     <span tal:replace="context/displayname">Steve Alexander</span>
     at present.</i>

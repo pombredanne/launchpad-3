@@ -730,6 +730,14 @@ class POTemplateSet:
             raise NotFoundError(name)
         return result
 
+    def getByIDs(self, ids):
+        """See IPOTemplateSet."""
+        values = ",".join(sqlvalues(*ids))
+        return POTemplate.select("POTemplate.id in (%s)" % values,
+            prejoins=["potemplatename", "productseries",
+                      "distrorelease", "sourcepackagename"],
+            orderBy=["POTemplate.id"])
+
     def getSubset(self, distrorelease=None, sourcepackagename=None,
                   productseries=None):
         """See IPOTemplateSet."""
@@ -789,3 +797,4 @@ class POTemplateSet:
             raise AssertionError(
                 'Either productseries or sourcepackagename arguments must be'
                 ' not None.')
+

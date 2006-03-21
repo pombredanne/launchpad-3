@@ -10,6 +10,8 @@ from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
     SQLObjectNotFound)
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
@@ -87,12 +89,18 @@ class Distribution(SQLBase, BugTargetBase):
     milestones = SQLMultipleJoin('Milestone', joinColumn='distribution')
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
-    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
-        joinColumn='distribution', orderBy='name')
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+
+    @property
+    def source_package_caches(self):
+        # XXX: should be moved back to SQLMultipleJoin when it supports
+        # prejoin
+        cache = DistributionSourcePackageCache.selectBy(distributionID=self.id,
+                    orderBy="DistributionSourcePackageCache.name")
+        return cache.prejoin(['sourcepackagename'])
 
     @property
     def enabled_official_mirrors(self):
@@ -104,8 +112,10 @@ class Distribution(SQLBase, BugTargetBase):
     def enabled_mirrors(self):
         return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
 
-    @property
+    @cachedproperty
     def releases(self):
+        # This is used in a number of places and given it's already
+        # listified, why not spare the trouble of regenerating?
         ret = DistroRelease.selectBy(distributionID=self.id)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
@@ -175,6 +185,9 @@ class Distribution(SQLBase, BugTargetBase):
 
     @property
     def currentrelease(self):
+        # XXX: this should be just a selectFirst with a case in its
+        # order by clause -- kiko, 2006-03-18
+
         # If we have a frozen one, return that.
         for rel in self.releases:
             if rel.releasestatus == DistributionReleaseStatus.FROZEN:

@@ -17,6 +17,7 @@ import pytz
 
 from zope.component import getUtility
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -79,7 +80,13 @@ class BranchView(LaunchpadView):
             return False
         return self.context.has_subscription(self.user)
 
-    def count_revisions(self, days=30):
+    @cachedproperty
+    def revision_count(self):
+        # Avoid hitting the database multiple times, which is expensive
+        # because it issues a COUNT
+        return self.context.revision_count()
+
+    def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
@@ -138,12 +145,11 @@ class BranchView(LaunchpadView):
 
 class BranchEditView(SQLObjectEditView):
     def __init__(self, context, request):
-        # If the context URL is none, Make a copy of the field names list and
-        # remove 'url' from it. This is to prevent users from converting
-        # push/import branches to pull branches.
 
-        if context.url is None:
-            self.fieldNames = list(self.fieldNames)
+        self.fieldNames = list(self.fieldNames)
+        if context.url is None and 'url' in self.fieldNames:
+            # This is to prevent users from converting push/import
+            # branches to pull branches.
             self.fieldNames.remove('url')
 
         SQLObjectEditView.__init__(self, context, request)
@@ -154,11 +160,11 @@ class BranchEditView(SQLObjectEditView):
 
 class BranchAddView(SQLObjectAddView):
 
-    _nextURL = None    
+    _nextURL = None
 
     def create(self, name, owner, author, product, url, title,
                lifecycle_status, summary, home_page):
-        """Handle a request to create a new branch for this product."""        
+        """Handle a request to create a new branch for this product."""
         branch_set = getUtility(IBranchSet)
         branch = branch_set.new(
             name=name, owner=owner, author=author, product=product, url=url,
@@ -170,7 +176,7 @@ class BranchAddView(SQLObjectAddView):
         assert self._nextURL is not None, 'nextURL was called before create()'
         return self._nextURL
 
-        
+
 class BranchPullListing(LaunchpadView):
     """Listing of all the branches that the Supermirror should pull soon.
 
