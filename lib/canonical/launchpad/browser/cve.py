@@ -16,6 +16,8 @@ __all__ = [
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.batching import BatchNavigator
+
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.webapp import (
@@ -26,7 +28,6 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 class CveSetNavigation(GetitemNavigation):
 
     usedfor = ICveSet
-
 
 class CveContextMenu(ContextMenu):
 
@@ -46,11 +47,16 @@ class CveContextMenu(ContextMenu):
 class CveSetContextMenu(ContextMenu):
 
     usedfor = ICveSet
-    links = ['allcve']
+    links = ['findcve', 'allcve']
 
     def allcve(self):
         text = 'All Registered CVEs'
         return Link('+all', text)
+
+    def findcve(self):
+        text = 'Find CVEs'
+        summary = 'Find CVEs in Launchpad'
+        return Link('', text, summary)
 
 
 class CveView:
@@ -114,8 +120,12 @@ class CveSetView:
         if self.text:
             self.pre_search()
 
+    def getAllBatched(self):
+        return BatchNavigator(self.context.getAll(), self.request)
+
     def pre_search(self):
-        # see if we have a proper sequence
+        # see if we have an exact match, and redirect if so; otherwise,
+        # do a search for it.
         sequence = self.text
         if sequence[:4].lower() in ['cve-', 'can-']:
             sequence = sequence[4:].strip()
@@ -125,9 +135,6 @@ class CveSetView:
             cve = cveset[sequence]
             if cve:
                 self.request.response.redirect(canonical_url(cve))
-
-        # ok, we have text, but it is not a valid sequence. lets try
-        # searching
         self.searchrequested = True
 
     def searchresults(self):

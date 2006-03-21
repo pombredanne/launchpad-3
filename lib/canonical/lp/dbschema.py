@@ -1792,6 +1792,13 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         import queue to be incorporated into that package's translations.
         """)
 
+    DIST_UPGRADER = Item(2, """
+        raw-dist-upgrader
+
+        A raw-dist-upgrader file is a tarball. It is simply published into
+        the archive.
+        """)
+
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
 
@@ -2611,36 +2618,47 @@ class RosettaTranslationOrigin(DBSchema):
 class RosettaImportStatus(DBSchema):
     """Rosetta Import Status
 
-    After a raw file is added into Rosetta it could have a set of
-    states like ignore, pending, imported or failed.
-    This schema documents those options.
+    Define the status of an import on the Import queue. It could have one
+    of the following states: approved, imported, deleted, failed, needs_review
+    or blocked.
     """
 
-    IGNORE = Item(1, """
-        Ignore
+    APPROVED = Item(1, """
+        Approved
 
-        There are not any rawfile attached and we don't need to do
-        anything with that field.
+        The entry has been approved by a Rosetta Expert or was able to be
+        approved by our automatic system and is waiting to be imported.
         """)
 
-    PENDING = Item(2, """
-        Pending
-
-        There are a rawfile pending of review to be finally imported into
-        the system.
-        """)
-
-    IMPORTED = Item(3, """
+    IMPORTED = Item(2, """
         Imported
 
-        The attached rawfile has been already imported so it does not needs
-        any extra process.
+        The entry has been imported.
+        """)
+
+    DELETED = Item(3, """
+        Deleted
+
+        The entry has been removed before being imported.
         """)
 
     FAILED = Item(4, """
         Failed
 
-        The attached rawfile import failed.
+        The entry import failed.
+        """)
+
+    NEEDS_REVIEW = Item(5, """
+        Needs Review
+
+        A Rosetta Expert needs to review this entry to decide whether it will
+        be imported and where it should be imported.
+        """)
+
+    BLOCKED = Item(6, """
+        Blocked
+
+        The entry has been blocked to be imported by a Rosetta Expert.
         """)
 
 
@@ -2771,6 +2789,15 @@ class BuildStatus(DBSchema):
         to be damaged or bad in some way. The buildd maintainer will have to
         reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
         has been fixed.
+        """)
+
+    SUPERSEDED = Item(5, """
+        Build for superseded Source.
+
+        Build record represents a build which never got to happen because the
+        source package release for the build was superseded before the job
+        was scheduled to be run on a builder. Builds which reach this state
+        will rarely if ever be reset to any other state.
         """)
 
 

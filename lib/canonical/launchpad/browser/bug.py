@@ -148,6 +148,7 @@ class BugView:
     def __init__(self, context, request):
         self.context = IBug(context)
         self.request = request
+        self.user = getUtility(ILaunchBag).user
 
     def currentBugTask(self):
         """Return the current IBugTask.

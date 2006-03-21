@@ -58,7 +58,7 @@ so that they get notified about the changes as well:
     >>> from canonical.launchpad.helpers import Snapshot
     >>> from canonical.launchpad.interfaces import ITicket, IPersonSet
 
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('name17')
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_ticket.subscribe(ubuntu_team)
     <TicketSubscription...>
     >>> login('no-priv@canonical.com')

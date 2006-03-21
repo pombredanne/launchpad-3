@@ -89,10 +89,6 @@
             name="+index"
             template="../templates/translationimportqueue-index.pt" />
             lp:url="/rosetta/imports/+index" />
-        <browser:page
-            name="+blocked"
-            template="../templates/translationimportqueue-blocked.pt" />
-            lp:url="/rosetta/imports/+blocked" />
     </browser:pages>
 
 </configure>

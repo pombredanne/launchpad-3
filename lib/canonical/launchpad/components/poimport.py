@@ -53,17 +53,17 @@ def getLastTranslator(parser):
 
         return person
 
-def import_po(pofile_or_potemplate, file, published=True):
+def import_po(pofile_or_potemplate, file, importer, published=True):
     """Convert a .pot or .po file into DB objects.
 
-    pofile_or_potemplate is the IPOFile or IPOTemplate object where the
-    import will be done.
-    file is a file-like object with the content we are importing.
+    :arg pofile_or_potemplate: is the IPOFile or IPOTemplate object where the
+        import will be done.
+    :arg file: is a file-like object with the content we are importing.
+    :arg importer: is the person who requested this import.
+    :arg published: indicates if the file being imported is published or just a
+        translation update. With template files should be always published.
 
-    published indicates if the file being imported is published or just a
-    translation update. With template files should be always published.
-
-    If 'file' is older than previous imported file, OldPOImported exception is
+    If file is older than previous imported file, OldPOImported exception is
     raised.
 
     Return a list of dictionaries with three keys:
@@ -71,6 +71,7 @@ def import_po(pofile_or_potemplate, file, published=True):
         - 'pomessage': The original POMessage object.
         - 'error-message': The error message as gettext names it.
     """
+    assert importer is not None, "The importer cannot be None."
 
     parser = POParser()
     parser.write(file.read())
@@ -96,8 +97,8 @@ def import_po(pofile_or_potemplate, file, published=True):
             if last_translator is None:
                 # We were not able to guess it from the .po file, so we take
                 # the importer as the last translator.
-                last_translator = pofile.rawimporter
-            is_editor = pofile.canEditTranslations(pofile.rawimporter)
+                last_translator = importer
+            is_editor = pofile.canEditTranslations(importer)
     elif IPOTemplate.providedBy(pofile_or_potemplate):
         pofile = None
         potemplate = pofile_or_potemplate
@@ -129,7 +130,7 @@ def import_po(pofile_or_potemplate, file, published=True):
         if pomessage.msgidPlural is not None and pomessage.msgidPlural != '':
             # Check if old potmsgset had a plural form already and mark as not
             # available in the file being imported.
-            msgids = list(potmsgset.messageIDs())
+            msgids = list(potmsgset.getPOMsgIDs())
             if len(msgids) > 1:
                 pomsgidsighting = potmsgset.getPOMsgIDSighting(
                     TranslationConstants.PLURAL_FORM)

@@ -1,7 +1,7 @@
 
 First, let's make sure the sample user (name12) can't view the page to
 add a milestone to the Ubuntu distribution, which is owned by the Ubuntu
-Team (name17).
+Team (ubuntu-team).
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+addmilestone HTTP/1.1
@@ -168,5 +168,4 @@ Verify that the bug now has the milestone set on the view page:
   ...<span class="severityNormal">Normal</span>...
   ...<span class="priorityMedium">Medium</span>...
   ...<td>sounder01</td>...
-
 

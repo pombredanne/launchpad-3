@@ -184,7 +184,7 @@ class POBasicTestCase(unittest.TestCase):
                          'msgid ""\n'
                          'msgstr ""\n'
                          '"foo: bar\\n"\n'
-                         '"Content-Type: text/plain; charset=us-ascii\\n"\n'
+                         '"Content-Type: text/plain; charset=ASCII\\n"\n'
                          '"plural-forms: nplurals=2; plural=random()\\n"')
 
 

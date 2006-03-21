@@ -11,7 +11,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin,
+    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
     SQLObjectNotFound, AND)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -19,8 +19,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
-    SpecificationSort)
+    EnumCol, TranslationPermission, SpecificationSort)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
@@ -98,9 +97,9 @@ class Product(SQLBase, BugTargetBase):
                 revision=0)
         return self.calendar
 
-    branches = MultipleJoin('Branch', joinColumn='product',
+    branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
-    serieslist = MultipleJoin('ProductSeries', joinColumn='product',
+    serieslist = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
     @property
@@ -119,7 +118,7 @@ class Product(SQLBase, BugTargetBase):
             orderBy=['version']
             )
 
-    milestones = MultipleJoin('Milestone', joinColumn = 'product')
+    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product')
 
     bounties = RelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
@@ -320,7 +319,9 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(Product.selectBy(active=True, orderBy="-datecreated"))
+        results = Product.selectBy(active=True, orderBy="-Product.datecreated")
+        # The main product listings include owner, so we prejoin it in
+        return iter(results.prejoin(["owner"]))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -343,7 +344,7 @@ class ProductSet:
                                 str(productid))
 
         return product
-    
+
     def getByName(self, name, default=None, ignore_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         if ignore_inactive:
