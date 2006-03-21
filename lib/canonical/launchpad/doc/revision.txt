@@ -68,8 +68,8 @@ Bazaar2 converge-on-pull logic.
 
 >>> from canonical.launchpad.database import Branch
 >>> branch = Branch.get(1)
->>> branch.revision_history
-[] 
+>>> branch.revision_history.count()
+0 
 
 RevisionNumber does not have a creation interface, like for Revision, new
 records are only created by a non-zope batch job.

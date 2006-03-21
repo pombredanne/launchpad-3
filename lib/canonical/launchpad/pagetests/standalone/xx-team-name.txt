@@ -1,5 +1,5 @@
-First we try to change the name of "name18" to "name17", but "name17" is
-already in use!
+First we try to change the name of "name18" to "ubuntu-team", but
+ "ubuntu-team" is already in use!
  
   >>> print http(r"""
   ... POST /people/name18/+edit HTTP/1.1
@@ -9,7 +9,7 @@ already in use!
   ... -----------------------------19030233218248605631984744659
   ... Content-Disposition: form-data; name="field.name"
   ... 
-  ... name17
+  ... ubuntu-team
   ... -----------------------------19030233218248605631984744659
   ... Content-Disposition: form-data; name="field.displayname"
   ... 
@@ -42,7 +42,7 @@ already in use!
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...name17 is already in use by another person/team...
+  ...ubuntu-team is already in use by another person/team...
 
   
 Then we try to change it to "name99", wich isn't taken yet.

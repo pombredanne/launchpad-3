@@ -103,8 +103,8 @@ We have to be logged in, so let's do that:
 
 There are currently no people subscribed to this bug:
 
-    >>> print firefox_crashes.subscriptions
-    []
+    >>> print firefox_crashes.subscriptions.count()
+    0 
 
 he rule with private bugs is that only explicit subscribers can view the
 bug after it's been marked private. So, if Sample Person is to mark the

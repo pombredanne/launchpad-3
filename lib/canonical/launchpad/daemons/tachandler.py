@@ -69,7 +69,12 @@ class TacTestSetup:
         if os.path.exists(pidfile):
             pid = open(pidfile,'r').read().strip()
             # Keep killing until it is dead
+            count = 0
             while True:
+                count += 1
+                if count == 50:
+                    os.kill(int(pid), SIGKILL)
+                    break
                 try:
                     os.kill(int(pid), SIGTERM)
                     time.sleep(0.1)

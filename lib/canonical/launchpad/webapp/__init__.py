@@ -27,7 +27,7 @@ from canonical.launchpad.webapp.menu import (
     )
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
-    redirection, stepto)
+    redirection, stepto, LaunchpadXMLRPCView)
 from canonical.launchpad.webapp.servers import (
         LaunchpadBrowserRequest, LaunchpadBrowserResponse
         )

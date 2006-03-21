@@ -6,8 +6,8 @@ set -e
 set -u
 
 USER=${BUILDD_USER:-buildd}
-BUILDDGID=${BUILDD_GID:-65500}
-BUILDDUID=${BUILDD_UID:-65500}
+BUILDDGID=${BUILDD_GID:-2501}
+BUILDDUID=${BUILDD_UID:-2001}
 
 make_buildd()
 {
@@ -33,11 +33,12 @@ case "$1" in
         cp  /usr/share/launchpad-buildd/sbuildrc \
 	    /home/${USER}/sbuildrc.tmp
 	cd /home/${USER}
-	sed -e's/@ARCHTAG@/'$(dpkg --print-architecture)'/g' \
+	sed -e's/@ARCHTAG@/'$(dpkg --print-installation-architecture)'/g' \
             -e's/@FQDN@/'$(hostname --fqdn)'/g' \
             <sbuildrc.tmp > .sbuildrc
 	chown $USER:buildd .sbuildrc
 	chmod 0644 .sbuildrc
+	rm sbuildrc.tmp
 
 	# Prepare a default buildd...
 	test -e /etc/launchpad-buildd/default || make_buildd
@@ -47,8 +48,6 @@ case "$1" in
 	chown $USER:buildd /home/${USER}/filecache-default
 	test -d /home/${USER}/ccache || mkdir /home/${USER}/ccache
 	chown $USER:buildd /home/${USER}/ccache
-	test -d /home/${USER}/logs || mkdir /home/${USER}/logs
-	chown $USER:buildd /home/${USER}/logs
 
 	chown $USER:buildd /var/log/launchpad-buildd /var/run/launchpad-buildd
 

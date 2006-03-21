@@ -10,17 +10,22 @@ Rosetta.
     >>> LaunchpadFunctionalTestSetup(dbuser='poimport').setUp()
     >>> LibrarianTestSetup().setUp()
 
+Here are some imports we need to get this test running.
 
-Here's some database classes we'll be using.
-
-    >>> from canonical.launchpad.database import Person
-    >>> from canonical.launchpad.database import POTemplate
-    >>> from canonical.launchpad.database import POFile
-    >>> from canonical.launchpad.utilities import LaunchpadCelebrities
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
+    >>> from canonical.launchpad.database import POTemplateSubset
 
 We need this for the Librarian to work properly.
 
     >>> import transaction
+
+And also, the DBSchema to change the imports status
+
+    >>> from canonical.lp.dbschema import RosettaImportStatus
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
@@ -44,6 +49,10 @@ Here's a fake logger to capture any errors that happen.
     ...
     ...     warning = log
 
+Login as an admin to be able to do changes to the import queue.
+
+    >>> login('carlos@canonical.com')
+
 Now, is time to create the new potemplate
 
     >>> from canonical.launchpad.database import ProductRelease
@@ -51,29 +60,22 @@ Now, is time to create the new potemplate
     >>> release.productseries.product.name
     u'firefox'
     >>> series = release.productseries
-    >>> from canonical.launchpad.database import POTemplateNameSet
-    >>> ptn = POTemplateNameSet().new('firefox', 'Whatever')
-
-    >>> from canonical.launchpad.database import POTemplateSubset
+    >>> ptn = getUtility(IPOTemplateNameSet).new('firefox', 'Whatever')
     >>> subset = POTemplateSubset(productseries=series)
 
 Here's the person who'll be doing the import.
 
-    >>> person = Person.get(1)
+    >>> person_set = getUtility(IPersonSet)
+    >>> person = person_set.getByName('sabdfl')
+
+And this is the POTemplate where the import will be done.
 
     >>> potemplate = subset.new(
     ...     potemplatename=ptn,
-    ...     contents='# Not much.',
+    ...     path='po/firefox.pot',
     ...     owner=person)
 
-We should disable the pending import status added by the IPOTemplate
-creation because the current data is not valid.
-
-    >>> from canonical.lp.dbschema import RosettaImportStatus
-    >>> from canonical.launchpad.interfaces import IRawFileData
-    >>> IRawFileData(potemplate).rawimportstatus = RosettaImportStatus.IGNORE
-
-And this is the file that'll get imported.
+This is the file that'll get imported.
 
     >>> potemplate_contents = r'''
     ... msgid ""
@@ -102,23 +104,35 @@ And this is the file that'll get imported.
     ... msgstr[1] ""
     ... '''
 
-Importing happens in two steps. First, we attach the file data to the
-template. The potemplate is always "published"
+Attach the import to the translations import queue:
 
-    >>> potemplate.attachRawFileData(potemplate_contents, True, person)
+    >>> translation_import_queue = getUtility(ITranslationImportQueue)
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     potemplate.path, potemplate_contents, True, potemplate.owner,
+    ...     productseries=series, potemplate=potemplate)
 
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
 
     >>> transaction.commit()
 
-Second, we tell the PO template to import from the file data it has but first
+We must approve the entry to be able to import it.
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
+
+Second, we tell the PO template to import from the file data it has, but first
 check the number of activities the 'person' has done to be sure that Karma is
 working.
 
     >>> person.activities.count()
     0
-    >>> potemplate.doRawImport(FakeLogger())
+    >>> potemplate.importFromQueue(FakeLogger())
+
+The status is now IMPORTED:
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
 
 The number of activities should be higher.
 
@@ -191,9 +205,33 @@ The process of importing a PO file is much like that of importing a PO
 template. Remember, we need to tell the system that this po file is a
 "published" one.
 
-    >>> pofile.attachRawFileData(pofile_with_errors, True, person)
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_with_errors, True, person,
+    ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> pofile.doRawImport(FakeLogger())
+
+The guess IPOFile should be the same we already had.
+
+    >>> entry.guessed_pofile.id == pofile.id
+    True
+
+Set it as the place where the entry should be imported.
+
+    >>> entry.pofile = entry.guessed_pofile
+
+We must approve the entry to be able to import it.
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
+
+And we do the import.
+
+    >>> pofile.importFromQueue(FakeLogger())
+
+The status is now IMPORTED:
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
 
 The number of activities performed is...
 
@@ -297,7 +335,7 @@ Now, is time to check the notification email.
 
 Here are the contents of another file we'll be importing. It has no errors.
 
-    >>> rosetta_experts = LaunchpadCelebrities().rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
     >>> pofile_without_errors = r'''
     ... msgid ""
     ... msgstr ""
@@ -309,9 +347,33 @@ Here are the contents of another file we'll be importing. It has no errors.
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> pofile.attachRawFileData(pofile_without_errors, True, rosetta_experts)
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_without_errors, True, rosetta_experts,
+    ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> pofile.doRawImport(FakeLogger())
+
+The guess IPOFile should be the same we already had.
+
+    >>> entry.guessed_pofile.id == pofile.id
+    True
+
+Set it as the place where the entry should be imported.
+
+    >>> entry.pofile = entry.guessed_pofile
+
+We must approve the entry to be able to import it.
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
+
+We do the import.
+
+    >>> pofile.importFromQueue(FakeLogger())
+
+The status is now IMPORTED:
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
 
 And the statistics reflect it.
 
@@ -344,14 +406,26 @@ Now, is time to test a .pot import when we don't have any header.
     ... msgid "foo"
     ... msgstr ""
     ... '''
-    >>> potemplate.attachRawFileData(potemplate_contents, True, person)
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     potemplate.path, potemplate_contents, True, person,
+    ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> potemplate.doRawImport(FakeLogger())
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
+    >>> potemplate.importFromQueue(FakeLogger())
+    log> We got an error importing %s Template "firefox" in Mozilla Firefox Milestone Releases
+    ...
+    log> POSyntaxError: No header found in this pofile
+
+The status is now IMPORTED:
+
+    >>> entry.status == RosettaImportStatus.FAILED
+    True
 
 And the number of activities performed is...
 
     >>> person.activities.count()
-    3
+    2
 
 The header should be the old one as this one does not have any:
 
@@ -377,20 +451,39 @@ Another test, try to import a .po file that is older than previous import...
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> pofile.attachRawFileData(pofile_contents, True, person)
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, True, person,
+    ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> pofile.doRawImport(FakeLogger())
+
+The guess IPOFile should be the same we already had.
+
+    >>> entry.guessed_pofile.id == pofile.id
+    True
+
+Set it as the place where the entry should be imported.
+
+    >>> entry.pofile = entry.guessed_pofile
+
+We must approve the entry to be able to import it.
+
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
+
+We do the import.
+
+    >>> pofile.importFromQueue(FakeLogger())
     log> Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
 
-The rawimportstatus should be ignored.
+The status is now FAILED
 
-    >>> pofile.rawimportstatus == RosettaImportStatus.IGNORE
+    >>> entry.status == RosettaImportStatus.FAILED
     True
 
 The number of activities shouldn't change as the import was rejected.
 
     >>> person.activities.count()
-    3
+    2
 
 And the statistics reflect it.
 
@@ -399,7 +492,7 @@ And the statistics reflect it.
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    0
+    1
 
 And the date should be the old one
 
@@ -424,9 +517,16 @@ the msgid
     ... msgstr[0] ""
     ... msgstr[1] ""
     ... '''
-    >>> pofile.attachRawFileData(pofile_content, True, rosetta_experts)
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_content, True, rosetta_experts,
+    ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> pofile.doRawImport(FakeLogger())
+    >>> entry.pofile = entry.guessed_pofile
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
+    >>> pofile.importFromQueue(FakeLogger())
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
 
 Now, is time to check the notification email.
 
@@ -440,9 +540,10 @@ Now, is time to check the notification email.
     >>> msg["Subject"]
     'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
     >>> print msg.get_payload(decode=True)
-    Hello Rosetta Administrators,...
+    Hello Rosetta Administrators,
+    <BLANKLINE>
     ...
-    0.  [msg 0]
+    5.  [msg 0]
     "The msgid_Plural field has changed since last time this .po file was
     generated, please notify this error to rosetta@ubuntu.com":
     <BLANKLINE>
@@ -457,18 +558,17 @@ Finally, we need to test that the script is being executed without problems.
 We tested already that the functionality works. Now it's time to know if the
 cronscript has any problem.
 
-First, remove the recently seen cache
+First, we are going to reactivate the entries that were already imported or
+failed.
 
-    >>> from canonical.launchpad.scripts.po_import import ImportProcess
-    >>> import os, os.path
-    >>> if os.path.exists(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE):
-    ...     os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
-
-    >>> potemplate.rawimportstatus = RosettaImportStatus.PENDING
-    >>> potemplate.sync()
-    >>> pofile.rawimportstatus = RosettaImportStatus.PENDING
-    >>> pofile.sync()
+    >>> for entry in translation_import_queue:
+    ...     if (entry.status == RosettaImportStatus.IMPORTED or
+    ...         entry.status == RosettaImportStatus.FAILED):
+    ...         entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
     >>> transaction.commit()
+
+And run the cronscript.
 
     >>> import subprocess, sys
     >>> process = subprocess.Popen([
@@ -479,32 +579,12 @@ First, remove the recently seen cache
     >>> (output, empty) = process.communicate()
     >>> print output
     INFO    Importing: Template "firefox" in Mozilla Firefox Milestone Releases
-    WARNING No header found in this pofile
+    WARNING We got an error importing Template "firefox" in Mozilla Firefox Milestone Releases
+     -> http://localhost:58000/... (No header found in this pofile)
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
+    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
     <BLANKLINE>
-
-If we run it again, the files won't import because the importer has seen
-them too recently.
-
-    >>> potemplate.rawimportstatus = RosettaImportStatus.PENDING
-    >>> potemplate.sync()
-    >>> pofile.rawimportstatus = RosettaImportStatus.PENDING
-    >>> pofile.sync()
-    >>> transaction.commit()
-
-    >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
-    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.STDOUT
-    ...     )
-    >>> (output, empty) = process.communicate()
-    >>> print output
-    <BLANKLINE>
-
-Remove the cache so it doesn't confuse anything
-
-    >>> os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
-
 
 It's time to test the import queue.
 
@@ -533,20 +613,12 @@ following the order the users uploaded them.
     ... msgstr "Bars"
     ... '''
 
-This is needed to use the translation import queue.
+We flush the entry contents.
 
-    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-    >>> translation_import_queue = getUtility(ITranslationImportQueue)
-
-The queue is empty at this point.
-
+    >>> for entry in translation_import_queue:
+    ...     translation_import_queue.remove(entry)
     >>> len(translation_import_queue)
     0
-
-Set the path of the IPOFile to a not None value.
-
-    >>> pofile.path = 'po/cy.po'
-    >>> pofile.sync()
 
 Attach the first version of the file.
 
@@ -564,8 +636,6 @@ It's in the queue now.
 
 For the second version, we need a new importer, in this case, Jordi.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> person_set = getUtility(IPersonSet)
     >>> jordi = person_set.getByName('jordi')
 
 Attach the second version of the file.
@@ -591,17 +661,28 @@ Do the final import.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    INFO...
-    ...
+    INFO    The automatic approval system approved some entries.
+    <BLANKLINE>
+    >>> transaction.commit()
+
+We need to run again the script to get those approved entries imported.
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
     <BLANKLINE>
     >>> transaction.commit()
 
-Only the first entry has been imported and thus, we still have one entry
-in the queue.
+And there are no more entries to import
 
-    >>> len(translation_import_queue)
-    1
+    >>> translation_import_queue.getFirstEntryToImport() is None
+    True
 
     >>> LibrarianTestSetup().tearDown()
     >>> LaunchpadFunctionalTestSetup().tearDown()
