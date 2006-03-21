@@ -68,7 +68,6 @@ build jobs will be created.
   ...     distroreleases.add(dar.distrorelease)
   ...     bm.addDistroArchRelease(dar)
   ...
-  WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
 
 Only Ubuntu/Warty/i386 and Debian/Woody/i386 have an available CHROOT.
 
@@ -102,8 +101,13 @@ added by the current sample data and so on)
   >>> srcfile.libraryfile.filename, srcfile.sourcepackagerelease.name
   (u'netapplet-1.0.0.tar.gz', u'test-buildd')
 
+We need to publish the source in order to get it visible to the
+createMissingBuilds() method. Additionally if the target is an already
+released distrorelease it can only be visible if published in in
+special pocket (UPDATES, SECURITY or BACKPORTS)
+
   >>> published = PackagePublishingStatus.PUBLISHED
-  >>> release_pocket = PackagePublishingPocket.RELEASE
+  >>> release_pocket = PackagePublishingPocket.UPDATES
   >>> p = SecureSourcePackagePublishingHistory(
   ...                                    sourcepackagerelease=srcpkgrel.id,
   ...                                    distroreleaseID=warty.id,
@@ -113,10 +117,11 @@ added by the current sample data and so on)
   ...                                    section=srcpkgrel.section,
   ...                                    datecreated=UTC_NOW)
 
+
 Verify how many Build entries we have from sampledata:
 
   >>> Build.select().count()
-  6
+  7
 
 Create missing builds (packages w/o build entry) for those distroreleases.
 As we just insert a new sourcepackagerelease in run-time we expect to
@@ -130,7 +135,7 @@ absence of nominatedarchindep field for Woody:
 Check if we create a new Build entry for just added sourcepackagerelease:
 
   >>> Build.select().count()
-  7
+  8
 
   >>> b = Build.selectOneBy(sourcepackagereleaseID=srcpkgrel.id)
   >>> (b.sourcepackagerelease.name, b.distroarchrelease.distrorelease.name)
@@ -158,7 +163,7 @@ After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:
 
   >>> new_jobs = bm.sanitiseAndScoreCandidates()
-  WARNING:root:MISSED DEP: [('foo', '1.0', '<<')] in warty i386
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in warty i386
 
   >>> len(new_jobs)
   1
@@ -172,7 +177,7 @@ component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
 launchpad/scripts/builddmaster.py code. The job presented should won
 exactly ** 995 ** points last turn (5 for the default urgency 'LOW'
-1000 for the 'Main' component and minus 10 for unsatisfied dependency,
+1000 for the 'Main' component and -10 for one unsatisfied dependency,
 further tests for scoring are in buildd-scoring.txt)
 
   >>> job.lastscore

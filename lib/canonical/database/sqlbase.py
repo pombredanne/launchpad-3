@@ -58,8 +58,6 @@ class LaunchpadStyle(Style):
         return className
 
     def dbTableToPythonClass(self, table):
-        raise NotImplementedError, \
-                "Our naming convention prohibits converting table to class"
         return table
 
     def idForTable(self, table):

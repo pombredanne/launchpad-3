@@ -210,7 +210,7 @@ template. Remember, we need to tell the system that this po file is a
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
 
-The guessed IPOFile should be the same we already had.
+The guess IPOFile should be the same we already had.
 
     >>> entry.guessed_pofile.id == pofile.id
     True
@@ -352,7 +352,7 @@ Here are the contents of another file we'll be importing. It has no errors.
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
 
-The guessed IPOFile should be the same we already had.
+The guess IPOFile should be the same we already had.
 
     >>> entry.guessed_pofile.id == pofile.id
     True
@@ -453,7 +453,7 @@ Another test, try to import a .po file that is older than previous import...
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
 
-The guessed IPOFile should be the same we already had.
+The guess IPOFile should be the same we already had.
 
     >>> entry.guessed_pofile.id == pofile.id
     True

@@ -2,7 +2,7 @@
 Lets try to change dpl-2080's name to election-2100!
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/dpl-2080/+edit HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/dpl-2080/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------13310732744057784551516819369
   ... 

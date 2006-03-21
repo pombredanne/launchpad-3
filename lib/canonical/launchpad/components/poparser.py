@@ -7,7 +7,7 @@
 # soon. https://launchpad.ubuntu.com/malone/bugs/403
 
 import sys
-import sets
+import re
 import textwrap
 import codecs
 import logging
@@ -76,7 +76,7 @@ class POMessage(object):
         self.commentText = kw.get('commentText', '')
         self.sourceComment = kw.get('sourceComment', '')
         self.fileReferences = kw.get('fileReferences', '').strip()
-        self.flags = kw.get('flags', sets.Set())
+        self.flags = kw.get('flags', set())
         self.msgstrPlurals = kw.get('msgstrPlurals', [])
         self.obsolete = kw.get('obsolete', False)
         self._lineno = kw.get('_lineno')
@@ -319,10 +319,25 @@ class POHeader(dict, POMessage):
 
     def __init__(self, **kw):
         dict.__init__(self)
+
+        # the charset is not known til the header has been parsed.
+        # Scan for the charset in the same way that gettext does.
+        self.charset = 'CHARSET'
+        if 'msgstr' in kw:
+            match = re.search(r'charset=([^\s]+)', kw['msgstr'])
+            if match:
+                self.charset = match.group(1)
+        if self.charset == 'CHARSET':
+            self.charset = 'US-ASCII'
+
+        for attr in ['msgid', 'msgstr', 'commentText', 'sourceComment']:
+            if attr in kw:
+                if isinstance(kw[attr], str):
+                    kw[attr] = unicode(kw[attr], self.charset, 'replace')
+
         POMessage.__init__(self, **kw)
         self._casefold = {}
         self.header = self
-        self.charset = kw.get('charset', 'utf8')
         self.messages = kw.get('messages', [])
         self.nplurals = None
         self.pluralExpr = '0'
@@ -364,7 +379,7 @@ class POHeader(dict, POMessage):
         if 'content-type' not in self:
             logging.warning(POSyntaxWarning(
                 msg='PO file header entry has no content-type field'))
-            self['Content-Type'] = 'text/plain; charset=us-ascii'
+            self['Content-Type'] = 'text/plain; charset=ASCII'
 
     def _decode(self, v):
         try:
@@ -424,7 +439,7 @@ class POHeader(dict, POMessage):
                 if parts['charset'] != 'CHARSET':
                     self.charset = parts['charset']
                 else:
-                    self.charset = 'us-ascii'
+                    self.charset = 'ASCII'
             # Convert attributes to unicode
             for attr in ('msgid', 'msgstr', 'commentText', 'sourceComment'):
                 v = getattr(self, attr)
@@ -457,7 +472,7 @@ class POHeader(dict, POMessage):
         # Update msgstr
         if update_msgstr:
             text = []
-            printed = sets.Set()
+            printed = set()
             for l in self.msgstr.strip().split('\n'):
                 l = l.strip()
                 if not l:
@@ -576,19 +591,69 @@ class POParser(object):
         self.header_factory = header_factory
         self.header = None
         self.messages = []
-        self._pending_line = ''
+        self._pending_chars = ''
+        self._pending_unichars = u''
         self._lineno = 0
         self._make_dataholder()
         self._section = None
         self._plural_case = None
 
+    def _convert_chars(self):
+        # is there anything to convert?
+        if not self._pending_chars:
+            return
+
+        # if the PO header hasn't been parsed, then we don't know the
+        # encoding yet
+        if not self.header:
+            return
+
+        decode = codecs.getdecoder(self.header.charset)
+        # decode as many characters as we can:
+        try:
+            newchars, length = decode(self._pending_chars, 'strict')
+        except UnicodeDecodeError, exc:
+            # XXX: James Henstridge 20060316
+            # If the number of unconvertable chars is longer than a
+            # multibyte sequence to be, the UnicodeDecodeError indicates
+            # a real error, rather than a partial read.
+            # I don't know what the longest multibyte sequence in the
+            # encodings we need to support, but it shouldn't be more
+            # than 10 bytes ...
+            if len(self._pending_chars) - exc.start > 10:
+                raise POInvalidInputError(self._lineno,
+                                          "could not decode input from %s"
+                                          % self.header.charset)
+            newchars, length = decode(self._pending_chars[:exc.start],
+                                      'strict')
+        self._pending_unichars += newchars
+        self._pending_chars = self._pending_chars[length:]
+
+    def _get_line(self):
+        # do we know what charset the data is in yet?
+        if self.header:
+            parts = re.split(r'\n|\r\n|\r', self._pending_unichars, 1)
+            if len(parts) == 1:
+                # only one line
+                return None
+            line, self._pending_unichars = parts
+            return line
+        else:
+            parts = re.split(r'\n|\r\n|\r', self._pending_chars, 1)
+            if len(parts) == 1:
+                # only one line
+                return None
+            line, self._pending_chars = parts
+            return line
+
     def write(self, string):
         """Parse string as a PO file fragment."""
-        string = self._pending_line + string
-        lines = string.split('\n')
-        for l in lines[:-1]:
-            self.parse_line(l)
-        self._pending_line = lines[-1]
+        self._pending_chars += string
+        self._convert_chars()
+        line = self._get_line()
+        while line is not None:
+            self.parse_line(line)
+            line = self._get_line()
 
     def _make_dataholder(self):
         self._partial_transl = {}
@@ -598,7 +663,7 @@ class POParser(object):
         self._partial_transl['commentText'] = ''
         self._partial_transl['sourceComment'] = ''
         self._partial_transl['fileReferences'] = ''
-        self._partial_transl['flags'] = sets.Set()
+        self._partial_transl['flags'] = set()
         self._partial_transl['msgstrPlurals'] = []
         self._partial_transl['obsolete'] = False
         self._partial_transl['_lineno'] = self._lineno
@@ -637,19 +702,89 @@ class POParser(object):
             logging.warning(POSyntaxWarning(self._lineno,
                                           'Header entry is not first entry'))
 
-    def to_unicode(self, text):
-        'Convert text to unicode'
-        if self.header: # header converts itself to unicode on updateDict()
-            try:
-                return unicode(text, self.header.charset)
-            except UnicodeError:
-                logging.warning(POSyntaxWarning(
-                    self._lineno,
-                    'string is not in declared charset %r' % self.header.charset
-                    ))
-                return unicode(text, self.header.charset, 'replace')
+        # convert buffered input to the encoding specified in the PO header
+        self._convert_chars()
+
+    def _parse_quoted_string(self, string):
+        r"""Parse a quoted string, interpreting escape sequences.
+
+          >>> parser = POParser()
+          >>> parser._parse_quoted_string(u'\"abc\"')
+          u'abc'
+          >>> parser._parse_quoted_string(u'\"abc\\ndef\"')
+          u'abc\ndef'
+          >>> parser._parse_quoted_string(u'\"ab\x63\"')
+          u'abc'
+          >>> parser._parse_quoted_string(u'\"ab\143\"')
+          u'abc'
+          >>> parser._parse_quoted_string(u'abc')
+          Traceback (most recent call last):
+            ...
+          POSyntaxError: string is not quoted
+          >>> parser._parse_quoted_string(u'\"ab')
+          Traceback (most recent call last):
+            ...
+          POSyntaxError: string not terminated
+          >>> parser._parse_quoted_string(u'\"ab\"x')
+          Traceback (most recent call last):
+            ...
+          POSyntaxError: extra content found after string
+        """
+        if string[0] != '"':
+            raise POSyntaxError(self._lineno, "string is not quoted")
+        output = ''
+        string = string[1:]
+        escape_map = {
+            'a': '\a',
+            'b': '\b',
+            'f': '\f',
+            'n': '\n',
+            'r': '\r',
+            't': '\t',
+            'v': '\v',
+            '"': '"',
+            '\'': '\'',
+            '\\': '\\',
+            }
+        while string:
+            if string[0] == '\\':
+                if string[1] in escape_map:
+                    output += escape_map[string[1]]
+                    string = string[2:]
+                elif string[1] == 'x':
+                    # hexadecimal escape
+                    output += chr(int(string[2:4], 16))
+                    string = string[4:]
+                elif string[1].isdigit():
+                    # octal escape
+                    digits = string[1]
+                    string = string[2:]
+                    # up to two more octal digits
+                    for i in range(2):
+                        if string[0].isdigit():
+                            digits += string[0]
+                            string = string[1:]
+                        else:
+                            break
+                    output += chr(int(digits, 8))
+                else:
+                    raise POSyntaxError(self._lineno,
+                                        "unknown escape sequence %s"
+                                        % string[:2])
+            elif string[0] == '"':
+                string = string[1:]
+                break
+            else:
+                output += string[0]
+                string = string[1:]
         else:
-            return text
+            raise POSyntaxError(self._lineno,
+                                "string not terminated")
+        # if there is any non-string data afterwards, raise an exception
+        if string and not string.isspace():
+            raise POSyntaxError(self._lineno,
+                                "extra content found after string")
+        return output
 
     def parse_line(self, l):
         self._lineno += 1
@@ -684,7 +819,6 @@ class POParser(object):
             self._partial_transl['obsolete'] = True
 
         if l[0] == '#':
-            l = self.to_unicode(l)
             # Record flags
             if l[:2] == '#,':
                 new_flags = [flag.strip() for flag in l[2:].split(',')]
@@ -744,18 +878,7 @@ class POParser(object):
                 'some implementations of msgfmt'))
             return
 
-        # Parse a str line
-        if not (l[0] == l[-1] == '"'):
-            raise POSyntaxError(self._lineno)
-        # XXX: not sure if all Python escapes are OK in a PO file...
-        # better be tolerant than strict when reading, since
-        # we're already quite strict when writing
-        try:
-            l = l[1:-1].decode('string_escape')
-        except ValueError:
-            raise POSyntaxError(self._lineno)
-
-        l = self.to_unicode(l)
+        l = self._parse_quoted_string(l)
 
         if self._section == 'msgid':
             self._partial_transl['msgid'] += l
@@ -773,12 +896,25 @@ class POParser(object):
         """Indicate that the PO data has come to an end.
         Throws an exception if the parser was in the
         middle of a message."""
-        if self._pending_line:
-            logging.warning(POSyntaxWarning(self._lineno,
-                                          'No newline at end of file'))
-            self.parse_line(self._pending_line)
+        # handle remaining buffered data:
+        if self.header:
+            if self._pending_chars:
+                raise POInvalidInputError(self._lineno,
+                                          'could not decode input from %s'
+                                          % self.header.charset)
+            if self._pending_unichars:
+                logging.warning(POSyntaxWarning(
+                    self._lineno, 'No newline at end of file'))
+                self.parse_line(self._pending_unichars)
+        else:
+            if self._pending_chars:
+                logging.warning(POSyntaxWarning(
+                    self._lineno, 'No newline at end of file'))
+                self.parse_line(self._pending_chars)
+
         if self._section and self._section.startswith('msgid'):
             raise POSyntaxError(self._lineno)
+
         if self._partial_transl and self._partial_transl['msgid']:
             self.append()
         elif self._partial_transl is not None:
@@ -789,6 +925,7 @@ class POParser(object):
                 # header is last entry... in practice this should
                 # only happen when the file is empty
                 self._make_header()
+
         if not self.header:
             # XXX kiko: it may be that we need to run a _make_header() here
             # to ensure we have one, but I'm not guessing.

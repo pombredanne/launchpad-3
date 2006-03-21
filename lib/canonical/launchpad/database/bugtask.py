@@ -81,7 +81,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _defaultOrder = ['distribution', 'product', 'distrorelease',
                      'milestone', 'sourcepackagename']
 
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
         notNull=False, default=None)
@@ -401,7 +401,7 @@ class BugTaskSet:
                 searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
 
         if params.subscriber is not None:
-            clauseTables = ['Bug', 'BugSubscription']
+            clauseTables.append('BugSubscription')
             extra_clauses.append("""Bug.id = BugSubscription.bug AND
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
@@ -431,7 +431,8 @@ class BugTaskSet:
 
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
-            query, clauseTables=clauseTables, orderBy=orderby_arg)
+            query, prejoinClauseTables=["Bug"], clauseTables=clauseTables,
+            orderBy=orderby_arg)
 
         return bugtasks
 
