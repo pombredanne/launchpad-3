@@ -75,9 +75,11 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
     9 guadalinex/2k5       Guada 2005
     4 redhat/7.0           Seven
     2 redhat/six           Six Six Six
+    10 ubuntu/breezy-autotest Breezy Badger Autotest
     5 ubuntu/grumpy        The Grumpy Groundhog Release
     3 ubuntu/hoary         The Hoary Hedgehog Release
     1 ubuntu/warty         The Warty Warthog Release
+    11 ubuntutest/breezy-autotest Breezy Badger Autotest
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value
     3
     >>> def getTerms(vocab, search_text):
@@ -391,13 +393,13 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name17', u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team']
+    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
 
     A search for 'support' will give us only the persons which have support
     as part of their name/displayname/givenname/familyname or the beginning of
     one of its email addresses.
     >>> sorted(person.name for person in vocab.search('support'))
-    [u'name17']
+    [u'ubuntu-team']
 
     Dave hasn't validated his email address; he's not a valid Person.
     >>> sorted(person.name for person in vocab.search('dave.miller'))
@@ -419,13 +421,13 @@ o ValidOwner - all valid persons and teams are also valid owners.
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name17', u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team']
+    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
 
 o ValidTeamMember - With the exception of all teams that have this team as a
   member and the team itself, all valid persons and teams are valid
   members.
 
-    >>> team = getUtility(IPersonSet).getByName('name17')
+    >>> team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> team2 = getUtility(IPersonSet).getByName('guadamen')
     >>> person = getUtility(IPersonSet).getByName('name16')
 
@@ -440,8 +442,8 @@ o ValidTeamMember - With the exception of all teams that have this team as a
     Traceback (most recent call last):
     ...
     AssertionError: ...
- 
-    'name16' is a valid member for 'name17'
+
+    'name16' is a valid member for 'ubuntu-team'
     >>> vocab = vocabulary_registry.get(team, "ValidTeamMember")
     >>> vocab.displayname
     'Select a Person or Team'
@@ -451,21 +453,21 @@ o ValidTeamMember - With the exception of all teams that have this team as a
     >>> [person.name for person in vocab.search('foo.bar')]
     [u'name16']
 
-    'name17' is not a valid member for itself
+    'ubuntu-team' is not a valid member for itself
     >>> team in vocab
     False
-    >>> [person.name for person in vocab.search('name17')]
-    []
+    >>> [person.name for person in vocab.search('ubuntu-team')]
+    [u'name18']
 
-    'name17' is a member of 'guadamen', so 'guadamen' can't be a member of
-    'name17'.
+    'ubuntu-team' is a member of 'guadamen', so 'guadamen' can't be a member of
+    'ubuntu-team'.
     >>> team2 in vocab
     False
     >>> [person.name for person in vocab.search('guadamen')]
     []
 
 o ValidTeamOwner - With the exception of the team itself and all teams owned
-  by that team, all valid persons and teams are valid owners for the team 
+  by that team, all valid persons and teams are valid owners for the team
   in context.
 
     ValidTeamOwner needs a context.
@@ -475,22 +477,24 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
     AssertionError: ...
 
     ValidTeamOwner's context must be a team.
+
+    >>> person = getUtility(IPersonSet).getByName('name16')
     >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
     AssertionError: ...
 
-    'name17' is not a valid owner for itself.
+    'ubuntu-team' is not a valid owner for itself.
     >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
     >>> vocab.displayname
     'Select a Person or Team'
 
     >>> team in vocab
     False
-    >>> [person.name for person in vocab.search('name17')]
-    []
+    >>> [person.name for person in vocab.search('ubuntu-team')]
+    [u'name18']
 
-    'name16' is a valid owner for 'name17'.
+    'name16' is a valid owner for 'ubuntu-team'.
     >>> person in vocab
     True
     >>> [person.name for person in vocab.search('foo.bar')]

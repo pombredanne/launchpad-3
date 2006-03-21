@@ -324,13 +324,19 @@ class ProductView:
         self.product = context
         self.request = request
         self.form = request.form
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = helpers.request_languages(request)
         self.status_message = None
-        self.branches = [
-            getView(branch, '+index', request)
-            for branch in self.context.branches]
+
+    @property
+    def languages(self):
+        # List of languages the user is interested on based on their
+        # browser, IP address and launchpad preferences.
+        return helpers.request_languages(request)
+
+    @property
+    def branches(self):
+        branches = [getView(branch, '+index', self.request)
+                    for branch in self.context.branches]
+        return branches
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.

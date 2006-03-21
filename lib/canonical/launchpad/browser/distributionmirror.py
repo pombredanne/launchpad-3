@@ -51,10 +51,6 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
 class DistributionMirrorAddView(GeneralFormView):
 
-    # XXX: This is a workaround while
-    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
-    __launchpad_facetname__ = 'overview'
-
     def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
 
@@ -85,10 +81,6 @@ class DistributionMirrorEditView(SQLObjectEditView):
 
 class DistributionMirrorAddSourceView(GeneralFormView):
 
-    # XXX: This is a workaround while
-    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
-    __launchpad_facetname__ = 'overview'
-
     def process(self, distro_release):
         notify(SQLObjectCreatedEvent(
             self.context.newMirrorSourceRelease(distro_release)))
@@ -97,12 +89,7 @@ class DistributionMirrorAddSourceView(GeneralFormView):
 
 class DistributionMirrorAddArchView(GeneralFormView):
 
-    # XXX: This is a workaround while
-    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
-    __launchpad_facetname__ = 'overview'
-
     def process(self, distro_arch_release, pocket):
         notify(SQLObjectCreatedEvent(
             self.context.newMirrorArchRelease(distro_arch_release, pocket)))
         self._nextURL = canonical_url(self.context)
-

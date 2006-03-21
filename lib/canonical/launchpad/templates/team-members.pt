@@ -34,7 +34,7 @@
             <th>Member since</th>
             <th>Expires</th>
             <th>Status</th>
-            <th>&nbsp;</th>
+            <th tal:condition="context/required:launchpad.Edit">&nbsp;</th>
           </tr>
         </thead>
 
@@ -56,7 +56,7 @@
                 tal:content="membership/dateexpires/fmt:date"
               >2006-06-13</td>
               <td tal:content="membership/statusname"></td>
-              <td>
+              <td tal:condition="context/required:launchpad.Edit">
                 [<a tal:attributes="href membership/fmt:url">Edit</a>]
               </td>
             </tal:block>
@@ -91,7 +91,7 @@
             <td
               tal:content="membership/datejoined/fmt:date"
             >2005-04-01</td>
-            <td>
+            <td tal:condition="context/required:launchpad.Edit">
               [<a tal:attributes="href membership/fmt:url">Edit</a>]
             </td>
             </tal:block>
@@ -99,7 +99,7 @@
         </tbody>
       </table>
 
-      <ul class="edit" style="text-align: right;">
+      <ul class="edit" tal:condition="context/required:launchpad.Edit">
         <li>
           <a href="+editproposedmembers"
           >Approve or decline members&#8230;</a>
@@ -141,7 +141,7 @@
             <td
               tal:condition="not: membership/isExpired"
               tal:content="membership/statusname" />
-            <td>
+            <td tal:condition="context/required:launchpad.Edit">
               [<a tal:attributes="href membership/fmt:url">Edit</a>]
             </td>
             </tal:block>
@@ -150,7 +150,7 @@
       </table>
     </tal:block>
 
-    <ul class="add" style="text-align: right;">
+    <ul class="add" tal:condition="context/required:launchpad.Edit">
       <li><a href="+addmember">Add a new member</a></li>
     </ul>
 
