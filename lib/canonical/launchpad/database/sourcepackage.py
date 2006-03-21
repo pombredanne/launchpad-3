@@ -414,7 +414,7 @@ class SourcePackage(BugTargetBase):
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
@@ -448,7 +448,6 @@ class SourcePackage(BugTargetBase):
             orderBy = "-BuildQueue.lastscore"
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
-
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

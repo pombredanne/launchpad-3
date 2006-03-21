@@ -29,7 +29,10 @@
                     value="chrootwait">Waiting Chroot</option>
 
           </select>
-
+	  <tal:searchname condition="view/searchName">
+	      <input title="Package Name" size="15" type="text"
+                     name="build_text" tal:attributes="value view/text"/>
+          </tal:searchname>
           <input type="submit" value="Update" />
 
           </form>

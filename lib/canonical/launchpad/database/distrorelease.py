@@ -481,12 +481,12 @@ class DistroRelease(SQLBase, BugTargetBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
         arch_ids = [arch.id for arch in self.architectures]
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status)
+        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status, name)
 
     def createUploadedSourcePackageRelease(self, sourcepackagename,
             version, maintainer, dateuploaded, builddepends,

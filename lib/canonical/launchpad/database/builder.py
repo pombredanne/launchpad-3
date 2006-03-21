@@ -99,9 +99,9 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(self.id, status)
+        return getUtility(IBuildSet).getBuildsForBuilder(self.id, status, name)
 
 
 class BuilderSet(object):

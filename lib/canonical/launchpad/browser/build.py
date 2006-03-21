@@ -85,6 +85,10 @@ class BuildRecordsView(LaunchpadView):
         """
         # recover selected build state
         self.state = self.request.get('build_state', '')
+        self.text = self.request.get('build_text', '')
+
+        if not self.text:
+            self.text = None
 
         # map state text tag back to dbschema
         state_map = {
@@ -97,14 +101,19 @@ class BuildRecordsView(LaunchpadView):
             }
 
         # request context build records according the selected state
-        builds = self.context.getBuildRecords(state_map[self.state])
+        builds = self.context.getBuildRecords(state_map[self.state],
+                                              name=self.text)
         self.batchnav = BatchNavigator(builds, self.request)
 
 
     def showBuilderInfo(self):
-        """Control the presentation o builder information.
+        """Control the presentation of builder information.
 
         It allows the callsite to control if they want a builder column
         in its result table or not. It's only ommited in builder-index page.
         """
+        return True
+
+    def searchName(self):
+        """Control the presentation of search box."""
         return True
