@@ -45,17 +45,17 @@ class LaunchpadValidationError(ValidationError):
     such as <span>.
 
     >>> LaunchpadValidationError('<b>oops</b>').snippet()
-    u'<span class="error"><b>oops</b></span>'
+    u'<b>oops</b>'
 
     >>> LaunchpadValidationError('<b>%s</b>','>>').snippet()
-    u'<span class="error"><b>&gt;&gt;</b></span>'
+    u'<b>&gt;&gt;</b>'
 
     >>> LaunchpadValidationError('<b>%(foo)s</b>', foo='>>').snippet()
-    u'<span class="error"><b>&gt;&gt;</b></span>'
+    u'<b>&gt;&gt;</b>'
 
     >>> LaunchpadValidationError('<a title="%s">Oops</a>',
     ... '"Quoted"').snippet()
-    u'<span class="error"><a title="&quot;Quoted&quot;">Oops</a></span>'
+    u'<a title="&quot;Quoted&quot;">Oops</a>'
     """
     implements(ILaunchpadValidationError)
     
@@ -76,7 +76,7 @@ class LaunchpadValidationError(ValidationError):
         # We stuff our message into self.args (a list) because this
         # is an exception, and exceptions use self.args (and the form
         # machinery expects it to be here).
-        self.args = [u'<span class="error">%s</span>' % message]
+        self.args = [message]
 
     def snippet(self):
         """Render as an HTML error message, as per IWidgetInputErrorView."""
@@ -112,7 +112,7 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         >>> err = WidgetInputError("foo", "Foo", bold_error)
         >>> view = WidgetInputErrorView(err, None)
         >>> view.snippet()
-        u'<span class="error"><b>Foo</b></span>'
+        u'<b>Foo</b>'
 
         >>> class TooSmallError(object):
         ...     def doc(self):
@@ -120,10 +120,11 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         >>> err = WidgetInputError("foo", "Foo", TooSmallError())
         >>> view = WidgetInputErrorView(err, None)
         >>> view.snippet()
-        u'<span class="error">Foo input &lt; 1</span>'
+        u'Foo input &lt; 1'
         """
         if (hasattr(self.context, 'errors') and
                 ILaunchpadValidationError.providedBy(self.context.errors)):
             return self.context.errors.snippet()
-        return super(WidgetInputErrorView, self).snippet()
+        return self.context.doc()
+        # return super(WidgetInputErrorView, self).snippet()
 

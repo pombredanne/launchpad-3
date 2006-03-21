@@ -1,2 +1,4 @@
-<div class="highlighted">Launchpad will be going offline for maintenance
-  <em tal:content="view/timelefttext" />.</div>
+<p class="warning message">
+  Launchpad will be going offline for maintenance
+  <tal:soon replace="view/timelefttext" />in 3 minutes</tal:soon>.
+</p>

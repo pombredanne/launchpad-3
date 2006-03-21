@@ -23,12 +23,11 @@
       this TranslationGroup.
   </p>
 
-
-  <p tal:repeat="notice view/notices"
-       class="portalMessage"
-       tal:content="notice">
-       Notification Message
-  </p>
+      <p
+        tal:repeat="notice view/notices"
+        class="informational message"
+        tal:content="notice"
+      >Notification message.</p>
 
   <tal:translators condition="context/translators">
 

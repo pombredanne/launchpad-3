@@ -14,8 +14,7 @@
   </metal:macro>
   <metal:macro define-macro="error">
     <tr><td colspan="2">
-      &nbsp;
-      <p class="portalError" tal:condition="view/errormessage"
+      <p class="error message" tal:condition="view/errormessage"
          tal:content="view/errormessage" />
     </td></tr>
   </metal:macro>

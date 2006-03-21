@@ -295,9 +295,6 @@ textarea {
   font-size: smaller;
   margin-bottom: 1em;
 }
-.portalError .fieldRequired {
-  color: #666;
-} 
 /* Temporarily make *all* buttons look plone-y. Ugh. */
 button {
   border: 1px solid #8cacbb;  
@@ -323,18 +320,6 @@ input[type="radio"] {
 }
 .portalMessage a {
   color: Black;
-}
-.portalError {
-  background-color: #ff9070;
-  border: 1px solid #998080;
-  color: Black;
-  padding: 0.25em;
-}
-.portalError .error {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 85%;
 }
 
 /* sabdfl says portlet links must not be underlined */
@@ -551,7 +536,7 @@ ins {
 .field {
     top: 0;
     left: 0;
-    margin: 0 1em 1em 0;
+    margin: 0 0 1em 0;
 }
 
 .field .field {
@@ -1210,7 +1195,6 @@ dl.faq ol {
 
 /*
 Things to get rid of:
-.portalError
 .portalMessage
 .notice-notification,
 .info-notification,

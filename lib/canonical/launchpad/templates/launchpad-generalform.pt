@@ -28,21 +28,22 @@
             >Add Something</h1>
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
-          This is the description of the add form.
+          This is the description of the form.
           This text will be in bold, beneath the title of the add form,
-          and should explain a little bit about the form.
+          and should give any introductory information required.
+          Don't use it to state the bleeding obvious!
         </p>
 
-        <p class="portalMessage"
+        <p class="error message"
            tal:define="status view/process_form"
            tal:condition="status"
            tal:content="status" />
 
-        <div class="portalError"
+        <p class="error message"
           tal:repeat="top_of_page_error view/top_of_page_errors"
           tal:content="structure top_of_page_error">
           Schema validation errors.
-        </div>
+        </p>
 
         <div class="row" 
              metal:define-slot="extra_top" 
