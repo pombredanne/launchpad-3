@@ -58,7 +58,7 @@ in person and product context. They provide a couple of extra attributes and
 properties to know whether to display links to the person or product associated
 to the branch.
 
-The view to use to render list item is chosen using the in_person_context and
+The view used to render list items is chosen using the in_person_context and
 in_product_context methods on BranchTargetView.
 
 >>> gterm_branches_view = getView(gterm_product, '+branches', TestRequest())
