@@ -263,7 +263,6 @@ class POTMsgSet(SQLBase):
             if msgid_style is not None:
                 raise BrokenTextError(
                     "msgid (%r) mixes different newline markers" % msgid)
-                        % msgid)
             msgid_style = unix_style
 
         # Get the style that uses the given text.
