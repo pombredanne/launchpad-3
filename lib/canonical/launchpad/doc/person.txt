@@ -312,27 +312,26 @@ Searching only for Teams based on their names or email addresses:
 Packages related to a person
 ----------------------------
 
-To obtain the packages a person is related to, we should use the
-maintainedPackages() and uploadedButNotMaintainedPackages() methods of
-IPersonSet. The former will return all SourcePackageReleases a person is
-listed as the Maintainer, while the latter will return all
-SourcePackageReleases that a person created (uploaded) but is not the
-Maintainer.
+To obtain the packages a person is related to, we can use the
+latestMaintainedPackages() and latestUploadedButNotMaintainedPackages()
+methods of IPersonSet. The former will return the latest
+SourcePackageReleases a person uploaded in which he is listed as the
+Maintainer. The latter will return the latest SourcePackageReleases a
+person uploaded (where he isn't the maintainer).
 
 >>> sabdfl = personset.getByName('sabdfl')
->>> for sprelease in sabdfl.maintainedPackages():
+>>> for sprelease in sabdfl.latestMaintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
 (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
 (u'pmount', u'Ubuntu Hoary', u'0.1-2')
-(u'pmount', u'Ubuntu Hoary', u'0.1-1')
 (u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
 (u'netapplet', u'Ubuntu Hoary', u'1.0-1')
 (u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
 (u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
 (u'evolution', u'Ubuntu Hoary', u'1.0')
 
->>> for sprelease in sabdfl.uploadedButNotMaintainedPackages():
+>>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
 (u'libstdc++', u'Ubuntu Hoary', u'b8p')
@@ -353,3 +352,4 @@ alphabetically (A to Z) by package name.
 
 >>> [package.name for package in foobar.getBugContactPackages()]
 [u'mozilla-firefox', u'pmount']
+

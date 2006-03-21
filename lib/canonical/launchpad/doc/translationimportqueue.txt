@@ -11,7 +11,7 @@ TranslationImportQueueEntry
 The TranslationImportQueueEntry is an entry of the queue that will be imported
 into Rosetta.
 
-guess_pofile
+guessed_pofile
 ------------
 
 This property gives us the IPOFile where we think we should import this entry.
@@ -49,7 +49,7 @@ And the guessing algorithm will not be able to guess anything as there is no
 IPOFiles on the same path and we have two IPOTemplates on the same path where
 this IPOFile is located ('po/')
 
-    >>> entry.guess_pofile == None
+    >>> entry.guessed_pofile == None
     True
 
 Now let's try the same against the evolution sourcepackage that only has an
@@ -70,8 +70,8 @@ This entry has no information about the IPOFile where it should be attached to:
 And the guessing algorithm is able to give us an IPOFile where it should be
 imported.
 
-    >>> entry.guess_pofile == None
+    >>> entry.guessed_pofile == None
     False
 
-    >>> entry.guess_pofile.title
+    >>> entry.guessed_pofile.title
     u'Serbian (sr) translation of evolution-2.2 in Ubuntu Hoary package "evolution"'

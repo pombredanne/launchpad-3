@@ -68,20 +68,20 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
     >>> distrorelease_vocabulary = vocabulary_registry.get(
     ...     None,"DistroRelease")
     >>> for term in distrorelease_vocabulary:
-    ...     print "%s %20s %s" % (term.value, term.token, term.title)
-    7 debian/sarge         Sarge
-    8 debian/sid           Sid
-    6 debian/woody         WOODY
-    9 guadalinex/2k5       Guada 2005
-    4 redhat/7.0           Seven
-    2 redhat/six           Six Six Six
-    10 ubuntu/breezy-autotest Breezy Badger Autotest
-    5 ubuntu/grumpy        The Grumpy Groundhog Release
-    3 ubuntu/hoary         The Hoary Hedgehog Release
-    1 ubuntu/warty         The Warty Warthog Release
-    11 ubuntutest/breezy-autotest Breezy Badger Autotest
-    >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value
-    3
+    ...     print "%20s %s" % (term.token, term.title)
+    debian/sarge         Sarge
+    debian/sid           Sid
+    debian/woody         WOODY
+    guadalinex/2k5       Guada 2005
+    redhat/7.0           Seven
+    redhat/six           Six Six Six
+    ubuntu/breezy-autotest Breezy Badger Autotest
+    ubuntu/grumpy        The Grumpy Groundhog Release
+    ubuntu/hoary         The Hoary Hedgehog Release
+    ubuntu/warty         The Warty Warthog Release
+    ubuntutest/breezy-autotest Breezy Badger Autotest
+    >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value.title
+    u'The Hoary Hedgehog Release'
     >>> def getTerms(vocab, search_text):
     ...     [vocab.toTerm(item) for item in vocab.search(search_text)]
 
