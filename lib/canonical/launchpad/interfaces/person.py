@@ -41,7 +41,7 @@ class EmailAddressAlreadyTaken(Exception):
 
 
 class PersonNameField(ContentNameField):
-    
+
     errormessage = _("%s is already in use by another person/team.")
 
     @property
@@ -259,9 +259,9 @@ class IPerson(IHasSpecifications):
                 "we'll use to communicate with them."), readonly=True)
 
     preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
-            description=_("The SHA-1 hash of the preferred email address as "
-                "a hexadecimal string. This is used as a key by FOAF RDF "
-                "spec"), readonly=True)
+            description=_("The SHA-1 hash of the preferred email address and "
+                "a mailto: prefix as a hexadecimal string. This is used as "
+                "a key by FOAF RDF spec"), readonly=True)
 
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
@@ -356,7 +356,7 @@ class IPerson(IHasSpecifications):
     def pastShipItRequests():
         """Return the requests made by this person that can't be changed
         anymore.
-        
+
         Any request that is cancelled, denied or sent for shipping can't be
         changed.
         """
@@ -368,7 +368,7 @@ class IPerson(IHasSpecifications):
 
     def currentShipItRequest():
         """Return this person's unshipped ShipIt request, if there's one.
-        
+
         Return None otherwise.
         """
 
@@ -380,12 +380,19 @@ class IPerson(IHasSpecifications):
         Return an iterable of matching results.
         """
 
-    def maintainedPackages():
-        """Return all SourcePackageReleases maintained by this person."""
+    def latestMaintainedPackages():
+        """Return SourcePackageReleases maintained by this person.
 
-    def uploadedButNotMaintainedPackages(self):
-        """Return all SourcePackageReleases created by this person but not
-        maintained by him.
+        This method will only include the latest source package release
+        for each source package name, distribution release combination.
+        """
+
+    def latestUploadedButNotMaintainedPackages(self):
+        """Return SourcePackageReleases created by this person but 
+           not maintained by him.
+
+        This method will only include the latest source package release
+        for each source package name, distribution release combination.
         """
 
     def validateAndEnsurePreferredEmail(email):
@@ -667,7 +674,7 @@ class IPersonSet(Interface):
 
     def getUbunteros(orderBy=None):
         """Return a set of person with valid Ubuntero flag.
-        
+
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
@@ -745,7 +752,7 @@ class IAdminRequestPeopleMerge(Interface):
         title=_('Account'), required=True,
         vocabulary='PersonAccountToMerge',
         description=_("The account to be merged on"))
-                        
+
 
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""

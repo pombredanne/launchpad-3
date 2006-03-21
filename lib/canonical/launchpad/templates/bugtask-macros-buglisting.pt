@@ -173,7 +173,7 @@
 
   <tal:navigation
     replace="structure task_batch_navigator/@@+navigation-links"
-    tal:condition="python:view.showBatchedListing() and task_batch_navigator.batch"
+    tal:condition="task_batch_navigator/currentBatch"
   />
   <tal:table_view tal:condition="view/showTableView">
     <table
@@ -184,7 +184,7 @@
                              should_show_assignee view/shouldShowAssignee">
 
       <table>
-        <tr tal:repeat="task task_batch_navigator/batch">
+        <tr tal:repeat="task task_batch_navigator/currentBatch">
           <td tal:condition="view/mass_edit_allowed">
             <input type="checkbox" name="task" tal:attributes="value task/id" />
           </td>
@@ -203,9 +203,9 @@
 
     <tal:navigation
       replace="structure task_batch_navigator/@@+navigation-links"
-      tal:condition="python:view.showBatchedListing() and task_batch_navigator.batch"
+      tal:condition="task_batch_navigator/currentBatch"
     />
-    <p tal:condition="not: task_batch_navigator/batch">
+    <p tal:condition="not: task_batch_navigator/currentBatch">
        No matching results found.
     </p>
 

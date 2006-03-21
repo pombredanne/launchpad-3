@@ -211,11 +211,21 @@ class LoginOrRegister:
                 "Please verify it and try again.")
             return
 
+        # For some reason, redirection_url can sometimes be a list, and
+        # sometimes a string.  See OOPS-68D508, where redirection_url has
+        # the following value:
+        # [u'https://launchpad.net/.../it/+translate/+login', u'']
+        redirection_url = request.form.get('redirection_url')
+        if isinstance(redirection_url, list):
+            # Remove blank entries.
+            redirection_url_list = [url for url in redirection_url if url]
+            assert len(redirection_url_list) == 1
+            redirection_url = redirection_url_list[0]
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
             requester=None, requesteremail=None, email=self.email,
             tokentype=LoginTokenType.NEWACCOUNT,
-            redirection_url=request.form.get('redirection_url'))
+            redirection_url=redirection_url)
         token.sendNewUserEmail(request.getApplicationURL())
 
     def login_success(self):

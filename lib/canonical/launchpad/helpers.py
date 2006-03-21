@@ -8,8 +8,6 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import email
-from email.Utils import make_msgid
 import subprocess
 import gettextpo
 import os
@@ -17,7 +15,6 @@ import random
 import re
 import sha
 import tarfile
-import time
 import warnings
 from StringIO import StringIO
 from math import ceil
@@ -35,18 +32,12 @@ from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
 import canonical
-from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
-    RosettaImportStatus, SourcePackageFileType,
-    BinaryPackageFormat, BinaryPackageFileType)
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed, DownloadFailed)
+    SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IHasOwner, IRequestPreferredLanguages,
-    IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed,
-    TranslationConstants)
-from canonical.launchpad.components.poparser import (
-    POSyntaxError, POInvalidInputError, POParser)
+    ILaunchBag, IOpenLaunchBag, IRequestPreferredLanguages,
+    IRequestLocalLanguages, ITeam, TranslationConstants)
+from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
 def text_replaced(text, replacements, _cache={}):
@@ -169,91 +160,6 @@ def get_attribute_names(ob):
     for iface in ifaces:
         names.update(iface.names(all=True))
     return list(names)
-
-class RosettaWriteTarFile:
-    """Convenience wrapper around the tarfile module.
-
-    This class makes it convenient to generate tar files in various ways.
-    """
-
-    def __init__(self, stream):
-        self.tarfile = tarfile.open('', 'w:gz', stream)
-        self.closed = False
-
-    @classmethod
-    def files_to_stream(cls, files):
-        """Turn a dictionary of files into a data stream."""
-        buffer = StringIO()
-        archive = cls(buffer)
-        archive.add_files(files)
-        archive.close()
-        buffer.seek(0)
-        return buffer
-
-    @classmethod
-    def files_to_string(cls, files):
-        """Turn a dictionary of files into a data string."""
-        return cls.files_to_stream(files).read()
-
-    @classmethod
-    def files_to_tarfile(cls, files):
-        """Turn a dictionary of files into a tarfile object."""
-        return tarfile.open('', 'r', cls.files_to_stream(files))
-
-    def close(self):
-        """Close the archive.
-
-        After the archive is closed, the data written to the filehandle will
-        be complete. The archive may not be appended to after it has been
-        closed.
-        """
-
-        self.tarfile.close()
-        self.closed = True
-
-    def add_file(self, path, contents):
-        """Add a file to the archive."""
-
-        if self.closed:
-            raise RuntimeError("Can't add a file to a closed archive")
-
-        now = int(time.time())
-        path_bits = path.split(os.path.sep)
-
-        # Ensure that all the directories in the path are present in the
-        # archive.
-
-        for i in range(1, len(path_bits)):
-            joined_path = os.path.join(*path_bits[:i])
-
-            try:
-                self.tarfile.getmember(joined_path + os.path.sep)
-            except KeyError:
-                tarinfo = tarfile.TarInfo(joined_path)
-                tarinfo.type = tarfile.DIRTYPE
-                tarinfo.mtime = now
-                tarinfo.mode = 0755
-                tarinfo.uname = 'rosetta'
-                tarinfo.gname = 'rosetta'
-                self.tarfile.addfile(tarinfo)
-
-        tarinfo = tarfile.TarInfo(path)
-        tarinfo.time = now
-        tarinfo.mtime = now
-        tarinfo.mode = 0644
-        tarinfo.size = len(contents)
-        tarinfo.uname = 'rosetta'
-        tarinfo.gname = 'rosetta'
-        self.tarfile.addfile(tarinfo, StringIO(contents))
-
-    def add_files(self, files):
-        """Add a number of files to the archive.
-
-        :files: A dictionary mapping file names to file contents.
-        """
-
-        for filename in sorted(files.keys()):
-            self.add_file(filename, files[filename])
 
 
 def join_lines(*lines):
@@ -469,51 +375,6 @@ def shortlist(sequence, longest_expected=15):
     return L
 
 
-def uploadRosettaFile(filename, contents):
-    client = getUtility(ILibrarianClient)
-
-    try:
-        size = len(contents)
-        file = StringIO(contents)
-
-        alias = client.addFile(
-            name=filename,
-            size=size,
-            file=file,
-            contentType='application/x-po')
-    except UploadFailed, e:
-        raise RawFileAttachFailed(str(e))
-
-    return alias
-
-
-def attachRawFileDataByFileAlias(raw_file_data, alias, importer,
-    date_imported):
-    """Attach the contents of a file to a raw file data object."""
-    raw_file_data.rawfile = alias
-    raw_file_data.daterawimport = date_imported
-    raw_file_data.rawimporter = importer
-    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
-
-
-def attachRawFileData(raw_file_data, filename, contents, importer,
-    date_imported):
-    """Attach the contents of a file to a raw file data object."""
-    alias = uploadRosettaFile(filename, contents)
-    attachRawFileDataByFileAlias(raw_file_data, alias, importer, date_imported)
-
-
-def getRawFileData(raw_file_data):
-    client = getUtility(ILibrarianClient)
-
-    try:
-        file = client.getFileByAlias(raw_file_data.rawfile.id)
-    except DownloadFailed, e:
-        raise RawFileFetchFailed(str(e))
-
-    return file.read()
-
-
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least
     as large as the number of logical lines in a string.
@@ -534,12 +395,8 @@ def request_languages(request):
     '''Turn a request into a list of languages to show.'''
 
     user = getUtility(ILaunchBag).user
-
-    # If the user is authenticated, try seeing if they have any languages set.
-    if user is not None:
-        languages = user.languages
-        if languages:
-            return languages
+    if user is not None and user.languages:
+        return user.languages
 
     # If the user is not authenticated, or they are authenticated but have no
     # languages set, try looking at the HTTP headers for clues.
@@ -884,6 +741,7 @@ def filenameToContentType(fname):
              ".deb":      "application/x-debian-package",
              ".udeb":     "application/x-debian-package",
              ".txt":      "text/plain",
+             ".txt.gz":   "text/plain", # For the build master logs
              }
     for ending in ftmap:
         if fname.endswith(ending):
@@ -1007,3 +865,4 @@ def capture_state(obj, *fields):
         setattr(state, field, getattr(obj, field))
 
     return state
+
