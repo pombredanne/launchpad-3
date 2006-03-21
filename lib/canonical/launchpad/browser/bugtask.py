@@ -207,8 +207,7 @@ class BugTaskView(LaunchpadView):
 
         if comment:
             self.context.bug.newMessage(
-                subject=subject, content=comment, owner=self.user,
-                publish_create_event=False)
+                subject=subject, content=comment, owner=self.user)
 
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
