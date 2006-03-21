@@ -124,9 +124,10 @@ class ImporterHandler:
         self.imported_sources = []
         self.imported_bins = {}
 
-        self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings, 
+        self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings,
                                               pocket)
-        self.bphandler = BinaryPackageHandler(self.sphandler, archive_root)
+        self.bphandler = BinaryPackageHandler(self.sphandler, archive_root,
+                                              pocket)
 
         self.sppublisher = SourcePackagePublisher(self.distrorelease, pocket)
         # This is initialized in ensure_archinfo
@@ -649,12 +650,13 @@ class SourcePackagePublisher:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
-    def __init__(self, sphandler, archive_root):
+    def __init__(self, sphandler, archive_root, pocket):
         # Create other needed object handlers.
         self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.source_handler = sphandler
         self.archive_root = archive_root
+        self.pocket = pocket
 
     def checkBin(self, binarypackagedata, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
@@ -845,7 +847,8 @@ class BinaryPackageHandler:
                           buildduration=None,
                           buildlog=None,
                           builder=None,
-                          datebuilt=None)
+                          datebuilt=None,
+                          pocket=self.pocket)
         return build
 
 

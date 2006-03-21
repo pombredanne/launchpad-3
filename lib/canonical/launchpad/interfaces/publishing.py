@@ -59,7 +59,6 @@ class IBinaryPackagePublishing(Interface):
             title=_('The status of this publishing record'),
             required=False, readonly=False,
             )
-
     pocket = Int(
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
@@ -108,6 +107,7 @@ class ISourcePackagePublishing(Interface):
             required=True, readonly=True,
             )
 
+
 class ISourcePackageFilePublishing(Interface):
     """Source package release files and their publishing status"""
 
@@ -148,6 +148,7 @@ class ISourcePackageFilePublishing(Interface):
     pocket = Int(
             title=_('Pocket'), required=True, readonly=True,
             )
+
 
 class IBinaryPackageFilePublishing(Interface):
     """Binary package files and their publishing status"""
@@ -195,6 +196,7 @@ class IBinaryPackageFilePublishing(Interface):
             title=_('Pocket'), required=True, readonly=True,
             )
 
+
 class ISourcePackagePublishingView(Interface):
     """Source package publishing information neatened up a bit"""
 
@@ -222,6 +224,7 @@ class ISourcePackagePublishingView(Interface):
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
             )
+
 
 class IBinaryPackagePublishingView(Interface):
     """Binary package publishing information neatened up a bit"""
@@ -328,6 +331,7 @@ class ISecureSourcePackagePublishingHistory(Interface):
             required=False, readonly=False,
             )
 
+
 class ISecureBinaryPackagePublishingHistory(Interface):
     """A binary package publishing record."""
 
@@ -407,6 +411,7 @@ class ISecureBinaryPackagePublishingHistory(Interface):
             required=False, readonly=False,
             )
 
+
 class ISourcePackagePublishingHistory(Interface):
     """A source package publishing history record."""
 
@@ -482,6 +487,7 @@ class ISourcePackagePublishingHistory(Interface):
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
 
+
 class IBinaryPackagePublishingHistory(Interface):
     """A binary package publishing record."""
 
@@ -550,3 +556,8 @@ class IBinaryPackagePublishingHistory(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=False,
             )
+
+    hasRemovalRequested = Bool(
+            title=_('Whether a removal has been requested for this record')
+            )
+

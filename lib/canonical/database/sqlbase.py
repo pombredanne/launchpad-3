@@ -10,21 +10,22 @@ from datetime import datetime
 
 from sqlos import SQLOS
 from sqlos.adapter import PostgresAdapter
-from sqlos.interfaces import ISQLObject
 
 from sqlobject import connectionForURI, SQLObjectNotFound
 from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
 
+from zope.interface import implements
+
 from canonical.config import config
+from canonical.database.interfaces import ISQLBase
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
            'flush_database_updates', 'flush_database_caches', 'cursor',
            'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
-           'convert_to_sql_id', 'AUTOCOMMIT_ISOLATION',
-           'READ_COMMITTED_ISOLATION', 'SERIALIZED_ISOLATION',
-           'DEFAULT_ISOLATION']
+           'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
+           'SERIALIZED_ISOLATION', 'DEFAULT_ISOLATION']
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION=0
@@ -57,8 +58,6 @@ class LaunchpadStyle(Style):
         return className
 
     def dbTableToPythonClass(self, table):
-        raise NotImplementedError, \
-                "Our naming convention prohibits converting table to class"
         return table
 
     def idForTable(self, table):
@@ -87,6 +86,7 @@ class SQLBase(SQLOS):
     ZopelessTransactionManager object to disable all the tricksy
     per-thread connection stuff that SQLOS does.
     """
+    implements(ISQLBase)
     _style = LaunchpadStyle()
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
@@ -398,11 +398,13 @@ def quote(x):
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
     "'2003-12-04T13:45:50'"
-
-    """ #'
+    """
     if isinstance(x, datetime):
         return "'%s'" % x
-    return sqlrepr(x, 'postgres')
+    elif ISQLBase(x, None) is not None:
+        return str(x.id)
+    else:
+        return sqlrepr(x, 'postgres')
 
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
@@ -483,31 +485,6 @@ def sqlvalues(*values, **kwvalues):
         return tuple([quote(item) for item in values])
     elif kwvalues:
         return dict([(key, quote(value)) for key, value in kwvalues.items()])
-
-
-def convert_to_sql_id(value):
-    """Returns the correct ID for use in an SQL conditional."""
-    # XXX: a lot of things should be done here, but I need this to
-    # implement a fix for an oops (bug 30957), so bear with me.
-    #
-    #   - We should really use ISQLBase
-    #   - We should really use an interface, not dbschema.Item
-    #   - We should consider moving this code into sqlvalues
-    #
-    #       -- kiko, 2006-02-23
-    from canonical.lp import dbschema
-    from zope.security.proxy import isinstance as zope_isinstance
-
-    is_sqlobject = ISQLObject(value, None)
-    if is_sqlobject:
-        return value.id
-    elif zope_isinstance(value, dbschema.Item):
-        return int(value.value)
-    else:
-        try:
-            return int(value)
-        except ValueError:
-            raise AssertionError("Couldn't convert %r to an integer" % value)
 
 
 def quoteIdentifier(identifier):

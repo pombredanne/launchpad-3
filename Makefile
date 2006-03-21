@@ -45,10 +45,8 @@ importdcheck:
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
-	# Store time information - we store this in /tmp instead of the cwd
-	# so we can see the results after PQM runs.
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py
+	${PYTHON} -t ./test_on_merge.py -vv
 
 lint:
 	@sh ./utilities/lint.sh

@@ -17,7 +17,9 @@
 </metal:leftportlets>
 
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="packagings view/cached_packagings;
+                 unlinked_translatables view/unlinked_translatables">
 
   <h1>Linking to upstream</h1>
 
@@ -26,7 +28,7 @@
     information to link a source package in a distribution to an upstream
     product series.
   </p>
-  <p class="portalMessage" tal:condition="not: context/packagings">
+  <p class="portalMessage" tal:condition="not: packagings">
     There are no links between packages in <span
     tal:replace="context/displayname">Hoary</span> and upstream.
     By adding packaging information for specific packages in this release that
@@ -34,63 +36,53 @@
     you can help the distribution developers collaborate with upstream.
   </p>
 
-  <h2>Unlinked translatable packages</h2>
+  <tal:unlinked_translatables condition="unlinked_translatables">
+    <h2>Unlinked translatable packages</h2>
 
-  <table class="listing">
-    <thead>
-      <tr>
-        <th>Source Package</th>
-        <th>Version</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="sp view/unlinked_translatables">
-        <td><a tal:content="sp/sourcepackagename/name"
-               tal:attributes="href string:${sp/fmt:url}/+packaging"
-               >evolution</a>
-        </td>
-        <td><span tal:condition="sp/currentrelease"
-                  tal:replace="sp/currentrelease/version">2.6.4-2</span>
-        </td>
-    </tr>
-  </table>
+      <a tal:repeat="sp unlinked_translatables"
+            tal:content="sp/sourcepackagename/name"
+            tal:attributes="href string:${sp/fmt:url}/+packaging">evolution</a>
 
-  <h2>
-    Known upstream links for
-    <span tal:replace="context/title">Ubuntu Hoary</span>
-    source packages
-  </h2>
+  </tal:unlinked_translatables>
 
-  <table class="listing" tal:condition="context/packagings">
-    <thead>
-      <tr>
-        <th>Source Package</th>
-        <th>Upstream Product Series</th>
-      </tr>
-    </thead>
+  <tal:known_links condition="packagings">
+    <h2>
+      Known upstream links for
+      <span tal:replace="context/title">Ubuntu Hoary</span>
+      source packages
+    </h2>
 
-    <tbody>
-      <tr tal:repeat="packaging context/packagings">
-        <td><a tal:attributes="href
-                   string:${packaging/sourcepackage/fmt:url}/+packaging"
-               tal:content="packaging/sourcepackagename/name">
-          evolution</a>
-        </td>
-        <td tal:content="packaging/productseries/title">
-          evolution main
-        </td>
-      </tr>
-    </tbody>
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>Source Package</th>
+          <th>Upstream Product Series</th>
+        </tr>
+      </thead>
 
-  </table>
+      <tbody>
+        <tr tal:repeat="packaging packagings">
+          <td><a tal:attributes="href
+                     string:${packaging/sourcepackage/fmt:url}/+packaging"
+                 tal:content="packaging/sourcepackagename/name">
+            evolution</a>
+          </td>
+          <td tal:content="packaging/productseries/title">
+            evolution main
+          </td>
+        </tr>
+      </tbody>
 
-  <p tal:condition="context/packagings">
-    These are the packaging details for only those packages that have been
-    specifically modified inside this release.
-    The distribution will also inherit packaging data from previous releases,
-    as well as its parent distribution.
-  </p>
+    </table>
 
-</div> 
+    <p>
+      These are the packaging details for only those packages that have been
+      specifically modified inside this release.
+      The distribution will also inherit packaging data from previous releases,
+      as well as its parent distribution.
+    </p>
+  </tal:known_links>
+
+</div>
 </body>
 </html>

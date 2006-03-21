@@ -21,23 +21,22 @@ from zope.publisher.browser import FileUpload
 from CVS.protocol import CVSRoot
 import pybaz
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
     request_languages, browserLanguages, is_tar_filename)
 from canonical.launchpad.interfaces import (
-    IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
+    ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
     ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError
     )
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    ApplicationMenu, stepto, canonical_url, LaunchpadView,
-    StandardLaunchpadFacets)
+    Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
+    canonical_url, LaunchpadView, StandardLaunchpadFacets
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad import _
 
@@ -682,14 +681,13 @@ class ProductSeriesSourceSetView:
         if request.form.get('search', None) is None:
             self.ready = 'on'
             self.importstatus = ImportStatus.TESTING.value
-        self.batch = Batch(self.search(), int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
+
+        self.batchnav = BatchNavigator(self.search(), request)
 
     def search(self):
-        return list(self.context.search(ready=self.ready,
-                                        text=self.text,
-                                        forimport=True,
-                                        importstatus=self.importstatus))
+        return self.context.search(ready=self.ready, text=self.text,
+                                   forimport=True,
+                                   importstatus=self.importstatus)
 
     def sourcestateselector(self):
         html = '<select name="state">\n'

@@ -12,10 +12,11 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
 
-from canonical.launchpad.validators.cve import valid_cve
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.validation import valid_cve_sequence
 from canonical.launchpad.interfaces.buglink import IBugLinkTarget
 from canonical.lp.dbschema import CveStatus
-from canonical.launchpad import _
+
 
 class ICve(IBugLinkTarget):
     """A single CVE database entry."""
@@ -24,7 +25,7 @@ class ICve(IBugLinkTarget):
     sequence = TextLine(
         title=_('CVE Sequence Number'),
         description=_('Should take the form XXXX-XXXX, all digits.'),
-        required=True, readonly=False, constraint=valid_cve)
+        required=True, readonly=False, constraint=valid_cve_sequence)
     status = Choice(title=_('Current CVE State'), 
         default=CveStatus.CANDIDATE, description=_("Whether or not the "
         "vulnerability has been reviewed and assigned a full CVE number, "
@@ -68,6 +69,9 @@ class ICveSet(Interface):
     def new(sequence, description, cvestate=CveStatus.CANDIDATE):
         """Create a new ICve."""
 
+    def getAll():
+        """Return all ICVEs"""
+
     def latest(quantity=5):
         """Return the most recently created CVE's, newest first, up to the
         number given in quantity."""
@@ -81,7 +85,7 @@ class ICveSet(Interface):
 
     def inText(text):
         """Find one or more Cve's by analysing the given text.
-        
+
         This will look for references to CVE or CAN numbers, and return the
         CVE references. It will create any CVE's that it sees which are
         already not in the database. It returns the list of all the CVE's it

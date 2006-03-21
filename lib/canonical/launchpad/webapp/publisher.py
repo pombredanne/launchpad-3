@@ -5,9 +5,10 @@ XXX: Much stuff from canonical.publication needs to move here.
 """
 
 __metaclass__ = type
-__all__ = ['UserAttributeCache', 'LaunchpadView', 'canonical_url', 'nearest',
-           'get_current_browser_request', 'canonical_url_iterator',
-           'rootObject', 'Navigation', 'stepthrough', 'redirection', 'stepto']
+__all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
+           'canonical_url', 'nearest', 'get_current_browser_request',
+           'canonical_url_iterator', 'rootObject', 'Navigation',
+           'stepthrough', 'redirection', 'stepto']
 
 from zope.interface import implements
 from zope.component import getUtility, queryView
@@ -17,6 +18,8 @@ import zope.security.management
 from zope.security.checker import ProxyFactory, NamesChecker
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
+from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
+from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.interfaces import (
@@ -161,7 +164,7 @@ class LaunchpadView(UserAttributeCache):
 
     def initialize(self):
         """Override this in subclasses.
-       
+
         Default implementation does nothing.
         """
         pass
@@ -173,7 +176,7 @@ class LaunchpadView(UserAttributeCache):
 
     def render(self):
         """Return the body of the response.
-        
+
         If the mime type of request.response starts with text/, then
         the result of this method is encoded to the charset of
         request.response. If there is no charset, it is encoded to 
@@ -187,6 +190,16 @@ class LaunchpadView(UserAttributeCache):
     def __call__(self):
         self.initialize()
         return self.render()
+
+
+class LaunchpadXMLRPCView(UserAttributeCache):
+    """Base class for writing XMLRPC view code."""
+
+    implements(IXMLRPCView, IMethodPublisher)
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
 
 class LaunchpadRootUrlData:

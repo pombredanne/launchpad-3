@@ -37,8 +37,8 @@ class IBinaryPackageNameSet(Interface):
     def __getitem__(name):
         """Retrieve a binarypackagename by name."""
 
-    def __iter__():
-        """Iterate over names"""
+    def getAll():
+        """return an iselectresults representing all package names"""
 
     def findByName(name):
         """Find binarypackagenames by its name or part of it"""
@@ -65,7 +65,7 @@ class IBinaryPackageNameSet(Interface):
 
 class IBinaryAndSourcePackageName(Interface):
     """A Binary or SourcePackage name.
-    
+
     This exists to make it easier for users to find the package they want 
     to report a bug in.
     """

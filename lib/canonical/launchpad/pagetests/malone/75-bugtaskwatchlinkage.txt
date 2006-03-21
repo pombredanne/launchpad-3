@@ -1,7 +1,7 @@
 We are going to test the ability to link a bug task with a bug watch. First,
 we render the bug page and show that we can see the bug watch:
 
-XXX: note the // between the hostname and the pagename; this is bug 1434
+XXX: The // between the hostname and the pagename is bug 1434.
 
   >>> print http(r"""
   ... GET /products/firefox/+bug/1 HTTP/1.1
@@ -101,7 +101,7 @@ form.
 
 
 
-Finally, let's view the bug page again. We should seea link to the remote bug
+Finally, let's view the bug page again. We should see a link to the remote bug
 under the relevant task.
 
   >>> print http(r"""

@@ -39,11 +39,15 @@ from zope.event import notify
 from zope.security import checkPermission
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
-from canonical.launchpad.browser.editview import SQLObjectEditView
+
+from schoolbell.interfaces import IEditCalendar, ICalendarEvent, ICalendar
+from schoolbell.utils import (
+    prev_month, next_month, weeknum_bounds, check_weeknum, Slots)
+from schoolbell.simple import SimpleCalendarEvent
 
 from canonical.launchpad import _
-from schoolbell.interfaces import IEditCalendar, ICalendarEvent
-from schoolbell.simple import SimpleCalendarEvent
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
      IPerson, ICalendarDay, ICalendarWeek, ICalendarOwner,
      ILaunchpadCalendar, ICalendarMonth, ICalendarYear, ICalendarSet,
@@ -52,10 +56,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, Link, canonical_url, Navigation,
     GetitemNavigation, stepto)
-
-from schoolbell.interfaces import ICalendar
-from schoolbell.utils import (
-    prev_month, next_month, weeknum_bounds, check_weeknum, Slots)
 
 
 daynames = [
@@ -313,7 +313,7 @@ class CalendarView:
         now = datetime.now(user_timezone)
 
         events = self.context.expand(now, now + timedelta(days=14))
-        self.events = list(events)
+        self.events = shortlist(events)
         self.events.sort(key=lambda x: x.dtstart)
 
 
@@ -407,7 +407,8 @@ class CalendarViewBase:
             self.subscriptions = None
 
         # get the events occurring within the given time range
-        self.events = list(context.calendar.expand(context.start, context.end))
+        self.events = shortlist(context.calendar.expand(context.start,
+                                                        context.end))
         self.events.sort()
 
     def eventColour(self, event):

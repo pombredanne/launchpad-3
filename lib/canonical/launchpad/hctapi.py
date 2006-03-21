@@ -72,14 +72,18 @@ from canonical.librarian.db import Library
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (
-     Product, ProductSeries, ProductRelease,
-     Distribution, DistroRelease, DistroReleaseSet,
-     DistributionSourcePackage, DistributionSourcePackageRelease,
-     DistroReleaseSourcePackageRelease, SourcePackageName, SourcePackage,
-     SourcePackageRelease,
-     Manifest, ManifestEntry, ManifestAncestry, Archive, ArchNamespace,
-     Branch, Changeset, VersionMapper
+     Product, ProductSeries, ProductRelease, Distribution,
+     DistroRelease, DistroReleaseSet, DistributionSourcePackage,
+     DistributionSourcePackageRelease, ManifestAncestry, Branch
+     DistroReleaseSourcePackageRelease, SourcePackageName,
+     SourcePackage, SourcePackageRelease, Manifest, ManifestEntry,
      )
+
+# XXX: somebody needs to update this code and fix these broken
+# imports -- kiko, 2006-03-16
+# from canonical.launchpad.database import (Archive, ArchNamespace,
+#   Changeset, VersionMapper)
+
 from hct.url import register_backend, UrlError
 
 

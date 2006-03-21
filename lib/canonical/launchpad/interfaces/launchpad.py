@@ -413,7 +413,9 @@ class IMenu(Interface):
 class IMenuBase(IMenu):
     """Common interface for facets, menus, extra facets and extra menus."""
 
-    context = Attribute('The object that has this menu')
+    context = Attribute('The object that has this menu.')
+
+    request = Attribute('The request the menus is used in.')
 
 
 class IFacetMenu(IMenuBase):

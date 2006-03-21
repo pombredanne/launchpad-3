@@ -86,6 +86,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(
                 requesturl=self._requesturl(),
                 selectedfacetname=self._selectedfacetname))
@@ -99,6 +100,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(requesturl=self._requesturl()))
 
     def context(self):
@@ -106,6 +108,7 @@ class MenuAPI:
         if menu is None:
             return  []
         else:
+            menu.request = self._request
             return list(menu.iterlinks(requesturl=self._requesturl()))
 
 
@@ -723,7 +726,6 @@ class FormattersAPI:
              reply quoting in emails).
         """
         paragraph = []
-        continue_logical_line = False
         for line in text.splitlines():
             line = line.rstrip()
 
@@ -732,19 +734,10 @@ class FormattersAPI:
                 if paragraph:
                     yield paragraph
                 paragraph = []
-                continue_logical_line = False
                 continue
 
-            # continue the run of text if the last line was between 60
-            # and 80 characters, and this line doesn't begin with
-            # whitespace.
-            if continue_logical_line and not (line[0].isspace() or
-                                              line[0] == '>'):
-                paragraph[-1] += '\n' + line
-            else:
-                paragraph.append(line)
+            paragraph.append(line)
 
-            continue_logical_line = 60 < len(line) < 80
         if paragraph:
             yield paragraph
 

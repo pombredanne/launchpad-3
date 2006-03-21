@@ -7,6 +7,7 @@ from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
 
 from canonical.launchpad import helpers
+from canonical.launchpad.components.poexport import RosettaWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 
 
@@ -25,7 +26,7 @@ def make_test_tarball_1():
     True
     '''
 
-    return helpers.RosettaWriteTarFile.files_to_tarfile({
+    return RosettaWriteTarFile.files_to_tarfile({
         'uberfrob-0.1/README':
             'Uberfrob is an advanced frobnicator.',
         'uberfrob-0.1/po/cy.po':
@@ -72,106 +73,11 @@ def make_test_tarball_2():
         'msgstr "bar"',
         )
 
-    return helpers.RosettaWriteTarFile.files_to_tarfile({
+    return RosettaWriteTarFile.files_to_tarfile({
         'test/test.pot': pot,
         'test/cy.po': po,
         'test/es.po': po,
     })
-
-def examine_tarfile(tarfile):
-    names = tarfile.getnames()
-    # Calculate the length of the longest name.
-    max_length = len(sorted(names, key=len)[-1])
-    # Use this length to generate an appropriate format string.
-    format = '%%-%ds | %%s' % max_length
-
-    for name in names:
-        file = tarfile.extractfile(name)
-
-        if file is not None:
-            print format % (name, file.read())
-        else:
-            print format % (name, '')
-
-def test_RosettaWriteTarFile():
-    """
-    Start off by creating a blank archive.
-
-    We'll need a filehandle to store it in.
-
-    >>> from StringIO import StringIO
-    >>> buffer = StringIO()
-
-    >>> from canonical.launchpad.helpers import RosettaWriteTarFile
-    >>> archive = RosettaWriteTarFile(buffer)
-
-    We can add files individually.
-
-    >>> archive.add_file('foo', '1')
-
-    Or add many files simultaneosly.
-
-    >>> archive.add_files({'bar': '2', 'baz': '3'})
-
-    Now we're done.
-
-    >>> archive.close()
-
-    Let's take a peek inside.
-
-    >>> import tarfile
-    >>> buffer.seek(0)
-    >>> archive = tarfile.open('', 'r', buffer)
-    >>> examine_tarfile(archive)
-    foo | 1
-    bar | 2
-    baz | 3
-
-    There are also some convenience methods for getting directly from a list
-    of files to a stream...
-
-    If we have a list of files:
-
-    >>> files = {
-    ...     'eins': 'zwei',
-    ...     'drei': 'vier'
-    ... }
-
-    ...then we can easily turn it into a tarfile...
-
-    >>> archive = RosettaWriteTarFile.files_to_tarfile(files)
-    >>> examine_tarfile(archive)
-    drei | vier
-    eins | zwei
-
-    ...or a stream...
-
-    >>> stream = RosettaWriteTarFile.files_to_stream(files)
-    >>> archive = tarfile.open('', 'r', stream)
-    >>> examine_tarfile(archive)
-    drei | vier
-    eins | zwei
-
-    ...or a data string.
-
-    >>> data = RosettaWriteTarFile.files_to_string(files)
-    >>> archive = tarfile.open('', 'r', StringIO(data))
-    >>> examine_tarfile(archive)
-    drei | vier
-    eins | zwei
-
-    If a filename contains slashes, containing directories are automatically
-    created.
-
-    >>> archive = RosettaWriteTarFile.files_to_tarfile({
-    ...     'uno/dos/tres/cuatro': 'blah'
-    ...     })
-    >>> examine_tarfile(archive)
-    uno/                | 
-    uno/dos/            | 
-    uno/dos/tres/       | 
-    uno/dos/tres/cuatro | blah
-    """
 
 def test_join_lines():
     r"""

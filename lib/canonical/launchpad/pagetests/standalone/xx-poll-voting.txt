@@ -1,23 +1,23 @@
   Test voting in all kind of polls we have (condorcet and simple, for now).
 
-  Logged in as name16 (which is a member of name17), go to a poll that's
+  Logged in as name16 (which is a member of ubuntu-team), go to a poll that's
   still open and get redirected to a page where it's possible to vote (and
   see the current vote).
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name17/+poll/never-closes/+vote-simple
+  Location: http://localhost:9000/people/ubuntu-team/+poll/never-closes/+vote-simple
   ...
 
 
   And here we'll see the form which allows one to vote in the poll.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes/+vote-simple HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes/+vote-simple HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -32,7 +32,7 @@
   Now we vote for "None of these options".
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/never-closes/+vote-simple HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/never-closes/+vote-simple HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -47,7 +47,7 @@
   he won't be allowed.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes/+vote-simple HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes/+vote-simple HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -59,17 +59,17 @@
   from seeing our vote we can also change it.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes2 HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes2 HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name17/+poll/never-closes2/+vote-condorcet
+  Location: http://localhost:9000/people/ubuntu-team/+poll/never-closes2/+vote-condorcet
   ...
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes2/+vote-condorcet HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -86,7 +86,7 @@
   he won't be allowed.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes2/+vote-condorcet HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -97,7 +97,7 @@
   By providing the token we will be able to see our current vote.
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/never-closes2/+vote-condorcet HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -132,7 +132,7 @@
   It's also possible to change the vote, if wanted.
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/never-closes2/+vote-condorcet HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/never-closes2/+vote-condorcet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -173,16 +173,16 @@
   one, so there's no need to provide the token to see the current vote.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes3 HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes3 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name17/+poll/never-closes3/+vote-condorcet
+  Location: http://localhost:9000/people/ubuntu-team/+poll/never-closes3/+vote-condorcet
   ...
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes3/+vote-condorcet HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes3/+vote-condorcet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -219,7 +219,7 @@
   vote.
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/never-closes3/+vote-condorcet HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/never-closes3/+vote-condorcet HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -254,17 +254,17 @@
   ...
 
 
-  Logged in as mark@hbd.com (which is a member of name17), go to a public
+  Logged in as mark@hbd.com (which is a member of ubuntu-team), go to a public
   condorcet-style poll that's still open and get redirected to a page where
   it's possible to vote (and see the current vote).
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes3 HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes3 HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name17/+poll/never-closes3/+vote-condorcet
+  Location: http://localhost:9000/people/ubuntu-team/+poll/never-closes3/+vote-condorcet
   ...
 
 
@@ -272,7 +272,7 @@
   to vote.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/never-closes3/+vote-condorcet HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/never-closes3/+vote-condorcet HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

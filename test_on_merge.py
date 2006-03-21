@@ -63,8 +63,8 @@ def main():
         # we expected.
         pass
     else:
-        if numeric_server_version < (7, 4):
-            print 'Your PostgreSQL version is too old.  You need 7.4.x'
+        if numeric_server_version < (8, 0):
+            print 'Your PostgreSQL version is too old.  You need 8.x.x'
             print 'You have %s' % server_version
             return 1
 
@@ -147,6 +147,8 @@ def main():
     proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     proc.stdin.close()
 
+    # Do proc.communicate(), but timeout if there's no activity on stdout or
+    # stderr for too long.
     out =  [] # stdout from tests
     err = [] # stderr from tests
     open_readers = set([proc.stderr, proc.stdout])
@@ -154,12 +156,12 @@ def main():
         rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
 
         if len(rlist) == 0:
-            if proc.poll() is None:
+            if proc.poll() is not None:
                 break
             print 'Tests hung - no output for %d seconds. Killing.' % TIMEOUT
             killem(proc.pid, SIGTERM)
             time.sleep(3)
-            if proc.poll() is None:
+            if proc.poll() is not None:
                 print 'Not dead yet! - slaughtering mercilessly'
                 killem(proc.pid, SIGKILL)
             break
