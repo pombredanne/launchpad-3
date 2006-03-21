@@ -1,0 +1,163 @@
+The Spec Mail Exploder
+======================
+
+There's an address, notifications@specs.launchpad.net, which looks at
+all incoming email to see if it looks like a change notifications from a
+Moin wiki. If it receive such notification, it will look up the relevant
+Launchpad specifiication, and re-send the mail to the spec's related
+people.
+
+First, let's take a look at how a Moin change notification looks like:
+
+    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> moin_change = read_test_message('moin-change.txt')
+
+It contains some headers, which are of no use to us, and the body is
+base64 encoded.
+
+    >>> print str(moin_change) #doctest: -NORMALIZE_WHITESPACE
+    From webmaster@ubuntu.com Mon Mar 20 10:31:59 2006
+    Return-path: <webmaster@ubuntu.com>
+    Content-Type: text/plain; charset="utf-8"
+    MIME-Version: 1.0
+    Content-Transfer-Encoding: base64
+    From: Launchpad Wiki <webmaster@ubuntu.com>
+    To: Launchpad Wiki <webmaster@ubuntu.com>
+    Date: Mon, 20 Mar 2006 10:26:28 -0000
+    Message-ID: <20060320102628.17391.34951@palmer.ubuntu.com>
+    Subject: [Launchpad Wiki] Update of "MediaIntegrityCheck" by ...
+    Status: RO
+    Content-Length: 1220
+    <BLANKLINE>
+    RGVhciBXaWtpIHVzZXIsDQo...
+
+Let's take a look at the decode body, since we'll have to use it in
+order to extract any useful information about the wiki page.
+
+    >>> print moin_change.get_payload(decode=True)
+    Dear Wiki user,
+    <BLANKLINE>
+    You have subscribed to a wiki page or wiki category on "Ubuntu Wiki"
+    for change notification.
+    <BLANKLINE>
+    The following page has been changed by JamesHenstridge:
+    https://wiki.ubuntu.com/MediaIntegrityCheck
+    <BLANKLINE>
+    The comment on the change is:
+    A comment about the change
+    <BLANKLINE>
+    -----------------------------------------------------------------...
+    ...
+
+So, we'll have to extract the specification URL from the message. To do
+this, we use get_spec_url_from_moin_mail():
+
+    >>> from canonical.launchpad.mail.specexploder import (
+    ...     get_spec_url_from_moin_mail)
+    >>> get_spec_url_from_moin_mail(moin_change.get_payload(decode=True))
+    'https://wiki.ubuntu.com/MediaIntegrityCheck'
+
+Even though it's name get_spec_url_from_moin_mail(), it doesn't really
+care if it's a moin notification or not, it simply extracts the first
+URL from the body.
+
+    >>> get_spec_url_from_moin_mail(
+    ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
+    'https://wiki.ubuntu.com/MediaIntegrityCheck'
+
+If no URL is found, None is returned.
+
+    >>> get_spec_url_from_moin_mail('foo bar') is None
+    True
+
+
+The Mail Handler
+----------------
+
+The mail handler that handles mail on notifications@specs.launchpad.net
+is SpecificationHandler.
+
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.mail.handlers import mail_handlers
+    >>> handler = mail_handlers.get(config.launchpad.specs_domain)
+    >>> handler is not None
+    True
+
+We use a logger to see what the handler does:
+
+    >>> from canonical.launchpad.scripts import log
+    >>> OLD_LOG_LEVEL = log._log.getEffectiveLevel()
+    >>> log._log.setLevel(10)
+
+Now, if we pass the email to it, we can see that it finds the correct
+spec, and mails it to the related people.
+
+    >>> handler.process(
+    ...     moin_change, 'notifications@specs.launchpad.net', log=log)
+    DEBUG:...:Found a spec URL: https://wiki.ubuntu.com/MediaIntegrityCheck
+    DEBUG:...:Found a corresponding spec: media-integrity-check
+    DEBUG:...:Sending notification to: test@canonical.com
+    True
+
+    >>> log._log.setLevel(OLD_LOG_LEVEL)
+
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> spec = getUtility(ISpecificationSet).getByURL(
+    ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
+    >>> spec.notificationRecipientAddresses()
+    ['test@canonical.com']
+
+Let's look at the email that got sent:
+
+    >>> import transaction
+    >>> from canonical.launchpad.mail import stub
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+The email got sent to all related people:
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> to_addrs == spec.notificationRecipientAddresses()
+    True
+
+We practically bounced the message, we didn't change anything about it,
+except for setting the Sender header to our bounce address:
+
+    >>> import email
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_body = sent_msg.get_payload(decode=True)
+    >>> sent_body == moin_change.get_payload(decode=True)
+    True
+
+    >>> sent_msg['To'] == moin_change['To']
+    True
+    >>> sent_msg['From'] == moin_change['From']
+    True
+    >>> sent_msg['Subject'] == moin_change['Subject']
+    True
+
+    >>> sent_msg['Sender'] == config.bounce_address
+    True
+
+If we get a change notification about a spec which doesn't exist in
+Launchpad, nothing happens.
+
+    >>> log._log.setLevel(10)
+    >>> moin_change = read_test_message('moin-change-nonexistant.txt')
+    >>> handler.process(
+    ...     moin_change, 'notifications@specs.launchpad.net', log=log)
+    DEBUG:...:Found a spec URL: https://wiki.ubuntu.com/NonExistant
+    DEBUG:...:Didn't find a corresponding spec for
+              https://wiki.ubuntu.com/NonExistant
+    True
+
+    >>> print getUtility(ISpecificationSet).getByURL(
+    ...     'https://wiki.ubuntu.com/NonExistant')
+    None
+
+
+To clean up after ourself, we set the log level back to what it was,
+otherwise we might break other tests.
+
+    >>> log._log.setLevel(OLD_LOG_LEVEL)

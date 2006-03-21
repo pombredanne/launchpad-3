@@ -26,6 +26,7 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.helpers import contactEmailAddresses
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
