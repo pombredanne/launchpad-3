@@ -46,29 +46,34 @@
 
   <div class="portalMessage" tal:condition="not:view/isReportedInContext" 
        style="margin-bottom: 1em">
-    This bug has <b>not yet been reported</b> in
+
+        <form name="alsooccursin" method="POST">
+
+    This bug is not recorded as needing to be fixed in the
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
-       tal:content="context/targetname">upstream firefox</a>.
+       tal:content="context/targetname">upstream firefox</a>
+    <tal:product condition="context/product">product.</tal:product>
+    <tal:package condition="context/sourcepackagename">package.</tal:package>
+    <tal:distribution
+      condition="python: (not context.product) and (not context.sourcepackagename)"
+    >distribution.</tal:distribution>
 
     <tal:loggedin condition="request/lp:person">
-      Do you want to report it?<br /><br />
 
-      <form name="alsooccursin" method="POST">
-        <input type="submit" name="reportbug"
-               tal:attributes="value string:Yes, I want to report this bug in ${context/targetname}" />
-      </form>
+        <input
+          type="submit"
+          name="reportbug"
+          value="Also Needs Fixing Here"
+        />
     </tal:loggedin>
     <tal:notloggedin condition="not:request/lp:person">
       If you wish report it in <tal:block content="context/targetname" />,
       you must <a href="+login">log in</a> first.
     </tal:notloggedin>
-  </div>
 
-  <p class="documentDescription"
-     tal:condition="context/bug/summary"
-     tal:content="context/bug/summary">
-     $bug.summary
-  </p>
+        </form>
+
+  </div>
 
   <div tal:replace="structure context/@@+headline-tasks" />
 

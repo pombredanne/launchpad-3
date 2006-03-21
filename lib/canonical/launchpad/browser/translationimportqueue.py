@@ -13,8 +13,6 @@ __all__ = [
     'TranslationImportQueueView',
     ]
 
-import urllib
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
@@ -25,10 +23,10 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
+
 from canonical.lp.dbschema import RosettaImportStatus
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -60,6 +58,33 @@ class TranslationImportQueueEntryView(GeneralFormView):
         self.request = request
         self.initialize()
         GeneralFormView.__init__(self, context, request)
+
+    @property
+    def initial_values(self):
+        """Initialize some values on the form, when it's possible."""
+        field_values = {}
+        # Fill the know values.
+        if self.context.sourcepackagename is not None:
+            field_values['sourcepackagename'] = self.context.sourcepackagename
+        if self.context.potemplate is not None:
+            field_values['potemplatename'] = (
+                self.context.potemplate.potemplatename.name)
+        if self.context.pofile is not None:
+            field_values['language'] = self.context.pofile.language
+            field_values['variant'] = self.context.pofile.variant
+        else:
+            # We try to guess the values.
+            (language, variant) = self.context.guessed_language_and_variant
+            if language is not None:
+                field_values['language'] = language
+                # Need to warn the user that we guessed the language information.
+                self.request.response.addWarningNotification(
+                    "Review the language selection as we guessed it and could"
+                    " not be accurated.")
+            if variant is not None:
+                field_values['variant'] = variant
+
+        return field_values
 
     def initialize(self):
         """Set the fields that will be shown based on the 'context' values.
@@ -157,18 +182,61 @@ class TranslationImportQueueContextMenu(ContextMenu):
 class TranslationImportQueueView(LaunchpadView):
     """View class used for Translation Import Queue management."""
 
-    DEFAULT_LENGTH = 50
+    def _validateFilteringOptions(self):
+        """Validate the filtering options for this form.
+
+        This method initialize self.status and self.file_extension depending
+        on the form values.
+
+        Raise UnexpectedFormData if we get something wrong.
+        """
+        # Get the filtering arguments.
+        self.status = str(self.form.get('status', 'all'))
+        # but the file_extension must be in lower case.
+        self.type = str(self.form.get('type', 'all'))
+
+        # Fix the case to our needs.
+        if self.status:
+            self.status = self.status.upper()
+        if self.type:
+            self.type = self.type.lower()
+
+        # Prepare the list of available status.
+        available_status = [
+            status.name
+            for status in RosettaImportStatus.items
+            ]
+        available_status.append('ALL')
+
+        # Sanity checks so we don't accept broken input.
+        if (not (self.status and self.type) or
+            (self.status not in available_status) or
+            (self.type not in ('all', 'po', 'pot'))):
+            raise UnexpectedFormData(
+                'The queue filtering got an unexpected value.')
+
+        # Set to None status and type if they have the default value.
+        if self.status == 'ALL':
+            # Selected all status, the status is None to get all values.
+            self.status = None
+        else:
+            # Get the DBSchema entry.
+            self.status = RosettaImportStatus.items[self.status]
+        if self.type == 'all':
+            # Selected all types, so the type is None to get all values.
+            self.type = None
 
     def initialize(self):
         """Useful initialization for this view class."""
+        # Get the filtering arguments.
         self.form = self.request.form
 
+        # Validate the filtering arguments.
+        self._validateFilteringOptions()
+
         # Setup the batching for this page.
-        self.start = int(self.request.get('batch_start', 0))
-        self.batch = Batch(
-            self.context.getAllEntries(), self.start,
-            size=self.DEFAULT_LENGTH)
-        self.batchnav = BatchNavigator(self.batch, self.request)
+        self.batchnav = BatchNavigator(self.context.getAllEntries(
+            status=self.status, file_extension=self.type), self.request)
 
         # Flag to control whether the view page should be rendered.
         self.redirecting = False
@@ -271,9 +339,51 @@ class TranslationImportQueueView(LaunchpadView):
 
         # We do a redirect so the submit doesn't breaks if the rendering of
         # the page takes too much time.
-        self.request.response.redirect(
-            '%s?batch_start=%d' % (self.request.getURL(), self.start))
+        url_string = self.request.getURL()
+        query_string = self.request.environment.get("QUERY_STRING")
+        if query_string:
+            url_string = "%s?%s" % (url_string, query_string)
+        self.request.response.redirect(url_string)
         self.redirecting = True
+
+    def renderOption(self, status, selected=False, check_status=None,
+                     empty_if_check_fails=False):
+        """Render an option for a certain status
+
+        When check_status is supplied, check if the supplied status
+        matches the check_status. If empty_if_check_fails is
+        additionally set to True, and the check fails, return an empty
+        string.
+        """
+        if check_status is not None:
+            if check_status == status:
+                selected = True
+            elif empty_if_check_fails:
+                return ''
+
+        # We need to supply selected as a dictionary because it can't
+        # appear at all in the argument list for renderElement -- if it
+        # does it is included in the HTML output
+        if selected:
+            selected = {'selected': 'yes'}
+        else:
+            selected = {}
+        html = renderElement('option',
+            value=status.name,
+            contents=status.title,
+            **selected)
+
+        return html
+
+    def getStatusFilteringSelect(self):
+        """Return a select html tag with all status for filtering purposes."""
+        selected_status = self.form.get('status', 'all')
+        html = ''
+        for status in RosettaImportStatus.items:
+            selected = (status.name.lower() == selected_status.lower())
+            html = '%s\n%s' % (
+                html, self.renderOption(status, selected=selected))
+        return html
 
     def getStatusSelect(self, entry):
         """Return a select html tag with the possible status for entry
@@ -283,77 +393,38 @@ class TranslationImportQueueView(LaunchpadView):
         assert helpers.check_permission('launchpad.Edit', entry), (
             'You can only change the status if you have rights to do it')
 
+        deleted_html = self.renderOption(RosettaImportStatus.DELETED,
+                                         check_status=entry.status)
+        needs_review_html = self.renderOption(RosettaImportStatus.NEEDS_REVIEW,
+                                              check_status=entry.status)
+
+        failed_html = self.renderOption(RosettaImportStatus.FAILED,
+                                        check_status=entry.status,
+                                        empty_if_check_fails=True)
+        imported_html = self.renderOption(RosettaImportStatus.IMPORTED,
+                                          check_status=entry.status,
+                                          empty_if_check_fails=True)
+
+        # These two options have special checks for permissions -- only
+        # admins can select them, though anyone can unselect.
         if entry.status == RosettaImportStatus.APPROVED:
-            # If the entry is approved, this status should appear and set as
-            # selected.
-            approved_html = renderElement('option', selected='yes',
-                value=RosettaImportStatus.APPROVED.name,
-                contents=RosettaImportStatus.APPROVED.title)
+            approved_html = self.renderOption(RosettaImportStatus.APPROVED,
+                                              selected=True)
         elif (helpers.check_permission('launchpad.Admin', entry) and
               entry.import_into is not None):
-            # The entry is not approved but if we are an admin and we know
-            # where it's going to be imported, we can approve it.
-            approved_html = renderElement('option',
-                value=RosettaImportStatus.APPROVED.name,
-                contents=RosettaImportStatus.APPROVED.title)
+            # We also need to check here if we know where to import this
+            # entry; if not, there's no sense in allowing this to be set
+            # as approved.
+            approved_html = self.renderOption(RosettaImportStatus.APPROVED,
+                                              selected=False)
         else:
-            # We should not add the approved status for this entry.
             approved_html = ''
 
-        if entry.status == RosettaImportStatus.IMPORTED:
-            # If the entry is imported, this status should appear and set as
-            # selected.
-            imported_html = renderElement('option', selected='yes',
-                value=RosettaImportStatus.IMPORTED.name,
-                contents=RosettaImportStatus.IMPORTED.title)
-        else:
-            # Only the import script should be able to set the status to
-            # imported, and thus, we don't add it as an option to select.
-            imported_html = ''
-
-        if entry.status == RosettaImportStatus.DELETED:
-            # If the entry is deleted, this status should appear and set as
-            # selected.
-            deleted_html = renderElement('option', selected='yes',
-                value=RosettaImportStatus.DELETED.name,
-                contents=RosettaImportStatus.DELETED.title)
-        else:
-            deleted_html = renderElement('option',
-                value=RosettaImportStatus.DELETED.name,
-                contents=RosettaImportStatus.DELETED.title)
-
-
-        if entry.status == RosettaImportStatus.FAILED:
-            # If the entry is failed, this status should appear and set as
-            # selected.
-            failed_html = renderElement('option', selected='yes',
-                value=RosettaImportStatus.FAILED.name,
-                contents=RosettaImportStatus.FAILED.title)
-        else:
-            # Only the import script should be able to set the status to
-            # failed, and thus, we don't add it as an option to select.
-            failed_html = ''
-
-        if entry.status == RosettaImportStatus.NEEDS_REVIEW:
-            # If the entry needs review, this status should appear and set as
-            # selected.
-            needs_review_html = renderElement('option', selected='yes',
-                value=RosettaImportStatus.NEEDS_REVIEW.name,
-                contents=RosettaImportStatus.NEEDS_REVIEW.title)
-        else:
-            needs_review_html = renderElement('option',
-                value=RosettaImportStatus.NEEDS_REVIEW.name,
-                contents=RosettaImportStatus.NEEDS_REVIEW.title)
-
         if entry.status == RosettaImportStatus.BLOCKED:
-            # If the entry is blocked, this status should appear and set as
-            # selected.
             blocked_html = renderElement('option', selected='yes',
                 value=RosettaImportStatus.BLOCKED.name,
                 contents=RosettaImportStatus.BLOCKED.title)
         elif helpers.check_permission('launchpad.Admin', entry):
-            # The entry is not blocked but if we are an admin, we can block
-            # it.
             blocked_html = renderElement('option',
                 value=RosettaImportStatus.BLOCKED.name,
                 contents=RosettaImportStatus.BLOCKED.title)
@@ -372,3 +443,5 @@ class TranslationImportQueueView(LaunchpadView):
             return u''
         else:
             return LaunchpadView.render(self)
+
+

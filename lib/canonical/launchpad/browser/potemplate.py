@@ -138,13 +138,11 @@ class POTemplateView(LaunchpadView):
         """
         # Languages the template has been translated into.
         translated_languages = set(self.context.languages())
-
         # The user's languages.
         prefered_languages = set(self.request_languages)
-
         # Merge the sets, convert them to a list, and sort them.
-        languages = list(translated_languages | prefered_languages)
-        languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
+        languages = sorted(translated_languages | prefered_languages,
+                           key=lambda x: x.englishname)
 
         for language in languages:
             pofile = self.context.getPOFileByLang(language.code)

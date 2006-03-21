@@ -27,6 +27,7 @@ from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""

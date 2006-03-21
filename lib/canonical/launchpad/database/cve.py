@@ -117,6 +117,10 @@ class CveSet:
         except SQLObjectNotFound:
             return None
 
+    def getAll(self):
+        """See ICveSet."""
+        return Cve.select(orderBy="-datemodified")
+
     def __iter__(self):
         """See ICveSet."""
         return iter(Cve.select())

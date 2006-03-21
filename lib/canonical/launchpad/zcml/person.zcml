@@ -29,8 +29,7 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PersonSupportMenu PersonCodeMenu PeopleContextMenu
-          TeamBugsMenu"
+          PersonSpecsMenu PersonSupportMenu PeopleContextMenu TeamBugsMenu"
       />
 
   <browser:url
@@ -383,7 +382,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.BranchTargetView"
     permission="zope.Public"
-    facet="code"
+    facet="overview"
     >
     <!-- there is trickery here, in the view class, which detects the view
     name and then gives the template a different set of branches to work
@@ -518,7 +517,7 @@
       schema="canonical.launchpad.interfaces.IBranch"
       fields="product name owner lifecycle_status url title summary home_page author"
       class="canonical.launchpad.browser.BranchAddView"
-      facet="code"
+      facet="overview"
       keyword_arguments="product name owner lifecycle_status url title summary home_page author"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt">

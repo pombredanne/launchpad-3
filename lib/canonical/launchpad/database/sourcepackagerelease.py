@@ -6,12 +6,15 @@ __all__ = ['SourcePackageRelease']
 import sets
 import tarfile
 from StringIO import StringIO
+import datetime
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.searchbuilder import any
@@ -66,32 +69,38 @@ class SourcePackageRelease(SQLBase):
         dbName='uploaddistrorelease')
 
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
-        orderBy=['-datecreated'])
+                             orderBy=['-datecreated'])
     files = SQLMultipleJoin('SourcePackageReleaseFile',
         joinColumn='sourcepackagerelease')
     publishings = SQLMultipleJoin('SourcePackagePublishing',
-        joinColumn='sourcepackagerelease')
+        joinColumn='sourcepackagerelease', orderBy="-datecreated")
 
     @property
     def latest_build(self):
-        builds = self.builds
+        builds = self._cached_builds
         if len(builds) > 0:
             return builds[0]
         return None
 
-    @property
     def failed_builds(self):
-        return [build for build in self.builds
+        return [build for build in self._cached_builds
                 if build.buildstate == BuildStatus.FAILEDTOBUILD]
 
     @property
     def needs_building(self):
-        for build in self.builds:
+        for build in self._cached_builds:
             if build.buildstate in [BuildStatus.NEEDSBUILD,
                                     BuildStatus.MANUALDEPWAIT,
                                     BuildStatus.CHROOTWAIT]:
                 return True
         return False
+
+    @cachedproperty
+    def _cached_builds(self):
+        # The reason we have this as a cachedproperty is that all the
+        # *build* methods here need access to it; better not to
+        # recalculate it multiple times.
+        return list(self.builds)
 
     @property
     def name(self):
@@ -100,12 +109,18 @@ class SourcePackageRelease(SQLBase):
     @property
     def sourcepackage(self):
         """See ISourcePackageRelease."""
-        return self.uploaddistrorelease.getSourcePackage(self.name)
+        # By supplying the sourcepackagename instead of its string name,
+        # we avoid doing an extra query doing getSourcepackage
+        release = self.uploaddistrorelease
+        return release.getSourcePackage(self.sourcepackagename)
 
     @property
     def distrosourcepackage(self):
         """See ISourcePackageRelease."""
-        return self.uploaddistrorelease.distribution.getSourcePackage(self.name)
+        # By supplying the sourcepackagename instead of its string name,
+        # we avoid doing an extra query doing getSourcepackage
+        distribution = self.uploaddistrorelease.distribution
+        return distribution.getSourcePackage(self.sourcepackagename)
 
     @property
     def title(self):
@@ -182,11 +197,13 @@ class SourcePackageRelease(SQLBase):
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
                  ' AND BinaryPackageRelease.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
-        return BinaryPackageRelease.select(query, clauseTables=clauseTables)
+        return BinaryPackageRelease.select(query,
+                                           prejoinClauseTables=['Build'],
+                                           clauseTables=clauseTables)
 
     @property
     def meta_binaries(self):
-        """See ISourcePackageRelease."""        
+        """See ISourcePackageRelease."""
         return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
                                     binary.binarypackagename)
                 for binary in self.binaries]
@@ -196,10 +213,8 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         from canonical.launchpad.database.distroreleasesourcepackagerelease \
             import DistroReleaseSourcePackageRelease
-        return[DistroReleaseSourcePackageRelease(
-            publishing.distrorelease,
-            self) for publishing in self.publishings]
-
+        return [DistroReleaseSourcePackageRelease(pub.distrorelease, self)
+                for pub in self.publishings]
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
@@ -235,30 +250,67 @@ class SourcePackageRelease(SQLBase):
                                         libraryfile=file.id)
 
     def createBuild(self, distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=BuildStatus.NEEDSBUILD,
+                    pocket=None):
         """See ISourcePackageRelease."""
+        # ensure pocket can't be ommited
+        assert pocket is not None
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchrelease.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
-        return Build(distroarchrelease=distroarchrelease.id,
-                     sourcepackagerelease=self.id,
-                     processor=processor.id, buildstate=status)
+        # force the current timestamp instead of the default
+        # UTC_NOW for the transaction, avoid several row with
+        # same datecreated.
+        datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
+        return Build(distroarchrelease=distroarchrelease,
+                     sourcepackagerelease=self,
+                     processor=processor,
+                     buildstate=status,
+                     datecreated=datecreated,
+                     pocket=pocket)
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
-        return Build.selectOneBy(sourcepackagereleaseID=self.id,
-                                 distroarchreleaseID=distroarchrelease.id)
+        query = """
+        build.id = binarypackagerelease.build AND
+        binarypackagerelease.id =
+            binarypackagepublishing.binarypackagerelease AND
+        binarypackagepublishing.distroarchrelease = %s AND
+        build.sourcepackagerelease = %s AND
+        binarypackagerelease.architecturespecific = true
+        """  % sqlvalues(distroarchrelease.id, self.id)
+
+        tables = ['binarypackagerelease', 'binarypackagepublishing']
+
+        builds = Build.select(query, clauseTables=tables)
+
+        if builds.count() == 0:
+            builds = Build.selectBy(distroarchreleaseID=distroarchrelease.id,
+                                    sourcepackagereleaseID=self.id)
+            if builds.count() == 0:
+                return None
+
+        return shortlist(builds)[0]
+
+    def override(self, component=None, section=None, urgency=None):
+        """See ISourcePackageRelease."""
+        if component is not None:
+            self.component = component
+        if section is not None:
+            self.section = section
+        if urgency is not None:
+            self.urgency = urgency
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):
         """See ISourcePackageRelease."""
         client = getUtility(ILibrarianClient)
 
-        tarball_file = client.getFileByAlias(tarball_alias)
+        tarball_file = client.getFileByAlias(tarball_alias.id)
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
@@ -276,6 +328,9 @@ class SourcePackageRelease(SQLBase):
         for filename in filenames:
             # Fetch the file
             content = tarball.extractfile(filename).read()
+            if len(content) == 0:
+                # The file is empty, we ignore it.
+                continue
             if filename.startswith('source/'):
                 # Remove the special 'source/' prefix for the path.
                 filename = filename[len('source/'):]
@@ -287,5 +342,4 @@ class SourcePackageRelease(SQLBase):
                 filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
                 distrorelease=self.uploaddistrorelease)
-
 

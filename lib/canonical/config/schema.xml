@@ -576,8 +576,44 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="builddmaster">
+        <key name="dbuser" datatype="string" required="yes">
+            <description>
+                BuilddMaster Datatbase user.
+            </description>
+        </key>
+        <key name="uploader" datatype="string" required="yes">
+            <description>
+                This is the command invoked by the buildd master when it wants
+                to process a package upload into the launchpad. The buildd
+                master splits the command on spaces so no escaping is allowed.
+                If the token BUILDID is present, the build master will replace
+                it with the ID of the build record for the upload.
+                The build master will append the directory containing the files
+                to the command before executing it.
+            </description>
+        </key>
+        <key name="root" datatype="string" required="yes">
+            <description>
+                Directory to be created to store build results.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="supermirror">
         <key name="dbuser" datatype="string" default="supermirror" />
+    </sectiontype>
+
+    <sectiontype name="supermirrorsftp">
+        <key name="authserver" datatype="string" />
+        <key name="host_key_pair_path" datatype="string" />
+        <key name="branches_root" datatype="string" />
+        <key name="port" datatype="string" default="tcp:5022" />
+    </sectiontype>
+
+    <sectiontype name="authserver">
+        <key name="dbuser" datatype="string" default="authserver" />
+        <key name="port" datatype="string" default="tcp:8999" />
     </sectiontype>
 
     <sectiontype name="canonical">
@@ -618,6 +654,9 @@
         <section name="*" type="uploadqueue" attribute="uploadqueue" />
         <section name="*" type="supermirror" attribute="supermirror" />
         <section name="*" type="branchupdater" attribute="branchupdater" />
+        <section name="*" type="builddmaster" attribute="builddmaster" />
+        <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
+        <section name="*" type="authserver" attribute="authserver" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

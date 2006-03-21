@@ -531,6 +531,8 @@ COMMENT ON COLUMN DistroReleaseQueue.distrorelease IS 'This integer field refers
 
 COMMENT ON COLUMN DistroReleaseQueue.pocket IS 'This is the pocket the upload is targeted at.';
 
+COMMENT ON COLUMN DistroReleaseQueue.changesfile IS 'The changes file associated with this upload.';
+
 -- DistroReleaseQueueSource
 COMMENT ON TABLE DistroReleaseQueueSource IS 'An upload queue source package. This table stores information pertaining to the source files in an in-progress package upload.';
 
@@ -1265,3 +1267,41 @@ COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile wher
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
+
+
+-- PersonalPackageArchive
+COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';
+COMMENT ON COLUMN PersonalPackageArchive.person IS 'Owner of this personal archive.';
+COMMENT ON COLUMN PersonalPackageArchive.distrorelease IS 'Target Distrorelease for this personal archive.';
+COMMENT ON COLUMN PersonalPackageArchive.packages IS 'Cache of the generated Packages file.';
+COMMENT ON COLUMN PersonalPackageArchive.sources IS 'Cache of the generated Sources file.';
+COMMENT ON COLUMN PersonalPackageArchive.release IS 'Cache of the generated Release file.';
+COMMENT ON COLUMN PersonalPackageArchive.release_gpg IS 'Cache of the detached GPG signature of the cached Release file.';
+COMMENT ON COLUMN PersonalPackageArchive.datelastupdated IS 'Time when cache of the archive files was last updated.';
+
+-- PersonalSourcepackagePublication
+COMMENT ON TABLE PersonalSourcePackagePublication IS 'Contains the information about which sourcepackagerelease is included in a Personal Package Archive.';
+COMMENT ON COLUMN PersonalSourcePackagePublication.personalpackagearchive IS 'Target Personal Package Archive.';
+COMMENT ON COLUMN PersonalSourcePackagePublication.sourcepackagerelease IS 'Target Sourcepackagerelease.';
+
+
+-- Component
+COMMENT ON TABLE Component IS 'Known components in Launchpad';
+COMMENT ON COLUMN Component.name IS 'Component name text';
+
+
+-- Section
+COMMENT ON TABLE Section IS 'Known sections in Launchpad';
+COMMENT ON COLUMN Section.name IS 'Section name text';
+
+
+-- ComponentSelection
+COMMENT ON TABLE ComponentSelection IS 'Allowed components in a given distrorelease.';
+COMMENT ON COLUMN ComponentSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON COLUMN ComponentSelection.component IS 'Refers to the component in qestion.';
+
+
+-- SectionSelection
+COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distrorelease.';
+COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';

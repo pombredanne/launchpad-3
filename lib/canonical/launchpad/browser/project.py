@@ -161,6 +161,7 @@ class ProjectView(object):
         self.request.response.redirect(self.request.URL[-1])
 
     def hasProducts(self):
+        # XXX: get rid of this crap using selectFirst()
         return len(list(self.context.products())) > 0
 
     def productTranslationStats(self):
