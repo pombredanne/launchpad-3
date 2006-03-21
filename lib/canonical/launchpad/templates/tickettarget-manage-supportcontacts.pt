@@ -31,7 +31,7 @@
     support requests. By checking the box below, you will receive be
     subscribed to all support requests opened on <span
     tal:replace="context/displayname">Mozilla Firefox</span>, and thus
-    receive mail notifications about them. You will be subscribed to
+    receive mail notifications about them. You will be subscribed
     only to new support requests from now on, not to existing ones.
     </div>
 
