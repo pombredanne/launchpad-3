@@ -229,7 +229,7 @@ class OutputMsgSet:
 
     def export_unicode_string(self):
         """Return a unicode string representation of this message set."""
-        assert len(self.msgids) < 2, "Too many message IDs for a message set."
+        assert len(self.msgids) <= 2, "Too many message IDs for a message set."
         assert len(self.msgids) > 0, (
             "Can't export a message set with no message IDs.")
 
