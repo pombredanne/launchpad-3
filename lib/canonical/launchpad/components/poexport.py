@@ -140,7 +140,7 @@ class OutputPOFile:
         """Append a message set to this PO file."""
         self.msgsets.append(msgset)
 
-    def export_string(self, force_utf8=False):
+    def export_string(self):
         """Return a string representation of this PO file."""
 
         # Sort all the PO file's message sets by sequence number.
@@ -156,24 +156,17 @@ class OutputPOFile:
             if msgset.obsolete and len(msgset.msgstrs) == 0:
                 continue
 
-            chunks.append(msgset.export_string(force_utf8))
+            chunks.append(msgset.export_string())
 
         return '\n\n'.join(chunks)
 
-    def dump_file(self, force_utf8=False):
+    def dump_file(self):
         """Return a string representing a .po file.
 
-        :arg force_utf8: Whether this file should be forced to be exported as
-            UTF-8
 
         The encoding of the string will depend on the declared charset at
         self.header or 'UTF-8' if cannot be represented by it.
         """
-
-        if force_utf8:
-            # Force the encoding as UTF-8
-            self.header['Content-Type'] = 'text/plain; charset=UTF-8'
-            self.header.updateDict()
 
         try:
             # Export the object.
@@ -276,17 +269,11 @@ class OutputMsgSet:
 
         return unicode(message)
 
-    def export_string(self, force_utf8=False):
-        """Return a string representation of this message set using PO file's
-        header.charset info.
+    def export_string(self):
+        """Return a string representation of this message set.
 
-        :force_utf8: Whether the export should be as UTF-8.
+        It uses PO file's header.charset info.
         """
-
-        if force_utf8:
-            # Change the header encoding to UTF-8
-            self.pofile.header['Content-Type'] = 'text/plain; charset=UTF-8'
-            self.pofile.header.updateDict()
         return self.export_unicode_string().encode(self.pofile.header.charset)
 
 def last_translator_text(person):
@@ -421,7 +408,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
 
             # Output the current PO file.
             if exported_file is not None:
-                exported_file_content = exported_file.dump_file(force_utf8)
+                exported_file_content = exported_file.dump_file()
                 pofile_output(
                     potemplate, language, variant, exported_file_content)
 
@@ -434,6 +421,10 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 msgstr=pot_header_value)
             # PO templates have always the fuzzy flag set on headers.
             pot_header.flags.add('fuzzy')
+            if force_utf8:
+                # Change the charset declared for this file.
+                header['Content-Type'] = 'text/plain; charset=UTF-8'
+
             pot_header.updateDict()
 
             if row.pofile is not None:
@@ -445,8 +436,6 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 if row.pofuzzyheader:
                     header.flags.add('fuzzy')
 
-                header.updateDict()
-
                 if 'Domain' in pot_header:
                     header['Domain'] = pot_header['Domain']
 
@@ -456,6 +445,14 @@ def export_rows(rows, pofile_output, force_utf8=False):
                     # indicates when was the .pot file created.
                     header['POT-Creation-Date'] = (
                         pot_header['POT-Creation-Date'])
+
+                if force_utf8:
+                    # Change the charset declared for this file.
+                    header['Content-Type'] = 'text/plain; charset=UTF-8'
+
+                # Needed to be sure that the header has the right information.
+                header.updateDict()
+
             else:
                 # We are exporting an IPOTemplate.
                 header = pot_header
@@ -579,7 +576,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
         exported_file.append(msgset)
 
     if exported_file is not None:
-        exported_file_content = exported_file.dump_file(force_utf8)
+        exported_file_content = exported_file.dump_file()
         pofile_output(potemplate, language, variant, exported_file_content)
 
 class FilePOFileOutput:
@@ -627,7 +624,7 @@ class TemplateTarballPOFileOutput:
         fileinfo.mtime = int(time.time())
         self.archive.addfile(fileinfo, StringIO(contents))
 
-def export_potemplate_tarball(filehandle, potemplate):
+def export_potemplate_tarball(filehandle, potemplate, force_utf8=False):
     """Export a tarball of translations for a PO template to a filehandle."""
 
     # Create a tarfile.
@@ -643,7 +640,7 @@ def export_potemplate_tarball(filehandle, potemplate):
 
     rows = getUtility(IVPOExportSet).get_potemplate_rows(potemplate)
     pofile_output = TemplateTarballPOFileOutput(archive, directory)
-    export_rows(rows, pofile_output)
+    export_rows(rows, pofile_output, force_utf8)
 
     archive.close()
 
@@ -705,25 +702,25 @@ class POTemplateExporter:
 
     implements(IPOTemplateExporter)
 
-    def __init__(self, potemplate):
+    def __init__(self, potemplate, force_utf8=False):
         self.potemplate = potemplate
+        self.force_utf8 = force_utf8
 
-    def export_pofile(self, language, variant=None, included_obsolete=True,
-        force_utf8=False):
+    def export_pofile(self, language, variant=None, included_obsolete=True):
         """See IPOTemplateExporter."""
 
         outputbuffer = StringIO()
         self.export_pofile_to_file(outputbuffer, language, variant,
-            included_obsolete, force_utf8)
+            included_obsolete)
         return outputbuffer.getvalue()
 
     def export_pofile_to_file(self, filehandle, language, variant=None,
-                              included_obsolete=True, force_utf8=False):
+                              included_obsolete=True):
         """See IPOTemplateExporter."""
         rows = getUtility(IVPOExportSet).get_pofile_rows(
             self.potemplate, language, variant, included_obsolete)
         pofile_output = FilePOFileOutput(filehandle)
-        export_rows(rows, pofile_output, force_utf8)
+        export_rows(rows, pofile_output, self.force_utf8)
 
     def export_potemplate(self):
         """See IPOTemplateExporter."""
@@ -736,18 +733,20 @@ class POTemplateExporter:
         rows = getUtility(IVPOExportSet).get_potemplate_rows(
             self.potemplate, include_translations=False)
         pofile_output = FilePOFileOutput(filehandle)
-        export_rows(rows, pofile_output)
+        export_rows(rows, pofile_output, self.force_utf8)
 
     def export_tarball(self):
         """See IPOTemplateExporter."""
 
         outputbuffer = StringIO()
-        export_potemplate_tarball(outputbuffer, self.potemplate)
+        export_potemplate_tarball(
+            outputbuffer, self.potemplate, force_utf8=self.force_utf8)
         return outputbuffer.getvalue()
 
     def export_tarball_to_file(self, filehandle):
         """See IPOTemplateExporter."""
-        export_potemplate_tarball(filehandle, self.potemplate)
+        export_potemplate_tarball(
+            filehandle, self.potemplate, force_utf8=self.force_utf8)
 
 class DistroReleasePOExporter:
     """Adapt a distribution release for PO exports."""
