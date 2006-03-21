@@ -24,7 +24,7 @@ Then we click on that link and load the +edit page for the branch.
   ...
 
 Then, post the changes to the author and summary. Also add a trailing
-whitespace to the URL. We should be redirected to the branch page.
+slash to the URL. We should be redirected to the branch page.
 
   >>> print http(r"""
   ... POST /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1

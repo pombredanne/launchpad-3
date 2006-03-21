@@ -202,40 +202,40 @@ class BranchSet:
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""
-        # import locally to avoid circular imports
         assert not url.endswith('/')
-        branch = Branch.selectOneBy(url=url)
-        if branch is not None:
-            return branch
+        prefix = config.launchpad.supermirror_root
+        if url.startswith(prefix):
+            branch = self.getByUniqueName(url[len(prefix):])
         else:
-            prefix = config.launchpad.supermirror_root
-            if url.startswith(prefix):
-                unique_name = url[len(prefix):]
-                return self.getByUniqueName(unique_name, default)
-            else:
-                return default
+            branch = Branch.selectOneBy(url=url)
+        if branch is None:
+            return default
+        else:
+            return branch
 
     def getByUniqueName(self, unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name."""
+        # import locally to avoid circular imports
         from canonical.launchpad.database.person import Person
         from canonical.launchpad.database.product import Product
         match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
         if match is None:
             return default
         owner_name, product_name, branch_name = match.groups()
-        owner = Person.selectOneBy(name=owner_name)
-        if owner is None:
-            return default
         if product_name == '+junk':
-            query = ('owner=%d AND product IS NULL AND name=%s'
-                     % (owner.id, quote(branch_name)))
+            query = ("Branch.owner = Person.id"
+                     + " AND Branch.product IS NULL"
+                     + " AND Person.name = " + quote(owner_name)
+                     + " AND Branch.name = " + quote(branch_name))
+            tables=['Person']
         else:
-            product = Product.selectOneBy(name=product_name)
-            if product is None:
-                return default
-            query = ('owner=%d AND product=%d AND name=%s'
-                     % (owner.id, product.id, quote(branch_name)))
-        branch = Branch.selectOne(query)
+            query = ("Branch.owner = Person.id"
+                     + " AND Branch.product = Product.id"
+                     + " AND Person.name = " + quote(owner_name)
+                     + " AND Product.name = " + quote(product_name)
+                     + " AND Branch.name = " + quote(branch_name))
+            tables=['Person', 'Product']            
+        branch = Branch.selectOne(query, clauseTables=tables)
         if branch is None:
             return default
         else:

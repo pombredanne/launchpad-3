@@ -130,7 +130,7 @@ True
 ...     ('failed', branchset.getByUrl(junkcode_supermirror))
 True
 
-The provided URL must not have any trailing whitespace:
+The provided URL must not have any trailing slash:
 
 >>> try: branchset.getByUrl(gterm_dev_url + '/')
 ... except AssertionError: print 'trailing slash not allowed'
