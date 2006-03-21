@@ -12,7 +12,7 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.webapp import LaunchpadView
 
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 from canonical.launchpad.interfaces import (
@@ -62,7 +62,7 @@ class QueueItemsView(LaunchpadView):
         Return a list of labeled actions or an empty list.
         """
         if self.state in ['', 'new', 'unapproved']:
-            return ['accept', 'reject']
+            return ['Accept', 'Reject']
         return []
 
     def performQueueAction(self):
@@ -74,10 +74,11 @@ class QueueItemsView(LaunchpadView):
         if self.request.method != "POST":
             return
 
-        action = self.request.form.get('queue_action', '')
+        accept = self.request.form.get('Accept', '')
+        reject = self.request.form.get('Reject', '')
         queue_ids = self.request.form.get('QUEUE_ID', '')
 
-        if not action or not queue_ids:
+        if (not accept and not reject) or not queue_ids:
             return
 
         if not isinstance(queue_ids, list):
@@ -85,17 +86,17 @@ class QueueItemsView(LaunchpadView):
 
         queue_set = getUtility(IDistroReleaseQueueSet)
 
-        action_map = {
-            'accept': 'setAccepted',
-            'reject': 'setRejected',
-            }
-
         success = []
         failure = []
         for queue_id in queue_ids:
             queue = queue_set.get(int(queue_id))
             try:
-                getattr(queue, action_map[action])()
+                if accept:
+                    queue.setAccepted()
+                    header = 'Accepting Results:<br>'
+                if reject:
+                    queue.setRejected()
+                    header = 'Rejecting Results:<br>'
             except QueueInconsistentStateError, info:
                 failure.append('FAILED: %s (%s)' %(queue.displayname, info))
             else:
@@ -103,6 +104,5 @@ class QueueItemsView(LaunchpadView):
 
         flush_database_updates()
 
-        report = '%s result<br>%s'% (action.upper(),
-                                     '<br>'.join(success + failure))
+        report = '%s<br>%s' % (header, ', '.join(success + failure))
         return report

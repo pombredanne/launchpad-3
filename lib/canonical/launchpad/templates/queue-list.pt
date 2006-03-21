@@ -4,14 +4,12 @@
 <div class="queue_list" tal:condition="not: view/setupQueueList">
 
   <tal:batch define="batch view/batchnav/currentBatch">
-
+  <form name="queue_items_state" action="" method="POST">
      <table>
        <tr>
-         <th><label>Queue state and name:</label></th>
+         <th><label for="queue_state">Show:</label></th>
          <td>
-          <form name="queue_items_state" action="" method="POST">
-
-          <select title="Queue state" name="queue_state" size="1">
+          <select name="queue_state" size="1">
 
             <option tal:attributes="selected python: view.state == 'new'"
                     value="new">New</option>
@@ -27,19 +25,20 @@
 
             <option tal:attributes="selected python: view.state == 'done'"
                     value="done">Done</option>
-
-          </select>
-
-	  <input title="Package Name" size="15" type="text" name="queue_text"
+          </select> uploads
+          </td>
+        </tr>
+        <tr>
+         <th><label for="queue_text">with names containing:</label></th>
+         <td>
+	  <input size="15" type="text" name="queue_text"
                  tal:attributes="value view/text"
            />
-
-          <input title="Search" type="submit" value="Search" />
-
-          </form>
+          <input type="submit" value="Update" />
          </td>
        </tr>
      </table>
+   </form>
 
      <tal:navigation
           tal:condition="batch"
@@ -80,13 +79,9 @@
        <tfoot tal:condition="view/availableActions">
          <tr>
            <td colspan="2">
-               <select title="Action" name="queue_action" size="1">
-                 <option value=""> -- </option>
-                 <option tal:repeat="action view/availableActions"
-                         tal:attributes="value action"
-                         tal:content="action"/>
-               </select>
-               <input title="Update" type="submit" value="Update" />
+                 <input tal:repeat="action view/availableActions"
+                        tal:attributes="value action; name action"
+                        value="1" type="submit"/>
            </td>
          </tr>
        </tfoot>
