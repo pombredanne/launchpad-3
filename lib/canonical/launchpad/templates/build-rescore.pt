@@ -16,26 +16,16 @@
     <div class="portalMessage" tal:condition="message"
          tal:content="structure message"/>
 
-    <div tal:condition="not: message">
-      <p><dfn tal:content="context/title">BUILD</dfn> is
-         <span tal:replace="context/buildstate/title"/>.</p>
+    <div>
+      <p> This build <span tal:replace="context/buildstate/name"/>.</p>
 
       <form name="RESCORE" action="" method="POST">
-      <table>
-        <tr>
-          <td>Last Score</td>
-          <td>
-             <input name="SCORE" type="text" size="5"
-	            tal:attributes="value context/buildqueue_record/lastscore"/>
-           </td>
-        </tr>
-        <tr>
-           <td>
-              <input name="RESCORE" type="hidden" value="1"/>
-              <input type="submit" value="Update"/>
-           </td>
-        </tr>
-      </table>
+      <div><label for="SCORE">Priority:</label>
+           <input name="SCORE" type="text" size="5"
+	          tal:attributes="value context/buildqueue_record/lastscore"/>
+           <input name="RESCORE" type="hidden" value="1"/>
+           <input type="submit" value="Update"/>
+      </div>
       </form>
     </div>
 
