@@ -36,7 +36,7 @@ class BuildOverviewMenu(ApplicationMenu):
     """Overview menu for build records """
     usedfor = IBuild
     facet = 'overview'
-    links = ['reset']
+    links = ['reset', 'rescore']
 
     @enabled_with_permission('launchpad.Admin')
     def reset(self):
@@ -44,6 +44,14 @@ class BuildOverviewMenu(ApplicationMenu):
         text = 'Reset Build'
         return Link('+reset', text, icon='edit',
                     enabled=self.context.can_be_reset)
+
+    @enabled_with_permission('launchpad.Admin')
+    def rescore(self):
+        """Only enabled for build records that are not resetable."""
+        text = 'Rescore Build'
+        enabled = not self.context.can_be_reset
+        return Link('+rescore', text, icon='edit',
+                    enabled=enabled)
 
 
 class BuildView(LaunchpadView):
@@ -65,6 +73,28 @@ class BuildView(LaunchpadView):
         # invoke context method to reset the build record
         self.context.reset()
         return '<p>Build Record reset.</p>'
+
+    def rescore_build(self):
+        """Check user confirmation and perform the build record rescore."""
+        # dismiss if builder can't be reset and return a user warn.
+        if self.context.can_be_reset:
+            return '<p>Build Record is already processed.</p>'
+
+        # retrieve user score
+        self.score = self.request.form.get('SCORE', '')
+        self.manual = self.request.form.get('MANUAL', '')
+        action = self.request.form.get('RESCORE', '')
+
+        if not action:
+            return None
+
+        if not self.manual:
+            self.context.buildqueue_record.autoScore()
+            return '<p>Auto Scoring.</p>'
+
+        # invoke context method to rescore the build record
+        self.context.buildqueue_record.manualScore(int(self.score))
+        return '<p>Build Record rescored to %s.</p>' % self.score
 
 
 class BuildRecordsView(LaunchpadView):

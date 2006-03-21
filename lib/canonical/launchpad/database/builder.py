@@ -157,6 +157,16 @@ class BuildQueue(SQLBase):
     buildstart = UtcDateTimeCol(dbName='buildstart', default= None)
     logtail = StringCol(dbName='logtail', default=None)
     lastscore = IntCol(dbName='lastscore', default=0)
+    manual = BoolCol(dbName='manual', default=False)
+
+    def manualScore(self, value):
+        """See IBuildQueue."""
+        self.lastscore = value
+        self.manual = True
+
+    def autoScore(self):
+        """See IBuildQueue."""
+        self.manual = False
 
     @property
     def archrelease(self):
