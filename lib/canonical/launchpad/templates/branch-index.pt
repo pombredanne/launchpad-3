@@ -92,10 +92,18 @@
           </a>
         </li>
         <li>
-          <a tal:attributes="href string:${context/owner/fmt:url}/+branches">
-            Other branches by
-            <tal:person replace="context/owner/displayname" />
-          </a>
+          <tal:author condition="context/author">
+            <a tal:attributes="href string:${context/owner/fmt:url}/+authoredbranches">
+              Other branches authored by
+              <tal:person replace="context/author/displayname">Author</tal:person>
+            </a>
+          </tal:author>
+          <tal:no-author condition="not:context/author">
+            <a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
+              Other branches registered (and not authored) by
+              <tal:person replace="context/owner/displayname">Owner</tal:person>
+            </a>
+          </tal:no-author>
         </li>
       </ul>
 </div>

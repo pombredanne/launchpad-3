@@ -8,6 +8,8 @@ __all__ = [
     'BranchAddView',
     'BranchContextMenu',
     'BranchEditView',
+    'BranchInPersonView',
+    'BranchInProductView',
     'BranchPullListing',
     'BranchView',
     ]
@@ -127,6 +129,21 @@ class BranchView(LaunchpadView):
                 return '(this branch has no title)'
             else:
                 return '(this branch has neither title nor summary)'
+
+
+class BranchInPersonView(BranchView):
+
+    show_person_link = False
+
+    @property
+    def show_product_link(self):
+        return self.context.product is not None
+
+
+class BranchInProductView(BranchView):
+
+    show_person_link = True
+    show_product_link = False
 
 
 class BranchEditView(SQLObjectEditView):

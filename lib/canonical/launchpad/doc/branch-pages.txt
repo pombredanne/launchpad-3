@@ -8,15 +8,15 @@ BranchView is the general class for displaying Branches.
 >>> from zope.publisher.browser import TestRequest
 >>> from canonical.launchpad.interfaces import IBranchSet
 >>> branchset = getUtility(IBranchSet)
->>> gterm = branchset[15]
+>>> gterm_dev = branchset[15]
 >>> pushed = branchset[25]
->>> gterm_view = getView(gterm, '+index', TestRequest())
+>>> gterm_dev_view = getView(gterm_dev, '+index', TestRequest())
 >>> pushed_view = getView(pushed, '+index', TestRequest())
 
 Each branch is associated to an URL on the Supermirror, that includes the name
 of the owner and product of the branch.
 
->>> gterm_view.supermirror_url()
+>>> gterm_dev_view.supermirror_url()
 u'http://bazaar.launchpad.net/~name12/gnome-terminal/main'
 
 The branch view generates an appropriate notice when a branch is missing a
@@ -51,14 +51,82 @@ True
 >>> view.missing_title_or_summary_text()
 '(this branch has neither title nor summary)'
 
+== Contextual branch views ==
+
+BranchInPersonView and BranchInProductView are used to display branch listings
+in person and product context. They provide a couple of extra attributes and
+properties to know whether to display links to the person or product associated
+to the branch.
+
+The view used to render list items is chosen using the in_person_context and
+in_product_context methods on BranchTargetView.
+
+>>> gterm_branches_view = getView(gterm_product, '+branches', TestRequest())
+>>> gterm_branches_view.in_person_context()
+False
+>>> gterm_branches_view.in_product_context()
+True
+
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> sampleperson = getUtility(IPersonSet).get(12)
+>>> sampleperson_branches_view = getView(sampleperson, '+branches', TestRequest())
+>>> sampleperson_branches_view.in_person_context()
+True
+>>> sampleperson_branches_view.in_product_context()
+False
+
+These methods behave the same in a Team context as in a normal person context.
+
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> ubuntuteam = getUtility(IPersonSet).get(17)
+>>> ubuntuteam_branches_view = getView(ubuntuteam, '+branches', TestRequest())
+>>> ubuntuteam_branches_view.in_person_context()
+True
+>>> ubuntuteam_branches_view.in_product_context()
+False
+
+These methods are used to decide whether to display the
++product-summary-listing or +person-summary listing view to generate branch
+list items.
+
+When viewing a branch listing in product context, we should display the link to
+a corresponding person.
+
+>>> gterm_dev_product_view = getView(gterm_dev, '+product-summary-listing', TestRequest())
+>>> gterm_dev_product_view.show_person_link
+True
+>>> gterm_dev_product_view.show_product_link
+False
+
+And when in a person context, we should link to the branch's product.
+
+>>> gterm_dev_product_view = getView(gterm_dev, '+person-summary-listing', TestRequest())
+>>> gterm_dev_product_view.show_person_link
+False
+>>> gterm_dev_product_view.show_product_link
+True
+
+When in a person context and the branch does not have an associated product, we
+should display none of those links.
+
+
+>>> junk_dev = branchset[20]
+>>> print junk_dev.product
+None
+>>> junk_dev_person_view = getView(junk_dev, '+person-summary-listing', TestRequest())
+>>> junk_dev_person_view.show_person_link
+False
+>>> junk_dev_person_view.show_product_link
+False
+
 == BranchEditView ==
 
 When a branch has a URL, the user is allowed to modify it. Check that the
 'url' field is present in the edit form.
 
->>> gterm.url is not None
+>>> gterm_dev.url is not None
 True
->>> view = getView(gterm, '+edit', TestRequest())
+>>> view = getView(gterm_dev, '+edit', TestRequest())
 >>> view.fieldNames
 [u'url', u'title', u'summary', u'home_page', u'author', u'whiteboard']
 
