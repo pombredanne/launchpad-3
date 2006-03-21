@@ -8,6 +8,14 @@ We should be able to see a list of branches on any product in Launchpad.
   HTTP/1.1 200 Ok
   ...<a href="http://localhost:9000/people/name12/+branch/gnome-terminal/main">GNOME Terminal Mainline</a>...
 
+Products should link their branch listing page.
+
+  >>> print http(r"""
+  ... GET /products/gnome-terminal HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...href="http://localhost:9000/products/gnome-terminal/+branches"...
+
 We should be able to display a list of branches for a product at +branches.
 
   >>> print http(r"""

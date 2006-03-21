@@ -78,11 +78,15 @@ class ITranslationImportQueueEntry(Interface):
 
     sourcepackage = Attribute("The sourcepackage associated with this entry.")
 
-    guess_potemplate = Attribute(
+    guessed_potemplate = Attribute(
         "The IPOTemplate that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 
-    guess_pofile = Attribute(
+    guessed_language_and_variant = Attribute(
+        "A set with the ILanguage and a variant that we think this entry is"
+        "for.")
+
+    guessed_pofile = Attribute(
         "The IPOFile that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 

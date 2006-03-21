@@ -14,7 +14,6 @@ Let's add 100 files to the queue so we have enough entries to play with.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 1689
   ... Content-Type: multipart/form-data; boundary=---------------------------1154239704143730702744913602
-  ... Cookie: launchpad=AoVU8ftCs8SJHHiylzoKuCfcrSYIBCAeiJhoAwAraay6sDTBT7Pzc0
   ... Referer: http://localhost:9000/products/evolution/+series/main/+translations-upload
   ... 
   ... -----------------------------1154239704143730702744913602

@@ -101,6 +101,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     # It's the caller's responsibility to encode the address fields to
     # ASCII strings.
+    # XXX CarlosPerelloMarin 20060320: Spiv is working on fixing this so we
+    # can provide a Unicode string and get the right encoding.
     for address in [from_addr] + list(to_addrs):
         if not isinstance(address, str) or not is_ascii_only(address):
             raise AssertionError(
