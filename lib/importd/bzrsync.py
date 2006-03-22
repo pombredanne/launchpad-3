@@ -145,11 +145,11 @@ class BzrSync:
                     branch=self.db_branch.id)
                 didsomething = True
 
-            # Sanity check that recorded revision history and ancestry match
-            # TODO: need to record parents immediately!
+            # XXX: need to record parents immediately!
+            # -- David Allouche 2006-03-22
 
-            # TODO: check that recorded parent list is equal to parent list in
-            # branch.
+            # XXX: check that recorded parent list is equal to parent list in
+            # branch. -- David Allouche 2006-03-22
 
         if didsomething:
             self.trans_manager.commit()
@@ -201,7 +201,7 @@ class BzrSync:
     def truncateHistory(self):
         """Remove excess RevisionNumber rows.
 
-        That is needed 'uncommit' or 'pull/push --overwrite' shortened the
+        That is needed when 'uncommit' or 'pull/push --overwrite' shortened the
         revision history. RevisionNumber rows with a sequence matching entries
         in the bzr history are updated by syncRevision, but we need to
         separately delete the excess rows.
