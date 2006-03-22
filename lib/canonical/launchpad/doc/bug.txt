@@ -130,7 +130,7 @@ Now we can mark bug #6 private:
     >>> notify(bug_will_be_set_private)
 
     >>> old_state = capture_state(
-    ...     firefox_crashes, "id", "title", "summary", "description", "name",
+    ...     firefox_crashes, "id", "title", "description", "name",
     ...     "private", "duplicateof")
     >>> firefox_crashes.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
@@ -193,7 +193,7 @@ And again, let's fake setting the bug private:
     >>> notify(bug_will_be_set_private)
 
     >>> old_state = capture_state(
-    ...     blackhole_trash_folder, "id", "title", "summary",
+    ...     blackhole_trash_folder, "id", "title",
     ...     "description", "name", "private", "duplicateof")
     >>> blackhole_trash_folder.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
@@ -323,7 +323,7 @@ When a private bug is filed:
 It's up to the submitter to explicitly subscribe the maintainer, if
 they so choose.
 
-Note that this works similarly for distributions; in this case the
+This works similarly for distributions; in this case the
 "maintainer" is considered the person who maintains the applicable
 sourcepackage. E.g.
 

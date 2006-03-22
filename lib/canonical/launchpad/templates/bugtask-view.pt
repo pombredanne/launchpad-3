@@ -49,16 +49,9 @@
             </p>
           </div>
 
-          <div class="documentDescription"
-             tal:condition="context/bug/summary"
-             tal:content="context/bug/summary">
-             Bug summary goes here if it exists.
-          </div>
-
-          <h2>Status of
-            <span tal:replace="context/targetname">upstream
-            firefox</span> bug
-            <span tal:replace="context/bug/id">3224</span></h2>
+          <h2>Status in
+            <tal:target replace="context/targetname">Firefox</tal:target>
+          </h2>
 
           <div class="field">
             <table>

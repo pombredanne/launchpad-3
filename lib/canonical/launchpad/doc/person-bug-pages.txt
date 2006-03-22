@@ -24,11 +24,25 @@ All bug tasks assigned to this person.
 By default, only bugtasks with any of the statuses listed in
 canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
 
-    >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs')
-    >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
+    >>> assigned_bugtasks_view = create_view(name16, '+assignedbugs')
+    >>> assigned_bugtasks = list(assigned_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in assigned_bugtasks])
     [(7, 'UNCONFIRMED')]
+
+Using the advanced form we can query for closed bugs.
+
+    >>> form = {
+    ...     'orderby': u'-priority', 
+    ...     'advanced': 1,
+    ...     'search': 'Search',
+    ...     'field.status': 'Fix Released'}
+
+    >>> closed_bugtasks_view = create_view(name16, '+assignedbugs', form)
+    >>> closed_bugtasks = list(closed_bugtasks_view.search().batch)
+    >>> [(bugtask.bug.id, bugtask.status.name)
+    ...     for bugtask in closed_bugtasks]
+    [(8, 'FIXRELEASED')]
 
 Reported bugs
 -------------
@@ -36,8 +50,8 @@ Reported bugs
 All bug tasks reported by someone. By default we'll get assigned and
 unassigned bug tasks.
 
-    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs')
-    >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
+    >>> reported_bugtasks_view = create_view(name16, '+reportedbugs')
+    >>> reported_bugtasks = list(reported_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
@@ -55,8 +69,8 @@ assigned.
     ...     'orderby': u'-priority', 'assignee_option': 'none',
     ...     'field.assignee': '', 'advanced': 1,
     ...     'search': 'Search'}
-    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', form)
-    >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
+    >>> reported_bugtasks_view = create_view(name16, '+reportedbugs', form)
+    >>> reported_bugtasks = list(reported_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
@@ -66,6 +80,36 @@ assigned.
      (9, 'CONFIRMED', None),
      (10, 'UNCONFIRMED', None)]
 
+Using the advanced form we can also query for closed bugs reported by someone.
+Let's first close a bug setting its status to 'Rejected'.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> reported_bugtasks[0].status = BugTaskStatus.REJECTED
+    >>> flush_database_updates()
+
+And now we query for it.
+
+    >>> form = {
+    ...     'orderby': u'-priority', 
+    ...     'assignee_option': 'none',
+    ...     'field.assignee': '', 
+    ...     'advanced': 1,
+    ...     'field.status': 'Rejected',
+    ...     'search': 'Search bugs reported by Foo Bar'}
+    >>> closed_reported_bugtasks_view = create_view(
+    ...     name16, '+reportedbugs', form)
+    >>> closed_reported_bugtasks = list(
+    ...     closed_reported_bugtasks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name,
+    ...          getattr(bugtask.assignee, 'name', None))
+    ...         for bugtask in closed_reported_bugtasks])
+    [(9, 'REJECTED', None)]
+
 
 Subscribed bugs
 ---------------
@@ -74,13 +118,30 @@ All bug tasks someone is subscribed to. By default we'll get bug tasks
 with any severity.
 
     >>> name12 = getUtility(IPersonSet).get(12)
-    >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs')
-    >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
+    >>> subscribed_bugtasks_view = create_view(name12, '+subscribedbugs')
+    >>> subscribed_bugtasks = list(subscribed_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
-     (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL'),
-     (9, 'CONFIRMED', 'NORMAL')]
+     (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
+
+Using the advanced form we can query for closed bugs someone is subscribed to. 
+
+    >>> form = {
+    ...     'orderby': u'-priority', 
+    ...     'assignee_option': 'any',
+    ...     'field.assignee': '', 
+    ...     'advanced': 1,
+    ...     'field.status': 'Fix Released',
+    ...     'search': "Search bugs Sample Person is CC'd to"}
+    >>> closed_subscribed_bugtasks_view = create_view(
+    ...     name12, '+subscribedbugs', form)
+    >>> closed_subscribed_bugtasks = list(
+    ...     closed_subscribed_bugtasks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name,
+    ...          getattr(bugtask.assignee, 'name', None))
+    ...         for bugtask in closed_subscribed_bugtasks])
+    [(8, 'FIXRELEASED', u'name16')]
 
 Bugs for Bug Contact
 --------------------

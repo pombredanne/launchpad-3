@@ -47,7 +47,6 @@ class Bug(SQLBase):
     # db field names
     name = StringCol(unique=True, default=None)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False,
                             default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -320,7 +319,7 @@ class BugSet:
 
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None, datecreated=None,
+        description=None, msg=None, datecreated=None,
         title=None, private=False, owner=None):
         """See IBugSet."""
         # Make sure that the factory has been passed enough information.
@@ -348,8 +347,7 @@ class BugSet:
             datecreated = UTC_NOW
 
         bug = Bug(
-            title=title, summary=summary,
-            description=description, private=private,
+            title=title, description=description, private=private,
             owner=owner.id, datecreated=datecreated)
 
         bug.subscribe(owner)

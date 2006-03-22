@@ -127,26 +127,6 @@ returns the subject and body of the email, as a tuple.
     <BLANKLINE>
         it's also smart enough to preserve whitespace, finally!
 
-Another edit, this time the summary:
-
-    >>> edited_bug.summary = "this summary isn't particularly short is it? after all, what kind of summary is so long that it needs to be wrapped?"
-
-    >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     summary = edited_bug.summary)
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://www.example.com/bugs/2
-    <BLANKLINE>
-    Short description changed to:
-        this summary isn't particularly short is it? after all, what kind of
-        summary is so long that it needs to be wrapped?
-
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
 
