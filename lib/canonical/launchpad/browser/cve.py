@@ -109,7 +109,6 @@ class CveSetView:
     __used_for__ = ICveSet
 
     def __init__(self, context, request):
-
         self.context = context
         self.request = request
         self.notices = []
