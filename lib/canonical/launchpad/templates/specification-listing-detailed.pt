@@ -1,9 +1,3 @@
-<p>Debug
-    Status = <span tal:replace="context/status" />
-    Priority = <span tal:replace="context/priority" />
-    Title = <span tal:replace="context/title" />
-</p>
-
 <table style="width: 100%;">
   <tbody>
     <tr>

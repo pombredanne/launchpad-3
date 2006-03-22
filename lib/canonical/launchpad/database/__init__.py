@@ -11,6 +11,7 @@ from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
 from canonical.launchpad.database.bug import *
+from canonical.launchpad.database.bugbranch import *
 from canonical.launchpad.database.bugcve import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *

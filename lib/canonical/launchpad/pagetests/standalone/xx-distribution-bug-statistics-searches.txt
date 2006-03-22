@@ -45,7 +45,7 @@ Viewing unassigned bugs as Sample Person:
   HTTP/1.1 200 Ok
   ...2 results...
 
-Viewing all reported bugs as Sample Person:
+Viewing open reported bugs as Sample Person:
 
   >>> print http(r"""
   ... GET /distros/debian/+bugs?search=Search HTTP/1.1
@@ -53,4 +53,4 @@ Viewing all reported bugs as Sample Person:
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
-  ...4 results...
+  ...3 results...

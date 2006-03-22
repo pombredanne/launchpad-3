@@ -17,8 +17,9 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    non_duplicate_bug, IMessageTarget, NotFoundError)
+from canonical.launchpad.interfaces.validation import non_duplicate_bug
+from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     ContentNameField, Title, Summary, BugField)
@@ -111,6 +112,9 @@ class IBug(IMessageTarget):
     attachments = Attribute("List of bug attachments.")
     tickets = Attribute("List of support tickets related to this bug.")
     specifications = Attribute("List of related specifications.")
+    bug_branches = Attribute(
+        "Branches associated with this bug, usually "
+        "branches on which this bug is being fixed.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
@@ -140,6 +144,15 @@ class IBug(IMessageTarget):
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
+        """
+
+    def hasBranch(branch):
+        """Is this branch linked to this bug?"""
+
+    def addBranch(branch, status):
+        """Associate a branch with this bug.
+
+        Returns an IBugBranch.
         """
 
     # CVE related methods
