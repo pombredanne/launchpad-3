@@ -8,6 +8,8 @@ __all__ = [
     'BranchAddView',
     'BranchContextMenu',
     'BranchEditView',
+    'BranchInPersonView',
+    'BranchInProductView',
     'BranchPullListing',
     'BranchView',
     ]
@@ -95,23 +97,9 @@ class BranchView(LaunchpadView):
         """Is the branch author set and equal to the registrant?"""
         return self.context.author == self.context.owner
 
-    def _unique_name(self):
-        """Unique name of the branch, including the owner and product names."""
-        return u'~%s/%s/%s' % (
-            self.context.owner.name,
-            self.context.product_name,
-            self.context.name)
-
     def supermirror_url(self):
         """Public URL of the branch on the Supermirror."""
-        return config.launchpad.supermirror_root + self._unique_name()
-
-    def display_name(self):
-        """The branch title if provided, or the unique_name."""
-        if self.context.title:
-            return self.context.title
-        else:
-            return self._unique_name()
+        return config.launchpad.supermirror_root + self.context.unique_name
 
     def edit_link_url(self):
         """Target URL of the Edit link used in the actions portlet."""
@@ -141,6 +129,21 @@ class BranchView(LaunchpadView):
                 return '(this branch has no title)'
             else:
                 return '(this branch has neither title nor summary)'
+
+
+class BranchInPersonView(BranchView):
+
+    show_person_link = False
+
+    @property
+    def show_product_link(self):
+        return self.context.product is not None
+
+
+class BranchInProductView(BranchView):
+
+    show_person_link = True
+    show_product_link = False
 
 
 class BranchEditView(SQLObjectEditView):

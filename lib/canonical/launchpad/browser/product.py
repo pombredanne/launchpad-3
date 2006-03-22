@@ -328,12 +328,6 @@ class ProductView:
         # browser, IP address and launchpad preferences.
         return helpers.request_languages(request)
 
-    @property
-    def branches(self):
-        branches = [getView(branch, '+index', self.request)
-                    for branch in self.context.branches]
-        return branches
-
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
 
