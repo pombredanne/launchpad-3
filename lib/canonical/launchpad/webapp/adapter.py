@@ -257,8 +257,10 @@ class CursorWrapper:
         except psycopg.ProgrammingError, error:
             if len(error.args):
                 errorstr = error.args[0]
-                if errorstr.startswith(
-                    'ERROR:  canceling query due to user request'):
+                if (errorstr.startswith(
+                    'ERROR:  canceling query due to user request') or
+                    errorstr.startswith(
+                    'ERROR:  canceling statement due to statement timeout')):
                     raise RequestStatementTimedOut(statement)
             raise
 
