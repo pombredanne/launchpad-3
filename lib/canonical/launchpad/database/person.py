@@ -17,7 +17,7 @@ from zope.component import getUtility
 
 # SQL imports
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin, 
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     RelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
@@ -63,6 +63,15 @@ from canonical.lp.dbschema import (
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
+
+
+class ValidPersonOrTeamCache(SQLBase):
+    """Flags if a Person or Team is active and usable in Launchpad.
+    
+    This is readonly, as the underlying table is maintained using
+    database triggers.
+    """
+    # Look Ma, no columns! (apart from id)
 
 
 class Person(SQLBase):
@@ -428,8 +437,31 @@ class Person(SQLBase):
         except IndexError:
             return 0
 
+    @property
+    def is_valid_person(self):
+        """See IPerson."""
+        # XXX: Bug 35952 stops this from working. This method is preferred,
+        # as it keeps the 'what is a valid person' logic encapsulated in the
+        # ValidPersonOrTeamCache materialized view.
+        # return (ValidPersonOrTeamCache.get(self.id) is not None)
+        
+        # No need to make this a cachedproperty, as preferredemail is
+        # already cached.
+        return (
+                self.teamowner is None
+                and self.password is not None
+                and self.merged is None
+                and self.preferredemail is not None
+                )
+
     def assignKarma(self, action_name):
         """See IPerson."""
+        # Teams don't get Karma. Inactive accounts don't get Karma.
+        # No warning, as we don't want to place the burden on callsites
+        # to check this.
+        if not self.is_valid_person:
+            return
+
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:

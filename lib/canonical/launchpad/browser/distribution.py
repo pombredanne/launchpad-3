@@ -207,7 +207,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'new']
 
     def listall(self):
         text = 'List All'
@@ -220,10 +220,6 @@ class DistributionSpecificationsMenu(ApplicationMenu):
     def table(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
-
-    def workload(self):
-        text = 'Workload'
-        return Link('+workload', text, icon='info')
 
     def new(self):
         text = 'New Specification'
