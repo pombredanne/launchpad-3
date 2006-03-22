@@ -129,6 +129,8 @@ def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
+bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
+
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextTitle('%s')
@@ -148,6 +150,8 @@ bug_secrecy = ContextId('Bug #%d - Set visibility')
 bug_subscription = ContextId('Subscription to bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
+
+bugbranch_status = "Edit branch fix status"
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 

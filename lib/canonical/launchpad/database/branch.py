@@ -21,8 +21,8 @@ from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
@@ -85,6 +85,13 @@ class Branch(SQLBase):
     subscribers = RelatedJoin(
         'Person', joinColumn='branch', otherColumn='person',
         intermediateTable='BranchSubscription', orderBy='name')
+
+    bug_branches = SQLMultipleJoin(
+        'BugBranch', joinColumn='branch', orderBy='id')
+
+    @property
+    def related_bugs(self):
+        return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
     def product_name(self):
