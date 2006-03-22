@@ -8,7 +8,7 @@ import os, os.path, errno
 import tabnanny
 from StringIO import StringIO
 import psycopg
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM
 from select import select
 
@@ -144,16 +144,13 @@ def main():
     os.chdir(here)
     cmd = [sys.executable, 'test.py'] + sys.argv[1:]
     print ' '.join(cmd)
-    # This would be simpler if we set stderr=STDOUT to combine the streams
-    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     proc.stdin.close()
 
     # Do proc.communicate(), but timeout if there's no activity on stdout or
     # stderr for too long.
-    out =  [] # stdout from tests
-    err = [] # stderr from tests
-    open_readers = set([proc.stderr, proc.stdout])
-    while open_readers:
+    open_readers = set([proc.stdout])
+    while True:
         rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
 
         if len(rlist) == 0:
@@ -168,33 +165,19 @@ def main():
             break
 
         if proc.stdout in rlist:
-            out.append(os.read(proc.stdout.fileno(), 1024))
-            if out[-1] == "":
-                open_readers.remove(proc.stdout)
-        if proc.stderr in rlist:
-            err.append(os.read(proc.stderr.fileno(), 1024))
-            if err[-1] == "":
-                open_readers.remove(proc.stderr)
+            chunk = os.read(proc.stdout.fileno(), 1024)
+            if chunk == "":
+                continue
+            print chunk,
 
-    test_ok = (proc.wait() == 0)
-
-    out = ''.join(out)
-    err = ''.join(err)
-
-    if test_ok:
-        for line in err.split('\n'):
-            if re.match('^Ran\s\d+\stest(s)?\sin\s[\d\.]+s$', line):
-                print line
-        return 0
+    rv == proc.wait()
+    if rv == 0:
+        print '\nSuccessfully run tests.'
     else:
-        print '---- test stdout ----'
-        print out
-        print '---- end test stdout ----'
+        print '\nTests failed (exit code %d)' % rv
 
-        print '---- test stderr ----'
-        print err
-        print '---- end test stderr ----'
-        return 1
+    return rv
+
 
 def killem(pid, signal):
     """Kill the process group leader identified by pid and other group members
