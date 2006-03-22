@@ -91,13 +91,13 @@ class IDistroReleaseQueue(Interface):
 
     age = Attribute("The age of this queue item.")
     displayname = Attribute("Generic displayname for a queue item")
-    isSource = Attribute("whether or not this upload contains sources")
-    isBuild = Attribute("whether or not this upload contains binaries")
-    isInstaller = Attribute(
+    containsSource = Attribute("whether or not this upload contains sources")
+    containsBuild = Attribute("whether or not this upload contains binaries")
+    containsInstaller = Attribute(
         "whether or not this upload contains installers images")
-    isTranslation = Attribute(
+    containsTranslation = Attribute(
         "whether or not this upload contains translations")
-    isUpgrader = Attribute(
+    containsUpgrader = Attribute(
         "wheter or not this upload contains upgrader images")
 
     def setNew():

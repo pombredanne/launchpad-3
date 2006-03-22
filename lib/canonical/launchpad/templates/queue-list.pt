@@ -54,17 +54,17 @@
                         tal:attributes="value queue/id"/>
               </td>
   	      <td> <span tal:replace="queue/displayname"/>
-                 <img tal:condition="queue/isSource"
+                 <img tal:condition="queue/containsSource"
                       alt="[Source]" src="/@@/package-source" title="Source"/>
-                 <img tal:condition="queue/isBuild"
+                 <img tal:condition="queue/containsBuild"
                       alt="[Build]" src="/@@/package-binary" title="Binary"/>
-                 <img tal:condition="queue/isInstaller"
+                 <img tal:condition="queue/containsInstaller"
                       alt="[Installer]" src="/@@/ubuntu.gif"
                       title="Installer"/>
-                 <img tal:condition="queue/isTranslation"
+                 <img tal:condition="queue/containsTranslation"
                       alt="[Translation]" src="/@@/translations"
                       title="Translation"/>
-                 <img tal:condition="queue/isUpgrader"
+                 <img tal:condition="queue/containsUpgrader"
                       alt="[Build]" src="/@@/topic_icon.gif"
                       title="Upgrader"/>
               </td>

@@ -139,7 +139,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
 
         The name given may be an IBinaryPackageName or a string.
         """
-        
+
     def getSourcePackageRelease(sourcepackagerelease):
         """Return a IDistroReleaseSourcePackageRelease
 

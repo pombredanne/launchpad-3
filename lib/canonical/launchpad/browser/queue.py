@@ -8,22 +8,21 @@ __all__ = [
     'QueueItemsView',
     ]
 from zope.component import getUtility
+
 from canonical.database.sqlbase import flush_database_updates
-
+from canonical.launchpad.interfaces import (
+    IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError)
 from canonical.launchpad.webapp import LaunchpadView
-
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
-from canonical.launchpad.interfaces import (
-    IHasQueueItems, IDistroReleaseQueueSet, QueueInconsistentStateError)
-
 QUEUE_SIZE = 20
 
-class QueueItemsView(LaunchpadView):
-    """Base class used to present objects that contains queue items.
 
-    It retrieves the UI queue_state selector action and setup a proper
+class QueueItemsView(LaunchpadView):
+    """Base class used to present objects that contain queue items.
+
+    It retrieves the UI queue_state selector action and sets up a proper
     batched list with the requested results. See further UI details in
     template/queue-items.pt and callsite details in DistroRelease
     view classes.
@@ -33,7 +32,7 @@ class QueueItemsView(LaunchpadView):
     def setupQueueList(self):
         """Setup a batched queue list.
 
-        Return None, so use tal:condition="not: view/setupQueueList" to
+        Returns None, so use tal:condition="not: view/setupQueueList" to
         invoke it in template.
         """
         # recover selected queue state and name
@@ -57,9 +56,9 @@ class QueueItemsView(LaunchpadView):
                                        size=QUEUE_SIZE)
 
     def availableActions(self):
-        """Return the avaiables action according selected queue state.
+        """Return the available actions according to the selected queue state.
 
-        Return a list of labeled actions or an empty list.
+        Returns a list of labeled actions or an empty list.
         """
         if self.state in ['', 'new', 'unapproved']:
             return ['Accept', 'Reject']
@@ -68,7 +67,7 @@ class QueueItemsView(LaunchpadView):
     def performQueueAction(self):
         """Execute the designed action over the selected queue items.
 
-        Return a message describing the action executed or None if nothing
+        Returns a message describing the action executed or None if nothing
         was done.
         """
         if self.request.method != "POST":
@@ -86,21 +85,26 @@ class QueueItemsView(LaunchpadView):
 
         queue_set = getUtility(IDistroReleaseQueueSet)
 
+        if accept:
+            header = 'Accepting Results:<br>'
+            def queue_action(queue_item):
+                queue_item.setAccepted()
+        elif reject:
+            header = 'Rejecting Results:<br>'
+            def queue_action(queue_item):
+                queue_item.setRejected()
+
         success = []
         failure = []
         for queue_id in queue_ids:
-            queue = queue_set.get(int(queue_id))
+            queue_item = queue_set.get(int(queue_id))
             try:
-                if accept:
-                    queue.setAccepted()
-                    header = 'Accepting Results:<br>'
-                if reject:
-                    queue.setRejected()
-                    header = 'Rejecting Results:<br>'
+                queue_action(queue_item)
             except QueueInconsistentStateError, info:
-                failure.append('FAILED: %s (%s)' %(queue.displayname, info))
+                failure.append('FAILED: %s (%s)' %
+                               (queue_item.displayname, info))
             else:
-                success.append('OK: %s' % queue.displayname)
+                success.append('OK: %s' % queue_item.displayname)
 
         flush_database_updates()
 

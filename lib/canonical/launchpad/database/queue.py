@@ -152,12 +152,12 @@ class DistroReleaseQueue(SQLBase):
     # XXX cprov 20060314: following properties should be redesigned to
     # reduce the duplicated code.
     @cachedproperty
-    def isSource(self):
+    def containsSource(self):
         """See IDistroReleaseQueue."""
         return self.sources
 
     @cachedproperty
-    def isBuild(self):
+    def containsBuild(self):
         """See IDistroReleaseQueue."""
         return self.builds
 
@@ -167,19 +167,19 @@ class DistroReleaseQueue(SQLBase):
         return [custom.customformat for custom in self.customfiles]
 
     @cachedproperty
-    def isInstaller(self):
+    def containsInstaller(self):
         """See IDistroReleaseQueue."""
         return (DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER
                 in self._customFormats)
 
     @cachedproperty
-    def isTranslation(self):
+    def containsTranslation(self):
         """See IDistroReleaseQueue."""
         return (DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS
                 in self._customFormats)
 
     @cachedproperty
-    def isUpgrader(self):
+    def containsUpgrader(self):
         """See IDistroReleaseQueue."""
         return (DistroReleaseQueueCustomFormat.DIST_UPGRADER
                 in self._customFormats)

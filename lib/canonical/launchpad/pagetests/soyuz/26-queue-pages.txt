@@ -1,7 +1,7 @@
 
-Queue pages were designed to offer the hability to perform
+Queue pages were designed to offer the ability to perform
 control and visualisation over the current uploade queue.
-It's based on top of DistroRelease instance
+Currently the queue page is only available for DistroReleases.
 
 
 Visualise current queue, by default the NEW queue:
@@ -55,7 +55,7 @@ Check if the item was moved to the correct place, the ACCEPTED queue:
   ...alsa-utils...
 
 
-Rejection an item:
+Reject an item:
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
@@ -79,7 +79,7 @@ Check if the item was moved to the correct place, REJECTED queue:
   ...netapplet...
 
 
-Use the text filter do inspect the NEW queue:
+Use the text filter to inspect the NEW queue:
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
