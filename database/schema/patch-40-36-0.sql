@@ -13,14 +13,14 @@ ALTER TABLE Branch ADD CONSTRAINT branch_url_unique UNIQUE(url);
 UPDATE Branch SET url = trim(trailing '/' FROM url) WHERE url IS NOT NULL;
 
 ALTER TABLE Branch ADD CONSTRAINT branch_url_no_trailing_slash
-   CHECK (trim(trailing '/' FROM url) = url);
+   CHECK (url NOT LIKE '%/');
 
 -- Since we need to uniquely identify a branch by pull URL _or_ Supermirror
 -- URL, we need to ensure that no pull URL looks like a Supermirror URL. That
 -- would not be useful anyway.
 
 ALTER TABLE Branch ADD CONSTRAINT branch_url_not_supermirror
-   CHECK (NOT url LIKE 'http://bazaar.launchpad.net/%');
+   CHECK (url NOT LIKE 'http://bazaar.launchpad.net/%');
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 96, 4);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 36, 0);
