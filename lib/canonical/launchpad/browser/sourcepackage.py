@@ -264,19 +264,3 @@ class SourcePackageView(BuildRecordsView):
         return sorted(potemplatenames, key=lambda item: item.name)
 
 
-class SourcePackageBugsView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        results = self.bugtask_search()
-        self.batchnav = BatchNavigator(results, request)
-
-    def bugtask_search(self):
-        return self.context.bugs
-
-    def task_columns(self):
-        return [
-            "id", "title", "status", "priority", "severity",
-            "submittedon", "submittedby", "assignedto", "actions"]
