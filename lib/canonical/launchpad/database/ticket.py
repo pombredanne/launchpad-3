@@ -69,6 +69,9 @@ class Ticket(SQLBase):
         orderBy='id')
     bugs = RelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
+    messages = RelatedJoin('Message', joinColumn='ticket',
+        otherColumn='message',
+        intermediateTable='TicketMessage', orderBy='datecreated')
     reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
 
@@ -118,6 +121,10 @@ class Ticket(SQLBase):
     def can_be_reopened(self):
         return self.status in [
             TicketStatus.ANSWERED, TicketStatus.REJECTED]
+
+    def isSubscribed(self, person):
+        return bool(TicketSubscription.selectOneBy(ticketID=self.id,
+                                                   personID=person.id))
 
     def reopen(self, reopener):
         """See ITicket."""
@@ -175,11 +182,6 @@ class Ticket(SQLBase):
             if sub.person.id == person.id:
                 sub.destroySelf()
                 return
-
-    # messages
-    messages = RelatedJoin('Message', joinColumn='ticket',
-        otherColumn='message',
-        intermediateTable='TicketMessage', orderBy='datecreated')
 
     def newMessage(self, owner=None, subject=None, content=None,
                    when=UTC_NOW):
@@ -278,3 +280,4 @@ class TicketSet:
             return Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return default
+

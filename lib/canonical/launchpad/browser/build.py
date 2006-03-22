@@ -108,3 +108,4 @@ class BuildRecordsView(LaunchpadView):
         in its result table or not. It's only ommited in builder-index page.
         """
         return True
+

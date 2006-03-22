@@ -280,8 +280,10 @@ class Distribution(SQLBase, BugTargetBase):
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        return Specification.selectBy(distributionID=self.id,
+        results = Specification.selectBy(distributionID=self.id,
             orderBy=order)[:quantity]
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -290,9 +292,10 @@ class Distribution(SQLBase, BugTargetBase):
     def tickets(self, quantity=None):
         """See ITicketTarget."""
         return Ticket.select("""
-            distribution = %s
+            Ticket.distribution = %s
             """ % sqlvalues(self.id),
-            orderBy='-datecreated',
+            orderBy='-Ticket.datecreated',
+            prejoins=['distribution', 'owner', 'sourcepackagename'],
             limit=quantity)
 
     def newTicket(self, owner, title, description):
