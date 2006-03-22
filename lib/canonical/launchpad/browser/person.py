@@ -1966,10 +1966,16 @@ class ObjectReassignmentView:
         self.request = request
         self.user = getUtility(ILaunchBag).user
         self.errormessage = ''
-        self.ownerOrMaintainer = getattr(context, self.ownerOrMaintainerAttr)
         setUpWidgets(self, self.schema, IInputWidget)
-        self.contextName = (getattr(self.context, 'displayname', None) or
-                            getattr(self.context, 'name', None))
+
+    @property
+    def ownerOrMaintainer(self):
+        return getattr(self.context, self.ownerOrMaintainerAttr)
+
+    @property
+    def contextName(self):
+        return (getattr(self.context, 'displayname', None) or
+                getattr(self.context, 'name', None))
 
     def processForm(self):
         if self.request.method == 'POST':
@@ -2047,7 +2053,6 @@ class TeamReassignmentView(ObjectReassignmentView):
 
     def __init__(self, context, request):
         ObjectReassignmentView.__init__(self, context, request)
-        self.contextName = self.context.browsername
         self.callback = self._addOwnerAsMember
 
     def _addOwnerAsMember(self, team, oldOwner, newOwner):
