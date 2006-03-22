@@ -94,10 +94,10 @@ class ProberFactory(protocol.ClientFactory):
             if status == str(httplib.OK):
                 self.deferred.callback(status)
             else:
-                self.deferred.errback(Failure(BadResponseCodeException(status)))
+                self.deferred.errback(Failure(BadResponseCode(status)))
 
 
-class BadResponseCodeException(Exception):
+class BadResponseCode(Exception):
 
     def __init__(self, status, *args):
         Exception.__init__(self, *args)
@@ -135,9 +135,9 @@ class MirrorProberCallbacks(object):
         msg = ('Deleted %s with url %s because of %s.'
                % (self.mirror_class_name, self.url, failure.getErrorMessage()))
         self.log_file.write(msg)
-        failure.trap(ProberTimeout, BadResponseCodeException)
+        failure.trap(ProberTimeout, BadResponseCode)
 
-    def ensureOrDeleteMirrorRelease(self, http_status):
+    def ensureMirrorRelease(self, http_status):
         """Make sure we have a mirror for self.release, self.pocket and 
         self.component.
         """

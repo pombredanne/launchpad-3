@@ -26,7 +26,7 @@ from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, ProberTimeout, MirrorProberCallbacks,
-    BadResponseCodeException)
+    BadResponseCode)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -87,12 +87,14 @@ class TestDistributionMirrorProber(TwistedTestCase):
 
     def test_notfound(self):
         d = self._createProberAndConnect(self.urls['404'])
-        return self.assertFailure(d, BadResponseCodeException)
+        return self.assertFailure(d, BadResponseCode)
 
     def test_500(self):
         d = self._createProberAndConnect(self.urls['500'])
+        # XXX: This is an intentionally introduced failure, so we know when we
+        # managed to make the zope test runner actually fail.
         return self.assertFailure(d, ProberTimeout)
-        return self.assertFailure(d, BadResponseCodeException)
+        return self.assertFailure(d, BadResponseCode)
 
     def test_timeout(self):
         d = self._createProberAndConnect(self.urls['timeout'])
@@ -104,27 +106,35 @@ class TestDistributionMirrorProberCallbacks(TestCase):
     def setUp(self):
         LaunchpadTestSetup().setUp()
         self.ztm = initZopeless(dbuser=config.distributionmirrorprober.dbuser)
-
-    def tearDown(self):
-        LaunchpadTestSetup().tearDown()
-        self.ztm.uninstall()
-
-    def test_Callbacks(self):
         mirror = DistributionMirror.get(1)
         warty = DistroRelease.get(1)
         pocket = PackagePublishingPocket.RELEASE
         component = warty.components[0]
         log_file = StringIO()
         url = 'foo'
-        callbacks = MirrorProberCallbacks(
+        self.callbacks = MirrorProberCallbacks(
             mirror, warty, pocket, component, url, log_file)
-        reason = callbacks.deleteMirrorRelease(
-            Failure(exc_value=ProberTimeout()))
+
+    def tearDown(self):
+        LaunchpadTestSetup().tearDown()
+        self.ztm.uninstall()
+
+    def test_failure_propagation(self):
+        # Make sure that deleteMirrorRelease() does not propagate
+        # ProberTimeOut or BadResponseCode failures.
+        reason = self.callbacks.deleteMirrorRelease(
+            Failure(ProberTimeout()))
         self.failUnless(
             reason is None, "A timeout shouldn't be propagated.")
+        reason = self.callbacks.deleteMirrorRelease(
+            Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
+        self.failUnless(
+            reason is None, "A bad response code shouldn't be propagated.")
 
+        # Make sure that deleteMirrorRelease() propagate any failure that is
+        # not a ProberTimeout or BadResponseCode.
         d = Deferred()
-        d.addErrback(callbacks.deleteMirrorRelease)
+        d.addErrback(self.callbacks.deleteMirrorRelease)
         def got_result(result):
             self.fail(
                 "Any failure that's not a timeout should be propagated.")
@@ -135,8 +145,8 @@ class TestDistributionMirrorProberCallbacks(TestCase):
         d.errback(Failure(ZeroDivisionError()))
         self.assertEqual([1], ok)
 
-        mirror_distro_release_source = None
-        mirror_distro_release_source = callbacks.ensureOrDeleteMirrorRelease(
+    def test_mirrorrelease_creation_and_deletion(self):
+        mirror_distro_release_source = self.callbacks.ensureMirrorRelease(
              str(httplib.OK))
         self.failUnless(
             mirror_distro_release_source is not None,
@@ -144,8 +154,8 @@ class TestDistributionMirrorProberCallbacks(TestCase):
             "MirrorDistroReleaseSource/MirrorDistroArchRelease should be "
             "created.")
 
-        callbacks.deleteMirrorRelease(
-            Failure(BadResponseCodeException(str(httplib.NOT_FOUND))))
+        self.callbacks.deleteMirrorRelease(
+            Failure(BadResponseCode(str(httplib.NOT_FOUND))))
         # If the prober gets a 404 status, we need to make sure there's no
         # MirrorDistroReleaseSource/MirrorDistroArchRelease referent to
         # that url

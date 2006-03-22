@@ -779,6 +779,16 @@ BINARYPACKAGE_EXTENSIONS = {
     BinaryPackageFormat.RPM: '.rpm'}
 
 
+class UnrecognizedBinaryFormat(Exception):
+
+    def __init__(self, fname, *args):
+        Exception.__init__(self, *args)
+        self.fname = fname
+
+    def __str__(self):
+        return '%s is not recognized as a binary file.' % self.fname
+
+
 def getBinaryPackageFormat(fname):
     """Return the BinaryPackageFormat for the given filename.
 
@@ -793,9 +803,7 @@ def getBinaryPackageFormat(fname):
         if fname.endswith(value):
             return key
 
-    # XXX: Is it okay to return None here?
-    # -- Guilherme Salgado, 2006-02-14
-    return None
+    raise UnrecognizedBinaryFormat(fname)
 
 
 def getBinaryPackageExtension(format):
