@@ -74,6 +74,12 @@ class IBranch(IHasOwner):
         description=_("Whether the product name specified within the branch "
                       " is overriden by the product name set in Launchpad."))
 
+    # Display names
+    unique_name = Attribute(
+        "Unique name of the branch, including the owner and product names.")
+    displayname = Attribute(
+        "The branch title if provided, or the unique_name.")
+
     # Home page attributes
     home_page = TextLine(
         title=_('Web Page'), required=False,
@@ -127,6 +133,10 @@ class IBranch(IHasOwner):
                          "push branch (url is None).  This url may be a "
                          "Canonical-internal path, so we don't display this "
                          "on the main website.")
+
+    related_bugs = Attribute(
+        "The bugs related to this branch, likely branches on which "
+        "some work has been done to fix this bug.")
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
