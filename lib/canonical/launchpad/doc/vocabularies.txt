@@ -152,7 +152,7 @@ o PersonActiveMembership - all the teams the person is an active member of.
     admins Launchpad Administrators Launchpad Administrators
     launchpad Launchpad Developers Launchpad Developers
     name18 Ubuntu Gnome Team Ubuntu Gnome Team
-    name17 Ubuntu Team Ubuntu Team
+    ubuntu-team Ubuntu Team Ubuntu Team
     vcs-imports VCS imports VCS imports
     testing-spanish-team testing Spanish team testing Spanish team
 
