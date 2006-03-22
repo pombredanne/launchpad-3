@@ -88,7 +88,6 @@ Let's read our mail.
   > from the following location:
   > 
   >     http://localhost:58000/.../rosetta-pmount.tar.gz
-  > 
 
 The mail has a URL in it.
 
@@ -125,10 +124,6 @@ Now let's see what happens if one of the PO files is broken.
   >>> request_set.addRequest(person, None, [hr, ca])
   >>> process_queue(MockTransactionManager(), MockLogger())
   log> Exporting objects for person 1, PO template 2
-  log> PO export failed for pmount/hr.po
-  log> Traceback (most recent call last):
-  ...
-  log> POInvalidInputError: Unknown charset u'broken'
 
   >>> transaction.commit()
 
@@ -152,12 +147,12 @@ another to the person who made the request.
   >  * hr.po
   > 
   > The Rosetta team has been notified of this problem. Please
-  > reply to this email for further assistance. Of the 2 files
-  > you requested, Rosetta successfully exported 1, which can
-  > be downloaded from the following location:
+  > reply to this email for further assistance.
+  > 
+  > Of the 2 files you requested, Rosetta successfully exported
+  > 1, which can be downloaded from the following location:
   > 
   >     http://localhost:58000/.../rosetta-pmount.tar.gz
-  > 
 
 We should get a slightly different email if we didn't manage to export any
 files:
@@ -166,10 +161,6 @@ files:
   >>> request_set.addRequest(person, None, [hr])
   >>> process_queue(MockTransactionManager(), MockLogger())
   log> Exporting objects for person 1, PO template 2
-  log> PO export failed for pmount/hr.po
-  log> Traceback (most recent call last):
-  ...
-  log> POInvalidInputError: Unknown charset u'broken'
 
   >>> transaction.commit()
 
@@ -183,7 +174,6 @@ files:
   > Rosetta encountered problems exporting the files you
   > requested. The Rosetta team has been notified of this
   > problem. Please reply to this email for further assistance.
-  > 
 
 Let's try requesting an export in MO format:
 

@@ -8,6 +8,9 @@ __all__ = [
     'BranchAddView',
     'BranchContextMenu',
     'BranchEditView',
+    'BranchNavigation',
+    'BranchInPersonView',
+    'BranchInProductView',
     'BranchPullListing',
     'BranchView',
     ]
@@ -19,12 +22,27 @@ from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
-
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.interfaces import (
+    IBranch, IBranchSet, ILaunchBag, IBugSet)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation, stepthrough)
+
+
+class BranchNavigation(Navigation):
+
+    usedfor = IBranch
+
+    @stepthrough("+bug")
+    def traverse_bug_branch(self, bugid):
+        """Traverses to an IBugBranch."""
+        bug = getUtility(IBugSet).get(bugid)
+
+        for bug_branch in bug.bug_branches:
+            if bug_branch.branch == self.context:
+                return bug_branch
 
 
 class BranchContextMenu(ContextMenu):
@@ -95,23 +113,9 @@ class BranchView(LaunchpadView):
         """Is the branch author set and equal to the registrant?"""
         return self.context.author == self.context.owner
 
-    def _unique_name(self):
-        """Unique name of the branch, including the owner and product names."""
-        return u'~%s/%s/%s' % (
-            self.context.owner.name,
-            self.context.product_name,
-            self.context.name)
-
     def supermirror_url(self):
         """Public URL of the branch on the Supermirror."""
-        return config.launchpad.supermirror_root + self._unique_name()
-
-    def display_name(self):
-        """The branch title if provided, or the unique_name."""
-        if self.context.title:
-            return self.context.title
-        else:
-            return self._unique_name()
+        return config.launchpad.supermirror_root + self.context.unique_name
 
     def edit_link_url(self):
         """Target URL of the Edit link used in the actions portlet."""
@@ -141,6 +145,21 @@ class BranchView(LaunchpadView):
                 return '(this branch has no title)'
             else:
                 return '(this branch has neither title nor summary)'
+
+
+class BranchInPersonView(BranchView):
+
+    show_person_link = False
+
+    @property
+    def show_product_link(self):
+        return self.context.product is not None
+
+
+class BranchInProductView(BranchView):
+
+    show_person_link = True
+    show_product_link = False
 
 
 class BranchEditView(SQLObjectEditView):

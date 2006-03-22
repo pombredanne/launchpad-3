@@ -695,9 +695,7 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
 
     def search(self):
         return BugTaskSearchListingView.search(
-            self, extra_params={
-                'owner': self.context,
-                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+            self, extra_params={'owner': self.context})
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""
@@ -882,9 +880,7 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def search(self):
         """Return the open bugs assigned to a person."""
         return BugTaskSearchListingView.search(
-            self, extra_params={
-                'assignee': self.context,
-                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+            self, extra_params={'assignee': self.context})
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -911,9 +907,7 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
 
     def search(self):
         return BugTaskSearchListingView.search(
-            self, extra_params={
-                'subscriber': self.context,
-                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+            self, extra_params={'subscriber': self.context})
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""

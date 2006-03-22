@@ -24,8 +24,8 @@ from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
-    ICanonicalUrlData, ILaunchpadCelebrities, ILaunchBag, IPOFileSet,
-    IPOTemplateSubset, ITranslationImportQueue)
+    ICanonicalUrlData, ILaunchBag, IPOFileSet, IPOTemplateSubset,
+    ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -236,14 +236,13 @@ class POTemplateView(LaunchpadView):
                 " recognised as a file that can be imported.")
 
 
-class POTemplateEditView(POTemplateView, SQLObjectEditView):
+class POTemplateEditView(SQLObjectEditView):
     """View class that lets you edit a POTemplate object."""
     def __init__(self, context, request):
         # Restrict the info we show to the user depending on the
         # permissions he has.
         self.prepareForm()
 
-        POTemplateView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
 
     def prepareForm(self):
@@ -252,10 +251,8 @@ class POTemplateEditView(POTemplateView, SQLObjectEditView):
         if user is not None:
             # We do this check because this method can be called before we
             # know which user is getting this view (when we show them the
-            # login form.
-            admins = getUtility(ILaunchpadCelebrities).admin
-            rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-            if not (user.inTeam(admins) or user.inTeam(rosetta_experts)):
+            # login form).
+            if not helpers.check_permission('launchpad.Admin', user):
                 # The user is just a maintainer, we show only the fields
                 # 'name', 'description' and 'owner'.
                 self.fieldNames = ['name', 'description', 'owner']
