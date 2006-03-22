@@ -1,0 +1,15 @@
+<div class="portlet" condition="context/branches">
+  <h4>Latest branches of <span tal:replace="context/name">firefox</span>:</h4>
+  <div class="portletBody portletContent">
+    
+  <ul>
+    <li tal:repeat="branch context/getLatestBranches" class="branch">
+      <a tal:attributes="href branch/fmt:url"
+         tal:content="branch/name"
+      >branch displayname</a>:
+      <span tal:replace="branch/owner/name">carlos</span> 
+    </li>
+  </ul>
+
+  </div>
+</div>
