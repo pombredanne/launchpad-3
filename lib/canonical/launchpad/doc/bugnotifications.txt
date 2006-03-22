@@ -76,8 +76,7 @@ examples throughout the rest of this document.
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=Unconfirmed; priority=None;\n\tassignee=None; ']
 
-Note that all bug notification emails include an absolute URL to the
-bug:
+All bug notification emails include an absolute URL to the bug:
 
     >>> print msg.get_payload(decode=True)
     Public bug reported:
@@ -108,10 +107,10 @@ the recipient, this issue is avoided:
     >>> for name in IBug.names(all=True):
     ...     setattr(bug_before_modification, name,
     ...             getattr(firefox_crashes, name))
-    >>> firefox_crashes.summary = "a new summary"
+    >>> firefox_crashes.description = "a new description"
     >>> firefox_crashes_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes, bug_before_modification,
-    ...     ["summary"])
+    ...     ["description"])
     >>> notify(firefox_crashes_modified)
 
     >>> transaction.commit()
@@ -787,7 +786,6 @@ report private:
     >>> firefox_bug.private = True
     >>> bug_before_modification = MockObject()
     >>> bug_before_modification.title = firefox_bug.title
-    >>> bug_before_modification.summary = firefox_bug.summary
     >>> bug_before_modification.description = firefox_bug.description
     >>> bug_before_modification.name = firefox_bug.name
     >>> bug_before_modification.id = firefox_bug.id
