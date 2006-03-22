@@ -23,9 +23,8 @@
     </p>
 
     <p>
-      To report a bug on <span tal:replace="context/displayname">Alsa Utils</span>,
-      please use its official bug tracker,
-      or report a bug on its package in the distribution you&#8217;re using.
+      To report a bug about <span tal:replace="context/displayname">Alsa Utils</span>,
+      please use its official bug tracker.
     </p>
   </tal:not_uses_malone>
 

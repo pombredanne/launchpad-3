@@ -36,7 +36,7 @@
         <p>
           To report a bug about
           <span tal:replace="context/distribution/displayname">Debian</span>,
-          please use the bug tracker for the distribution you're using.
+          please use its official bug tracker.
         </p>
       </tal:not_malone>
     </div>
