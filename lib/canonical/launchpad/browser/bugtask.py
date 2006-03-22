@@ -673,6 +673,10 @@ class BugTaskSearchListingView(LaunchpadView):
             # CustomWidgetFactory doesn't work with
             # MultiCheckBoxWidget, so we work around this by manually
             # instantiating the widget.
+            #
+            # XXX, Brad Bollenbach, 2006-03-22: Integrate BjornT's
+            # MultiCheckBoxWidget workaround once that lands, which
+            # will also fix the widget to use <label>'s.
             self.component_widget = MultiCheckBoxWidget(
                 self.schema['component'].bind(self.context),
                 getVocabularyRegistry().get(None, "Component"),

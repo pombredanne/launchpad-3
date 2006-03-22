@@ -243,7 +243,7 @@ demonstrate how component filtering works.
     ...     comment="test")
     <Bug ...>
 
-There are now four bugtasks open on packages in Ubuntu main.
+There are now three bugtasks open on packages in Ubuntu main.
 
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> componentset = getUtility(IComponentSet)
@@ -253,7 +253,7 @@ There are now four bugtasks open on packages in Ubuntu main.
     >>> params = BugTaskSearchParams(component=main, user=None)
     >>> main_tasks = ubuntu.searchTasks(params)
     >>> sorted([bugtask.bug.id for bugtask in main_tasks])
-    [1, 1, 9]
+    [1, 9]
 
 And there is the one bug on a "universe" package that we just added:
 
@@ -268,7 +268,7 @@ Let's get all bugs on either main or universe:
     ...     component=any(main, universe), user=None)
     >>> main_or_universe_tasks = ubuntu.searchTasks(params)
     >>> sorted([bugtask.bug.id for bugtask in main_or_universe_tasks])
-    [1, 1, 9, 10L]
+    [1, 9, 10L]
 
 It's also possible to iterate over all the bug tasks:
 

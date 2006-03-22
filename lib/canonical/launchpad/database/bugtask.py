@@ -418,20 +418,17 @@ class BugTaskSet:
                 "or distrorelease")
 
             if zope_isinstance(params.component, any):
-                component_ids = [
-                    str(component.id) for component in
-                    params.component.query_values]
+                component_ids = sqlvalues(*params.component.query_values)
             else:
-                component_ids = [str(params.component.id)]
+                component_ids = sqlvalues(params.component)
 
-            extra_clauses.append(
-                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename AND "
-                "SourcePackageRelease.uploaddistrorelease = %d AND "
-                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease AND "
-                "SourcePackagePublishing.component IN (%s) AND "
-                "SourcePackagePublishing.status = %s" % (
-                    distrorelease.id, ', '.join(component_ids),
-                    dbschema.PackagePublishingStatus.PUBLISHED.value))
+            extra_clauses.extend([
+                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename",
+                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease",
+                "SourcePackagePublishing.distrorelease = %d" % distrorelease.id,
+                "SourcePackagePublishing.component IN (%s)" % ', '.join(component_ids),
+                "SourcePackagePublishing.status = %s" %
+                    dbschema.PackagePublishingStatus.PUBLISHED.value])
 
         clause = self._getPrivacyFilter(params.user)
         if clause:
