@@ -65,14 +65,6 @@ Change the title of a bug:
     >>> make_sure_karma_is_added('bugtitlechanged', event, 1)
     True
 
-Change the summary of a bug:
-
-    >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.summary = "Summary of bug"
-    >>> event = SQLObjectModifiedEvent(bug, old_bug, ['summary'])
-    >>> make_sure_karma_is_added('bugsummarychanged', event, 2)
-    True
-
 Change the description of a bug:
 
     >>> old_bug = Snapshot(bug, providing=IBug)
@@ -197,11 +189,18 @@ Adding a comment generates a karma event, bug gives no points:
     >>> make_sure_karma_is_added('bugcommentadded', event, 0)
     True
 
-Now, let's ensure that we've covered every of Malone's karma actions:
+Now, let's ensure that we've covered every one of Malone's karma actions,
+except for updating the obsolete "summary":
 
     >>> from canonical.launchpad.database import KarmaCategory
     >>> bugs_category = KarmaCategory.byName('bugs')
     >>> bugs_karma_actions = bugs_category.karmaactions
+    >>> summary_change = getUtility(IKarmaActionSet).getByName('bugsummarychanged')
+    >>> added_karma_actions.add(summary_change)
     >>> added_karma_actions == set(bugs_karma_actions)
     True
 
+XXX Matthew Paul Thomas 2006-03-22: On 2007-03-23, a year after bug summaries were
+removed, all the karma gained from updating bug summaries will have expired. Then the
+'bugsummarychanged' row should be removed from the database, and summary_change can be
+removed from this test.
