@@ -7,13 +7,9 @@ __metaclass__ = type
 
 import datetime
 import sys
-import tarfile
 import tempfile
-import time
 import transaction
-from StringIO import StringIO
 from shutil import copyfileobj
-from urllib2 import HTTPError
 
 from zope.component import getUtility
 
@@ -22,10 +18,9 @@ from canonical.database.sqlbase import (flush_database_updates, sqlvalues,
     cursor)
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 from canonical.launchpad.components.poexport import (DistroReleasePOExporter,
-    DistroReleaseTarballPOFileOutput)
+    DistroReleaseTarballPOFileOutput, RosettaWriteTarFile)
 from canonical.launchpad.interfaces import IDistributionSet, IVPOExportSet
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad import helpers
 
 def get_distribution(name):
     """Return the distribution with the given name."""
@@ -89,7 +84,7 @@ def export(distribution_name, release_name, component, update, logger):
     logger.info("Number of PO files to export: %d" % pofile_count)
 
     filehandle = tempfile.TemporaryFile()
-    archive = helpers.RosettaWriteTarFile(filehandle)
+    archive = RosettaWriteTarFile(filehandle)
     pofile_output = DistroReleaseTarballPOFileOutput(release, archive)
 
     for index, pofile in enumerate(pofiles):
