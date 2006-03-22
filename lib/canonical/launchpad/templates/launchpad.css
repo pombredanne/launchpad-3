@@ -1160,3 +1160,7 @@ dl.faq ol {
 .informational.message, .informational .message {
   background-image: url(/@@/info_icon.gif);
 }
+.debug {background-color: black; color: white;}
+.debug.message, .debug .message {
+  background-image: url(/@@/info_icon.gif);
+}

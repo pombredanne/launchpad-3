@@ -50,7 +50,6 @@ class SQLObjectEditView(EditView, NoRenderingOnRedirect):
 
     def _abortAndSetStatus(self):
         """Abort the current transaction and set self.update_status."""
-        self.update_status = _("An error occurred.")
         transaction.abort()
 
     def update(self):
