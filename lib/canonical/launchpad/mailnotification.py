@@ -279,11 +279,6 @@ def generate_bug_edit_email(bug_delta):
         body += u"Summary changed to:\n"
         body += u"    %s\n" % bug_delta.title
 
-    if bug_delta.summary is not None:
-        body += u"Short description changed to:\n"
-        body += mailwrapper.format(bug_delta.summary)
-        body += u"\n"
-
     if bug_delta.description is not None:
         body += u"Description changed to:\n"
         body += mailwrapper.format(bug_delta.description)
@@ -549,8 +544,8 @@ def send_bug_notification(bug, user, subject, body, to_addrs=None,
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
 
-    # Add a header for each task on this bug, to help users organize their
-    # incoming mail in a way that's convenient for them.
+    # Add a header for each task on this bug, to help users organize
+    # their incoming mail in a way that's convenient for them.
     x_launchpad_bug_values = []
     for bugtask in bug.bugtasks:
         x_launchpad_bug_values.append(bugtask.asEmailHeaderValue())
@@ -646,7 +641,7 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("title", "summary", "description"):
+    for field_name in ("title", "description"):
         # fields for which we simply show the new value when they
         # change
         old_val = getattr(old_bug, field_name)

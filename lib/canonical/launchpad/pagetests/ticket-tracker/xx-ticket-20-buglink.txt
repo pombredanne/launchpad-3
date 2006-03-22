@@ -18,6 +18,30 @@ The ticket should have a +linkbug page.
   ... """)
   HTTP/1.1 200 Ok
   ...
+  
+If we try to fill a non-existent bug we'll get a nice error message.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/+linkbug HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 292
+  ... Content-Type: multipart/form-data; boundary=---------------------------668222957126169870270969712
+  ... 
+  ... -----------------------------668222957126169870270969712
+  ... Content-Disposition: form-data; name="field.bug"
+  ... 
+  ... 2112
+  ... -----------------------------668222957126169870270969712
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------668222957126169870270969712--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...An error occured...
+  ...Bug 2112 doesn't exist...
+  ...
 
 POSTing that form back to the ticket page should show the linked bug, and a
 new link to allow for unlinking.

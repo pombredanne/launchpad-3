@@ -112,12 +112,21 @@ class _Batch(object):
 
     def prevBatch(self):
         if self.start > self.listlength:
-            start = self.listlength - (self.listlength % self.size)
+            return self.lastBatch()
         else:
             start = self.start - self.size
         if start < 0:
             return None
         return _Batch(self.list, start, self.size, _listlength=self.listlength)
+
+    def firstBatch(self):
+        return _Batch(self.list, 0, size=self.size,
+                      _listlength=self.listlength)
+
+    def lastBatch(self):
+        last_batch_start = self.listlength - (self.listlength % self.size)
+        return _Batch(self.list, last_batch_start, size=self.size,
+                      _listlength=self.listlength)
 
     def total(self):
         return self.listlength

@@ -8,8 +8,15 @@
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
-COMMENT ON COLUMN Bug.summary IS 'A brief summary of the bug. This will be displayed at the very top of the page in bold. It will also receive a higher ranking in FTI queries than the description and comments of the bug. The bug summary is not created necessarily when the bug is filed, instead we just use the first comment as a description and allow people to fill in the summary later as they converge on a clear description of the bug itself.';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
+
+/* BugBranch */
+COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
+COMMENT ON COLUMN BugBranch.bug IS 'The bug associated with this branch.';
+COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
+COMMENT ON COLUMN BugBranch.fixed_in_revision IS 'The revision ID of the branch that fixes this bug.';
+COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
+COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
 /* BugTask */
 
@@ -530,6 +537,8 @@ COMMENT ON COLUMN DistroReleaseQueue.status IS 'This is an integer field contain
 COMMENT ON COLUMN DistroReleaseQueue.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
 
 COMMENT ON COLUMN DistroReleaseQueue.pocket IS 'This is the pocket the upload is targeted at.';
+
+COMMENT ON COLUMN DistroReleaseQueue.changesfile IS 'The changes file associated with this upload.';
 
 -- DistroReleaseQueueSource
 COMMENT ON TABLE DistroReleaseQueueSource IS 'An upload queue source package. This table stores information pertaining to the source files in an in-progress package upload.';
@@ -1281,3 +1290,25 @@ COMMENT ON COLUMN PersonalPackageArchive.datelastupdated IS 'Time when cache of 
 COMMENT ON TABLE PersonalSourcePackagePublication IS 'Contains the information about which sourcepackagerelease is included in a Personal Package Archive.';
 COMMENT ON COLUMN PersonalSourcePackagePublication.personalpackagearchive IS 'Target Personal Package Archive.';
 COMMENT ON COLUMN PersonalSourcePackagePublication.sourcepackagerelease IS 'Target Sourcepackagerelease.';
+
+
+-- Component
+COMMENT ON TABLE Component IS 'Known components in Launchpad';
+COMMENT ON COLUMN Component.name IS 'Component name text';
+
+
+-- Section
+COMMENT ON TABLE Section IS 'Known sections in Launchpad';
+COMMENT ON COLUMN Section.name IS 'Section name text';
+
+
+-- ComponentSelection
+COMMENT ON TABLE ComponentSelection IS 'Allowed components in a given distrorelease.';
+COMMENT ON COLUMN ComponentSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON COLUMN ComponentSelection.component IS 'Refers to the component in qestion.';
+
+
+-- SectionSelection
+COMMENT ON TABLE SectionSelection IS 'Allowed sections in a given distrorelease.';
+COMMENT ON COLUMN SectionSelection.distrorelease IS 'Refers to the distrorelease in question.';
+COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question.';
