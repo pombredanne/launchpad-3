@@ -11,7 +11,7 @@ from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Bool
+from zope.schema import Bool, Int
 from persistent import IPersistent
 
 _ = MessageIDFactory('launchpad')
@@ -25,7 +25,7 @@ __all__ = [
     'IZODBAnnotation', 'IAuthorization',
     'IHasOwner', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
-    'IAging', 'IHasDateCreated',
+    'IAging', 'IHasDateCreated', 'IHasBug',
     'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
     'ILinkData', 'ILink', 'IFacetLink', 'IStructuredString',
     'IMenu', 'IMenuBase', 'IFacetMenu',
@@ -274,6 +274,12 @@ class IHasProduct(Interface):
     """An object that has a product attribute that is an IProduct."""
 
     product = Attribute("The object's product")
+
+
+class IHasBug(Interface):
+    """An object linked to a bug, e.g., a bugtask or a bug branch."""
+
+    bug = Int(title=_("Bug #"))
 
 
 class IHasProductAndAssignee(IHasProduct, IHasAssignee):

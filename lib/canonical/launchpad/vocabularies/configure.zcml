@@ -46,6 +46,11 @@
     />
 
   <vocabulary
+    name="BugBranchStatus"
+    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
+    />
+
+  <vocabulary
     name="BugRef"
     factory="canonical.launchpad.vocabularies.BugRefVocabulary"
     />
@@ -208,6 +213,11 @@
   <vocabulary
     name="Product"
     factory="canonical.launchpad.vocabularies.ProductVocabulary"
+    />
+
+  <vocabulary
+    name="ProductBranch"
+    factory="canonical.launchpad.vocabularies.ProductBranchVocabulary"
     />
 
   <vocabulary

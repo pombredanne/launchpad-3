@@ -24,7 +24,7 @@ class TestErrorReport(unittest.TestCase):
         """Test ErrorReport.__init__()"""
         from canonical.launchpad.webapp.errorlog import ErrorReport
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
-                            'traceback-text', 'username', 'url',
+                            'traceback-text', 'username', 'url', 42,
                             [('name1', 'value1'), ('name2', 'value2'),
                              ('name1', 'value3'),
                              ('field.password', 'secret1'),
@@ -38,6 +38,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.tb_text, 'traceback-text')
         self.assertEqual(entry.username, 'username')
         self.assertEqual(entry.url, 'url')
+        self.assertEqual(entry.duration, 42)
         self.assertEqual(len(entry.req_vars), 5)
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
@@ -55,7 +56,7 @@ class TestErrorReport(unittest.TestCase):
                             datetime.datetime(2005, 04, 01, 00, 00, 00,
                                               tzinfo=UTC),
                             'traceback-text',
-                            'Sample User', 'http://localhost:9000/foo',
+                            'Sample User', 'http://localhost:9000/foo', 42,
                             [('HTTP_USER_AGENT', 'Mozilla/5.0'),
                              ('HTTP_REFERER', 'http://localhost:9000/'),
                              ('name=foo', 'hello\nworld')],
@@ -70,6 +71,7 @@ class TestErrorReport(unittest.TestCase):
             Date: 2005-04-01T00:00:00+00:00
             User: Sample User
             URL: http://localhost:9000/foo
+            Duration: 42
             
             HTTP_USER_AGENT=Mozilla/5.0
             HTTP_REFERER=http://localhost:9000/
@@ -90,6 +92,7 @@ class TestErrorReport(unittest.TestCase):
             Date: 2005-04-01T00:00:00+00:00
             User: Sample User
             URL: http://localhost:9000/foo
+            Duration: 42
             
             HTTP_USER_AGENT=Mozilla/5.0
             HTTP_REFERER=http://localhost:9000/
@@ -109,6 +112,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.tb_text, 'traceback-text')
         self.assertEqual(entry.username, 'Sample User')
         self.assertEqual(entry.url, 'http://localhost:9000/foo')
+        self.assertEqual(entry.duration, 42)
         self.assertEqual(len(entry.req_vars), 3)
         self.assertEqual(entry.req_vars[0], ('HTTP_USER_AGENT', 'Mozilla/5.0'))
         self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
@@ -201,19 +205,20 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'User: None\n')
         self.assertEqual(lines[5], 'URL: None\n')
-        self.assertEqual(lines[6], '\n')
-
-        # no request vars
+        self.assertEqual(lines[6], 'Duration: -1\n')
         self.assertEqual(lines[7], '\n')
 
-        # no database statements
+        # no request vars
         self.assertEqual(lines[8], '\n')
 
+        # no database statements
+        self.assertEqual(lines[9], '\n')
+
         # traceback
-        self.assertEqual(lines[9], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[10], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise Exception(\'xyz\')
-        self.assertEqual(lines[12], 'Exception: xyz\n')
+        self.assertEqual(lines[13], 'Exception: xyz\n')
 
     def test_raising_with_request(self):
         """Test ErrorReportingService.raising() with a request"""
@@ -258,23 +263,24 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'User: Login, 42, title, description |\\u25a0|\n')
         self.assertEqual(lines[5], 'URL: http://localhost:9000/foo\n')
-        self.assertEqual(lines[6], '\n')
+        self.assertEqual(lines[6], 'Duration: -1\n')
+        self.assertEqual(lines[7], '\n')
 
         # request vars
-        self.assertEqual(lines[7], '\\u25a0=value4\n')    # non-ASCII request var
-        self.assertEqual(lines[8], 'name1=value1\n')
-        self.assertEqual(lines[9], 'name1=value3 \\xa7\n')
-        self.assertEqual(lines[10], 'name2=value2\n')
-        self.assertEqual(lines[11], '\n')
-
-        # no database statements
+        self.assertEqual(lines[8], '\\u25a0=value4\n')    # non-ASCII request var
+        self.assertEqual(lines[9], 'name1=value1\n')
+        self.assertEqual(lines[10], 'name1=value3 \\xa7\n')
+        self.assertEqual(lines[11], 'name2=value2\n')
         self.assertEqual(lines[12], '\n')
 
+        # no database statements
+        self.assertEqual(lines[13], '\n')
+
         # traceback
-        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[14], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise Exception(\'xyz\')
-        self.assertEqual(lines[16], 'Exception: xyz\n')
+        self.assertEqual(lines[17], 'Exception: xyz\n')
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
@@ -305,19 +311,20 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[3], 'Date: 2006-01-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'User: None\n')
         self.assertEqual(lines[5], 'URL: None\n')
-        self.assertEqual(lines[6], '\n')
-
-        # no request vars
+        self.assertEqual(lines[6], 'Duration: -1\n')
         self.assertEqual(lines[7], '\n')
 
-        # no database statements
+        # no request vars
         self.assertEqual(lines[8], '\n')
 
+        # no database statements
+        self.assertEqual(lines[9], '\n')
+
         # traceback
-        self.assertEqual(lines[9], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[10], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
-        self.assertEqual(lines[12], 'UnprintableException: <unprintable instance object>\n')
+        self.assertEqual(lines[13], 'UnprintableException: <unprintable instance object>\n')
 
 
 def test_suite():

@@ -41,9 +41,12 @@
                         priority severity assignee binarypackagename
                         bugwatch dateassigned datecreated age owner
                         targetname title related_tasks statusdisplayhtml
-                        statuselsewhere setStatusFromDebbugs
-                        setSeverityFromDebbugs updateTargetNameCache
-                        asEmailHeaderValue" />
+                        statuselsewhere asEmailHeaderValue
+                        bugtask_branches" />
+        <require
+            permission="launchpad.Edit"
+            attributes="setStatusFromDebbugs setSeverityFromDebbugs
+                        updateTargetNameCache" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
@@ -76,14 +79,17 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugTaskView"
+        class="canonical.launchpad.browser.BugTaskPortletView"
         permission="launchpad.View">
-      <browser:page
-        name="+index"
-        template="../templates/bugtask-index.pt" />
       <browser:page
         name="+portlet-alsoreportedin"
         template="../templates/bugtask-portlet-alsoreportedin.pt" />
+      <browser:page
+         name="+portlet-status-details"
+         template="../templates/bugtask-status-portlet-details.pt" />
+      <browser:page
+          name="+portlet-search"
+          template="../templates/bugtarget-portlet-search.pt" />
     </browser:pages>
 
     <browser:pages
@@ -139,19 +145,6 @@
         name="+listing-detailed"
         template="../templates/bugtask-listing-detailed.pt"
         permission="zope.Public" />
-
-    <!-- Some more IBugTask portlets that use different view classes -->
-    <browser:pages
-       for="canonical.launchpad.interfaces.IBugTask"
-       class="canonical.launchpad.browser.BugTaskView"
-       permission="zope.Public">
-      <browser:page
-         name="+portlet-status-details"
-         template="../templates/bugtask-status-portlet-details.pt" />
-      <browser:page
-          name="+portlet-search"
-          template="../templates/bugtarget-portlet-search.pt" />
-    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"
@@ -246,6 +239,25 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-attachment-add.pt"
         lp:url="malone/bugs/$Bug.id/+addattachment" />
+
+    <browser:generalform
+        name="+addbranch"
+        schema="canonical.launchpad.interfaces.IBugBranch"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugBranchAddView"
+        label="Add a branch"
+        fields="branch whiteboard"
+        keyword_arguments="branch whiteboard"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-branch-add.pt"
+        lp:url="malone/bugs/$Bug.id/+addbranch" />
+
+    <browser:page
+        name="+index"
+        for="canonical.launchpad.interfaces.IBugTask"
+        class="canonical.launchpad.browser.BugTaskView"
+        permission="launchpad.View"
+        template="../templates/bugtask-index.pt" />
 
     <browser:addform
         name="+addurl"
@@ -510,21 +522,6 @@
       permission="launchpad.AnyPerson"
       template="../templates/bug-addsubscriber.pt"
       />
-
-    <browser:addform
-      name="+addmessage"
-      for="canonical.launchpad.interfaces.IBugTask"
-      schema="canonical.launchpad.interfaces.IMessage"
-      class="canonical.launchpad.browser.BugMessageAddView"
-      label="Add a comment"
-      fields="subject content owner"
-      keyword_arguments="subject content owner"
-      permission="launchpad.AnyPerson"
-      template="../templates/message-add.pt">
-      <browser:widget
-        field="owner"
-        class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
 
     <!-- BugTaskDelta -->
     <content class="canonical.launchpad.components.bugtask.BugTaskDelta">
