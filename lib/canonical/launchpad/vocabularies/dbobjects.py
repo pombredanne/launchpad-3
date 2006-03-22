@@ -1052,7 +1052,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
         token = '%s/%s' % (obj.distribution.name, obj.name)
-        return SimpleTerm(obj.id, token, obj.title)
+        return SimpleTerm(obj, token, obj.title)
 
     def getTermByToken(self, token):
         try:

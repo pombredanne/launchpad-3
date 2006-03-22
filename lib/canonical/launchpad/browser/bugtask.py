@@ -739,16 +739,15 @@ class BugTaskSearchListingView(LaunchpadView):
             has_patch = data.pop("has_patch", False)
             if has_patch:
                 data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
-        else:
-            if not self.request.form.get("search"):
-                # The user came in at the default +bugs URL, so inject default
-                # search parameters.
-                data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         if data.get("omit_dupes") is None:
             # The "omit dupes" parameter wasn't provided, so default to omitting
             # dupes from reports, of course.
             data["omit_dupes"] = True
+
+        if data.get("status") is None:
+            # Show only open bugtasks as default
+            data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         # "Normalize" the form data into search arguments.
         form_values = {}

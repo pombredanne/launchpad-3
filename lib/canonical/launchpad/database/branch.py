@@ -26,6 +26,7 @@ from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
@@ -97,6 +98,17 @@ class Branch(SQLBase):
         if self.product is None:
             return '+junk'
         return self.product.name
+
+    @property
+    def unique_name(self):
+        return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
+
+    @property
+    def displayname(self):
+        if self.title:
+            return self.title
+        else:
+            return self.unique_name
 
     def revision_count(self):
         return RevisionNumber.selectBy(branchID=self.id).count()

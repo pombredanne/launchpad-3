@@ -90,7 +90,7 @@ class LaunchbagBugID(SubstitutionHelper):
 
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bzr syncing'
 
 def binarypackagerelease_index(context, view):
     return "%s binary package in Launchpad" % context.title
@@ -113,7 +113,7 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextTitle(smartquote('Edit branch "%s"'))
 
-branch_index = ContextTitle(smartquote('Bazaar branch "%s"'))
+branch_index = ContextDisplayName(smartquote('Bzr branch "%s"'))
 
 branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
@@ -554,8 +554,6 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-potemplate_add = 'Add a new template to Rosetta'
-
 # potemplate_chart is a fragment
 
 potemplate_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
@@ -617,7 +615,7 @@ productseries_translations_upload = 'Request new translations upload'
 
 project = ContextTitle('%s in Launchpad')
 
-project_branches = ContextTitle('Bazaar branches for %s')
+project_branches = ContextTitle('Bzr branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
@@ -738,7 +736,7 @@ def sourcepackages(context, view):
 
 sourcepackages_comingsoon = 'Coming soon'
 
-sources_index = 'Bazaar: Upstream revision control imports'
+sources_index = 'Bazaar: Upstream revision control imports to bzr'
 
 sourcesource_index = 'Upstream source import'
 

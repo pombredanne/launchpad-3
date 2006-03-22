@@ -271,9 +271,13 @@ class Item:
     """An item in an enumerated type.
 
     An item has a name, title and description.  It also has an integer value.
+
+    An item has a sortkey, which defaults to its integer value, but can be
+    set specially in the constructor.
+
     """
 
-    def __init__(self, value, title, description=None):
+    def __init__(self, value, title, description=None, sortkey=None):
         frame = sys._getframe(1)
         locals = frame.f_locals
 
@@ -291,6 +295,10 @@ class Item:
         else:
             self.title = title
             self.description = description
+        if sortkey is None:
+            self.sortkey = self.value
+        else:
+            self.sortkey = sortkey
 
     def _setClassFromAdvice(self, cls):
         self.schema = cls
@@ -328,6 +336,18 @@ class Item:
 
     def __ne__(self, other):
         return not self.__eq__(other, stacklevel=3)
+
+    def __lt__(self, other):
+        return self.sortkey < other.sortkey
+
+    def __gt__(self, other):
+        return self.sortkey > other.sortkey
+
+    def __le__(self, other):
+        return self.sortkey <= other.sortkey
+
+    def __ge__(self, other):
+        return self.sortkey >= other.sortkey
 
     def __hash__(self):
         return self.value
