@@ -270,9 +270,13 @@ class Item:
     """An item in an enumerated type.
 
     An item has a name, title and description.  It also has an integer value.
+
+    An item has a sortkey, which defaults to its integer value, but can be
+    set specially in the constructor.
+
     """
 
-    def __init__(self, value, title, description=None):
+    def __init__(self, value, title, description=None, sortkey=None):
         frame = sys._getframe(1)
         locals = frame.f_locals
 
@@ -290,6 +294,10 @@ class Item:
         else:
             self.title = title
             self.description = description
+        if sortkey is None:
+            self.sortkey = self.value
+        else:
+            self.sortkey = sortkey
 
     def _setClassFromAdvice(self, cls):
         self.schema = cls
@@ -327,6 +335,18 @@ class Item:
 
     def __ne__(self, other):
         return not self.__eq__(other, stacklevel=3)
+
+    def __lt__(self, other):
+        return self.sortkey < other.sortkey
+
+    def __gt__(self, other):
+        return self.sortkey > other.sortkey
+
+    def __le__(self, other):
+        return self.sortkey <= other.sortkey
+
+    def __ge__(self, other):
+        return self.sortkey >= other.sortkey
 
     def __hash__(self):
         return self.value
@@ -1792,6 +1812,13 @@ class DistroReleaseQueueCustomFormat(DBSchema):
         import queue to be incorporated into that package's translations.
         """)
 
+    DIST_UPGRADER = Item(2, """
+        raw-dist-upgrader
+
+        A raw-dist-upgrader file is a tarball. It is simply published into
+        the archive.
+        """)
+
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
 
@@ -2764,6 +2791,15 @@ class BuildStatus(DBSchema):
         to be damaged or bad in some way. The buildd maintainer will have to
         reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
         has been fixed.
+        """)
+
+    SUPERSEDED = Item(5, """
+        Build for superseded Source.
+
+        Build record represents a build which never got to happen because the
+        source package release for the build was superseded before the job
+        was scheduled to be run on a builder. Builds which reach this state
+        will rarely if ever be reset to any other state.
         """)
 
 

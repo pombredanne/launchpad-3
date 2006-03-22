@@ -57,10 +57,6 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
 class DistributionMirrorAddView(GeneralFormView):
 
-    # XXX: This is a workaround while
-    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
-    __launchpad_facetname__ = 'overview'
-
     def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
 
@@ -90,10 +86,6 @@ class DistributionMirrorEditView(SQLObjectEditView):
 
 
 class DistributionMirrorUploadFileListView(GeneralFormView):
-
-    # XXX: This is a workaround while
-    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
-    __launchpad_facetname__ = 'overview'
 
     def process(self, file_list=None):
         if file_list is not None:

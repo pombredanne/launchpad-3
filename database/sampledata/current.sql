@@ -495,6 +495,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -852,12 +858,13 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE build DISABLE TRIGGER ALL;
 
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (8, '2005-09-30 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 14, 0, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (9, '2005-10-01 00:00:00', 1, 1, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (10, '2006-01-27 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 26, 0, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (11, '2006-02-14 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 25, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket) VALUES (8, '2005-09-30 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 14, 0);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket) VALUES (9, '2005-10-01 00:00:00', 1, 1, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket) VALUES (10, '2006-01-27 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 26, 0);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket) VALUES (11, '2006-02-14 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 25, 0);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (12, '2006-02-28 00:00:00', 1, 6, 3, '2006-02-28 00:00:01', '00:06:02', 1, 1, 27, 0, 'cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)');
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -919,6 +926,7 @@ ALTER TABLE component DISABLE TRIGGER ALL;
 INSERT INTO component (id, name) VALUES (1, 'main');
 INSERT INTO component (id, name) VALUES (2, 'restricted');
 INSERT INTO component (id, name) VALUES (3, 'universe');
+INSERT INTO component (id, name) VALUES (4, 'multiverse');
 
 
 ALTER TABLE component ENABLE TRIGGER ALL;
@@ -927,10 +935,18 @@ ALTER TABLE component ENABLE TRIGGER ALL;
 ALTER TABLE componentselection DISABLE TRIGGER ALL;
 
 INSERT INTO componentselection (id, distrorelease, component) VALUES (1, 3, 1);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (2, 3, 2);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (3, 3, 3);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (4, 1, 1);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (5, 1, 3);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (2, 10, 1);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (3, 10, 2);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (4, 10, 3);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (5, 10, 4);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (6, 11, 1);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (7, 11, 2);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (8, 11, 3);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (9, 11, 4);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (10, 3, 2);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (11, 3, 3);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (12, 1, 1);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (13, 1, 3);
 
 
 ALTER TABLE componentselection ENABLE TRIGGER ALL;
@@ -1279,14 +1295,17 @@ ALTER TABLE developmentmanifest ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new
-approach to Linux Distribution that includes regular releases, and a
-simplified single-CD installation system.', 'ubuntulinux.org', 17, NULL, 'Ubuntu', 'Ubuntu is a new
-approach to Linux Distribution that includes regular releases, and a
-simplified single-CD installation system.', 17, NULL, 1, NULL, NULL, NULL, true, true);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a
-commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a
-commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, NULL, NULL, false, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
+pendingremovalduration=5
+root=/var/tmp/archive
+archiveroot=/var/tmp/archive/ubuntu
+poolroot=/var/tmp/archive/ubuntu/pool
+distsroot=/var/tmp/archive/ubuntu/dists
+overrideroot=/var/tmp/archive/ubuntu-overrides
+cacheroot=/var/tmp/archive/ubuntu-cache
+miscroot=/var/tmp/archive/ubuntu-misc
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, NULL, NULL, true, true);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, NULL, NULL, false, false);
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
@@ -1294,14 +1313,21 @@ a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 1, NULL, 1, NULL, NULL, NULL, false, false);
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very
-customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL, NULL, true, false);
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL, NULL, true, false);
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 1, NULL, 1, NULL, NULL, NULL, false, false);
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, NULL, NULL, false, false);
-
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact, official_malone, official_rosetta) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+pendingremovalduration=5
+root=/var/tmp/archive
+archiveroot=/var/tmp/archive/ubuntutest
+poolroot=/var/tmp/archive/ubuntutest/pool
+distsroot=/var/tmp/archive/ubuntutest/dists
+overrideroot=/var/tmp/archive/ubuntutest-overrides
+cacheroot=/var/tmp/archive/ubuntutest-cache
+miscroot=/var/tmp/archive/ubuntutest-misc
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, NULL, NULL, false, false);
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
 
@@ -1342,6 +1368,7 @@ ALTER TABLE distroarchrelease DISABLE TRIGGER ALL;
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (1, 1, 1, 'i386', 1, true, 1);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (6, 3, 1, 'i386', 1, true, 1);
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (7, 6, 1, 'i386', 1, true, 0);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (8, 10, 1, 'i386', 1, true, 0);
 
 
 ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
@@ -1350,6 +1377,9 @@ ALTER TABLE distroarchrelease ENABLE TRIGGER ALL;
 ALTER TABLE distrocomponentuploader DISABLE TRIGGER ALL;
 
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (1, 1, 1, 17);
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (3, 1, 2, 17);
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (4, 1, 3, 17);
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (5, 8, 1, 17);
 
 
 ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
@@ -1367,6 +1397,12 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'Sid', NULL, 0, NULL, NULL, 0, 1);
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
 Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 1, 1, '[publishing]
+components = main restricted universe multiverse
+', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubutu.com', 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2006-01-08 10:00:00', 1, 1, '[publishing]
+components = main restricted universe multiverse
+', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0);
 
 
 ALTER TABLE distrorelease ENABLE TRIGGER ALL;
@@ -1409,7 +1445,10 @@ ALTER TABLE distroreleasepackagecache ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleasequeue DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (1, 3, 1, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (1, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (2, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (3, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (4, 0, 10, 0, 1);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
@@ -1418,6 +1457,7 @@ ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;
 ALTER TABLE distroreleasequeuebuild DISABLE TRIGGER ALL;
 
 INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (1, 1, 2);
+INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (2, 2, 7);
 
 
 ALTER TABLE distroreleasequeuebuild ENABLE TRIGGER ALL;
@@ -1432,6 +1472,8 @@ ALTER TABLE distroreleasequeuecustom ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleasequeuesource DISABLE TRIGGER ALL;
 
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (1, 3, 17);
+INSERT INTO distroreleasequeuesource (id, distroreleasequeue, sourcepackagerelease) VALUES (2, 4, 25);
 
 
 ALTER TABLE distroreleasequeuesource ENABLE TRIGGER ALL;
@@ -3051,7 +3093,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1A,2B,5C ''marín'':4B,7C ''perelló'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 'daf', NULL, '''daf'':1A ''harri'':3B,5C ''dafydd'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':3B,5C ''foo'':2B,4C ''name16'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 2, 'Africa/Johannesburg', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'name17', NULL, '''team'':3B ''name17'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'ubuntu-team', NULL, '''team'':3B ''ubuntu-team'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 'name18', NULL, '''team'':4B ''gnome'':3B ''name18'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 'name19', NULL, '''team'':4B ''gnome'':3B ''warti'':2B ''name19'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 'name20', NULL, '''team'':4B ''secur'':3B ''warti'':2B ''name20'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
@@ -3097,6 +3139,20 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
+
+
+ALTER TABLE personalpackagearchive DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE personalpackagearchive ENABLE TRIGGER ALL;
+
+
+ALTER TABLE personalsourcepackagepublication DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE personalsourcepackagepublication ENABLE TRIGGER ALL;
 
 
 ALTER TABLE personlabel DISABLE TRIGGER ALL;
@@ -6403,6 +6459,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (3, 'netapplet', 'Main translation domain for netapplet', 'This is the description about netapplet''s POTemplateName', 'netapplet');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (4, 'pkgconf-mozilla', 'pkgconf-mozilla', NULL, 'pkgconf-mozilla');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (5, 'evolution-2.2-test', 'Another template for Evolution', NULL, 'evolution-2.2-test');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (6, 'alsa-utils', 'Alsa Utils', NULL, 'alsa-utils');
 
 
 ALTER TABLE potemplatename ENABLE TRIGGER ALL;
@@ -7948,7 +8005,7 @@ ALTER TABLE potranslation ENABLE TRIGGER ALL;
 ALTER TABLE processor DISABLE TRIGGER ALL;
 
 INSERT INTO processor (id, family, name, title, description) VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family');
-
+INSERT INTO processor (id, family, name, title, description) VALUES (2, 3, 'amd64', 'AMD 64bit', 'AMD 64bit');
 
 ALTER TABLE processor ENABLE TRIGGER ALL;
 
@@ -8438,6 +8495,38 @@ ALTER TABLE section DISABLE TRIGGER ALL;
 INSERT INTO section (id, name) VALUES (1, 'base');
 INSERT INTO section (id, name) VALUES (2, 'web');
 INSERT INTO section (id, name) VALUES (3, 'editors');
+INSERT INTO section (id, name) VALUES (4, 'admin');
+INSERT INTO section (id, name) VALUES (5, 'comm');
+INSERT INTO section (id, name) VALUES (6, 'debian-installer');
+INSERT INTO section (id, name) VALUES (7, 'devel');
+INSERT INTO section (id, name) VALUES (8, 'doc');
+INSERT INTO section (id, name) VALUES (9, 'games');
+INSERT INTO section (id, name) VALUES (10, 'gnome');
+INSERT INTO section (id, name) VALUES (11, 'graphics');
+INSERT INTO section (id, name) VALUES (12, 'interpreters');
+INSERT INTO section (id, name) VALUES (13, 'kde');
+INSERT INTO section (id, name) VALUES (14, 'libdevel');
+INSERT INTO section (id, name) VALUES (15, 'libs');
+INSERT INTO section (id, name) VALUES (16, 'mail');
+INSERT INTO section (id, name) VALUES (17, 'math');
+INSERT INTO section (id, name) VALUES (18, 'misc');
+INSERT INTO section (id, name) VALUES (19, 'net');
+INSERT INTO section (id, name) VALUES (20, 'news');
+INSERT INTO section (id, name) VALUES (21, 'oldlibs');
+INSERT INTO section (id, name) VALUES (22, 'otherosfs');
+INSERT INTO section (id, name) VALUES (23, 'perl');
+INSERT INTO section (id, name) VALUES (24, 'python');
+INSERT INTO section (id, name) VALUES (25, 'shells');
+INSERT INTO section (id, name) VALUES (26, 'sound');
+INSERT INTO section (id, name) VALUES (27, 'tex');
+INSERT INTO section (id, name) VALUES (28, 'text');
+INSERT INTO section (id, name) VALUES (29, 'translations');
+INSERT INTO section (id, name) VALUES (30, 'utils');
+INSERT INTO section (id, name) VALUES (31, 'x11');
+INSERT INTO section (id, name) VALUES (32, 'electronics');
+INSERT INTO section (id, name) VALUES (33, 'embedded');
+INSERT INTO section (id, name) VALUES (34, 'hamradio');
+INSERT INTO section (id, name) VALUES (35, 'science');
 
 
 ALTER TABLE section ENABLE TRIGGER ALL;
@@ -8446,7 +8535,78 @@ ALTER TABLE section ENABLE TRIGGER ALL;
 ALTER TABLE sectionselection DISABLE TRIGGER ALL;
 
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (1, 3, 3);
-
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (2, 10, 4);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (3, 10, 1);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (4, 10, 5);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (5, 10, 6);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (6, 10, 7);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (7, 10, 8);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (8, 10, 3);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (9, 10, 9);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (10, 10, 10);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (11, 10, 11);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (12, 10, 12);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (13, 10, 13);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (14, 10, 14);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (15, 10, 15);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (16, 10, 16);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (17, 10, 17);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (18, 10, 18);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (19, 10, 19);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (20, 10, 20);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (21, 10, 21);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (22, 10, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (23, 10, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (24, 10, 23);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (25, 10, 24);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (26, 10, 25);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (27, 10, 26);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (28, 10, 27);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (29, 10, 28);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (30, 10, 30);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (31, 10, 2);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (32, 10, 31);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (33, 10, 29);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (34, 10, 32);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (35, 10, 33);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (36, 10, 34);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (37, 10, 35);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (38, 11, 4);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (39, 11, 1);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (40, 11, 5);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (41, 11, 6);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (42, 11, 7);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (43, 11, 8);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (44, 11, 3);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (45, 11, 9);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (46, 11, 10);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (47, 11, 11);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (48, 11, 12);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (49, 11, 13);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (50, 11, 14);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (51, 11, 15);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (52, 11, 16);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (53, 11, 17);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (54, 11, 18);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (55, 11, 19);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (56, 11, 20);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (57, 11, 21);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (58, 11, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (59, 11, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (60, 11, 23);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (61, 11, 24);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (62, 11, 25);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (63, 11, 26);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (64, 11, 27);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (65, 11, 28);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (66, 11, 30);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (67, 11, 2);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (68, 11, 31);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (69, 11, 29);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (70, 11, 32);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (71, 11, 33);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (72, 11, 34);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (73, 11, 35);
 
 ALTER TABLE sectionselection ENABLE TRIGGER ALL;
 
@@ -8481,6 +8641,7 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (15, 24, 1, 2, 1, 1, '2005-09-16 11:42:02.870714', '2005-09-16 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (16, 27, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (17, 28, 3, 2, 1, 1, '2005-02-10 12:19:00.05741', '2005-02-10 12:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (18, 14, 1, 1, 1, 3, '2006-02-13 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 ALTER TABLE securesourcepackagepublishinghistory ENABLE TRIGGER ALL;

@@ -3,20 +3,24 @@
 import logging
 import gc
 
+import _pythonpath
+
 from optparse import OptionParser
 from canonical.config import config
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
 from canonical.lp import initZopeless
-from canonical.archivepublisher import \
-     DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator
+from canonical.archivepublisher import (
+    DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator,
+    LucilleConfigError)
 import sys, os
 
 from canonical.launchpad.database import (
     Distribution, DistroRelease, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
-    BinaryPackageFilePublishing)
+    BinaryPackageFilePublishing, SecureSourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory)
 
 from sqlobject import AND
 
@@ -70,6 +74,10 @@ parser.add_option("-d", "--distribution",
                   dest="distribution", metavar="DISTRO", default="ubuntu",
                   help="The distribution to publish.")
 
+parser.add_option("-R", "--distsroot",
+                  dest="distsroot", metavar="SUFFIX", default=None,
+                  help="Override the dists path for generation")
+
 (options, args) = parser.parse_args()
 
 log = logger(options, "process-upload")
@@ -108,7 +116,14 @@ drs = DistroRelease.selectBy(distributionID=distro.id)
 
 debug("Finding configuration.")
 
-pubconf = Config(distro, drs)
+try:
+    pubconf = Config(distro, drs)
+except LucilleConfigError, info:
+    error(info)
+    sys.exit(1)
+
+if options.distsroot is not None:
+    pubconf.distsroot = options.distsroot
 
 debug("Making directories as needed.")
 
@@ -147,10 +162,12 @@ try:
     if not (options.careful or options.careful_publishing):
         clause = clause + (" AND publishingstatus = %s" %
                            sqlvalues(PackagePublishingStatus.PENDING))
-    spps = SourcePackageFilePublishing.select(clause)
+    spps = SourcePackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
     pub.publish(spps, isSource=True)
+    debug("Flushing caches.")
+    clear_cache()
     debug("Attempting to publish pending binaries.")
-    pps = BinaryPackageFilePublishing.select(clause)
+    pps = BinaryPackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
     pub.publish(pps, isSource=False)
     debug("Committing.")
     txn.commit()
@@ -163,19 +180,33 @@ except:
 
 judgejudy = Dominator(logging.getLogger("Dominator"))
 
+is_careful_domination = options.careful or options.careful_domination
 try:
     debug("Attempting to perform domination.")
     for distrorelease in drs:
-        if ((distrorelease.releasestatus in non_careful_domination_states) or
-            options.careful or options.careful_domination):
-            for pocket in PackagePublishingPocket.items:
+        for pocket in PackagePublishingPocket.items:
+            is_in_development = (distrorelease.releasestatus in
+                                non_careful_domination_states)
+            is_release_pocket = pocket == PackagePublishingPocket.RELEASE
+            if (is_careful_domination or is_in_development or
+                not is_release_pocket):
+                debug("Domination for %s (%s)" % (
+                    distrorelease.name, pocket.name))
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
                 clear_cache()
-    debug("Committing.")
-    txn.commit()
+            debug("Committing.")
+            txn.commit()
 except:
     logging.getLogger().exception("Bad muju while dominating")
+    txn.abort()
+    sys.exit(1)
+
+try:
+    debug("Preparing file lists and overrides.")
+    pub.createEmptyPocketRequests()
+except:
+    logging.getLogger().exception("Bad muju while preparing file lists etc.")
     txn.abort()
     sys.exit(1)
 
@@ -224,14 +255,15 @@ except:
 try:
     # Generate apt-ftparchive config and run.
     debug("Doing apt-ftparchive work.")
-    fn = os.tmpnam()
-    f = file(fn,"w")
+    # fn = os.tmpnam()
+    fn = os.path.join(pubconf.miscroot, "apt.conf")
+    f = file(fn, "w")
     f.write(pub.generateAptFTPConfig(fullpublish=(
         options.careful or options.careful_apt)))
     f.close()
     print fn
 
-    if os.system("apt-ftparchive generate "+fn) != 0:
+    if os.system("apt-ftparchive --no-contents generate "+fn) != 0:
         raise OSError("Unable to run apt-ftparchive properly")
 
 except:
@@ -242,7 +274,7 @@ except:
 try:
     # Generate the Release files.
     debug("Generating Release files.")
-    pub.writeReleaseFiles()
+    pub.writeReleaseFiles(full_run=(options.careful or options.careful_apt))
     
 except:
     logging.getLogger().exception("Bad muju while doing release files")
@@ -278,9 +310,42 @@ try:
     
     pub.unpublishDeathRow(consrc, conbin, livesrc, livebin)
 
+    # Now that the os.remove() calls have been made, simply let every
+    # now out-of-date record be marked as removed.
+
+    debug("Marking condemned sources as removed.")
+    consrc = SecureSourcePackagePublishingHistory.select(
+        "status = %s AND scheduleddeletiondate <= %s" % sqlvalues(
+        PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW))
+    for pubrec in consrc:
+        pubrec.status = PackagePublishingStatus.REMOVED
+        pubrec.dateremoved = UTC_NOW
+        
+    debug("Marking condemned binaries as removed.")
+    conbin = SecureBinaryPackagePublishingHistory.select(
+        "status = %s AND scheduleddeletiondate <= %s" % sqlvalues(
+        PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW))
+    for pubrec in conbin:
+        pubrec.status = PackagePublishingStatus.REMOVED
+        pubrec.dateremoved = UTC_NOW
+
+    debug("Committing")
+    txn.commit()
+
 except:
     logging.getLogger().exception("Bad muju while doing death-row unpublish")
     txn.abort()
     sys.exit(1)
 
+try:
+    debug("Sanitising links in the pool.")
+    dp.sanitiseLinks(['main', 'restricted', 'universe', 'multiverse'])
+except:
+    logging.getLogger().exception("Bad muju while sanitising links.")
+    sys.exit(1)
+
+debug("All done, committing anything left over before bed.")
+
 txn.commit()
+
+debug("Ciao")

@@ -43,7 +43,7 @@ Teams also have an RDF export, which includes information for each member of the
 team.
 
   >>> print http(r"""
-  ... GET /people/name17/+rdf HTTP/1.1
+  ... GET /people/ubuntu-team/+rdf HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -55,7 +55,7 @@ team.
            xmlns:wot="http://xmlns.com/wot/0.1/">
       <foaf:Group>
           <foaf:name>Ubuntu Team</foaf:name>
-          <foaf:nick>name17</foaf:nick>
+          <foaf:nick>ubuntu-team</foaf:nick>
   ...
           <foaf:member>
               <foaf:Person>

@@ -68,6 +68,7 @@
 
     <browser:generalform
         name="+uploadfilelist"
+        facet="overview"
         for="canonical.launchpad.interfaces.IDistributionMirror"
         schema="canonical.launchpad.interfaces.IDistributionMirror"
         permission="launchpad.Edit"

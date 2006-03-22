@@ -319,7 +319,9 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(Product.selectBy(active=True, orderBy="-datecreated"))
+        results = Product.selectBy(active=True, orderBy="-Product.datecreated")
+        # The main product listings include owner, so we prejoin it in
+        return iter(results.prejoin(["owner"]))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""

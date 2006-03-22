@@ -18,8 +18,9 @@
       <thead>
         <tr>
           <th>Malone bug</th>
-          <th>Remote #</th>
+          <th>Remote bug</th>
           <th>Status</th>
+          <th>Date created</th>
         </tr>
       </thead>
 
@@ -37,6 +38,7 @@
               </a>
           </td>
           <td tal:content="watch/remotestatus" />
+          <td tal:content="watch/datecreated/fmt:datetime" />
         </tr>
       </tbody>
     </table>

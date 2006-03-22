@@ -67,7 +67,7 @@ class TranslationImportQueueEntry(SQLBase):
         return SourcePackage(self.sourcepackagename, self.distrorelease)
 
     @property
-    def guess_potemplate(self):
+    def guessed_potemplate(self):
         """See ITranslationImportQueueEntry."""
         assert self.path.endswith('.pot'), (
             "We cannot handle the file %s here." % self.path)
@@ -80,7 +80,7 @@ class TranslationImportQueueEntry(SQLBase):
             sourcepackagename=self.sourcepackagename)
 
     @property
-    def _guess_potemplate_for_pofile_from_path(self):
+    def _guessed_potemplate_for_pofile_from_path(self):
         """Return an IPOTemplate that we think is related to this entry.
 
         We get it based on the path of the entry and the IPOTemplate's one
@@ -97,14 +97,14 @@ class TranslationImportQueueEntry(SQLBase):
             sourcepackagename=self.sourcepackagename,
             productseries=self.productseries)
         entry_dirname = os.path.dirname(self.path)
-        guess_potemplate = None
+        guessed_potemplate = None
         for potemplate in subset:
-            if guess_potemplate is not None:
+            if guessed_potemplate is not None:
                 # We already got a winner, should check if we could have
                 # another one, which means we cannot be sure which one is the
                 # right one.
                 if (os.path.dirname(
-                    guess_potemplate.path) == os.path.dirname(potemplate.path)):
+                    guessed_potemplate.path) == os.path.dirname(potemplate.path)):
                     # Two matches, cannot be sure which one is the good one.
                     return None
                 else:
@@ -114,9 +114,9 @@ class TranslationImportQueueEntry(SQLBase):
             elif entry_dirname == os.path.dirname(potemplate.path):
                 # We have a match; we can't stop checking, though, because
                 # there may be other matches.
-                guess_potemplate = potemplate
+                guessed_potemplate = potemplate
 
-        if guess_potemplate is None:
+        if guessed_potemplate is None:
             return None
 
         # We have a winner, but to be 100% sure, we should not have
@@ -127,15 +127,15 @@ class TranslationImportQueueEntry(SQLBase):
             productseries=self.productseries)
         for entry in entries:
             if (os.path.dirname(entry.path) == os.path.dirname(
-                guess_potemplate.path)):
+                guessed_potemplate.path)):
                 # There is a .pot entry pending to be imported that has the
                 # same path.
                 return None
 
-        return guess_potemplate
+        return guessed_potemplate
 
     @property
-    def _guess_pofile_from_path(self):
+    def _guessed_pofile_from_path(self):
         """Return an IPOFile that we think is related to this entry.
 
         We get it based on the path it's stored or None.
@@ -147,43 +147,20 @@ class TranslationImportQueueEntry(SQLBase):
             sourcepackagename=self.sourcepackagename)
 
     @property
-    def guess_pofile(self):
+    def guessed_language_and_variant(self):
         """See ITranslationImportQueueEntry."""
-        assert self.path.endswith('.po'), (
-            "We cannot handle the file %s here." % self.path)
-
-        if self.potemplate is None:
-            # We don't have the IPOTemplate object associated with this entry.
-            # Try to guess it from the file path.
-            pofile = self._guess_pofile_from_path
-            if pofile is not None:
-                # We were able to guess an IPOFile.
-                return pofile
-            # We were not able to find an IPOFile based on the path, try
-            # to guess an IPOTemplate before giving up.
-            potemplate = self._guess_potemplate_for_pofile_from_path
-            if potemplate is None:
-                # No way to guess anything...
-                return None
-            # We got the potemplate, try to guess the language from
-            # the info we have.
-            self.potemplate = potemplate
-
-        # We know the IPOTemplate associated with this entry so we can try to
-        # detect the right IPOFile.
         filename = os.path.basename(self.path)
-        guess_language, file_ext = filename.split(u'.', 1)
+        guessed_language, file_ext = filename.split(u'.', 1)
         if file_ext != 'po':
             # The filename does not follows the pattern 'LANGCODE.po'
             # so we cannot guess its language.
-            # Fallback to the guess value based on the path.
-            return self._guess_pofile_from_path
+            return (None, None)
 
-        if u'@' in guess_language:
+        if u'@' in guessed_language:
             # Seems like this entry is using a variant entry.
-            language_code, language_variant = guess_language.split(u'@')
+            language_code, language_variant = guessed_language.split(u'@')
         else:
-            language_code = guess_language
+            language_code = guessed_language
             language_variant = None
 
         language_set = getUtility(ILanguageSet)
@@ -193,8 +170,7 @@ class TranslationImportQueueEntry(SQLBase):
         except NotFoundError:
             # We don't have such language in our database so we cannot
             # guess it using this method.
-            # Fallback to the guess value based on the path.
-            return self._guess_pofile_from_path
+            return (None, None)
 
         if not language.visible:
             # The language is hidden by default, that would mean that
@@ -202,14 +178,46 @@ class TranslationImportQueueEntry(SQLBase):
             # someone before importing. That's to prevent the import
             # of languages like 'es_ES' or 'fr_FR' instead of just
             # 'es' or 'fr'.
-            # Fallback to the guess value based on the path to accept
-            # languages that the admin already accepted, even if by default
-            # should not be accepted.
-            return self._guess_pofile_from_path
+            return (None, None)
+
+        return (language, language_variant)
+
+    @property
+    def guessed_pofile(self):
+        """See ITranslationImportQueueEntry."""
+        assert self.path.endswith('.po'), (
+            "We cannot handle the file %s here." % self.path)
+
+        if self.potemplate is None:
+            # We don't have the IPOTemplate object associated with this entry.
+            # Try to guess it from the file path.
+            pofile = self._guessed_pofile_from_path
+            if pofile is not None:
+                # We were able to guess an IPOFile.
+                return pofile
+            # We were not able to find an IPOFile based on the path, try
+            # to guess an IPOTemplate before giving up.
+            potemplate = self._guessed_potemplate_for_pofile_from_path
+            if potemplate is None:
+                # No way to guess anything...
+                return None
+            # We got the potemplate, try to guess the language from
+            # the info we have.
+            self.potemplate = potemplate
+
+        # We know the IPOTemplate associated with this entry so we can try to
+        # detect the right IPOFile.
+        # Let's try to guess the language.
+        (language, language_variant) = self.guessed_language_and_variant
+
+        if language is None:
+            # We were not able to guess the language, fallback to get it based
+            # on the path.
+            return self._guessed_pofile_from_path
 
         # Get or create an IPOFile based on the info we guess.
         return self.potemplate.getOrCreatePOFile(
-            language_code, variant=language_variant, owner=self.importer)
+            language.code, variant=language_variant, owner=self.importer)
 
     @property
     def import_into(self):
@@ -405,7 +413,7 @@ class TranslationImportQueue:
                 # We don't have a place to import this entry. Try to guess it.
                 if entry.path.endswith('.po'):
                     # Check if we can guess where it should be imported.
-                    guess = entry.guess_pofile
+                    guess = entry.guessed_pofile
                     if guess is None:
                         # We were not able to guess a place to import it,
                         # leave the status of this entry as
@@ -418,7 +426,7 @@ class TranslationImportQueue:
                 else:
                     # It's a .pot file
                     # Check if we can guess where it should be imported.
-                    guess = entry.guess_potemplate
+                    guess = entry.guessed_potemplate
                     if guess is None:
                         # We were not able to guess a place to import it,
                         # leave the status of this entry as
