@@ -14,14 +14,13 @@
     <h1>Welcome to the Bazaar</h1>
 
     <p>
-      The Launchpad Bazaar tracks
-      all the upstream and distribution code registered with Launchpad,
-      publishing it in a format usable by the Bazaar revision control system.
+      The Bazaar tracks all the upstream and distribution code registered
+      with Launchpad, publishing it in a format usable by the
+      <img src="/@@/link" />
+      <a href="http://www.bazaar-vcs.org/">Bazaar
+      revision control system</a>, giving you a global distributed
+      revision control infrastructure.
     </p>
-
-    <ul>
-        <li><a href="series">Manage Upstream Bazaar Imports</a></li>
-    </ul>
 
 </div>
 </body>

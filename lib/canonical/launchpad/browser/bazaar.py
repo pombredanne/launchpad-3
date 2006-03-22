@@ -10,8 +10,22 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IProductSeriesSourceSet, IBazaarApplication, IProductSet)
 from canonical.lp.dbschema import ImportStatus
-from canonical.launchpad.webapp import Navigation, stepto
+from canonical.launchpad.webapp import (
+    Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
 import canonical.launchpad.layers
+
+
+class BazaarBranchesMenu(ApplicationMenu):
+    usedfor = IBazaarApplication
+    facet = 'branches'
+    links = ['importer']
+
+    @enabled_with_permission('launchpad.Admin')
+    def importer(self):
+        target = 'series/'
+        text = 'Branch Importer'
+        summary = 'Manage CVS and SVN Trunk Imports'
+        return Link(target, text, icon='branch')
 
 
 class BazaarApplicationView:
