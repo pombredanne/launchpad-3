@@ -48,7 +48,7 @@
           <td class="lesser">
             <label tal:attributes="for string:spec_${spec/name}">
               <img src="/@@/spec" />
-              <span tal:replace="spec/title">fix-it</span>
+              <span tal:replace="spec/title/fmt:shorten/50">fix-it</span>
             </label>
             
             <div tal:content="spec/summary"
