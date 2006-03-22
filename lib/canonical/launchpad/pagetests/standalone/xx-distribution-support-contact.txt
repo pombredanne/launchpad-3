@@ -40,7 +40,7 @@ contacts.
   ... ------------bZSuYgnw4ENVX5W0chYGPT
   ... Content-Disposition: form-data; name="field.support_contact_teams"
   ... 
-  ... name17
+  ... ubuntu-team
   ... ------------bZSuYgnw4ENVX5W0chYGPT
   ... Content-Disposition: form-data; name="field.support_contact_teams-empty-marker"
   ... 

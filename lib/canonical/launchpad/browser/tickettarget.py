@@ -9,10 +9,12 @@ __all__ = [
     'ManageSupportContactView',
     ]
 
+from zope.component import getUtility
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
 
-from canonical.launchpad.interfaces import IPerson, IManageSupportContacts
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IManageSupportContacts, IPerson)
 from canonical.launchpad.webapp import GeneralFormView, canonical_url
 
 
@@ -130,19 +132,21 @@ class ManageSupportContactView(GeneralFormView):
 
     @property
     def initial_values(self):
+        user = getUtility(ILaunchBag).user
         support_contacts = self.context.support_contacts
         user_teams = [
-            membership.team for membership in self.user.myactivememberships]
+            membership.team for membership in user.myactivememberships]
         support_contact_teams = set(support_contacts).intersection(user_teams)
         return {
-            'want_to_be_support_contact': self.user in support_contacts,
+            'want_to_be_support_contact': user in support_contacts,
             'support_contact_teams': list(support_contact_teams)
             }
-
     def _setUpWidgets(self):
+        if not self.user:
+            return
         self.support_contact_teams_widget = CustomWidgetFactory(
             SupportContactTeamsWidget)
-        GeneralFormView._setUpWidgets(self, context=self.user)
+        GeneralFormView._setUpWidgets(self, context=getUtility(ILaunchBag).user)
 
     def process(self, want_to_be_support_contact, support_contact_teams=None):
         if support_contact_teams is None:

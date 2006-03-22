@@ -74,6 +74,7 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
         self.errors = {}
+        self._setUpWidgets()
 
     # methods that should be overridden
     def process(self, *args, **kw):
@@ -105,10 +106,6 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         initial values.
         """
         return {}
-
-    # internal methods, should not be overridden
-    def initialize(self):
-        self._setUpWidgets()
 
     def _setUpWidgets(self, context=None):
         """Set up the widgets.
