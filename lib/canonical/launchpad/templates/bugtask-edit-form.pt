@@ -26,9 +26,15 @@
     Please fix them and try again.
   </p>
   <p
-    tal:condition="not: context/required:launchpad.Edit"
+    tal:define="errors view/errors|nothing"
+    tal:condition="errors"
+    tal:repeat="error errors"
+    tal:content="error"
     class="error message"
-  >
+  >Individual error.</p>
+      
+
+  <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the assignee, or the maintainer of
     <tal:context replace="context/targetname">product</tal:context>,
     so you cannot edit this bug's status.

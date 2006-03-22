@@ -1116,22 +1116,6 @@ Calendar stuff.
   background-repeat: no-repeat;
 }
 
-.notice-notification,
-.info-notification,
-.debug-notification {
-  background-position: 5px 0.5em;
-  padding-left: 30px;
-  background-color: #ffffcc;
-  border: 1px solid #eeee00;
-  color: Black;
-  background-image: url(/@@/info_icon.gif);
-  font-size: 85%;
-  font-weight: bold;
-  margin: 1em 0em;
-  padding: 0.5em 1em 0.5em 3em;
-  background-repeat: no-repeat;
-}
-
 .oopsid {
   font-weight: bold;
   color: #cc0000;
@@ -1176,10 +1160,3 @@ dl.faq ol {
 .informational.message, .informational .message {
   background-image: url(/@@/info_icon.gif);
 }
-
-/*
-Things to get rid of:
-.notice-notification,
-.info-notification,
-.debug-notification,
-*/

@@ -452,7 +452,7 @@ class BugTaskEditView(GeneralFormView):
         if distro is not None and sourcename != data['sourcepackagename']:
             valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
         if product is not None and product != data['product']:
-            valid_upstreamtask(bugtask.bug, data['product'])
+             valid_upstreamtask(bugtask.bug, data['product'])
 
         return data
 

@@ -154,6 +154,7 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
             self.validate(data)
         except WidgetsError, errors:
             self.top_of_page_errors = errors
+            self.errors = errors
             self._abortAndSetStatus()
             return self.process_status
 
