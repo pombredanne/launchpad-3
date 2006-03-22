@@ -278,8 +278,10 @@ class Distribution(SQLBase, BugTargetBase):
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        return Specification.selectBy(distributionID=self.id,
+        results = Specification.selectBy(distributionID=self.id,
             orderBy=order)[:quantity]
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
