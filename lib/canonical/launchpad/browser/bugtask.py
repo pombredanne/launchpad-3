@@ -10,6 +10,7 @@ __all__ = [
     'BugTaskSetNavigation',
     'BugTaskContextMenu',
     'BugTaskEditView',
+    'BugTaskPortletView',
     'BugTaskStatusView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
@@ -196,6 +197,24 @@ class BugTaskView(LaunchpadView):
 
         self.notices = []
 
+    def process(self):
+        """Process changes to the bug page.
+
+        These include potentially changing bug branch statuses and
+        adding a comment.
+        """
+        if not "save" in self.request:
+            return
+
+        # Process the comment, if one was added.
+        form = self.request.form
+        comment = form.get("comment")
+        subject = form.get("subject")
+
+        if comment:
+            self.context.bug.newMessage(
+                subject=subject, content=comment, owner=self.user)
+
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
         # establish if a subscription form was posted
@@ -248,6 +267,17 @@ class BugTaskView(LaunchpadView):
         """
         return self.context.datecreated is not None
 
+    def isReleaseTargetableContext(self):
+        """Is the context something that supports release targeting?
+
+        Returns True or False.
+        """
+        return (
+            IDistroBugTask.providedBy(self.context) or
+            IDistroReleaseBugTask.providedBy(self.context))
+
+
+class BugTaskPortletView:
     def alsoReportedIn(self):
         """Return a list of IUpstreamBugTasks in which this bug is reported.
 
@@ -257,15 +287,6 @@ class BugTaskView(LaunchpadView):
         return [
             task for task in self.context.bug.bugtasks
             if task.id is not self.context.id]
-
-    def isReleaseTargetableContext(self):
-        """Is the context something that supports release targeting?
-
-        Returns True or False.
-        """
-        return (
-            IDistroBugTask.providedBy(self.context) or
-            IDistroReleaseBugTask.providedBy(self.context))
 
 
 class BugTaskBackportView:
@@ -398,8 +419,8 @@ class BugTaskEditView(GeneralFormView):
         GeneralFormView.__init__(self, context, request)
 
         # A simple hack, which avoids the mind-bending Z3 form/widget
-        # complexity, to provide the user a useful error message if they make a
-        # change comment but don't change anything.
+        # complexity, to provide the user a useful error message if
+        # they make a change comment but don't change anything.
         self.comment_on_change_error = ""
 
     def _setUpWidgets(self):
@@ -502,9 +523,9 @@ class BugTaskEditView(GeneralFormView):
     def process(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        # Save the field names we extract from the form in a separate list,
-        # because we modify this list of names later if the bugtask is
-        # reassigned to a different product.
+        # Save the field names we extract from the form in a separate
+        # list, because we modify this list of names later if the
+        # bugtask is reassigned to a different product.
         field_names = list(self.fieldNames)
         new_values = getWidgetsData(self, self.schema, field_names)
 
@@ -801,16 +822,15 @@ class BugTaskSearchListingView(LaunchpadView):
             has_patch = data.pop("has_patch", False)
             if has_patch:
                 data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
-        else:
-            if not self.request.form.get("search"):
-                # The user came in at the default +bugs URL, so inject default
-                # search parameters.
-                data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         if data.get("omit_dupes") is None:
             # The "omit dupes" parameter wasn't provided, so default to omitting
             # dupes from reports, of course.
             data["omit_dupes"] = True
+
+        if data.get("status") is None:
+            # Show only open bugtasks as default
+            data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         # "Normalize" the form data into search arguments.
         form_values = {}

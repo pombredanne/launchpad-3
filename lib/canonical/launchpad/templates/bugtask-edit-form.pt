@@ -4,11 +4,13 @@
   tal:condition="status"
   tal:content="status"
 />
+
 <div class="portalError"
   tal:repeat="top_of_page_error view/top_of_page_errors"
   tal:content="structure top_of_page_error">
   Schema validation errors.
 </div>
+
 <p tal:condition="context/bug/duplicateof" class="portalMessage">
   This bug is a duplicate of
   <a

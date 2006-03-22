@@ -103,7 +103,7 @@ No search criteria (ordered by priority, then severity):
 
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
-    [8, 1, 2, 3]
+    [1, 2, 3]
 
 Simple keyword searching:
 

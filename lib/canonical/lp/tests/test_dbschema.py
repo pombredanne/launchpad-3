@@ -5,6 +5,24 @@
 import unittest
 from zope.testing.doctestunit import DocTestSuite
 
+def test_sorting():
+    """
+    dbschema items sort themselves based on the order they are defined in the class.
+
+    >>> from canonical.lp.dbschema import Item, DBSchema
+    >>> class SortingTest(DBSchema):
+    ...
+    ...     lobster = Item(9, 'A lobster', 'signifies completion')
+    ...     crayfish = Item(2, 'A crayfish', 'signifies good taste in women', sortkey=14)
+    ...     langoustine = Item(12, 'A langoustine', 'signifies emptiness')
+
+    >>> SortingTest.lobster < SortingTest.langoustine < SortingTest.crayfish
+    True
+    >>> SortingTest.crayfish > SortingTest.langoustine > SortingTest.lobster
+    True
+
+    """
+
 def test_constructor():
     """
     We're definitely intending to do something that we should be warned

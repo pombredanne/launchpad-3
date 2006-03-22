@@ -549,8 +549,8 @@ def send_bug_notification(bug, user, subject, body, to_addrs=None,
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
 
-    # Add a header for each task on this bug, to help users organize their
-    # incoming mail in a way that's convenient for them.
+    # Add a header for each task on this bug, to help users organize
+    # their incoming mail in a way that's convenient for them.
     x_launchpad_bug_values = []
     for bugtask in bug.bugtasks:
         x_launchpad_bug_values.append(bugtask.asEmailHeaderValue())
