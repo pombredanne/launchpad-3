@@ -181,6 +181,11 @@ def sendmail(message, to_addrs=None):
     if 'reply-to' not in message:
         message['Reply-To'] = message['from']
 
+    # Add a Sender: header to show that we were the one sending the
+    # email.
+    if "Sender" not in message:
+        message["Sender"] = config.bounce_address
+
     # Add an Errors-To: header for bounce handling
     del message['Errors-To']
     message['Errors-To'] = config.bounce_address

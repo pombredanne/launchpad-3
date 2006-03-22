@@ -156,8 +156,48 @@ Launchpad, nothing happens.
     ...     'https://wiki.ubuntu.com/NonExistant')
     None
 
+In order to prevent loops, we set the X-Loop header:
 
-To clean up after ourself, we set the log level back to what it was,
-otherwise we might break other tests.
+    >>> sent_msg['X-Loop']
+    'notifications@specs.launchpad.net'
 
+So that if we someone re-sends the notification we sent to us, we'll
+simply emit a warning and drop the email.
+
+    >>> class FakeFileAlias:
+    ...     url = 'http://librarian/foo.txt'
+    >>> del sent_msg['Sender']
+    >>> sent_msg['Sender'] = 'webmaster@ubuntu.com'
+    >>> handler.process(
+    ...     sent_msg, 'notifications@specs.launchpad.net',
+    ...     filealias=FakeFileAlias(), log=log)
+    WARNING:...:Got back a notification we sent: http://librarian/foo.txt
+    True
     >>> log._log.setLevel(OLD_LOG_LEVEL)
+
+No emails were sent:
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0
+
+To prevent bad things happening if someone subscribes this address to
+specifications for example, we ignore all email that are sent from
+Launchpad:
+
+    >>> del sent_msg['X-Loop']
+    >>> del sent_msg['Sender']
+    >>> sent_msg['Sender'] = config.bounce_address
+    >>> log._log.setLevel(10)
+    >>> handler.process(
+    ...     sent_msg, 'notifications@specs.launchpad.net',
+    ...     filealias=FakeFileAlias(), log=log)
+    WARNING:...:We received an email from Launchpad: http://librarian/foo.txt
+    True
+    >>> log._log.setLevel(OLD_LOG_LEVEL)
+
+Again, no emails were sent:
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0

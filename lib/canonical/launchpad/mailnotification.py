@@ -546,8 +546,6 @@ def send_bug_notification(bug, user, subject, body, to_addrs=None,
 
     if "Reply-To" not in headers:
         headers["Reply-To"] = get_bugmail_replyto_address(bug)
-    if "Sender" not in headers:
-        headers["Sender"] = config.bounce_address
 
     # Add a header for each task on this bug, to help users organize their
     # incoming mail in a way that's convenient for them.

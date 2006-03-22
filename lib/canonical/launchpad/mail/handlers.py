@@ -318,6 +318,20 @@ class SpecificationHandler:
         if not match:
             # We handle only spec-changes at the moment.
             return False
+        our_address = "notifications@%s" % config.launchpad.specs_domain
+        # Check for emails that we sent.
+        if signed_msg['X-Loop'] and our_address in signed_msg.get_all('X-Loop'):
+            if log and filealias:
+                log.warning(
+                    'Got back a notification we sent: %s' % filealias.url)
+            return True
+        # Check for emails that Launchpad sent us.
+        if signed_msg['Sender'] == config.bounce_address:
+            if log and filealias:
+                log.warning(
+                    'We received an email from Launchpad: %s' % filealias.url)
+            return True
+
         mail_body = signed_msg.get_payload(decode=True)
         spec_url = get_spec_url_from_moin_mail(mail_body)
         if spec_url is not None:
@@ -327,11 +341,8 @@ class SpecificationHandler:
             if spec is not None:
                 if log is not None:
                     log.debug('Found a corresponding spec: %s' % spec.name)
-                # Set the sender to bounces@launchpad.net, so that
-                # people can see that we sent the message, not Moin.
-                if 'Sender' in signed_msg:
-                    del signed_msg['Sender']
-                signed_msg['Sender'] = config.bounce_address
+                # Add an X-Loop header, in order to prevent mail loop.
+                signed_msg['X-Loop'] = our_address
                 notification_addresses = spec.notificationRecipientAddresses()
                 if log is not None:
                     log.debug(
