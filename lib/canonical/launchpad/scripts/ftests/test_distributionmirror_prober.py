@@ -91,9 +91,6 @@ class TestDistributionMirrorProber(TwistedTestCase):
 
     def test_500(self):
         d = self._createProberAndConnect(self.urls['500'])
-        # XXX: This is an intentionally introduced failure, so we know when we
-        # managed to make the zope test runner actually fail.
-        return self.assertFailure(d, ProberTimeout)
         return self.assertFailure(d, BadResponseCode)
 
     def test_timeout(self):
@@ -122,14 +119,15 @@ class TestDistributionMirrorProberCallbacks(TestCase):
     def test_failure_propagation(self):
         # Make sure that deleteMirrorRelease() does not propagate
         # ProberTimeOut or BadResponseCode failures.
-        reason = self.callbacks.deleteMirrorRelease(
-            Failure(ProberTimeout()))
-        self.failUnless(
-            reason is None, "A timeout shouldn't be propagated.")
-        reason = self.callbacks.deleteMirrorRelease(
-            Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
-        self.failUnless(
-            reason is None, "A bad response code shouldn't be propagated.")
+        try:
+            self.callbacks.deleteMirrorRelease(Failure(ProberTimeout()))
+        except:
+            self.fail("A timeout shouldn't be propagated.")
+        try:
+            self.callbacks.deleteMirrorRelease(
+                Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
+        except:
+            self.fail("A bad response code shouldn't be propagated.")
 
         # Make sure that deleteMirrorRelease() propagate any failure that is
         # not a ProberTimeout or BadResponseCode.

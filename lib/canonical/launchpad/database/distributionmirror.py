@@ -9,13 +9,14 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchRelease',
 
 from datetime import datetime, timedelta
 import pytz
-import urlparse
 import warnings
 
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 
+from canonical.config import config
+from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -31,7 +32,7 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroArchRelease)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import getBinaryPackageExtension
+from canonical.launchpad.helpers import getBinaryPackageExtension, urlappend
 
 
 STATUS_TIMES = [
@@ -86,6 +87,13 @@ class DistributionMirror(SQLBase):
         notNull=True, default=False)
     official_approved = BoolCol(
         notNull=True, default=False)
+
+    @cachedproperty
+    def last_probe_record(self):
+        """See IDistributionMirror"""
+        return MirrorProbeRecord.selectFirst(
+            MirrorProbeRecord.q.distribution_mirrorID==self.id,
+            orderBy='-date_created')
 
     @property
     def title(self):
@@ -208,11 +216,12 @@ class DistributionMirrorSet:
             LEFT OUTER JOIN mirrorproberecord
                 ON mirrorproberecord.distribution_mirror = distributionmirror.id
             WHERE distributionmirror.enabled IS TRUE
+                AND distributionmirror.content = %s
             GROUP BY distributionmirror.id
             HAVING max(mirrorproberecord.date_created) IS NULL
                 OR max(mirrorproberecord.date_created) 
                     < %s - '%s hours'::interval
-            """ % (UTC_NOW, PROBE_INTERVAL)
+            """ % (MirrorContent.ARCHIVE, UTC_NOW, PROBE_INTERVAL)
         conn = DistributionMirror._connection
         ids = ", ".join(str(id) for (id, date_created) in conn.queryAll(query))
         query = '1 = 2'
@@ -223,15 +232,36 @@ class DistributionMirrorSet:
 
 class MirrorReleaseMixIn:
 
+    # The class where we search for the history of packages published. Must be
+    # overwritten in subclasses.
     _publishing_class = None
 
     @property
     def _base_query(self):
+        """The base query to be used when searching for published packages.
+
+        Must be overwritten in subclasses.
+        """
         raise NotImplementedError
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
+        """Given a publishing record, return a dictionary mapping MirrorStatus
+        items to URLs of files on this mirror.
+
+        Must be overwritten on subclasses.
+        """
         raise NotImplementedError
 
+    @property
+    def _no_published_uploads_msg(self):
+        """A message to be logged when no publishing records are found for
+        this (mirror,component,pocket) tuple.
+
+        Must be overwritten on subclasses.
+        """
+        raise NotImplementedError
+
+    # XXX: Needs a docstring
     def getURLsToCheckUpdateness(self, when=None):
         """ """
         base_query = self._base_query
@@ -246,8 +276,6 @@ class MirrorReleaseMixIn:
         oldest_status_time = when - timedelta(hours=threshold)
         query = (base_query + " AND datepublished > %s" 
                  % sqlvalues(oldest_status_time))
-        # XXX: SQLBase.selectFirst() shouldn't require an orderBy argument, so
-        # this can be removed as soon as Andrew merge his fix for that.
         recent_upload = publishing_class.selectFirst(
             query, orderBy='-datepublished')
         if not recent_upload:
@@ -261,12 +289,9 @@ class MirrorReleaseMixIn:
                 # This should not happen when running on production because
                 # the publishing records are correctly filled. But that's not
                 # true when it comes to our sampledata.
-                warnings.warn(
-                    "No published uploads were found for DistroArchRelease "
-                    "'%s %s', Pocket '%s' and Component '%s'" 
-                    % (self.distro_arch_release.distrorelease.name,
-                       self.distro_arch_release.architecturetag,
-                       self.pocket.name, self.component.name))
+                config_options = config.distributionmirrorprober
+                if config_options.warn_about_no_published_uploads:
+                    warnings.warn(self._no_published_uploads_msg)
                 return {}
 
             url = self._getPackageReleaseURLFromPublishingRecord(
@@ -318,7 +343,19 @@ class MirrorDistroArchRelease(SQLBase, MirrorReleaseMixIn):
         notNull=True, schema=PackagePublishingPocket)
 
     @property
+    def _no_published_uploads_msg(self):
+        return ("No published uploads were found for DistroArchRelease "
+                "'%s %s', Pocket '%s' and Component '%s'" 
+                % (self.distro_arch_release.distrorelease.name,
+                   self.distro_arch_release.architecturetag,
+                   self.pocket.name, self.component.name))
+
+    @property
     def _base_query(self):
+        """The base query to search for entries in
+        SecureBinaryPackagePublishingHistory that refer to the 
+        distroarchrelease, pocket and component of this mirror.
+        """
         return """
             pocket = %s AND component = %s AND distroarchrelease = %s
             AND status = %s
@@ -340,7 +377,7 @@ class MirrorDistroArchRelease(SQLBase, MirrorReleaseMixIn):
             name += 'all'
         name += getBinaryPackageExtension(bpr.binpackageformat)
         full_path = 'pool/%s/%s' % (path, name)
-        return urlparse.urljoin(base_url, full_path)
+        return urlappend(base_url, full_path)
 
 
 class MirrorDistroReleaseSource(SQLBase, MirrorReleaseMixIn):
@@ -365,7 +402,18 @@ class MirrorDistroReleaseSource(SQLBase, MirrorReleaseMixIn):
         notNull=True, schema=PackagePublishingPocket)
 
     @property
+    def _no_published_uploads_msg(self):
+        return ("No published uploads were found for DistroRelease "
+                "'%s, Pocket '%s' and Component '%s'" 
+                % (self.distro_release.name, self.pocket.name, 
+                   self.component.name))
+
+    @property
     def _base_query(self):
+        """The base query to search for entries in
+        SecureSourcePackagePublishingHistory that refer to the distrorelease,
+        pocket and component of this mirror.
+        """
         return """
             pocket = %s AND component = %s AND distrorelease = %s
             AND status = %s
@@ -384,7 +432,7 @@ class MirrorDistroReleaseSource(SQLBase, MirrorReleaseMixIn):
         version = spr.version
         filename = "%s_%s.dsc" % (sourcename, version)
         full_path = 'pool/%s/%s' % (path, filename)
-        return urlparse.urljoin(base_url, full_path)
+        return urlappend(base_url, full_path)
 
 
 class MirrorProbeRecord(SQLBase):

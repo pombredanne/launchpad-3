@@ -15,6 +15,7 @@ import random
 import re
 import sha
 import tarfile
+import urlparse
 import warnings
 from StringIO import StringIO
 from math import ceil
@@ -902,4 +903,21 @@ def capture_state(obj, *fields):
         setattr(state, field, getattr(obj, field))
 
     return state
+
+
+def urlappend(baseurl, path):
+    """Append the given path to baseurl.
+
+    The path must not start with a slash, but a slash is added to baseurl
+    (before appending the path), in case it doesn't end with a slash.
+
+    >>> urlappend('http://foo.bar', 'spam/eggs')
+    'http://foo.bar/spam/eggs'
+    >>> urlappend('http://localhost:11375/foo', 'bar/baz')
+    'http://localhost:11375/foo/bar/baz'
+    """
+    assert not path.startswith('/')
+    if not baseurl.endswith('/'):
+        baseurl += '/'
+    return urlparse.urljoin(baseurl, path)
 

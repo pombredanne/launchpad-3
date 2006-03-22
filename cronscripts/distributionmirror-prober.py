@@ -78,10 +78,11 @@ def main(argv):
             unchecked_urls.append(url)
             prober = ProberFactory(url)
 
-            prober.deferred.addCallback(callbacks.ensureOrDeleteMirrorRelease)
-            prober.deferred.addErrback(callbacks.deleteMirrorRelease)
+            prober.deferred.addCallbacks(
+                callbacks.ensureMirrorRelease, callbacks.deleteMirrorRelease)
 
             prober.deferred.addCallback(callbacks.updateMirrorStatus)
+            prober.deferred.addErrback(logger_obj.error)
 
             prober.deferred.addBoth(checkComplete, url, unchecked_urls)
             reactor.connectTCP(prober.host, prober.port, prober)

@@ -77,6 +77,7 @@ class IDistributionMirror(Interface):
     title = Attribute('The title of this mirror')
     source_releases = Attribute('All MirrorDistroReleaseSources of this mirror')
     arch_releases = Attribute('All MirrorDistroArchReleases of this mirror')
+    last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
 
     def isOfficial():
         """Return True if this is an official mirror."""
@@ -137,7 +138,7 @@ class IDistributionMirrorSet(Interface):
         """Return the DistributionMirror with the given id."""
 
     def getMirrorsToProbe():
-        """Return all enabled mirrors that need to be probed.
+        """Return all enabled ARCHIVE mirrors that need to be probed.
 
         A mirror needs to be probed either if it was never probed before or if
         it wasn't probed in the last PROBE_INTERVAL hours.

@@ -1,6 +1,7 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 import httplib
+import logging
 import urlparse
 
 from twisted.internet import defer, protocol, reactor
@@ -11,7 +12,7 @@ from canonical.launchpad.interfaces import IDistroArchRelease, IDistroRelease
 from canonical.lp.dbschema import MirrorStatus
 
 
-PROBER_TIMEOUT = 3
+PROBER_TIMEOUT = 5
 
 
 class ProberProtocol(HTTPClient):
@@ -43,6 +44,14 @@ class ProberProtocol(HTTPClient):
 class ProberTimeout(Exception):
     """The initialized URL did not return in time."""
 
+    def __init__(self, host, port, *args):
+        self.host = host
+        self.port = port
+        Exception.__init__(self, *args)
+
+    def __str__(self):
+        return 'Time out on host %s, port %s' % (self.host, self.port)
+
 
 class ProberFactory(protocol.ClientFactory):
     """Factory using ProberProtocol to probe single URL existence."""
@@ -63,7 +72,7 @@ class ProberFactory(protocol.ClientFactory):
 
     def timeOut(self):
         self.timedOut = True
-        self.deferred.errback(ProberTimeout('TIMEOUT'))
+        self.deferred.errback(ProberTimeout(self.host, self.port))
         self.connector.disconnect()
 
     def _parse(self, url, defaultPort=80):
@@ -103,6 +112,9 @@ class BadResponseCode(Exception):
         Exception.__init__(self, *args)
         self.status = status
 
+    def __str__(self):
+        return "Bad response code: %s" % self.status
+
 
 class MirrorProberCallbacks(object):
 
@@ -132,7 +144,7 @@ class MirrorProberCallbacks(object):
         is propagated.
         """
         self.deleteMethod(self.release, self.pocket, self.component)
-        msg = ('Deleted %s with url %s because of %s.'
+        msg = ('Deleted %s with url %s because of %s.\n'
                % (self.mirror_class_name, self.url, failure.getErrorMessage()))
         self.log_file.write(msg)
         failure.trap(ProberTimeout, BadResponseCode)
@@ -141,7 +153,7 @@ class MirrorProberCallbacks(object):
         """Make sure we have a mirror for self.release, self.pocket and 
         self.component.
         """
-        msg = ('Ensuring %s with url %s exists in the database.'
+        msg = ('Ensuring %s with url %s exists in the database.\n'
                % (self.mirror_class_name, self.url))
         mirror = self.ensureMethod(
             self.release, self.pocket, self.component)
@@ -157,27 +169,47 @@ class MirrorProberCallbacks(object):
         packages the mirror contains and when these packages were published,
         we can have an idea of when that mirror was last updated.
         """
+        # The errback that's one level before this callback in the chain will
+        # return None if it gets a ProberTimeout or BadResponseCode error, so
+        # we need to check that here.
+        if arch_or_source_mirror is None:
+            return
+
+        deferredList = []
         # We start setting the status to unknown, and then we move on trying to
         # find one of the recently published packages mirrored there.
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
         status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
         for status, url in status_url_mapping.items():
-            prober = ProberFactory(url, timeout=PROBER_TIMEOUT)
+            prober = ProberFactory(url)
             prober.deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
             prober.deferred.addErrback(self.logError, url)
+            deferredList.append(prober.deferred)
             reactor.connectTCP(prober.host, prober.port, prober)
+        return defer.DeferredList(deferredList)
 
-    def setMirrorStatus(self, http_status, arch_or_source_mirror, status):
+    def setMirrorStatus(self, http_status, arch_or_source_mirror, status, url):
         """Update the status of the given arch or source mirror.
 
         The status is changed only if the given status refers to a more 
         recent date than the current one.
         """
-        if arch_or_source_mirror.status > status:
+        if status < arch_or_source_mirror.status:
+            msg = ('Found that %s exists. Updating the mirror status to %s.\n'
+                   % (url, status.title))
+            self.log_file.write(msg)
             arch_or_source_mirror.status = status
 
     def logError(self, failure, url):
-        self.log_file.write("%s on %s" % (failure.getErrorMessage(), url))
+        msg = "%s on %s\n" % (failure.getErrorMessage(), url)
+        if failure.check(ProberTimeout, BadResponseCode) is not None:
+            self.log_file.write(msg)
+        else:
+            # This is not an error we expect from an HTTP server, so we log it
+            # using the cronscript's logger and wait for kiko to complain
+            # about it.
+            logger = logging.getLogger('distributionmirror-prober')
+            logger.error(msg)
         return None
 

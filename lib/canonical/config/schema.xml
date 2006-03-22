@@ -423,6 +423,13 @@
                 mirrors.
             </description>
         </key>
+        <key name="warn_about_no_published_uploads" datatype="boolean" 
+             default="yes">
+            <description>
+                Should we warn if we don't find any published records for a
+                given (distro[arch]release,pocket,component) tuple?
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="expiredmembershipsflagger">
