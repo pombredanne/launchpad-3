@@ -809,6 +809,9 @@ ul.architecture>li, li.architecture {
 ul.bounty>li, li.bounty {
   list-style-image: url(/@@/bounty);
 }
+ul.branch>li, li.branch {
+  list-style-image: url(/@@/branch);
+}
 ul.bug>li, li.bug {
   list-style-image: url(/@@/bug);
 }

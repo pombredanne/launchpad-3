@@ -55,9 +55,6 @@
             template="../templates/branch-index.pt"
             lp:url="bazaar/branches/$Branch.id/" />
         <browser:page
-            name="+summary-listing"
-            template="../templates/branch-summary-listing.pt" />
-        <browser:page
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt" />
         <browser:page
@@ -67,6 +64,26 @@
             name="+series-reference"
             template="../templates/branch-series-reference.pt" />
     </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IBranch"
+      facet="overview"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.BranchInProductView" >
+    <browser:page      
+      name="+product-summary-listing"
+      template="../templates/branch-summary-listing.pt" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IBranch"
+      facet="overview"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.BranchInPersonView" >
+    <browser:page
+        name="+person-summary-listing"
+        template="../templates/branch-summary-listing.pt" />
+  </browser:pages>
 
   <browser:pages
     for="canonical.launchpad.interfaces.IBranch"

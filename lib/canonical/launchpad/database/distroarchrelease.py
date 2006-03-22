@@ -127,6 +127,7 @@ class DistroArchRelease(SQLBase):
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
             clauseTables=['BinaryPackagePublishing'],
+            prejoins=["binarypackagename"],
             orderBy=['-rank'],
             distinct=True)
         # import here to avoid circular import problems
