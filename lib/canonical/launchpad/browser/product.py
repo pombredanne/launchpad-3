@@ -523,7 +523,6 @@ class ProductSetView:
     __used_for__ = IProductSet
 
     def __init__(self, context, request):
-
         self.context = context
         self.request = request
         form = self.request.form

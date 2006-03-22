@@ -6,7 +6,7 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageFacets',
     'SourcePackageView',
-    'SourcePackageBugsView']
+    ]
 
 # Python standard library imports
 import cgi
