@@ -121,6 +121,8 @@ class POTemplateView(LaunchpadView):
 
     @property
     def request_languages(self):
+        # if this is accessed multiple times in a same request, consider
+        # changing this to a cachedproperty
         return helpers.request_languages(self.request)
 
     def num_messages(self):
