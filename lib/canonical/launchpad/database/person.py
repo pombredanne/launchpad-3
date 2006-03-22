@@ -1273,6 +1273,35 @@ class PersonSet:
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
+        # Update only the SupportContacts that will not conflict
+        cur.execute('''
+            UPDATE SupportContact
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND distribution IS NULL
+                AND product NOT IN (
+                    SELECT product
+                    FROM SupportContact
+                    WHERE person = %(to_id)d
+                    )
+            ''' % vars())
+        cur.execute('''
+            UPDATE SupportContact
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND distribution IS NOT NULL
+                AND (distribution, sourcepackagename) NOT IN (
+                    SELECT distribution,sourcepackagename
+                    FROM SupportContact
+                    WHERE person = %(to_id)d
+                    )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM SupportContact WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('supportcontact', 'person'))
+
         # Update only the TicketSubscriptions that will not conflict
         cur.execute('''
             UPDATE TicketSubscription
