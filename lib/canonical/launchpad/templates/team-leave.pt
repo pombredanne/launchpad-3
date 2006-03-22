@@ -21,7 +21,7 @@
     </tal:block>
 
     <tal:block tal:condition="not: view/userCanRequestToLeave">
-      <p class="portalMessage">You are not an active member of this team.
+      <p class="error message">You are not an active member of this team.
       You don't need to leave it.</p>
       <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
     </tal:block>

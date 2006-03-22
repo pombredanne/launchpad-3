@@ -104,7 +104,6 @@ enters in action.
   >>> print http(r"""
   ... POST /products/thunderbird/+bug/3/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1346
   ... Content-Type: multipart/form-data; boundary=---------------------------6732896103366711491579814469
   ... 
   ... 

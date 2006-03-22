@@ -1,4 +1,4 @@
 <p class="warning message">
   Launchpad will be going offline for maintenance
-  <tal:soon replace="view/timelefttext" />in 3 minutes</tal:soon>.
+  <tal:soon replace="view/timelefttext">in 3 minutes</tal:soon>.
 </p>

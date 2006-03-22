@@ -99,7 +99,6 @@ But it's not possible to change a bugtask to a existing one.
   >>> print http(r"""
   ... POST /distros/ubuntu/+bug/6/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1346
   ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
   ... 
   ... -----------------------------16131040782095479517127443199

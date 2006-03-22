@@ -306,22 +306,6 @@ input[type="radio"] {
   border: none;
 }
 
-/* -- Form errors: -- */
-.portalMessage {
-  background-color: #ffce7b;
-  border: 1px solid #ffa500;
-  color: black;
-  margin: 1em 0em 0em 0em;
-  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
-  vertical-align: middle;
-  background-position: 5px 0.75em;
-  background-image: url(/@@/info_icon.gif);
-  background-repeat: no-repeat;
-}
-.portalMessage a {
-  color: Black;
-}
-
 /* sabdfl says portlet links must not be underlined */
 .portlet a {
   text-decoration: none;
@@ -1195,7 +1179,6 @@ dl.faq ol {
 
 /*
 Things to get rid of:
-.portalMessage
 .notice-notification,
 .info-notification,
 .debug-notification,

@@ -26,7 +26,7 @@
               metal:define-slot="heading"
               >Edit something</h1>
 
-          <p class="error message"
+          <p class="informational message"
              tal:define="status view/update"
              tal:condition="status"
              tal:content="status" />

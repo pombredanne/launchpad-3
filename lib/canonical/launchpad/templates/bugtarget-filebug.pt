@@ -18,13 +18,13 @@
   </tal:uses_malone>
 
   <tal:not_uses_malone tal:condition="not: context/official_malone">
-    <p class="portalMessage">
+    <p class="error message">
       <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
     </p>
 
-    <div>
-    In order to file a bug on <span tal:replace="context/displayname">Alsa Utils</span>, please do so in its official bug tracker or on its package in the distribution you're using.
-    </div>
+    <p>
+      To file a bug on <span tal:replace="context/displayname">Alsa Utils</span>, please do so in its official bug tracker or on its package in the distribution you're using.
+    </p>
   </tal:not_uses_malone>
 
   </div>

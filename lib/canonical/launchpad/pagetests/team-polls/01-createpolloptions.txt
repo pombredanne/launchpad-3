@@ -96,12 +96,11 @@
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...This poll is already closed, you can't add new options...
+  ...You can&#8217;t add new options because the poll is already closed.
 
   >>> print http(r"""
   ... GET /people/ubuntu-team/+poll/never-closes/+newoption HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...This poll is already open, you can't add new options...
-
+  ...You can&#8217;t add new options because the poll is already open.

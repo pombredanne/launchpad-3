@@ -15,6 +15,7 @@
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
+
        <p class="documentDescription"
           tal:condition="context/bug/summary"
           tal:content="context/bug/summary">

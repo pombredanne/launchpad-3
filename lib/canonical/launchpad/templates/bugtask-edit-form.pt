@@ -1,5 +1,5 @@
 <tal:process define="status view/process_form" />
-<p tal:condition="context/bug/duplicateof" class="portalMessage">
+<p tal:condition="context/bug/duplicateof" class="informational message">
   This bug is a duplicate of
   <a
     href="#"
@@ -27,7 +27,7 @@
   </p>
   <p
     tal:condition="not: context/required:launchpad.Edit"
-    class="portalMessage"
+    class="error message"
   >
     You are not the assignee, or the maintainer of
     <tal:context replace="context/targetname">product</tal:context>,
