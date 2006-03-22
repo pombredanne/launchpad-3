@@ -19,15 +19,15 @@ XXX: Branch URLs should be unique. David has a patch that will make
     >>> Branch.selectBy(url=branch_url).count()
     0
 
-The only thing that we have to supply is the branch url, and the author
-of the branch. The rest is optional, so we pass '' for the rest of the
-parameters. We use the currently authenticated user as the owner of the
-branch, so let's log in as Foo Bar.
+The only thing that we have to supply is the branch url The rest is
+optional, so we pass '' for the rest of the parameters. We use the
+currently authenticated user as the owner of the branch, so let's log in
+as Foo Bar.
 
     >>> login('foo.bar@canonical.com')
     >>> branch_api.register_branch(
-    ...      'http://foo.com/branch', '', '', '', 'test@canonical.com', '')
-    u'Successfully registered the branch.'
+    ...      'http://foo.com/branch', '', '', '', '', '')
+    u'http://localhost:8086/people/name16/+branch/+junk/branch'
 
 Now we can see that a branch got registered:
 
@@ -35,10 +35,10 @@ Now we can see that a branch got registered:
     1
     >>> new_branch = Branch.selectOneBy(url=branch_url)
 
-The author got set to Sample Person, and the author to Foo Bar:
+The author and owner got set to the authenticated person; Foo Bar.
 
     >>> print new_branch.author.displayname
-    Sample Person
+    Foo Bar
     >>> print new_branch.owner.displayname
     Foo Bar
 
@@ -64,7 +64,7 @@ well:
     >>> branch_api.register_branch(
     ...      branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'test@canonical.com', 'evolution')
-    u'Successfully registered the branch.'
+    u'http://localhost:8086/people/name16/+branch/evolution/branch_name'
     >>> Branch.selectBy(url=branch_url).count()
     1
 

@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 import xmlrpclib
 
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.interfaces import (
     IBranchSet, ILaunchBag, IProductSet, IPersonSet)
 
@@ -51,7 +51,10 @@ class BranchAPI(LaunchpadXMLRPCView):
         if not branch_title:
             branch_title = branch_name
 
-        author = getUtility(IPersonSet).getByEmail(author_email)
+        if author_email:
+            author = getUtility(IPersonSet).getByEmail(author_email)
+        else:
+            author = owner
         if author is None:
             return xmlrpclib.Fault(
                 20, "No such email is registered in Launchpad: %s." % 
@@ -61,5 +64,5 @@ class BranchAPI(LaunchpadXMLRPCView):
             name=branch_name, owner=owner, product=product, url=branch_url,
             title=branch_name, summary=branch_description, author=author)
 
-        return u'Successfully registered the branch.'
+        return canonical_url(branch)
 
