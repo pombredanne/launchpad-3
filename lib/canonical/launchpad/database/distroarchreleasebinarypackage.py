@@ -244,13 +244,11 @@ class DistroArchReleaseBinaryPackage:
             pocket=current.pocket,
             embargo=False,
             )
-        
+
     def supersede(self):
         """See IDistroArchReleaseBinaryPackage."""
-
         # Retrieve current publishing info
         current = self.current_published
-
         current = SecureBinaryPackagePublishingHistory.get(current.id)
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW
