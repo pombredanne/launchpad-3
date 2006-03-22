@@ -128,6 +128,42 @@ last 24 hours.
     >>> [mirror.name for mirror in mirrorset.getMirrorsToProbe()]
     [u'archive-404-mirror']
 
+    Now we change the date of the MirrorProbeRecord we've just created, to 
+    make sure this mirror is probed by our prober script.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_record = removeSecurityProxy(proberecord)
+    >>> naked_record.destroySelf()
+    >>> flush_database_updates()
+
+If when we finish probing a mirror, that mirror doesn't have any
+MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
+disabled and a notification is sent to its owner. This is done using
+IDistributionMirror.disableAndNotifyOwner().
+
+    >>> other_mirror = mirrorset[2]
+    >>> other_mirror.enabled
+    True
+    >>> other_mirror.disableAndNotifyOwner()
+
+    Commit, so the email is actually sent.
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> import email
+    >>> from canonical.launchpad.mail import stub
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'Foo Bar <foo.bar@canonical.com>'
+    >>> other_mirror.enabled
+    False
+
+    Enable the mirror again.
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+    >>> other_mirror.enabled = True
+    >>> transaction.commit()
+
 
 - Checking what content is mirrored
 

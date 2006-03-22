@@ -32,7 +32,9 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroArchRelease)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import getBinaryPackageExtension, urlappend
+from canonical.launchpad.helpers import (
+    getBinaryPackageExtension, urlappend, get_email_template)
+from canonical.launchpad.mail import simple_sendmail, format_address
 
 
 STATUS_TIMES = [
@@ -110,8 +112,17 @@ class DistributionMirror(SQLBase):
     def disableAndNotifyOwner(self):
         """See IDistributionMirror"""
         self.enabled = False
-        # XXX: Missing a call to simple_sendmail to notify the owner.
-        # -- Guilherme Salgado, 2006-02-16
+        template = get_email_template('notify-mirror-owner.txt')
+        fromaddress = "Launchpad Mirror Prober <noreply@launchpad.net>"
+
+        replacements = {'distro': self.distribution.title,
+                        'mirror_name': self.name}
+        message = template % replacements
+
+        subject = "Launchpad: Your distribution mirror seems to be unreachable"
+        to_address = format_address(
+            self.owner.displayname, self.owner.preferredemail.email)
+        simple_sendmail(fromaddress, to_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""
@@ -261,9 +272,8 @@ class MirrorReleaseMixIn:
         """
         raise NotImplementedError
 
-    # XXX: Needs a docstring
     def getURLsToCheckUpdateness(self, when=None):
-        """ """
+        """See IMirrorDistroReleaseSource or IMirrorDistroArchRelease."""
         base_query = self._base_query
         publishing_class = self._publishing_class
         assert base_query is not None and publishing_class is not None
