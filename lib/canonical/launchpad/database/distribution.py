@@ -482,10 +482,9 @@ class Distribution(SQLBase, BugTargetBase):
             """ % sqlvalues(self.id, text),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
+            prejoins=["sourcepackagename"],
             distinct=True)
-        return [DistributionSourcePackage(
-            distribution=self,
-            sourcepackagename=dspc.sourcepackagename) for dspc in dspcaches]
+        return [dspc.distributionsourcepackage for dspc in dspcaches]
 
     def getPackageNames(self, pkgname):
         """See IDistribution"""
