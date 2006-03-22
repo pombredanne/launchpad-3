@@ -114,7 +114,7 @@
             </a>
           </td>
           <td tal:content="bug_branch/branch/owner/displayname"></td>
-          <td tal:content="bug_branch/fixed_in_revision_id"></td>
+          <td tal:content="bug_branch/fixed_in_revision"></td>
         </tr>
       </tbody>
     </table>
