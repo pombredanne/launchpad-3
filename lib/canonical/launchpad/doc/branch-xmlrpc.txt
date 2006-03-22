@@ -1,0 +1,105 @@
+The XMLRPC API for registering branches is handled by BranchAPI.
+
+    >>> from canonical.launchpad.xmlrpc import BranchAPI
+    >>> branch_api = BranchAPI(None, None)
+
+register_branch(branch_url, branch_name, branch_title,
+                branch_description, author_email, product_name)
+---------------------------------------------------------------
+
+Let's register a branch using register_branch(). First we make sure that
+there is no branch with the URL we are going to register.
+
+XXX: Branch URLs should be unique. David has a patch that will make
+     branch URLs unique, and add some other constraints.
+     -- Bjorn Tillenius, 2006-03-22
+
+    >>> from canonical.launchpad.database import Branch
+    >>> branch_url = 'http://foo.com/branch'
+    >>> Branch.selectBy(url=branch_url).count()
+    0
+
+The only thing that we have to supply is the branch url, and the author
+of the branch. The rest is optional, so we pass '' for the rest of the
+parameters. We use the currently authenticated user as the owner of the
+branch, so let's log in as Foo Bar.
+
+    >>> login('foo.bar@canonical.com')
+    >>> branch_api.register_branch(
+    ...      'http://foo.com/branch', '', '', '', 'test@canonical.com', '')
+    u'Successfully registered the branch.'
+
+Now we can see that a branch got registered:
+
+    >>> Branch.selectBy(url=branch_url).count()
+    1
+    >>> new_branch = Branch.selectOneBy(url=branch_url)
+
+The author got set to Sample Person, and the author to Foo Bar:
+
+    >>> print new_branch.author.displayname
+    Sample Person
+    >>> print new_branch.owner.displayname
+    Foo Bar
+
+The name and title got set to the last component of the URL:
+
+    >>> print new_branch.name
+    branch
+    >>> print new_branch.title
+    branch
+
+Since we didn't specify product and description, they are None:
+
+    >>> new_branch.product is None
+    True
+    >>> new_branch.summary is None
+    True
+
+
+Let's register a branch specifying the name, description and product as
+well:
+
+    >>> branch_url = 'http://foo.com/other_branch'
+    >>> branch_api.register_branch(
+    ...      branch_url, 'branch_name', 'branch_title',
+    ...      'branch description', 'test@canonical.com', 'evolution')
+    u'Successfully registered the branch.'
+    >>> Branch.selectBy(url=branch_url).count()
+    1
+
+    >>> new_branch = Branch.selectOneBy(url=branch_url)
+    >>> print new_branch.owner.displayname
+    Foo Bar
+    >>> print new_branch.author.displayname
+    Sample Person
+
+    >>> print new_branch.name
+    branch_name
+    >>> print new_branch.title
+    branch_name
+    >>> print new_branch.product.displayname
+    Evolution
+
+If we give a product name that doesn't exist, we get an error:
+
+    >>> branch_api.register_branch(
+    ...      branch_url, 'branch_name', 'branch_title',
+    ...      'branch description', 'test@canonical.com', 'non-existing')
+    <Fault 10: 'No such product: non-existing.'>
+
+If we get an email address which isn't registered in Launchpad:
+
+    >>> branch_api.register_branch(
+    ...      branch_url, 'branch_name', 'branch_title',
+    ...      'branch description', 'non-existing@canonical.com', 'evolution')
+    <Fault 20: 'No such email is registered in Launchpad:
+     non-existing@canonical.com.'>
+
+We don't support anonymous branch registrations:
+
+    >>> login(ANONYMOUS)
+    >>> branch_api.register_branch(
+    ...      branch_url, 'branch_name', 'branch_title',
+    ...      'branch description', 'test@canonical.com', 'evolution')
+    <Fault 99: 'Anonymous registration of branches is not supported.'>
