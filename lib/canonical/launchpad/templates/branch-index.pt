@@ -83,8 +83,22 @@
   </table>
   </tal:history_available>
 
-      <h1>Nearby</h1>
-      <ul>
+  <tal:related_bugs condition="context/related_bugs">
+    <h2>Related Bugs</h2>
+    <ul style="list-style: none">
+      <span tal:repeat="bug context/related_bugs"
+            tal:omit-tag="">
+        <li tal:condition="bug/required:launchpad.View">
+          <a href="#"
+             tal:content="string:${bug/id}. ${bug/title}"
+             tal:attributes="href bug/fmt:url">Foo is Broken</a>
+        </li>
+      </span>
+    </ul>
+  </tal:related_bugs>
+
+      <h2>Nearby</h2>
+      <ul style="list-style: none">
         <li tal:condition="context/product">
           <a tal:attributes="href string:${context/product/fmt:url}/+branches">
             Other <tal:product replace="context/product/displayname" />
@@ -92,10 +106,18 @@
           </a>
         </li>
         <li>
-          <a tal:attributes="href string:${context/owner/fmt:url}/+branches">
-            Other branches by
-            <tal:person replace="context/owner/displayname" />
-          </a>
+          <tal:author condition="context/author">
+            <a tal:attributes="href string:${context/owner/fmt:url}/+authoredbranches">
+              Other branches authored by
+              <tal:person replace="context/author/displayname">Author</tal:person>
+            </a>
+          </tal:author>
+          <tal:no-author condition="not:context/author">
+            <a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
+              Other branches registered (and not authored) by
+              <tal:person replace="context/owner/displayname">Owner</tal:person>
+            </a>
+          </tal:no-author>
         </li>
       </ul>
 </div>

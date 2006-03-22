@@ -10,8 +10,8 @@ import urllib
 import cgi
 import datetime
 
-from sqlobject import ForeignKey, StringCol
-from sqlobject import SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 import pytz
 
@@ -137,15 +137,20 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-
-        if self.product is not None:
-            # This is an upstream task.
+        # We use the forbidden underscore attributes below because, with
+        # SQLObject, hitting self.product means querying and
+        # instantiating an object; prejoining doesn't help because this
+        # happens when the bug task is being instantiated -- too early
+        # in cases where we prejoin other things in.
+        # XXX: we should use a specific SQLObject API here to avoid the
+        # privacy violation.
+        #   -- kiko, 2006-03-21
+        if self._SO_val_productID is not None:
             mark_task(self, IUpstreamBugTask)
-        elif self.distrorelease is not None:
-            # This is a distro release task.
+        elif self._SO_val_distroreleaseID is not None:
             mark_task(self, IDistroReleaseBugTask)
         else:
-            # This is a distro task.
+            # If nothing else, this is a distro task.
             mark_task(self, IDistroBugTask)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
@@ -275,7 +280,7 @@ class BugTask(SQLBase, BugTaskMixin):
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (dbschema.BugTaskStatus.REJECTED, 
+            if status in (dbschema.BugTaskStatus.REJECTED,
                           dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
             else:
@@ -432,6 +437,7 @@ class BugTaskSet:
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
             query, prejoinClauseTables=["Bug"], clauseTables=clauseTables,
+            prejoins=['sourcepackagename', 'product'],
             orderBy=orderby_arg)
 
         return bugtasks

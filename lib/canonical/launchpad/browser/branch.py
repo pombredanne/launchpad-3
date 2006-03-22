@@ -8,6 +8,9 @@ __all__ = [
     'BranchAddView',
     'BranchContextMenu',
     'BranchEditView',
+    'BranchNavigation',
+    'BranchInPersonView',
+    'BranchInProductView',
     'BranchPullListing',
     'BranchUrlWidget',
     'BranchView',
@@ -21,12 +24,27 @@ from zope.app.form.browser import TextWidget
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
-
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.interfaces import (
+    IBranch, IBranchSet, ILaunchBag, IBugSet)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation, stepthrough)
+
+
+class BranchNavigation(Navigation):
+
+    usedfor = IBranch
+
+    @stepthrough("+bug")
+    def traverse_bug_branch(self, bugid):
+        """Traverses to an IBugBranch."""
+        bug = getUtility(IBugSet).get(bugid)
+
+        for bug_branch in bug.bug_branches:
+            if bug_branch.branch == self.context:
+                return bug_branch
 
 
 class BranchContextMenu(ContextMenu):
@@ -129,6 +147,21 @@ class BranchView(LaunchpadView):
                 return '(this branch has no title)'
             else:
                 return '(this branch has neither title nor summary)'
+
+
+class BranchInPersonView(BranchView):
+
+    show_person_link = False
+
+    @property
+    def show_product_link(self):
+        return self.context.product is not None
+
+
+class BranchInProductView(BranchView):
+
+    show_person_link = True
+    show_product_link = False
 
 
 class BranchEditView(SQLObjectEditView):

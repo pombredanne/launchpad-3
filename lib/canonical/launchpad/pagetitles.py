@@ -129,6 +129,8 @@ def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
+bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
+
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextTitle('%s')
@@ -148,6 +150,8 @@ bug_secrecy = ContextId('Bug #%d - Set visibility')
 bug_subscription = ContextId('Subscription to bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
+
+bugbranch_status = "Edit branch fix status"
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 
@@ -550,8 +554,6 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-potemplate_add = 'Add a new template to Rosetta'
-
 # potemplate_chart is a fragment
 
 potemplate_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
@@ -786,7 +788,9 @@ specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
-specificationgoal_index = ContextTitle('Specification acceptance for %s')
+specificationgoal_specs = ContextTitle('List goals for %s')
+
+specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 

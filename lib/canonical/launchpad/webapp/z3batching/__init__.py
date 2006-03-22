@@ -79,10 +79,27 @@ class _Batch(object):
     def __getitem__(self, key):
         if key >= self.trueSize:
             raise IndexError, 'batch index out of range'
+        # When self.start is negative (IOW, when we are batching over an
+        # empty list) we need to raise IndexError here; otherwise, the
+        # attempt to slice below will, on objects which don't implement
+        # __len__, raise a mysterious exception directly from python.
+        if self.start < 0:
+            raise IndexError, 'batch is empty'
         return self.list[self.start+key]
 
-    def __iter__(self): 
-        return iter(self.list[self.start:self.end+1])
+    def __iter__(self):
+        if self.start < 0:
+            # as in __getitem__, we need to avoid slicing with negative
+            # indices in this code
+            return iter([])
+        batch = self.list[self.start:self.end+1]
+        return iter(batch)
+
+    def first(self):
+        return self[0]
+
+    def last(self):
+        return self[self.trueSize-1]
 
     def __contains__(self, item):
         return item in self.__iter__()
@@ -110,12 +127,6 @@ class _Batch(object):
         last_batch_start = self.listlength - (self.listlength % self.size)
         return _Batch(self.list, last_batch_start, size=self.size,
                       _listlength=self.listlength)
-
-    def first(self):
-        return self.list[self.start]
-
-    def last(self):
-        return self.list[self.end]
 
     def total(self):
         return self.listlength
