@@ -333,7 +333,7 @@ class TranslationImportQueueView(LaunchpadView):
 
             # Update the date_status_change field.
             UTC = pytz.timezone('UTC')
-            entry.date_status_change = datetime.datetime.now(UTC)
+            entry.date_status_changed = datetime.datetime.now(UTC)
 
         if number_of_changes == 0:
             self.request.response.addWarningNotification(
