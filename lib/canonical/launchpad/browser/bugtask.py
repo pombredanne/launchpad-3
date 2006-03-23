@@ -11,6 +11,7 @@ __all__ = [
     'BugTaskContextMenu',
     'BugTaskEditView',
     'BugTaskPortletView',
+    'BugTaskStatusView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'BugTargetView',
@@ -28,7 +29,7 @@ from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import (
     setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
-from zope.app.form.interfaces import IInputWidget, WidgetsError
+from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -44,7 +45,8 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
     IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
     ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    valid_distrotask, valid_upstreamtask, BugDistroReleaseTargetDetails)
+    valid_distrotask, valid_upstreamtask, BugDistroReleaseTargetDetails,
+    IRemoteBugTask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -52,7 +54,11 @@ from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.database.sqlbase import flush_database_updates
+from canonical.lp.dbschema import (
+    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
+from canonical.widgets.bugtask import (
+    AssigneeDisplayWidget, DBItemDisplayWidget)
+
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
@@ -408,6 +414,7 @@ class BugTaskBackportView:
 
 class BugTaskEditView(GeneralFormView):
     """The view class used for the task +editstatus page."""
+
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
@@ -415,6 +422,63 @@ class BugTaskEditView(GeneralFormView):
         # complexity, to provide the user a useful error message if
         # they make a change comment but don't change anything.
         self.comment_on_change_error = ""
+
+    def _setUpWidgets(self):
+        """Set up a combination of display and edit widgets.
+
+        Set up the widgets depending on if it's a remote bug task, where
+        only the bug watch should be editable, or if it's a normal
+        bug task, where everything should be editable except for the bug
+        watch.
+        """
+        if IRemoteBugTask.providedBy(self.context):
+            edit_field_names = ['bugwatch']
+            if not IUpstreamBugTask.providedBy(self.context):
+                #XXX: Should be possible to edit the product as well,
+                #     but that's harder due to complications with bug
+                #     watches. The new product might use Malone
+                #     officially, thus we need to handle that case.
+                #     Let's deal with that later.
+                #     -- Bjorn Tillenius, 2006-03-01
+                edit_field_names += ['sourcepackagename', 'binarypackagename']
+            display_field_names = [
+                field_name for field_name in self.fieldNames
+                if field_name not in edit_field_names + ['milestone']
+                ]
+            self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
+            self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.milestone_widget = None
+        else:
+            # Set up the milestone widget as an input widget only if the
+            # has launchpad.Edit permissions on the distribution, for
+            # distro tasks, or launchpad.Edit permissions on the
+            # product, for upstream tasks.
+            milestone_context = (
+                self.context.product or self.context.distribution or
+                self.context.distrorelease.distribution)
+
+            # Don't edit self.fieldNames directly. ZCML magic causes
+            # self.fieldNames to be shared by all BugTaskEditView
+            # instances.
+            edit_field_names = list(self.fieldNames)
+            edit_field_names.remove('bugwatch')
+            self.bugwatch_widget = None
+            display_field_names = []
+            if (("milestone" in edit_field_names) and not
+                helpers.check_permission("launchpad.Edit", milestone_context)):
+                # The user doesn't have permission to edit the
+                # milestone, so render a read-only milestone widget.
+                edit_field_names.remove("milestone")
+                display_field_names.append("milestone")
+
+        self.fieldNames = edit_field_names
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=edit_field_names,
+            initial = self.initial_values)
+        setUpWidgets(
+            self, self.schema, IDisplayWidget, names=display_field_names)
 
     @property
     def initial_values(self):
@@ -424,27 +488,6 @@ class BugTaskEditView(GeneralFormView):
             field_values[name] = getattr(self.context, name)
 
         return field_values
-
-    def _setUpWidgets(self):
-        """Set up the bug task status edit widgets."""
-        # Set up the milestone widget as an input widget only if the has
-        # launchpad.Edit permissions on the distribution, for distro tasks, or
-        # launchpad.Edit permissions on the product, for upstream tasks.
-        milestone_context = (
-            self.context.product or self.context.distribution or
-            self.context.distrorelease.distribution)
-
-        field_names = list(self.fieldNames)
-        if (("milestone" in field_names) and not
-            helpers.check_permission("launchpad.Edit", milestone_context)):
-            # The user doesn't have permission to edit the milestone, so render
-            # a read-only milestone widget.
-            field_names.remove("milestone")
-            setUpDisplayWidgets(self, self.schema, names=["milestone"])
-
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=field_names,
-            initial=self.initial_values)
 
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
@@ -471,7 +514,8 @@ class BugTaskEditView(GeneralFormView):
         product = bugtask.product
         if distro is not None and sourcename != data['sourcepackagename']:
             valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
-        if product is not None and product != data['product']:
+        if (product is not None and
+            'product' in data and product != data['product']):
             valid_upstreamtask(bugtask.bug, data['product'])
 
         return data
@@ -495,7 +539,7 @@ class BugTaskEditView(GeneralFormView):
         milestone_cleared = None
         if (IUpstreamBugTask.providedBy(bugtask) and
             (bugtask.product != new_values.get("product")) and
-             bugtask.milestone):
+            'milestone' in field_names and bugtask.milestone):
             milestone_cleared = bugtask.milestone
             bugtask.milestone = None
             # Remove the "milestone" field from the list of fields whose changes
@@ -505,6 +549,17 @@ class BugTaskEditView(GeneralFormView):
 
         changed = applyWidgetsChanges(
             self, self.schema, target=bugtask, names=field_names)
+
+        if bugtask_before_modification.bugwatch != bugtask.bugwatch:
+            #XXX: Reset the bug task's status information. The right
+            #     thing would be to convert the bug watch's status to a
+            #     Malone status, but it's not trivial to do at the
+            #     moment. I will fix this later.
+            #     -- Bjorn Tillenius, 2006-03-01
+            bugtask.status = BugTaskStatus.UNKNOWN
+            bugtask.priority = BugTaskPriority.UNKNOWN
+            bugtask.severity = BugTaskSeverity.UNKNOWN
+            bugtask.assignee = None
 
         if milestone_cleared:
             self.request.response.addWarningNotification(
@@ -548,6 +603,38 @@ class BugTaskEditView(GeneralFormView):
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         return canonical_url(self.context)
+
+
+class BugTaskStatusView(LaunchpadView):
+    """Viewing the status of a bug task."""
+
+    def initialize(self):
+        """Set up the appropriate widgets.
+
+        Different widgets are shown depending on if it's a remote bug
+        task or not.
+        """
+        field_names = [
+            'status', 'priority', 'severity', 'assignee', 'statusexplanation']
+        if IRemoteBugTask.providedBy(self.context):
+            field_names += ['bugwatch']
+            self.milestone_widget = None
+        else:
+            field_names += ['milestone']
+            self.bugwatch_widget = None
+
+        if IUpstreamBugTask.providedBy(self.context):
+            self.label = 'Product fix request'
+        else:
+            field_names += ['sourcepackagename', 'binarypackagename']
+            self.label = 'Source package fix request'
+
+        self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
+        self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+        self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+        self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+
+        setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
 
 
 class BugListingPortletView(LaunchpadView):
@@ -681,10 +768,6 @@ class BugTaskSearchListingView(LaunchpadView):
             return ["id", "summary", "packagename", "importance", "status"]
 
     def initialize(self):
-        #XXX: The base class should have a simple schema containing only
-        #     the search form. Sub classes, like
-        #     AdvancedBugTaskSearchView should use a seperate schema if
-        #     they need to. -- Bjorn Tillenius, 2005-09-29
         if self._personContext():
             self.schema = IPersonBugTaskSearch
         else:

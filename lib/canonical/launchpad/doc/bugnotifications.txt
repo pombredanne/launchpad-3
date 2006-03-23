@@ -173,7 +173,7 @@ they each have on notification recipients.
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=Unconfirmed; priority=None;\n\tassignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
-      status=Unconfirmed; priority=None; assignee=None;']
+      status=Unknown; priority=Unknown; assignee=None;']
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
