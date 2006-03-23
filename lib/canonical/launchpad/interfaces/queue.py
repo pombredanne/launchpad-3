@@ -91,8 +91,6 @@ class IDistroReleaseQueue(Interface):
 
     age = Attribute("The age of this queue item.")
     displayname = Attribute("Generic displayname for a queue item")
-    queue_icons = Attribute("Return an icon url list correspondent to "
-                            "what is contained in th upload.")
     containsSource = Attribute("whether or not this upload contains sources")
     containsBuild = Attribute("whether or not this upload contains binaries")
     containsInstaller = Attribute(
