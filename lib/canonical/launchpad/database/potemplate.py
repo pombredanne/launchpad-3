@@ -330,7 +330,9 @@ class POTemplate(SQLBase, RosettaStats):
             """ % (self.id,
                    variantspec,
                    quote(language_code)),
-            clauseTables=['Language'])
+            clauseTables=['Language'],
+            prejoinClauseTables=['Language'],
+            prejoins=["latestsubmission"])
 
     def messageCount(self):
         """See IRosettaStats."""

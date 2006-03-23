@@ -34,7 +34,8 @@ from canonical.launchpad.interfaces import (
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
     ISourcePackage, ISourcePackageNameSet, IComponentSet, ISectionSet,
-    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
+    IHasQueueItems)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -73,7 +74,7 @@ from canonical.launchpad.helpers import shortlist
 
 class DistroRelease(SQLBase, BugTargetBase):
     """A particular release of a distribution."""
-    implements(IDistroRelease, IHasBuildRecords)
+    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -505,12 +506,12 @@ class DistroRelease(SQLBase, BugTargetBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
         arch_ids = [arch.id for arch in self.architectures]
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status)
+        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status, name)
 
     def createUploadedSourcePackageRelease(self, sourcepackagename,
             version, maintainer, dateuploaded, builddepends,
@@ -691,18 +692,17 @@ class DistroRelease(SQLBase, BugTargetBase):
                                   pocket=pocket,
                                   changesfile=changes_file.id)
 
-    def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
+    def getQueueItems(self, status=None, name=None, version=None,
+                      exact_match=False):
         """See IDistroRelease."""
-        return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                           status=status)
-
-    def getFancyQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
-                            name=None, version=None, exact_match=False):
-        """See IDistroRelease."""
-
+        if not status:
+            assert not version and not exact_match and not status
+            return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
+                                               orderBy=['-id'])
         if not name:
             assert not version and not exact_match
-            return self.getQueueItems(status)
+            return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
+                                               status=status, orderBy=['-id'])
 
         source_where_clauses = ["""
             distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
@@ -711,6 +711,11 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         build_where_clauses = ["""
             distroreleasequeue.id = distroreleasequeuebuild.distroreleasequeue
+            AND distrorelease = %s
+            AND status = %s""" % sqlvalues(self.id, status)]
+
+        custom_where_clauses = ["""
+            distroreleasequeue.id = distroreleasequeuecustom.distroreleasequeue
             AND distrorelease = %s
             AND status = %s""" % sqlvalues(self.id, status)]
 
@@ -727,10 +732,17 @@ class DistroRelease(SQLBase, BugTargetBase):
         build_where_clauses.append(
             "binarypackagerelease.binarypackagename = binarypackagename.id")
 
-        # attempt to exact or similar names in both, builds and sources
+        # modify custom clause to lookup on libraryfilealias
+        custom_where_clauses.append(
+            "distroreleasequeuecustom.libraryfilealias = "
+            "libraryfilealias.id")
+
+        # attempt to exact or similar names in builds, sources and custom
         if exact_match:
             source_where_clauses.append("sourcepackagename.name = '%s'" % name)
             build_where_clauses.append("binarypackagename.name = '%s'" % name)
+            custom_where_clauses.append(
+                "libraryfilealias.filename='%s'" % name)
         else:
             source_where_clauses.append(
                 "sourcepackagename.name LIKE '%%' || %s || '%%'"
@@ -740,7 +752,11 @@ class DistroRelease(SQLBase, BugTargetBase):
                 "binarypackagename.name LIKE '%%' || %s || '%%'"
                 % quote_like(name))
 
-        # attempt for given version argument
+            custom_where_clauses.append(
+                "libraryfilealias.filename LIKE '%%' || %s || '%%'"
+                % quote_like(name))
+
+        # attempt for given version argument, except by custom
         if version:
             # exact or similar matches
             if exact_match:
@@ -770,6 +786,12 @@ class DistroRelease(SQLBase, BugTargetBase):
             ]
         build_orderBy = ['-binarypackagerelease.datecreated']
 
+        custom_clauseTables = [
+            'DistroReleaseQueueCustom',
+            'LibraryFileAlias',
+            ]
+        custom_orderBy = ['-LibraryFileAlias.id']
+
         source_where_clause = " AND ".join(source_where_clauses)
         source_results = DistroReleaseQueue.select(
             source_where_clause, clauseTables=source_clauseTables,
@@ -780,7 +802,12 @@ class DistroRelease(SQLBase, BugTargetBase):
             build_where_clause, clauseTables=build_clauseTables,
             orderBy=build_orderBy)
 
-        return source_results.union(build_results)
+        custom_where_clause = " AND ".join(custom_where_clauses)
+        custom_results = DistroReleaseQueue.select(
+            custom_where_clause, clauseTables=custom_clauseTables,
+            orderBy=custom_orderBy)
+
+        return source_results.union(build_results.union(custom_results))
 
     def createBug(self, owner, title, comment, private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""

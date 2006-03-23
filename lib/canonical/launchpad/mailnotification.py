@@ -12,8 +12,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
-    IUpstreamBugTask, )
+    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, IRemoteBugTask, 
+    ISpecification, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -279,11 +279,6 @@ def generate_bug_edit_email(bug_delta):
         body += u"Summary changed to:\n"
         body += u"    %s\n" % bug_delta.title
 
-    if bug_delta.summary is not None:
-        body += u"Short description changed to:\n"
-        body += mailwrapper.format(bug_delta.summary)
-        body += u"\n"
-
     if bug_delta.description is not None:
         body += u"Description changed to:\n"
         body += mailwrapper.format(bug_delta.description)
@@ -420,7 +415,7 @@ def generate_bug_edit_email(bug_delta):
             added_bugtasks = [bug_delta.added_bugtasks]
 
         for added_bugtask in added_bugtasks:
-            body += u"Also affects: %s" % added_bugtask.targetname
+            body += u"Also affects: %s\n" % added_bugtask.targetname
             body += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
             if added_bugtask.priority:
                 priority_title = added_bugtask.priority.title
@@ -646,7 +641,7 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("title", "summary", "description"):
+    for field_name in ("title", "description"):
         # fields for which we simply show the new value when they
         # change
         old_val = getattr(old_bug, field_name)

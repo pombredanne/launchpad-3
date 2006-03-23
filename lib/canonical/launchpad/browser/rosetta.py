@@ -28,7 +28,10 @@ class RosettaApplicationView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.languages = helpers.request_languages(self.request)
+
+    @property
+    def languages(self):
+        return helpers.request_languages(self.request)
 
     @property
     def ubuntu_translationrelease(self):
