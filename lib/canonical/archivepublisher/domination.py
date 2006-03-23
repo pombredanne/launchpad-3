@@ -9,6 +9,8 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.database.constants import UTC_NOW
 
+# Importing from canonical.launchpad.database will cause a circular import
+# because we import from this file into database/distributionmirror.py
 from canonical.launchpad.database.publishing import (
      BinaryPackagePublishing, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)

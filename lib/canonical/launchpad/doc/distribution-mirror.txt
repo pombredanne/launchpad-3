@@ -268,7 +268,8 @@ The same goes for the warty i386 mirror, in which we had one upload on
 Running the prober script
 -------------------------
 
-First we need to run our http server, that's going to answer our requests.
+First we need to run the http server that's going to answer our requests and
+the Librarian, so we can send the log files to it.
 
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> from canonical.launchpad.daemons.tachandler import TacTestSetup
@@ -277,6 +278,9 @@ First we need to run our http server, that's going to answer our requests.
     >>> http_server = HTTPServerTestSetup()
     >>> http_server.setUp()
     >>> LibrarianTestSetup().setUp()
+
+Now we run the prober as another process, and check that the generated output
+doesn't contain any errors and that the number of mirrors probed is correct.
 
     >>> import subprocess
     >>> prober = subprocess.Popen(
