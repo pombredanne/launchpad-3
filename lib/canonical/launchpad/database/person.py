@@ -399,20 +399,8 @@ class Person(SQLBase):
     @property
     def is_valid_person(self):
         """See IPerson."""
-        # XXX: Bug 35952 stops this from working. This method is preferred,
-        # as it keeps the 'what is a valid person' logic encapsulated in the
-        # ValidPersonOrTeamCache materialized view.
-        # return (ValidPersonOrTeamCache.get(self.id) is not None)
+        return (ValidPersonOrTeamCache.get(self.id) is not None)
         
-        # No need to make this a cachedproperty, as preferredemail is
-        # already cached.
-        return (
-                self.teamowner is None
-                and self.password is not None
-                and self.merged is None
-                and self.preferredemail is not None
-                )
-
     def assignKarma(self, action_name):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
