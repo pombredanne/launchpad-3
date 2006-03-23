@@ -73,6 +73,19 @@ The Thunderbird bug task was added to the bug:
     firefox (upstream)
     thunderbird (upstream)
 
+Since Thunderbird doesn't use Malone, the status, severity and priority
+are set to Unknown. They will be set later, if it's linked to a bug watch.
+
+    >>> thunderbird_task = bug_four.bugtasks[1]
+    >>> thunderbird_task.target.official_malone
+    False
+    >>> thunderbird_task.status.title
+    'Unknown'
+    >>> thunderbird_task.priority.title
+    'Unknown'
+    >>> thunderbird_task.severity.title
+    'Unknown'
+
 At the same form, we can add a bug watch. If we specify a remote bug
 tracker, but omit the remote bug number, an error message is given:
 

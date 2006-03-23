@@ -13,7 +13,7 @@
 
       <h1>Build machines for Launchpad</h1>
 
-      <table class="listing" width="100%">
+      <table class="listing sortable" tal:attributes="id string:builders">
       <thead>
         <tr>
             <th>Name</th>
