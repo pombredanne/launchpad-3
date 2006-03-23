@@ -40,7 +40,7 @@ the information we have is always up to date.
 
 To create a new MirrorDistroArchRelease (or MirrorDistroReleaseSource)
 associated with a given mirror, we use the ensureMirrorDistroArchRelease
-(or ensureMirrorDistroReleaseSource) method..
+(or ensureMirrorDistroReleaseSource) method.
 
     >>> warty = getUtility(IDistroReleaseSet).get(1)
     >>> warty_i386 = getUtility(IDistroArchReleaseSet).get(1)

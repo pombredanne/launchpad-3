@@ -101,8 +101,9 @@ def main(argv):
     for mirror in probed_mirrors:
         logfile = logfiles[mirror.id]
         logfile.seek(0)
+        filename = '%s-probe-logfile.txt' % mirror.name
         log_file = getUtility(ILibraryFileAliasSet).create(
-            name='mirror-probe-record.txt', size=len(logfile.getvalue()),
+            name=filename, size=len(logfile.getvalue()),
             file=logfile, contentType='text/plain')
         probe_record = mirror.newProbeRecord(log_file)
         if not (mirror.source_releases or mirror.arch_releases):

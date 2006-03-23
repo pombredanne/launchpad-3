@@ -37,17 +37,6 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.mail import simple_sendmail, format_address
 
 
-STATUS_TIMES = [
-    (MirrorStatus.UP, 0.5),
-    (MirrorStatus.ONEHOURBEHIND, 1.5),
-    (MirrorStatus.TWOHOURSBEHIND, 2.5),
-    (MirrorStatus.SIXHOURSBEHIND, 6.5),
-    (MirrorStatus.ONEDAYBEHIND, 24.5),
-    (MirrorStatus.TWODAYSBEHIND, 48.5),
-    (MirrorStatus.ONEWEEKBEHIND, 168.5)
-    ]
-
-
 class DistributionMirror(SQLBase):
     """See IDistributionMirror"""
 
@@ -241,7 +230,24 @@ class DistributionMirrorSet:
         return DistributionMirror.select(query)
 
 
-class MirrorReleaseMixIn:
+class _MirrorReleaseMixIn:
+    """A class containing some commonalities between MirrorDistroArchRelease
+    and MirrorDistroReleaseSource.
+
+    This class is not meant to be used alone. Instead, both
+    MirrorDistroReleaseSource and MirrorDistroArchRelease should inherit from
+    it and override the methods and attributes that say so.
+    """
+
+    status_times = [
+        (MirrorStatus.UP, 0.5),
+        (MirrorStatus.ONEHOURBEHIND, 1.5),
+        (MirrorStatus.TWOHOURSBEHIND, 2.5),
+        (MirrorStatus.SIXHOURSBEHIND, 6.5),
+        (MirrorStatus.ONEDAYBEHIND, 24.5),
+        (MirrorStatus.TWODAYSBEHIND, 48.5),
+        (MirrorStatus.ONEWEEKBEHIND, 168.5)
+        ]
 
     # The class where we search for the history of packages published. Must be
     # overwritten in subclasses.
@@ -282,7 +288,7 @@ class MirrorReleaseMixIn:
             when = datetime.now(pytz.timezone('UTC'))
             
         # Check if there was any recent upload on this distro release.
-        status, threshold = STATUS_TIMES[-1]
+        status, threshold = self.status_times[-1]
         oldest_status_time = when - timedelta(hours=threshold)
         query = (base_query + " AND datepublished > %s" 
                  % sqlvalues(oldest_status_time))
@@ -310,7 +316,7 @@ class MirrorReleaseMixIn:
 
         urls = {}
         last_threshold = timedelta()
-        for status, threshold in STATUS_TIMES:
+        for status, threshold in self.status_times:
             end = when - last_threshold
             start = when - timedelta(hours=threshold)
             last_threshold = timedelta(hours=threshold)
@@ -331,7 +337,7 @@ class MirrorReleaseMixIn:
         return urls
 
 
-class MirrorDistroArchRelease(SQLBase, MirrorReleaseMixIn):
+class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
     """See IMirrorDistroArchRelease"""
 
     implements(IMirrorDistroArchRelease)
@@ -390,7 +396,7 @@ class MirrorDistroArchRelease(SQLBase, MirrorReleaseMixIn):
         return urlappend(base_url, full_path)
 
 
-class MirrorDistroReleaseSource(SQLBase, MirrorReleaseMixIn):
+class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
     """See IMirrorDistroReleaseSource"""
 
     implements(IMirrorDistroReleaseSource)

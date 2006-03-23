@@ -120,14 +120,15 @@ class TestDistributionMirrorProberCallbacks(TestCase):
         # Make sure that deleteMirrorRelease() does not propagate
         # ProberTimeOut or BadResponseCode failures.
         try:
-            self.callbacks.deleteMirrorRelease(Failure(ProberTimeout()))
-        except:
-            self.fail("A timeout shouldn't be propagated.")
+            self.callbacks.deleteMirrorRelease(
+                Failure(ProberTimeout('localhost', '13424')))
+        except Exception, e:
+            self.fail("A timeout shouldn't be propagated. Got %s" % e)
         try:
             self.callbacks.deleteMirrorRelease(
                 Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
-        except:
-            self.fail("A bad response code shouldn't be propagated.")
+        except Exception, e:
+            self.fail("A bad response code shouldn't be propagated. Got %s" % e)
 
         # Make sure that deleteMirrorRelease() propagate any failure that is
         # not a ProberTimeout or BadResponseCode.
