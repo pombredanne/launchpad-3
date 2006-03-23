@@ -78,7 +78,7 @@
                       unknown
                    </tal:nqbb>
                 </tal:qb>
-                <tal:nqb condition="not context/buildqueue_record">
+                <tal:nqb condition="not: context/buildqueue_record">
                    unknown
                 </tal:nqb>
             </td>
