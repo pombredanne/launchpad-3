@@ -84,3 +84,4 @@ from canonical.launchpad.browser.translationimportqueue import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.calendarwidgets import *
+from canonical.launchpad.browser.queue import *
