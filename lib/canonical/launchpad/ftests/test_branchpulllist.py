@@ -122,7 +122,7 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
             u'22 http://not.launchpad.server.com/',
             u'23 http://whynot.launchpad.server.com/',
             u'24 http://users.example.com/gnome-terminal/launchpad',
-            u'25 file:///srv/sm-ng/pushsftp-hosted/00/00/00/19']
+            u'25 /tmp/sftp-test/branches/00/00/00/19']
         self.assertEqual(sorted(listing.splitlines()), sorted(expected))
 
     def test_branch_pull_mime_type(self):
