@@ -24,7 +24,7 @@ from canonical.launchpad.database.potranslation import POTranslation
 
 
 def _get_pluralforms(pomsgset):
-    if len(list(pomsgset.potmsgset.getPOMsgIDs())) > 1:
+    if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
         if pomsgset.pofile.language.pluralforms is not None:
             entries = pomsgset.pofile.language.pluralforms
         elif pomsgset.pofile.pluralforms is not None:
