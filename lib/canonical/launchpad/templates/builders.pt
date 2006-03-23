@@ -14,7 +14,7 @@
 
   <div metal:fill-slot="main">
 
-      <table class="listing" width="100%">
+      <table class="listing sortable" tal:attributes="id string:builders">
       <thead>
         <tr>
             <th>Name</th>

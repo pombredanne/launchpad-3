@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import os
 
-from canonical.malone.externalsystem import Bugzilla
+from canonical.launchpad.components.externalbugtracker import Bugzilla
 
 
 def read_test_file(name):

@@ -515,7 +515,6 @@ class ProductSetView:
     header = "Products registered in Launchpad"
 
     def __init__(self, context, request):
-
         self.context = context
         self.request = request
         form = self.request.form

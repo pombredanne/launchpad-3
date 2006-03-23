@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.queue import QueueItemsView
 
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -80,7 +81,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     usedfor = IDistroRelease
     facet = 'overview'
     links = ['support', 'packaging', 'edit', 'reassign',
-             'addport', 'admin', 'builds']
+             'addport', 'admin', 'builds', 'queue']
 
     def edit(self):
         text = 'Edit Details'
@@ -115,6 +116,10 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'View Builds'
         return Link('+builds', text, icon='info')
+
+    def queue(self):
+        text = 'View Queue'
+        return Link('+queue', text, icon='info')
 
 
 class DistroReleaseBugsMenu(ApplicationMenu):
@@ -169,7 +174,7 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
         return Link('+roadmap', text, icon='info')
 
 
-class DistroReleaseView(BuildRecordsView):
+class DistroReleaseView(BuildRecordsView, QueueItemsView):
 
     def initialize(self):
         # List of languages the user is interested on based on their browser,

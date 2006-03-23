@@ -148,6 +148,10 @@ class IBuildQueue(Interface):
     files = Attribute("SourcePackageRelease files")
     builddependsindep = Attribute("SourcePackageRelease builddependsindep")
     buildduration = Attribute("The duration of the build in progress")
+    manual = Attribute("whether or not the record was rescored manually")
+
+    def manualScore(value):
+        """Manually set a score value to a queue item and lock it."""
 
     def destroySelf():
         """Delete this entry from the database."""

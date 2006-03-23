@@ -8,6 +8,7 @@
   <content class="canonical.launchpad.database.DistroRelease">
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
          shedloads of data. -->
@@ -111,6 +112,12 @@
       lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
+      name="+queue"
+      facet="overview"
+      template="../templates/distrorelease-queue.pt"
+      lp:url="/distros/$distribution/$distrorelease/+queue"
+      />
+    <browser:page
       name="+search"
       facet="overview"
       template="../templates/distrorelease-search.pt"
@@ -119,6 +126,11 @@
       name="+builds-list"
       template="../templates/builds-list.pt"
       lp:url="/distros/$distribution/$distrorelease/+builds-list"
+      />
+    <browser:page
+      name="+queue-list"
+      template="../templates/queue-list.pt"
+      lp:url="/distros/$distribution/$distrorelease/+queue-list"
       />
     <browser:page
       name="+portlet-details"

@@ -1,1 +1,0 @@
-'''Malone unit tests'''

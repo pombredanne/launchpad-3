@@ -25,14 +25,8 @@
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
-       <p class="documentDescription"
-          tal:condition="context/bug/summary"
-          tal:content="context/bug/summary">
-         Bug summary goes here if it exists.
-       </p>
 
-      <div tal:content="structure context/@@+edit-form">
-      </div>
+      <div tal:content="structure context/@@+edit-form" />
 
       <h2>Bug description</h2>
 
