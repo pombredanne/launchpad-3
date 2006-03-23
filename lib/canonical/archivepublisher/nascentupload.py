@@ -309,10 +309,8 @@ class NascentUpload:
         self.sender = "%s <%s>" % (
             config.uploader.default_sender_name,
             config.uploader.default_sender_address)
-        self.recipients = ["%s <%s>" % (
-            config.uploader.default_recipient_name,
-            config.uploader.default_recipient_address)
-                           ]
+        self.recipients = []
+
         self.logger = logger
         self.rejection_message = ""
         self.warnings = ""
@@ -1799,7 +1797,9 @@ class NascentUpload:
             }
         self.build_recipients()
         interpolations['RECIPIENT'] = ", ".join(self.recipients)
-
+        interpolations['DEFAULT_RECIPIENT'] = (
+            "%s <%s>" % (config.uploader.default_recipient_name,
+                         config.uploader.default_recipient_address))
         interpolations = self.policy.filterInterpolations(self,
                                                           interpolations)
         outgoing_msg = template % interpolations
@@ -2041,6 +2041,10 @@ class NascentUpload:
             self.build_recipients()
 
             interpolations['RECIPIENT'] = ", ".join(self.recipients)
+
+            interpolations['DEFAULT_RECIPIENT'] = (
+                "%s <%s>" % (config.uploader.default_recipient_name,
+                             config.uploader.default_recipient_address))
 
             interpolations = self.policy.filterInterpolations(
                 self, interpolations)
