@@ -9,7 +9,7 @@ __all__ = [
     'ITicketTarget',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')

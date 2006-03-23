@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
@@ -18,6 +18,12 @@
 
   <div tal:replace="structure context/@@+table-specworkload" />
 
+  <p class="discreet">
+    This page lists the specifications which are related to this person -
+    either they were created by them, or they are in some way expected to
+    work on the specs. The cross marks [x] identify specific roles.
+  </p>
+
   <tal:is_team condition="context/isTeam">
 
     <h2>Team member workload</h2>
@@ -31,9 +37,16 @@
 
     <tal:participants repeat="member context/allmembers">
 
-      <h3 tal:content="member/browsername">Foo Bar</h3>
+      <tal:has_work condition="member/specifications">
 
-      <div tal:replace="structure member/@@+table-specworkload" />
+        <img src="/@@/user" />
+        <a tal:content="member/browsername"
+           tal:attributes="href member/fmt:url">Foo Bar</a>'s
+        specifications:<br />
+
+        <div tal:replace="structure member/@@+table-specworkload" />
+
+      </tal:has_work>
 
     </tal:participants>
 

@@ -6,7 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     'IPOTMsgSet',
+    'BrokenTextError',
     ]
+
+class BrokenTextError(ValueError):
+    """Exception raised when we detect values on a text that aren't valid."""
 
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""

@@ -61,6 +61,11 @@
         facet="overview"
         template="../templates/build-reset.pt"
         />
+      <browser:page 
+        name="+rescore"
+        facet="overview"
+        template="../templates/build-rescore.pt"
+        />
     </browser:pages>
 
     <!-- BuildSet -->

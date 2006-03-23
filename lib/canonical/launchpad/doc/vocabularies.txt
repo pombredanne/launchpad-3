@@ -68,20 +68,20 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
     >>> distrorelease_vocabulary = vocabulary_registry.get(
     ...     None,"DistroRelease")
     >>> for term in distrorelease_vocabulary:
-    ...     print "%s %20s %s" % (term.value, term.token, term.title)
-    7 debian/sarge         Sarge
-    8 debian/sid           Sid
-    6 debian/woody         WOODY
-    9 guadalinex/2k5       Guada 2005
-    4 redhat/7.0           Seven
-    2 redhat/six           Six Six Six
-    10 ubuntu/breezy-autotest Breezy Badger Autotest
-    5 ubuntu/grumpy        The Grumpy Groundhog Release
-    3 ubuntu/hoary         The Hoary Hedgehog Release
-    1 ubuntu/warty         The Warty Warthog Release
-    11 ubuntutest/breezy-autotest Breezy Badger Autotest
-    >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value
-    3
+    ...     print "%20s %s" % (term.token, term.title)
+    debian/sarge         Sarge
+    debian/sid           Sid
+    debian/woody         WOODY
+    guadalinex/2k5       Guada 2005
+    redhat/7.0           Seven
+    redhat/six           Six Six Six
+    ubuntu/breezy-autotest Breezy Badger Autotest
+    ubuntu/grumpy        The Grumpy Groundhog Release
+    ubuntu/hoary         The Hoary Hedgehog Release
+    ubuntu/warty         The Warty Warthog Release
+    ubuntutest/breezy-autotest Breezy Badger Autotest
+    >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value.title
+    u'The Hoary Hedgehog Release'
     >>> def getTerms(vocab, search_text):
     ...     [vocab.toTerm(item) for item in vocab.search(search_text)]
 
@@ -191,6 +191,64 @@ The search does a case-insensitive, substring match.
     >>> [package_name_term.name for package_name_term in package_name_terms]
     [u'mozilla', u'mozilla-firefox']
 
+o ProductBranchVocabulary - the list of bzr branches registered in
+  Launchpad. Searchable by branch name or URL, and searched within the
+  context of a product.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> firefox = getUtility(IProductSet)["firefox"]
+    >>> gnome_terminal = getUtility(IProductSet)["gnome-terminal"]
+
+    >>> branch_vocabulary = vocabulary_registry.get(firefox, "ProductBranch")
+
+    >>> branches = branch_vocabulary.search(
+    ...     "http://bazaar.launchpad.net/mozilla@arch.ubuntu.com/"
+    ...     "mozilla--release--0.9.2")
+
+    >>> [branch.name for branch in branches]
+    [u'mozilla@arch.ubuntu.com_mozilla--release--0.9.2']
+
+    >>> branches = branch_vocabulary.search(
+    ...     "mozilla@arch.ubuntu.com_mozilla--release--0.9.2")
+
+    >>> [branch.name for branch in branches]
+    [u'mozilla@arch.ubuntu.com_mozilla--release--0.9.2']
+
+The search will not match branches in another product:
+
+    >>> branches = branch_vocabulary.search("slowness")
+    >>> [branch for branch in branches]
+    []
+
+Now, when we search in gnome-terminal, we'll find the "slowness"
+branch:
+
+    >>> branch_vocabulary = vocabulary_registry.get(
+    ...     gnome_terminal, "ProductBranch")
+    >>> branches = branch_vocabulary.search("slowness")
+    >>> [branch.name for branch in branches]
+    [u'slowness']
+
+We can also specify a context of None, meaning "search all product
+branches".
+
+    >>> branch_vocabulary = vocabulary_registry.get(None, "ProductBranch")
+    >>> branches = branch_vocabulary.search("slowness")
+    >>> [branch.name for branch in branches]
+    [u'slowness']
+
+When the context is anything other than an IProduct, the search behaves
+as though no product were passed. This happens, for example, when adding
+a branch off the bugtask page; in this case, the context is an IBugTask:
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> bugtask = getUtility(IBugTaskSet).get(2)
+    >>> branch_vocabulary = vocabulary_registry.get(bugtask, "ProductBranch")
+    >>> branches = branch_vocabulary.search("slowness")
+    >>> [branch.name for branch in branches]
+    [u'slowness']
+
 o ProjectVocabulary - the list of selectable projects. The results are
   ordered by displayname.
 
@@ -247,7 +305,6 @@ o ProductVocabulary - the list of selectable products. Results are
     >>> arch.value in product_vocabulary
     True
 
-    >>> from canonical.launchpad.interfaces import IProductSet
     >>> arch_product = getUtility(IProductSet)['arch-mirrors']
     >>> arch_product in product_vocabulary
     True

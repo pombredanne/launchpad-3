@@ -212,12 +212,12 @@ template. Remember, we need to tell the system that this po file is a
 
 The guess IPOFile should be the same we already had.
 
-    >>> entry.guess_pofile.id == pofile.id
+    >>> entry.guessed_pofile.id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guess_pofile
+    >>> entry.pofile = entry.guessed_pofile
 
 We must approve the entry to be able to import it.
 
@@ -354,12 +354,12 @@ Here are the contents of another file we'll be importing. It has no errors.
 
 The guess IPOFile should be the same we already had.
 
-    >>> entry.guess_pofile.id == pofile.id
+    >>> entry.guessed_pofile.id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guess_pofile
+    >>> entry.pofile = entry.guessed_pofile
 
 We must approve the entry to be able to import it.
 
@@ -413,16 +413,19 @@ Now, is time to test a .pot import when we don't have any header.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> potemplate.importFromQueue(FakeLogger())
+    log> We got an error importing %s Template "firefox" in Mozilla Firefox Milestone Releases
+    ...
+    log> POSyntaxError: No header found in this pofile
 
 The status is now IMPORTED:
 
-    >>> entry.status == RosettaImportStatus.IMPORTED
+    >>> entry.status == RosettaImportStatus.FAILED
     True
 
 And the number of activities performed is...
 
     >>> person.activities.count()
-    3
+    2
 
 The header should be the old one as this one does not have any:
 
@@ -455,12 +458,12 @@ Another test, try to import a .po file that is older than previous import...
 
 The guess IPOFile should be the same we already had.
 
-    >>> entry.guess_pofile.id == pofile.id
+    >>> entry.guessed_pofile.id == pofile.id
     True
 
 Set it as the place where the entry should be imported.
 
-    >>> entry.pofile = entry.guess_pofile
+    >>> entry.pofile = entry.guessed_pofile
 
 We must approve the entry to be able to import it.
 
@@ -480,7 +483,7 @@ The status is now FAILED
 The number of activities shouldn't change as the import was rejected.
 
     >>> person.activities.count()
-    3
+    2
 
 And the statistics reflect it.
 
@@ -489,7 +492,7 @@ And the statistics reflect it.
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    0
+    1
 
 And the date should be the old one
 
@@ -518,7 +521,7 @@ the msgid
     ...     pofile.path, pofile_content, True, rosetta_experts,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> entry.pofile = entry.guess_pofile
+    >>> entry.pofile = entry.guessed_pofile
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
     >>> pofile.importFromQueue(FakeLogger())
@@ -537,9 +540,10 @@ Now, is time to check the notification email.
     >>> msg["Subject"]
     'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
     >>> print msg.get_payload(decode=True)
-    Hello Rosetta Administrators,...
+    Hello Rosetta Administrators,
+    <BLANKLINE>
     ...
-    0.  [msg 0]
+    5.  [msg 0]
     "The msgid_Plural field has changed since last time this .po file was
     generated, please notify this error to rosetta@ubuntu.com":
     <BLANKLINE>
@@ -575,7 +579,8 @@ And run the cronscript.
     >>> (output, empty) = process.communicate()
     >>> print output
     INFO    Importing: Template "firefox" in Mozilla Firefox Milestone Releases
-    WARNING No header found in this pofile
+    WARNING We got an error importing Template "firefox" in Mozilla Firefox Milestone Releases
+     -> http://localhost:58000/... (No header found in this pofile)
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases

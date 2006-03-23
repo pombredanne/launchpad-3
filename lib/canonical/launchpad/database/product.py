@@ -163,9 +163,10 @@ class Product(SQLBase, BugTargetBase):
     def tickets(self, quantity=None):
         """See ITicketTarget."""
         return Ticket.select("""
-            product = %s
+            Ticket.product = %s
             """ % sqlvalues(self.id),
-            orderBy='-datecreated',
+            orderBy='-Ticket.datecreated',
+            prejoins=['product', 'owner'],
             limit=quantity)
 
     def newTicket(self, owner, title, description):
@@ -257,8 +258,10 @@ class Product(SQLBase, BugTargetBase):
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        return Specification.selectBy(productID=self.id,
+        results = Specification.selectBy(productID=self.id,
             orderBy=order)[:quantity]
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -317,10 +320,6 @@ class ProductSet:
     def __init__(self):
         self.title = "Products registered in Launchpad"
 
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(Product.selectBy(active=True, orderBy="-datecreated"))
-
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         item = Product.selectOneBy(name=name, active=True)
@@ -328,20 +327,25 @@ class ProductSet:
             raise NotFoundError(name)
         return item
 
+    def __iter__(self):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        return iter(self._getProducts())
+
     def latest(self, quantity=5):
-        return Product.select(Product.q.active == True, 
-                              orderBy='-datecreated',
-                              limit=quantity)
+        return self._getProducts()[:quantity]
+
+    def _getProducts(self):
+        results = Product.selectBy(active=True, orderBy="-Product.datecreated")
+        # The main product listings include owner, so we prejoin it in
+        return results.prejoin(["owner"])
 
     def get(self, productid):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         try:
-            product = Product.get(productid)
+            return Product.get(productid)
         except SQLObjectNotFound:
             raise NotFoundError("Product with ID %s does not exist" %
                                 str(productid))
-
-        return product
 
     def getByName(self, name, default=None, ignore_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -379,45 +383,41 @@ class ProductSet:
                bazaar=None,
                show_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        # XXX: soyuz is unused
+        # XXX: the soyuz argument is unused
+        #   -- kiko, 2006-03-22
         clauseTables = sets.Set()
         clauseTables.add('Product')
-        query = '1=1 '
+        queries = ['1=1']
         if text:
-            query += " AND Product.fti @@ ftq(%s) " % sqlvalues(text)
+            queries.append("Product.fti @@ ftq(%s) " % sqlvalues(text))
         if rosetta:
             clauseTables.add('POTemplate')
             clauseTables.add('ProductRelease')
             clauseTables.add('ProductSeries')
+            queries.append("POTemplate.productrelease=ProductRelease.id")
+            queries.append("ProductRelease.productseries=ProductSeries.id")
+            queries.append("ProductSeries.product=product.id")
         if malone:
             clauseTables.add('BugTask')
+            queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            query += ' AND ProductSeries.branch IS NOT NULL \n'
-        if 'POTemplate' in clauseTables:
-            query += """ AND POTemplate.productrelease=ProductRelease.id
-                         AND ProductRelease.productseries=ProductSeries.id
-                         AND ProductSeries.product=product.id """
-        if 'BugTask' in clauseTables:
-            query += ' AND BugTask.product=Product.id \n'
+            queries.append('ProductSeries.branch IS NOT NULL')
         if 'ProductSeries' in clauseTables:
-            query += ' AND ProductSeries.product=Product.id \n'
+            queries.append('ProductSeries.product=Product.id')
         if not show_inactive:
-            query += ' AND Product.active IS TRUE \n'
+            queries.append('Product.active IS TRUE')
+        query = " AND ".join(queries)
         return Product.select(query, distinct=True, clauseTables=clauseTables)
 
     def translatables(self):
         """See IProductSet"""
-        translatable_set = set()
         upstream = Product.select('''
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id
             ''',
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
-        for product in upstream:
-            translatable_set.add(product)
-
         distro = Product.select('''
             Product.id = ProductSeries.product AND
             Packaging.productseries = ProductSeries.id AND
@@ -425,17 +425,13 @@ class ProductSet:
             ''',
             clauseTables=['ProductSeries', 'Packaging', 'POTemplate'],
             distinct=True)
-        for product in distro:
-            translatable_set.add(product)
-        result = list(translatable_set)
-        result.sort(key=lambda x: x.name)
-        return result
+        return upstream.union(distro)
 
     def count_all(self):
         return Product.select().count()
 
     def count_translatable(self):
-        return len(self.translatables())
+        return self.translatables().count()
 
     def count_reviewed(self):
         return Product.selectBy(reviewed=True, active=True).count()

@@ -99,9 +99,9 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords."""
-        return getUtility(IBuildSet).getBuildsForBuilder(self.id, status)
+        return getUtility(IBuildSet).getBuildsForBuilder(self.id, status, name)
 
 
 class BuilderSet(object):
@@ -157,6 +157,12 @@ class BuildQueue(SQLBase):
     buildstart = UtcDateTimeCol(dbName='buildstart', default= None)
     logtail = StringCol(dbName='logtail', default=None)
     lastscore = IntCol(dbName='lastscore', default=0)
+    manual = BoolCol(dbName='manual', default=False)
+
+    def manualScore(self, value):
+        """See IBuildQueue."""
+        self.lastscore = value
+        self.manual = True
 
     @property
     def archrelease(self):
