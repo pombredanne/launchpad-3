@@ -1,11 +1,13 @@
 import os
 import shutil
-import signal
 import tempfile
 import unittest
 from StringIO import StringIO
 
-from canonical.launchpad.scripts.supermirror.bzr_5_6 import BZR_5_6
+import bzrlib
+
+from canonical.config import config
+from canonical.launchpad.scripts.supermirror.branchtomirror import BranchToMirror
 from canonical.launchpad.scripts.supermirror.branchtargeter import branchtarget
 from canonical.launchpad.scripts.supermirror.tests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
@@ -31,6 +33,7 @@ class TestJobManager(unittest.TestCase):
     def testExistance(self):
         from canonical.launchpad.scripts.supermirror.jobmanager import (
             JobManager)
+        assert JobManager
 
     def testEmptyBranchStreamToBranchList(self):
         falsestdin = StringIO("")
@@ -39,35 +42,27 @@ class TestJobManager(unittest.TestCase):
 
     def testSingleBranchStreamToBranchList(self):
         """Get a list of branches and ensure that it can add a branch object."""
-        bzr56branch = self._makeAndMirrorBranch("managersingle", 0)
-        falsestdin = StringIO("0 %s\n" % (bzr56branch.source))
+        expected_branch = BranchToMirror(
+            'managersingle', config.supermirror.branchesdest + '/00/00/00/00')
+        falsestdin = StringIO("0 managersingle\n")
         manager = jobmanager.JobManager()
         branches = manager.branchStreamToBranchList(falsestdin)
-        # this is better because it ensures the entire output is the same.
-        self.assertEqual([bzr56branch], branches) 
-
-    def testNotHandledObjected(self):
-        """Make sure jobmanager does the right thing when it gets told that 
-        there is no missing branch
-        """
-        manager = jobmanager.JobManager()
-        manager.run()
+        self.assertEqual([expected_branch], branches) 
 
     def testAddJobManager(self):
         manager = jobmanager.JobManager()
-        brancha = self._makeBranch("brancha", None)
-        manager.add(brancha)
-        branchb = self._makeBranch("branchb", None)
-        manager.add(branchb)
-        self.assertEqual(manager.jobswaiting, 2)
+        manager.add(BranchToMirror('foo', 'bar'))
+        manager.add(BranchToMirror('baz', 'bar'))
+        self.assertEqual(len(manager.branches_to_mirror), 2)
 
-    def assertEquivilantMirror(self, branch):
-        mirror = BZR_5_6(branch.dest, None)
-        self.assertEqual(branch, mirror) 
+    def assertMirrored(self, branch):
+        source_tree = bzrlib.workingtree.WorkingTree.open(branch.source)
+        dest_tree = bzrlib.workingtree.WorkingTree.open(branch.dest)
+        self.assertEqual(source_tree.last_revision(), dest_tree.last_revision())
 
     def testJobRunner(self):
         manager = jobmanager.JobManager()
-        self.assertEqual(manager.jobswaiting, 0)
+        self.assertEqual(len(manager.branches_to_mirror), 0)
 
         brancha = self._makeBranch("brancha", 0)
         manager.add(brancha)
@@ -84,46 +79,16 @@ class TestJobManager(unittest.TestCase):
         branche = self._makeBranch("branche", 4444)
         manager.add(branche)
 
-        self.assertEqual(manager.jobswaiting, 5)
+        self.assertEqual(len(manager.branches_to_mirror), 5)
 
         manager.run()
 
-        self.assertEqual(manager.jobswaiting, 0)
-        self.assertEquivilantMirror(brancha)
-        self.assertEquivilantMirror(branchb)
-        self.assertEquivilantMirror(branchc)
-        self.assertEquivilantMirror(branchd)
-        self.assertEquivilantMirror(branche)
-
-    def testInstallsKillHandler(self):
-        controller = jobmanager.JobManagerController()
-
-        self.assertDefaultHandler(controller)
-        manager = jobmanager.JobManager()
-        self.assertDefaultHandler(controller)
-
-        manager.install() 
-        try:
-            newSigHandler = signal.getsignal(controller.killSignal)
-            self.assertEqual(newSigHandler, manager.killRecieved)
-        finally:
-            manager.uninstall() 
-
-        self.assertDefaultHandler(controller)
-
-    def assertDefaultHandler(self, controller):
-        """Ensures that the default signal handler is installed."""
-        currentSigHandler = signal.getsignal(controller.killSignal)
-        self.assertEqual(currentSigHandler, signal.SIG_DFL)
-
-    def testKillRecievedInactive(self):
-        manager = jobmanager.JobManager()
-        manager.install()
-        try:
-            self.assertRaises(
-                NotImplementedError, manager.killRecieved, None, None)
-        finally:
-            manager.uninstall()
+        self.assertEqual(len(manager.branches_to_mirror), 0)
+        self.assertMirrored(brancha)
+        self.assertMirrored(branchb)
+        self.assertMirrored(branchc)
+        self.assertMirrored(branchd)
+        self.assertMirrored(branche)
 
     def testManagerCreatesLocks(self):
         try:
@@ -155,7 +120,7 @@ class TestJobManager(unittest.TestCase):
         """Given a relative directory, make a strawman branch and return it.
 
         @param relativedir - The directory to make the branch
-        @output BZR_5_6 - A branch object representing the strawman branch
+        @output BranchToMirror - A branch object representing the strawman branch
         """
         branchdir = os.path.join(self.testdir, relativedir)
         createbranch(branchdir)
@@ -163,14 +128,14 @@ class TestJobManager(unittest.TestCase):
             targetdir = None
         else:
             targetdir = os.path.join(self.testdir, branchtarget(target))
-        return BZR_5_6(branchdir, targetdir)
+        return BranchToMirror(branchdir, targetdir)
 
     def _makeAndMirrorBranch(self, relativedir, target):
         """Given a relative directory, makes a strawman branch, mirrors it
         and returns the branch object
 
         @param relativedir - The directory relative to cwd to make the branch
-        @output BZR_5_6 - A branch object representing the strawman branch
+        @output BranchToMirror - A branch object representing the strawman branch
         """
         branch = self._makeBranch(relativedir, target=target)
         branch.mirror()

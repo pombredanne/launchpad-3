@@ -42,15 +42,13 @@ class TestMirrorCommand(unittest.TestCase):
     def testMainRunsManager(self):
         self.startMirror()
         call_log = MockJobManager.instances[-1]._call_log
-        self.assertEquals(7, len(call_log))
+        self.assertEquals(5, len(call_log))
         self.assertEquals(call_log[0], ("__init__",))
         self.assertEquals(call_log[1], ("lock",))
-        self.assertEquals(call_log[2], ("install",))
-        self.assertEquals(call_log[3],
+        self.assertEquals(call_log[2],
                           ("branchStreamToBranchList", "first post\n"))
-        self.assertEquals(call_log[4], ("run",))
-        self.assertEquals(call_log[5], ("uninstall",))
-        self.assertEquals(call_log[6], ("unlock",))
+        self.assertEquals(call_log[3], ("run",))
+        self.assertEquals(call_log[4], ("unlock",))
 
     def startMirror(self):
         fakeurllib = setupFakeurllib()
@@ -69,16 +67,14 @@ class TestMockJobManager(unittest.TestCase):
         # FIXME: we need to check for return of something for some of these,
         # maybe
         manager = MockJobManager()
-        manager.install()
         manager.lock()
-        manager.branchStreamToBranchList(StringIO("kill"))
+        manager.branchStreamToBranchList(StringIO("data"))
         manager.unlock()
-        manager.uninstall()
         # we want a list of tuples, one tuple for each api called.
         self.assertEquals(
             manager._call_log, 
-            [("__init__",), ("install",), ("lock",),
-             ("branchStreamToBranchList", "kill"), ("unlock",), ("uninstall",)])
+            [("__init__",), ("lock",), ("branchStreamToBranchList", "data"), 
+             ("unlock",)])
 
 
 class MockJobManager:
@@ -92,9 +88,6 @@ class MockJobManager:
 
     def add(self, item):
         pass
-
-    def install(self):
-        self._call_log.append(("install",))
 
     def lock(self, lockfilename=None):
         if MockJobManager.locked:
@@ -112,9 +105,6 @@ class MockJobManager:
 
     def run(self):
         self._call_log.append(("run",))
-
-    def uninstall(self):
-        self._call_log.append(("uninstall",))
 
 
 class TestMockurllib(unittest.TestCase):

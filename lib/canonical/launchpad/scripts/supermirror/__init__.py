@@ -1,16 +1,13 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-import socket
-import sys
 import urllib
 
 from canonical.config import config
-from canonical.launchpad.scripts.supermirror.jobmanager import JobManager
+from canonical.launchpad.scripts.supermirror.jobmanager import (
+    JobManager, LockError)
 
-config.supermirror.branchlistsource = 'http://foo.com/baz'
 
-def mirror(managerClass=JobManager, lockfile=config.supermirror.masterlock,
-           urllibOpener=urllib.urlopen):
+def mirror(managerClass=JobManager, urllibOpener=urllib.urlopen):
     """Mirror the given branches into the directory specified in
     config.supermirror.branchesdest.
     
@@ -20,25 +17,15 @@ def mirror(managerClass=JobManager, lockfile=config.supermirror.masterlock,
     mymanager = managerClass()
     try:
         mymanager.lock()
-    except:
+    except LockError:
         return 0
 
-    mymanager.install()
     try:
         branchdata = urllibOpener(config.supermirror.branchlistsource)
-        branches = mymanager.branchStreamToBranchList(branchdata)
-        for branch in branches:
+        for branch in mymanager.branchStreamToBranchList(branchdata):
             mymanager.add(branch)
         mymanager.run()
-        mymanager.uninstall()
+    finally:
         mymanager.unlock()
-    except socket.error:
-        print >> sys.stderr,  "Launchpad is unreachable" 
-        mymanager.uninstall()
-        mymanager.unlock()
-    except:
-        mymanager.uninstall()
-        mymanager.unlock()
-        raise
     return 0
 
