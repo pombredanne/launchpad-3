@@ -51,7 +51,7 @@
   for="canonical.launchpad.interfaces.ILaunchpadRoot"
   interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
   class="canonical.launchpad.xmlrpc.BranchSetAPI"
-  permission="zope.Public"
+  permission="launchpad.AnyPerson"
   />
 
 </configure>

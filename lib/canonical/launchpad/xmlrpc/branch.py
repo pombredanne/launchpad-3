@@ -11,7 +11,8 @@ import xmlrpclib
 
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.interfaces import (
-    IBranchSet, ILaunchBag, IProductSet, IPersonSet)
+    IBranchSet, IBugSet, ILaunchBag, IProductSet, IPersonSet, NotFoundError)
+from canonical.lp.dbschema import BugBranchStatus
 
 
 class IBranchSetAPI(Interface):
@@ -20,6 +21,9 @@ class IBranchSetAPI(Interface):
     def register_branch(branch_url, branch_name, branch_title,
                         branch_description, author_email, product_name):
         """Register a new branch in Launchpad."""
+
+    def link_branch_to_bug(branch_url, bug_id, whiteboard):
+        """Link the branch to the bug."""
 
 
 class BranchSetAPI(LaunchpadXMLRPCView):
@@ -30,9 +34,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                         branch_description, author_email, product_name):
         """See IBranchSetAPI."""
         owner = getUtility(ILaunchBag).user
-        if owner is None:
-            return xmlrpclib.Fault(
-                99, 'Anonymous registration of branches is not supported.')
+        assert owner is not None, (
+            "Anonymous registration of branches is not supported.")
         if product_name:
             product = getUtility(IProductSet).getByName(product_name)
             if product is None:
@@ -65,4 +68,20 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             title=branch_name, summary=branch_description, author=author)
 
         return canonical_url(branch)
+
+    def link_branch_to_bug(self, branch_url, bug_id, whiteboard):
+        """See IBranchSetAPI."""
+        branch = getUtility(IBranchSet).getByURL(url=branch_url)
+        if branch is None:
+            return xmlrpclib.Fault(30, 'No such branch: %s' % branch_url)
+        try:
+            bug = getUtility(IBugSet).get(bug_id)
+        except NotFoundError:
+            return xmlrpclib.Fault(40, 'No such bug: %s' % bug_id)
+        if not whiteboard:
+            whiteboard = None
+
+        bug.addBranch(branch, whiteboard=whiteboard)
+        return canonical_url(bug)
+
 

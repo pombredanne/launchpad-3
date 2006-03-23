@@ -212,6 +212,10 @@ class BranchSet:
                              " OR (%s - last_mirror_attempt > '1 day'))"
                              % UTC_NOW)
 
+    def getByURL(self, url):
+        """XXX: Temporary method until David lands his branch."""
+        return Branch.selectOneBy(url=url)
+
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.

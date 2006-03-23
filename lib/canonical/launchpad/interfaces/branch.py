@@ -189,3 +189,5 @@ class IBranchSet(Interface):
     def get_supermirror_pull_queue():
         """Get a list of branches the supermirror should pull now."""
 
+    def getByURL(url):
+        """XXX: Temporary method until David lands his branch."""
