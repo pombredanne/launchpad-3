@@ -67,9 +67,7 @@ ALL_FTI = [
 
     ('person', [
             ('name', A),
-            ('displayname', B),
-            ('givenname', C),
-            ('familyname', C),
+            ('displayname', A),
             ]),
 
     ('product', [
