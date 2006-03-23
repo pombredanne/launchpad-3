@@ -12,3 +12,4 @@ class BugMessageAddView(MessageAddView):
     def __init__(self, context, request):
         context = IBug(context)
         MessageAddView.__init__(self, context, request)
+

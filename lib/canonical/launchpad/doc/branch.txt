@@ -120,6 +120,27 @@ navigation purposes as if they were associated to a magic product named
 >>> gterm_dev.product_name
 u'gnome-terminal'
 
+== Branch names ==
+
+Branches have a unique name, that is based on the names of the owner, product
+and branch.
+
+>>> pushed = branchset[25]
+>>> pushed.unique_name
+u'~name12/gnome-terminal/pushed'
+>>> junkcode.unique_name
+u'~ddaa/+junk/junkcode'
+
+Branches have a display name that is the Branch.title if it's provided, and the
+unique_name otherwise.
+
+>>> assert gterm_dev.title is not None
+>>> gterm_dev.displayname == gterm_dev.title
+True
+>>> assert pushed.title is None
+>>> pushed.displayname == pushed.unique_name
+True
+
 == Branches registered and authored ==
 
 You can get the list of branches for a given Launchpad owner. These are called

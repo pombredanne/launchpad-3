@@ -190,12 +190,18 @@ class DistroReleaseSourcePackageRelease:
     @property
     def current_published(self):
         """See IDistroArchReleaseSourcePackage."""
-
         # Retrieve current publishing info
-        current = self.publishing_history.selectFirstBy(
-            status = PackagePublishingStatus.PUBLISHED)
+        current = SourcePackagePublishingHistory.selectFirst("""
+        distrorelease = %s AND
+        sourcepackagerelease = %s AND
+        status = %s
+        """ % sqlvalues(self.distrorelease.id,
+                        self.sourcepackagerelease.id,
+                        PackagePublishingStatus.PUBLISHED),
+            orderBy='-datecreated')
+
         if current is None:
-            raise NotFoundError("Source package %s not published in %s/%s"
+            raise NotFoundError("Source package %s not published in %s"
                                 % (self.sourcepackagename.name,
                                    self.distrorelease.name))
 
@@ -235,8 +241,10 @@ class DistroReleaseSourcePackageRelease:
 
     def supersede(self):
         """See IDistroReleaseSourcePackageRelease."""
-
+        # Retrieve current publishing info
         current = self.current_published
         current = SecureSourcePackagePublishingHistory.get(current.id)
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW
+
+        return current

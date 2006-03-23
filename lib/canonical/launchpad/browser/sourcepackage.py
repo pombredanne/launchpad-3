@@ -6,7 +6,7 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageFacets',
     'SourcePackageView',
-    'SourcePackageBugsView']
+    ]
 
 # Python standard library imports
 import cgi
@@ -157,9 +157,12 @@ class SourcePackageView(BuildRecordsView):
         self.productseries_widget.setRenderedValue(self.context.productseries)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
-        self.languages = helpers.request_languages(self.request)
         self.status_message = None
         self.processForm()
+
+    @property
+    def languages(self):
+        return helpers.request_languages(self.request)
 
     def processForm(self):
         # look for an update to any of the things we track
@@ -263,19 +266,3 @@ class SourcePackageView(BuildRecordsView):
     def searchName(self):
         return False
 
-class SourcePackageBugsView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        results = self.bugtask_search()
-        self.batchnav = BatchNavigator(results, request)
-
-    def bugtask_search(self):
-        return self.context.bugs
-
-    def task_columns(self):
-        return [
-            "id", "title", "status", "priority", "severity",
-            "submittedon", "submittedby", "assignedto", "actions"]
