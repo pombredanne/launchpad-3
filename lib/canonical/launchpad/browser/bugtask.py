@@ -26,6 +26,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
 from zope.app.form.utility import (
     setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
