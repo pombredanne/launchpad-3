@@ -1,19 +1,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <div><a href="../../+allmirrors">Distribution mirrors</a>:</div>
-      <div>
-        <a
-          tal:attributes="href context/fmt:url"
-          tal:content="context/title"
-        >Mirror name</a>
-      </div>
-      <h1>Add source release</h1>
-    </metal:heading>
+      i18n:domain="launchpad">
+
+<body>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />

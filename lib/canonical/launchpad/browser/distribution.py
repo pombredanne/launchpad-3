@@ -230,7 +230,7 @@ class DistributionSupportMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'support'
-    links = ['new']
+    links = ['new', 'support_contact']
     # XXX: MatthewPaulThomas, 2005-09-20
     # Add 'help' once +gethelp is implemented for a distribution
 
@@ -241,6 +241,10 @@ class DistributionSupportMenu(ApplicationMenu):
     def new(self):
         text = 'Request Support'
         return Link('+addticket', text, icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class DistributionTranslationsMenu(ApplicationMenu):
