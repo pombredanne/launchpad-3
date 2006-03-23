@@ -72,16 +72,6 @@ class IPerson(IHasSpecifications):
             "throughout Launchpad. Most people use their full name "
             "here.")
             )
-    givenname = TextLine(
-            title=_('Given Name'), required=False, readonly=False,
-            description=_("Your first name or given name, such as "
-                "Mark, or Richard, or Joanna.")
-            )
-    familyname = TextLine(
-            title=_('Family Name'), required=False, readonly=False,
-            description=_("Your family name, the name "
-                "you acquire from your parents.")
-            )
     password = Password(
             title=_('Password'), required=True, readonly=False,
             description=_("The password you will use to access "

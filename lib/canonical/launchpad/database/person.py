@@ -79,13 +79,14 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    sortingColumns = ['displayname', 'familyname', 'givenname', 'name']
+    # XXX: We should be sorting on person_sort_key(displayname,name), but
+    # SQLObject will not let us sort using a stored procedure.
+    # -- StuartBishop 20060323
+    sortingColumns = ['displayname', 'name']
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
     password = StringCol(dbName='password', default=None)
-    givenname = StringCol(dbName='givenname', default=None)
-    familyname = StringCol(dbName='familyname', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
