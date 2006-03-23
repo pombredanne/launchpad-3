@@ -11,6 +11,7 @@
       attributes="distribution sourcepackagename name displayname title
                   distro by_distroreleases subscribers currentrelease
                   releases publishing_history binary_package_names
+                  current_publishing_records
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
                   tickets getTicket searchTasks isBugContact open_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
