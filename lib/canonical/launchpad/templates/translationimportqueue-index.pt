@@ -12,7 +12,7 @@
 
   <tal:block condition="view/has_entries">
     <p tal:condition="not:request/lp:person">
-      <a href="+login">Log in</a> to change items in this list.</tal:loggedin>
+      <a href="+login">Log in</a> to change items in this list.
     </p>
 
     <!-- Filtering options. -->
