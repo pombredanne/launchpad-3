@@ -3,7 +3,9 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
-           'ProductSeriesContextMenu',
+           'ProductSeriesOverviewMenu',
+           'ProductSeriesFacets',
+           'ProductSeriesSpecificationsMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesRdfView',
@@ -20,35 +22,23 @@ from zope.publisher.browser import FileUpload
 from CVS.protocol import CVSRoot
 import pybaz
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
     request_languages, browserLanguages, is_tar_filename)
 from canonical.launchpad.interfaces import (
-    IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
+    ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
     ITranslationImportQueue, IProductSeriesSourceSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    stepto, canonical_url, LaunchpadView)
+    Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
+    canonical_url, LaunchpadView, StandardLaunchpadFacets
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad import _
-
-class ProductSeriesReviewView(SQLObjectEditView):
-    def changed(self):
-        """Redirect to the productseries page.
-
-        We need this because people can now change productseries'
-        product and name, and this will make their canonical_url to
-        change too.
-        """
-        self.request.response.addInfoNotification( 
-            _('This Serie has been changed'))
-        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesNavigation(Navigation):
@@ -64,20 +54,19 @@ class ProductSeriesNavigation(Navigation):
         return self.context.getRelease(name)
 
 
-class ProductSeriesContextMenu(ContextMenu):
+class ProductSeriesFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSeries
-    links = ['overview', 'specs', 'edit', 'editsource', 'ubuntupkg',
+    enable_only = ['overview', 'specifications', 'translations']
+
+
+class ProductSeriesOverviewMenu(ApplicationMenu):
+
+    usedfor = IProductSeries
+    facet = 'overview'
+    links = ['edit', 'editsource', 'ubuntupkg',
              'addpackage', 'addrelease', 'download', 'translationupload',
              'addpotemplate', 'review']
-
-    def overview(self):
-        text = 'Series Overview'
-        return Link('', text, icon='info')
-
-    def specs(self):
-        text = 'Specifications'
-        return Link('+specs', text, icon='info')
 
     def edit(self):
         text = 'Edit Series Details'
@@ -116,6 +105,53 @@ class ProductSeriesContextMenu(ContextMenu):
     def review(self):
         text = 'Review Series Details'
         return Link('+review', text, icon='edit')
+
+
+class ProductSeriesSpecificationsMenu(ApplicationMenu):
+    """Specs menu for ProductSeries.
+
+    This menu needs to keep track of whether we are showing all the
+    specs, or just those that are approved/declined/proposed. It should
+    allow you to change the set your are showing while keeping the basic
+    view intact.
+    """
+
+    usedfor = IProductSeries
+    facet = 'specifications'
+    links = ['roadmap', 'table', 'setgoals', 'listdeclined']
+
+    def listall(self):
+        text = 'Show All'
+        return Link('+specs?show=all', text, icon='info')
+
+    def listapproved(self):
+        text = 'Show Approved'
+        return Link('+specs?show=accepted', text, icon='info')
+
+    def listproposed(self):
+        text = 'Show Proposed'
+        return Link('+specs?show=proposed', text, icon='info')
+
+    def listdeclined(self):
+        text = 'Show Declined'
+        summary = 'Show the goals which have been declined'
+        return Link('+specs?show=declined', text, summary, icon='info')
+
+    def setgoals(self):
+        text = 'Set Goals'
+        summary = 'Approve or decline feature goals that have been proposed'
+        return Link('+setgoals', text, summary, icon='edit')
+
+    def table(self):
+        text = 'Assignments'
+        summary = 'Show the assignee, drafter and approver of these specs'
+        return Link('+assignments', text, summary, icon='info')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        summary = 'Show the sequence in which specs should be implemented'
+        return Link('+roadmap', text, summary, icon='info')
+
 
 
 def validate_cvs_root(cvsroot, cvsmodule):
@@ -186,9 +222,6 @@ class ProductSeriesView(LaunchpadView):
         else:
             self.default_targetarchbranch = self.context.name
         self.default_targetarchversion = '0'
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
         # Whether there is more than one PO template.
         self.has_multiple_templates = len(self.context.currentpotemplates) > 1
 
@@ -200,6 +233,10 @@ class ProductSeriesView(LaunchpadView):
 
         # Check the form submission.
         self.processForm()
+
+    @property
+    def languages(self):
+        return request_languages(self.request)
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -584,6 +621,19 @@ class ProductSeriesEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
+class ProductSeriesReviewView(SQLObjectEditView):
+
+    def changed(self):
+        """Redirect to the productseries page.
+
+        We need this because people can now change productseries'
+        product and name, and this will make the canonical_url change too.
+        """
+        self.request.response.addInfoNotification(
+            _('This Series has been changed'))
+        self.request.response.redirect(canonical_url(self.context))
+
+
 class ProductSeriesRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
 
@@ -632,14 +682,13 @@ class ProductSeriesSourceSetView:
         if request.form.get('search', None) is None:
             self.ready = 'on'
             self.importstatus = ImportStatus.TESTING.value
-        self.batch = Batch(self.search(), int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
+
+        self.batchnav = BatchNavigator(self.search(), request)
 
     def search(self):
-        return list(self.context.search(ready=self.ready,
-                                        text=self.text,
-                                        forimport=True,
-                                        importstatus=self.importstatus))
+        return self.context.search(ready=self.ready, text=self.text,
+                                   forimport=True,
+                                   importstatus=self.importstatus)
 
     def sourcestateselector(self):
         html = '<select name="state">\n'

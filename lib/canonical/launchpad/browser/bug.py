@@ -34,6 +34,8 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
+from canonical.lp.dbschema import (
+    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 
 
 class BugSetNavigation(Navigation):
@@ -66,8 +68,8 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
-             'addsubscriber', 'addattachment', 'linktocve', 'unlinkcve',
-             'addwatch', 'filebug', 'activitylog', 'backportfix']
+             'addsubscriber', 'addattachment', 'addbranch', 'linktocve',
+             'unlinkcve', 'addwatch', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -88,7 +90,7 @@ class BugContextMenu(ContextMenu):
 
     def subscription(self):
         user = getUtility(ILaunchBag).user
-        
+
         if user is None:
             text = 'Your Subscription'
         elif user is not None and self.context.bug.isSubscribed(user):
@@ -104,6 +106,10 @@ class BugContextMenu(ContextMenu):
     def addattachment(self):
         text = 'Add Attachment'
         return Link('+addattachment', text, icon='add')
+
+    def addbranch(self):
+        text = 'Add Branch'
+        return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
         text = structured(
@@ -146,6 +152,7 @@ class BugView:
     def __init__(self, context, request):
         self.context = IBug(context)
         self.request = request
+        self.user = getUtility(ILaunchBag).user
 
     def currentBugTask(self):
         """Return the current IBugTask.
@@ -314,21 +321,29 @@ class BugAlsoReportInView(GeneralFormView):
             product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
+        if product is not None:
+            target = product
+        elif distribution is not None:
+            target = distribution
+        else:
+            raise UnexpectedFormData(
+                'Neither product nor distribution was provided')
+
         if bugtracker is not None:
             user = getUtility(ILaunchBag).user
             bug_watch = getUtility(IBugWatchSet).createBugWatch(
                 bug=taskadded.bug, owner=user, bugtracker=bugtracker,
                 remotebug=remotebug)
             notify(SQLObjectCreatedEvent(bug_watch))
-            if product is not None:
-                target = product
-            elif distribution is not None:
-                target = distribution
-            else:
-                raise UnexpectedFormData(
-                    'Neither product nor distribution was provided')
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch
+
+        if not target.official_malone:
+            # A remote bug task gets its from a bug watch, so we want
+            # its status to be None when created.
+            taskadded.status = BugTaskStatus.UNKNOWN
+            taskadded.priority = BugTaskPriority.UNKNOWN
+            taskadded.severity = BugTaskSeverity.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
         self._nextURL = canonical_url(taskadded)

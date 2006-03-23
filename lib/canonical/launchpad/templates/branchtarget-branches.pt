@@ -20,12 +20,9 @@
   </p>
 
   <tal:comment condition="nothing">
-    <!-- This page was cargo-culted from tickettarget-tickets.pt
-         David Allouche 2005-09-09
-
-    This page uses a view class that organises the tasks into a set of
-    categories (by status). it determines the sequence of the categories,
-    and the sequence of the branches in each category.
+    <!-- This page uses a view class that organises the tasks into a set of
+    categories (by status). it determines the sequence of the categories, and
+    the sequence of the branches in each category.
 
        view/categories => the list of branch statuses to be displayed
        category/status => the category Branchestatus
@@ -34,17 +31,23 @@
     -->
   </tal:comment>
 
-  <p tal:condition="not:context/branches">
+  <p tal:condition="not:view/branches">
     <i>There are no branches currently registered for
     <span tal:replace="context/displayname">Steve Alexander</span>
     at present.</i>
   </p>
 
-  <tal:block repeat="category view/categories"
-    ><h2 tal:content="category/status/title">Experimental</h2>
-    <div tal:repeat="branch category/branches"
-         tal:replace="structure branch/@@+summary-listing"
-  /></tal:block>
+  <tal:block repeat="category view/categories">
+    <h2 tal:content="category/status/title">Experimental</h2>
+    <ul class="branch">
+      <tal:branches repeat="branch category/branches"
+           condition="view/in_person_context"
+           replace="structure branch/@@+person-summary-listing" />
+      <tal:branches repeat="branch category/branches"
+           condition="view/in_product_context"
+           replace="structure branch/@@+product-summary-listing" />
+    </ul>
+  </tal:block>
 
 </div>
 </body>

@@ -44,8 +44,6 @@ Let's check the complex properties of a build object.
   >>> firefox_build.changesfile
   <LibraryFileAlias ...>
 
-  >>> assert pmount_build.changesfile is None
-
 Test "reset" functionality:
 
   >>> firefox_build.can_be_reset
@@ -131,7 +129,72 @@ Invoke createBinaryPackageRelease with all required arguments.
   ...                                 architecturespecific)
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
-  >>> assert verifyObject(IBinaryPackageRelease, bin) is True
+  >>> verifyObject(IBinaryPackageRelease, bin)
+  True
+
+
+Commit previous transaction, data we want to preserv:
+
+  >>> import transaction
+  >>> transaction.commit()
+
+Check binarypackages property:
+
+  >>> for b in pmount_build.binarypackages:
+  ...     b.version
+  u'0.0.1-demo'
+  u'0.1-1'
+
+Emulate a huge list of binaries for 'pmount':
+
+  >>> bpnameset = getUtility(IBinaryPackageNameSet)
+  >>> for i in range(15):
+  ...     version = "%d" % i
+  ...     bpname = bpnameset.ensure("test-%d" % i).id
+  ...     b = pmount_build.createBinaryPackageRelease(
+  ...                                 bpname, version,
+  ...                                 summary, description,
+  ...                                 binpackageformat, component,
+  ...                                 section, priority, shlibdeps,
+  ...                                 depends, recommends, suggests,
+  ...                                 conflicts, replaces, provides,
+  ...                                 essential, installedsize,
+  ...                                 copyright, licence,
+  ...                                 architecturespecific)
+
+
+Check if the property still working:
+
+  >>> len(pmount_build.binarypackages)
+  17
+
+Ensure the list is ordered by 'name'
+
+  >>> for b in pmount_build.binarypackages:
+  ...     b.name, b.version
+  (u'demo', u'0.0.1-demo')
+  (u'pmount', u'0.1-1')
+  (u'test-0', u'0')
+  (u'test-1', u'1')
+  (u'test-10', u'10')
+  (u'test-11', u'11')
+  (u'test-12', u'12')
+  (u'test-13', u'13')
+  (u'test-14', u'14')
+  (u'test-2', u'2')
+  (u'test-3', u'3')
+  (u'test-4', u'4')
+  (u'test-5', u'5')
+  (u'test-6', u'6')
+  (u'test-7', u'7')
+  (u'test-8', u'8')
+  (u'test-9', u'9')
+
+Rollback transaction to no disturb the other tests:
+
+  >>> transaction.abort()
+
+
 
 The BuildSet class gives us some useful ways to consider the
 collection of builds.
@@ -146,7 +209,7 @@ We can find builds given a source package release and architecture tag.
 We can find recent and pending builds for a given distrorelease.
 
   >>> hoary.getBuildRecords().count()
-  3
+  4
 
 Or for a given distroarchrelease.
 
@@ -155,12 +218,12 @@ Or for a given distroarchrelease.
   u'The Hoary Hedgehog Release for i386 (x86)'
 
   >>> hoaryi386.getBuildRecords().count()
-  3
+  4
 
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  5
+  7
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
@@ -219,5 +282,13 @@ Note that they are ordered by DESC lastscore, as expected:
   (9, 0, 100)
   (11, 0, 10)
   (8, 0, 1)
+
+Using the optional name argument to filter build results:
+
+  >>> builds = ubuntu.getBuildRecords(name='pm')
+  >>> builds.count()
+  2
+  >>> [(b.sourcepackagerelease.name, b.distrorelease.name) for b in builds]
+  [(u'pmount', u'warty'), (u'pmount', u'hoary')]
 
 

@@ -30,9 +30,11 @@
     </content>
 
     <browser:menus
-        module="canonical.launchpad.browser"
-        classes="ProductSeriesContextMenu"
+        module="canonical.launchpad.browser.productseries"
+        classes="ProductSeriesFacets ProductSeriesOverviewMenu
+                 ProductSeriesSpecificationsMenu"
         />
+
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -217,27 +219,6 @@
         <browser:widget
             field="owner"
             class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
-
-    <browser:addform
-        name="+addpotemplate"
-        for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
-        class="canonical.launchpad.browser.POTemplateAddView"
-        facet="translations"
-        label="Add a new translation template"
-        fields="potemplatename description iscurrent owner path content"
-        arguments=""
-        keyword_arguments="potemplatename description iscurrent owner
-                           path content"
-        content_factory="canonical.launchpad.database.POTemplate"
-        permission="launchpad.Append"
-        template="../templates/potemplate-add.pt" >
-        <browser:widget
-          field="description"
-          class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="30"
-          height="5" />
     </browser:addform>
 
     <browser:pages

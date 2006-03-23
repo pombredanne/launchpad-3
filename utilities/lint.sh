@@ -19,7 +19,7 @@ PYLINT=pylint.python2.4
 #            SQLObject's id and _table attributes
 # XXX: W0613 (Unused argument) triggers often for hook methods, and for tuple
 #            unpacking where you really want it to make the code clearer
-PYLINTOFF="W0232,C0103,W0103,C0101,W0142,R0903,W0201"
+PYLINTOFF="W0232,C0103,W0103,C0101,W0142,R0903,W0201,W0212"
 
 if [ "$1" == "-v" ]; then
     shift

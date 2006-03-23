@@ -376,10 +376,11 @@ and attach a watch to the upstream bug tracker:
       Severity: CRITICAL
       Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
   Task: evolution (Debian)
-      Status: UNCONFIRMED
+      Status: UNKNOWN
       Distro: debian
       Source package: evolution
-      Severity: NORMAL
+      Priority: UNKNOWN
+      Severity: UNKNOWN
       Watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
   Messages:
       Author: Sample Person

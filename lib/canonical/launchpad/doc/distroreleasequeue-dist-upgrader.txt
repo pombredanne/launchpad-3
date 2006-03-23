@@ -1,0 +1,152 @@
+== DIST-UPGRADE upload ==
+
+This test will check the upload of dist-upgrade tarballs
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
+
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
+  >>> from canonical.archivepublisher.tests import datadir
+
+  >>> distro_release_set = getUtility(IDistroReleaseSet)
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> breezy_autotest = ubuntutest['breezy-autotest']
+
+  >>> import logging
+
+  >>> class MockOptions:
+  ...     distro = "ubuntutest"
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
+
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
+  >>> discarded_key = getUtility(IGPGKeySet).new(16, '6C64A8C5',
+  ...     '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5', 1024, GPGKeyAlgorithm.D)
+
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+
+Login as an admin.
+
+  >>> login('foo.bar@canonical.com')
+
+First, test the rejection of a missapplied changesfile name:
+
+  >>> upload = NascentUpload(findPolicyByName('sync'),
+  ...     datadir(''), "dist-upgrader_20060302.0120.changes",
+  ...     logging.getLogger())
+  >>> mock_options = MockOptions()
+  >>> upload.policy.setOptions(mock_options)
+
+  >>> from canonical.archivepublisher.nascentupload import UploadError
+  >>> try:
+  ...    upload.process()
+  ... except UploadError, info:
+  ...    print 'BOOM:', info
+  BOOM: dist-upgrader_20060302.0120.changes -> missapplied changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
+
+
+Now do a proper upload into the system.
+
+  >>> class MockLogger:
+  ...     def debug(self, s):
+  ...         print "DEBUG:", s
+
+  >>> upload = NascentUpload(findPolicyByName('insecure'),
+  ...     datadir(''), "dist-upgrader_20060302.0120_all.changes",
+  ...     MockLogger())
+
+
+  >>> upload.changes_filename == datadir(
+  ...     "dist-upgrader_20060302.0120_all.changes")
+  True
+
+  >>> mock_options = MockOptions()
+  >>> upload.policy.setOptions(mock_options)
+  >>> upload.process()
+  DEBUG: Beginning processing.
+  DEBUG: Checking signature on changes file.
+  DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
+  DEBUG: Verifying the changes file.
+  DEBUG: Verifying files in upload.
+  DEBUG: Performing overall file verification checks.
+  DEBUG: Single Custom Upload detected.
+  DEBUG: Finding and applying overrides.
+  DEBUG: Foo Bar (16) is in main's uploaders.
+  DEBUG: Finished checking upload.
+
+It was not rejected.
+
+  >>> upload.rejected
+  False
+
+  >>> success, msgs = upload.do_accept()
+  DEBUG: Building recipients list.
+  DEBUG: Creating a New queue entry
+  DEBUG: Setting it to ACCEPTED
+
+And all things worked.
+
+  >>> success
+  True
+
+  >>> print upload.rejection_message
+
+We need to commit the transaction to be able to use the librarian files.
+
+  >>> import transaction
+  >>> transaction.commit()
+
+Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
+previous upload:
+
+  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> queue_item = breezy_autotest.getQueueItems(
+  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
+  >>> queue_item.customfiles[0].libraryfilealias.filename
+  u'dist-upgrader_20060302.0120_all.tar.gz'
+
+Do the publish, i.e process the CustomUpload writing the tarball in
+the archive
+
+  >>> queue_item.realiseUpload()
+
+Check what was published in the target directory:
+
+  >>> import os
+  >>> archive_dir = '/var/tmp/archive/'
+  >>> upgrade_dir = 'ubuntutest/dists/breezy-autotest/main/dist-upgrader-all'
+  >>> target_dir = os.path.join(archive_dir, upgrade_dir)
+  >>> content = os.listdir(target_dir)
+  >>> content
+  ['20060302.0120', 'current']
+
+Check the content of the directories published and the integrity of
+the 'current' symbolic link (contents are the same)
+
+  >>> real_path = os.path.join(target_dir, content[0])
+  >>> link_path = os.path.join(target_dir, content[1])
+
+  >>> assert os.path.islink(link_path) is True
+
+  >>> os.listdir(real_path)
+  ['ReleaseAnouncement', 'dapper.tar.gz']
+
+  >>> os.listdir(link_path)
+  ['ReleaseAnouncement', 'dapper.tar.gz']
+
+Remove the directory to keep the test working.
+
+  >>> import shutil
+  >>> shutil.rmtree(target_dir)
+
+Switch Librarian off
+
+  >>> LibrarianTestSetup().tearDown()
+
+
+

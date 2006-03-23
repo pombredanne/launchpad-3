@@ -9,23 +9,24 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
+    ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
@@ -71,23 +72,43 @@ class Branch(SQLBase):
 
     cache_url = StringCol(default=None)
 
-    revision_history = MultipleJoin('RevisionNumber', joinColumn='branch',
+    revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
         orderBy='-sequence')
 
-    subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
-    objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
+    subjectRelations = SQLMultipleJoin(
+        'BranchRelationship', joinColumn='subject')
+    objectRelations = SQLMultipleJoin(
+        'BranchRelationship', joinColumn='object')
 
-    subscriptions = MultipleJoin(
+    subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
     subscribers = RelatedJoin(
         'Person', joinColumn='branch', otherColumn='person',
         intermediateTable='BranchSubscription', orderBy='name')
+
+    bug_branches = SQLMultipleJoin(
+        'BugBranch', joinColumn='branch', orderBy='id')
+
+    @property
+    def related_bugs(self):
+        return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
     def product_name(self):
         if self.product is None:
             return '+junk'
         return self.product.name
+
+    @property
+    def unique_name(self):
+        return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
+
+    @property
+    def displayname(self):
+        if self.title:
+            return self.title
+        else:
+            return self.unique_name
 
     def revision_count(self):
         return RevisionNumber.selectBy(branchID=self.id).count()

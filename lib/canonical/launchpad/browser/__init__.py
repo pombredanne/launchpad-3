@@ -15,6 +15,7 @@ from canonical.launchpad.browser.branch import *
 from canonical.launchpad.browser.branchtarget import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.bugattachment import *
+from canonical.launchpad.browser.bugbranch import *
 from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.buginfestation import *
 from canonical.launchpad.browser.bugmessage import *
@@ -65,6 +66,7 @@ from canonical.launchpad.browser.specification import *
 from canonical.launchpad.browser.specificationbug import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationfeedback import *
+from canonical.launchpad.browser.specificationgoal import *
 from canonical.launchpad.browser.specificationsubscription import *
 from canonical.launchpad.browser.specificationtarget import *
 from canonical.launchpad.browser.sprint import *
@@ -82,3 +84,4 @@ from canonical.launchpad.browser.translationimportqueue import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.calendarwidgets import *
+from canonical.launchpad.browser.queue import *

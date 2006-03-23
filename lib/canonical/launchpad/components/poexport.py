@@ -43,6 +43,92 @@ from canonical.launchpad.interfaces import IVPOExportSet
 
 from canonical.launchpad.components.poparser import POMessage, POHeader
 
+class RosettaWriteTarFile:
+    """Convenience wrapper around the tarfile module.
+
+    This class makes it convenient to generate tar files in various ways.
+    """
+
+    def __init__(self, stream):
+        self.tarfile = tarfile.open('', 'w:gz', stream)
+        self.closed = False
+
+    @classmethod
+    def files_to_stream(cls, files):
+        """Turn a dictionary of files into a data stream."""
+        buffer = StringIO()
+        archive = cls(buffer)
+        archive.add_files(files)
+        archive.close()
+        buffer.seek(0)
+        return buffer
+
+    @classmethod
+    def files_to_string(cls, files):
+        """Turn a dictionary of files into a data string."""
+        return cls.files_to_stream(files).read()
+
+    @classmethod
+    def files_to_tarfile(cls, files):
+        """Turn a dictionary of files into a tarfile object."""
+        return tarfile.open('', 'r', cls.files_to_stream(files))
+
+    def close(self):
+        """Close the archive.
+
+        After the archive is closed, the data written to the filehandle will
+        be complete. The archive may not be appended to after it has been
+        closed.
+        """
+
+        self.tarfile.close()
+        self.closed = True
+
+    def add_file(self, path, contents):
+        """Add a file to the archive."""
+
+        if self.closed:
+            raise RuntimeError("Can't add a file to a closed archive")
+
+        now = int(time.time())
+        path_bits = path.split(os.path.sep)
+
+        # Ensure that all the directories in the path are present in the
+        # archive.
+
+        for i in range(1, len(path_bits)):
+            joined_path = os.path.join(*path_bits[:i])
+
+            try:
+                self.tarfile.getmember(joined_path + os.path.sep)
+            except KeyError:
+                tarinfo = tarfile.TarInfo(joined_path)
+                tarinfo.type = tarfile.DIRTYPE
+                tarinfo.mtime = now
+                tarinfo.mode = 0755
+                tarinfo.uname = 'rosetta'
+                tarinfo.gname = 'rosetta'
+                self.tarfile.addfile(tarinfo)
+
+        tarinfo = tarfile.TarInfo(path)
+        tarinfo.time = now
+        tarinfo.mtime = now
+        tarinfo.mode = 0644
+        tarinfo.size = len(contents)
+        tarinfo.uname = 'rosetta'
+        tarinfo.gname = 'rosetta'
+        self.tarfile.addfile(tarinfo, StringIO(contents))
+
+    def add_files(self, files):
+        """Add a number of files to the archive.
+
+        :files: A dictionary mapping file names to file contents.
+        """
+
+        for filename in sorted(files.keys()):
+            self.add_file(filename, files[filename])
+
+
 class OutputPOFile:
     """Buffer PO header/message set data for output."""
 
@@ -69,20 +155,34 @@ class OutputPOFile:
         for msgset in msgsets:
             if msgset.obsolete and len(msgset.msgstrs) == 0:
                 continue
-            else:
-                try:
-                    chunks.extend([msgset.export_string()])
-                except UnicodeEncodeError:
-                    # This msgset has a character that is not valid based on
-                    # the information stored in the header. Instead of
-                    # failing, we export it without translations
-                    logging.warning('We have encoding problems using %s:\n%r' % (
-                        self.header.charset, msgset.export_unicode_string()))
-                    msgset.msgstr = None
-                    msgset.msgstrPlurals = None
-                    chunks.extend([msgset.export_string()])
+
+            chunks.append(msgset.export_string())
 
         return '\n\n'.join(chunks)
+
+    def dump_file(self):
+        """Return a string representing a .po file.
+
+        The encoding of the string will depend on the declared charset at
+        self.header or 'UTF-8' if cannot be represented by it.
+        """
+
+        try:
+            # Export the object.
+            return self.export_string()
+        except UnicodeEncodeError:
+            # Got any message that cannot be represented by its default
+            # encoding, need to force a UTF-8 export.
+            # We log it.
+            export_logger = logging.getLogger('poexport-user-warnings')
+            export_logger.warn(
+                'Had to recode the file as UTF-8 as it has characters that'
+                ' cannot be represented using the %s charset' % 
+                    self.header.charset
+                )
+            # Export the file as UTF-8 as a workaround to this problem.
+            self.header['Content-Type'] = 'text/plain; charset=UTF-8'
+            return self.export_string()
 
 class OutputMsgSet:
     """Buffer message set data for output."""
@@ -92,6 +192,7 @@ class OutputMsgSet:
         self.msgids = []
         self.msgstrs = []
         self.flags = []
+        self.obsolete = False
         self.commenttext = ''
         self.sourcecomment = ''
         self.filereferences = ''
@@ -177,7 +278,6 @@ class OutputMsgSet:
 
         Raises a ValueError if there are errors in the message set.
         """
-
         return self.export_unicode_string().encode(self.pofile.header.charset)
 
 def last_translator_text(person):
@@ -208,6 +308,7 @@ def last_translator_text(person):
 
     return '%s <%s>' % (person.browsername, email)
 
+
 def export_rows(rows, pofile_output):
     """Convert a list of PO file export view rows to a set of PO files.
 
@@ -226,10 +327,16 @@ def export_rows(rows, pofile_output):
     potsequence = None
     posequence = None
 
-    pofile = None
+    exported_file = None
     msgset = None
 
     for row in rows:
+        # Assert added due we allowed this situation on the past and it's
+        # broken.
+        assert ((row.poheader is not None and row.pofile is not None) or
+                row.poheader is None), (
+            'row.pofile cannot be None, we have a poheader!')
+
         new_pofile = False
         new_msgset = False
 
@@ -281,7 +388,7 @@ def export_rows(rows, pofile_output):
         if new_msgset:
             # Output the current message set.
 
-            if msgset:
+            if msgset is not None:
                 # validate the translation
                 if 'fuzzy' not in msgset.flags and len(msgset.msgstrs) > 0:
                     # The validation is done only if the msgset is not fuzzy
@@ -297,7 +404,7 @@ def export_rows(rows, pofile_output):
                         # export a broken value, we set it as fuzzy.
                         msgset.flags.append('fuzzy')
 
-                pofile.append(msgset)
+                exported_file.append(msgset)
 
         if new_pofile:
             # If the PO file has changed, flush the old one and print the
@@ -305,27 +412,32 @@ def export_rows(rows, pofile_output):
 
             # Output the current PO file.
 
-            if pofile:
-                pofile_output(potemplate, language, variant,
-                    pofile.export_string())
+            if exported_file is not None:
+                exported_file_content = exported_file.dump_file()
+                pofile_output(
+                    potemplate, language, variant, exported_file_content)
 
-            # Generate the header of the new PO file.
+            # Get the pot header
+            if row.potheader is None:
+                pot_header_value = ''
+            else:
+                pot_header_value = row.potheader
+            pot_header = POHeader(
+                msgstr=pot_header_value)
+            # PO templates have always the fuzzy flag set on headers.
+            pot_header.flags.add('fuzzy')
+            pot_header.updateDict()
 
-            header = POHeader(
-                commentText=row.potopcomment,
-                msgstr=row.poheader)
+            if row.pofile is not None:
+                # Generate the header of the new PO file.
+                header = POHeader(
+                    commentText=row.potopcomment,
+                    msgstr=row.poheader)
 
-            if row.pofuzzyheader:
-                header.flags.add('fuzzy')
+                if row.pofuzzyheader:
+                    header.flags.add('fuzzy')
 
-            header.updateDict()
-
-            # Update header fields.
-
-            if row.potheader is not None:
-                pot_header = POHeader(
-                    msgstr=row.potheader)
-                pot_header.updateDict()
+                header.updateDict()
 
                 if 'Domain' in pot_header:
                     header['Domain'] = pot_header['Domain']
@@ -336,6 +448,9 @@ def export_rows(rows, pofile_output):
                     # indicates when was the .pot file created.
                     header['POT-Creation-Date'] = (
                         pot_header['POT-Creation-Date'])
+            else:
+                # We are exporting an IPOTemplate.
+                header = pot_header
 
             # This part is conditional on the PO file being present in order
             # to make it easier to fake data for testing.
@@ -345,7 +460,6 @@ def export_rows(rows, pofile_output):
                 # Update the last translator field.
 
                 submission = row.pofile.latestsubmission
-                assert not submission.person.isTeam(), submission.person.name
                 header['Last-Translator'] = (
                     last_translator_text(submission.person))
 
@@ -362,13 +476,22 @@ def export_rows(rows, pofile_output):
 
             # Create the new PO file.
 
-            pofile = OutputPOFile(header)
+            exported_file = OutputPOFile(header)
 
         if new_msgset:
             # Create new message set
 
-            msgset = OutputMsgSet(pofile)
-            msgset.fuzzy = row.isfuzzy
+            if row.posequence is None and row.potsequence == 0:
+                # The po sequence is unknown, that means that we don't have
+                # this message as part of IPOFile and the pot sequence is
+                # zero which means that this message is not anymore valid for
+                # the IPOTemplate we are handling and it's an obsolete entry.
+                # Ignore it.
+                continue
+
+            msgset = OutputMsgSet(exported_file)
+            if row.isfuzzy is not None:
+                msgset.fuzzy = row.isfuzzy
 
             if row.potsequence > 0:
                 msgset.sequence = row.potsequence
@@ -445,10 +568,11 @@ def export_rows(rows, pofile_output):
                     msgset.msgids, new_translations, msgset.flags)
             except gettextpo.error:
                 msgset.flags.append('fuzzy')
-        pofile.append(msgset)
+        exported_file.append(msgset)
 
-    if pofile:
-        pofile_output(potemplate, language, variant, pofile.export_string())
+    if exported_file is not None:
+        exported_file_content = exported_file.dump_file()
+        pofile_output(potemplate, language, variant, exported_file_content)
 
 class FilePOFileOutput:
     """Output PO files from an export to a single file handle."""
@@ -458,9 +582,9 @@ class FilePOFileOutput:
     def __init__(self, filehandle):
         self.filehandle = filehandle
 
-    def __call__(self, potemplate, language, variant, pofile):
+    def __call__(self, potemplate, language, variant, contents):
         """See IPOFileOutput."""
-        self.filehandle.write(pofile)
+        self.filehandle.write(contents)
 
 class TemplateTarballPOFileOutput:
     """Add exported PO files to a tarball."""
@@ -474,15 +598,20 @@ class TemplateTarballPOFileOutput:
     def __call__(self, potemplate, language, variant, contents):
         """See IPOFileOutput."""
 
-        language_code = language.code.encode('ascii')
-
-        if variant is not None:
-            code = '%s@%s' % (language_code, variant.encode('UTF-8'))
+        if language is None:
+            # We are exporting an IPOTemplate.
+            name = '%s.pot' % potemplate.potemplatename.translationdomain
         else:
-            code = language_code
+            # We are exporting an IPOFile
+            language_code = language.code.encode('ascii')
 
-        code = language.code.encode('ascii')
-        name = '%s.po' % code
+            if variant is not None:
+                code = '%s@%s' % (language_code, variant.encode('UTF-8'))
+            else:
+                code = language_code
+
+            code = language.code.encode('ascii')
+            name = '%s.po' % code
 
         # Put it in the archive.
         fileinfo = tarfile.TarInfo("%s/%s" % (self.directory, name))
@@ -542,7 +671,7 @@ def export_distrorelease_tarball(filehandle, release, date=None):
     """Export a tarball of translations for a distribution release."""
 
     # Open the archive.
-    archive = helpers.RosettaWriteTarFile(filehandle)
+    archive = RosettaWriteTarFile(filehandle)
 
     # Do the export.
     pofiles = getUtility(IVPOExportSet).get_distrorelease_pofiles(
@@ -584,6 +713,19 @@ class POTemplateExporter:
         """See IPOTemplateExporter."""
         rows = getUtility(IVPOExportSet).get_pofile_rows(
             self.potemplate, language, variant, included_obsolete)
+        pofile_output = FilePOFileOutput(filehandle)
+        export_rows(rows, pofile_output)
+
+    def export_potemplate(self):
+        """See IPOTemplateExporter."""
+        outputbuffer = StringIO()
+        self.export_potemplate_to_file(outputbuffer)
+        return outputbuffer.getvalue()
+
+    def export_potemplate_to_file(self, filehandle):
+        """See IPOTemplateExporter."""
+        rows = getUtility(IVPOExportSet).get_potemplate_rows(
+            self.potemplate, include_translations=False)
         pofile_output = FilePOFileOutput(filehandle)
         export_rows(rows, pofile_output)
 

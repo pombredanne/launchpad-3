@@ -10,6 +10,8 @@ __all__ = [
     'BugTaskSetNavigation',
     'BugTaskContextMenu',
     'BugTaskEditView',
+    'BugTaskPortletView',
+    'BugTaskStatusView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'BugTargetView',
@@ -24,9 +26,10 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import (
     setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
-from zope.app.form.interfaces import IInputWidget, WidgetsError
+from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -35,8 +38,6 @@ from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
     IBugTaskSet, IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch,
@@ -44,15 +45,19 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
     IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
     ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    valid_distrotask, valid_upstreamtask)
+    valid_distrotask, valid_upstreamtask, BugDistroReleaseTargetDetails,
+    IRemoteBugTask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
-from canonical.launchpad.interfaces.bugtarget import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
-
+from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.lp.dbschema import (
+    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
+from canonical.widgets.bugtask import (
+    AssigneeDisplayWidget, DBItemDisplayWidget)
 
 
 def get_sortorder_from_request(request):
@@ -178,24 +183,40 @@ class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
 
 
-class BugTaskView:
+class BugTaskView(LaunchpadView):
     """View class for presenting information about an IBugTask."""
 
     def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+
         # Make sure we always have the current bugtask.
         if not IBugTask.providedBy(context):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
 
-        self.request = request
         self.notices = []
+
+    def process(self):
+        """Process changes to the bug page.
+
+        These include potentially changing bug branch statuses and
+        adding a comment.
+        """
+        if not "save" in self.request:
+            return
+
+        # Process the comment, if one was added.
+        form = self.request.form
+        comment = form.get("comment")
+        subject = form.get("subject")
+
+        if comment:
+            self.context.bug.newMessage(
+                subject=subject, content=comment, owner=self.user)
 
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
-
         # establish if a subscription form was posted
         newsub = self.request.form.get('subscribe', None)
         if newsub and self.user and self.request.method == 'POST':
@@ -246,6 +267,17 @@ class BugTaskView:
         """
         return self.context.datecreated is not None
 
+    def isReleaseTargetableContext(self):
+        """Is the context something that supports release targeting?
+
+        Returns True or False.
+        """
+        return (
+            IDistroBugTask.providedBy(self.context) or
+            IDistroReleaseBugTask.providedBy(self.context))
+
+
+class BugTaskPortletView:
     def alsoReportedIn(self):
         """Return a list of IUpstreamBugTasks in which this bug is reported.
 
@@ -255,15 +287,6 @@ class BugTaskView:
         return [
             task for task in self.context.bug.bugtasks
             if task.id is not self.context.id]
-
-    def isReleaseTargetableContext(self):
-        """Is the context something that supports release targeting?
-
-        Returns True or False.
-        """
-        return (
-            IDistroBugTask.providedBy(self.context) or
-            IDistroReleaseBugTask.providedBy(self.context))
 
 
 class BugTaskBackportView:
@@ -391,13 +414,71 @@ class BugTaskBackportView:
 
 class BugTaskEditView(GeneralFormView):
     """The view class used for the task +editstatus page."""
+
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
         # A simple hack, which avoids the mind-bending Z3 form/widget
-        # complexity, to provide the user a useful error message if they make a
-        # change comment but don't change anything.
+        # complexity, to provide the user a useful error message if
+        # they make a change comment but don't change anything.
         self.comment_on_change_error = ""
+
+    def _setUpWidgets(self):
+        """Set up a combination of display and edit widgets.
+
+        Set up the widgets depending on if it's a remote bug task, where
+        only the bug watch should be editable, or if it's a normal
+        bug task, where everything should be editable except for the bug
+        watch.
+        """
+        if IRemoteBugTask.providedBy(self.context):
+            edit_field_names = ['bugwatch']
+            if not IUpstreamBugTask.providedBy(self.context):
+                #XXX: Should be possible to edit the product as well,
+                #     but that's harder due to complications with bug
+                #     watches. The new product might use Malone
+                #     officially, thus we need to handle that case.
+                #     Let's deal with that later.
+                #     -- Bjorn Tillenius, 2006-03-01
+                edit_field_names += ['sourcepackagename', 'binarypackagename']
+            display_field_names = [
+                field_name for field_name in self.fieldNames
+                if field_name not in edit_field_names + ['milestone']
+                ]
+            self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
+            self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.milestone_widget = None
+        else:
+            # Set up the milestone widget as an input widget only if the
+            # has launchpad.Edit permissions on the distribution, for
+            # distro tasks, or launchpad.Edit permissions on the
+            # product, for upstream tasks.
+            milestone_context = (
+                self.context.product or self.context.distribution or
+                self.context.distrorelease.distribution)
+
+            # Don't edit self.fieldNames directly. ZCML magic causes
+            # self.fieldNames to be shared by all BugTaskEditView
+            # instances.
+            edit_field_names = list(self.fieldNames)
+            edit_field_names.remove('bugwatch')
+            self.bugwatch_widget = None
+            display_field_names = []
+            if (("milestone" in edit_field_names) and not
+                helpers.check_permission("launchpad.Edit", milestone_context)):
+                # The user doesn't have permission to edit the
+                # milestone, so render a read-only milestone widget.
+                edit_field_names.remove("milestone")
+                display_field_names.append("milestone")
+
+        self.fieldNames = edit_field_names
+        setUpWidgets(
+            self, self.schema, IInputWidget, names=edit_field_names,
+            initial = self.initial_values)
+        setUpWidgets(
+            self, self.schema, IDisplayWidget, names=display_field_names)
 
     @property
     def initial_values(self):
@@ -407,27 +488,6 @@ class BugTaskEditView(GeneralFormView):
             field_values[name] = getattr(self.context, name)
 
         return field_values
-
-    def _setUpWidgets(self):
-        """Set up the bug task status edit widgets."""
-        # Set up the milestone widget as an input widget only if the has
-        # launchpad.Edit permissions on the distribution, for distro tasks, or
-        # launchpad.Edit permissions on the product, for upstream tasks.
-        milestone_context = (
-            self.context.product or self.context.distribution or
-            self.context.distrorelease.distribution)
-
-        field_names = list(self.fieldNames)
-        if (("milestone" in field_names) and not
-            helpers.check_permission("launchpad.Edit", milestone_context)):
-            # The user doesn't have permission to edit the milestone, so render
-            # a read-only milestone widget.
-            field_names.remove("milestone")
-            setUpDisplayWidgets(self, self.schema, names=["milestone"])
-
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=field_names,
-            initial=self.initial_values)
 
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
@@ -454,7 +514,8 @@ class BugTaskEditView(GeneralFormView):
         product = bugtask.product
         if distro is not None and sourcename != data['sourcepackagename']:
             valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
-        if product is not None and product != data['product']:
+        if (product is not None and
+            'product' in data and product != data['product']):
             valid_upstreamtask(bugtask.bug, data['product'])
 
         return data
@@ -462,9 +523,9 @@ class BugTaskEditView(GeneralFormView):
     def process(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        # Save the field names we extract from the form in a separate list,
-        # because we modify this list of names later if the bugtask is
-        # reassigned to a different product.
+        # Save the field names we extract from the form in a separate
+        # list, because we modify this list of names later if the
+        # bugtask is reassigned to a different product.
         field_names = list(self.fieldNames)
         new_values = getWidgetsData(self, self.schema, field_names)
 
@@ -478,7 +539,7 @@ class BugTaskEditView(GeneralFormView):
         milestone_cleared = None
         if (IUpstreamBugTask.providedBy(bugtask) and
             (bugtask.product != new_values.get("product")) and
-             bugtask.milestone):
+            'milestone' in field_names and bugtask.milestone):
             milestone_cleared = bugtask.milestone
             bugtask.milestone = None
             # Remove the "milestone" field from the list of fields whose changes
@@ -488,6 +549,17 @@ class BugTaskEditView(GeneralFormView):
 
         changed = applyWidgetsChanges(
             self, self.schema, target=bugtask, names=field_names)
+
+        if bugtask_before_modification.bugwatch != bugtask.bugwatch:
+            #XXX: Reset the bug task's status information. The right
+            #     thing would be to convert the bug watch's status to a
+            #     Malone status, but it's not trivial to do at the
+            #     moment. I will fix this later.
+            #     -- Bjorn Tillenius, 2006-03-01
+            bugtask.status = BugTaskStatus.UNKNOWN
+            bugtask.priority = BugTaskPriority.UNKNOWN
+            bugtask.severity = BugTaskSeverity.UNKNOWN
+            bugtask.assignee = None
 
         if milestone_cleared:
             self.request.response.addWarningNotification(
@@ -533,6 +605,38 @@ class BugTaskEditView(GeneralFormView):
         return canonical_url(self.context)
 
 
+class BugTaskStatusView(LaunchpadView):
+    """Viewing the status of a bug task."""
+
+    def initialize(self):
+        """Set up the appropriate widgets.
+
+        Different widgets are shown depending on if it's a remote bug
+        task or not.
+        """
+        field_names = [
+            'status', 'priority', 'severity', 'assignee', 'statusexplanation']
+        if IRemoteBugTask.providedBy(self.context):
+            field_names += ['bugwatch']
+            self.milestone_widget = None
+        else:
+            field_names += ['milestone']
+            self.bugwatch_widget = None
+
+        if IUpstreamBugTask.providedBy(self.context):
+            self.label = 'Product fix request'
+        else:
+            field_names += ['sourcepackagename', 'binarypackagename']
+            self.label = 'Source package fix request'
+
+        self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
+        self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+        self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+        self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+
+        setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
+
+
 class BugListingPortletView(LaunchpadView):
     """Portlet containing all available bug listings."""
     def getOpenBugsURL(self):
@@ -541,7 +645,7 @@ class BugListingPortletView(LaunchpadView):
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
     def getBugsAssignedToMeURL(self):
-        """Return the URL for bugs assigned to the current user on this target."""
+        """Return the URL for bugs assigned to the current user on target."""
         if self.user:
             return self.getSearchFilterURL(assignee=self.user.name)
         else:
@@ -664,10 +768,6 @@ class BugTaskSearchListingView(LaunchpadView):
             return ["id", "summary", "packagename", "importance", "status"]
 
     def initialize(self):
-        #XXX: The base class should have a simple schema containing only
-        #     the search form. Sub classes, like
-        #     AdvancedBugTaskSearchView should use a seperate schema if
-        #     they need to. -- Bjorn Tillenius, 2005-09-29
         if self._personContext():
             self.schema = IPersonBugTaskSearch
         else:
@@ -683,8 +783,7 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the search results be displayed as a list?"""
         return True
 
-    def search(self, searchtext=None, batch_start=None, context=None,
-               extra_params=None):
+    def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
@@ -700,7 +799,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 self, self.schema,
                 names=[
                     "searchtext", "status", "assignee", "severity",
-                    "priority", "owner", "omit_dupes", "has_patch"]))
+                    "priority", "owner", "omit_dupes", "has_patch",
+                    "milestone"]))
 
         if extra_params:
             data.update(extra_params)
@@ -722,16 +822,15 @@ class BugTaskSearchListingView(LaunchpadView):
             has_patch = data.pop("has_patch", False)
             if has_patch:
                 data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
-        else:
-            if not self.request.form.get("search"):
-                # The user came in at the default +bugs URL, so inject default
-                # search parameters.
-                data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         if data.get("omit_dupes") is None:
             # The "omit dupes" parameter wasn't provided, so default to omitting
             # dupes from reports, of course.
             data["omit_dupes"] = True
+
+        if data.get("status") is None:
+            # Show only open bugtasks as default
+            data['status'] = UNRESOLVED_BUGTASK_STATUSES
 
         # "Normalize" the form data into search arguments.
         form_values = {}
@@ -741,24 +840,17 @@ class BugTaskSearchListingView(LaunchpadView):
             else:
                 form_values[key] = value
 
-        search_params = BugTaskSearchParams(user=self.user, **form_values)
-        search_params.orderby = get_sortorder_from_request(self.request)
-
         # Base classes can provide an explicit search context.
         if not context:
             context = self.context
 
+        search_params = BugTaskSearchParams(user=self.user, **form_values)
+        search_params.orderby = get_sortorder_from_request(self.request)
         tasks = context.searchTasks(search_params)
-        if self.showBatchedListing():
-            if batch_start is None:
-                batch_start = int(self.request.get('batch_start', 0))
-            batch = Batch(tasks, batch_start, config.malone.buglist_batch_size)
-        else:
-            batch = tasks
 
-        return TableBatchNavigator(
-            batch=batch, request=self.request,
-            columns_to_show=self.columns_to_show)
+        return TableBatchNavigator(tasks, self.request,
+                    columns_to_show=self.columns_to_show,
+                    size=config.malone.buglist_batch_size)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""
@@ -768,7 +860,7 @@ class BugTaskSearchListingView(LaunchpadView):
         for term in vocabulary_registry.get(None, vocabulary_name):
             widget_values.append(
                 dict(
-                    value=term.token, title=term.token,
+                    value=term.token, title=term.title or term.token,
                     checked=term.value in default_values))
 
         return helpers.shortlist(widget_values, longest_expected=10)
@@ -786,6 +878,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def getSeverityWidgetValues(self):
         """Return data used to render the severity checkboxes."""
         return self.getWidgetValues("BugTaskSeverity")
+
+    def getMilestoneWidgetValues(self):
+        """Return data used to render the milestone checkboxes."""
+        return self.getWidgetValues("Milestone")
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""

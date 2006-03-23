@@ -3,6 +3,7 @@
 import __builtin__
 import atexit
 import itertools
+import types
 from operator import attrgetter
 
 original_import = __builtin__.__import__
@@ -171,14 +172,16 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
               not is_test_module(import_into)):
             # "from foo import bar" is naughty if bar isn't in foo.__all__ (and
             # foo actually has an __all__).  Unless foo is within a tests
-            # or ftests module.
+            # or ftests module or bar is itself a module.
             for attrname in fromlist:
-                if attrname not in module.__all__:
-                    error = NotInModuleAllPolicyViolation(
-                        import_into, name, attrname)
-                    naughty_imports.add(error)
-                    # Not raising on NotInModuleAllPolicyViolation yet.
-                    #raise error
+                if attrname != '__doc__' and attrname not in module.__all__:
+                    if not isinstance(
+                        getattr(module, attrname, None), types.ModuleType):
+                        error = NotInModuleAllPolicyViolation(
+                            import_into, name, attrname)
+                        naughty_imports.add(error)
+                        # Not raising on NotInModuleAllPolicyViolation yet.
+                        #raise error
     return module
 
 def report_naughty_imports():

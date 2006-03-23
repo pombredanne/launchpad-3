@@ -1,0 +1,17 @@
+= XMLRPC self-test API =
+
+The Launchpad root object has a simple XMLRPC API to show that XMLRPC works.
+
+We cannot currently test this going all the way through the XMLRPC http
+publisher.  So, we'll test it by importing the view class, and using it.
+
+    >>> from canonical.launchpad.xmlrpc import SelfTest, ISelfTest
+    >>> from zope.interface.verify import verifyObject
+    >>> selftestview = SelfTest('somecontext', 'somerequest')
+    >>> verifyObject(ISelfTest, selftestview)
+    True
+    >>> selftestview.concatenate('foo', 'bar')
+    u'foo bar'
+    >>> selftestview.make_fault()
+    <Fault 666: 'Yoghurt and spanners.'>
+

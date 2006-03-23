@@ -17,8 +17,8 @@ from zope.component import getUtility
 
 # SQL imports
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
-    SQLObjectNotFound)
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
+    RelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
@@ -33,13 +33,15 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaAction, Karma
+from canonical.launchpad.database.potemplate import POTemplateSet
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -61,6 +63,15 @@ from canonical.lp.dbschema import (
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
+
+
+class ValidPersonOrTeamCache(SQLBase):
+    """Flags if a Person or Team is active and usable in Launchpad.
+    
+    This is readonly, as the underlying table is maintained using
+    database triggers.
+    """
+    # Look Ma, no columns! (apart from id)
 
 
 class Person(SQLBase):
@@ -95,9 +106,9 @@ class Person(SQLBase):
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None)
 
-    sshkeys = MultipleJoin('SSHKey', joinColumn='person')
+    sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
-    karma_total_cache = MultipleJoin('KarmaTotalCache', joinColumn='person')
+    karma_total_cache = SQLMultipleJoin('KarmaTotalCache', joinColumn='person')
 
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
@@ -117,70 +128,71 @@ class Person(SQLBase):
                             otherColumn='language',
                             intermediateTable='PersonLanguage')
 
-    # relevant joins
-    authored_branches = MultipleJoin(
-        'Branch', joinColumn='author',orderBy='-id')
     subscribed_branches = RelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', orderBy='-id')
-    ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
+    ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
-    reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
+    reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
+    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute 
+    # 'claimant' in the Bounty database class or interface, but the column 
+    # exists in the database. 
+    # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    karma_category_caches = MultipleJoin('KarmaCache', joinColumn='person',
+    karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
         orderBy='category')
-    signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
-    ircnicknames = MultipleJoin('IrcID', joinColumn='person')
-    jabberids = MultipleJoin('JabberID', joinColumn='person')
+    signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
+    ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
+    jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
     # specification-related joins
     @property
     def approver_specs(self):
-        return Specification.selectBy(approverID=self.id,
-                                      orderBy=['-datecreated'])
+        return shortlist(Specification.selectBy(approverID=self.id,
+                                      orderBy=['-datecreated']))
 
     @property
     def assigned_specs(self):
-        return Specification.selectBy(assigneeID=self.id,
-                                      orderBy=['-datecreated'])
+        return shortlist(Specification.selectBy(assigneeID=self.id,
+                                      orderBy=['-datecreated']))
 
     @property
     def created_specs(self):
-        return Specification.selectBy(ownerID=self.id,
-                                      orderBy=['-datecreated'])
+        return shortlist(Specification.selectBy(ownerID=self.id,
+                                      orderBy=['-datecreated']))
 
     @property
     def drafted_specs(self):
-        return Specification.selectBy(drafterID=self.id,
-                                      orderBy=['-datecreated'])
+        return shortlist(Specification.selectBy(drafterID=self.id,
+                                      orderBy=['-datecreated']))
 
     @property
     def feedback_specs(self):
-        return Specification.select(
+        return shortlist(Specification.select(
             AND(Specification.q.id == SpecificationFeedback.q.specificationID,
                 SpecificationFeedback.q.reviewerID == self.id),
             clauseTables=['SpecificationFeedback'],
-            orderBy=['-datecreated'])
+            orderBy=['-datecreated']))
 
     @property
     def subscribed_specs(self):
-        return Specification.select(
+        return shortlist(Specification.select(
             AND(Specification.q.id == SpecificationSubscription.q.specificationID,
                 SpecificationSubscription.q.personID == self.id),
             clauseTables=['SpecificationSubscription'],
-            orderBy=['-datecreated'])
+            orderBy=['-datecreated']))
 
     # ticket related joins
-    answered_tickets = MultipleJoin('Ticket', joinColumn='answerer',
+    answered_tickets = SQLMultipleJoin('Ticket', joinColumn='answerer',
         orderBy='-datecreated')
-    assigned_tickets = MultipleJoin('Ticket', joinColumn='assignee',
+    assigned_tickets = SQLMultipleJoin('Ticket', joinColumn='assignee',
         orderBy='-datecreated')
-    created_tickets = MultipleJoin('Ticket', joinColumn='owner',
+    created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
         orderBy='-datecreated')
     subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
         otherColumn='ticket', intermediateTable='TicketSubscription',
@@ -302,7 +314,7 @@ class Person(SQLBase):
                 WHERE SpecificationSubscription.person = %(my_id)d
                 )
             """ % {'my_id': self.id}
-                    
+
         if sort is None or sort == SpecificationSort.DATE:
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
@@ -310,7 +322,8 @@ class Person(SQLBase):
         else:
             raise AssertionError('Unknown sort %s' % sort)
 
-        return Specification.select(query, orderBy=order, limit=quantity)
+        return shortlist(Specification.select(
+                    query, orderBy=order, limit=quantity))
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -327,15 +340,26 @@ class Person(SQLBase):
         S = set(self.authored_branches)
         S.update(self.registered_branches)
         S.update(self.subscribed_branches)
-        def by_reverse_id(branch):
-            return -branch.id
-        return sorted(S, key=by_reverse_id)
+        return sorted(S, key=lambda x: -x.id)
 
     @property
     def registered_branches(self):
         """See IPerson."""
-        return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
-                             % (self.id, self.id), orderBy='-id')
+        query = """Branch.owner = %d AND
+                   (Branch.author != %d OR Branch.author is NULL)"""
+        return Branch.select(query % (self.id, self.id),
+                             prejoins=["product"],
+                             orderBy='-Branch.id')
+
+
+    @property
+    def authored_branches(self):
+        """See IPerson."""
+        # XXX: this should be moved back to SQLMultipleJoin when we
+        # support prejoins in that -- kiko, 2006-03-17
+        return Branch.select('Branch.author = %d' % self.id,
+                             prejoins=["product"],
+                             orderBy='-Branch.id')
 
     def getBugContactPackages(self):
         """See IPerson."""
@@ -413,8 +437,31 @@ class Person(SQLBase):
         except IndexError:
             return 0
 
+    @property
+    def is_valid_person(self):
+        """See IPerson."""
+        # XXX: Bug 35952 stops this from working. This method is preferred,
+        # as it keeps the 'what is a valid person' logic encapsulated in the
+        # ValidPersonOrTeamCache materialized view.
+        # return (ValidPersonOrTeamCache.get(self.id) is not None)
+        
+        # No need to make this a cachedproperty, as preferredemail is
+        # already cached.
+        return (
+                self.teamowner is None
+                and self.password is not None
+                and self.merged is None
+                and self.preferredemail is not None
+                )
+
     def assignKarma(self, action_name):
         """See IPerson."""
+        # Teams don't get Karma. Inactive accounts don't get Karma.
+        # No warning, as we don't want to place the burden on callsites
+        # to check this.
+        if not self.is_valid_person:
+            return
+
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
@@ -713,14 +760,39 @@ class Person(SQLBase):
 
     @property
     def touched_pofiles(self):
-        return POFile.select('''
+        results = POFile.select('''
             POSubmission.person = %s AND
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = POFile.id
             ''' % sqlvalues(self.id),
-            orderBy=['datecreated'],
-            clauseTables=['POMsgSet', 'POSubmission'],
+            orderBy=['POFile.datecreated'],
+            prejoins=['language', 'potemplate'],
+            clauseTables=['POMsgSet', 'POFile', 'POSubmission'],
             distinct=True)
+        # XXX: Because of a template reference to
+        # pofile.potemplate.displayname, it would be ideal to also
+        # prejoin above:
+        #   potemplate.potemplatename
+        #   potemplate.productseries
+        #   potemplate.productseries.product
+        #   potemplate.distrorelease
+        #   potemplate.distrorelease.distribution
+        #   potemplate.sourcepackagename
+        # However, a list this long may be actually suggesting that
+        # displayname be cached in a table field; particularly given the
+        # fact that it won't be altered very often. At any rate, the
+        # code below works around this by caching all the templates in
+        # one shot. The list() ensures that we materialize the query
+        # before passing it on to avoid reissuing it; the template code
+        # only hits this callsite once and iterates over all the results
+        # anyway. When we have deep prejoining we can just ditch all of
+        # this and either use cachedproperty or cache in the view code.
+        #   -- kiko, 2006-03-17
+        results = list(results)
+        ids = set(pofile.potemplate.id for pofile in results)
+        if ids:
+            list(POTemplateSet().getByIDs(ids))
+        return results
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""
@@ -772,7 +844,7 @@ class Person(SQLBase):
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.
-        emails = list(emails)
+        emails = shortlist(emails)
         length = len(emails)
         assert length <= 1
         if length:
@@ -785,7 +857,7 @@ class Person(SQLBase):
         """See IPerson."""
         preferredemail = self.preferredemail
         if preferredemail:
-            return sha.new(preferredemail.email).hexdigest().upper()
+            return sha.new('mailto:' + preferredemail.email).hexdigest().upper()
         else:
             return None
 
@@ -834,30 +906,41 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def maintainedPackages(self):
+    def latestMaintainedPackages(self):
         """See IPerson."""
-        querystr = """
-            sourcepackagerelease.maintainer = %d AND
-            sourcepackagerelease.sourcepackagename = sourcepackagename.id
-            """ % self.id
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
-            clauseTables=['SourcePackageName'])
+        return self._latestReleaseQuery()
 
-    def uploadedButNotMaintainedPackages(self):
+    def latestUploadedButNotMaintainedPackages(self):
         """See IPerson."""
-        querystr = """
-            sourcepackagerelease.creator = %d AND
-            sourcepackagerelease.maintainer != %d AND
-            sourcepackagerelease.sourcepackagename = sourcepackagename.id
-            """ % (self.id, self.id)
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
-            clauseTables=['SourcePackageName'])
+        return self._latestReleaseQuery(uploader_only=True)
 
-    @property
+    def _latestReleaseQuery(self, uploader_only=False):
+        # Issues a special query that returns the most recent
+        # sourcepackagereleases that were maintained/uploaded to
+        # distribution releases by this person.
+        if uploader_only:
+            extra = """sourcepackagerelease.creator = %d AND
+                       sourcepackagerelease.maintainer != %d""" % (
+                       self.id, self.id)
+        else:
+            extra = "sourcepackagerelease.maintainer = %d" % self.id
+        query = """
+            SourcePackageRelease.id IN (
+                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
+                       sourcepackagerelease.id
+                  FROM sourcepackagerelease
+                 WHERE %s
+              ORDER BY uploaddistrorelease, sourcepackagename, 
+                       dateuploaded DESC
+              )
+              """ % extra
+        return SourcePackageRelease.select(
+            query,
+            orderBy=['-SourcePackageRelease.dateuploaded',
+                     'SourcePackageRelease.id'],
+            prejoins=['sourcepackagename', 'maintainer'])
+
+    @cachedproperty
     def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)

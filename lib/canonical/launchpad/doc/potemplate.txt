@@ -7,12 +7,6 @@ Test that the security setup for IPOTemplateSet is working
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
-The list of pending imports should be empty.
-
-    >>> potemplate_list = potemplate_set.getTemplatesPendingImport()
-    >>> len(list(potemplate_list))
-    0
-
 POTemplateSubset
 ================
 

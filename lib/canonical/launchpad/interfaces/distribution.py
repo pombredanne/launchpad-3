@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IDistribution',
     'IDistributionSet',
-    'IDistroPackageFinder',
     ]
 
 from zope.schema import Choice, Int, TextLine, Bool
@@ -144,7 +143,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         """Return the DistroReleases which are marked as in development."""
 
     def getRelease(name_or_version):
-        """Return the source package release with the name or version
+        """Return the distribution release with the name or version
         given.
         """
 
@@ -254,8 +253,4 @@ class IDistributionSet(Interface):
     def new(name, displayname, title, description, summary, domainname,
             members, owner):
         """Creaste a new distribution."""
-
-
-class IDistroPackageFinder(Interface):
-    """A tool to find packages in a distribution."""
 

@@ -1,7 +1,15 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
+import unittest
+import doctest
+import textwrap
 from canonical.launchpad.components import poparser as pofile
-import unittest, doctest
+
+DEFAULT_HEADER = '''
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=ASCII\\n"
+'''
 
 class POBasicTestCase(unittest.TestCase):
 
@@ -9,7 +17,7 @@ class POBasicTestCase(unittest.TestCase):
         self.parser = pofile.POParser()
 
     def testSingular(self):
-        self.parser.write('''msgid "foo"\nmsgstr "bar"\n''')
+        self.parser.write('''%smsgid "foo"\nmsgstr "bar"\n''' % DEFAULT_HEADER)
         self.parser.finish()
         messages = self.parser.messages
         self.assertEqual(len(messages), 1, "incorrect number of messages")
@@ -19,14 +27,14 @@ class POBasicTestCase(unittest.TestCase):
 
     def testNoNewLine(self):
         # note, no trailing newline; this raises a warning
-        self.parser.write('''msgid "foo"\nmsgstr "bar"''')
+        self.parser.write('''%smsgid "foo"\nmsgstr "bar"''' % DEFAULT_HEADER)
         self.parser.finish()
         messages = self.parser.messages
         self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
         self.assertEqual(messages[0].msgstr, "bar", "incorrect msgstr")
 
     def testMissingQuote(self):
-        self.parser.write('''msgid "foo"\nmsgstr "bar''')
+        self.parser.write('''%smsgid "foo"\nmsgstr "bar''' % DEFAULT_HEADER)
 
         try:
             self.parser.finish()
@@ -37,7 +45,8 @@ class POBasicTestCase(unittest.TestCase):
 
     def testBadNewline(self):
         try:
-            self.parser.write('''msgid "foo\n"\nmsgstr "bar"\n''')
+            self.parser.write(
+                '''%smsgid "foo\n"\nmsgstr "bar"\n''' % DEFAULT_HEADER)
             self.parser.finish()
         except pofile.POSyntaxError:
             pass
@@ -46,7 +55,8 @@ class POBasicTestCase(unittest.TestCase):
 
     def testBadBackslash(self):
         try:
-            self.parser.write('''msgid "foo\\"\nmsgstr "bar"\n''')
+            self.parser.write(
+                '''%smsgid "foo\\"\nmsgstr "bar"\n''' % DEFAULT_HEADER)
             self.parser.finish()
         except pofile.POSyntaxError:
             pass
@@ -54,7 +64,7 @@ class POBasicTestCase(unittest.TestCase):
             self.fail("uncaught syntax error (misplaced backslash)")
 
     def testMissingMsgstr(self):
-        self.parser.write('''msgid "foo"\n''')
+        self.parser.write('''%smsgid "foo"\n''' % DEFAULT_HEADER)
 
         try:
             self.parser.finish()
@@ -65,7 +75,7 @@ class POBasicTestCase(unittest.TestCase):
 
     def testMissingMsgid1(self):
         try:
-            self.parser.write('''msgid_plural "foos"\n''')
+            self.parser.write('''%smsgid_plural "foos"\n''' % DEFAULT_HEADER)
             self.parser.finish()
         except pofile.POSyntaxError:
             pass
@@ -74,7 +84,7 @@ class POBasicTestCase(unittest.TestCase):
                 "msgid_plural)")
 
     def testMissingMsgid2(self):
-        self.parser.write("# blah blah blah\n")
+        self.parser.write("%s# blah blah blah\n" % DEFAULT_HEADER)
 
         try:
             self.parser.finish()
@@ -84,17 +94,19 @@ class POBasicTestCase(unittest.TestCase):
             self.fail("uncaught syntax error (missing msgid after comment)")
 
     def testFuzzy(self):
-        self.parser.write("""#, fuzzy\nmsgid "foo"\nmsgstr "bar"\n""")
+        self.parser.write(
+            """%s#, fuzzy\nmsgid "foo"\nmsgstr "bar"\n""" % DEFAULT_HEADER)
         self.parser.finish()
         messages = self.parser.messages
         assert 'fuzzy' in messages[0].flags, "missing fuzziness"
 
     def testComment(self):
-        self.parser.write(
-            '#. foo/bar.baz\n'
-            '# cake not drugs\n'
-            'msgid "a"\n'
-            'msgstr "b"\n')
+        self.parser.write(textwrap.dedent("""
+            %s
+            #. foo/bar.baz\n
+            # cake not drugs\n
+            msgid "a"\n
+            msgstr "b"\n""" % DEFAULT_HEADER))
         self.parser.finish()
         messages = self.parser.messages
         self.assertEqual(messages[0].sourceComment, "foo/bar.baz\n",
@@ -104,7 +116,9 @@ class POBasicTestCase(unittest.TestCase):
         assert 'fuzzy' not in messages[0].flags, "incorrect fuzziness"
 
     def testEscape(self):
-        self.parser.write('''msgid "foo\\"bar\\nbaz\\\\xyzzy"\nmsgstr"z"\n''')
+        self.parser.write(
+            '''%smsgid "foo\\"bar\\nbaz\\\\xyzzy"\nmsgstr"z"\n''' %
+                DEFAULT_HEADER)
         self.parser.finish()
         messages = self.parser.messages
         self.assertEqual(messages[0].msgid, 'foo"bar\nbaz\\xyzzy')
@@ -123,8 +137,12 @@ class POBasicTestCase(unittest.TestCase):
     def testPlural(self):
         self.parser.header = pofile.POHeader()
         self.parser.header.nplurals = 2
-        self.parser.write('''msgid "foo"\nmsgid_plural "foos"\n'''
-            '''msgstr[0] "bar"\nmsgstr[1] "bars"\n''')
+        self.parser.write(textwrap.dedent('''
+            %s
+            msgid "foo"
+            msgid_plural "foos"
+            msgstr[0] "bar"
+            msgstr[1] "bars"''' % DEFAULT_HEADER))
         self.parser.finish()
         messages = self.parser.messages
         self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
@@ -141,7 +159,8 @@ class POBasicTestCase(unittest.TestCase):
         assert 'fuzzy' not in messages[0].flags, "incorrect fuzziness"
 
     def testObsolete(self):
-        self.parser.write('''#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"\n''')
+        self.parser.write(
+            '%s#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"\n' % DEFAULT_HEADER)
         self.parser.finish()
         messages = self.parser.messages
         self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
@@ -150,7 +169,8 @@ class POBasicTestCase(unittest.TestCase):
         assert 'fuzzy' in messages[0].flags, "incorrect fuzziness"
 
     def testMultiLineObsolete(self):
-        self.parser.write('''#~ msgid "foo"\n#~ msgstr ""\n#~ "bar"\n''')
+        self.parser.write(
+            '%s#~ msgid "foo"\n#~ msgstr ""\n#~ "bar"\n' % DEFAULT_HEADER)
         self.parser.finish()
         messages = self.parser.messages
         self.assertEqual(messages[0].msgid, "foo")
@@ -158,8 +178,13 @@ class POBasicTestCase(unittest.TestCase):
 
     def testDuplicateMsgid(self):
         try:
-            self.parser.write('''msgid "foo"\nmsgstr "bar1"\n\n'''
-                '''msgid "foo"\nmsgstr "bar2"\n''')
+            self.parser.write(textwrap.dedent('''
+                %s
+                msgid "foo"
+                msgstr "bar1"
+
+                msgid "foo"
+                msgstr "bar2"''' % DEFAULT_HEADER))
             self.parser.finish()
         except pofile.POInvalidInputError:
             pass
@@ -168,11 +193,13 @@ class POBasicTestCase(unittest.TestCase):
 
     def testSquareBracketAndPlural(self):
         try:
-            self.parser.write(
-                'msgid "foo %d"\n'
-                'msgid_plural "foos %d"\n'
-                'msgstr[0] "foo translated[%d]"\n'
-                'msgstr[1] "foos translated[%d]"\n')
+            self.parser.write(textwrap.dedent('''
+                %s
+                msgid "foo %%d"
+                msgid_plural "foos %%d"
+                msgstr[0] "foo translated[%%d]"
+                msgstr[1] "foos translated[%%d]"
+                ''' % DEFAULT_HEADER))
         except ValueError:
             self.fail("The SquareBracketAndPlural test failed")
 
@@ -181,11 +208,11 @@ class POBasicTestCase(unittest.TestCase):
         self.parser.finish()
         self.parser.header['plural-forms'] = 'nplurals=2; plural=random()'
         self.assertEqual(unicode(self.parser.header),
-                         'msgid ""\n'
-                         'msgstr ""\n'
-                         '"foo: bar\\n"\n'
-                         '"Content-Type: text/plain; charset=us-ascii\\n"\n'
-                         '"plural-forms: nplurals=2; plural=random()\\n"')
+            u'msgid ""\n'
+            u'msgstr ""\n'
+            u'"foo: bar\\n"\n'
+            u'"Content-Type: text/plain; charset=ASCII\\n"\n'
+            u'"plural-forms: nplurals=2; plural=random()\\n"')
 
 
 def test_suite():

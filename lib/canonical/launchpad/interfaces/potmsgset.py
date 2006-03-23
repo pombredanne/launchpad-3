@@ -4,7 +4,13 @@ from zope.interface import Interface, Attribute
 
 __metaclass__ = type
 
-__all__ = ('IPOTMsgSet', )
+__all__ = [
+    'IPOTMsgSet',
+    'BrokenTextError',
+    ]
+
+class BrokenTextError(ValueError):
+    """Exception raised when we detect values on a text that aren't valid."""
 
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""
@@ -42,8 +48,8 @@ class IPOTMsgSet(Interface):
     def flags():
         """Return a list of flags on this set."""
 
-    def messageIDs():
-        """Return an iterator over this set's message IDs.
+    def getPOMsgIDs():
+        """Return an iterator over this set's IPOMsgID.
 
         The maximum number of items this iterator returns is 2.
         """
@@ -74,22 +80,35 @@ class IPOTMsgSet(Interface):
         is not, then a KeyError is raised.
         """
 
-    def sanity_fixes(text):
-        """Return 'text' after doing some sanity checks and fixes against the
-        msgid so we improve its value in case the user did some mistakes.
+    def applySanityFixes(unicode_text):
+        """Return 'unicode_text' after doing some sanity checks and fixes.
+
+        The text is checked against the msgid using the following filters:
+
+          self.convertDotToSpace
+          self.normalizeWhitespaces
+          self.normalizeNewLines
+
+        :arg unicode_text: A unicode text that needs to be checked.
         """
 
-    def convert_dot_to_space(text):
-        """Return 'text' with the u'\u2022' char changed by a normal space.
+    def convertDotToSpace(unicode_text):
+        """Return 'unicode_text' with the u'\u2022' char exchanged with a
+        normal space.
 
-        If the self.primemsgid contains that character, 'text' is returned without
-        changes.
+        If the self.primemsgid contains that character, 'unicode_text' is
+        returned without changes as it's a valid char instead of our way to
+        represent a normal space to the user.
         """
 
-    def normalize_whitespaces(text):
-        """Return 'text' with the same trailing and leading whitespaces
+    def normalizeWhitespaces(unicode_text):
+        """Return 'unicode_text' with the same trailing and leading whitespaces
         that self.primemsgid has.
 
-        If 'text' has only whitespaces but self.primemsgid has other characters, the
-        empty string ('') is returned.
+        If 'unicode_text' has only whitespaces but self.primemsgid has other
+        characters, the empty string (u'') is returned to note it as an
+        untranslated string.
         """
+
+    def normalizeNewLines(unicode_text):
+        """Return 'unicode_text' with new lines chars in sync with the msgid."""
