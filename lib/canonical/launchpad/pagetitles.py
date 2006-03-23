@@ -204,6 +204,8 @@ build_index = ContextTitle('Build details for %s')
 
 build_reset = ContextTitle('Reset %s')
 
+build_rescore = ContextTitle('Rescore %s')
+
 builders = 'Launchpad build farm'
 
 builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
@@ -337,6 +339,8 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
 
 distrorelease_builds = ContextTitle('Builds for %s')
+
+distrorelease_queue = ContextTitle('Queue for %s')
 
 distroreleasebinarypackage_index = ContextTitle('%s')
 

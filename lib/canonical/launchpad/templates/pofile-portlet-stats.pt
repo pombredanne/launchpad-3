@@ -22,7 +22,8 @@
                 </a><br />
                 <br />
             </tal:block>
-            <span tal:replace="structure context/@@+barchart">--</span>
+            <span style="white-space: nowrap"
+                  tal:content="structure context/@@+barchart">--</span>
             <br />
 
         </div>

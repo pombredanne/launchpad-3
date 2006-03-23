@@ -75,5 +75,5 @@ Bugs Related to Branches
 The bugs related to a branch are accessible via the related_bugs
 property.
 
-    >>> [bug.id for bug in branch.related_bugs]
-    [1]
+    >>> sorted([bug.id for bug in branch.related_bugs])
+    [1, 4, 5]
