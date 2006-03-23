@@ -74,6 +74,14 @@
               <td>Version: <span tal:replace="queue/sourceversion" />
                   Age: <span tal:replace="queue/age" /> </td>
            </tr>
+           <tr class="secondary discreet">
+              <td tal:condition="view/availableActions" />
+              <td>Component: <span
+                  tal:replace="queue/sourcepackagerelease/component/name"
+                  /> Version: <span
+                  tal:replace="queue/sourcepackagerelease/section/name" />
+               </td>
+           </tr>
          </tal:batch>
        </tbody>
        <tal:admin condition="context/required:launchpad.Admin">

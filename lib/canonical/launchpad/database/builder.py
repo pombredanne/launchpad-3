@@ -177,7 +177,12 @@ class BuildQueue(SQLBase):
     @property
     def component_name(self):
         """See IBuildQueue"""
-        return self.build.sourcepackagerelease.publishings[0].component.name
+        # check currently published version
+        publishings = self.build.sourcepackagerelease.publishings
+        if publishings is not None:
+            return publishings[0].component.name
+        # if not found return the original component
+        return self.build.sourcepackagerelease.component.name
 
     @property
     def archhintlist(self):
