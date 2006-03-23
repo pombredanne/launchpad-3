@@ -74,11 +74,13 @@
               <td>Version: <span tal:replace="queue/sourceversion" />
                   Age: <span tal:replace="queue/age" /> </td>
            </tr>
-           <tr class="secondary discreet">
+           <tr class="secondary discreet"
+               tal:condition="python: queue.containsSource or
+                                      queue.containsBuild">
               <td tal:condition="view/availableActions" />
               <td>Component: <span
                   tal:replace="queue/sourcepackagerelease/component/name"
-                  /> Version: <span
+                  /> Section: <span
                   tal:replace="queue/sourcepackagerelease/section/name" />
                </td>
            </tr>
