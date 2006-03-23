@@ -15,6 +15,8 @@ from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
+from canonical.lp.dbschema import PackagePublishingStatus
+
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
 from canonical.launchpad.components.bugtarget import BugTargetBase
@@ -84,7 +86,8 @@ class DistributionSourcePackage(BugTargetBase):
             """ % sqlvalues(self.distribution.id, self.sourcepackagename.id,
                             version),
             orderBy='-datecreated',
-            clauseTables=['distrorelease', 'sourcepackagerelease'])
+            prejoinClauseTables=['SourcePackageRelease'],
+            clauseTables=['DistroRelease', 'SourcePackageRelease'])
         if spph.count() == 0:
             return None
         return DistributionSourcePackageRelease(
@@ -194,7 +197,16 @@ class DistributionSourcePackage(BugTargetBase):
     @property
     def publishing_history(self):
         """See IDistributionSourcePackage."""
-        return SourcePackagePublishingHistory.select("""
+        return self._getPublishingHistoryQuery()
+
+    @property
+    def current_publishing_records(self):
+        """See IDistributionSourcePackage."""
+        status = PackagePublishingStatus.PUBLISHED
+        return self._getPublishingHistoryQuery(status)
+
+    def _getPublishingHistoryQuery(self, status=None):
+        query = """
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
@@ -202,8 +214,15 @@ class DistributionSourcePackage(BugTargetBase):
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
+                            self.sourcepackagename.id)
+
+        if status is not None:
+            query += ("AND SourcePackagePublishingHistory.status = %s"
+                      % sqlvalues(status))
+
+        return SourcePackagePublishingHistory.select(query,
             clauseTables=['DistroRelease', 'SourcePackageRelease'],
+            prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
     @property

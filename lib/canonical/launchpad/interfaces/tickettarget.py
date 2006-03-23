@@ -10,7 +10,7 @@ __all__ = [
     'IManageSupportContacts',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
 from zope.schema import Bool, Choice, List
 
