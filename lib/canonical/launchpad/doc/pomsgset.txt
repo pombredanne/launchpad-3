@@ -92,11 +92,11 @@ And same with the fuzzy flags.
   False
 
 We use a DummyPOMsgSet when we don't have a POMsgSet for a given POFile and
-POTMsgSet. First we'll get a DummyPOFile
+POTMsgSet. First we'll get a DummyPOFile:
 
 >>> pt_BR_dummypofile = upstream_evo.getPOFileOrDummy('pt_BR')
 
-We get a POMsgSet and verify it's a singular form
+We get a POMsgSet and verify it's a singular form:
 
 >>> pt_BR_dummypomsgset = pt_BR_dummypofile.getPOMsgSet(u'evolution addressbook')
 >>> pt_BR_dummypomsgset.potmsgset.getPOMsgIDs().count()
@@ -108,13 +108,13 @@ We get a POMsgSet and verify it's a singular form
 [None]
 
 Using another pofile we'll get a POMsgset that's not a
-singular form. 
+singular form: 
 
 >>> apa_dummypofile = upstream_evo.getPOFileOrDummy('apa')
 >>> apa_dummypomsgset = apa_dummypofile.getPOMsgSet(u'%d contact')
 
-We don't know anything about pluralforms for this language, so we fallback to
-the most common case
+We don't know anything about pluralforms for this language, so we fall back to
+the most common case:
 
 >>> print apa_dummypomsgset.pofile.language.pluralforms
 None
@@ -125,7 +125,7 @@ None
 >>> apa_dummypomsgset.active_texts
 [None, None]
 
-We can guess the pluralforms for this language thru IPOFile.pluralforms
+We can guess the pluralforms for this language thru IPOFile.pluralforms:
 
 >>> apa_dummypomsgset.pofile.pluralforms = 4 
 >>> apa_dummypomsgset.pluralforms
@@ -133,7 +133,7 @@ We can guess the pluralforms for this language thru IPOFile.pluralforms
 >>> apa_dummypomsgset.active_texts
 [None, None, None, None]
 
-Or thru ILanguage.pluralforms
+Or thru ILanguage.pluralforms:
 
 >>> ru_dummypofile = upstream_evo.getPOFileOrDummy('ru')
 >>> ru_dummypomsgset = ru_dummypofile.getPOMsgSet(u'%d contact')
