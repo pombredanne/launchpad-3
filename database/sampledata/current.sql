@@ -501,6 +501,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -742,6 +745,16 @@ ALTER TABLE bugattachment DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugattachment ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugbranch DISABLE TRIGGER ALL;
+
+INSERT INTO bugbranch (id, datecreated, bug, branch, fixed_in_revision, status, whiteboard) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, NULL, 20, NULL);
+INSERT INTO bugbranch (id, datecreated, bug, branch, fixed_in_revision, status, whiteboard) VALUES (2, '2006-03-22 18:45:08.75694', 4, 10, NULL, 10, NULL);
+INSERT INTO bugbranch (id, datecreated, bug, branch, fixed_in_revision, status, whiteboard) VALUES (3, '2006-03-22 18:45:50.344434', 4, 1, NULL, 20, NULL);
+
+
+ALTER TABLE bugbranch ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugcve DISABLE TRIGGER ALL;
