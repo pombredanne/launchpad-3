@@ -240,6 +240,9 @@ class POMsgSet(SQLBase):
                 validation_status=validation_status,
                 force_edition_rights=is_editor)
 
+            # Flush the database cache
+            flush_database_updates()
+
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:
             if published:

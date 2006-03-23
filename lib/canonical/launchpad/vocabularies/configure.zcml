@@ -46,6 +46,11 @@
     />
 
   <vocabulary
+    name="BugBranchStatus"
+    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
+    />
+
+  <vocabulary
     name="BugRef"
     factory="canonical.launchpad.vocabularies.BugRefVocabulary"
     />
@@ -216,6 +221,11 @@
     />
 
   <vocabulary
+    name="ProductBranch"
+    factory="canonical.launchpad.vocabularies.ProductBranchVocabulary"
+    />
+
+  <vocabulary
     name="ProductRelease"
     factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
     />
@@ -228,6 +238,21 @@
   <vocabulary
     name="Project"
     factory="canonical.launchpad.vocabularies.ProjectVocabulary"
+    />
+
+  <vocabulary
+    name="RemoteBugTaskStatus"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
+    />
+
+  <vocabulary
+    name="RemoteBugTaskPriority"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskPriorityVocabulary"
+    />
+
+  <vocabulary
+    name="RemoteBugTaskSeverity"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskSeverityVocabulary"
     />
 
   <vocabulary

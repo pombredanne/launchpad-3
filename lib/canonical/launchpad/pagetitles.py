@@ -129,6 +129,8 @@ def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
+bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
+
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextTitle('%s')
@@ -148,6 +150,8 @@ bug_secrecy = ContextId('Bug #%d - Set visibility')
 bug_subscription = ContextId('Subscription to bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
+
+bugbranch_status = "Edit branch fix status"
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 
@@ -199,6 +203,8 @@ build_changes = ContextTitle('Changes in %s')
 build_index = ContextTitle('Build details for %s')
 
 build_reset = ContextTitle('Reset %s')
+
+build_rescore = ContextTitle('Rescore %s')
 
 builders = 'Launchpad build farm'
 
@@ -333,6 +339,8 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
 
 distrorelease_builds = ContextTitle('Builds for %s')
+
+distrorelease_queue = ContextTitle('Queue for %s')
 
 distroreleasebinarypackage_index = ContextTitle('%s')
 
@@ -784,7 +792,9 @@ specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
-specificationgoal_index = ContextTitle('Specification acceptance for %s')
+specificationgoal_specs = ContextTitle('List goals for %s')
+
+specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 

@@ -15,6 +15,7 @@ __all__ = [
     'NamedSQLObjectHugeVocabulary',
     'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
+    'ProductBranchVocabulary',
     'BountyVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
@@ -62,7 +63,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
-    Distribution, DistroRelease, Person, SourcePackageRelease,
+    Distribution, DistroRelease, Person, SourcePackageRelease, Branch,
     SourcePackageName, BugWatch, Sprint, DistroArchRelease, KarmaCategory,
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
@@ -70,7 +71,7 @@ from canonical.launchpad.database import (
     BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
     IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet)
+    IMilestoneSet, IProduct)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -144,8 +145,8 @@ class SQLObjectVocabularyBase:
         return None
 
     def getTerm(self, value):
-        # Short circuit. There is probably a design problem here since we
-        # sometimes get the id and sometimes an SQLBase instance.
+        # Short circuit. There is probably a design problem here since
+        # we sometimes get the id and sometimes an SQLBase instance.
         if zisinstance(value, SQLBase):
             return self.toTerm(value)
 
@@ -339,6 +340,40 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         return self._table.select(
             "BinaryPackageName.name LIKE '%%' || %s || '%%'"
             % quote_like(query))
+
+
+class ProductBranchVocabulary(SQLObjectVocabularyBase):
+    """The set of branches associated with a product.
+
+    Perhaps this should be renamed to BranchVocabulary.
+    """
+
+    implements(IHugeVocabulary)
+
+    _table = Branch
+    _orderBy = 'name'
+    displayname = 'Select a Branch'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+    def search(self, query):
+        """Return terms where query is a subtring of the name or URL."""
+        if not query:
+            return self.emptySelectResults()
+
+        quoted_query = quote_like(query)
+
+        sql_query = "("
+        if IProduct.providedBy(self.context):
+            sql_query += "(Branch.product = %d) AND " % self.context.id
+        sql_query += ((
+            "((Branch.name ILIKE '%%' || %s || '%%') OR "
+            "  (Branch.url ILIKE '%%' || %s || '%%'))") % (
+                quoted_query, quoted_query))
+        sql_query += ")"
+
+        return self._table.select(sql_query, orderBy=self._orderBy)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):

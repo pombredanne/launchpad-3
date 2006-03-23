@@ -10,8 +10,8 @@ import urllib
 import cgi
 import datetime
 
-from sqlobject import ForeignKey, StringCol
-from sqlobject import SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 import pytz
 
@@ -27,7 +27,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, IRemoteBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
@@ -137,16 +137,27 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-
-        if self.product is not None:
-            # This is an upstream task.
+        # We use the forbidden underscore attributes below because, with
+        # SQLObject, hitting self.product means querying and
+        # instantiating an object; prejoining doesn't help because this
+        # happens when the bug task is being instantiated -- too early
+        # in cases where we prejoin other things in.
+        # XXX: we should use a specific SQLObject API here to avoid the
+        # privacy violation.
+        #   -- kiko, 2006-03-21
+        if self._SO_val_productID is not None:
             mark_task(self, IUpstreamBugTask)
-        elif self.distrorelease is not None:
-            # This is a distro release task.
+            root_target = self.product
+        elif self._SO_val_distroreleaseID is not None:
             mark_task(self, IDistroReleaseBugTask)
+            root_target = self.distrorelease.distribution
         else:
-            # This is a distro task.
+            # If nothing else, this is a distro task.
             mark_task(self, IDistroBugTask)
+            root_target = self.distribution
+
+        if not root_target.official_malone:
+            mark_task(self, IRemoteBugTask)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
         # We need to overwrite this method to make sure whenever we change a
@@ -275,7 +286,7 @@ class BugTask(SQLBase, BugTaskMixin):
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (dbschema.BugTaskStatus.REJECTED, 
+            if status in (dbschema.BugTaskStatus.REJECTED,
                           dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
             else:
@@ -456,6 +467,7 @@ class BugTaskSet:
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
             query, prejoinClauseTables=["Bug"], clauseTables=clauseTables,
+            prejoins=['sourcepackagename', 'product'],
             orderBy=orderby_arg)
 
         return bugtasks
@@ -497,7 +509,7 @@ class BugTaskSet:
             assert distrorelease != distrorelease.distribution.currentrelease, (
                 'Bugtasks cannot be opened on the current release.')
 
-        return BugTask(
+        bugtask = BugTask(
             bug=bug,
             product=product,
             distribution=distribution,
@@ -510,6 +522,12 @@ class BugTaskSet:
             assignee=assignee,
             owner=owner,
             milestone=milestone)
+        if IRemoteBugTask.providedBy(bugtask):
+            bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
+            bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
+            bugtask.status = dbschema.BugTaskStatus.UNKNOWN
+
+        return bugtask
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
                            showclosed=False, orderBy=None, user=None):

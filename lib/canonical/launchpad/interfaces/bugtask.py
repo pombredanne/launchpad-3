@@ -14,6 +14,7 @@ __all__ = [
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
+    'IRemoteBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
@@ -31,7 +32,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.component import IComponent
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 
@@ -52,9 +53,9 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 
-class IBugTask(IHasDateCreated):
-    """A description of a bug needing fixing in a particular product
-    or package."""
+class IBugTask(IHasDateCreated, IHasBug):
+    """A bug needing fixing in a particular product or package."""
+
     id = Int(title=_("Bug Task #"))
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
@@ -129,7 +130,7 @@ class IBugTask(IHasDateCreated):
         severity.
         """
 
-    def updateTargetNameCache(self):
+    def updateTargetNameCache():
         """Update the targetnamecache field in the database.
 
         This method is meant to be called when an IBugTask is created or
@@ -138,7 +139,7 @@ class IBugTask(IHasDateCreated):
         example, an IDistribution is renamed.
         """
 
-    def asEmailHeaderValue(self):
+    def asEmailHeaderValue():
         """Return a value suitable for an email header value for this bugtask.
 
         The return value is a single line of arbitrary length, so header folding
@@ -313,6 +314,16 @@ class IDistroReleaseBugTask(IBugTask):
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
+
+
+class IRemoteBugTask(IBugTask):
+    """A bug task for products/distributions not using Malone.
+
+    The status of the bug will be updated from a remote bug watch.
+    """
+    status = Choice(title=_('Status'), vocabulary='RemoteBugTaskStatus')
+    severity = Choice(title=_('Severity'), vocabulary='RemoteBugTaskSeverity')
+    priority = Choice(title=_('Priority'), vocabulary='RemoteBugTaskPriority')
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
