@@ -28,13 +28,13 @@ INFO
   Running: "info *"
   Listing ubuntu/breezy-autotest (NEW) 4/4
   ---------|----|----------------------|----------------------|---------------
-         4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | 33 weeks
+         4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
            | * alsa-utils/1.0.9a-4ubuntu1 Component: main Section: base
-         3 | S- | netapplet            | 0.99.6-1             | 53 weeks
+         3 | S- | netapplet            | 0.99.6-1             | ...
            | * netapplet/0.99.6-1 Component: main Section: web
-         2 | -B | pmount (i386)        | 0.1-1                | 21 weeks
+         2 | -B | pmount (i386)        | 0.1-1                | ...
            | * pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
-         1 | -B | mozilla-firefox (i38 | 0.9                  | 21 weeks
+         1 | -B | mozilla-firefox (i38 | 0.9                  | ...
            | * mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
   ---------|----|----------------------|----------------------|---------------
                                                                4/4
@@ -53,7 +53,7 @@ Check the custom uploads presentation:
   Running: "info *"
   Listing ubuntu/breezy-autotest (UNAPPROVED) 1/1
   ---------|----|----------------------|----------------------|---------------
-         5 | -- | netapplet-1.0.0.tar. | -                    | 49 weeks
+         5 | -- | netapplet-1.0.0.tar. | -                    | ...
            | * netapplet-1.0.0.tar.gz Format: ROSETTA_TRANSLATIONS
   ---------|----|----------------------|----------------------|---------------
   1/1 total
