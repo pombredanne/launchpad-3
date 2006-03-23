@@ -48,10 +48,6 @@ class SQLObjectEditView(EditView, NoRenderingOnRedirect):
         """
         pass
 
-    def _abortAndSetStatus(self):
-        """Abort the current transaction and set self.update_status."""
-        transaction.abort()
-
     def update(self):
         # This method's code is mostly copy-and-pasted from
         # EditView.update due to the fact that we want to change the
@@ -76,14 +72,14 @@ class SQLObjectEditView(EditView, NoRenderingOnRedirect):
                 new_values = getWidgetsData(self, self.schema, self.fieldNames)
             except WidgetsError, errors:
                 self.errors = errors
-                self._abortAndSetStatus()
+                transaction.abort()
                 return self.update_status
 
             try:
                 self.validate(new_values)
             except WidgetsError, errors:
                 self.top_of_page_errors = errors
-                self._abortAndSetStatus()
+                transaction.abort()
                 return self.update_status
 
             # This is a really important event for handling bug
@@ -110,7 +106,7 @@ class SQLObjectEditView(EditView, NoRenderingOnRedirect):
                     self, self.schema, target=content, names=self.fieldNames)
             except WidgetsError, errors:
                 self.errors = errors
-                self._abortAndSetStatus()
+                transaction.abort()
                 return self.update_status
 
             # We should not generate events when an adapter is used.

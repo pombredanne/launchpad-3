@@ -149,7 +149,9 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         # Do custom validation defined in subclasses. This would generally
         # include form-level validation, or validation of fields shown on the
         # form that don't map to schema fields, and thus don't have "widgets" in
-        # the Zope 3 sense.
+        # the Zope 3 sense. We set both self.error and self.top_of_page_errors
+        # so we can provide an easy way of both getting the total number of errors,
+        # and of displaying more specific errors at the top of the page.
         try:
             self.validate(data)
         except WidgetsError, errors:

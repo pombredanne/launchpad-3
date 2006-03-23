@@ -88,10 +88,10 @@
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
     <strong>Related Branches</strong>
-    <div tal:condition="context/bug/private"
-         class="portalMessage">
-      This bug is private. All branches below should be private.
-    </div>
+    <p tal:condition="context/bug/private"
+         class="warning message">
+      This bug is private, so avoid adding public branches here.
+    </p>
 
     <table class="listing">
       <thead>

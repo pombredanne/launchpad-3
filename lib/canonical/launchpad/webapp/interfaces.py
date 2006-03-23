@@ -131,6 +131,7 @@ class BrowserNotificationLevel:
     (which we should probably add to our log levels as well)
     """
     # XXX Matthew Paul Thomas 2006-03-22: NOTICE and INFO should be merged.
+    # https://launchpad.net/bugs/36287
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
     NOTICE = logging.INFO + 5 # action had effects you might not have intended

@@ -105,7 +105,7 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         """Convert a widget input error to an html snippet
 
         If the error implements provides a snippet() method, just return it.
-        Otherwise, fall back to the default Z3 mechanism
+        Otherwise return the error message.
 
         >>> from zope.app.form.interfaces import WidgetInputError
         >>> bold_error = LaunchpadValidationError(u"<b>Foo</b>")
@@ -125,6 +125,5 @@ class WidgetInputErrorView(Z3WidgetInputErrorView):
         if (hasattr(self.context, 'errors') and
                 ILaunchpadValidationError.providedBy(self.context.errors)):
             return self.context.errors.snippet()
-        return self.context.doc()
-        # return super(WidgetInputErrorView, self).snippet()
+        return _quote(self.context.doc())
 
