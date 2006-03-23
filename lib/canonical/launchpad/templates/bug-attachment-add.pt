@@ -6,7 +6,7 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <div>
-        <img alt="" src="/++resource++bug" />
+        <img alt="" src="/@@/bug" />
         <a tal:attributes="href context/fmt:url"
         >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
         <tal:title replace="context/title">Foo doesn't work</tal:title>

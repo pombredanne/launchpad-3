@@ -261,7 +261,6 @@
         facet="bugs"
         arguments=""
         keyword_arguments="title comment private"
-        label="Report a bug"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/products/$Product.name/+filebug">

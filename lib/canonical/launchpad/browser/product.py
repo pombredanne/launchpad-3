@@ -512,8 +512,6 @@ class ProductSetView:
 
     __used_for__ = IProductSet
 
-    header = "Products registered in Launchpad"
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

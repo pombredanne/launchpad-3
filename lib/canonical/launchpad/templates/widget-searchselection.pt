@@ -3,7 +3,7 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXbody metal:fill-slot="main">
+<body metal:fill-slot="main">
 
 <tal:testvalues define="selection python: {'title':'Mozilla Firefox',
                          'summary':'''Mozilla Firefox is a streamlined 
@@ -26,9 +26,6 @@
                                on the Mozilla code base.'''}];
                         ">
 
-<fieldset>
-    <legend>Package</legend>
-    
     <tal:noselection condition="not: selection">
         <form action=""
               style="float: right;"
@@ -115,8 +112,6 @@
         </div>
 
     </fieldset>
-
-</fieldset>
 
 </tal:testvalues>
 

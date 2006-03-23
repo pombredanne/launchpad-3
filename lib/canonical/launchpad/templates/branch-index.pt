@@ -34,7 +34,7 @@
            should be changed when bug #5313 is fixed to comply with DNRY.
            -- DavidAllouche 2005-12-02 -->
     </tal:comment>
-    <img src="/++resource++edit.gif" />
+    <img src="/@@/edit.gif" />
     <a tal:attributes="href view/edit_link_url">Edit branch details</a>.
     This branch has no summary. 
   </p>
