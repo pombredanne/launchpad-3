@@ -17,10 +17,10 @@ import _pythonpath
 
 from canonical.database.sqlbase import connect
 
-BATCHSIZE = 10000
+BATCHSIZE = 3000
 
 def main():
-    con = connect()
+    con = connect('postgres')
     con.set_isolation_level(0)
     cur = con.cursor()
     count = 0
@@ -40,7 +40,9 @@ def main():
             """ % BATCHSIZE)
         num_deleted = cur.rowcount
         assert num_deleted != -1, "No delete count returned"
-        assert num_deletes is not None, "No delete count returned (got None)"
+        assert num_deleted is not None, "No delete count returned (got None)"
         count += num_deleted
         print count
 
+if __name__ == '__main__':
+    main()
