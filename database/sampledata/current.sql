@@ -944,9 +944,8 @@ INSERT INTO componentselection (id, distrorelease, component) VALUES (7, 11, 2);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (8, 11, 3);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (9, 11, 4);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (10, 3, 2);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (11, 3, 3);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (12, 1, 1);
-INSERT INTO componentselection (id, distrorelease, component) VALUES (13, 1, 3);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (11, 1, 1);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (12, 1, 3);
 
 
 ALTER TABLE componentselection ENABLE TRIGGER ALL;
