@@ -16,7 +16,7 @@ __all__ = [
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugTaskPriorityVocabulary',
-    'BugTaskSeverityVocabulary',
+    'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
     'CveStatusVocabulary',
@@ -76,7 +76,7 @@ BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 BugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
-BugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
+BugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS])

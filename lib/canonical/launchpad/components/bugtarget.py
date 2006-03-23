@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
+from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
@@ -44,7 +44,7 @@ class BugTargetBase:
     def critical_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         critical_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, severity=BugTaskSeverity.CRITICAL,
+            user=getUtility(ILaunchBag).user, importance=BugTaskImportance.CRITICAL,
             omit_dupes=True)
 
         return self.searchTasks(critical_tasks_query)

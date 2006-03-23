@@ -61,8 +61,8 @@
     />
 
   <vocabulary
-    name="BugTaskSeverity"
-    factory="canonical.launchpad.vocabularies.BugTaskSeverityVocabulary"
+    name="BugTaskImportance"
+    factory="canonical.launchpad.vocabularies.BugTaskImportanceVocabulary"
     />
 
   <vocabulary

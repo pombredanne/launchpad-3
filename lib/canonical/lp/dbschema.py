@@ -4,9 +4,9 @@
 
 Use them like this:
 
-  from canonical.lp.dbschema import BugTaskSeverity
+  from canonical.lp.dbschema import BugTaskImportance
 
-  print "SELECT * FROM Bug WHERE Bug.severity='%d'" % BugTaskSeverity.CRITICAL
+  print "SELECT * FROM Bug WHERE Bug.importance='%d'" % BugTaskImportance.CRITICAL
 
 """
 __metaclass__ = type
@@ -41,7 +41,7 @@ __all__ = (
 'BugInfestationStatus',
 'BugTaskPriority',
 'BugRelationship',
-'BugTaskSeverity',
+'BugTaskImportance',
 'BuildStatus',
 'CodereleaseRelationships',
 'CveStatus',
@@ -2388,10 +2388,7 @@ class BugTaskStatus(DBSchema):
 class BugTaskPriority(DBSchema):
     """Bug Task Priority
 
-    Each bug task in Malone can be assigned a priority by the
-    maintainer of the bug. The priority is an indication of the
-    maintainer's desire to fix the task. This schema documents the
-    priorities Malone allows.
+    This field is no longer used, but is left in case we want to resurrect it later.
     """
 
     HIGH = Item(40, """
@@ -2419,10 +2416,10 @@ class BugTaskPriority(DBSchema):
         """)
 
 
-class BugTaskSeverity(DBSchema):
-    """Bug Task Severity
+class BugTaskImportance(DBSchema):
+    """Bug Task Importance
 
-    A bug task has a severity, which is an indication of the
+    Importance is an indication of the
     extent to which the bug impairs the stability and security of
     the distribution or upstream in which it was reported.
     """
@@ -2442,8 +2439,8 @@ class BugTaskSeverity(DBSchema):
         upstream. It affects local system security or data integrity.
         """)
 
-    NORMAL = Item(30, """
-        Normal
+    MEDIUM = Item(30, """
+        Medium
 
         This bug warrants an upload just to fix it, but can be put
         off until other major or critical bugs have been fixed.
@@ -2464,6 +2461,13 @@ class BugTaskSeverity(DBSchema):
         new feature that does not yet exist in the package. It does
         not affect system stability, it might be a usability or
         documentation fix.
+        """)
+
+    UNTRIAGED = Item(5, """
+        Untriaged
+        
+        A relevant developer or manager has not yet decided how
+        important this bug is.
         """)
 
 

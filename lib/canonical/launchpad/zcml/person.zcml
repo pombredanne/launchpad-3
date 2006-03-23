@@ -213,7 +213,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status severity priority assignee owner omit_dupes
+      fields="status importance priority assignee owner omit_dupes
               searchtext"
       permission="zope.Public"
       template="../templates/bugtarget-advanced-search.pt"
@@ -249,7 +249,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status severity priority assignee owner omit_dupes
+      fields="status importance priority assignee owner omit_dupes
               searchtext"
       permission="zope.Public"
       template="../templates/bugtarget-advanced-search.pt"
@@ -269,7 +269,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status severity priority assignee owner omit_dupes
+      fields="status importance priority assignee owner omit_dupes
               searchtext"
       permission="zope.Public"
       template="../templates/bugtarget-advanced-search.pt"
