@@ -30,6 +30,8 @@
         tal:condition="view/search_requested" />
   </form>
 
+  <br />
+
   <tal:search_requested condition="view/search_requested">
 
     <tal:batch define="batch view/batchnav/currentBatch">
@@ -44,33 +46,33 @@
                              title dsp/title"
              tal:content="dsp/title"/>
           <ul tal:condition="view/detailed">
-          <li tal:repeat="pubrec dsp/publishing_history">
-            <a tal:content="pubrec/distrorelease/name"
-               tal:attributes="href pubrec/meta_sourcepackage/fmt:url;
-                               title pubrec/meta_sourcepackage/title"/>
-            (<span tal:replace="pubrec/section/name"/>):
-            <a tal:content="pubrec/meta_sourcepackagerelease/version"
-               tal:attributes="href pubrec/meta_sourcepackagerelease/fmt:url;
-                               title pubrec/meta_sourcepackagerelease/title"/>
+            <li tal:repeat="pubrec dsp/current_publishing_records">
+              <a tal:content="pubrec/distrorelease/name"
+                 tal:attributes="href pubrec/meta_sourcepackage/fmt:url;
+                                 title pubrec/meta_sourcepackage/title" />
+              (<span tal:replace="pubrec/section/name"/>):
+              <a tal:content="pubrec/meta_sourcepackagerelease/version"
+                 tal:attributes="href pubrec/meta_sourcepackagerelease/fmt:url;
+                                 title pubrec/meta_sourcepackagerelease/title" />
 
-            <div style="font-size: 80%;"
-                 tal:define="meta_binaries 
-                             pubrec/sourcepackagerelease/meta_binaries">
+              <div style="font-size: 80%;"
+                   tal:define="meta_binaries 
+                               pubrec/sourcepackagerelease/meta_binaries">
 
-              <tal:has_bin condition="meta_binaries">
-                 Binary Packages:
-                 <tal:binaries repeat="bin meta_binaries">
-                  <a tal:content="bin/name"
-                     tal:attributes="href bin/fmt:url; title bin/title"/>
-                </tal:binaries>
-              </tal:has_bin>
+                <tal:has_bin condition="meta_binaries">
+                   Binary Packages:
+                   <tal:binaries repeat="bin meta_binaries">
+                    <a tal:content="bin/name"
+                       tal:attributes="href bin/fmt:url; title bin/title" />
+                  </tal:binaries>
+                </tal:has_bin>
 
-              <tal:has_no_bin condition="not:meta_binaries">
-                <i>This package has no binaries</i>
-              </tal:has_no_bin>
+                <tal:has_no_bin condition="not:meta_binaries">
+                  <i>This package has no binaries</i>
+                </tal:has_no_bin>
 
-            </div>
-          </li>
+              </div>
+            </li>
           </ul>
         </li>
       </ul>
