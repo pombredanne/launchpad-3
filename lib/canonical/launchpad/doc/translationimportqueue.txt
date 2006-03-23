@@ -149,3 +149,76 @@ And the date_status_changed is newer
 
     >>> entry.date_status_changed > previous_date_status_changed
     True
+
+
+executeAutomaticBlock
+---------------------
+
+This method looks on the queue to find entries to block based on other .pot
+entries that are stored on the same directory and are already blocked.
+
+First, we import a new .pot file.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/foo.pot', 'foo', True, rosetta_expert,
+    ...      distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=evolution_sourcepackagename)
+
+And block it.
+
+    >>> entry.status = RosettaImportStatus.BLOCKED
+    >>> transaction.commit()
+
+Check the number of entries on the queue.
+
+    >>> len(translationimportqueue)
+    3
+
+First, let's check the status of the existing entries.
+
+    >>> entry1 = translationimportqueue.get(1)
+    >>> entry1.path
+    u'po/sr.po'
+    >>> entry1.status == RosettaImportStatus.NEEDS_REVIEW
+    True
+
+    >>> entry2 = translationimportqueue.get(2)
+    >>> entry2.path
+    u'po/sr.po'
+    >>> entry2.status == RosettaImportStatus.NEEDS_REVIEW
+    True
+
+    >>> entry3 = translationimportqueue.get(3)
+    >>> entry3.path
+    u'po/foo.pot'
+    >>> entry3.status == RosettaImportStatus.BLOCKED
+    True
+
+Let's see how many entries are blocked.
+
+    >>> translationimportqueue.executeAutomaticBlock()
+    1
+
+Now is time to check that we only have one item on the NeedsReview status.
+
+    >>> entry1 = translationimportqueue.get(1)
+    >>> entry1.path
+    u'po/sr.po'
+
+This entry is form a productseries, and it's not blocked because the blocked
+.pot entry is for a distrorelease-sourcepackagename.
+
+    >>> entry1.status == RosettaImportStatus.NEEDS_REVIEW
+    True
+
+    >>> entry2 = translationimportqueue.get(2)
+    >>> entry2.path
+    u'po/sr.po'
+    >>> entry2.status == RosettaImportStatus.BLOCKED
+    True
+
+    >>> entry3 = translationimportqueue.get(3)
+    >>> entry3.path
+    u'po/foo.pot'
+    >>> entry3.status == RosettaImportStatus.BLOCKED
+    True

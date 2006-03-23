@@ -112,6 +112,15 @@ class ITranslationImportQueueEntry(Interface):
     def getFileContent():
         """Return the imported file content as a stream."""
 
+    def getTemplatesOnSameDirectory(status=None):
+        """Return import queue entries stored on the same directory as self.
+
+        :arg status: The RosettaImportStatus that the entries must have or
+            None.
+
+        The returned entries will be only .pot entries.
+        """
+
 
 class ITranslationImportQueue(Interface):
     """A set of files to be imported into Rosetta."""
@@ -201,13 +210,22 @@ class ITranslationImportQueue(Interface):
         filtering purposes.
         """
 
-    def executeAutomaticReviews(ztm):
+    def executeOptimisticApprovals(ztm):
         """Try to move entries from the Needs Review status to Approved one.
 
         :arg ztm: Zope transaction manager object.
 
         This method moves all entries that we know where should they be
         imported from the Needs Review status to the Accepted one.
+        """
+
+    def executeOptimisticBlock():
+        """Try to move entries from the Needs Review status to Blocked one.
+
+        This method moves all .po entries that are on the same directory that
+        a .pot entry that has the status Blocked to that same status.
+
+        Return the number of items blocked.
         """
 
     def cleanUpQueue():

@@ -238,6 +238,24 @@ class TranslationImportQueueEntry(SQLBase):
         client = getUtility(ILibrarianClient)
         return client.getFileByAlias(self.content.id).read()
 
+    def getTemplatesOnSameDirectory(self, status=None):
+        """See ITranslationImportQueueEntry."""
+        query = 'path LIKE %s' % sqlvalues(
+            '%s/%%.pot' % os.path.dirname(self.path))
+        if self.distrorelease is not None:
+            query += ' AND distrorelease = %s' % sqlvalues(
+                self.distrorelease.id)
+        if self.sourcepackagename is not None:
+            query += ' AND sourcepackagename = %s' % sqlvalues(
+                self.sourcepackagename.id)
+        if self.productseries is not None:
+            query += ' AND productseries = %s' % sqlvalues(
+                self.productseries.id)
+        if status is not None:
+            query += ' AND status = %s' % sqlvalues(status.value)
+
+        return TranslationImportQueueEntry.select(query)
+
 
 class TranslationImportQueue:
     implements(ITranslationImportQueue)
@@ -412,7 +430,7 @@ class TranslationImportQueue:
 
         return TranslationImportQueueEntry.select(query)
 
-    def executeAutomaticReviews(self, ztm):
+    def executeOptimisticApprovals(self, ztm):
         """See ITranslationImportQueue."""
         there_are_entries_approved = False
         for entry in self.iterNeedsReview():
@@ -451,6 +469,39 @@ class TranslationImportQueue:
             ztm.commit()
 
         return there_are_entries_approved
+
+    def executeOptimisticBlock(self):
+        """See ITranslationImportQueue."""
+        num_blocked = 0
+        there_are_entries_blocked = False
+        for entry in self.iterNeedsReview():
+            if entry.path.endswith('.pot'):
+                # .pot files cannot be managed automatically, ignore them and
+                # wait for an admin to do it.
+                continue
+            # As kiko would say... this method is crack, I know it, but we
+            # need it to save time to our poor Rosetta Experts while handling
+            # the translation import queue...
+            # We need to look for all .pot files that we have on the same
+            # directory for the entry we are processin and check that all
+            # them are blocked. If there is at least one not blocked,
+            # we cannot block the entry.
+            templates = entry.getTemplatesOnSameDirectory()
+            has_templates = False
+            has_templates_unblocked = False
+            for template in templates:
+                has_templates = True
+                if template.status != RosettaImportStatus.BLOCKED:
+                    # This template is not set as blocked, so we note it.
+                    has_templates_unblocked = True
+
+            if has_templates and not has_templates_unblocked:
+                # All .pot templates on the same directory that this entry is,
+                # are blocked, so we can block it too.
+                entry.status = RosettaImportStatus.BLOCKED
+                num_blocked += 1
+
+        return num_blocked
 
     def cleanUpQueue(self):
         """See ITranslationImportQueue."""
