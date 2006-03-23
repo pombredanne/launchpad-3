@@ -43,6 +43,32 @@ def main():
         assert num_deleted is not None, "No delete count returned (got None)"
         count += num_deleted
         print count
+    print 'Cleaning KarmaCache entries of teams'
+    cur.execute("""
+        DELETE FROM KarmaCache
+        USING Person
+        WHERE KarmaCache.person = Person.id AND teamowner IS NOT NULL
+        """)
+    print 'Cleaning KarmaCache entries of invalids'
+    cur.execute("""
+        DELETE FROM KarmaCache WHERE NOT EXISTS (
+            SELECT id FROM ValidPersonOrTeamCache
+            WHERE ValidPersonOrTeamCache.id = KarmaCache.person
+            )
+        """)
+    print 'Cleaning KarmaTotalCache entries of teams'
+    cur.execute("""
+        DELETE FROM KarmaTotalCache
+        USING Person
+        WHERE KarmaTotalCache.person = Person.id AND teamowner IS NOT NULL
+        """)
+    print 'Cleaning KarmaTotalCache entries of invalids'
+    cur.execute("""
+        DELETE FROM KarmaTotalCache WHERE NOT EXISTS (
+            SELECT id FROM ValidPersonOrTeamCache
+            WHERE ValidPersonOrTeamCache.id = KarmaTotalCache.person
+            )
+        """)
 
 if __name__ == '__main__':
     main()
