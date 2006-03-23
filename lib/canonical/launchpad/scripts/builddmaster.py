@@ -541,6 +541,7 @@ class BuilderGroup:
 
         queueItem.builder = None
         queueItem.buildstart = None
+        queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
 
     def updateBuild_BUILDING(self, queueItem, slave, librarian, buildid,
                              logtail):
@@ -563,6 +564,7 @@ class BuilderGroup:
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         queueItem.builder = None
         queueItem.buildstart = None
+        queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
         slave.clean()
 
     def updateBuild_WAITING(self, queueItem, slave, librarian, buildstatus,
