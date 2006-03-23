@@ -180,38 +180,28 @@ of IDistributionMirror.
     ...  if 'hoary' in path]
     [u'dists/hoary/main/binary-i386/Packages.gz',
      u'dists/hoary/restricted/binary-i386/Packages.gz',
-     u'dists/hoary/universe/binary-i386/Packages.gz',
      u'dists/hoary-backports/main/binary-i386/Packages.gz',
      u'dists/hoary-backports/restricted/binary-i386/Packages.gz',
-     u'dists/hoary-backports/universe/binary-i386/Packages.gz',
      u'dists/hoary-security/main/binary-i386/Packages.gz',
      u'dists/hoary-security/restricted/binary-i386/Packages.gz',
-     u'dists/hoary-security/universe/binary-i386/Packages.gz',
      u'dists/hoary-updates/main/binary-i386/Packages.gz',
      u'dists/hoary-updates/restricted/binary-i386/Packages.gz',
-     u'dists/hoary-updates/universe/binary-i386/Packages.gz',
      u'dists/hoary-proposed/main/binary-i386/Packages.gz',
-     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz',
-     u'dists/hoary-proposed/universe/binary-i386/Packages.gz']
+     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz']
 
     >>> [path 
     ...  for (release, pocket, component, path) in mirror.guessSourcesPaths()
     ...  if 'hoary' in path]
     [u'dists/hoary/main/source/Sources.gz',
      u'dists/hoary/restricted/source/Sources.gz',
-     u'dists/hoary/universe/source/Sources.gz',
      u'dists/hoary-backports/main/source/Sources.gz',
      u'dists/hoary-backports/restricted/source/Sources.gz',
-     u'dists/hoary-backports/universe/source/Sources.gz',
      u'dists/hoary-security/main/source/Sources.gz',
      u'dists/hoary-security/restricted/source/Sources.gz',
-     u'dists/hoary-security/universe/source/Sources.gz',
      u'dists/hoary-updates/main/source/Sources.gz',
      u'dists/hoary-updates/restricted/source/Sources.gz',
-     u'dists/hoary-updates/universe/source/Sources.gz',
      u'dists/hoary-proposed/main/source/Sources.gz',
-     u'dists/hoary-proposed/restricted/source/Sources.gz',
-     u'dists/hoary-proposed/universe/source/Sources.gz']
+     u'dists/hoary-proposed/restricted/source/Sources.gz']
 
 
 - Checking how up-to-date the content is
