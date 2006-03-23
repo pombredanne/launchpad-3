@@ -41,7 +41,7 @@ BuildQueue entries.
 
   >>> class MockBuildQueue:
   ...     def __init__(self, name, urgency, component_name, archrelease,
-  ...                  created, builddependsindep):
+  ...                  created, builddependsindep, manual=False):
   ...         self.name = name
   ...         self.urgency = urgency
   ...         self.component_name = component_name
@@ -49,7 +49,7 @@ BuildQueue entries.
   ...         self.lastscore = 0
   ...         self.created = created
   ...         self.builddependsindep = builddependsindep
-
+  ...         self.manual = manual
 
   >>> from canonical.lp.dbschema import SourcePackageUrgency
 
@@ -162,3 +162,16 @@ scoreBuildQueueEntry() method.
   >>> bm.scoreBuildQueueEntry(bq6)
   >>> bq6.name, bq6.lastscore
   ('Sechs', 1000)
+
+
+By setting manual attribute of a BuildQueue entry we prevent it to be
+rescored, which allows us to set an arbitrary value on it.
+
+  >>> time7 = LOCAL_NOW
+  >>> bq7 = MockBuildQueue('Sieben', SourcePackageUrgency.LOW,
+  ...                      'main', warty386, time7,
+  ...                      'mozilla-firefox', manual=True)
+  >>> bq7.lastscore = 5000
+  >>> bm.scoreBuildQueueEntry(bq7)
+  >>> bq7.name, bq7.lastscore
+  ('Sieben', 5000)

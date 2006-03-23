@@ -8,13 +8,18 @@ __all__ = [
     'TicketTargetView',
     ]
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.webapp.publisher import LaunchpadView
 
-class TicketTargetView:
+class TicketTargetView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    @cachedproperty
+    def tickets(self):
+        # Cache this and avoid having to regenerate it for each template
+        # and view test of the query results.
+        return list(self.context.tickets())
 
     def categories(self):
         """This organises the tickets related to this target by
@@ -33,9 +38,8 @@ class TicketTargetView:
          - subscribed by this person (self.context.subscriber_tickets)
 
         """
-        categories = {}
         if not IPerson.providedBy(self.context):
-            tickets = self.context.tickets()
+            tickets = self.tickets
         else:
             # for a person, we need to figure out which set of tickets to be
             # showing.
@@ -64,7 +68,7 @@ class TicketTargetView:
             #     self.assigned_tickets
             #     self.answered_tickets
             #     self.subscribed_tickets
-            #     self.tickets()  # everything else.
+            #     self.tickets  # everything else.
             #   Hook these up in zcml
             #   using the class and attribute style of registing pages.
             url = self.request.getURL()
@@ -77,7 +81,9 @@ class TicketTargetView:
             elif '+subscribedtickets' in url:
                 tickets = self.context.subscribed_tickets
             else:
-                tickets = self.context.tickets()
+                tickets = self.tickets
+
+        categories = {}
         for ticket in tickets:
             if categories.has_key(ticket.status):
                 category = categories[ticket.status]
