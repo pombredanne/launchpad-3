@@ -5,17 +5,20 @@
   <div class="portletBody portletContent">
 
     <b>Package:</b>
-    <span tal:replace="context/sourcepackagerelease/name">foobar</span>
-    <span tal:replace="context/sourcepackagerelease/version">2.6.5-1</span>
+    <a tal:content="context/distributionsourcepackagerelease/displayname"
+       tal:attributes="href context/distributionsourcepackagerelease/fmt:url">
+       foobar
+    </a>
     <br />
 
     <b>Built on:</b>
-    <span tal:replace="context/distroarchrelease/distrorelease/distribution/name">
-      ubuntu
-    </span>
-    <span tal:replace="context/distroarchrelease/distrorelease/name">
+    <a tal:content="context/distribution/name"
+       tal:attributes="href context/distribution/fmt:url">
+      ubuntu</a>
+    <a tal:content="context/distrorelease/name"
+       tal:attributes="href context/distrorelease/fmt:url">
       hoary
-    </span>
+    </a>
     <br />
 
     <b>Architecture:</b>

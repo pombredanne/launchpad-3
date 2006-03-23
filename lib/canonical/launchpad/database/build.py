@@ -11,7 +11,7 @@ from sqlobject import (
     StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -99,6 +99,8 @@ class Build(SQLBase):
             BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
+            # XXX cprov 20060321: proper icon
+            BuildStatus.SUPERSEDED: "/@@/topic_icon.gif",
             }
         return icon_map[self.buildstate]
 
@@ -125,7 +127,8 @@ class Build(SQLBase):
         """See IBuild."""
         return self.buildstate in [BuildStatus.FAILEDTOBUILD,
                                    BuildStatus.MANUALDEPWAIT,
-                                   BuildStatus.CHROOTWAIT]
+                                   BuildStatus.CHROOTWAIT,
+                                   BuildStatus.SUPERSEDED]
 
     def reset(self):
         """See IBuild."""
@@ -210,17 +213,29 @@ class BuildSet:
                 IN(Build.q.distroarchreleaseID, archrelease_ids))
             )
 
-    def getBuildsForBuilder(self, builder_id, status=None):
+    def getBuildsForBuilder(self, builder_id, status=None, name=None):
         """See IBuildSet."""
-        status_clause = ''
+        queries = []
+        clauseTables = []
         if status:
-            status_clause = "AND buildstate=%s" % sqlvalues(status)
+            queries.append('buildstate=%s' % sqlvalues(status))
 
-        return Build.select(
-            "builder=%s %s" % (builder_id, status_clause),
-            orderBy="-datebuilt")
+        if name:
+            queries.append("Build.sourcepackagerelease="
+                           "Sourcepackagerelease.id")
+            queries.append("Sourcepackagerelease.sourcepackagename="
+                           "Sourcepackagename.id")
+            queries.append("Sourcepackagename.name LIKE '%%' || %s || '%%'"
+                           % quote_like(name))
+            clauseTables.append('Sourcepackagerelease')
+            clauseTables.append('Sourcepackagename')
 
-    def getBuildsByArchIds(self, arch_ids, status=None):
+        queries.append("builder=%s" % builder_id)
+
+        return Build.select(" AND ".join(queries), clauseTables=clauseTables,
+                            orderBy="-datebuilt")
+
+    def getBuildsByArchIds(self, arch_ids, status=None, name=None):
         """See IBuildSet."""
         # If not distroarchrelease was found return None.
         if not arch_ids:
@@ -257,6 +272,18 @@ class BuildSet:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
+
+        if name:
+            condition_clauses.append("Build.sourcepackagerelease="
+                                     "Sourcepackagerelease.id")
+            condition_clauses.append("Sourcepackagerelease.sourcepackagename="
+                                     "Sourcepackagename.id")
+            condition_clauses.append(
+                "Sourcepackagename.name LIKE '%%' || %s || '%%'"
+                % quote_like(name))
+            clauseTables.append('Sourcepackagerelease')
+            clauseTables.append('Sourcepackagename')
+
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

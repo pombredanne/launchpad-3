@@ -127,6 +127,7 @@ class DistroArchRelease(SQLBase):
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
             clauseTables=['BinaryPackagePublishing'],
+            prejoins=["binarypackagename"],
             orderBy=['-rank'],
             distinct=True)
         # import here to avoid circular import problems
@@ -146,10 +147,11 @@ class DistroArchRelease(SQLBase):
         return DistroArchReleaseBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds([self.id], status)
+        return getUtility(IBuildSet).getBuildsByArchIds([self.id], status,
+                                                        name)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None):

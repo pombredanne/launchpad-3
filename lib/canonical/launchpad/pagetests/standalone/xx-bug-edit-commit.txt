@@ -14,10 +14,6 @@ Sample person tries to change the bug's nickname to a existing one and gets a ni
   ... 
   ... Bug Title Testing
   ... -----------------------------9007557518154646371082635117
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo xx ww
-  ... -----------------------------9007557518154646371082635117
   ... Content-Disposition: form-data; name="field.description"
   ... 
   ... y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
@@ -52,10 +48,6 @@ And now we show that any logged-in user can edit public bugs.
   ... Content-Disposition: form-data; name="field.title"
   ... 
   ... Bug Title Testing
-  ... -----------------------------9007557518154646371082635117
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo xx ww
   ... -----------------------------9007557518154646371082635117
   ... Content-Disposition: form-data; name="field.description"
   ... 

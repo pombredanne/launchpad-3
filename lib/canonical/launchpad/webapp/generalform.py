@@ -132,7 +132,7 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
             # computed.
             return self.process_status
 
-        if "FORM_SUBMIT" not in self.request:
+        if not self.submitted():
             self.process_status = ''
             if self.request.method == 'POST':
                 self.process_status = 'Please fill in the form.'
@@ -178,6 +178,10 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
         return self.process_status
 
+    def submitted(self):
+        """Has the form been submitted?"""
+        return "FORM_SUBMIT" in self.request
+
     def update(self):
         """NoRenderingOnRedirect class calls this method."""
         return self.process_form()
@@ -189,13 +193,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
     def __call__(self):
         #XXX: BrowserView doesn't define __call__(), but somehow
-        #     NoRenderingOnRedirect.__call__() won't be called unless we
-        #     define this method and call it explicitly. It's probably
-        #     due to some ZCML magic which should be removed.
+        #     NoRenderingOnRedirect.__call__() won't be called unless
+        #     we define this method and call it explicitly. It's
+        #     probably due to some ZCML magic which should be removed.
         #     -- Bjorn Tillenius, 2006-02-22
 
         # We call initialize explicitly here (it's normally called by
-        # GeneralFormView.__call__), because of the hack Bjorn mentions above.
+        # GeneralFormView.__call__), because of the hack Bjorn
+        # mentions above.
         self.initialize()
 
         return NoRenderingOnRedirect.__call__(self)

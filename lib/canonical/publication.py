@@ -18,7 +18,7 @@ from zope.app import zapi  # used to get at the adapters service
 import zope.app.publication.browser
 from zope.app.publication.zopepublication import Cleanup
 from zope.publisher.interfaces.browser import IDefaultSkin
-from zope.publisher.interfaces import IPublishTraverse
+from zope.publisher.interfaces import IPublishTraverse, Retry
 
 # zope transactions
 import transaction
@@ -33,7 +33,6 @@ from canonical.launchpad.interfaces import (
     IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-import canonical.launchpad.webapp.zodb
 import canonical.launchpad.webapp.adapter as da
 
 # sqlos
@@ -141,14 +140,6 @@ class LaunchpadBrowserPublication(
         newInteraction(request)
         transaction.begin()
 
-        # Open the ZODB.
-        conn = self.db.open('')
-        cleanup = Cleanup(conn.close)
-        request.hold(cleanup)  # Close the connection on request.close()
-        self.openedConnection(conn)
-        root = conn.root()
-        canonical.launchpad.webapp.zodb.handle_before_traversal(root)
-
         self.clearSQLOSCache()
         getUtility(IOpenLaunchBag).clear()
 
@@ -204,6 +195,11 @@ class LaunchpadBrowserPublication(
         raise NotImplementedError
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
+        # Reraise Retry exceptions rather than log.
+        # TODO: Remove this when the standard handleException method
+        # we call does this (bug to be fixed upstream) -- StuartBishop 20060317
+        if retry_allowed and isinstance(exc_info[1], Retry):
+            raise
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.handleException(self, object, request, exc_info,
                                    retry_allowed)

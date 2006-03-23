@@ -11,6 +11,7 @@ apt_pkg.InitSystem()
 
 from warnings import warn
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
@@ -24,7 +25,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords)
+    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -60,29 +61,38 @@ class SourcePackage(BugTargetBase):
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
-        # XXX: jamesh, please check this.
-        #      from stevea, 2006-01-28
-        package = SourcePackagePublishing.selectFirst("""
+    def _get_ubuntu(self):
+        # XXX: Ideally, it would be possible to just do 
+        # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        # and not need this method. However, importd currently depends
+        # on SourcePackage methods that require the ubuntu celebrity,
+        # and given it does not execute_zcml_for_scripts, we are forced
+        # here to do this hack instead of using components. Ideally,
+        # imports is rewritten to not use SourcePackage, or it
+        # initializes the component architecture correctly.
+        from canonical.launchpad.database.distribution import Distribution
+        return Distribution.byName("ubuntu")
+
+    @property
+    def currentrelease(self):
+        pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease = 
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distrorelease.id),
-            orderBy='datepublished',
+            orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
-        if package is None:
-            self.currentrelease = None
-        else:
-            self.currentrelease = DistroReleaseSourcePackageRelease(
-                distrorelease=self.distrorelease,
-                sourcepackagerelease=SourcePackageRelease.get(
-                    package.sourcepackagerelease.id))
+        if pkg is None:
+            return None
+        currentrelease = DistroReleaseSourcePackageRelease(
+            distrorelease=self.distrorelease,
+            sourcepackagerelease=pkg.sourcepackagerelease)
+        return currentrelease
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        # XXX: 20051219 jamesh
-        # Is the orderBy clause here correct, or just to avoid the warning?
         pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -91,20 +101,12 @@ class SourcePackage(BugTargetBase):
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(version, self.sourcepackagename.id,
                             self.distrorelease.id),
-            orderBy='id',
+            orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
         if pkg is None:
             return None
         return DistroReleaseSourcePackageRelease(
             self.distrorelease, pkg.sourcepackagerelease)
-
-    def _get_ubuntu(self):
-        """This is a temporary measure while
-        getUtility(IlaunchpadCelebrities) is bustificated here."""
-        # XXX: fix and get rid of this and clean up callsites
-        #   -- kiko, 2005-09-23
-        from canonical.launchpad.database.distribution import Distribution
-        return Distribution.byName('ubuntu')
 
     @property
     def displayname(self):
@@ -243,20 +245,10 @@ class SourcePackage(BugTargetBase):
     def direct_packaging(self):
         """See ISourcePackage."""
         # get any packagings matching this sourcepackage
-        packagings = Packaging.selectBy(
+        return Packaging.selectFirstBy(
             sourcepackagenameID=self.sourcepackagename.id,
             distroreleaseID=self.distrorelease.id,
             orderBy='packaging')
-        # now, return any Primary Packaging's found
-        for pkging in packagings:
-            if pkging.packaging == PackagingType.PRIME:
-                return pkging
-        # ok, we're scraping the bottom of the barrel, send the first
-        # packaging we have
-        if packagings.count() > 0:
-            return packagings[0]
-        # capitulate
-        return None
 
     @property
     def packaging(self):
@@ -272,15 +264,12 @@ class SourcePackage(BugTargetBase):
         if result is not None:
             return result
 
-        # ubuntu is used as a special case below
-        #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         ubuntu = self._get_ubuntu()
-
         # if we are an ubuntu sourcepackage, try the previous release of
         # ubuntu
         if self.distribution == ubuntu:
             ubuntureleases = self.distrorelease.previous_releases
-            if ubuntureleases.count() > 0:
+            if ubuntureleases:
                 previous_ubuntu_release = ubuntureleases[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distrorelease=previous_ubuntu_release)
@@ -302,10 +291,7 @@ class SourcePackage(BugTargetBase):
         revision control is in place and working.
         """
 
-        # ubuntu is used as a special case below
-        #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         ubuntu = self._get_ubuntu()
-
         if self.distribution != ubuntu:
             return False
         ps = self.productseries
@@ -414,7 +400,7 @@ class SourcePackage(BugTargetBase):
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
@@ -448,7 +434,6 @@ class SourcePackage(BugTargetBase):
             orderBy = "-BuildQueue.lastscore"
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
-
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

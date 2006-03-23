@@ -21,6 +21,8 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -225,17 +227,17 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return self.potemplate.translationpermission
 
-    @property
+    @cachedproperty
     def contributors(self):
         """See IPOFile."""
         from canonical.launchpad.database.person import Person
 
-        return Person.select("""
+        return list(Person.select("""
             POSubmission.person = Person.id AND
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d""" % self.id,
             clauseTables=('POSubmission', 'POMsgSet'),
-            distinct=True)
+            distinct=True))
 
     def canEditTranslations(self, person):
         """See IPOFile."""
