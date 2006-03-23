@@ -35,7 +35,8 @@ __all__ = [
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent',
-    'IBreadcrumb', 'ILaunchpadBrowserApplicationRequest',
+    'IBreadcrumb', 'IBasicLaunchpadRequest',
+    'ILaunchpadBrowserApplicationRequest',
     ]
 
 
@@ -546,11 +547,7 @@ class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
 #         self.object = ob
 #         self.request = request
 
-class ILaunchpadBrowserApplicationRequest(
-    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
-    """The request interface to the application for launchpad browser requests.
-    """
-
+class IBasicLaunchpadRequest(Interface):
     stepstogo = Attribute(
         'The StepsToGo object for this request, allowing you to inspect and'
         ' alter the remaining traversal steps.')
@@ -572,6 +569,13 @@ class ILaunchpadBrowserApplicationRequest(
 
         If no matching object is found, the tuple (None, None) is returned.
         """
+
+
+class ILaunchpadBrowserApplicationRequest(
+    IBasicLaunchpadRequest,
+    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
+    """The request interface to the application for launchpad browser requests.
+    """
 
 
 class IBreadcrumb(Interface):
