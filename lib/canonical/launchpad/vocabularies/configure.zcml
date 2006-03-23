@@ -236,6 +236,21 @@
     />
 
   <vocabulary
+    name="RemoteBugTaskStatus"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
+    />
+
+  <vocabulary
+    name="RemoteBugTaskPriority"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskPriorityVocabulary"
+    />
+
+  <vocabulary
+    name="RemoteBugTaskSeverity"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskSeverityVocabulary"
+    />
+
+  <vocabulary
     name="Schema"
     factory="canonical.launchpad.vocabularies.SchemaVocabulary"
     />

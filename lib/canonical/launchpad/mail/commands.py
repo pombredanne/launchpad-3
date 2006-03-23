@@ -446,9 +446,14 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
         item_name = self.string_args[0]
         dbschema = self.dbschema
         try:
-            return {self.name: dbschema.items[item_name.upper()]}
+            dbitem = dbschema.items[item_name.upper()]
         except KeyError:
-            possible_items = [item.name.lower() for item in dbschema.items]
+            dbitem = None
+
+        if dbitem is None or dbitem.name == 'UNKNOWN':
+            possible_items = [
+                item.name.lower() for item in dbschema.items
+                if item.name != 'UNKNOWN']
             possible_values = ', '.join(possible_items)
             raise EmailProcessingError(
                     get_error_message(
@@ -456,6 +461,8 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
                          command_name=self.name,
                          arguments=possible_values,
                          example_argument=possible_items[0]))
+
+        return {self.name: dbitem}
 
 
 class StatusEmailCommand(DBSchemaEditEmailCommand):
