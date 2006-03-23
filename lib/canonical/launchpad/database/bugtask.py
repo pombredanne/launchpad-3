@@ -27,7 +27,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, IRemoteBugTask, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
@@ -147,17 +147,26 @@ class BugTask(SQLBase, BugTaskMixin):
         #   -- kiko, 2006-03-21
         if self._SO_val_productID is not None:
             mark_task(self, IUpstreamBugTask)
-            root_target = self.product
         elif self._SO_val_distroreleaseID is not None:
             mark_task(self, IDistroReleaseBugTask)
-            root_target = self.distrorelease.distribution
-        else:
+        elif self._SO_val_distributionID is not None:
             # If nothing else, this is a distro task.
             mark_task(self, IDistroBugTask)
-            root_target = self.distribution
+        else:
+            raise AssertionError, "Task %d is floating" % self.id
 
-        if not root_target.official_malone:
-            mark_task(self, IRemoteBugTask)
+    @property
+    def target_uses_malone(self):
+        """See IBugTask"""
+        if IUpstreamBugTask.providedBy(self):
+            root_target = self.product
+        elif IDistroReleaseBugTask.providedBy(self):
+            root_target = self.distrorelease.distribution
+        elif IDistroBugTask.providedBy(self):
+            root_target = self.distribution
+        else:
+            raise AssertionError, "Task %d is floating" % self.id
+        return bool(root_target.official_malone)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
         # We need to overwrite this method to make sure whenever we change a
@@ -498,7 +507,7 @@ class BugTaskSet:
             assignee=assignee,
             owner=owner,
             milestone=milestone)
-        if IRemoteBugTask.providedBy(bugtask):
+        if not bugtask.target_uses_malone:
             bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
             bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
             bugtask.status = dbschema.BugTaskStatus.UNKNOWN

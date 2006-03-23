@@ -12,8 +12,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, IRemoteBugTask, 
-    ISpecification, IUpstreamBugTask)
+    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
+    IUpstreamBugTask)
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta

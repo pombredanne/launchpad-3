@@ -45,8 +45,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
     IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
     ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    valid_distrotask, valid_upstreamtask, BugDistroReleaseTargetDetails,
-    IRemoteBugTask)
+    valid_distrotask, valid_upstreamtask, BugDistroReleaseTargetDetails)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -431,7 +430,7 @@ class BugTaskEditView(GeneralFormView):
         bug task, where everything should be editable except for the bug
         watch.
         """
-        if IRemoteBugTask.providedBy(self.context):
+        if not self.context.target_uses_malone:
             edit_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Should be possible to edit the product as well,
@@ -616,7 +615,7 @@ class BugTaskStatusView(LaunchpadView):
         """
         field_names = [
             'status', 'priority', 'severity', 'assignee', 'statusexplanation']
-        if IRemoteBugTask.providedBy(self.context):
+        if not self.context.target_uses_malone:
             field_names += ['bugwatch']
             self.milestone_widget = None
         else:
