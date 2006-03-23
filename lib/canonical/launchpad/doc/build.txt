@@ -235,7 +235,7 @@ Retrive the current PENDING builds
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
-  2
+  1
 
 Inspect the FAILED builds:
 
@@ -261,7 +261,7 @@ the existence of builds missing buildqueue:
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
-  2
+  1
 
 Create the missing BuildQueue correspondent row and tweak lastscore:
 
@@ -273,7 +273,7 @@ Now we can see an extra PENDING build record:
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
-  3
+  2
 
 Note that they are ordered by DESC lastscore, as expected:
 
@@ -281,6 +281,5 @@ Note that they are ordered by DESC lastscore, as expected:
   ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
   (9, 0, 100)
   (11, 0, 10)
-  (8, 0, 1)
 
 

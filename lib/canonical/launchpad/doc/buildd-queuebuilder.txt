@@ -159,6 +159,14 @@ element of the result.
   >>> job.lastscore
   0
 
+Check the published component name retriever, they might be different,
+i.e., the published component can be different than the original component.
+
+  >>> job.component_name
+  u'main'
+  >>> job.build.sourcepackagerelease.component.name
+  u'main'
+
 After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:
 

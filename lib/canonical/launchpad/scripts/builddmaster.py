@@ -376,6 +376,7 @@ class BuilderGroup:
         # store DB information
         queueItem.builder = builder
         queueItem.buildstart = UTC_NOW
+        queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
         # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
         slave = removeSecurityProxy(builder.slave)
         status, info = slave.build(buildid, buildtype, chroot, filemap, args)

@@ -457,8 +457,8 @@ These packages must now be in the publishing history. Let's check it.
   ...         print name, sspph.status.title
   ...     else:
   ...         print name, 'not Published'
-  drdsl not Published
   etherwake Pending
+  drdsl not Published
 
 Invoke Publisher script against the 'ubuntutest' distribution:
 

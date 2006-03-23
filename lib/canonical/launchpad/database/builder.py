@@ -171,7 +171,7 @@ class BuildQueue(SQLBase):
     @property
     def component_name(self):
         """See IBuildQueue"""
-        return self.build.sourcepackagerelease.component.name
+        return self.build.sourcepackagerelease.publishings[0].component.name
 
     @property
     def archhintlist(self):
