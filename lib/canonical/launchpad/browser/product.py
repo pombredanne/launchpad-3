@@ -236,7 +236,7 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'new']
 
     def listall(self):
         text = 'List All'
@@ -249,10 +249,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
     def table(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
-
-    def workload(self):
-        text = 'Workload'
-        return Link('+workload', text, icon='info')
 
     def new(self):
         text = 'New Specification'
@@ -327,12 +323,6 @@ class ProductView:
         # List of languages the user is interested on based on their
         # browser, IP address and launchpad preferences.
         return helpers.request_languages(request)
-
-    @property
-    def branches(self):
-        branches = [getView(branch, '+index', self.request)
-                    for branch in self.context.branches]
-        return branches
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
@@ -523,7 +513,6 @@ class ProductSetView:
     __used_for__ = IProductSet
 
     def __init__(self, context, request):
-
         self.context = context
         self.request = request
         form = self.request.form

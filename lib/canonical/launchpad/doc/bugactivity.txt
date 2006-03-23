@@ -67,8 +67,7 @@ EVENT: user files a bug
 
   >>> bug = getUtility(IBugSet).createBug(
   ...     product=getUtility(IProductSet)['firefox'],
-  ...     title="a test bug", summary="this is only a test bug",
-  ...     comment="this is only a test bug\nplease ignore",
+  ...     title="a test bug", comment="this is only a test bug\nplease ignore",
   ...     owner=user)
   >>> bug.activity.count()
   0 
@@ -85,11 +84,11 @@ EVENT: user files a bug
 EVENT: bug edited
 
   >>> old_state = capture_state(
-  ...     bug, "id", "title", "summary", "description", "name", "private",
+  ...     bug, "id", "title", "description", "name", "private",
   ...     "duplicateof")
   >>> bug.title = "new bug title"
   >>> bug_edited = SQLObjectModifiedEvent(
-  ...     bug, old_state, ["title", "summary", "description"])
+  ...     bug, old_state, ["title", "description"])
   >>> notify(bug_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -165,7 +164,7 @@ EVENT: upstream product assignment edited
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNKNOWN.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
   True
@@ -241,7 +240,7 @@ EVENT: product infestation edited
 EVENT: this bug report is marked as a duplicate of another bug report
 
   >>> edit_fields = [
-  ...     "id", "title", "summary", "description", "name",
+  ...     "id", "title", "description", "name",
   ...     "private", "duplicateof"]
   >>> old_bug = capture_state(bug, *edit_fields)
   >>> bug.duplicateof = 1
@@ -259,8 +258,7 @@ EVENT: the same bug report has his duplicate marker changed to another
 bug report
 
   >>> edit_fields = [
-  ...     "id", "title", "summary", "description", "name",
-  ...     "private", "duplicateof"]
+  ...     "id", "title", "description", "name", "private", "duplicateof"]
   >>> old_bug = capture_state(bug, *edit_fields)
   >>> bug.duplicateof = 2 
   >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
@@ -276,8 +274,7 @@ bug report
 EVENT: the bug report is now un-duplicated 
 
   >>> edit_fields = [
-  ...     "id", "title", "summary", "description", "name",
-  ...     "private", "duplicateof"]
+  ...     "id", "title", "description", "name", "private", "duplicateof"]
   >>> old_bug = capture_state(bug, *edit_fields)
   >>> bug.duplicateof = None 
   >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)

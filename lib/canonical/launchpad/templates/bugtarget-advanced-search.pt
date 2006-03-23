@@ -53,15 +53,21 @@
           </tr>
           <tr class="section">
             <td style="padding: 10px">
-              <input type="text" name="field.searchtext" size="40" />
-              <input type="submit"
-                     name="search"
-                     value="Search bugs in mozilla-firefox in ubuntu"
-                     tal:attributes="value view/getAdvancedSearchButtonLabel" />
-              <a href="#"
-                 tal:attributes="href string:${context/fmt:url}/+bugs">
-                <small>Simple</small>
-              </a>
+              <small>
+                <input type="text" name="field.searchtext" size="40" />
+                <input type="submit"
+                       name="search"
+                       value="Search bugs in mozilla-firefox in ubuntu"
+                       tal:attributes="value view/getAdvancedSearchButtonLabel" />
+                <a href="#"
+                   tal:attributes="href string:${context/fmt:url}/+bugs">
+                  Simple
+                </a>
+                <div style="margin-top: 5px">
+                  Sort by:
+                  <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+                </div>
+              </small>
             </td>
           </tr>
           <tr>
@@ -286,10 +292,12 @@
           </tr>
           <tr>
             <th class="section-header" style="font-weight: normal">
-              <input type="submit"
-                     name="search"
-                     value="Search bugs in mozilla-firefox in ubuntu"
-                     tal:attributes="value view/getAdvancedSearchButtonLabel"/>
+              <small>
+                <input type="submit"
+                       name="search"
+                       value="Search bugs in mozilla-firefox in ubuntu"
+                       tal:attributes="value view/getAdvancedSearchButtonLabel" />
+              </small>
             </th>
           </tr>
         </table>

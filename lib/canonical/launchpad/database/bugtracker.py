@@ -74,7 +74,7 @@ class BugTracker(SQLBase):
                (lastchecked < (now() at time zone 'UTC' - interval '%s hours')
                 OR lastchecked IS NULL)""" % sqlvalues(
                     self.id, hours_since_last_check))
-        return BugWatch.select(query, orderBy="remotebug")
+        return BugWatch.select(query, orderBy=["remotebug", "id"])
 
 
 class BugTrackerSet:
