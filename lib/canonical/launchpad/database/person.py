@@ -399,7 +399,12 @@ class Person(SQLBase):
     @property
     def is_valid_person(self):
         """See IPerson."""
-        return (ValidPersonOrTeamCache.get(self.id) is not None)
+        try:
+            if ValidPersonOrTeamCache.get(self.id) is not None:
+                return True
+        except SQLObjectNotFound:
+            pass
+        return False
         
     def assignKarma(self, action_name):
         """See IPerson."""
