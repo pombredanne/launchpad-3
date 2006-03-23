@@ -7,9 +7,10 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+  <div tal:replace="structure context/@@+portlet-latestbranches" />
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 

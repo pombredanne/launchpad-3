@@ -162,6 +162,11 @@ class IShipItApplication(ILaunchpadApplication):
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
 
+    branches = Attribute("The full set of branches in The Bazaar")
+
+    def getMatchingBranches():
+        """Return the set of branches that match the given queries."""
+
 
 class IAuthApplication(Interface):
     """Interface for AuthApplication."""

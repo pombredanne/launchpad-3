@@ -17,6 +17,7 @@ __all__ = [
     'ProductTranslationsMenu',
     'ProductSetContextMenu',
     'ProductView',
+    'ProductBranchView',
     'ProductEditView',
     'ProductSeriesAddView',
     'ProductRdfView',
@@ -228,12 +229,17 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', ]
+    links = ['listing', 'branch_add', ]
 
     def branch_add(self):
         text = 'Add Bazaar Branch'
         summary='Register a new Bazaar branch for this product'
         return Link('+addbranch', text, icon='add')
+
+    def listing(self):
+        text = 'Listing View'
+        summary = 'Show detailed branch listing'
+        return Link('+branchlisting', text, summary, icon='branch')
 
 
 class ProductSupportMenu(ApplicationMenu):
@@ -523,7 +529,7 @@ class ProductRdfView(object):
         return encodeddata
 
 
-class ProductBranchesView:
+class ProductBranchView:
 
     def __init__(self, context, request):
         self.context = context

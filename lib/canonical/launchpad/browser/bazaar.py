@@ -18,15 +18,20 @@ import canonical.launchpad.layers
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
     facet = 'branches'
-    links = ['importer']
+    links = ['importer', 'all_branches']
 
     @enabled_with_permission('launchpad.Admin')
     def importer(self):
         target = 'series/'
         text = 'Branch Importer'
         summary = 'Manage CVS and SVN Trunk Imports'
-        return Link(target, text, icon='branch')
+        return Link(target, text, summary, icon='branch')
 
+    def all_branches(self):
+        target = '+all-branches'
+        text = 'Show All Branches'
+        summary = 'Listing every branch registered in The Bazaar'
+        return Link(target, text, summary, icon='branch')
 
 class BazaarApplicationView:
 

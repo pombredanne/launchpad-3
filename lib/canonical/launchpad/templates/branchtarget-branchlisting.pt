@@ -13,12 +13,6 @@
 
   <h1>Bazaar branches</h1>
 
-  <p class="documentDescription">
-    This page shows the Bazaar branches that
-    are <span tal:replace="view/context_relationship">related to</span>
-    <span tal:replace="context/displayname">Steve Alexander</span>.
-  </p>
-
   <tal:comment condition="nothing">
     <!-- This page uses a view class that organises the tasks into a set of
     categories (by status). it determines the sequence of the categories, and
@@ -31,10 +25,12 @@
     -->
   </tal:comment>
 
-  <p tal:condition="not:view/branches">
-    <i>There are no branches currently registered for
-    <span tal:replace="context/displayname">Steve Alexander</span>
-    at present.</i>
+  <p class="portalMessage" tal:condition="not:view/branches">
+    There are no branches currently registered for
+    <span tal:replace="context/displayname">Steve Alexander</span>. You can
+    use the Launchpad as a tracker for Bazaar branches, and encourage
+    broader community participation in your project using distributed
+    revision control.
   </p>
 
   <tal:block repeat="category view/categories">
@@ -48,6 +44,17 @@
            replace="structure branch/@@+product-summary-listing" />
     </ul>
   </tal:block>
+
+  <h2>Further information</h2>
+
+  <p class="discreet">
+    This page shows the Bazaar branches that
+    are <span tal:replace="view/context_relationship">related to</span>
+    <span tal:replace="context/displayname">Steve Alexander</span>.
+    Bazaar is a distributed revision control system, see
+    <a href="http://www.bazaar-vcs.org/">www.bazaar-vcs.org</a> for more
+    information.
+  </p>
 
 </div>
 </body>

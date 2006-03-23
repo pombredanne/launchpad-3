@@ -388,17 +388,17 @@
     name and then gives the template a different set of branches to work
     with.-->
     <browser:page
-        name="+branches"
-        template="../templates/branchtarget-branches.pt" />
+        name="+branchlisting"
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+authoredbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+registeredbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+subscribedbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
   </browser:pages>
 
   <!-- Team Views -->

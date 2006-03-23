@@ -1,0 +1,68 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main"
+     tal:define="branchviewset context/branches;
+                 branchset context/branches">
+
+  <h1>Bazaar Branches</h1>
+
+  <table class="listing sortable" id="branchtable"
+         tal:condition="branchset">
+    <thead>
+      <tr>
+        <th>Author</th>
+        <th>Title</th>
+        <th>Name</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody class="lesser">
+      <tr tal:repeat="branch branchviewset">
+        <td>
+          <span tal:condition="branch/author"
+                tal:replace="branch/author/browsername">Author</span>
+        </td>
+        <td tal:content="branch/title/fmt:shorten/50">Title Goes Here!</td>
+        <td tal:content="branch/name">Name</td>
+        <td>
+          <span tal:content="branch/lifecycle_status/sortkey"
+                style="display: none;">23</span>
+          <span tal:content="branch/lifecycle_status/title"
+                tal:attributes="
+                  class string:branchstatus${branch/lifecycle_status/name}">
+                  Status</span>
+        </td>
+      </tr>
+      <tr tal:condition="not: branchviewset">
+        <td rowspan="4">
+          <i>There are branches registered for
+            <span tal:replace="context/name">firefox</span> but none of them
+            match the current filter criteria for this page. try clicking on
+            the "Show All" action.</i>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div tal:condition="not: context/branches" class="portalMessage">
+    There are no branches currently registered for this product in Launchpad
+    today. We recommend you visit
+    <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> for more
+    information about how you can use the Bazaar revision control system to
+    improve community participation in this product!
+  </div>
+
+</div>
+</body>
+</html>
