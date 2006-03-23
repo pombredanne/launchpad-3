@@ -259,15 +259,11 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
-distributionmirror_addarchrelease = ContextTitle(
-    'Add new Arch Release for mirror %s')
-
-distributionmirror_addsourcerelease = ContextTitle(
-    'Add new Source Release for mirror %s')
-
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
+
+distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
 
 distribution_allpackages = ContextTitle('All packages in %s')
 

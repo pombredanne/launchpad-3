@@ -15,6 +15,7 @@ import random
 import re
 import sha
 import tarfile
+import urlparse
 import warnings
 from StringIO import StringIO
 from math import ceil
@@ -773,13 +774,50 @@ def getFileType(fname):
         return SourcePackageFileType.TARBALL
 
 
+BINARYPACKAGE_EXTENSIONS = {
+    BinaryPackageFormat.DEB: '.deb',
+    BinaryPackageFormat.UDEB: '.udeb',
+    BinaryPackageFormat.RPM: '.rpm'}
+
+
+class UnrecognizedBinaryFormat(Exception):
+
+    def __init__(self, fname, *args):
+        Exception.__init__(self, *args)
+        self.fname = fname
+
+    def __str__(self):
+        return '%s is not recognized as a binary file.' % self.fname
+
+
 def getBinaryPackageFormat(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFormat.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFormat.UDEB
-    if fname.endswith(".rpm"):
-        return BinaryPackageFormat.RPM
+    """Return the BinaryPackageFormat for the given filename.
+
+    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
+    'DEB'
+    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
+    'UDEB'
+    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
+    'RPM'
+    """
+    for key, value in BINARYPACKAGE_EXTENSIONS.items():
+        if fname.endswith(value):
+            return key
+
+    raise UnrecognizedBinaryFormat(fname)
+
+
+def getBinaryPackageExtension(format):
+    """Return the file extension for the given BinaryPackageFormat.
+
+    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
+    '.deb'
+    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
+    '.udeb'
+    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
+    '.rpm'
+    """
+    return BINARYPACKAGE_EXTENSIONS[format]
 
 
 def intOrZero(value):
@@ -865,4 +903,21 @@ def capture_state(obj, *fields):
         setattr(state, field, getattr(obj, field))
 
     return state
+
+
+def urlappend(baseurl, path):
+    """Append the given path to baseurl.
+
+    The path must not start with a slash, but a slash is added to baseurl
+    (before appending the path), in case it doesn't end with a slash.
+
+    >>> urlappend('http://foo.bar', 'spam/eggs')
+    'http://foo.bar/spam/eggs'
+    >>> urlappend('http://localhost:11375/foo', 'bar/baz')
+    'http://localhost:11375/foo/bar/baz'
+    """
+    assert not path.startswith('/')
+    if not baseurl.endswith('/'):
+        baseurl += '/'
+    return urlparse.urljoin(baseurl, path)
 
