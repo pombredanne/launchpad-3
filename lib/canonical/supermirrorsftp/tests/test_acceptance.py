@@ -258,6 +258,7 @@ class AcceptanceTests(BzrTestCase):
         branch = database.Branch.get(branch_id)
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
+        getattr(sftp, '_connected_hosts', {}).clear()
         self.assertRaises(
             NotBranchError,
             bzrlib.branch.Branch.open,
