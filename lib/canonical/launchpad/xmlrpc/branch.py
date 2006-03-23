@@ -3,7 +3,7 @@
 """Branch XMLRPC API."""
 
 __metaclass__ = type
-__all__ = ['IBranchAPI', 'BranchAPI']
+__all__ = ['IBranchSetAPI', 'BranchSetAPI']
 
 from zope.component import getUtility
 from zope.interface import Interface, implements
@@ -14,21 +14,21 @@ from canonical.launchpad.interfaces import (
     IBranchSet, ILaunchBag, IProductSet, IPersonSet)
 
 
-class IBranchAPI(Interface):
-    """XMLRPC external interface for testing the XMLRPC external interface."""
+class IBranchSetAPI(Interface):
+    """An XMLRPC interface for dealing with branches."""
 
     def register_branch(branch_url, branch_name, branch_title,
                         branch_description, author_email, product_name):
         """Register a new branch in Launchpad."""
 
 
-class BranchAPI(LaunchpadXMLRPCView):
+class BranchSetAPI(LaunchpadXMLRPCView):
 
-    implements(IBranchAPI)
+    implements(IBranchSetAPI)
 
     def register_branch(self, branch_url, branch_name, branch_title,
                         branch_description, author_email, product_name):
-        """See IBranchAPI."""
+        """See IBranchSetAPI."""
         owner = getUtility(ILaunchBag).user
         if owner is None:
             return xmlrpclib.Fault(

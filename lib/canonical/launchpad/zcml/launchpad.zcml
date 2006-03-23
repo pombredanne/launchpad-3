@@ -163,11 +163,4 @@
   permission="zope.Public"
   />
 
-<xmlrpc:view
-  for="canonical.launchpad.interfaces.ILaunchpadRoot"
-  interface="canonical.launchpad.xmlrpc.IBranchAPI"
-  class="canonical.launchpad.xmlrpc.BranchAPI"
-  permission="zope.Public"
-  />
-
 </configure>
