@@ -150,7 +150,7 @@ def main():
     # Do proc.communicate(), but timeout if there's no activity on stdout or
     # stderr for too long.
     open_readers = set([proc.stdout])
-    while True:
+    while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
 
         if len(rlist) == 0:
@@ -166,11 +166,11 @@ def main():
 
         if proc.stdout in rlist:
             chunk = os.read(proc.stdout.fileno(), 1024)
-            if chunk == "":
-                continue
             print chunk,
+            if chunk == "":
+                open_readers.remove(proc.stdout)
 
-    rv == proc.wait()
+    rv = proc.wait()
     if rv == 0:
         print '\nSuccessfully run tests.'
     else:
