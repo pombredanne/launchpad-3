@@ -20,6 +20,7 @@ __all__ = [
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
+    'ComponentVocabulary',
     'CountryNameVocabulary',
     'DistributionVocabulary',
     'DistributionUsingMaloneVocabulary',
@@ -67,7 +68,7 @@ from canonical.launchpad.database import (
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
-    BinaryAndSourcePackageName)
+    BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
     IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
     IMilestoneSet, IProduct)
@@ -258,6 +259,15 @@ class BasePersonVocabulary:
             if person is None:
                 raise LookupError(token)
             return self.toTerm(person)
+
+
+class ComponentVocabulary(SQLObjectVocabularyBase):
+
+    _table = Component
+    _orderBy = 'name'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
 
 
 # Country.name may have non-ASCII characters, so we can't use

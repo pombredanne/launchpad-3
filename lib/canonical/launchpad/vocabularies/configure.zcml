@@ -86,6 +86,11 @@
     />
 
   <vocabulary
+      name="Component"
+      factory="canonical.launchpad.vocabularies.ComponentVocabulary"
+      />
+
+  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
