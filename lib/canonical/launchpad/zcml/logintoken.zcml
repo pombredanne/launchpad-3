@@ -78,7 +78,7 @@
         name="+newaccount"
         for="canonical.launchpad.interfaces.ILoginToken"
         schema="canonical.launchpad.interfaces.IPerson"
-        fields="givenname familyname displayname hide_email_addresses password"
+        fields="displayname hide_email_addresses password"
         content_factory="canonical.launchpad.database.Person"
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
