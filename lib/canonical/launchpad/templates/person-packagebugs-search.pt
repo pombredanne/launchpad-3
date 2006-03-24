@@ -2,7 +2,6 @@
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="malone"
-    i18n:domain="bazaar"
 >
   <body>
     <metal:heading fill-slot="pageheading">    
