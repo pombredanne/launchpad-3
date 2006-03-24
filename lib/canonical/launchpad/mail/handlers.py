@@ -346,7 +346,7 @@ class SpecificationHandler:
                 if log is not None:
                     log.debug('Found a corresponding spec: %s' % spec.name)
                 # Add an X-Loop header, in order to prevent mail loop.
-                signed_msg['X-Loop'] = our_address
+                signed_msg.add_header('X-Loop', our_address)
                 notification_addresses = spec.notificationRecipientAddresses()
                 if log is not None:
                     log.debug(
