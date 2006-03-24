@@ -50,6 +50,12 @@ class IBugWatch(Interface):
 
     url = Attribute('The URL at which to view the remote bug.')
 
+    def updateStatus(remote_status, malone_status):
+        """Update the status of the bug watch and any linked bug task.
+
+        The lastchanged attribute gets set to the current time.
+        """
+
 
 class IBugWatchSet(Interface):
     """The set of IBugWatch's."""

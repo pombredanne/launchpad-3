@@ -26,6 +26,7 @@ from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
 from zope.app.publisher.browser.menumeta import menuItemDirective
 import zope.app.form.browser.metaconfigure
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
     page as original_page)
@@ -266,8 +267,15 @@ def navigation(_context, module, classes):
         view(_context, factory, IBrowserRequest, name, for_, layer,
                 permission=PublicPermission, provides=provides,
                 allowed_interface=[IBrowserPublisher])
-        #view(_context, factory, layer, name, for_, permission=PublicPermission,
-        #     provides=provides, allowed_interface=[IBrowserPublisher])
+        #view(_context, factory, layer, name, for_,
+        #     permission=PublicPermission, provides=provides)
+
+        # Also register the navigation as a traversal component for XMLRPC.
+        # XXX: Layer?? Request??? wtf is the layer being set to an IRequest?
+        # -- StuartBishop 20060324
+        xmlrpc_layer = IXMLRPCRequest
+        view(_context, factory, xmlrpc_layer, name, for_,
+             permission=PublicPermission, provides=provides)
 
 
 class InterfaceInstanceDispatcher:

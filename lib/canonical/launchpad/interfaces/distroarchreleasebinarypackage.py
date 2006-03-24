@@ -54,4 +54,7 @@ class IDistroArchReleaseBinaryPackage(Interface):
         DistroArchReleaseBinaryPackageRelease."""
         
     def supersede():
-        """Supersede a DistroArchReleaseBinaryPackageRelease."""
+        """Supersede a DistroArchReleaseBinaryPackageRelease.
+
+        Return the modified IBinaryPackagePublishingHistory object.
+        """

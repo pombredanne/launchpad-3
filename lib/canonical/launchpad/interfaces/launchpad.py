@@ -10,7 +10,7 @@ import zope.exceptions
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Bool
+from zope.schema import Bool, Int
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -24,7 +24,7 @@ __all__ = [
     'IZODBAnnotation', 'IAuthorization',
     'IHasOwner', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
-    'IAging', 'IHasDateCreated',
+    'IAging', 'IHasDateCreated', 'IHasBug',
     'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
     'ILinkData', 'ILink', 'IFacetLink', 'IStructuredString',
     'IMenu', 'IMenuBase', 'IFacetMenu',
@@ -34,7 +34,8 @@ __all__ = [
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent',
-    'IBreadcrumb', 'ILaunchpadBrowserApplicationRequest',
+    'IBreadcrumb', 'IBasicLaunchpadRequest',
+    'ILaunchpadBrowserApplicationRequest',
     ]
 
 
@@ -273,6 +274,12 @@ class IHasProduct(Interface):
     """An object that has a product attribute that is an IProduct."""
 
     product = Attribute("The object's product")
+
+
+class IHasBug(Interface):
+    """An object linked to a bug, e.g., a bugtask or a bug branch."""
+
+    bug = Int(title=_("Bug #"))
 
 
 class IHasProductAndAssignee(IHasProduct, IHasAssignee):
@@ -547,11 +554,7 @@ class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
 #         self.object = ob
 #         self.request = request
 
-class ILaunchpadBrowserApplicationRequest(
-    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
-    """The request interface to the application for launchpad browser requests.
-    """
-
+class IBasicLaunchpadRequest(Interface):
     stepstogo = Attribute(
         'The StepsToGo object for this request, allowing you to inspect and'
         ' alter the remaining traversal steps.')
@@ -573,6 +576,13 @@ class ILaunchpadBrowserApplicationRequest(
 
         If no matching object is found, the tuple (None, None) is returned.
         """
+
+
+class ILaunchpadBrowserApplicationRequest(
+    IBasicLaunchpadRequest,
+    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
+    """The request interface to the application for launchpad browser requests.
+    """
 
 
 class IBreadcrumb(Interface):

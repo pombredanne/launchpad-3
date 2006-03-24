@@ -7,6 +7,8 @@ import re
 import gettextpo
 from zope.component import getUtility
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError
@@ -45,20 +47,22 @@ class POMsgSetView(LaunchpadView):
         self._suggested_submissions = None
         self._second_language_submissions = None
 
-        self.msgids = helpers.shortlist(self.potmsgset.getPOMsgIDs())
-
-        assert len(self.msgids) > 0, (
-            'Found a POTMsgSet without any POMsgIDSighting')
-
         # Handle any form submission.
         self.process_form()
+
+    @cachedproperty
+    def msgids(self):
+        msgids = helpers.shortlist(self.potmsgset.getPOMsgIDs())
+        assert len(msgids) > 0, (
+            'Found a POTMsgSet without any POMsgIDSighting')
+        return msgids
 
     @property
     def is_plural(self):
         """Return whether there are plural forms."""
         return len(self.msgids) > 1
 
-    @property
+    @cachedproperty
     def max_lines_count(self):
         """Return the max number of lines a multiline entry will have
 

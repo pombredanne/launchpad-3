@@ -55,4 +55,7 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
         DistroReleaseSourcePackageRelease."""
 
     def supersede():
-        """Supersede a DistroReleaseSourcePackageRelease."""
+        """Supersede a DistroReleaseSourcePackageRelease.
+
+        Return the modified ISourcePackagePublishingHistory object.
+        """

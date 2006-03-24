@@ -14,6 +14,7 @@ __all__ = [
     'IDistroReleaseQueueSource',
     'IDistroReleaseQueueCustom',
     'IDistroReleaseQueueSet',
+    'IHasQueueItems',
     ]
 
 from zope.schema import Int
@@ -88,6 +89,15 @@ class IDistroReleaseQueue(Interface):
     sourcepackagerelease = Attribute("The source package release for this item")
 
     age = Attribute("The age of this queue item.")
+    displayname = Attribute("Generic displayname for a queue item")
+    containsSource = Attribute("whether or not this upload contains sources")
+    containsBuild = Attribute("whether or not this upload contains binaries")
+    containsInstaller = Attribute(
+        "whether or not this upload contains installers images")
+    containsTranslation = Attribute(
+        "whether or not this upload contains translations")
+    containsUpgrader = Attribute(
+        "wheter or not this upload contains upgrader images")
 
     def setNew():
         """Set queue state to NEW."""
@@ -287,4 +297,20 @@ class IDistroReleaseQueueSet(Interface):
         If status is ommitted return the number of all entries.
         'distrorelease' is optional and restrict the results in given
         distrorelease.
+        """
+
+class IHasQueueItems(Interface):
+    """An Object that has queue items"""
+
+    def getQueueItems(status=None, name=None, version=None, exact_match=False):
+        """Get the union of builds, sources and custom queue items.
+
+        Returns builds, sources and custom queue items in a given state,
+        matching a give name and version terms. If 'status' is not supplied,
+        return all items in the queues. if 'name' and 'version'
+        are supplied return only items which the sourcepackage name or
+        binarypackage name or the filename match (SQL LIKE).
+        'name' doesn't require 'version'
+        'version' doesn't has effect on custom queue items
+        Use 'exact_match' argument for precise results.
         """

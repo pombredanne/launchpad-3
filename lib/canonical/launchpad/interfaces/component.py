@@ -11,6 +11,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Choice
+
+from canonical.launchpad import _
 
 class IComponent(Interface):
     """Represents the Component table.
@@ -20,7 +23,8 @@ class IComponent(Interface):
     'main', 'restricted', 'universe', etc.
     """
     id = Attribute("The ID")
-    name = Attribute("The Component Name")
+    name = Choice(
+        title=_("Component Name"), vocabulary="Component", required=True)
 
 
 class IComponentSelection(Interface):

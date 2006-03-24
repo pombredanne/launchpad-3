@@ -25,7 +25,8 @@ from zope.publisher.interfaces import IRequest
 
 import canonical.launchpad.layers
 #from zope.publisher.http import HTTPRequest
-from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
+from canonical.launchpad.interfaces import (
+    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest)
 from canonical.launchpad.webapp.notifications import (
         NotificationRequest, NotificationResponse, NotificationList
         )
@@ -127,24 +128,20 @@ class LaunchpadBrowserRequestFactory:
         return LaunchpadBrowserRequest(body_instream, environ)
 
 
-class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
-                              ErrorReportRequest):
+class BasicLaunchpadRequest:
+    """Mixin request class to provide stepstogo and breadcrumbs."""
 
-    implements(IRequest, ILaunchpadBrowserApplicationRequest)
+    implements(IBasicLaunchpadRequest)
 
     def __init__(self, body_instream, environ, response=None):
         self.breadcrumbs = []
         self.traversed_objects = []
-        super(LaunchpadBrowserRequest, self).__init__(
+        super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
     @property
     def stepstogo(self):
         return StepsToGo(self)
-
-    def _createResponse(self):
-        """As per zope.publisher.browser.BrowserRequest._createResponse"""
-        return LaunchpadBrowserResponse()
 
     def getNearest(self, *some_interfaces):
         """See ILaunchpadBrowserApplicationRequest.getNearest()"""
@@ -153,6 +150,23 @@ class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
                 if iface.providedBy(context):
                     return context, iface
         return None, None
+
+
+class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
+                              NotificationRequest, ErrorReportRequest):
+    """Integration of launchpad mixin request classes to make an uber
+    launchpad request class.
+    """
+
+    implements(ILaunchpadBrowserApplicationRequest)
+
+    def __init__(self, body_instream, environ, response=None):
+        super(LaunchpadBrowserRequest, self).__init__(
+            body_instream, environ, response)
+
+    def _createResponse(self, outstream):
+        """As per zope.publisher.browser.BrowserRequest._createResponse"""
+        return LaunchpadBrowserResponse()
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
@@ -237,7 +251,8 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         return self._notifications
 
 
-class LaunchpadXMLRPCRequest(XMLRPCRequest, ErrorReportRequest):
+class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
+                             ErrorReportRequest):
     """Request type for doing XMLRPC in Launchpad."""
 
 

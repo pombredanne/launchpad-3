@@ -118,6 +118,9 @@ class ITicket(IHasOwner, IMessageTarget):
     def subscribe(person):
         """Subscribe this person to the ticket."""
 
+    def isSubscribed(person):
+        """Return a boolean indicating whether the person is subscribed."""
+
     def unsubscribe(person):
         """Remove the person's subscription to this ticket."""
 

@@ -47,11 +47,14 @@ class TestImportKeyRing(unittest.TestCase):
 
     def testImportKeyRing(self):
         """Import a sample keyring and check its contents are available."""
+<<<<<<< TREE
         # XXX: This test was disabled with the comment "testImportKeyRing
         # disabled due to swig binding bug crashing out of python."
         # but with no attribution. There should be an open bug on this
         # -- StuartBishop 20060307
         return
+=======
+>>>>>>> MERGE-SOURCE
         self.testEmptyGetKeys()
         importedkeys = set()
         for ring in keys_for_tests.test_keyrings():
@@ -72,11 +75,14 @@ class TestImportKeyRing(unittest.TestCase):
 
     def testSetOwnerTrust(self):
         """Import a key and set the ownertrust."""
+<<<<<<< TREE
         # XXX: This test was disabled with the comment "testSetOwnerTrust
         # disabled due to swig binding bug crashing out of python."
         # but with no attribution. There should be an open bug on this
         # -- StuartBishop 20060307
         return
+=======
+>>>>>>> MERGE-SOURCE
         self.testEmptyGetKeys()
         for email in keys_for_tests.iter_test_key_emails():
             pubkey = keys_for_tests.test_pubkey_from_email(email)

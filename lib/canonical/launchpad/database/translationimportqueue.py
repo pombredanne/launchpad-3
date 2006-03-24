@@ -328,11 +328,18 @@ class TranslationImportQueue:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
 
+            if entry.status == RosettaImportStatus.IMPORTED:
+                # The entry was already imported, so we need to update its
+                # dateimported field so it doesn't get preference over old
+                # entries.
+                entry.dateimported = UTC_NOW
+
             if (entry.status == RosettaImportStatus.DELETED or
-                entry.status == RosettaImportStatus.FAILED):
+                entry.status == RosettaImportStatus.FAILED or
+                entry.status == RosettaImportStatus.IMPORTED):
                 # We got an update for this entry. If the previous import is
-                # deleted or failed we should retry the import now, just in
-                # case it can be imported now.
+                # deleted or failed or was already imported we should retry
+                # the import now, just in case it can be imported now.
                 entry.status = RosettaImportStatus.NEEDS_REVIEW
 
             entry.date_status_changed = UTC_NOW

@@ -14,10 +14,6 @@
 
 <div metal:fill-slot="main">
 
-  <p tal:replace="nothing">
-    This page will show relevant specifications as a simple table.
-  </p>
-
   <table class="listing sortable" id="speclisting"
         tal:condition="view/specs">
     <thead>
@@ -34,9 +30,15 @@
         <th>
           Delivery
         </th>
+        <th>
+          Assignee
+        </th>
+        <th tal:content="view/goaltitle">
+          Hack!
+        </th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="lesser">
       <tr tal:repeat="spec view/specs">
         <td tal:attributes="class string:specpriority${spec/priority/name}"
             tal:content="spec/priority/title">High</td>
@@ -48,6 +50,20 @@
             tal:content="spec/status/title">Informational</td>
         <td tal:attributes="class string:specdelivery${spec/delivery/name}"
             tal:content="spec/delivery/title">Deployed</td>
+        <td>
+          <a tal:condition="spec/assignee"
+             tal:attributes="href spec/assignee/fmt:url"
+             tal:content="spec/assignee/browsername">
+            Carlos Perello Marin
+          </a>
+        </td>
+        <td>
+          <a tal:condition="spec/has_release_goal"
+             tal:attributes="href spec/goal/fmt:url"
+             tal:content="spec/goal/name">
+            Ubuntu 6.04
+          </a>
+        </td>
       </tr>
     </tbody>
   </table>

@@ -9,12 +9,14 @@ __all__ = [
     'valid_rsync_url',
     'valid_webref',
     'non_duplicate_bug',
+    'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
     'valid_emblem',
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
+    'valid_distributionmirror_file_list',
     'valid_distrotask',
     'valid_upstreamtask'
     ]
@@ -24,6 +26,11 @@ from textwrap import dedent
 from StringIO import StringIO
 
 from zope.component import getUtility
+<<<<<<< TREE
+=======
+from zope.exceptions import NotFoundError
+from zope.app.content_types import guess_content_type
+>>>>>>> MERGE-SOURCE
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
@@ -163,6 +170,18 @@ def non_duplicate_bug(value):
     else:
         return True
 
+
+def non_duplicate_branch(value):
+    """Ensure that this branch hasn't already been linked to this bug."""
+    current_bug = getUtility(ILaunchBag).bug
+    if current_bug.hasBranch(value):
+        raise LaunchpadValidationError(_(dedent("""
+            This branch is already registered on this bug.
+            """)))
+
+    return True
+
+
 def valid_bug_number(value):
     from canonical.launchpad.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
@@ -173,6 +192,7 @@ def valid_bug_number(value):
             "Bug %i doesn't exist." % value))
     return True
 
+
 def valid_cve_sequence(value):
     """Check if the given value is a valid CVE otherwise raise an exception."""
     if valid_cve(value):
@@ -180,6 +200,7 @@ def valid_cve_sequence(value):
     else:
         raise LaunchpadValidationError(_(
             "%s is not a valid CVE number" % value))
+
 
 def _valid_image(image, max_size, max_dimensions):
     """Check that the given image is under the given constraints.
@@ -229,6 +250,14 @@ def valid_unregistered_email(email):
     else:
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
+
+def valid_distributionmirror_file_list(file_list=None):
+    if file_list is not None:
+        content_type, dummy = guess_content_type(body=file_list)
+        if content_type != 'text/plain':
+            raise LaunchpadValidationError(
+                "The given file is not in plain text format.")
+    return True
 
 def validate_distribution_mirror_schema(form_values):
     """Perform schema validation according to IDistributionMirror constraints.

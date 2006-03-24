@@ -79,6 +79,11 @@ class BinaryPackageRelease(SQLBase):
             distribution=self.build.distribution,
             sourcepackagerelease=self.build.sourcepackagerelease)
 
+    @property
+    def sourcepackagename(self):
+        """See IBinaryPackageRelease."""
+        return self.build.sourcepackagerelease.sourcepackagename.name
+
     def lastversions(self):
         """Return the SUPERSEDED BinaryPackageReleases in a DistroRelease
         that comes from the same SourcePackage.

@@ -12,7 +12,8 @@ from canonical.lp.dbschema import (
     SpecificationGoalStatus)
 
 from canonical.launchpad.interfaces import (
-    ISprint, IPerson, IProductSeries, IDistroRelease)
+    ISprint, IPerson, IProduct, IDistribution, IProductSeries,
+    IDistroRelease)
 
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.helpers import shortlist
@@ -46,6 +47,13 @@ class SpecificationTargetView(LaunchpadView):
             self.view_title = 'Subscribed by %s' % self.context.title
         else:
             self.view_title = ''
+
+        # Set a title for the "Goal" of any specs
+        self.goaltitle = ''
+        if IProduct.providedBy(self.context):
+            self.goaltitle = 'Series'
+        elif IDistribution.providedBy(self.context):
+            self.goaltitle = 'Release'
 
     @cachedproperty
     def specs(self):

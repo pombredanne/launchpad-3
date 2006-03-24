@@ -18,12 +18,13 @@ from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
-    ICanonicalUrlData, ILaunchpadCelebrities, ILaunchBag, IPOFileSet,
-    IPOTemplateSubset, ITranslationImportQueue)
+    ICanonicalUrlData, ILaunchBag, IPOFileSet, IPOTemplateSubset,
+    ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -114,10 +115,14 @@ class POTemplateView(LaunchpadView):
 
     def initialize(self):
         """Get the requested languages and submit the form."""
-        self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
-
         self.submitForm()
+
+    @property
+    def request_languages(self):
+        # if this is accessed multiple times in a same request, consider
+        # changing this to a cachedproperty
+        return helpers.request_languages(self.request)
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -136,15 +141,10 @@ class POTemplateView(LaunchpadView):
         Where the template has no POFile for that language, we use
         a DummyPOFile.
         """
-        # Languages the template has been translated into.
-        translated_languages = set(self.context.languages())
-        # The user's languages.
-        prefered_languages = set(self.request_languages)
-        # Merge the sets, convert them to a list, and sort them.
-        languages = sorted(translated_languages | prefered_languages,
-                           key=lambda x: x.englishname)
-
-        for language in languages:
+        # Union the languages the template has been translated into with
+        # The user's selected languages.
+        languages = set(self.context.languages()) | set(self.request_languages)
+        for language in sorted(languages, key=lambda x: x.englishname):
             pofile = self.context.getPOFileByLang(language.code)
             if pofile is None:
                 pofileset = getUtility(IPOFileSet)
@@ -237,14 +237,13 @@ class POTemplateView(LaunchpadView):
                 " recognised as a file that can be imported.")
 
 
-class POTemplateEditView(POTemplateView, SQLObjectEditView):
+class POTemplateEditView(SQLObjectEditView):
     """View class that lets you edit a POTemplate object."""
     def __init__(self, context, request):
         # Restrict the info we show to the user depending on the
         # permissions he has.
         self.prepareForm()
 
-        POTemplateView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
 
     def prepareForm(self):
@@ -253,10 +252,8 @@ class POTemplateEditView(POTemplateView, SQLObjectEditView):
         if user is not None:
             # We do this check because this method can be called before we
             # know which user is getting this view (when we show them the
-            # login form.
-            admins = getUtility(ILaunchpadCelebrities).admin
-            rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-            if not (user.inTeam(admins) or user.inTeam(rosetta_experts)):
+            # login form).
+            if not helpers.check_permission('launchpad.Admin', user):
                 # The user is just a maintainer, we show only the fields
                 # 'name', 'description' and 'owner'.
                 self.fieldNames = ['name', 'description', 'owner']
