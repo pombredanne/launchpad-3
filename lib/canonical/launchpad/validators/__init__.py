@@ -22,7 +22,7 @@ import cgi
 __all__ = ['LaunchpadValidationError']
 
 def _quote(txt):
-    """HTML quote text, including the " character so the quoted text can
+    """HTML quote text, including the \" character so the quoted text can
     be included in an attribute.
 
     >>> _quote(u'> "foo" <')
