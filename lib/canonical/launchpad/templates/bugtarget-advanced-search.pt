@@ -225,42 +225,52 @@
             </th>
           </tr>
           <tr>
-            <td class="section">
+            <td class="section"
+                tal:define="show_component_widget view/shouldShowComponentWidget">
               <table>
                 <tr>
                   <td>
                     <small>
-                      <label for="field.milestone">
-                        <strong>Target Milestone</strong>
-                      </label>
-                    </small>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <small tal:define="widget_values view/getMilestoneWidgetValues">
-                      <span tal:repeat="widget_value widget_values">
-                        <span tal:define="widget_id string:milestone.${widget_value/title}">
-                          <input name="field.milestone:list"
-                                 type="checkbox"
-                                 tal:attributes="value widget_value/value;
-                                                 checked widget_value/checked;
-                                                 id widget_id">
-                          <label tal:content="widget_value/title"
-                                 tal:attributes="for widget_id">
-                            dapper
-                          </label>
-                          <br />
+                      <span style="float: left">
+                        <label for="field.milestone">
+                          <strong>Target Milestone</strong>
+                        </label>
+                        <br />
+                        <span tal:define="widget_values view/getMilestoneWidgetValues">
+                          <span tal:repeat="widget_value widget_values">
+                            <span tal:define="widget_id string:milestone.${widget_value/title}">
+                            <input name="field.milestone:list"
+                                   type="checkbox"
+                                   tal:attributes="value widget_value/value;
+                                                   checked widget_value/checked;
+                                                   id widget_id">
+                              <label tal:content="widget_value/title"
+                                     tal:attributes="for widget_id">
+                                dapper
+                              </label>
+                            </span>
+                          </span>
+                          <span tal:condition="not:widget_values">
+                            (none)
+                          </span>
                         </span>
                       </span>
-                      <span tal:condition="not:widget_values">
-                        (none)
+                      <span style="float: left; margin-left: 4em"
+                            tal:condition="show_component_widget">
+                        <label for="field.component">
+                          <strong>Component</strong>
+                        </label>
+                        <br />
+                        <span tal:content="structure view/component_widget"
+                              tal:condition="show_component_widget">
+                        </span>
                       </span>
                     </small>
                   </td>
                 </tr>
               </table>
             </td>
+          </tr>
           <tr>
             <th class="section-header">
               Other

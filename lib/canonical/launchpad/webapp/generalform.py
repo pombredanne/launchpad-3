@@ -69,6 +69,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
     # Fall-back template
     generated_form = ViewPageTemplateFile('../templates/launchpad-generalform.pt')
+    process_status = None
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self.errors = ErrorContainer()
+        self.process_status = None
+        self._setUpWidgets()
+
 
     # methods that should be overridden
     def process(self, *args, **kw):
@@ -101,18 +109,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         """
         return {}
 
-    # internal methods, should not be overridden
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+    def _setUpWidgets(self, context=None):
+        """Set up the widgets.
 
-        self.errors = ErrorContainer()
-        self.process_status = None
-
-        self._setUpWidgets()
-
-    def _setUpWidgets(self):
+        :param context: The context to use. If it's None, self.context
+                        is used.
+        """
         setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames,
-                     initial=self.initial_values)
+                     initial=self.initial_values, context=context)
 
     def setPrefix(self, prefix):
         for widget in self.widgets():

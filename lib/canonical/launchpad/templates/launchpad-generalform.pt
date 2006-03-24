@@ -52,7 +52,9 @@
             <div><input type="text" style="width:100%" /></div>
         </div>
 
+        <metal:widgets metal:define-slot="widgets">
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+        </metal:widgets>
 
         <div class="row"
              metal:define-slot="extra_bottom" 
