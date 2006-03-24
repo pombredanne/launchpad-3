@@ -12,7 +12,6 @@ from unittest import TestCase, TestLoader
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase as TwistedTestCase
 from twisted.web import server
 
 from sqlobject import SQLObjectNotFound
@@ -24,6 +23,7 @@ from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.ftests.twistcase import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, ProberTimeout, MirrorProberCallbacks,
     BadResponseCode)

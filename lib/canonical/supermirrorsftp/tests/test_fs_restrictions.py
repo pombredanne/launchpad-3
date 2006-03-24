@@ -4,15 +4,15 @@ import os
 import shutil
 import unittest
 
-from twisted.trial.unittest import TestCase
 from twisted.internet import defer
 from twisted.vfs.ivfs import VFSError, PermissionError
 
+from canonical.ftests.twistcase import TwistedTestCase
 from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
 from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot, SFTPServerBranch
 
 
-class AvatarTestBase(TestCase):
+class AvatarTestBase(TwistedTestCase):
     """Base class for tests that need an SFTPOnlyAvatar with some basic sample
     data."""
     def setUp(self):
