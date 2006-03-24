@@ -201,6 +201,11 @@
     />
 
   <vocabulary
+    name="PersonActiveMembership"
+    factory="canonical.launchpad.vocabularies.PersonActiveMembershipVocabulary"
+    />
+
+  <vocabulary
     name="PollAlgorithm"
     factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
     />

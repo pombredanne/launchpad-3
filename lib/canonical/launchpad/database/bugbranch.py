@@ -24,7 +24,7 @@ class BugBranch(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     bug = ForeignKey(dbName="bug", foreignKey="Bug", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
-    fixed_in_revision = StringCol(default=None)
+    revision_hint = StringCol(default=None)
     status = EnumCol(
         dbName="status", schema=BugBranchStatus, notNull=False,
         default=BugBranchStatus.INPROGRESS)

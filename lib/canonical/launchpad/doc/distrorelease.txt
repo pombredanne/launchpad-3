@@ -104,7 +104,7 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> warty = DistroRelease.get(1)
     >>> bpp = warty.getBinaryPackagePublishing()
     >>> print bpp.count()
-    1
+    2
     >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
     mozilla-firefox
     >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
@@ -151,6 +151,7 @@ other things) the uploader for validating incoming uploads.
    >>> for c in hoary.components:
    ...     print c.name
    main
+   restricted
    >>> for s in hoary.sections:
    ...     print s.name
    editors
@@ -166,6 +167,7 @@ other things) the uploader for validating incoming uploads.
    >>> for c in hoary.components:
    ...     print c.name
    main
+   restricted
    universe
 
    >>> for s in hoary.sections:
