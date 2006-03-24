@@ -20,18 +20,18 @@
 <div metal:fill-slot="main">
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="portalMessage" style="margin-bottom: 10px">
+     class="error message">
     notice goes here
   </p>
 
-  <p tal:condition="context/superseded_by" class="portalMessage">
+  <p tal:condition="context/superseded_by" class="warning message">
     This specification has been superseded. See the newer specification
     "<b><a tal:content="context/superseded_by/title"
            tal:attributes="href context/superseded_by/fmt:url">new spec
     title</a></b>" for updated plans.
   </p>
 
-  <p tal:condition="not:context/specurl" class="portalMessage"
+  <p tal:condition="not:context/specurl" class="informational message"
      style="margin-bottom: 10px">
     This specification is currently not linked to a URL. Visit the
     <a href="+edit">edit page</a> if you wish to link it to a URL that others

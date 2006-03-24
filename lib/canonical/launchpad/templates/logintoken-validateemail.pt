@@ -14,9 +14,11 @@
 
     <div tal:condition="not: view/successfullyProcessed">
 
-      <div tal:condition="view/errormessage" class="portalMessage"
-           tal:content="structure view/errormessage">
-      </div>
+        <p
+          tal:condition="view/errormessage"
+          tal:content="structure view/errormessage"
+          class="error message"
+        >Errors go here.</p>
 
       <p>To confirm this address, enter your password.</p>
 

@@ -13,9 +13,11 @@
 
     <div tal:condition="not: view/successfullyProcessed">
 
-      <div tal:condition="view/errormessage" class="portalMessage"
-           tal:content="structure view/errormessage">
-      </div>
+        <p
+          tal:condition="view/errormessage"
+          tal:content="structure view/errormessage"
+          class="error message"
+        />
 
       <p>You're about to make <code tal:content="context/email" /> the contact
         email address of this team. By doing so, all notifications directed to

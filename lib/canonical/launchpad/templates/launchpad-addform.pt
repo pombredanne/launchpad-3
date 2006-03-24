@@ -36,7 +36,7 @@
           and should explain a little bit about the form.
         </p>
 
-        <p class="portalMessage"
+        <p class="error message"
            tal:define="status view/update"
            tal:condition="status"
            tal:content="status" />

@@ -14,15 +14,16 @@
 
 <div metal:fill-slot="main">
 
-  <tal:dummy tal:define="submitted view/emailFormSubmitted">
-  <div tal:condition="submitted">
-    <p class="portalMessage" tal:content="structure view/message"></p>
-  </div>
-  </tal:dummy>
+  <p
+    tal:define="submitted view/emailFormSubmitted"
+    tal:condition="submitted"
+    tal:content="structure view/message"
+    class="informational message"
+  />
   
   <form name="email" action="" method="POST">
 
-  <tal:block tal:condition="context/preferredemail">
+  <tal:block condition="context/preferredemail">
     <p>Your preferred contact address for all Launchpad e-mail is:</p>
     <ul>
       <li class="mail"><b tal:content="context/preferredemail/email" /></li>

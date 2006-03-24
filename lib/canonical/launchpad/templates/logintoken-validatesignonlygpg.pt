@@ -14,8 +14,11 @@
 
     <div tal:condition="not: view/successfullyProcessed">
 
-      <div tal:condition="view/errormessage" class="portalMessage"
-           tal:content="structure view/errormessage">
+        <p
+          tal:condition="view/errormessage"
+          tal:content="structure view/errormessage"
+          class="error message"
+        />
       </div>
 
       <p>
@@ -58,9 +61,5 @@
         </div>
       </form>
     </div>
-
-</div>
-
-
-</body>
+  </body>
 </html>

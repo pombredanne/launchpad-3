@@ -24,9 +24,8 @@
 
 <div metal:fill-slot="main">
 
-    <p class="portalMessage"
-       tal:condition="not:request/lp:person">
-       Please log in to change the mapping from this product branch to its
+    <p tal:condition="not:request/lp:person">
+       You must log in to change the mapping from this product branch to its
        Ubuntu package.
     </p>
 

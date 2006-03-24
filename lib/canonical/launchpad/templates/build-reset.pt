@@ -14,7 +14,7 @@
 
   <div metal:fill-slot="main" tal:define="message view/reset_build">
                    
-    <div class="portalMessage" tal:condition="message" 
+    <div class="error message" tal:condition="message" 
          tal:content="structure message"/>
 
     <div tal:condition="not: message">

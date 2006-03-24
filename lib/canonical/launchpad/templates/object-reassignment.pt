@@ -18,8 +18,11 @@
 
 <div metal:fill-slot="main">
 
-  <p class="portalMessage" tal:condition="view/errormessage"
-     tal:content="view/errormessage" />
+  <p
+    tal:condition="view/errormessage"
+    class="error message"
+    tal:content="view/errormessage"
+  />
 
   <form action="" method="POST">
 

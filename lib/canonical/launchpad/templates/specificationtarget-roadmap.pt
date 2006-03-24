@@ -18,7 +18,7 @@
     Launchpad recommends the following sequence of spec implementations.
   </p>
 
-  <p class="portalMessage" tal:condition="not: view/specPlan">
+  <p class="informational message" tal:condition="not: view/specPlan">
     No specifications for
     <span tal:replace="context/displayname">Ubuntu Hoary</span>
     exist that can be scheduled.

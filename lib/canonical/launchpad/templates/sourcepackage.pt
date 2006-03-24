@@ -21,7 +21,7 @@
 
   <h1>Versions published</h1>
 
-  <p class="portalMessage" tal:condition="not:context/currentrelease">
+  <p class="warning message" tal:condition="not:context/currentrelease">
     There is no current release of this source package 
     in <span tal:replace="context/distrorelease/title" />.
     You can still report bugs, make translations, and so on,

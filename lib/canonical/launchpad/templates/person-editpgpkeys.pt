@@ -17,9 +17,12 @@
 
   <div metal:fill-slot="main">
 
-    <div tal:define="msg view/form_action" tal:condition="msg" 
-         tal:content="structure msg" class="portalMessage">
-    </div>
+      <p
+        tal:define="msg view/form_action"
+        tal:condition="msg" 
+        tal:content="structure msg"
+        class="error message"
+      />
 
     <p>
       Launchpad lets you register OpenPGP keys,
