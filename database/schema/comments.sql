@@ -672,8 +672,6 @@ COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of t
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
-COMMENT ON COLUMN Person.givenname IS 'Component of a person''s full name used for secondary sorting. Generally the person''s given or christian name.';
-COMMENT ON COLUMN Person.familyname IS 'Component of a person''s full name used for sorting. Generally the person''s family name.';
 COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';

@@ -18,7 +18,7 @@ from optparse import OptionParser
 from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.librarian import librariangc
-from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
 from canonical.config import config
 
 _default_lock_file = '/var/lock/librarian-gc.lock'
@@ -56,21 +56,18 @@ def main():
         sys.exit(1)
 
     try:
-        ztm = initZopeless(
-                dbuser=config.librarian.gc.dbuser, implicitBegin=False,
-                isolation=READ_COMMITTED_ISOLATION
-                )
-        # Note - no need to issue ztm.begin() or ztm.commit(),
-        # as each of these next steps will issue these as appropriate
-        # to make this script as transaction friendly as possible.
+        con = connect(config.librarian.gc.dbuser)
+        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        # Note that each of these next steps will issue commit commands
+        # as appropriate to make this script transaction friendly
         if not options.skip_content:
-            librariangc.delete_unreferenced_content(ztm) # first sweep
+            librariangc.delete_unreferenced_content(con) # first sweep
         if not options.skip_duplicates:
-            librariangc.merge_duplicates(ztm)
+            librariangc.merge_duplicates(con)
         if not options.skip_aliases:
-            librariangc.delete_unreferenced_aliases(ztm)
+            librariangc.delete_unreferenced_aliases(con)
         if not options.skip_content:
-            librariangc.delete_unreferenced_content(ztm) # second sweep
+            librariangc.delete_unreferenced_content(con) # second sweep
     finally:
         lockfile.release()
 

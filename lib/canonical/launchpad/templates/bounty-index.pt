@@ -21,8 +21,8 @@
 
   <p tal:repeat="notice view/notices"
      tal:content="notice"
-     class="portalMessage"
-     >Notification Message</p>
+     class="error message"
+     >Error message</p>
 
   <p class="documentDescription" tal:content="context/summary">
     $Bounty.summary goes here. This should be quite short,
