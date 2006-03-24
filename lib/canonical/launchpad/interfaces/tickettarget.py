@@ -12,7 +12,6 @@ __all__ = [
 
 from canonical.launchpad import _
 from zope.interface import Interface
-from zope.i18nmessageid import MessageIDFactory
 from zope.schema import Bool, Choice, List
 
 
