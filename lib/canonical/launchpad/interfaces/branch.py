@@ -48,6 +48,9 @@ class IBranch(IHasOwner):
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
+    mirror_failure_message = Text(
+        title=_('The last failure message we got when mirroring this branch '
+                'into supermirror.'), required=False, readonly=False)
     started_at = Int(title=_('Started At'), required=False,
         description=_("The number of the first revision"
                       " to display on that branch."))

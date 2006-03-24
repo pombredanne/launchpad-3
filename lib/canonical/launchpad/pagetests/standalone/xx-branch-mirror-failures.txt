@@ -1,0 +1,34 @@
+If a branch fails to mirror, that information is displayed in the mirror's
+page, together with the last failure message we got when mirroring.
+
+  >>> print http(r"""
+  ... GET /people/jblack/+branch/+junk/arch@arch.ubuntu.com_arch--devel--1.0 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Failures:...
+  ...This branch failed to mirror 9 times...
+  ...Last Failure:...
+  ...I do not like Arch, so I am pretending it failed to mirror...
+
+If a branch failed to mirror but no failure message was stored, then we'll
+simply say that the branch failed to mirror.
+
+  >>> thunderbird_mirror_page = str(http(r"""
+  ... GET /people/stevea/+branch/thunderbird/thunderbird@arch.ubuntu.com_thunderbird--MAIN--0 HTTP/1.1
+  ... """))
+  >>> 'Failures' in thunderbird_mirror_page
+  True
+  >>> 'Last Failure' in thunderbird_mirror_page
+  False
+
+Ultimately, if a branch didn't failed to mirror, then we obviously won't
+display any failure-related information.
+
+  >>> gnome_terminal_page = str(http(r"""
+  ... GET /people/name12/+branch/gnome-terminal/2.6 HTTP/1.1
+  ... """))
+  >>> 'Failures' in gnome_terminal_page
+  False
+  >>> 'Last Failure' in gnome_terminal_page
+  False
+
