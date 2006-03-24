@@ -4,9 +4,9 @@
 
 __metaclass__ = type
 
-import time
 from email.MIMEText import MIMEText
 from email.Utils import formatdate
+import rfc822
 
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
@@ -62,7 +62,8 @@ def construct_email_notification(bug_notifications):
 
     if bug.duplicateof is not None:
         text_notifications.insert(
-            0, '*** This bug is a duplicate of %d ***' % bug.duplicateof.id)
+            0,
+            '*** This bug is a duplicate of bug %d ***' % bug.duplicateof.id)
         if not bug.private:
             # This bug is a duplicate of another bug, so include the dup
             # target's subscribers in the recipient list, for comments
@@ -109,13 +110,13 @@ def construct_email_notification(bug_notifications):
     msg['Reply-To'] = get_bugmail_replyto_address(bug)
     msg['References'] = ' '.join(references)
     msg['Sender'] = config.bounce_address
-    msg['Date'] = formatdate(time.mktime(email_date.utctimetuple()))
+    msg['Date'] = formatdate(rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
     msg['Message-Id'] = msgid
     msg['Subject'] = "[Bug %d] %s" % (bug.id, subject)
 
     # Add X-Launchpad-Bug headers.
     for bugtask in bug.bugtasks:
-        msg['X-Launchpad-Bug'] = bugtask.asEmailHeaderValue()
+        msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
 
     return bug_notifications, notified_addresses, msg
 
@@ -127,6 +128,8 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         person_bug_notifications = []
         bug = bug_notifications[0].bug
         person = bug_notifications[0].message.owner
+        # Create a copy of the list, so removing items from it won't
+        # break the iteration over it.
         for notification in list(bug_notifications):
             if (notification.bug, notification.message.owner) != (bug, person):
                 break

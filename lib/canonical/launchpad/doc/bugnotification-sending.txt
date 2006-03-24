@@ -443,7 +443,7 @@ top of the email:
     From: Sample Person <test@canonical.com>
     Subject: [Bug 10] subject
     <BLANKLINE>
-    *** This bug is a duplicate of 1 ***
+    *** This bug is a duplicate of bug 1 ***
     <BLANKLINE>
     a comment.
     --
