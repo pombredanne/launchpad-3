@@ -10,6 +10,7 @@ from zope.testing.doctest import DocFileSuite, DocTestSuite
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import browser as browser
+from canonical.launchpad.database import Branch
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
 
@@ -71,7 +72,6 @@ class TestBranchPullWithBranches(unittest.TestCase):
 class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
 
     def test_get_branches_to_pull(self):
-        from canonical.launchpad.database import Branch
         self.login()
         mock_request = MockRequest()
         mock_request.response = MockResponse()
@@ -122,7 +122,7 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
             u'22 http://not.launchpad.server.com/',
             u'23 http://whynot.launchpad.server.com/',
             u'24 http://users.example.com/gnome-terminal/launchpad',
-            u'25 file:///srv/sm-ng/pushsftp-hosted/00/00/00/19']
+            u'25 /tmp/sftp-test/branches/00/00/00/19']
         self.assertEqual(sorted(listing.splitlines()), sorted(expected))
 
     def test_branch_pull_mime_type(self):

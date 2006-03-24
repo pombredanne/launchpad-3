@@ -17,7 +17,7 @@ from zope.component import getUtility
 
 # SQL imports
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin, 
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     RelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
@@ -33,13 +33,15 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaAction, Karma
+from canonical.launchpad.database.potemplate import POTemplateSet
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -61,6 +63,15 @@ from canonical.lp.dbschema import (
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
+
+
+class ValidPersonOrTeamCache(SQLBase):
+    """Flags if a Person or Team is active and usable in Launchpad.
+    
+    This is readonly, as the underlying table is maintained using
+    database triggers.
+    """
+    # Look Ma, no columns! (apart from id)
 
 
 class Person(SQLBase):
@@ -117,9 +128,6 @@ class Person(SQLBase):
                             otherColumn='language',
                             intermediateTable='PersonLanguage')
 
-    # relevant joins
-    authored_branches = SQLMultipleJoin(
-        'Branch', joinColumn='author',orderBy='-id')
     subscribed_branches = RelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', orderBy='-id')
@@ -332,15 +340,26 @@ class Person(SQLBase):
         S = set(self.authored_branches)
         S.update(self.registered_branches)
         S.update(self.subscribed_branches)
-        def by_reverse_id(branch):
-            return -branch.id
-        return sorted(S, key=by_reverse_id)
+        return sorted(S, key=lambda x: -x.id)
 
     @property
     def registered_branches(self):
         """See IPerson."""
-        return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
-                             % (self.id, self.id), orderBy='-id')
+        query = """Branch.owner = %d AND
+                   (Branch.author != %d OR Branch.author is NULL)"""
+        return Branch.select(query % (self.id, self.id),
+                             prejoins=["product"],
+                             orderBy='-Branch.id')
+
+
+    @property
+    def authored_branches(self):
+        """See IPerson."""
+        # XXX: this should be moved back to SQLMultipleJoin when we
+        # support prejoins in that -- kiko, 2006-03-17
+        return Branch.select('Branch.author = %d' % self.id,
+                             prejoins=["product"],
+                             orderBy='-Branch.id')
 
     def getBugContactPackages(self):
         """See IPerson."""
@@ -418,8 +437,31 @@ class Person(SQLBase):
         except IndexError:
             return 0
 
+    @property
+    def is_valid_person(self):
+        """See IPerson."""
+        # XXX: Bug 35952 stops this from working. This method is preferred,
+        # as it keeps the 'what is a valid person' logic encapsulated in the
+        # ValidPersonOrTeamCache materialized view.
+        # return (ValidPersonOrTeamCache.get(self.id) is not None)
+        
+        # No need to make this a cachedproperty, as preferredemail is
+        # already cached.
+        return (
+                self.teamowner is None
+                and self.password is not None
+                and self.merged is None
+                and self.preferredemail is not None
+                )
+
     def assignKarma(self, action_name):
         """See IPerson."""
+        # Teams don't get Karma. Inactive accounts don't get Karma.
+        # No warning, as we don't want to place the burden on callsites
+        # to check this.
+        if not self.is_valid_person:
+            return
+
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
@@ -718,14 +760,39 @@ class Person(SQLBase):
 
     @property
     def touched_pofiles(self):
-        return POFile.select('''
+        results = POFile.select('''
             POSubmission.person = %s AND
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = POFile.id
             ''' % sqlvalues(self.id),
-            orderBy=['datecreated'],
-            clauseTables=['POMsgSet', 'POSubmission'],
+            orderBy=['POFile.datecreated'],
+            prejoins=['language', 'potemplate'],
+            clauseTables=['POMsgSet', 'POFile', 'POSubmission'],
             distinct=True)
+        # XXX: Because of a template reference to
+        # pofile.potemplate.displayname, it would be ideal to also
+        # prejoin above:
+        #   potemplate.potemplatename
+        #   potemplate.productseries
+        #   potemplate.productseries.product
+        #   potemplate.distrorelease
+        #   potemplate.distrorelease.distribution
+        #   potemplate.sourcepackagename
+        # However, a list this long may be actually suggesting that
+        # displayname be cached in a table field; particularly given the
+        # fact that it won't be altered very often. At any rate, the
+        # code below works around this by caching all the templates in
+        # one shot. The list() ensures that we materialize the query
+        # before passing it on to avoid reissuing it; the template code
+        # only hits this callsite once and iterates over all the results
+        # anyway. When we have deep prejoining we can just ditch all of
+        # this and either use cachedproperty or cache in the view code.
+        #   -- kiko, 2006-03-17
+        results = list(results)
+        ids = set(pofile.potemplate.id for pofile in results)
+        if ids:
+            list(POTemplateSet().getByIDs(ids))
+        return results
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""
@@ -839,30 +906,41 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    def maintainedPackages(self):
+    def latestMaintainedPackages(self):
         """See IPerson."""
-        querystr = """
-            sourcepackagerelease.maintainer = %d AND
-            sourcepackagerelease.sourcepackagename = sourcepackagename.id
-            """ % self.id
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy=['-dateuploaded'],
-            clauseTables=['SourcePackageName'])
+        return self._latestReleaseQuery()
 
-    def uploadedButNotMaintainedPackages(self):
+    def latestUploadedButNotMaintainedPackages(self):
         """See IPerson."""
-        querystr = """
-            sourcepackagerelease.creator = %d AND
-            sourcepackagerelease.maintainer != %d AND
-            sourcepackagerelease.sourcepackagename = sourcepackagename.id
-            """ % (self.id, self.id)
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy=['-dateuploaded'],
-            clauseTables=['SourcePackageName'])
+        return self._latestReleaseQuery(uploader_only=True)
 
-    @property
+    def _latestReleaseQuery(self, uploader_only=False):
+        # Issues a special query that returns the most recent
+        # sourcepackagereleases that were maintained/uploaded to
+        # distribution releases by this person.
+        if uploader_only:
+            extra = """sourcepackagerelease.creator = %d AND
+                       sourcepackagerelease.maintainer != %d""" % (
+                       self.id, self.id)
+        else:
+            extra = "sourcepackagerelease.maintainer = %d" % self.id
+        query = """
+            SourcePackageRelease.id IN (
+                SELECT DISTINCT ON (uploaddistrorelease,sourcepackagename)
+                       sourcepackagerelease.id
+                  FROM sourcepackagerelease
+                 WHERE %s
+              ORDER BY uploaddistrorelease, sourcepackagename, 
+                       dateuploaded DESC
+              )
+              """ % extra
+        return SourcePackageRelease.select(
+            query,
+            orderBy=['-SourcePackageRelease.dateuploaded',
+                     'SourcePackageRelease.id'],
+            prejoins=['sourcepackagename', 'maintainer'])
+
+    @cachedproperty
     def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)
@@ -1226,6 +1304,35 @@ class PersonSet:
             DELETE FROM BountySubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
+
+        # Update only the SupportContacts that will not conflict
+        cur.execute('''
+            UPDATE SupportContact
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND distribution IS NULL
+                AND product NOT IN (
+                    SELECT product
+                    FROM SupportContact
+                    WHERE person = %(to_id)d
+                    )
+            ''' % vars())
+        cur.execute('''
+            UPDATE SupportContact
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND distribution IS NOT NULL
+                AND (distribution, sourcepackagename) NOT IN (
+                    SELECT distribution,sourcepackagename
+                    FROM SupportContact
+                    WHERE person = %(to_id)d
+                    )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM SupportContact WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('supportcontact', 'person'))
 
         # Update only the TicketSubscriptions that will not conflict
         cur.execute('''

@@ -583,8 +583,9 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
 class ShipItReportsView(LaunchpadView):
     """The view for the list of shipit reports."""
 
-    def initialize(self):
-        self.reports = getUtility(IShipItReportSet).getAll()
+    @property
+    def reports(self):
+        return getUtility(IShipItReportSet).getAll()
 
 
 class ShipItExportsView:

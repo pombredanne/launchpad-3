@@ -6,7 +6,7 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageFacets',
     'SourcePackageView',
-    'SourcePackageBugsView']
+    ]
 
 # Python standard library imports
 import cgi
@@ -122,13 +122,17 @@ class SourcePackageSupportMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'support'
-    links = ['addticket', 'gethelp']
+    links = ['addticket', 'support_contact', 'gethelp']
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')
 
     def addticket(self):
         return Link('+addticket', 'Request Support', icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class SourcePackageTranslationsMenu(ApplicationMenu):
@@ -157,9 +161,12 @@ class SourcePackageView(BuildRecordsView):
         self.productseries_widget.setRenderedValue(self.context.productseries)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
-        self.languages = helpers.request_languages(self.request)
         self.status_message = None
         self.processForm()
+
+    @property
+    def languages(self):
+        return helpers.request_languages(self.request)
 
     def processForm(self):
         # look for an update to any of the things we track
@@ -189,28 +196,19 @@ class SourcePackageView(BuildRecordsView):
 
     def binaries(self):
         """Format binary packages into binarypackagename and archtags"""
-
-        all_arch = [] # all archtag in this distrorelease
-        for arch in self.context.distrorelease.architectures:
-            all_arch.append(arch.architecturetag)
-        all_arch.sort()
-
-        bins = self.context.currentrelease.binaries
-
         results = {}
+        all_arch = sorted([arch.architecturetag for arch in
+                           self.context.distrorelease.architectures])
+        for bin in self.context.currentrelease.binaries:
+            distroarchrelease = bin.build.distroarchrelease
+            if bin.name not in results:
+                results[bin.name] = []
 
-        for bin in bins:
-            if bin.name not in results.keys():
-                if not bin.architecturespecific:
-                    results[bin.name] = all_arch
-                else:
-                    results[bin.name] = \
-                             [bin.build.distroarchrelease.architecturetag]
+            if bin.architecturespecific:
+                results[bin.name].append(distroarchrelease.architecturetag)
             else:
-                if bin.architecturespecific:
-                    results[bin.name].append(\
-                                bin.build.distroarchrelease.architecturetag)
-                    results[bin.name].sort()
+                results[bin.name] = all_arch
+            results[bin.name].sort()
 
         return results
 
@@ -269,20 +267,6 @@ class SourcePackageView(BuildRecordsView):
         potemplatenames = set([p.potemplatename for p in potemplates])
         return sorted(potemplatenames, key=lambda item: item.name)
 
+    def searchName(self):
+        return False
 
-class SourcePackageBugsView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        results = self.bugtask_search()
-        self.batchnav = BatchNavigator(results, request)
-
-    def bugtask_search(self):
-        return self.context.bugs
-
-    def task_columns(self):
-        return [
-            "id", "title", "status", "priority", "severity",
-            "submittedon", "submittedby", "assignedto", "actions"]

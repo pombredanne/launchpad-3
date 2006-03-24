@@ -8,6 +8,8 @@ __all__ = [
     'POFileFacets',
     'POFileAppMenus',
     'POFileView',
+    'POFileUploadView',
+    'POFileTranslateView',
     'BaseExportView',
     'POFileAppMenus',
     'POExportView']
@@ -30,11 +32,8 @@ from canonical.launchpad.webapp import (
 
 
 class POFileFacets(StandardLaunchpadFacets):
-
     usedfor = IPOFile
-
     defaultlink = 'translations'
-
     enable_only = ['overview', 'translations']
 
     def _parent_url(self):
@@ -114,6 +113,89 @@ class BaseExportView:
 
 
 class POFileView(LaunchpadView):
+    """A basic view for a POFile"""
+    __used_for__ = IPOFile
+
+
+class POFileUploadView(POFileView):
+    """A basic view for a POFile"""
+    __used_for__ = IPOFile
+
+    def initialize(self):
+        self.form = self.request.form
+        self.process_form()
+
+    def process_form(self):
+        """Handle a form submission to request a .po file upload."""
+        if self.request.method != 'POST' or self.user is None:
+            # The form was not submitted or the user is not logged in.
+            return
+
+        file = self.form['file']
+
+        if not isinstance(file, FileUpload):
+            if file == '':
+                self.request.response.addErrorNotification(
+                    "Ignored your upload because you didn't select a file to"
+                    " upload.")
+            else:
+                # XXX: Carlos Perello Marin 2004/12/30
+                # Epiphany seems to have an unpredictable bug with upload
+                # forms (or perhaps it's launchpad because I never had
+                # problems with bugzilla). The fact is that some uploads don't
+                # work and we get a unicode object instead of a file-like
+                # object in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116.
+                self.request.response.addErrorNotification(
+                    "The upload failed because there was a problem receiving"
+                    " the data.")
+            return
+
+        filename = file.filename
+        content = file.read()
+
+        if len(content) == 0:
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the uploaded file is empty.")
+            return
+
+        translation_import_queue = getUtility(ITranslationImportQueue)
+
+        if not filename.endswith('.po'):
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the file you uploaded was not"
+                " recognised as a file that can be imported as it does not"
+                " ends with the '.po' suffix.")
+            return
+
+        # We only set the 'published' flag if the upload is marked as an
+        # upstream upload.
+        if self.form.get('upload_type') == 'upstream':
+            published = True
+        else:
+            published = False
+
+        if self.context.path is None:
+            # The POFile is a dummy one, we use the filename as the path.
+            path = filename
+        else:
+            path = self.context.path
+        # Add it to the queue.
+        translation_import_queue.addOrUpdateEntry(
+            path, content, published, self.user,
+            sourcepackagename=self.context.potemplate.sourcepackagename,
+            distrorelease=self.context.potemplate.distrorelease,
+            productseries=self.context.potemplate.productseries,
+            potemplate=self.context.potemplate)
+
+        self.request.response.addInfoNotification(
+            'Thank you for your upload. The PO file content will be imported'
+            ' soon into Rosetta. You can track its status from the'
+            ' <a href="%s">Translation Import Queue</a>' %
+                canonical_url(translation_import_queue))
+
+
+class POFileTranslateView(POFileView):
     """The View class for a POFile or a DummyPOFile.
 
     Note that the DummyPOFile is presented if there is no POFile in the
@@ -127,6 +209,52 @@ class POFileView(LaunchpadView):
     DEFAULT_COUNT = 10
     MAX_COUNT = 100
     DEFAULT_SHOW = 'all'
+
+    def initialize(self):
+        self.form = self.request.form
+        # Whether this page is redirecting or not.
+        self.redirecting = False
+        # When we start we don't have any error.
+        self.pomsgset_views_with_errors = []
+        # Initialize the tab index for the form entries.
+        self._table_index_value = 0
+        # Initialize the variables that handle the kind of messages to show.
+        self._initialize_show_option()
+        # Initialize the variables that handle the number of messages to show.
+        self._initialize_count_option()
+        # Initialize the message offset.
+        self._initialize_offset_option()
+
+        if not self.context.canEditTranslations(self.user):
+            # The user is not an official translator, we should show a
+            # warning.
+            self.request.response.addWarningNotification(
+                "You are not an official translator for this file. You can"
+                " still make suggestions, and your translations will be"
+                " stored and reviewed for acceptance later by the designated"
+                " translators.")
+
+        if self.lacks_plural_form_information:
+            # Cannot translate this IPOFile without the plural form
+            # information. Show the info to add it to our system.
+            self.request.response.addErrorNotification("""
+<p>
+Rosetta can&#8217;t handle the plural items in this file, because it
+doesn&#8217;t yet know how plural forms work for %s.
+</p>
+<p>
+To fix this, please e-mail the <a
+href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
+with this information, preferably in the format described in the
+<a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
+</p>
+<p>
+This only needs to be done once per language. Thanks for helping Rosetta.
+</p>
+""" % self.context.language.englishname)
+
+        # Handle any form submission
+        self.process_form()
 
     def _initialize_show_option(self):
         # Get any value given by the user
@@ -176,52 +304,6 @@ class POFileView(LaunchpadView):
         # to an offset of zero
         if self.offset >= self.shown_count:
             self.offset = max(self.shown_count - self.count, 0)
-
-    def initialize(self):
-        self.form = self.request.form
-        # Whether this page is redirecting or not.
-        self.redirecting = False
-        # When we start we don't have any error.
-        self.pomsgset_views_with_errors = []
-        # Initialize the tab index for the form entries.
-        self._table_index_value = 0
-        # Initialize the variables that handle the kind of messages to show.
-        self._initialize_show_option()
-        # Initialize the variables that handle the number of messages to show.
-        self._initialize_count_option()
-        # Initialize the message offset.
-        self._initialize_offset_option()
-
-        if not self.context.canEditTranslations(self.user):
-            # The user is not an official translator, we should show a
-            # warning.
-            self.request.response.addWarningNotification(
-                "You are not an official translator for this file. You can"
-                " still make suggestions, and your translations will be"
-                " stored and reviewed for acceptance later by the designated"
-                " translators.")
-
-        if self.lacks_plural_form_information:
-            # Cannot translate this IPOFile without the plural form
-            # information. Show the info to add it to our system.
-            self.request.response.addErrorNotification("""
-<p>
-Rosetta can&#8217;t handle the plural items in this file, because it
-doesn&#8217;t yet know how plural forms work for %s.
-</p>
-<p>
-To fix this, please e-mail the <a
-href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
-with this information, preferably in the format described in the
-<a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
-</p>
-<p>
-This only needs to be done once per language. Thanks for helping Rosetta.
-</p>
-""" % self.context.language.englishname)
-
-        # Handle any form submission
-        self.process_form()
 
     @property
     def lacks_plural_form_information(self):
@@ -390,7 +472,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return
 
         dispatch_table = {
-            'pofile_upload': self._upload,
             'pofile_translation_filter': self._filter_translations,
             'submit_translations': self._store_translations
             }
@@ -410,71 +491,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # We need to redirect to the new URL based on the new given arguments.
         self.redirecting = True
         self.request.response.redirect(self.createURL())
-
-    def _upload(self):
-        """Handle a form submission to request a .po file upload."""
-        file = self.form['file']
-
-        if not isinstance(file, FileUpload):
-            if file == '':
-                self.request.response.addErrorNotification(
-                    "Ignored your upload because you didn't select a file to"
-                    " upload.")
-            else:
-                # XXX: Carlos Perello Marin 2004/12/30
-                # Epiphany seems to have an unpredictable bug with upload
-                # forms (or perhaps it's launchpad because I never had
-                # problems with bugzilla). The fact is that some uploads don't
-                # work and we get a unicode object instead of a file-like
-                # object in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116.
-                self.request.response.addErrorNotification(
-                    "The upload failed because there was a problem receiving"
-                    " the data.")
-            return
-
-        filename = file.filename
-        content = file.read()
-
-        if len(content) == 0:
-            self.request.response.addWarningNotification(
-                "Ignored your upload because the uploaded file is empty.")
-            return
-
-        translation_import_queue = getUtility(ITranslationImportQueue)
-
-        if not filename.endswith('.po'):
-            self.request.response.addWarningNotification(
-                "Ignored your upload because the file you uploaded was not"
-                " recognised as a file that can be imported as it does not"
-                " ends with the '.po' suffix.")
-            return
-
-        # We only set the 'published' flag if the upload is marked as an
-        # upstream upload.
-        if self.form.get('upload_type') == 'upstream':
-            published = True
-        else:
-            published = False
-
-        if self.context.path is None:
-            # The POFile is a dummy one, we use the filename as the path.
-            path = filename
-        else:
-            path = self.context.path
-        # Add it to the queue.
-        translation_import_queue.addOrUpdateEntry(
-            path, content, published, self.user,
-            sourcepackagename=self.context.potemplate.sourcepackagename,
-            distrorelease=self.context.potemplate.distrorelease,
-            productseries=self.context.potemplate.productseries,
-            potemplate=self.context.potemplate)
-
-        self.request.response.addInfoNotification(
-            'Thank you for your upload. The PO file content will be imported'
-            ' soon into Rosetta. You can track its status from the'
-            ' <a href="%s">Translation Import Queue</a>' %
-                canonical_url(translation_import_queue))
 
     def _store_translations(self):
         """Handle a form submission to store new translations."""

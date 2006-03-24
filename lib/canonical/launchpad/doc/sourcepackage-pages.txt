@@ -1,5 +1,5 @@
-   SourcePackage View Classes
-   ==========================
+SourcePackage View Classes
+==========================
 
   >>> from zope.component import queryView
   >>> from zope.publisher.browser import TestRequest
@@ -61,22 +61,20 @@ as 'packages', as:
 Check the consistence of the binaries dictionary, it should contains a
 binarypackagename and the architecture where it was built.
 
-XXX cprov 20060210: this method is very confusing because the
-architecturespecific attribute is hidden, i.e, this binary is
-architecture independent and we don't know at this point, that's why we
-have only on binary.
-
-  >>> for bin_name, archs in pmount_view.binaries().items():
-  ...    print bin_name, archs
-  pmount [u'i386']
-
-
 Let's retrieve a new view with useful dependency data:
 
   >>> warty = ubuntu['warty']
   >>> firefox = warty.getSourcePackage('mozilla-firefox')
   >>> firefox_view = queryView(firefox, "+index", request)
 
+XXX cprov 20060210: this method is very confusing because the
+architecturespecific attribute is hidden, i.e, this binary is
+architecture independent and we don't know at this point, that's why we
+have only on binary.
+
+  >>> for bin_name, archs in firefox_view.binaries().items():
+  ...    print bin_name, archs
+  mozilla-firefox [u'i386']
 
 Check dependency related view attributes:
 
@@ -119,3 +117,4 @@ sourcepackagename before passing to regexp.
    -- Sample Person &lt;test@canonical.com&gt; Tue, 10 Feb 2006 10:10:08 +0300
   <BLANKLINE>
   <BLANKLINE>
+

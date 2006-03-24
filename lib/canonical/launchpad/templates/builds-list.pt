@@ -1,12 +1,10 @@
 <div class="builds_list" tal:condition="not: view/setupBuildList">
   <tal:batch define="batch view/batchnav/currentBatch">
-
+     <form name="build_records_state" action="" method="GET">
      <table>
        <tr>
-         <th><label>Build state:</label></th>
+         <th><label for="build_state">Show:</label></th>
          <td>
-          <form name="build_records_state" action="" method="GET">
-
           <select name="build_state" size="1">
 
             <option tal:attributes="selected python: view.state == ''"
@@ -28,14 +26,24 @@
             <option tal:attributes="selected python: view.state == 'chrootwait'"
                     value="chrootwait">Waiting Chroot</option>
 
-          </select>
+            <option tal:attributes="selected python: view.state == 'superseded'"
+                    value="superseded">Superseded</option>
 
-          <input type="submit" value="Update" />
-
-          </form>
+          </select> builds
          </td>
        </tr>
+       <tr>
+          <th><label for="build_text">with names containing:</label></th>
+          <td>
+	  <tal:searchname condition="view/searchName">
+	      <input title="Package Name" size="20" type="text"
+                     name="build_text" tal:attributes="value view/text"/>
+          </tal:searchname>
+          <input type="submit" value="Update" />
+          </td>
+       </tr>
      </table>
+     </form>
 
      <tal:navigation
           tal:condition="batch"
@@ -63,6 +71,18 @@
             Requested
             <tal:requested
               content="build/datecreated/fmt:datetime"
+            />
+            in pocket <tal:buildpocket
+              content="build/pocket/name"
+            />
+          </td>
+        </tr>
+        <tr class="secondary" tal:condition="build/dependencies">
+          <td></td>
+          <td>
+	    Missing Dependencies
+            <tal:dependencies
+              content="build/dependencies"
             />
           </td>
         </tr>
