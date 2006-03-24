@@ -27,6 +27,7 @@ from zope.interface import providedBy
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
 from zope.app.form.utility import (
     setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
@@ -41,7 +42,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
     IBugTaskSet, IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch,
-    BugTaskSearchParams, IUpstreamBugTask, IDistroBugTask,
+    BugTaskSearchParams, IUpstreamBugTask, IDistroBugTask, IComponent,
     IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
     IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
     ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
@@ -773,6 +774,19 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             self.schema = IBugTaskSearch
 
+        if self.shouldShowComponentWidget():
+            # CustomWidgetFactory doesn't work with
+            # MultiCheckBoxWidget, so we work around this by manually
+            # instantiating the widget.
+            #
+            # XXX, Brad Bollenbach, 2006-03-22: Integrate BjornT's
+            # MultiCheckBoxWidget workaround once that lands, which
+            # will also fix the widget to use <label>'s.
+            self.component_widget = MultiCheckBoxWidget(
+                self.schema['component'].bind(self.context),
+                getVocabularyRegistry().get(None, "Component"),
+                self.request)
+
         setUpWidgets(self, self.schema, IInputWidget)
 
     def showTableView(self):
@@ -800,7 +814,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 names=[
                     "searchtext", "status", "assignee", "severity",
                     "priority", "owner", "omit_dupes", "has_patch",
-                    "milestone"]))
+                    "milestone", "component"]))
 
         if extra_params:
             data.update(extra_params)
@@ -835,10 +849,11 @@ class BugTaskSearchListingView(LaunchpadView):
         # "Normalize" the form data into search arguments.
         form_values = {}
         for key, value in data.items():
-            if zope_isinstance(value, (list, tuple)):
-                form_values[key] = any(*value)
-            else:
-                form_values[key] = value
+            if value:
+                if zope_isinstance(value, (list, tuple)):
+                    form_values[key] = any(*value)
+                else:
+                    form_values[key] = value
 
         # Base classes can provide an explicit search context.
         if not context:
@@ -898,6 +913,15 @@ class BugTaskSearchListingView(LaunchpadView):
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
         return True
+
+    def shouldShowComponentWidget(self):
+        """Should the component widget be shown on the advanced search page?"""
+        context = self.context
+        return (
+            IDistribution.providedBy(context) or
+            IDistroRelease.providedBy(context) or
+            ISourcePackage.providedBy(context) or
+            IDistributionSourcePackage.providedBy(context))
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""

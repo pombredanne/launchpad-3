@@ -3,6 +3,7 @@
 __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
+import os.path
 from urlparse import urljoin
 
 from zope.interface import implements
@@ -168,8 +169,8 @@ class Branch(SQLBase):
         else:
             # This is a push branch, hosted on the supermirror (pushed there by
             # users via SFTP).
-            prefix = config.launchpad.bzr_push_root_url
-            return urljoin(prefix, split_branch_id(self.id))
+            prefix = config.supermirrorsftp.branches_root
+            return os.path.join(prefix, split_branch_id(self.id))
 
 
 class BranchSet:
