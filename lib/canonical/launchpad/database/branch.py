@@ -40,7 +40,7 @@ class Branch(SQLBase):
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
-    mirror_failure_message = StringCol(default=None)
+    mirror_status_message = StringCol(default=None)
     started_at = ForeignKey(
         dbName='started_at', foreignKey='RevisionNumber', default=None)
 

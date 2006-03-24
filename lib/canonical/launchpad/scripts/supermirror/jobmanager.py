@@ -27,9 +27,9 @@ class JobManager:
     def run(self):
         """Run all branches_to_mirror registered with the JobManager"""
         while self.branches_to_mirror:
-            self.branches_to_mirror.pop().mirror()
+            self.branches_to_mirror.pop(0).mirror()
 
-    def branchStreamToBranchList(self, inputstream):
+    def branchStreamToBranchList(self, inputstream, branch_status_client):
         """Convert a stream of branch URLS to list of branch objects.
         
         This function takes a file handle associated with a text file of
@@ -45,11 +45,13 @@ class JobManager:
         branches = []
         destination = config.supermirror.branchesdest
         for line in inputstream.readlines():
-            branchnum, branchsrc = line.split(" ")
-            branchsrc = branchsrc.strip()
-            path = branchtarget(branchnum)
-            branchdest = os.path.join(destination, path)
-            branches.append(BranchToMirror(branchsrc, branchdest))
+            branch_id, branch_src = line.split(" ")
+            branch_src = branch_src.strip()
+            path = branchtarget(branch_id)
+            branch_dest = os.path.join(destination, path)
+            branch = BranchToMirror(
+                branch_src, branch_dest, branch_status_client, int(branch_id))
+            branches.append(branch)
         return branches
 
     def lock(self, lockfilename=config.supermirror.masterlock):

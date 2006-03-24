@@ -21,7 +21,7 @@ from twisted.enterprise import adbapi
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import sqlvalues, quote
 from canonical.lp import dbschema
 
 from canonical.authserver.interfaces import (
@@ -691,7 +691,8 @@ class DatabaseBranchDetailsStorage:
     def _mirrorCompleteInteraction(self, transaction, branchID):
         transaction.execute("""
             UPDATE Branch
-              SET last_mirrored = last_mirror_attempt, mirror_failures = 0
+              SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
+                  mirror_status_message = NULL
               WHERE id = %d""" % (branchID,))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
@@ -703,13 +704,11 @@ class DatabaseBranchDetailsStorage:
         return ri(self._mirrorFailedInteraction, branchID, reason)
     
     def _mirrorFailedInteraction(self, transaction, branchID, reason):
-        # XXX: 20060217 jamesh
-        # Where should the failure reason be stored?  The whiteboard is
-        # almost right, but appears to be for use by the user.
         transaction.execute("""
             UPDATE Branch
-              SET mirror_failures = mirror_failures + 1
-              WHERE id = %d""" % (branchID,))
+              SET mirror_failures = mirror_failures + 1,
+                  mirror_status_message = %s
+              WHERE id = %s""" % sqlvalues(reason, branchID))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1

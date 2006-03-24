@@ -163,7 +163,13 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
     def xmlrpc_startMirroring(self, branchID):
         if self.debug:
             print 'startMirroring(%r)' % branchID
-        return self.storage.startMirroring(branchID)
+        d = self.storage.startMirroring(branchID)
+        if self.debug:
+            def printresult(result):
+                print result
+                return result
+            d.addBoth(printresult)
+        return d
 
     def xmlrpc_mirrorComplete(self, branchID):
         if self.debug:

@@ -27,6 +27,6 @@ class BranchStatusClient:
 
     def mirrorFailed(self, branch_id, reason):
         assert isinstance(branch_id, int)
-        if not self.client.mirrorComplete(branch_id, reason):
+        if not self.client.mirrorFailed(branch_id, reason):
             raise BranchStatusError('mirrorFailed() failed for branch %d'
                                     % branch_id)

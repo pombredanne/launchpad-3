@@ -2,28 +2,40 @@ import os
 import shutil
 import tempfile
 import unittest
-from StringIO import StringIO
 
 import bzrlib.branch
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.weave import Weave
 
+import transaction
+from canonical.launchpad import database
 from canonical.launchpad.scripts.supermirror.tests import createbranch
-from canonical.launchpad.scripts.supermirror.branchtomirror import BranchToMirror
+from canonical.launchpad.scripts.supermirror.branchtomirror import (
+    BranchToMirror)
+from canonical.authserver.client.branchstatus import BranchStatusClient
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.launchpad.ftests.harness import (
+    LaunchpadFunctionalTestSetup, LaunchpadFunctionalTestCase)
 
 
-class TestBranchToMirror(unittest.TestCase):
+
+class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
     testdir = None
 
     def setUp(self):
         self.testdir = tempfile.mkdtemp()
+        LaunchpadFunctionalTestCase.setUp(self)
         # Change the HOME environment variable in order to ignore existing
         # user config files.
         os.environ.update({'HOME': self.testdir})
+        self.authserver = AuthserverTacTestSetup()
+        self.authserver.setUp()
 
     def tearDown(self):
         shutil.rmtree(self.testdir)
+        self.authserver.tearDown()
+        LaunchpadFunctionalTestCase.tearDown(self)
 
     def _getBranchDir(self, branchname):
         return os.path.join(self.testdir, branchname)
@@ -33,7 +45,8 @@ class TestBranchToMirror(unittest.TestCase):
         srcbranchdir = self._getBranchDir("branchtomirror-testmirror-src")
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
-        branch_56 = BranchToMirror(srcbranchdir, destbranchdir)
+        client = BranchStatusClient()
+        branch_56 = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
 
         tree = createbranch(srcbranchdir)
         branch_56.mirror()
@@ -43,14 +56,35 @@ class TestBranchToMirror(unittest.TestCase):
 
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 
+    def setUp(self):
+        LaunchpadFunctionalTestSetup().setUp()
+        TestCaseInTempDir.setUp(self)
+        self.authserver = AuthserverTacTestSetup()
+        self.authserver.setUp()
+
+    def tearDown(self):
+        self.authserver.tearDown()
+        TestCaseInTempDir.tearDown(self)
+        LaunchpadFunctionalTestSetup().tearDown()
+        test_root = TestCaseInTempDir.TEST_ROOT
+        if test_root is not None and os.path.exists(test_root):
+            shutil.rmtree(test_root) 
+        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
+        # to create a new root when the next test is run.
+        # The TestCaseInTempDir is part of bzr's test infrastructure and the
+        # bzr test runner normally does this cleanup, but here we have to do
+        # that ourselves.
+        TestCaseInTempDir.TEST_ROOT = None
+
     def testMissingSourceWhines(self):
         non_existant_branch = "/nonsensedir"
-        mybranch = BranchToMirror(non_existant_branch, "/anothernonsensedir")
-        stderr = StringIO()
-        result = self.apply_redirected(None, None, stderr, mybranch.mirror)
-        # result has return code
-        self.assertEqual(stderr.getvalue(), "%s is unreachable\n" \
-                % (non_existant_branch))
+        client = BranchStatusClient()
+        mybranch = BranchToMirror(
+            non_existant_branch, "/anothernonsensedir", client, 1)
+        mybranch.mirror()
+        transaction.abort()
+        branch = database.Branch.get(1)
+        self.assertEqual(1, branch.mirror_failures)
 
     def testMissingFileRevisionData(self):
         self.build_tree(['bzr56-missingrevision/',
@@ -65,18 +99,6 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         tree.branch.repository.weave_store.put_weave(
             "myid", Weave(weave_name="myid"), 
             tree.branch.repository.get_transaction())
-
-    def tearDown(self):
-        TestCaseInTempDir.tearDown(self)
-        test_root = TestCaseInTempDir.TEST_ROOT
-        if test_root is not None and os.path.exists(test_root):
-            shutil.rmtree(test_root) 
-        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
-        # to create a new root when the next test is run.
-        # The TestCaseInTempDir is part of bzr's test infrastructure and the
-        # bzr test runner normally does this cleanup, but here we have to do
-        # that ourselves.
-        TestCaseInTempDir.TEST_ROOT = None
 
 
 def test_suite():

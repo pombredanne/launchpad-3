@@ -18,6 +18,11 @@ Create the branch status client:
 
   >>> client = BranchStatusClient()
 
+We are using Branch here which is a local database class, to cross-check
+what the BranchStatusClient is reporting. The BranchStatusClient 'client' is
+communicating over XML-RPC to the running authserver to answer these 
+queries.
+
 Check the mirror status of branch #1:
 
   >>> branch = Branch.get(1)
@@ -33,12 +38,14 @@ update the last_mirror_attempt field in the database.  An integer
 branch ID is used here, because the branch puller can not make use of
 SQLObject instances.
 
+This updates the last_mirror_attempt field:
+
   >>> client.startMirroring(1)
 
-This updates the last_mirror_attempt field, which we see after moving
-to the next transaction:
+We can only see the change after we abort our local transaction so
+we can get the data the authserver has committed.
 
-  >>> LaunchpadZopelessTestSetup().txn.commit()
+  >>> LaunchpadZopelessTestSetup().txn.abort()
   >>> branch = Branch.get(1)
   >>> branch.last_mirror_attempt != None
   True
@@ -58,7 +65,7 @@ authserver using the mirrorComplete() method:
 This sets the last_mirrored date to the time when the mirror started
 (recorded by startMirroring()):
 
-  >>> LaunchpadZopelessTestSetup().txn.commit()
+  >>> LaunchpadZopelessTestSetup().txn.abort()
   >>> branch = Branch.get(1)
   >>> branch.last_mirrored is not None
   True
@@ -76,17 +83,23 @@ flag this with the mirrorFailed() method:
 This increments the failure count and leaves the last_mirrored date as
 is:
 
-  >>> LaunchpadZopelessTestSetup().txn.commit()
+  >>> LaunchpadZopelessTestSetup().txn.abort()
   >>> branch = Branch.get(1)
   >>> branch.mirror_failures
   1
   >>> branch.last_mirrored == old_last_mirrored
+  True
+  >>> branch.mirror_status_message
+  u'failure reason'
 
 A successful mirror will reset the failure counter though:
 
   >>> client.startMirroring(1)
   >>> client.mirrorComplete(1)
-  >>> LaunchpadZopelessTestSetup().txn.commit()
+  >>> LaunchpadZopelessTestSetup().txn.abort()
   >>> branch = Branch.get(1)
   >>> branch.mirror_failures
   0
+  >>> print branch.mirror_status_message
+  None
+

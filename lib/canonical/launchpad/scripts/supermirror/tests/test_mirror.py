@@ -95,7 +95,7 @@ class MockJobManager:
         MockJobManager.locked = True
         self._call_log.append(("lock",))
 
-    def branchStreamToBranchList(self, arg):
+    def branchStreamToBranchList(self, arg, client=None):
         self._call_log.append(("branchStreamToBranchList", arg.getvalue()))
         return []
 

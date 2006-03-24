@@ -5,6 +5,7 @@ import urllib
 from canonical.config import config
 from canonical.launchpad.scripts.supermirror.jobmanager import (
     JobManager, LockError)
+from canonical.authserver.client.branchstatus import BranchStatusClient
 
 
 def mirror(managerClass=JobManager, urllibOpener=urllib.urlopen):
@@ -15,9 +16,10 @@ def mirror(managerClass=JobManager, urllibOpener=urllib.urlopen):
     except LockError:
         return 0
 
+    client = BranchStatusClient()
     try:
         branchdata = urllibOpener(config.supermirror.branchlistsource)
-        for branch in mymanager.branchStreamToBranchList(branchdata):
+        for branch in mymanager.branchStreamToBranchList(branchdata, client):
             mymanager.add(branch)
         mymanager.run()
     finally:

@@ -6,7 +6,7 @@
 /* Branch */
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
-COMMENT ON COLUMN Branch.mirror_failure_message IS 'The last failure message we got when mirroring this branch.';
+COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
 
 /* Bug */
 

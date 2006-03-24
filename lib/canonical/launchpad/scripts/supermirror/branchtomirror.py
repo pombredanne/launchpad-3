@@ -9,40 +9,34 @@ from bzrlib.errors import NotBranchError
 
 class BranchToMirror:
 
-    def __init__(self, src, dest):
+    def __init__(self, src, dest, branch_status_client, branch_id):
         self.source = src
         self.dest = dest
+        self.branch_status_client = branch_status_client
+        self.branch_id = branch_id
         assert self.dest is not None
         assert self.source is not None
 
     def mirror(self):
-        try:
-            self._mirror()
-        except Exception, e:
-            print 
-            print "@BZR_ERROR_START@"
-            print "@BZR_ERROR_MSG@ Unknown error"
-            print "@BZR_ERROR_SRC@ %s" % self.source
-            print "@BZR_ERROR_DEST@ %s" % self.dest
-            print "@BZR_ERROR_TRACEBACK_START@"
-            print e.__class__ 
-            print "@BZR_ERROR_TRACEBACK_END@"
-            print "@BZR_ERROR_END@"
-            print "\n"
-
-    def _mirror(self):
+        self.branch_status_client.startMirroring(self.branch_id)
         try: 
             srcbranch = bzrlib.branch.Branch.open(self.source)
-        except bzrlib.errors.NotBranchError:
-            print >> sys.stderr,  "%s is unreachable" % (self.source)
+        except bzrlib.errors.BzrError, e:
+            self.branch_status_client.mirrorFailed(self.branch_id, str(e))
             return
         try:
             destdir = bzrlib.bzrdir.BzrDir.open(self.dest)
-            #destbranch = bzrlib.branch.Branch.open(self.dest)
             destdir.open_branch().pull(srcbranch, overwrite=True)
-        except NotBranchError:
+        except bzrlib.errors.NotBranchError:
             os.makedirs(self.dest) 
             destdir = srcbranch.bzrdir.clone(self.dest)
+        # add further encountered errors from the production runs here
+        # ------ HERE ---------
+        #
+        except bzrlib.errors.BzrError:
+            self.branch_status_client.mirrorFailed(self.branch_id, str(e))
+            return
+        self.branch_status_client.mirrorComplete(self.branch_id)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest

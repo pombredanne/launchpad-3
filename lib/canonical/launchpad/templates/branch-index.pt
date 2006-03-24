@@ -56,9 +56,9 @@
           <span tal:replace="context/mirror_failures" /> times.
         </td>
       </tr>
-      <tr tal:condition="context/mirror_failure_message">
+      <tr tal:condition="context/mirror_status_message">
         <th>Last Failure:</th>
-        <td tal:content="context/mirror_failure_message">
+        <td tal:content="context/mirror_status_message">
         </td>
       </tr>
       <tr tal:condition="context/whiteboard">
