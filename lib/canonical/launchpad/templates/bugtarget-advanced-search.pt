@@ -1,7 +1,6 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
@@ -34,7 +33,6 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-    <div style="margin-left: 0; width: 74%; float: left">
       <div style="border-width: 0px 0px 1px 0px; border-style: solid; margin-bottom: 5px">
         <strong tal:content="view/getAdvancedSearchPageHeading">
             Bugs in Ubuntu: Advanced Search
@@ -53,15 +51,21 @@
           </tr>
           <tr class="section">
             <td style="padding: 10px">
-              <input type="text" name="field.searchtext" size="40" />
-              <input type="submit"
-                     name="search"
-                     value="Search bugs in mozilla-firefox in ubuntu"
-                     tal:attributes="value view/getAdvancedSearchButtonLabel" />
-              <a href="#"
-                 tal:attributes="href string:${context/fmt:url}/+bugs">
-                <small>Simple</small>
-              </a>
+              <small>
+                <input type="text" name="field.searchtext" size="40" />
+                <input type="submit"
+                       name="search"
+                       value="Search bugs in mozilla-firefox in ubuntu"
+                       tal:attributes="value view/getAdvancedSearchButtonLabel" />
+                <a href="#"
+                   tal:attributes="href string:${context/fmt:url}/+bugs">
+                  Simple
+                </a>
+                <div style="margin-top: 5px">
+                  Sort by:
+                  <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+                </div>
+              </small>
             </td>
           </tr>
           <tr>
@@ -219,42 +223,52 @@
             </th>
           </tr>
           <tr>
-            <td class="section">
+            <td class="section"
+                tal:define="show_component_widget view/shouldShowComponentWidget">
               <table>
                 <tr>
                   <td>
                     <small>
-                      <label for="field.milestone">
-                        <strong>Target Milestone</strong>
-                      </label>
-                    </small>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <small tal:define="widget_values view/getMilestoneWidgetValues">
-                      <span tal:repeat="widget_value widget_values">
-                        <span tal:define="widget_id string:milestone.${widget_value/title}">
-                          <input name="field.milestone:list"
-                                 type="checkbox"
-                                 tal:attributes="value widget_value/value;
-                                                 checked widget_value/checked;
-                                                 id widget_id">
-                          <label tal:content="widget_value/title"
-                                 tal:attributes="for widget_id">
-                            dapper
-                          </label>
-                          <br />
+                      <span style="float: left">
+                        <label for="field.milestone">
+                          <strong>Target Milestone</strong>
+                        </label>
+                        <br />
+                        <span tal:define="widget_values view/getMilestoneWidgetValues">
+                          <span tal:repeat="widget_value widget_values">
+                            <span tal:define="widget_id string:milestone.${widget_value/title}">
+                            <input name="field.milestone:list"
+                                   type="checkbox"
+                                   tal:attributes="value widget_value/value;
+                                                   checked widget_value/checked;
+                                                   id widget_id">
+                              <label tal:content="widget_value/title"
+                                     tal:attributes="for widget_id">
+                                dapper
+                              </label>
+                            </span>
+                          </span>
+                          <span tal:condition="not:widget_values">
+                            (none)
+                          </span>
                         </span>
                       </span>
-                      <span tal:condition="not:widget_values">
-                        (none)
+                      <span style="float: left; margin-left: 4em"
+                            tal:condition="show_component_widget">
+                        <label for="field.component">
+                          <strong>Component</strong>
+                        </label>
+                        <br />
+                        <span tal:content="structure view/component_widget"
+                              tal:condition="show_component_widget">
+                        </span>
                       </span>
                     </small>
                   </td>
                 </tr>
               </table>
             </td>
+          </tr>
           <tr>
             <th class="section-header">
               Other
@@ -286,10 +300,12 @@
           </tr>
           <tr>
             <th class="section-header" style="font-weight: normal">
-              <input type="submit"
-                     name="search"
-                     value="Search bugs in mozilla-firefox in ubuntu"
-                     tal:attributes="value view/getAdvancedSearchButtonLabel"/>
+              <small>
+                <input type="submit"
+                       name="search"
+                       value="Search bugs in mozilla-firefox in ubuntu"
+                       tal:attributes="value view/getAdvancedSearchButtonLabel" />
+              </small>
             </th>
           </tr>
         </table>
@@ -299,12 +315,7 @@
             document.forms["search"].elements['field.searchtext'].focus();
           -->
       </script>
-    </div>
-    <div id="portal-column-two">
-      <metal:macro use-macro="context/@@main_template/action-menu" />
-    </div>
     <div class="visualClear">&nbsp;</div>
   </div>
 </body>
 </html>
-</tal:layout>

@@ -695,9 +695,7 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
 
     def search(self):
         return BugTaskSearchListingView.search(
-            self, extra_params={
-                'owner': self.context,
-                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+            self, extra_params={'owner': self.context})
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""
@@ -882,9 +880,7 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def search(self):
         """Return the open bugs assigned to a person."""
         return BugTaskSearchListingView.search(
-            self, extra_params={
-                'assignee': self.context,
-                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+            self, extra_params={'assignee': self.context})
 
     def shouldShowAssigneeWidget(self):
         """Should the assignee widget be shown on the advanced search page?"""
@@ -911,9 +907,7 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
 
     def search(self):
         return BugTaskSearchListingView.search(
-            self, extra_params={
-                'subscriber': self.context,
-                'status': any(*UNRESOLVED_BUGTASK_STATUSES)})
+            self, extra_params={'subscriber': self.context})
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""
@@ -1954,7 +1948,7 @@ class ObjectReassignmentView:
 
     Also, if the object for which you're using this view doesn't have a
     displayname or name attribute, you'll have to subclass it and define the
-    contextName attribute in your subclass constructor.
+    contextName property in your subclass.
     """
 
     ownerOrMaintainerAttr = 'owner'
@@ -1966,10 +1960,15 @@ class ObjectReassignmentView:
         self.request = request
         self.user = getUtility(ILaunchBag).user
         self.errormessage = ''
-        self.ownerOrMaintainer = getattr(context, self.ownerOrMaintainerAttr)
         setUpWidgets(self, self.schema, IInputWidget)
-        self.contextName = (getattr(self.context, 'displayname', None) or
-                            getattr(self.context, 'name', None))
+
+    @property
+    def ownerOrMaintainer(self):
+        return getattr(self.context, self.ownerOrMaintainerAttr)
+
+    @property
+    def contextName(self):
+        return self.context.displayname or self.context.name
 
     def processForm(self):
         if self.request.method == 'POST':
@@ -2047,8 +2046,11 @@ class TeamReassignmentView(ObjectReassignmentView):
 
     def __init__(self, context, request):
         ObjectReassignmentView.__init__(self, context, request)
-        self.contextName = self.context.browsername
         self.callback = self._addOwnerAsMember
+
+    @property
+    def contextName(self):
+        return self.context.browsername
 
     def _addOwnerAsMember(self, team, oldOwner, newOwner):
         """Add the new and the old owners as administrators of the team.

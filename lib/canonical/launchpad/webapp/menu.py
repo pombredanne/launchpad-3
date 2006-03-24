@@ -156,6 +156,7 @@ class MenuBase(UserAttributeCache):
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
         self.context = context
+        self.request = None
 
     def initialize(self):
         """Override this in subclasses to do initialization."""

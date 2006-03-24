@@ -44,7 +44,7 @@
   <p>HCT uses "packaging" information to link a source package in a
   distribution to upstream product series.</p>
 
-  <p class="portalMessage" tal:condition="not: context/productseries">
+  <p class="informational message" tal:condition="not: context/productseries">
     Launchpad doesn&#8217;t know which product and series this package
     belongs to.
     If you can, please <a href="+packaging">let us know</a>.

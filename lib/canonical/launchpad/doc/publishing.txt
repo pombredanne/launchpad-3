@@ -14,14 +14,19 @@ interesting one):
 
 Verify if the object follows its interface contracts:
 
+ >>> from zope.interface.verify import verifyObject
  >>> from canonical.launchpad.interfaces import (
  ...     ISourcePackageRelease, IDistroRelease,
  ...     ISourcePackagePublishingHistory,
  ...     ISourcePackage,
  ...     IDistributionSourcePackageRelease)
 
- >>> ISourcePackagePublishingHistory.providedBy(spph)
+ >>> verifyObject(ISourcePackagePublishingHistory, spph)
  True
+
+ XXX cprov 20060322: None of the attributes below pass verifyObject().
+ So, they claim to implement some thing they don't really have. Most
+ of the problems are related with bad interface inheritance.
 
  >>> IDistroRelease.providedBy(spph.distrorelease)
  True

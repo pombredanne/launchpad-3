@@ -16,7 +16,7 @@
              Language Name
           </a>
         </td>
-        <td>
+        <td style="white-space: nowrap">
           <div tal:replace="structure drlang/@@+barchart" />
         </td>
         <td tal:content="drlang/contributor_count">16</td>

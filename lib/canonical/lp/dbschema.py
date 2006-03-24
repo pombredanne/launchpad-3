@@ -34,6 +34,7 @@ __all__ = (
 'BranchRelationships',
 'BranchLifecycleStatus',
 'BranchReviewStatus',
+'BugBranchStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -270,9 +271,13 @@ class Item:
     """An item in an enumerated type.
 
     An item has a name, title and description.  It also has an integer value.
+
+    An item has a sortkey, which defaults to its integer value, but can be
+    set specially in the constructor.
+
     """
 
-    def __init__(self, value, title, description=None):
+    def __init__(self, value, title, description=None, sortkey=None):
         frame = sys._getframe(1)
         locals = frame.f_locals
 
@@ -290,6 +295,10 @@ class Item:
         else:
             self.title = title
             self.description = description
+        if sortkey is None:
+            self.sortkey = self.value
+        else:
+            self.sortkey = sortkey
 
     def _setClassFromAdvice(self, cls):
         self.schema = cls
@@ -327,6 +336,18 @@ class Item:
 
     def __ne__(self, other):
         return not self.__eq__(other, stacklevel=3)
+
+    def __lt__(self, other):
+        return self.sortkey < other.sortkey
+
+    def __gt__(self, other):
+        return self.sortkey > other.sortkey
+
+    def __le__(self, other):
+        return self.sortkey <= other.sortkey
+
+    def __ge__(self, other):
+        return self.sortkey >= other.sortkey
 
     def __hash__(self):
         return self.value
@@ -716,6 +737,38 @@ class GPGKeyAlgorithm(DBSchema):
         G
 
         ElGamal, compromised""")
+
+
+class BugBranchStatus(DBSchema):
+    """The status of a bugfix branch."""
+
+    ABANDONED = Item(10, """
+        Abandoned Attempt
+
+        A fix for this bug is no longer being worked on in this
+        branch.
+        """)
+
+    INPROGRESS = Item(20, """
+        Fix In Progress
+
+        Development to fix this bug is currently going on in this
+        branch.
+        """)
+
+    FIXAVAILABLE = Item(30, """
+        Fix Available
+
+        This branch contains a potentially useful fix for this bug.
+        """)
+
+    BESTFIX = Item(40, """
+        Best Fix Available
+
+        This branch contains a fix agreed upon by the community as
+        being the best available branch from which to merge to fix
+        this bug.
+        """)
 
 
 class BranchRelationships(DBSchema):
@@ -2364,6 +2417,12 @@ class BugTaskStatus(DBSchema):
         affected software.
         """)
 
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The status of this bug task is unknown.
+        """)
+
 
 class BugTaskPriority(DBSchema):
     """Bug Task Priority
@@ -2373,6 +2432,12 @@ class BugTaskPriority(DBSchema):
     maintainer's desire to fix the task. This schema documents the
     priorities Malone allows.
     """
+
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The priority of this bug task is unknown.
+        """)
 
     HIGH = Item(40, """
         High
@@ -2406,6 +2471,12 @@ class BugTaskSeverity(DBSchema):
     extent to which the bug impairs the stability and security of
     the distribution or upstream in which it was reported.
     """
+
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The severity of this bug task is unknown.
+        """)
 
     CRITICAL = Item(50, """
         Critical

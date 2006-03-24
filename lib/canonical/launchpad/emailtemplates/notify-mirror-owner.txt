@@ -1,0 +1,17 @@
+
+Hello
+
+We just finished probing the mirror for distribution %(distro)s,
+named %(mirror_name)s, that you registered on Launchpad, but we couldn't
+find any content mirrored in the location you specified. For this reason,
+we marked your mirror as disabled. It would be great if you could check
+the mirror details, to make sure that everything is correct.
+
+If all details are correct and the mirror is reachable, it could be
+a problem in our side, and in that case you can file a bug on
+https://launchpad.net/products/launchpad/+bugs
+
+Thanks,
+
+The Launchpad Team 
+
