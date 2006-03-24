@@ -25,7 +25,7 @@ from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, StrippingTextLine 
+from canonical.launchpad.fields import ContentNameField, StrippingTextLine
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -169,7 +169,10 @@ class IPerson(IHasSpecifications):
     # Properties of the Person object.
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
-    is_ubuntero = Attribute("Ubuntero Flag")
+    is_valid_person = Bool(
+            title=_("This is a active user and not a team."), readonly=True
+            )
+    is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")

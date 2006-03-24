@@ -35,7 +35,6 @@ def bug_modified(bug, event):
     assert bug_delta is not None
 
     attrs_actionnames = {'title': 'bugtitlechanged',
-                         'summary': 'bugsummarychanged',
                          'description': 'bugdescriptionchanged',
                          'duplicateof': 'bugmarkedasduplicate'}
 

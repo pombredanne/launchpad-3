@@ -48,6 +48,9 @@ class IBranch(IHasOwner):
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
+    mirror_failure_message = Text(
+        title=_('The last failure message we got when mirroring this branch '
+                'into supermirror.'), required=False, readonly=False)
     started_at = Int(title=_('Started At'), required=False,
         description=_("The number of the first revision"
                       " to display on that branch."))
@@ -73,6 +76,12 @@ class IBranch(IHasOwner):
         title=_("Product Locked"),
         description=_("Whether the product name specified within the branch "
                       " is overriden by the product name set in Launchpad."))
+
+    # Display names
+    unique_name = Attribute(
+        "Unique name of the branch, including the owner and product names.")
+    displayname = Attribute(
+        "The branch title if provided, or the unique_name.")
 
     # Home page attributes
     home_page = TextLine(
@@ -127,6 +136,10 @@ class IBranch(IHasOwner):
                          "push branch (url is None).  This url may be a "
                          "Canonical-internal path, so we don't display this "
                          "on the main website.")
+
+    related_bugs = Attribute(
+        "The bugs related to this branch, likely branches on which "
+        "some work has been done to fix this bug.")
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")

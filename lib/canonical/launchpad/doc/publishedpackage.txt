@@ -24,6 +24,6 @@ model in more intuitive ones:
  >>> src.name
  u'pmount'
 
- >>> IDistroReleaseBinaryPackage.providedBy(src.meta_binaries[0])
+ >>> verifyObject(IDistroReleaseBinaryPackage, src.meta_binaries[0])
  True
 

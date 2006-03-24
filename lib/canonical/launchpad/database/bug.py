@@ -19,10 +19,11 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
@@ -46,7 +47,6 @@ class Bug(SQLBase):
     # db field names
     name = StringCol(unique=True, default=None)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False,
                             default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -92,6 +92,7 @@ class Bug(SQLBase):
     tickets = RelatedJoin('Ticket', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
+    bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
 
     @property
     def displayname(self):
@@ -189,6 +190,21 @@ class Bug(SQLBase):
         # ok, we need a new one
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
+
+    def hasBranch(self, branch):
+        """See canonical.launchpad.interfaces.IBug."""
+        branch = BugBranch.selectOneBy(branchID=branch.id, bugID=self.id)
+
+        return branch is not None
+
+    def addBranch(self, branch, whiteboard=None):
+        """See canonical.launchpad.interfaces.IBug."""
+        for bug_branch in shortlist(self.bug_branches):
+            if bug_branch.branch == branch:
+                return bug_branch
+
+        return BugBranch(
+            branch=branch, bug=self, whiteboard=whiteboard)
 
     def linkCVE(self, cve, user=None):
         """See IBug."""
@@ -303,7 +319,7 @@ class BugSet:
 
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None, datecreated=None,
+        description=None, msg=None, datecreated=None,
         title=None, private=False, owner=None):
         """See IBugSet."""
         # Make sure that the factory has been passed enough information.
@@ -331,8 +347,7 @@ class BugSet:
             datecreated = UTC_NOW
 
         bug = Bug(
-            title=title, summary=summary,
-            description=description, private=private,
+            title=title, description=description, private=private,
             owner=owner.id, datecreated=datecreated)
 
         bug.subscribe(owner)

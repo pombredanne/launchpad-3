@@ -28,30 +28,7 @@ from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
-
-
-class AuthserverTacTestSetup(TacTestSetup):
-    root = '/tmp/authserver-test'
-    
-    def setUpRoot(self):
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
-
-    @property
-    def tacfile(self):
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/authserver.tac'
-            ))
-
-    @property
-    def pidfile(self):
-        return os.path.join(self.root, 'authserver.pid')
-
-    @property
-    def logfile(self):
-        return os.path.join(self.root, 'authserver.log')
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 
 
 class SFTPSetup(TacTestSetup):
@@ -258,6 +235,7 @@ class AcceptanceTests(BzrTestCase):
         branch = database.Branch.get(branch_id)
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
+        getattr(sftp, '_connected_hosts', {}).clear()
         self.assertRaises(
             NotBranchError,
             bzrlib.branch.Branch.open,
