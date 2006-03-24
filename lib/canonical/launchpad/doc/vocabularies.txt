@@ -453,7 +453,7 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
     [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
 
     A search for 'support' will give us only the persons which have support
-    as part of their name/displayname/givenname/familyname or the beginning of
+    as part of their name or displayname, or the beginning of
     one of its email addresses.
     >>> sorted(person.name for person in vocab.search('support'))
     [u'ubuntu-team']

@@ -1,7 +1,6 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
@@ -34,7 +33,6 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-    <div style="margin-left: 0; width: 74%; float: left">
       <div style="border-width: 0px 0px 1px 0px; border-style: solid; margin-bottom: 5px">
         <strong tal:content="view/getAdvancedSearchPageHeading">
             Bugs in Ubuntu: Advanced Search
@@ -317,12 +315,7 @@
             document.forms["search"].elements['field.searchtext'].focus();
           -->
       </script>
-    </div>
-    <div id="portal-column-two">
-      <metal:macro use-macro="context/@@main_template/action-menu" />
-    </div>
     <div class="visualClear">&nbsp;</div>
   </div>
 </body>
 </html>
-</tal:layout>
