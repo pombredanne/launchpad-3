@@ -1,13 +1,21 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="malone"
+    i18n:domain="bazaar"
 >
   <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1 tal:content="string:${context/displayname}'s bug reports by package">
+        Foo Bar's bug reports by package
+      </h1>
+    </metal:heading>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:content="structure context/@@+portlet-otherpackages" />
+  </metal:leftportlets>
+
   <div metal:fill-slot="main">
-    <div style="margin-left: 0; width: 74%; float: left">
-      <h1>Bug reports by package</h1>
       <strong>
         <small tal:content="view/current_package/displayname">
           mozilla-firefox (Ubuntu)
@@ -34,14 +42,8 @@
             -->
         </script>
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
-      </div>
-    </div>
-    <div id="portal-column-two">
-      <metal:macro use-macro="context/@@main_template/action-menu" />
-      <div tal:content="structure context/@@+portlet-otherpackages" />
     </div>
     <div class="visualClear">&nbsp;</div>
   </div>
 </body>
 </html>
-</tal:layout>
