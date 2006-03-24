@@ -331,6 +331,10 @@ class SpecificationHandler:
                 log.warning(
                     'We received an email from Launchpad: %s' % filealias.url)
             return True
+        # When sending the email, the sender will be set so that it's
+        # clear that we're the one sending the email, not the original
+        # sender.
+        del signed_msg['Sender']
 
         mail_body = signed_msg.get_payload(decode=True)
         spec_url = get_spec_url_from_moin_mail(mail_body)
