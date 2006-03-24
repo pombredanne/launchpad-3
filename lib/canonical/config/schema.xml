@@ -99,13 +99,6 @@
                 puller to use, not for public URLs.
             </description>
         </key>
-        <key name="bzr_push_root_url" datatype="canonical.config.urlbase"
-            required="no" default="file:///srv/sm-ng/pushsftp-hosted/">
-            <description>
-                The URL prefix for bzr push branches.  Used to generate URLs for
-                the branch puller to use, not for public URLs.
-            </description>
-        </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
