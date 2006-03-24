@@ -48,6 +48,16 @@ COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related conten
 COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
 COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
 
+
+-- BugNotification
+
+COMMENT ON TABLE BugNotification IS 'The text representation of changes to a bug, which are used to send email notifications to bug changes.';
+COMMENT ON COLUMN BugNotification.bug IS 'The bug that was changed.';
+COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textual representation of the change.';
+COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
+COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
+
+
 /* BugPackageInfestation */
 
 COMMENT ON TABLE BugPackageInfestation IS 'A BugPackageInfestation records the impact that a bug is known to have on a specific sourcepackagerelease. This allows us to track the versions of a package that are known to be affected or unaffected by a bug.';
