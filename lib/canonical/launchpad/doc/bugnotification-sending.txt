@@ -401,7 +401,7 @@ initial message of the bug, it will result in a bug filed notification:
     ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 10] subject
+    Subject: [Bug 11] subject
     <BLANKLINE>
     Public bug reported:
     <BLANKLINE>
@@ -414,7 +414,7 @@ initial message of the bug, it will result in a bug filed notification:
     a description of the bug.
     --
     new bug
-    http://localhost:8086/malone/bugs/10
+    http://localhost:8086/malone/bugs/11
     <BLANKLINE>
 
     >>> for notification in BugNotification.select():
@@ -441,14 +441,14 @@ top of the email:
     ...     print_notification(to_addresses, email)
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug 10] subject
+    Subject: [Bug 11] subject
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
     <BLANKLINE>
     a comment.
     --
     new bug
-    http://localhost:8086/malone/bugs/10
+    http://localhost:8086/malone/bugs/11
     <BLANKLINE>
 
 Also note that notification was sent to Mark as well, since he's a

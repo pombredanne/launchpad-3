@@ -192,9 +192,9 @@ pretend we had just added task five:
     u'[Bug 1] Firefox does not support SVG'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     ** Also affects: mozilla-firefox (Ubuntu)
-           Severity: Normal
-           Priority: Medium
-             Status: Unconfirmed
+         Severity: Normal
+         Priority: Medium
+           Status: Unconfirmed
 
 Editing a bug task
 ------------------

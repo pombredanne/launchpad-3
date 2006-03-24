@@ -36,8 +36,7 @@ those notifications look like.
 
     >>> firefox_crashes = getUtility(IBugSet).createBug(
     ...     product=firefox, title="firefox crashes all the time",
-    ...     comment="this is a comment", owner=bug_submitter, 
-    ...     summary="some summary")
+    ...     comment="this is a comment", owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes))
 
     >>> from canonical.launchpad.database import BugNotification
@@ -75,7 +74,7 @@ those notifications look like.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    ** Short description changed:
+    ** Description changed:
     ...
 
 3. Filing a new task on an existing bug

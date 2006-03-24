@@ -474,7 +474,7 @@ def _get_task_change_values(task_change, displayattrname):
     return (oldval_display, newval_display)
 
 
-def send_bug_notification(bug, user, subject, content, to_addrs=None,
+def send_bug_notification(bug, user, subject, contents, to_addrs=None,
                           headers=None):
     """Sends a bug notification.
 
@@ -482,7 +482,7 @@ def send_bug_notification(bug, user, subject, content, to_addrs=None,
     :user: The user that did that action that caused a notification to
            be sent.
     :subject: The subject of the notification.
-    :content: The content of the notification.
+    :contents: The content of the notification.
     :to_addrs: The addresses the notification should be sent to. If none
                are provided, the default bug cc list will be used.
     :headers: Any additional headers that should get added to the
@@ -535,7 +535,7 @@ def send_bug_notification(bug, user, subject, content, to_addrs=None,
     headers["X-Launchpad-Bug"] = x_launchpad_bug_values
 
     signature = get_email_template('bug-notification.txt') % {
-        'content': content,
+        'content': contents,
         'bug_title': bug.title,
         'bug_url': canonical_url(bug)}
 

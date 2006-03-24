@@ -683,7 +683,7 @@ A notification was added:
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print bug_notification.message.text_contents
-    *** Also affects: Debian
+    ** Also affects: Debian
     ...
 
 
@@ -857,7 +857,7 @@ edited:
     >>> print bug_notification.bug.id
     7
     >>> print bug_notification.message.text_contents
-    *** Changed in: evolution (upstream)
+    ** Changed in: evolution (upstream)
         Status: Unconfirmed => Confirmed
 
 If the bug has more than one bug task, we try to guess which bug task
@@ -883,7 +883,7 @@ The user is a bug contact of the upstream product
     >>> print bug_notification.bug.id
     1
     >>> print bug_notification.message.text_contents
-    *** Changed in: firefox (upstream)
+    ** Changed in: firefox (upstream)
     ...
         Status: Unconfirmed => Confirmed
 
@@ -917,7 +917,7 @@ The user is a package bug contact
     >>> print bug_notification.bug.id
     1
     >>> print bug_notification.message.text_contents
-    *** Changed in: mozilla-firefox (Ubuntu)
+    ** Changed in: mozilla-firefox (Ubuntu)
         Assignee: (unassigned) => No Privileges Person
     ...
 
@@ -945,7 +945,7 @@ The user is a distribution member
     >>> print bug_notification.bug.id
     1
     >>> print bug_notification.message.text_contents
-    *** Changed in: mozilla-firefox (Ubuntu)
+    ** Changed in: mozilla-firefox (Ubuntu)
         Assignee: No Privileges Person => Sample Person
     ...
 
