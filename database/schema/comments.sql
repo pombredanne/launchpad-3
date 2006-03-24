@@ -902,6 +902,7 @@ COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this libr
 COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file\'s contents';
+COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file\'s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 
 -- LibraryFileAlias
