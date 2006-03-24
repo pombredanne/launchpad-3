@@ -7,6 +7,12 @@
   <body>
     <div metal:fill-slot="main">
       <div metal:use-macro="context/@@launchpad_addform/addform">
+        <p
+          metal:fill-slot="extra_top"
+          tal:condition="view/errors"
+          tal:content="structure view/errors"
+          class="error message"
+        />
         <div metal:fill-slot="extra_info">
           <p>
             To sign the code of conduct:

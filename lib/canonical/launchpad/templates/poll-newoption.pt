@@ -22,11 +22,11 @@
     </tal:block>
 
     <tal:block condition="not: context/isNotYetOpened">
-      <p class="portalMessage" tal:condition="context/isClosed">
-        This poll is already closed, you can't add new options.
+      <p class="error message" tal:condition="context/isClosed">
+        You can&#8217;t add new options because the poll is already closed.
       </p>
-      <p class="portalMessage" tal:condition="context/isOpen">
-        This poll is already open, you can't add new options.
+      <p class="error message" tal:condition="context/isOpen">
+        You can&#8217;t add new options because the poll is already open.
       </p>
     </tal:block>
 

@@ -16,8 +16,12 @@
 
     <h1>Your Jabber IDs</h1>
 
-    <div tal:define="feedback view/processJabberForm" tal:condition="feedback" 
-         tal:content="structure feedback" class="portalMessage" />
+    <p
+      tal:define="feedback view/processJabberForm"
+      tal:condition="feedback" 
+      tal:content="structure feedback"
+      class="error message"
+    />
 
     <form name="edit_jabber" action="" method="POST">
     <table>
