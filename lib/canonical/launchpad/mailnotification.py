@@ -523,8 +523,6 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
 
     if "Reply-To" not in headers:
         headers["Reply-To"] = get_bugmail_replyto_address(bug)
-    if "Sender" not in headers:
-        headers["Sender"] = config.bounce_address
 
     # Add a header for each task on this bug, to help users organize
     # their incoming mail in a way that's convenient for them.
@@ -1075,14 +1073,5 @@ def notify_specification_modified(spec, event):
         'spec_title': spec.title,
         'spec_url': canonical_url(spec)}
 
-    sent_addrs = set()
-    related_people = [spec.owner, spec.assignee, spec.approver, spec.drafter]
-    related_people = [
-        person for person in related_people if person is not None]
-    subscribers = [subscription.person for subscription in spec.subscriptions]
-
-    for notified_person in related_people + subscribers:
-        for address in contactEmailAddresses(notified_person):
-            if address not in sent_addrs:
-                simple_sendmail_from_person(event.user, address, subject, body)
-                sent_addrs.add(address)
+    for address in spec.notificationRecipientAddresses():
+        simple_sendmail_from_person(event.user, address, subject, body)

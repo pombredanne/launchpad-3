@@ -196,6 +196,9 @@ class ISpecification(IHasOwner):
         specification.
         """
 
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that receive notifications."""
+
     # event-related methods
     def getDelta(old_spec, user):
         """Return a dictionary of things that changed between this spec and
