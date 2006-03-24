@@ -121,7 +121,7 @@ Let's see some examples:
   'filed in 2 other places'
 
   >>> low_priority_task.statuselsewhere
-  'filed in 2 other places'
+  'filed in 3 other places'
 
 Let's take a random task related to wontfix_priority_task, mark it
 Fixed, and see how the statuselsewhere value is affected:

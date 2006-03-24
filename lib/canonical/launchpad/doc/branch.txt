@@ -37,7 +37,7 @@ Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
 utility.
 
 >>> from zope.component import getUtility
->>> from canonical.launchpad.interfaces import IBranchSet
+>>> from canonical.launchpad.interfaces import IBranchSet, NotFoundError
 >>> branchset = getUtility(IBranchSet)
 
 It must define the IBranchSet interface.
@@ -52,6 +52,18 @@ True
 
 >>> print branchset.get(-1)
 None
+
+A branch is retrievable via BranchSet's __getitem__ 
+
+>>> branchset[24].name
+u'launchpad'
+
+If it doesn't exist an exception NotFoundError is raised
+
+>>> try:
+...     branchset[-1]
+... except NotFoundError:
+...     pass
 
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> personset = getUtility(IPersonSet)
@@ -108,6 +120,27 @@ navigation purposes as if they were associated to a magic product named
 >>> gterm_dev.product_name
 u'gnome-terminal'
 
+== Branch names ==
+
+Branches have a unique name, that is based on the names of the owner, product
+and branch.
+
+>>> pushed = branchset[25]
+>>> pushed.unique_name
+u'~name12/gnome-terminal/pushed'
+>>> junkcode.unique_name
+u'~ddaa/+junk/junkcode'
+
+Branches have a display name that is the Branch.title if it's provided, and the
+unique_name otherwise.
+
+>>> assert gterm_dev.title is not None
+>>> gterm_dev.displayname == gterm_dev.title
+True
+>>> assert pushed.title is None
+>>> pushed.displayname == pushed.unique_name
+True
+
 == Branches registered and authored ==
 
 You can get the list of branches for a given Launchpad owner. These are called
@@ -151,7 +184,7 @@ Branches can be subscribed to and unsubscribed from by a Person.
 True
 >>> subscription.branch == gterm_dev and subscription.person == sabdfl
 True
->>> gterm_dev.subscriptions == [subscription]
+>>> gterm_dev.subscriptions[0] == subscription
 True
 >>> gterm_dev.subscribers == [sabdfl]
 True

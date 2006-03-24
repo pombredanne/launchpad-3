@@ -1,3 +1,125 @@
+launchpad-buildd (31) unstable; urgency=low
+
+  * Cherry-pick patch from Ryan's sbuild that outputs dpkg --purge output
+    line-by-line, instead of as one big blob, to make output on the web
+    UI a little bit more friendly for people following along at home.
+  * Install a cron.daily script (eww) to purge old build logs for now until
+    I have the time to learn how twisted's native log rotation works.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Wed, 15 Mar 2006 17:23:26 +1100
+
+launchpad-buildd (30) unstable; urgency=low
+
+  * Move our translation publishing mojo so it happens BEFORE we move
+    all the files from debian/files out of the chroot, instead of after.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Wed,  8 Mar 2006 18:50:49 +1100
+
+launchpad-buildd (29) unstable; urgency=low
+
+  * Use dpkg --print-installation-architecture in our postinst instead
+    of --print-architecture to avoid spewing suprious error messages.
+  * Remove the check for log_dir, since we call sbuild with --nolog,
+    and stop creating $HOME/logs in the user setup part of postinst.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Tue,  7 Mar 2006 19:13:56 +1100
+
+launchpad-buildd (28) unstable; urgency=low
+
+  * Modify the protocol method ensurepresent to return additional
+    information about the target files lookup procedure. It helps to
+    debug intermittent Librarian errors.
+
+ -- Celso Providelo <celso.providelo@canonical.com>  Mon, 06 Mar 2006 16:42:00 -0300
+
+launchpad-buildd (27) unstable; urgency=low
+
+  * Update the slave chroot tool to use getent so it works on the production
+    buildds
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Mon, 20 Feb 2006 12:57:45 +0000
+
+launchpad-buildd (26) unstable; urgency=low
+
+  * Update buildd-slave code to allow for GIVENBACK status returns,
+    matching the states under which sbuild used to do --auto-give-back.
+  * Port over sanae's build log regex parsing to allow us to do:
+    - Automatic dep-wait handling, based on sbuild's logs of apt-get.
+    - Automatic give-backs for a few corner cases (like kernel bugs).
+  * Make sbuild stop dying if we have no sendmail installed, since we
+    don't really want it sending mail in the launchpad world anyway.
+  * Call sbuild and apt with "LANG=C", so we don't have to worry about
+    locales matching between the base system and the autobuild chroots.
+  * Clear up confusion in build states with 's/BUILDFAIL/PACKAGEFAIL/'
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Mon, 27 Feb 2006 14:00:08 +1100
+
+launchpad-buildd (25) unstable; urgency=low
+
+  * Update sbuild.conf to current yumminess.
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri,  3 Feb 2006 19:22:01 +0000
+
+launchpad-buildd (24) unstable; urgency=low
+
+  * Add /var/cache/apt/archives to the buildd chroots when mounting
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri,  3 Feb 2006 00:30:07 +0000
+
+launchpad-buildd (23) unstable; urgency=low
+
+  * And make apply-ogre-model use $SUDO, yay
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:59:10 +0000
+
+launchpad-buildd (22) unstable; urgency=low
+
+  * Fix typo in apply-ogre-model (missing space)
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:55:12 +0000
+
+launchpad-buildd (21) unstable; urgency=low
+
+  * Fix the .extend call for the --comp argument to pass it as one argument
+    instead of as - - c o m p = m a i n (which kinda doesn't work)
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:45:34 +0000
+
+launchpad-buildd (20) unstable; urgency=low
+
+  * Update sbuild to the latest sbuild from adam.
+  * Make sure we pass --archive=ubuntu
+  * Make sure we pass --comp=<the component we're building for>
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 26 Jan 2006 17:20:49 +0000
+
+launchpad-buildd (19) unstable; urgency=low
+
+  * Add ogre support to the slave chroot tool
+  * Make sure the chroot tool ensures localhost in /etc/hosts in the chroot
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed, 25 Jan 2006 12:29:04 +0000
+
+launchpad-buildd (18) unstable; urgency=low
+
+  * Remove sbuildrc.tmp dangleberry in postinst
+  * Add linux32 to set of depends so that hppa, sparc and powerpc can build
+  * Make hppa, sparc, powerpc use linux32 to invoke the sbuild binary
+  * Add --resolve-deps to debootstrap invocation
+  * Make chroot tool use /bin/su - rather than /bin/sh for chrooting. shiny
+    (apparently)
+  * Add a bunch of deps infinity spotted.
+  * Make sure we chown the chroot tarball to the calling user after packing
+    it up.
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed,  9 Nov 2005 17:37:37 -0500
+
+launchpad-buildd (17) unstable; urgency=low
+
+  * Changed default UID/GID to match the ldap buildd UID/GID
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed,  9 Nov 2005 17:13:22 -0500
+
 launchpad-buildd (16) unstable; urgency=low
 
   * Change the XMLRPC method 'ensure' to be 'ensurepresent'

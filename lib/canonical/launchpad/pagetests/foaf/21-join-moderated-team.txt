@@ -41,6 +41,7 @@
 
   >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> assert not stub.test_emails
   >>> to_addrs
   ['foo@baz.com']
 

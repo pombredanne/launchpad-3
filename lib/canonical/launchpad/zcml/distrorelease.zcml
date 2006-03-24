@@ -8,11 +8,21 @@
   <content class="canonical.launchpad.database.DistroRelease">
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+    <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+    <!-- NB: check with SABDFL before modifying these, there is potential to
+         make a huge mess if these get changed and Soyuz has to republish
+         shedloads of data. -->
     <require
         permission="launchpad.Edit"
-        set_attributes="displayname title summary description version
-                        releasestatus owner datelastlangpack 
-                        nominatedarchindep"
+        set_attributes="displayname title summary description
+                        datelastlangpack"
+        />
+    <!-- NB: check with SABDFL before modifying these, there is potential to
+         make a huge mess if these get changed and Soyuz has to republish
+         shedloads of data. -->
+    <require
+        permission="launchpad.Admin"
+        set_attributes="version name releasestatus owner nominatedarchindep"
         />
   </content>
 
@@ -102,6 +112,12 @@
       lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
+      name="+queue"
+      facet="overview"
+      template="../templates/distrorelease-queue.pt"
+      lp:url="/distros/$distribution/$distrorelease/+queue"
+      />
+    <browser:page
       name="+search"
       facet="overview"
       template="../templates/distrorelease-search.pt"
@@ -110,6 +126,11 @@
       name="+builds-list"
       template="../templates/builds-list.pt"
       lp:url="/distros/$distribution/$distrorelease/+builds-list"
+      />
+    <browser:page
+      name="+queue-list"
+      template="../templates/queue-list.pt"
+      lp:url="/distros/$distribution/$distrorelease/+queue-list"
       />
     <browser:page
       name="+portlet-details"
@@ -134,7 +155,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
-    permission="launchpad.Edit"
+    permission="launchpad.Admin"
     facet="overview"
     class="canonical.launchpad.browser.ObjectReassignmentView">
     <browser:page
@@ -143,17 +164,26 @@
       lp:url="/distros/$distro.id/$release.id/+reassign" />
   </browser:pages>
 
+  <!-- NB DO NOT CHANGE WITHOUT THINKING
+       Do not allow people to change the details of the distro release that
+       will affect the way Soyuz publishes the distrorelease. Check with
+       SABDFL before modifying this page. -->
   <browser:editform
     for="canonical.launchpad.interfaces.IDistroRelease"
     permission="launchpad.Edit"
+    label="Edit release details"
     name="+edit"
     schema="canonical.launchpad.interfaces.IDistroRelease"
     facet="overview"
     fields="displayname title summary description"
-    template="../templates/launchpad-editform.pt"
+    template="../templates/distrorelease-edit.pt"
     lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"
     />
 
+  <!-- NB DO NOT CHANGE WITHOUT THINKING
+       Do not allow people to change the details of the distro release that
+       will affect the way Soyuz publishes the distrorelease. Check with
+       SABDFL before modifying this page. -->
   <browser:editform
     for="canonical.launchpad.interfaces.IDistroRelease"
     permission="launchpad.Admin"

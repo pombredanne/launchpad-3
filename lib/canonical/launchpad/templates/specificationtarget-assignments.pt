@@ -1,0 +1,75 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Specification assignments</h1>
+
+  <p class="portalMessage" tal:condition="not: view/specs">
+    No specifications to display.
+  </p>
+
+  <table class="listing sortable" tal:condition="view/specs" id="work">
+    <thead>
+      <tr>
+        <th>Priority</th>
+        <th>Name</th>
+        <th>Definition</th>
+        <th>Delivery</th>
+        <th>Assignee</th>
+        <th>Drafter</th>
+        <th>Approver</th>
+      </tr>
+    </thead>
+    <tbody class="lesser">
+      <tr tal:repeat="spec view/specs">
+        <td>
+          <span style="display: none" tal:content="spec/priority/value" />
+          <span tal:content="spec/priority/title"
+                tal:attributes="
+                class string:specpriority${spec/priority/name}">High</span>
+        </td>
+        <td><a tal:content="spec/name/fmt:shorten/35"
+               tal:attributes="
+                 href spec/fmt:url;
+                 title spec/title">foo-bar-baz</a></td>
+        <td>
+          <span style="display: none" tal:content="spec/status/value" />
+          <span tal:content="spec/status/title"
+                tal:attributes="
+                class string:specstatus${spec/status/name}">Approved</span>
+        </td>
+        <td>
+          <span style="display: none"
+                tal:content="spec/delivery/value" />
+          <span tal:content="spec/delivery/title"
+                tal:attributes="
+                class string:specdelivery${spec/delivery/name}">Slow
+          </span>
+        </td>
+        <td><a tal:condition="spec/assignee"
+               tal:content="spec/assignee/name"
+               tal:attributes="href spec/assignee/fmt:url">Assignee Bar</a></td>
+        <td><a tal:condition="spec/drafter"
+               tal:content="spec/drafter/name"
+               tal:attributes="href spec/drafter/fmt:url">Drafter Baz</a></td>
+        <td><a tal:condition="spec/approver"
+               tal:content="spec/approver/name"
+               tal:attributes="href spec/approver/fmt:url">Approver Foo</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>

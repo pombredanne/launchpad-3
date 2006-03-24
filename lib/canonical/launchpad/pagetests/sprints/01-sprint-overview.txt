@@ -1,4 +1,3 @@
-
 Launchpad Sprint Tracker
 ========================
 
@@ -14,7 +13,7 @@ Let's start by viewing the list of sprints registered.
   ... """)
   HTTP/1.1 200 Ok
   ...Meetings and sprints...
-  ...Ubuntu Below Zero...
+  ...<a href=".../sprints/ubz">Ubuntu Below Zero</a>...
 
 Now lets have a look at one sprint in particular. We expect to have UBZ in
 the sample data:

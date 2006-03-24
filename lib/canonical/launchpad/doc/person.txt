@@ -158,7 +158,7 @@ Now we remove the only email address nonempty had.
 
 Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 >>> login('mark@hbd.com')
->>> ubuntu_team = personset.getByName('name17')
+>>> ubuntu_team = personset.getByName('ubuntu-team')
 >>> ubuntu_translators = personset.getByName('ubuntu-translators')
 >>> ubuntu_translators.addMember(empty)
 >>> ubuntu_team.teamowner = empty
@@ -211,7 +211,7 @@ True
 True
 
 >>> cur.execute("select p1.name from person as p1, person as p2 where "
-...             "p1.id = p2.teamowner and p2.name = 'name17'")
+...             "p1.id = p2.teamowner and p2.name = 'ubuntu-team'")
 >>> cur.fetchone()[0]
 u'name12'
 
@@ -269,7 +269,7 @@ trying to match the text only against the beginning of an email address:
 ...     (person.displayname, person.name, emails)
 (u'Sigurd Gartmann', u'sigurd-ubuntu', [u'sigurd-ubuntu@brogar.org'])
 (u'Ubuntu Gnome Team', u'name18', [])
-(u'Ubuntu Team', u'name17', [u'support@ubuntu.com'])
+(u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
 (u'Ubuntu Translators', u'ubuntu-translators', [])
 
 >>> results = personset.find('steve.alexander')
@@ -300,7 +300,7 @@ Searching only for Teams based on their names or email addresses:
 >>> for person in results:
 ...     emails = [email.email for email in emailset.getByPerson(person)]
 ...     (person.displayname, person.name, emails)
-(u'Ubuntu Team', u'name17', [u'support@ubuntu.com'])
+(u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
 
 >>> results = personset.findTeam('translators')
 >>> for person in results:
@@ -312,33 +312,32 @@ Searching only for Teams based on their names or email addresses:
 Packages related to a person
 ----------------------------
 
-To obtain the packages a person is related to, we should use the
-maintainedPackages() and uploadedButNotMaintainedPackages() methods of
-IPersonSet. The former will return all SourcePackageReleases a person is
-listed as the Maintainer, while the latter will return all
-SourcePackageReleases that a person created (uploaded) but is not the
-Maintainer.
+To obtain the packages a person is related to, we can use the
+latestMaintainedPackages() and latestUploadedButNotMaintainedPackages()
+methods of IPersonSet. The former will return the latest
+SourcePackageReleases a person uploaded in which he is listed as the
+Maintainer. The latter will return the latest SourcePackageReleases a
+person uploaded (where he isn't the maintainer).
 
 >>> sabdfl = personset.getByName('sabdfl')
->>> for sprelease in sabdfl.maintainedPackages():
+>>> for sprelease in sabdfl.latestMaintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
-(u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
 (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
-(u'evolution', u'Ubuntu Hoary', u'1.0')
-(u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
-(u'netapplet', u'Ubuntu Hoary', u'1.0-1')
-(u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
-(u'pmount', u'Ubuntu Hoary', u'0.1-1')
 (u'pmount', u'Ubuntu Hoary', u'0.1-2')
+(u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
+(u'netapplet', u'Ubuntu Hoary', u'1.0-1')
+(u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
+(u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
+(u'evolution', u'Ubuntu Hoary', u'1.0')
 
->>> for sprelease in sabdfl.uploadedButNotMaintainedPackages():
+>>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
-(u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
-(u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
 (u'libstdc++', u'Ubuntu Hoary', u'b8p')
+(u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
 (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
+(u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
 Bug contact packages
@@ -353,3 +352,4 @@ alphabetically (A to Z) by package name.
 
 >>> [package.name for package in foobar.getBugContactPackages()]
 [u'mozilla-firefox', u'pmount']
+

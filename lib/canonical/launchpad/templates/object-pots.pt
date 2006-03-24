@@ -3,7 +3,9 @@
   redirects to the mailing lists in case that is incorrect.
 </tal:comment>
 
-  <tal:block condition="not: context/currentpotemplates">
+<tal:content define="potemplates context/currentpotemplates">
+
+  <tal:block condition="not: potemplates">
 
     <h2 i18n:translate="">No translatable templates available</h2>
 
@@ -19,7 +21,7 @@
 
   <tal:templateviews condition="view/templateviews">
 
-    <tal:block tal:condition="python:len(context.currentpotemplates) > 5">
+    <tal:block tal:condition="python:len(potemplates) > 5">
       <!-- Listing of MANY templates -->
 
       <p>
@@ -46,7 +48,7 @@
 
     </tal:block>
 
-    <tal:listing tal:condition="python:len(context.currentpotemplates) <= 5">
+    <tal:listing tal:condition="python:len(potemplates) <= 5">
       <!-- Listing of FEW templates -->
 
       <div tal:condition="not: view/languages">
@@ -88,3 +90,5 @@
     </tal:listing>
 
   </tal:templateviews>
+
+</tal:content>

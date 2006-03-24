@@ -58,7 +58,7 @@ so that they get notified about the changes as well:
     >>> from canonical.launchpad.helpers import Snapshot
     >>> from canonical.launchpad.interfaces import ITicket, IPersonSet
 
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('name17')
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_ticket.subscribe(ubuntu_team)
     <TicketSubscription...>
     >>> login('no-priv@canonical.com')
@@ -132,8 +132,8 @@ bug that has been linked to the request:
     Support request #8 on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
-        Linked to bug: #10
-        http://.../malone/bugs/10
+        Linked to bug: #11
+        http://.../malone/bugs/11
     <BLANKLINE>
 
     >>> stub.test_emails = []
@@ -160,8 +160,8 @@ And if we remove the link again, we get:
     Support request #8 on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
-        Removed link to bug: #10
-        http://.../malone/bugs/10
+        Removed link to bug: #11
+        http://.../malone/bugs/11
     <BLANKLINE>
 
     >>> stub.test_emails = []

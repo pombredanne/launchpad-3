@@ -12,7 +12,7 @@ import os
 import shutil
 import gc
 
-from bzrlib.branch import ScratchBranch
+from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
 from bzrlib.tests import TestCase as BzrTestCase
 from bzrlib.errors import NoSuchFile, NotBranchError
@@ -77,17 +77,14 @@ class AcceptanceTests(BzrTestCase):
             """)
         connection.commit()
 
-        # Start authserver.
-        self.userHome = os.path.abspath(tempfile.mkdtemp())
-        self.authserver = AuthserverTacTestSetup()
-        self.authserver.setUp()
-
         # Create a local branch with one revision
-        self.local_branch = ScratchBranch(files=['foo'])
-        self.local_branch.working_tree().add('foo')
-        self.local_branch.working_tree().commit('Added foo')
+        self.local_branch = ScratchDir(files=['foo']).open_branch()
+        wt = self.local_branch.bzrdir.open_workingtree()
+        wt.add('foo')
+        wt.commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
+        self.userHome = os.path.abspath(tempfile.mkdtemp())
         os.makedirs(os.path.join(self.userHome, '.ssh'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa'), 
@@ -103,6 +100,10 @@ class AcceptanceTests(BzrTestCase):
         # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
         self.realSshVendor = sftp._ssh_vendor
         sftp._ssh_vendor = 'none'
+
+        # Start authserver.
+        self.authserver = AuthserverTacTestSetup()
+        self.authserver.setUp()
 
         # Start the SFTP server
         self.server = SFTPSetup()
@@ -210,10 +211,18 @@ class AcceptanceTests(BzrTestCase):
 
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.selectOneBy(name='test-branch')
+        testuser = database.Person.byName('testuser')
+        branch = database.Branch.selectOneBy(
+            ownerID=testuser.id, name='test-branch')
         branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
+
+        # XXX Andrew Bennetts 2006-04-20: Force bzrlib to make a new SFTP
+        # connection.  We use getattr to protect against this private attr going
+        # away in a later version of bzrlib.
+        getattr(sftp, '_connected_hosts', {}).clear()
+        
         remote_branch = bzrlib.branch.Branch.open(
             self.server_base + '~testuser/+junk/renamed-branch')
         self.assertEqual(

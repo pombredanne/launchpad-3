@@ -41,11 +41,6 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
 
-class BugPageTitle:
-    def __call__(self, context, view):
-        return smartquote('Bug #%d: "%s"') % (context.id, context.title)
-
-
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return smartquote('Bug #%d in %s: "%s"') % (
@@ -95,7 +90,7 @@ class LaunchbagBugID(SubstitutionHelper):
 
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bzr syncing'
 
 def binarypackagerelease_index(context, view):
     return "%s binary package in Launchpad" % context.title
@@ -118,7 +113,7 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextTitle(smartquote('Edit branch "%s"'))
 
-branch_index = ContextTitle(smartquote('Bazaar branch "%s"'))
+branch_index = ContextDisplayName(smartquote('Bzr branch "%s"'))
 
 branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
@@ -134,17 +129,17 @@ def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
+bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
+
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = BugPageTitle()
+bug_edit = ContextTitle('%s')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):
     return smartquote('Bug #%d - Edit Web link "%s"') % (
         context.bug.id, context.title)
-
-bug_index = BugPageTitle()
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
@@ -155,6 +150,8 @@ bug_secrecy = ContextId('Bug #%d - Set visibility')
 bug_subscription = ContextId('Subscription to bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
+
+bugbranch_status = "Edit branch fix status"
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 
@@ -206,6 +203,8 @@ build_changes = ContextTitle('Changes in %s')
 build_index = ContextTitle('Build details for %s')
 
 build_reset = ContextTitle('Reset %s')
+
+build_rescore = ContextTitle('Rescore %s')
 
 builders = 'Launchpad build farm'
 
@@ -327,6 +326,8 @@ distrorelease_bugs = ContextTitle('Bugs in %s')
 
 distrorelease_cvereport = ContextDisplayName('CVE report for %s')
 
+distrorelease_edit = ContextTitle('Edit details of %s')
+
 def distrorelease_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
@@ -338,6 +339,8 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
 
 distrorelease_builds = ContextTitle('Builds for %s')
+
+distrorelease_queue = ContextTitle('Queue for %s')
 
 distroreleasebinarypackage_index = ContextTitle('%s')
 
@@ -511,6 +514,8 @@ person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
 person_review = ContextDisplayName("Review %s")
 
+person_specworkload = ContextDisplayName('Specification workload for %s')
+
 person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
 person_translations = ContextDisplayName('Translations made by %s')
@@ -552,8 +557,6 @@ poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
-
-potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment
 
@@ -616,7 +619,7 @@ productseries_translations_upload = 'Request new translations upload'
 
 project = ContextTitle('%s in Launchpad')
 
-project_branches = ContextTitle('Bazaar branches for %s')
+project_branches = ContextTitle('Bzr branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
@@ -737,7 +740,7 @@ def sourcepackages(context, view):
 
 sourcepackages_comingsoon = 'Coming soon'
 
-sources_index = 'Bazaar: Upstream revision control imports'
+sources_index = 'Bazaar: Upstream revision control imports to bzr'
 
 sourcesource_index = 'Upstream source import'
 
@@ -789,9 +792,17 @@ specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
+specificationgoal_specs = ContextTitle('List goals for %s')
+
+specificationgoal_setgoals = ContextTitle('Set goals for %s')
+
+specificationtarget_index = ContextTitle('Specification Listing for %s')
+
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
-specificationtarget_specplan = ContextTitle('Project plan for %s')
+specificationtarget_roadmap = ContextTitle('Project plan for %s')
+
+specificationtarget_assignments = ContextTitle('Specification assignments for %s')
 
 specificationtarget_workload = ContextTitle('Feature workload in %s')
 
@@ -805,7 +816,7 @@ sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
 
-sprint_table = ContextTitle('Table of specifications for %s')
+sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 
