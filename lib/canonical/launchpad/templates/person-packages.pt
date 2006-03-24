@@ -17,25 +17,25 @@
 
   <h1>Package maintenance report</h1>
 
-  <tal:maintained-packages condition="context/maintainedPackages">
+  <tal:maintained-packages condition="context/latestMaintainedPackages">
     <h2>Maintained packages</h2>
 
     <ul>
         <tal:block define="
             table_id string:maintained;
-            sourcepackagereleases context/maintainedPackages">
+            sourcepackagereleases context/latestMaintainedPackages">
           <div metal:use-macro="template/macros/sourcepackagerelease-table" />
         </tal:block>
     </ul>
   </tal:maintained-packages>
 
-  <tal:uploaded-packages condition="context/uploadedButNotMaintainedPackages">
+  <tal:uploaded-packages condition="context/latestUploadedButNotMaintainedPackages">
     <h2>Uploaded packages</h2>
 
     <ul>
         <tal:block define="
             table_id string:uploaded;
-            sourcepackagereleases context/uploadedButNotMaintainedPackages">
+            sourcepackagereleases context/latestUploadedButNotMaintainedPackages">
           <div metal:use-macro="template/macros/sourcepackagerelease-table" />
         </tal:block>
     </ul>

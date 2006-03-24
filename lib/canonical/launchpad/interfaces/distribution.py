@@ -143,7 +143,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         """Return the DistroReleases which are marked as in development."""
 
     def getRelease(name_or_version):
-        """Return the source package release with the name or version
+        """Return the distribution release with the name or version
         given.
         """
 

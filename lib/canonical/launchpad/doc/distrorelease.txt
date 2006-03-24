@@ -104,7 +104,7 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> warty = DistroRelease.get(1)
     >>> bpp = warty.getBinaryPackagePublishing()
     >>> print bpp.count()
-    1
+    2
     >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
     mozilla-firefox
     >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
@@ -151,6 +151,7 @@ other things) the uploader for validating incoming uploads.
    >>> for c in hoary.components:
    ...     print c.name
    main
+   restricted
    >>> for s in hoary.sections:
    ...     print s.name
    editors
@@ -166,6 +167,7 @@ other things) the uploader for validating incoming uploads.
    >>> for c in hoary.components:
    ...     print c.name
    main
+   restricted
    universe
 
    >>> for s in hoary.sections:
@@ -214,10 +216,12 @@ again" type set of assertions.
 DistroRelease can build meta objects for packages
 -------------------------------------------------
 
+   >>> from zope.interface.verify import verifyObject
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
    ...     IDistroReleaseBinaryPackage,
-   ...     IDistroReleaseSourcePackageRelease)
+   ...     IDistroReleaseSourcePackageRelease,
+   ...     ISourcePackagePublishingHistory)
 
 
    >>> pmount_src_name =  SourcePackageName.byName('pmount')
@@ -242,4 +246,63 @@ DistroRelease can build meta objects for packages
    >>> pmount_srcrel = hoary.getSourcePackageRelease(pmount_rel)
    >>> IDistroReleaseSourcePackageRelease.providedBy(pmount_srcrel)
    True
+
+Check some properties of DRSPR meta class
+
+Entire publishing history:
+
+   >>> pmount_srcrel.publishing_history.count()
+   1
+
+Most recent published history row:
+
+   >>> spph = pmount_srcrel.current_published
+   Traceback (most recent call last):
+   ...
+   NotFoundError: u'Source package pmount not published in hoary'
+
+   >>> netapplet_srcrel =  hoary.getSourcePackage('netapplet').currentrelease
+   >>> spph = netapplet_srcrel.current_published
+   >>> verifyObject(ISourcePackagePublishingHistory, spph)
+   True
+
+   >>> spph.section.name
+   u'web'
+
+Perform `post publication` override:
+
+   >>> new_section = getUtility(ISectionSet)['base']
+
+   >>> netapplet_srcrel.changeOverride(new_section=new_section)
+   >>> pub_hist = netapplet_srcrel.publishing_history
+   >>> pub_hist.count()
+   2
+
+Override information about 'pmount' is pending publication:
+
+   >>> pub_hist[0].status.name, pub_hist[0].section.name
+   ('PENDING', u'base')
+
+Supersede current publication:
+
+   >>> superseded_netapplet = netapplet_srcrel.supersede()
+   >>> netapplet_srcrel.publishing_history.count()
+   2
+
+   XXX cprov 20060322: Misteriously we cannot direct access attributes
+   of a SSPPH objects within the tests, but we do this for SBPPH in
+   distroarchrelease.txt. wth ?
+
+   >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
+   Traceback (most recent call last):
+   ...
+   ForbiddenAttribute: ('status', <SecureSourcePackagePublishingHistory...)
+
+   >>> from zope.security.proxy import removeSecurityProxy
+   >>> naked_hist = removeSecurityProxy(superseded_netapplet)
+
+   >>> naked_hist.status.name, naked_hist.datesuperseded
+   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+
+
 

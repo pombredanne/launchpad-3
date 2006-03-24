@@ -1104,6 +1104,11 @@ class BuilddMaster:
         * distribution release component
         * sourcepackagerelease urgency
         """
+        if job.manual:
+            self._logger.debug("%s (%d) MANUALLY RESCORED"
+                               % (job.name, job.lastscore))
+            return
+
         score = 0
         score_componentname = {
             'multiverse': 0,

@@ -15,10 +15,12 @@ __all__ = [
     'NamedSQLObjectHugeVocabulary',
     'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
+    'ProductBranchVocabulary',
     'BountyVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
+    'ComponentVocabulary',
     'CountryNameVocabulary',
     'DistributionVocabulary',
     'DistributionUsingMaloneVocabulary',
@@ -31,6 +33,7 @@ __all__ = [
     'MilestoneVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
+    'PersonActiveMembershipVocabulary',
     'POTemplateNameVocabulary',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
@@ -61,15 +64,15 @@ from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
-    Distribution, DistroRelease, Person, SourcePackageRelease,
+    Distribution, DistroRelease, Person, SourcePackageRelease, Branch,
     SourcePackageName, BugWatch, Sprint, DistroArchRelease, KarmaCategory,
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
-    BinaryAndSourcePackageName)
+    BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
     IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet)
+    IMilestoneSet, IPerson, IProduct)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -143,8 +146,8 @@ class SQLObjectVocabularyBase:
         return None
 
     def getTerm(self, value):
-        # Short circuit. There is probably a design problem here since we
-        # sometimes get the id and sometimes an SQLBase instance.
+        # Short circuit. There is probably a design problem here since
+        # we sometimes get the id and sometimes an SQLBase instance.
         if zisinstance(value, SQLBase):
             return self.toTerm(value)
 
@@ -259,6 +262,15 @@ class BasePersonVocabulary:
             return self.toTerm(person)
 
 
+class ComponentVocabulary(SQLObjectVocabularyBase):
+
+    _table = Component
+    _orderBy = 'name'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+
 # Country.name may have non-ASCII characters, so we can't use
 # NamedSQLObjectVocabulary here.
 class CountryNameVocabulary(SQLObjectVocabularyBase):
@@ -329,6 +341,40 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         return self._table.select(
             "BinaryPackageName.name LIKE '%%' || %s || '%%'"
             % quote_like(query))
+
+
+class ProductBranchVocabulary(SQLObjectVocabularyBase):
+    """The set of branches associated with a product.
+
+    Perhaps this should be renamed to BranchVocabulary.
+    """
+
+    implements(IHugeVocabulary)
+
+    _table = Branch
+    _orderBy = 'name'
+    displayname = 'Select a Branch'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+    def search(self, query):
+        """Return terms where query is a subtring of the name or URL."""
+        if not query:
+            return self.emptySelectResults()
+
+        quoted_query = quote_like(query)
+
+        sql_query = "("
+        if IProduct.providedBy(self.context):
+            sql_query += "(Branch.product = %d) AND " % self.context.id
+        sql_query += ((
+            "((Branch.name ILIKE '%%' || %s || '%%') OR "
+            "  (Branch.url ILIKE '%%' || %s || '%%'))") % (
+                quoted_query, quoted_query))
+        sql_query += ")"
+
+        return self._table.select(sql_query, orderBy=self._orderBy)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
@@ -599,6 +645,47 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
         self.extra_clause = """
             (person.teamowner != %d OR person.teamowner IS NULL) AND
             person.id != %d""" % (context.id, context.id)
+
+
+class PersonActiveMembershipVocabulary:
+    """All the teams the person is an active member of."""
+
+    implements(IVocabulary, IVocabularyTokenized)
+
+    def __init__(self, context):
+        assert IPerson.providedBy(context)
+        self.context = context
+
+    def __len__(self):
+        return self.context.myactivememberships.count()
+
+    def __iter__(self):
+        return iter(
+            [self.getTerm(membership.team) 
+             for membership in self.context.myactivememberships])
+
+    def getTerm(self, team):
+        if team not in self:
+            raise LookupError(team)
+        return SimpleTerm(team, team.name, team.displayname)
+
+    def __contains__(self, obj):
+        if not ITeam.providedBy(obj):
+            return False
+        member_teams = [
+            membership.team for membership in self.context.myactivememberships
+            ]
+        return obj in member_teams
+
+    def getQuery(self):
+        return None
+
+    def getTermByToken(self, token):
+        for membership in self.context.myactivememberships:
+            if membership.team.name == token:
+                return self.getTerm(membership.team)
+        else:
+            raise LookupError(token)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1017,7 +1104,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
         token = '%s/%s' % (obj.distribution.name, obj.name)
-        return SimpleTerm(obj.id, token, obj.title)
+        return SimpleTerm(obj, token, obj.title)
 
     def getTermByToken(self, token):
         try:

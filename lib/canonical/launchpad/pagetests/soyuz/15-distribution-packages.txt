@@ -21,7 +21,7 @@ Search for a package and check if the result page is not broken
   ... text=pmount""")
   HTTP/1.1 200 Ok
   ...
-  ...pmount...0.1-1...
+  ...pmount...0.1-2...
   ...
 
 
@@ -37,7 +37,7 @@ Follow pmount source package path
 Get pmount 0.1-1 version
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+source/pmount/0.1-1 HTTP/1.1
+  ... POST /distros/ubuntu/+source/pmount/0.1-2 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
