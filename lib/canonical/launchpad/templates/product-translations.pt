@@ -30,7 +30,7 @@
 
         <h2 i18n:translate="">Translation setup required</h2>
 
-        <p class="portalMessage" i18n:translate="">Administrator help
+        <p class="error message" i18n:translate="">Administrator help
         needed. <span tal:replace="context/displayname"
         i18n:name="product_name">Product</span> has not yet been
         setup for translation through Rosetta.</p>

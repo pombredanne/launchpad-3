@@ -23,9 +23,11 @@
     <span tal:replace="context/displayname">Mozilla Firefox 1.0</span>.
   </p>
 
-  <p class="portalMessage"
-     tal:condition="view/status_message"
-     tal:content="view/status_message" />
+  <p
+    tal:condition="view/status_message"
+    tal:content="view/status_message"
+    class="error message"
+  />
 
   <p tal:condition="not: view/specs">
     <i>There are no specifications currently proposed as goals for
