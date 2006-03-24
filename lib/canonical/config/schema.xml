@@ -605,6 +605,7 @@
                 to update branch mirror details.
 	    </description>
 	</key>
+    </sectiontype>
 
     <sectiontype name="builddmaster">
         <key name="dbuser" datatype="string" required="yes">
@@ -628,8 +629,6 @@
                 Directory to be created to store build results.
             </description>
         </key>
-    </sectiontype>
-
     </sectiontype>
 
     <sectiontype name="canonical">
