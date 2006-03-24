@@ -26,11 +26,7 @@ from textwrap import dedent
 from StringIO import StringIO
 
 from zope.component import getUtility
-<<<<<<< TREE
-=======
-from zope.exceptions import NotFoundError
 from zope.app.content_types import guess_content_type
->>>>>>> MERGE-SOURCE
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
