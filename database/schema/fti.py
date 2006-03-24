@@ -237,14 +237,14 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
         # Convert to Unicode
         query = args[0].decode('utf8')
-        plpy.debug('1 query is %s' % repr(query))
+        ## plpy.debug('1 query is %s' % repr(query))
 
         # Convert AND, OR, NOT and - to tsearch2 punctuation
         query = re.sub(r"(?:^|\s)-([\w\(])", r" !\1", query)
         query = re.sub(r"\bAND\b", "&", query)
         query = re.sub(r"\bOR\b", "|", query)
         query = re.sub(r"\bNOT\b", " !", query)
-        plpy.debug('2 query is %s' % repr(query))
+        ## plpy.debug('2 query is %s' % repr(query))
 
         # Deal with unwanted punctuation. We convert strings of punctuation
         # inside words to a '-' character for the hypenation handling below
@@ -253,7 +253,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         punctuation = re.escape(r'`~@#$%^*+=[]{}:;"<>,.?\/')
         query = re.sub(r"(\w)[%s]+(\w)" % (punctuation,), r"\1-\2", query)
         query = re.sub(r"[%s]+" % (punctuation,), " ", query)
-        plpy.debug('3 query is %s' % repr(query))
+        ## plpy.debug('3 query is %s' % repr(query))
 
         # Now that we have handle case sensitive booleans, convert to lowercase
         query = query.lower()
@@ -264,19 +264,19 @@ def setup(con, configuration=DEFAULT_CONFIG):
             bits = match.group(0).split("-")
             return "((%s)|%s)" % ("&".join(bits), "".join(bits))
         query = re.sub(r"\b\w+-[\w\-]+\b", hyphen_repl, query)
-        plpy.debug('3.1 query is %s' % repr(query))
+        ## plpy.debug('3.1 query is %s' % repr(query))
 
         # Any remaining - characters are spurious
         query = query.replace('-','')
 
         # Remove spurious brackets
         query = re.sub(r"\(([^\&\|]*?)\)", r" \1 ", query)
-        plpy.debug('3.2 query is %s' % repr(query))
+        ## plpy.debug('3.2 query is %s' % repr(query))
 
         # Insert & between tokens without an existing boolean operator
         # Whitespace not proceded by (|&! not followed by &|
         query = re.sub(r"(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
-        plpy.debug('4 query is %s' % repr(query))
+        ## plpy.debug('4 query is %s' % repr(query))
 
         # Detect and repair syntax errors - we are lenient because
         # this input is generally from users.
@@ -288,34 +288,37 @@ def setup(con, configuration=DEFAULT_CONFIG):
             query = query + " ) "*(openings-closings)
         elif closings > openings:
             query = " ( "*(closings-openings) + query
-        plpy.debug('5 query is %s' % repr(query))
+        ## plpy.debug('5 query is %s' % repr(query))
+
+        # Strip ' character that do not have letters on both sides
+        query = re.sub(r"((?<!\w)'|'(?!\w))", "", query)
 
         # Brackets containing nothing but whitespace and booleans, recursive
         last = ""
         while last != query:
             last = query
             query = re.sub(r"\([\s\&\|\!]*\)", "", query)
-        plpy.debug('6 query is %s' % repr(query))
+        ## plpy.debug('6 query is %s' % repr(query))
 
         # An & or | following a (
         query = re.sub(r"(?<=\()[\&\|\s]+", "", query)
-        plpy.debug('7 query is %s' % repr(query))
+        ##  plpy.debug('7 query is %s' % repr(query))
 
         # An &, | or ! immediatly before a )
         query = re.sub(r"[\&\|\!\s]*[\&\|\!]+(?=\))", "", query)
-        plpy.debug('8 query is %s' % repr(query))
+        ## plpy.debug('8 query is %s' % repr(query))
 
         # An &,| or ! followed by another boolean.
         query = re.sub(r"\s*([\&\|\!])\s*[\&\|]+", r"\1", query)
-        plpy.debug('9 query is %s' % repr(query))
+        ## plpy.debug('9 query is %s' % repr(query))
 
         # Leading & or |
         query = re.sub(r"^[\s\&\|]+", "", query)
-        plpy.debug('10 query is %s' % repr(query))
+        ## plpy.debug('10 query is %s' % repr(query))
 
         # Trailing &, | or !
         query = re.sub(r"[\&\|\!\s]+$", "", query)
-        plpy.debug('11 query is %s' % repr(query))
+        ## plpy.debug('11 query is %s' % repr(query))
 
         # If we have nothing but whitespace and tsearch2 operators,
         # return NULL.
@@ -324,7 +327,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
         # Convert back to UTF-8
         query = query.encode('utf8')
-        plpy.debug('12 query is %s' % repr(query))
+        ## plpy.debug('12 query is %s' % repr(query))
         '''
     text_func = shared_func + """
         return query or None
