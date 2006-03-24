@@ -164,7 +164,7 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         super(LaunchpadBrowserRequest, self).__init__(
             body_instream, environ, response)
 
-    def _createResponse(self, outstream):
+    def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
 
