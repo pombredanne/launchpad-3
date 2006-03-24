@@ -28,7 +28,3 @@ class TwistedTestCase(TrialTestCase):
             signal.signal(signal.SIGTERM, sigterm)
             signal.signal(signal.SIGCHLD, sigchld)
 
-
-def test_suite():
-    # Intentionally empty test suite
-    return TestSuite()
