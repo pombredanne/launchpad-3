@@ -174,7 +174,7 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
             # foo actually has an __all__).  Unless foo is within a tests
             # or ftests module or bar is itself a module.
             for attrname in fromlist:
-                if attrname not in module.__all__:
+                if attrname != '__doc__' and attrname not in module.__all__:
                     if not isinstance(
                         getattr(module, attrname, None), types.ModuleType):
                         error = NotInModuleAllPolicyViolation(

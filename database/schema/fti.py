@@ -26,7 +26,6 @@ ALL_FTI = [
     ('bug', [
             ('name', A),
             ('title', B),
-            ('summary', C),
             ('description', D),
             ]),
 

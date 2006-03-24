@@ -1,52 +1,92 @@
+POMsgSet
+========
+
+A POMsgSet represents a concrete msgset translation from a POFile.
+
+It's linked with a POTMsgSet that has the English strings that are being
+translated.
 
 Get the PO msgid we will be working with.
 
->>> from canonical.launchpad.database import POMsgSet, POMsgID, Language
->>> from canonical.launchpad.database import POTemplate
->>> pomsgid = POMsgID.byMsgid('evolution addressbook')
+  >>> from canonical.launchpad.database import POMsgSet, POMsgID, Language
+  >>> from canonical.launchpad.database import POTemplate
+  >>> pomsgid = POMsgID.byMsgid('evolution addressbook')
 
-Now find the two po templates, one for evolution 2.1.6 upstream and one for
-evolution in hoary. They should both have a message with the msgid we have
-chosen. We will be working with the Spanish (ef) language.
+Carlos is the one that will do the uploads.
 
->>> upstream_evo = POTemplate.get(1)
->>> upstream_evo.productseries is not None
-True
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
->>> upstream_evo.productseries.product.name
-u'evolution'
+Now find the po template.
 
->>> hoary_evo = POTemplate.get(4)
->>> hoary_evo.distrorelease is not None
-True
+  >>> upstream_evo = POTemplate.get(1)
+  >>> upstream_evo.productseries is not None
+  True
 
->>> hoary_evo.distrorelease.name
-u'hoary'
+  >>> upstream_evo.productseries.product.name
+  u'evolution'
 
->>> hoary_evo.sourcepackagename.name
-u'evolution'
+We will be working in Catalan (ca).
 
-We will be working in (es)panol.
+We need the right POMsgSet. We'll get the PO File, then, create the needed
+po msgset there.
 
-We need the right POMsgSet's. We'll get the PO Files, then find the po
-msgset from there.
+  >>> upstream_pofile = upstream_evo.getOrCreatePOFile('ca')
+  >>> upstream_pomsgset = upstream_pofile.createMessageSetFromText(
+  ...     u'evolution addressbook')
 
->>> upstream_pofile = upstream_evo.getPOFileByLang('es')
->>> upstream_pomsgset = upstream_pofile.getPOMsgSet(u'evolution addressbook')
->>> hoary_pofile = hoary_evo.getPOFileByLang('es')
->>> hoary_pomsgset = hoary_pofile.getPOMsgSet(u'evolution addressbook')
+Show that there are no active translations and no suggestions.
 
-Show that there are no active translations and no suggestions for either
-upstream or the hoary translation.
+  >>> upstream_pomsgset.active_texts
+  [None]
+  >>> upstream_pomsgset.published_texts
+  [None]
+  >>> list(upstream_pomsgset.getSuggestedSubmissions(0))
+  []
 
->>> list(upstream_pomsgset.getSuggestedSubmissions(0))
-[]
+And the fuzzy flags should also be disabled
 
->>> list(hoary_pomsgset.getSuggestedSubmissions(0))
-[]
+  >>> upstream_pomsgset.isfuzzy
+  False
+  >>> upstream_pomsgset.publishedfuzzy
+  False
 
-TESTING NonEditorTranslations
+Let's add a fuzzy translation.
 
-Let's make a submission, when we are not an editor. It should not
-become the active submission, and it
+  >>> upstream_pomsgset.updateTranslationSet(carlos, { 0: u'foo' }, fuzzy=True, published=True)
 
+Now it should appear as active and as published.
+
+  >>> upstream_pomsgset.active_texts
+  [u'foo']
+  >>> upstream_pomsgset.published_texts
+  [u'foo']
+
+And also, the fuzzy flag should be set in both cases.
+
+  >>> upstream_pomsgset.isfuzzy
+  True
+  >>> upstream_pomsgset.publishedfuzzy
+  True
+
+Now let's think that upstream removed that translation completely...
+
+  >>> upstream_pomsgset.updateTranslationSet(carlos, { 0: ''}, fuzzy=False, published=True)
+
+The active text should still have it as we never remove anything from Rosetta if upstream does it
+
+  >>> upstream_pomsgset.active_texts
+  [u'foo']
+
+But the published one should disapper
+
+  >>> upstream_pomsgset.published_texts
+  [None]
+
+And same with the fuzzy flags.
+
+  >>> upstream_pomsgset.isfuzzy
+  True
+  >>> upstream_pomsgset.publishedfuzzy
+  False

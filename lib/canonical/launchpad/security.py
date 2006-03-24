@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITranslationImportQueueEntry,
-    ITranslationImportQueue, IDistributionMirror)
+    ITranslationImportQueue, IDistributionMirror, IHasBug)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -356,16 +356,16 @@ class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
 
 
 class EditBugTask(AuthorizationBase):
-    """Permission checker for IBugTask editing.
+    """Permission checker for editing objects linked to a bug.
 
-    Allow any logged-in user to edit public bugtasks. Allow only
-    explicit subscribers to edit private bugtasks.
+    Allow any logged-in user to edit objects linked to public
+    bugs. Allow only explicit subscribers to edit objects linked to
+    private bugs.
     """
     permission = 'launchpad.Edit'
-    usedfor = IBugTask
+    usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-        """Check whether the user has permissions to edit this IBugTask."""
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
@@ -389,22 +389,21 @@ class EditBugTask(AuthorizationBase):
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     permission = 'launchpad.View'
-    usedfor = IBugTask
+    usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-        """Check whether the user has permissions to view this IBugTask."""
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
-            # Admins can always edit bugtasks, whether they're reported on a
-            # private bug or not.
+            # Admins can always edit bugs, whether they're public or
+            # private.
             return True
 
         if not self.obj.bug.private:
             # This is a public bug.
             return True
         else:
-            # This is a private bug
+            # This is a private bug.
             for subscription in self.obj.bug.subscriptions:
                 if user.inTeam(subscription.person):
                     return True

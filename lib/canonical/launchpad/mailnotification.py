@@ -14,8 +14,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
-    IUpstreamBugTask, )
+    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, IRemoteBugTask, 
+    ISpecification, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -319,14 +319,6 @@ def generate_bug_edit_email(bug_delta):
         change_info += u"- %s\n" % bug_delta.title['old']
         change_info += u"+ %s\n" % bug_delta.title['new']
 
-    if bug_delta.summary is not None:
-        summary_diff = get_unified_diff(
-            bug_delta.summary['old'],
-            bug_delta.summary['new'], 72)
-        change_info += u"** Short description changed:\n\n"
-        change_info += summary_diff
-        change_info += u"\n\n"
-
     if bug_delta.description is not None:
         description_diff = get_unified_diff(
             bug_delta.description['old'],
@@ -534,8 +526,8 @@ def send_bug_notification(bug, user, subject, content, to_addrs=None,
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
 
-    # Add a header for each task on this bug, to help users organize their
-    # incoming mail in a way that's convenient for them.
+    # Add a header for each task on this bug, to help users organize
+    # their incoming mail in a way that's convenient for them.
     x_launchpad_bug_values = []
     for bugtask in bug.bugtasks:
         x_launchpad_bug_values.append(bugtask.asEmailHeaderValue())
@@ -635,7 +627,7 @@ def get_bug_delta(old_bug, new_bug, user):
     """
     changes = {}
 
-    for field_name in ("title", "description", "summary", "name", "private",
+    for field_name in ("title", "description",  "name", "private",
                        "duplicateof"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)

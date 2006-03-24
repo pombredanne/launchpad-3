@@ -17,11 +17,12 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    non_duplicate_bug, IMessageTarget, NotFoundError)
+from canonical.launchpad.interfaces.validation import non_duplicate_bug
+from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    ContentNameField, Title, Summary, BugField)
+    ContentNameField, Title, BugField)
 
 
 class BugNameField(ContentNameField):
@@ -58,11 +59,6 @@ class IBug(IMessageTarget):
     title = Title(
         title=_('Summary'), required=True,
         description=_("""A one-line summary of the problem."""))
-    summary = Summary(
-        title=_('Short Description'), required=False,
-        description=_("""A single paragraph
-        description that should capture the essence of the bug, where it
-        has been observed, and what triggers it."""))
     description = Text(
         title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
@@ -111,6 +107,9 @@ class IBug(IMessageTarget):
     attachments = Attribute("List of bug attachments.")
     tickets = Attribute("List of support tickets related to this bug.")
     specifications = Attribute("List of related specifications.")
+    bug_branches = Attribute(
+        "Branches associated with this bug, usually "
+        "branches on which this bug is being fixed.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
@@ -148,6 +147,15 @@ class IBug(IMessageTarget):
         tracker, owned by the person given as the owner.
         """
 
+    def hasBranch(branch):
+        """Is this branch linked to this bug?"""
+
+    def addBranch(branch, status):
+        """Associate a branch with this bug.
+
+        Returns an IBugBranch.
+        """
+
     # CVE related methods
     def linkCVE(cve, user=None):
         """Ensure that this CVE is linked to this bug."""
@@ -172,7 +180,6 @@ class IBugDelta(Interface):
 
     # fields on the bug itself
     title = Attribute("A dict with two keys, 'old' and 'new', or None.")
-    summary = Attribute("A dict with two keys, 'old' and 'new', or None.")
     description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
@@ -261,7 +268,7 @@ class IBugSet(Interface):
 
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None, datecreated=None,
+        description=None, msg=None, datecreated=None,
         title=None, private=False, owner=None):
         """Create a bug and return it.
 
@@ -269,9 +276,6 @@ class IBugSet(Interface):
 
           * if no description is passed, the comment will be used as the
             description
-
-          * if summary is not passed then the summary will be the
-            first sentence of the description
 
           * the reporter will be subscribed to the bug
 

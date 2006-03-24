@@ -12,7 +12,7 @@ class BugDelta:
     """See canonical.launchpad.interfaces.IBugDelta."""
     implements(IBugDelta)
     def __init__(self, bug, bugurl, user,
-                 title=None, summary=None, description=None, name=None,
+                 title=None, description=None, name=None,
                  private=None, duplicateof=None, external_reference=None,
                  bugwatch=None, cve=None, attachment=None, added_bugtasks=None,
                  bugtask_deltas=None):
@@ -20,7 +20,6 @@ class BugDelta:
         self.bugurl = bugurl
         self.user = user
         self.title = title
-        self.summary = summary
         self.description = description
         self.name = name
         self.private = private

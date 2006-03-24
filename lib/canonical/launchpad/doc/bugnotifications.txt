@@ -62,10 +62,10 @@ those notifications look like.
     >>> for name in IBug.names(all=True):
     ...     setattr(bug_before_modification, name,
     ...             getattr(firefox_crashes, name))
-    >>> firefox_crashes.summary = "a new summary"
+    >>> firefox_crashes.description = "a new description"
     >>> firefox_crashes_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes, bug_before_modification,
-    ...     ["summary"])
+    ...     ["description"])
     >>> notify(firefox_crashes_modified)
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')

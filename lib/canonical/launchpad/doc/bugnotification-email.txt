@@ -109,11 +109,9 @@ returns the subject and body of the email, as a tuple.
       There is no undo or ability to recover the deleted file. Help!
 
 
-Another edit, this time the summary, and a long description, showing
-that the description is wrapped properly:
+Another edit, this time a long description, showing that the description
+is wrapped properly:
 
-    >>> old_summary = edited_bug.summary
-    >>> edited_bug.summary = "this summary isn't particularly short is it? after all, what kind of summary is so long that it needs to be wrapped?"
     >>> old_description = edited_bug.description
     >>> edited_bug.description = """\
     ... a new description that is quite long. but the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent.\n\nit's also smart enough to preserve whitespace, finally!"""
@@ -123,18 +121,11 @@ that the description is wrapped properly:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     description={'new': edited_bug.description,
-    ...                  'old': old_description},
-    ...     summary={'new': edited_bug.summary, 'old': old_summary})
+    ...                  'old': old_description})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    ** Short description changed:
-    <BLANKLINE>
-    - Everything put into the folder "Trash" disappears!
-    + this summary isn't particularly short is it? after all, what kind of
-    + summary is so long that it needs to be wrapped?
-    <BLANKLINE>
     ** Description changed:
     <BLANKLINE>
     - The Trash folder seems to have significant problems! At the moment,
@@ -148,8 +139,6 @@ that the description is wrapped properly:
     + 
     + it's also smart enough to preserve whitespace, finally!
 
-
-    
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
@@ -190,22 +179,22 @@ generate_bug_edit_email handles generating the email when a new task
 is added to a bug. To demonstrate what this email looks like, let's
 pretend we had just added task five:
 
-    >>> task_five = getUtility(IBugTaskSet).get(5)
+    >>> ubuntu_mozilla_task = getUtility(IBugTaskSet).get(17)
+    >>> bug_one = getUtility(IBugSet).get(1)
 
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     bug = bug_one,
+    ...     bugurl = "http://www.example.com/bugs/1",
     ...     user = sample_person,
-    ...     added_bugtasks = task_five)
+    ...     added_bugtasks = ubuntu_mozilla_task)
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
-    u'[Bug 2] the new title'
-    >>> print body
-    ** Also affects: mozilla-firefox (Debian)
-           Severity: Minor
-           Priority: High
-           Assignee: name12 <test@canonical.com>
-             Status: Confirmed
+    u'[Bug 1] Firefox does not support SVG'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    ** Also affects: mozilla-firefox (Ubuntu)
+           Severity: Normal
+           Priority: Medium
+             Status: Unconfirmed
 
 Editing a bug task
 ------------------

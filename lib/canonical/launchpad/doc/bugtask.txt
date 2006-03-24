@@ -114,8 +114,8 @@ the connection after a ProgrammingError is raised. ARGH.
 Retrieving and Searching for Bug Tasks
 --------------------------------------
 
-To retrieve a specific BugTask, use IBugTaskSet.get. As an example, interacting
-with the system as an anonymous (i.e. unauthenticated) user:
+To retrieve a specific BugTask, use IBugTaskSet.get. As an example,
+interacting with the system as an anonymous (i.e. unauthenticated) user:
 
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from canonical.launchpad.database import Person
@@ -134,6 +134,151 @@ zope.exceptions.NotFoundError:
     Traceback (most recent call last):
       ...
     NotFoundError: 'BugTask with ID -1 does not exist'
+
+To retrieve a set of bug tasks matching a set of search criteria, use
+the searchTasks method of the IBugTarget interface. Here's how you'd
+grab all the UNCONFIRMED and CONFIRMED tasks:
+
+For upstream:
+
+    >>> from canonical.launchpad.searchbuilder import any
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.database import Product
+    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> upstream_mozilla = Product.get(4)
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    ...                                         BugTaskStatus.CONFIRMED),
+    ...                              orderby="id", user=None)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+    >>> bugtask_ids = [bt.id for bt in bugtasks]
+    >>> print bugtask_ids
+    [2, 13, 14, 15]
+
+For a distribution:
+
+    >>> debian = distroset.get(3)
+    >>> sample_person = personset.get(12)
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    ...                                         BugTaskStatus.CONFIRMED),
+    ...                              orderby="id", user=None,
+    ...                              assignee=sample_person)
+    >>> bugtasks = debian.searchTasks(params)
+    >>> print bugtasks.count()
+    1
+    >>> bugtasks[0].id
+    5
+
+For a person:
+
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_updates, flush_database_caches)
+    >>> foobar = personset.get(16)
+    >>> evolution_sourcepackage = sourcepackagenameset.queryByName('evolution')
+    >>> ubuntu_evolution_task = bugtaskset.createTask(
+    ...     bug=bug_one, distribution=ubuntu, owner=foobar,
+    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
+    ...     severity=SEVERITY_NORMAL, sourcepackagename=evolution_sourcepackage)
+    >>> flush_database_updates()
+    >>> params = BugTaskSearchParams(owner=foobar, user=None,
+    ...                              orderby='targetname')
+    >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
+    [u'Ubuntu',
+     u'evolution (Ubuntu)',
+     u'evolution (upstream)',
+     u'linux-source-2.6.15 (Ubuntu)',
+     u'mozilla-firefox (debian)',
+     u'mozilla-firefox (ubuntu)',
+     u'thunderbird (Ubuntu)']
+
+It's also possible to search bugs that a person is subscribed to:
+
+    >>> params = BugTaskSearchParams(user=None, subscriber=foobar)
+    >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
+    [7, 9, 9, 10]
+
+To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
+
+    >>> from canonical.launchpad.searchbuilder import NULL
+    >>> params = BugTaskSearchParams(assignee=NULL, user=None)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
+    >>> print bugtasks.count()
+    2
+    >>> print [bugtask.bug.id for bugtask in bugtasks]
+    [4, 6]
+
+There's also support for searching tasks based on a string of text, e.g.:
+
+    >>> params = BugTaskSearchParams(searchtext="instructions", user=None)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
+    >>> print bugtasks.count()
+    1
+    >>> print [bugtask.bug.id for bugtask in bugtasks]
+    [5]
+
+searchtext is also used in a substring search against the target name:
+
+    >>> params = BugTaskSearchParams(searchtext="mozilla-firefoxX", user=None)
+    >>> bugtasks = debian.searchTasks(params)
+    >>> print bugtasks.count()
+    0
+    >>> params = BugTaskSearchParams(searchtext="mozilla-firefox", user=None)
+    >>> bugtasks = debian.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+    >>> params = BugTaskSearchParams(searchtext="mozilla-fire", user=None)
+    >>> bugtasks = debian.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+
+When the IBugTarget is an IDistribution, IDistributionSourcePackage, or
+ISourcePackage, you may include a "component" argument to filter the
+search. Let's file some bugs on cnews, a universe package, to
+demonstrate how component filtering works.
+
+    >>> cnews = ubuntu.getSourcePackage("cnews")
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> cnews.createBug(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="a bug in a universe package",
+    ...     comment="test")
+    <Bug ...>
+
+There are now three bugtasks open on packages in Ubuntu main.
+
+    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> componentset = getUtility(IComponentSet)
+    >>> main = componentset["main"]
+    >>> universe = componentset["universe"]
+
+    >>> params = BugTaskSearchParams(component=main, user=None)
+    >>> main_tasks = ubuntu.searchTasks(params)
+    >>> sorted([bugtask.bug.id for bugtask in main_tasks])
+    [1, 10]
+
+And there is the one bug on a "universe" package that we just added:
+
+    >>> params = BugTaskSearchParams(component=universe, user=None)
+    >>> universe_tasks = ubuntu.searchTasks(params)
+    >>> sorted([bugtask.bug.title for bugtask in universe_tasks])
+    [u'a bug in a universe package']
+
+Let's get all bugs on either main or universe:
+
+    >>> params = BugTaskSearchParams(
+    ...     component=any(main, universe), user=None)
+    >>> main_or_universe_tasks = ubuntu.searchTasks(params)
+    >>> sorted([bugtask.bug.id for bugtask in main_or_universe_tasks])
+    [1, 10, 11L]
+
+It's also possible to iterate over all the bug tasks:
+
+    >>> bugtasks = [bugtask for bugtasks in bugtaskset]
+    >>> len(bugtasks)
+    24
 
 Bug Task Targets
 ----------------
@@ -290,105 +435,6 @@ Distrorelease, sourcepackagename and binarypackagename.
 
 Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
-
-To retrieve a set of bug tasks matching a set of search criteria, use
-the searchTasks method of the IBugTarget interface. Here's how you'd
-grab all the UNCONFIRMED and CONFIRMED tasks:
-
-For upstream:
-
-    >>> from canonical.launchpad.searchbuilder import any
-    >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> from canonical.launchpad.database import Product
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
-    >>> upstream_mozilla = Product.get(4)
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
-    ...                                         BugTaskStatus.CONFIRMED),
-    ...                              orderby="id", user=None)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-    >>> print bugtasks.count()
-    4
-    >>> bugtask_ids = [bt.id for bt in bugtasks]
-    >>> print bugtask_ids
-    [2, 13, 14, 15]
-
-For a distribution:
-
-    >>> debian = distroset.get(3)
-    >>> sample_person = personset.get(12)
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
-    ...                                         BugTaskStatus.CONFIRMED),
-    ...                              orderby="id", user=None,
-    ...                              assignee=sample_person)
-    >>> bugtasks = debian.searchTasks(params)
-    >>> print bugtasks.count()
-    1
-    >>> bugtasks[0].id
-    5
-
-For a person:
-
-    >>> from canonical.database.sqlbase import (
-    ...     flush_database_updates, flush_database_caches)
-    >>> foobar = personset.get(16)
-    >>> evolution_sourcepackage = sourcepackagenameset.queryByName('evolution')
-    >>> ubuntu_evolution_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, owner=foobar,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL, sourcepackagename=evolution_sourcepackage)
-    >>> flush_database_updates()
-    >>> params = BugTaskSearchParams(owner=foobar, user=None,
-    ...                              orderby='targetname')
-    >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
-    [u'Ubuntu', u'evolution (Ubuntu)', u'evolution (upstream)',
-     u'linux-source-2.6.15 (Ubuntu)', u'mozilla-firefox (Debian)',
-     u'mozilla-firefox (Ubuntu)']
-
-It's also possible to search bugs that a person is subscribed to:
-
-    >>> params = BugTaskSearchParams(user=None, subscriber=foobar)
-    >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
-    [7, 9]
-
-To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
-
-    >>> from canonical.launchpad.searchbuilder import NULL
-    >>> params = BugTaskSearchParams(assignee=NULL, user=None)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-    >>> print bugtasks.count()
-    2
-    >>> print [bugtask.bug.id for bugtask in bugtasks]
-    [4, 6]
-
-There's also support for searching tasks based on a string of text, e.g.:
-
-    >>> params = BugTaskSearchParams(searchtext="instructions", user=None)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-    >>> print bugtasks.count()
-    1
-    >>> print [bugtask.bug.id for bugtask in bugtasks]
-    [5]
-
-searchtext is also used in a substring search against the target name:
-
-    >>> params = BugTaskSearchParams(searchtext="mozilla-firefoxX", user=None)
-    >>> bugtasks = debian.searchTasks(params)
-    >>> print bugtasks.count()
-    0
-    >>> params = BugTaskSearchParams(searchtext="mozilla-firefox", user=None)
-    >>> bugtasks = debian.searchTasks(params)
-    >>> print bugtasks.count()
-    4
-    >>> params = BugTaskSearchParams(searchtext="mozilla-fire", user=None)
-    >>> bugtasks = debian.searchTasks(params)
-    >>> print bugtasks.count()
-    4
-
-It's also possible to iterate over all the bug tasks:
-
-    >>> bugtasks = [bugtask for bugtasks in bugtaskset]
-    >>> len(bugtasks)
-    21
 
 Editing Bug Tasks
 -----------------
@@ -549,8 +595,7 @@ entitled _Privacy and Team Awareness_):
 
     >>> old_state = capture_state(
     ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
-    ...     "summary", "description", "private", "name",
-    ...     "duplicateof")
+    ...     "description", "private", "name", "duplicateof")
     >>> bug_upstream_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
@@ -776,6 +821,55 @@ Of course, it's also computed and set when a bugtask is created.
 
     >>> bugtaskset.get(upstream_task_id).targetname
     u'thunderbird-ng (upstream)'
+
+Remote BugTasks
+---------------
+
+If a bug tasks's target isn't using Malone officially, we say that it's
+a remote bug tasks. Such bug tasks provide IRemoteBugTask, which allows the
+status, piroity and severity to have an UNKNOWN value.
+
+    >>> from canonical.launchpad.interfaces import IRemoteBugTask
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> evolution_task = bug_one.bugtasks[0]
+    >>> evolution_task.target.name
+    u'evolution'
+    >>> evolution_task.target.official_malone
+    True
+    >>> IRemoteBugTask.providedBy(evolution_task)
+    False
+
+    >>> thunderbird_task = bug_one.bugtasks[2]
+    >>> thunderbird_task.target.name
+    u'thunderbird-ng'
+    >>> thunderbird_task.target.official_malone
+    False
+    >>> IRemoteBugTask.providedBy(thunderbird_task)
+    True
+
+    >>> ubuntu_task = bug_one.bugtasks[3]
+    >>> ubuntu_task.target.name
+    u'ubuntu'
+    >>> ubuntu_task.target.official_malone
+    True
+    >>> IRemoteBugTask.providedBy(ubuntu_task)
+    False
+
+    >>> ubuntu_mozilla_task = bug_one.bugtasks[5]
+    >>> ubuntu_mozilla_task.targetname
+    u'mozilla-firefox (Ubuntu)'
+    >>> ubuntu_mozilla_task.target.distribution.official_malone
+    True
+    >>> IRemoteBugTask.providedBy(ubuntu_mozilla_task)
+    False
+
+    >>> debian_mozilla_task = bug_one.bugtasks[7]
+    >>> debian_mozilla_task.targetname
+    u'mozilla-firefox (Debian)'
+    >>> debian_mozilla_task.target.distribution.official_malone
+    False
+    >>> IRemoteBugTask.providedBy(debian_mozilla_task)
+    True
 
 Handling IntegrityError and ProgrammingError
 --------------------------------------------

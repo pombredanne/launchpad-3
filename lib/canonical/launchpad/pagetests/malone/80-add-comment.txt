@@ -9,14 +9,13 @@ Bar. First, let's clear out the notification table:
   >>> BugNotification.clearTable()
 
   >>> print http(r"""
-  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+addmessage HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 78
   ... Content-Type: application/x-www-form-urlencoded
   ...
-  ... field.subject=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Post+Comment""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
+  ... subject=test+comment+subject&comment=test+comment&save=Add+Comment""")
+  HTTP/1.1 200 Ok
   ...
 
 
