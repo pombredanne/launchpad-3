@@ -48,7 +48,7 @@
           for XMLRPC doesn't work at the moment.
           - Bjorn Tillenius, 2006-03-23 -->
 <xmlrpc:view
-  for="canonical.launchpad.interfaces.ILaunchpadRoot"
+  for="canonical.launchpad.interfaces.IBazaarApplication"
   interface="canonical.launchpad.xmlrpc.IBranchSetAPI"
   class="canonical.launchpad.xmlrpc.BranchSetAPI"
   permission="launchpad.AnyPerson"
