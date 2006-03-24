@@ -238,21 +238,19 @@ class TranslationImportQueueEntry(SQLBase):
         client = getUtility(ILibrarianClient)
         return client.getFileByAlias(self.content.id).read()
 
-    def getTemplatesOnSameDirectory(self, status=None):
+    def getTemplatesOnSameDirectory(self):
         """See ITranslationImportQueueEntry."""
-        query = 'path LIKE %s' % sqlvalues(
-            '%s/%%.pot' % os.path.dirname(self.path))
+        query = 'path LIKE %s AND id <> %s' % sqlvalues(
+            '%s/%%.pot' % os.path.dirname(self.path), self)
         if self.distrorelease is not None:
             query += ' AND distrorelease = %s' % sqlvalues(
-                self.distrorelease.id)
+                self.distrorelease)
         if self.sourcepackagename is not None:
             query += ' AND sourcepackagename = %s' % sqlvalues(
-                self.sourcepackagename.id)
+                self.sourcepackagename)
         if self.productseries is not None:
             query += ' AND productseries = %s' % sqlvalues(
-                self.productseries.id)
-        if status is not None:
-            query += ' AND status = %s' % sqlvalues(status.value)
+                self.productseries)
 
         return TranslationImportQueueEntry.select(query)
 

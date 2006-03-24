@@ -112,11 +112,8 @@ class ITranslationImportQueueEntry(Interface):
     def getFileContent():
         """Return the imported file content as a stream."""
 
-    def getTemplatesOnSameDirectory(status=None):
+    def getTemplatesOnSameDirectory():
         """Return import queue entries stored on the same directory as self.
-
-        :arg status: The RosettaImportStatus that the entries must have or
-            None.
 
         The returned entries will be only .pot entries.
         """

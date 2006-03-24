@@ -1,10 +1,3 @@
-TranslationImportQueue
-======================
-
-The translation import queue is the place where the new translation imports
-end before being imported into Rosetta.
-
-
 TranslationImportQueueEntry
 ===========================
 
@@ -151,7 +144,7 @@ And the date_status_changed is newer
     True
 
 
-executeAutomaticBlock
+executeOptimisticBlock
 ---------------------
 
 This method looks on the queue to find entries to block based on other .pot
@@ -196,7 +189,7 @@ First, let's check the status of the existing entries.
 
 Let's see how many entries are blocked.
 
-    >>> translationimportqueue.executeAutomaticBlock()
+    >>> translationimportqueue.executeOptimisticBlock()
     1
 
 Now is time to check that we only have one item on the NeedsReview status.
@@ -211,14 +204,64 @@ This entry is form a productseries, and it's not blocked because the blocked
     >>> entry1.status == RosettaImportStatus.NEEDS_REVIEW
     True
 
+On the other hand, this other one is for the same
+distrorelease/sourcepackagename than the .pot file we have so it's also blocked.
+
     >>> entry2 = translationimportqueue.get(2)
     >>> entry2.path
     u'po/sr.po'
     >>> entry2.status == RosettaImportStatus.BLOCKED
     True
 
+And the .pot entry is still blocked.
+
     >>> entry3 = translationimportqueue.get(3)
     >>> entry3.path
     u'po/foo.pot'
     >>> entry3.status == RosettaImportStatus.BLOCKED
     True
+
+
+TranslationImportQueue
+======================
+
+The translation import queue is the place where the new translation imports
+end before being imported into Rosetta.
+
+
+getTemplatesOnSameDirectory
+---------------------------
+
+This method allows us to get the set of .pot files we have on the same
+directory that a given entry.
+
+For the first entry, we don't have any .pot file on that directory.
+
+    >>> entry1.status = RosettaImportStatus.NEEDS_REVIEW
+    >>> transaction.commit()
+    >>> entries = entry1.getTemplatesOnSameDirectory()
+    >>> entries.count()
+    0
+
+For the second entry, we have one.
+
+    >>> entry2.status = RosettaImportStatus.NEEDS_REVIEW
+    >>> transaction.commit()
+    >>> entries = entry2.getTemplatesOnSameDirectory()
+    >>> entries.count()
+    1
+
+Which is blocked.
+
+    >>> entries[0].status == RosettaImportStatus.BLOCKED
+    True
+
+And finally, the .pot entry doesn't have other .pot in the same directory and
+obviously, we are not returning it as being at the same directory as it makes
+no sense at all.
+
+    >>> entry3.status = RosettaImportStatus.NEEDS_REVIEW
+    >>> transaction.commit()
+    >>> entries = entry3.getTemplatesOnSameDirectory()
+    >>> entries.count()
+    0
