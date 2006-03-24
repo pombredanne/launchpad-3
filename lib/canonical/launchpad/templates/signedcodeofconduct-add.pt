@@ -56,9 +56,6 @@
             </li>
           </ol>
         </div>
-        <div class="portalMessage" metal:fill-slot="extra_top"
-              tal:condition="view/errors" tal:content="structure view/errors">
-        </div>
       </div>
     </div>
   </body>
