@@ -1274,6 +1274,8 @@ COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTempl
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
 
+-- SupportContact
+COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
 
 -- PersonalPackageArchive
 COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';

@@ -14,7 +14,7 @@ from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import (
     IBugTrackerSet, ILaunchpadCelebrities)
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.malone import externalsystem
+from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad import scripts
 
 _default_lock_file = '/var/lock/launchpad-checkwatches.lock'
@@ -48,12 +48,12 @@ def main():
         bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate(23)
 
         try:
-            remotesystem = externalsystem.ExternalSystem(bug_tracker)
-        except externalsystem.UnknownBugTrackerTypeError, error:
+            remotesystem = externalbugtracker.ExternalSystem(bug_tracker)
+        except externalbugtracker.UnknownBugTrackerTypeError, error:
             log.info(
                 "ExternalSystem for BugTrackerType '%s' is not known.",
                 error.bugtrackertypename)
-        except externalsystem.BugTrackerConnectError:
+        except externalbugtracker.BugTrackerConnectError:
             log.exception("Got error trying to contact %s", bug_tracker.name)
         except externalsystem.UnsupportedBugTrackerVersion, error:
             log.warning(str(error))

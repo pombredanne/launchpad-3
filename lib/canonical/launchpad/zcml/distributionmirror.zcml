@@ -67,30 +67,28 @@
     </browser:editform>
 
     <browser:generalform
-        name="+addarchrelease"
+        name="+uploadfilelist"
         facet="overview"
         for="canonical.launchpad.interfaces.IDistributionMirror"
-        schema="canonical.launchpad.interfaces.IMirrorDistroArchRelease"
+        schema="canonical.launchpad.interfaces.IDistributionMirror"
         permission="launchpad.Edit"
-        label="Add Architecture Release"
-        class="canonical.launchpad.browser.DistributionMirrorAddArchView"
-        fields="distro_arch_release pocket"
-        arguments="distro_arch_release pocket"
-        template="../templates/distributionmirror-addarchrelease.pt">
+        label="Upload File List"
+        class="canonical.launchpad.browser.DistributionMirrorUploadFileListView"
+        fields="file_list"
+        keyword_arguments="file_list"
+        template="../templates/distributionmirror-uploadfilelist.pt">
     </browser:generalform>
 
-    <browser:generalform
-        name="+addsourcerelease"
-        facet="overview"
-        for="canonical.launchpad.interfaces.IDistributionMirror"
-        schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource"
-        permission="launchpad.Edit"
-        label="Add Source Release"
-        class="canonical.launchpad.browser.DistributionMirrorAddSourceView"
-        fields="distro_release"
-        arguments="distro_release"
-        template="../templates/distributionmirror-addarchrelease.pt">
-    </browser:generalform>
+    <!-- DistributionMirrorSet -->
+    <content class="canonical.launchpad.database.DistributionMirrorSet">
+        <allow interface="canonical.launchpad.interfaces.IDistributionMirrorSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.DistributionMirrorSet"
+        provides="canonical.launchpad.interfaces.IDistributionMirrorSet">
+        <allow interface="canonical.launchpad.interfaces.IDistributionMirrorSet" />
+    </securedutility>
 
     <!-- MirrorDistroArchRelease -->
     <content class="canonical.launchpad.database.MirrorDistroArchRelease">

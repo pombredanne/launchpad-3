@@ -8,12 +8,12 @@ __all__ = [
     'DuplicateBugContactError',
     'DeleteBugContactError',
     'IDistributionSourcePackage',
-    'IDistributionSourcePackageAuthenticated',
     ]
 
 from zope.interface import Attribute, Interface
 
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.tickettarget import ITicketTarget
 
 
 class DuplicateBugContactError(Exception):
@@ -24,7 +24,7 @@ class DeleteBugContactError(Exception):
     """Raised when an error occurred trying to delete a bug contact."""
 
 
-class IDistributionSourcePackage(IBugTarget):
+class IDistributionSourcePackage(IBugTarget, ITicketTarget):
 
     distribution = Attribute("The distribution.")
     sourcepackagename = Attribute("The source package name.")
@@ -102,21 +102,6 @@ class IDistributionSourcePackage(IBugTarget):
         Distro sourcepackages compare not equal if either of their distribution
         or sourcepackagename compare not equal.
         """
-
-    # XXX: half of ITicketTarget is implemented here, and half in the
-    # Authenticated version. This is a bit of a bummer and there should
-    # be a nicer way of restricting attributes of an interface to a
-    # permission, but there isn't one today
-    #   -- kiko, 2005-03-22
-    def getTicket(ticket_num):
-        """See ITicketTarget"""
-
-    def tickets(quantity=None):
-        """See ITicketTarget"""
-
-class IDistributionSourcePackageAuthenticated(Interface):
-    def newTicket(owner, title, description):
-        """See ITicketTarget"""
 
     def addBugContact(person):
         """Add a bug contact for this package.

@@ -140,6 +140,50 @@ o DistributionUsingMaloneVocabulary - all the distributions that use
     ...
     LookupError:...
 
+o PersonActiveMembership - all the teams the person is an active member of.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> person_active_membership = vocabulary_registry.get(
+    ...     foo_bar, 'PersonActiveMembership')
+    >>> len(person_active_membership)
+    6
+    >>> for term in person_active_membership:
+    ...     print term.token, term.value.displayname, term.title
+    admins Launchpad Administrators Launchpad Administrators
+    launchpad Launchpad Developers Launchpad Developers
+    name18 Ubuntu Gnome Team Ubuntu Gnome Team
+    ubuntu-team Ubuntu Team Ubuntu Team
+    vcs-imports VCS imports VCS imports
+    testing-spanish-team testing Spanish team testing Spanish team
+
+    >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
+    >>> launchpad_team in person_active_membership
+    True
+    >>> mirrors_admins = getUtility(IPersonSet).getByName('mirrors-admins')
+    >>> mirrors_admins in person_active_membership
+    False
+
+    >>> person_active_membership.getQuery() is None
+    True
+
+    >>> term = person_active_membership.getTerm(launchpad_team)
+    >>> print term.token, term.value.displayname, term.title
+    launchpad Launchpad Developers Launchpad Developers
+
+    >>> term = person_active_membership.getTerm(mirrors_admins)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+    >>> term = person_active_membership.getTermByToken('launchpad')
+    >>> print term.token, term.value.displayname, term.title
+    launchpad Launchpad Developers Launchpad Developers
+
+    >>> term = person_active_membership.getTermByToken('mirrors-admins')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
 
 
 Non-Enumerable Vocabularies

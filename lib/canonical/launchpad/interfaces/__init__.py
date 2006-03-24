@@ -55,6 +55,7 @@ from canonical.launchpad.interfaces.distroreleasebinarypackage import *
 from canonical.launchpad.interfaces.distroreleaselanguage import *
 from canonical.launchpad.interfaces.distroreleasepackagecache import *
 from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
+from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
@@ -122,6 +123,7 @@ from canonical.launchpad.interfaces.sprint import *
 from canonical.launchpad.interfaces.sprintattendance import *
 from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
+from canonical.launchpad.interfaces.supportcontact import *
 from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.ticket import *
 from canonical.launchpad.interfaces.ticketbug import *

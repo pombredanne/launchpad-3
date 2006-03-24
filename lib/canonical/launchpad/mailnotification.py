@@ -12,8 +12,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
-    IUpstreamBugTask, )
+    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, IRemoteBugTask, 
+    ISpecification, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -415,7 +415,7 @@ def generate_bug_edit_email(bug_delta):
             added_bugtasks = [bug_delta.added_bugtasks]
 
         for added_bugtask in added_bugtasks:
-            body += u"Also affects: %s" % added_bugtask.targetname
+            body += u"Also affects: %s\n" % added_bugtask.targetname
             body += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
             if added_bugtask.priority:
                 priority_title = added_bugtask.priority.title

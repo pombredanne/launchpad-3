@@ -162,5 +162,11 @@
   class="canonical.launchpad.xmlrpc.SelfTest"
   permission="zope.Public"
   />
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.IRosettaApplication"
+  interface="canonical.launchpad.xmlrpc.IRosettaSelfTest"
+  class="canonical.launchpad.xmlrpc.RosettaSelfTest"
+  permission="zope.Public"
+  />
 
 </configure>
