@@ -23,7 +23,7 @@ from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-from canonical.ftests.twistcase import TwistedTestCase
+from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, ProberTimeout, MirrorProberCallbacks,
     BadResponseCode)

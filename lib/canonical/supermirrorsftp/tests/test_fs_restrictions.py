@@ -7,7 +7,7 @@ import unittest
 from twisted.internet import defer
 from twisted.vfs.ivfs import VFSError, PermissionError
 
-from canonical.ftests.twistcase import TwistedTestCase
+from canonical.tests.test_twisted import TwistedTestCase
 from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
 from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot, SFTPServerBranch
 
