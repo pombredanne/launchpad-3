@@ -1,27 +1,61 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-   <body>
-   <div metal:fill-slot="main">
-     <div metal:use-macro="context/@@launchpad_addform/addform">
-       <div metal:fill-slot="extra_info">
-         <p>
-           When comparing the signed code of conduct with the reference
-           copy, white space differences are ignored.  You may wish to
-           use this fact to alter the checksum of the signed content.
-          </p>
-          <p>
-            If you have any problems signing the Code of Conduct, please check
-            our <a href="/faq">FAQ</a>.
-          </p>
-       </div>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en" lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <div metal:fill-slot="main">
+      <div metal:use-macro="context/@@launchpad_addform/addform">
         <p
           metal:fill-slot="extra_top"
           tal:condition="view/errors"
           tal:content="structure view/errors"
           class="error message"
         />
+        <div metal:fill-slot="extra_info">
+          <p>
+            To sign the code of conduct:
+          </p>
+          <ol>
+            <li>
+              <p>
+                Choose &#8220;Download This Version&#8221; to save the code to
+                your own computer.
+              </p>
+            </li>
+            <li>
+              <p>
+                Open the file you saved in a text editor,
+                and read it carefully to ensure you agree to it.
+              </p>
+            </li>
+            <li>
+              <p>
+                If you want to, add extra spaces or blank lines between words
+                in the file.
+                (This helps protect against other people trying to use your signature
+                for anything else.)
+              </p>
+            </li>
+            <li>
+              <p>
+                In a terminal, run the command
+                <code>gpg --clearsign <var>~/coc.txt</var></code>
+                (or whatever filename you gave to the code).
+                This will create a file with a name like
+                <code><var>coc.txt.asc</var></code>.
+              </p>
+            </li>
+            <li>
+              <p>
+                Open that new file,
+                and copy and paste its contents into this box.
+                Then click &#8220;Add&#8221;.
+              </p>
+            </li>
+          </ol>
+        </div>
       </div>
     </div>
   </body>
