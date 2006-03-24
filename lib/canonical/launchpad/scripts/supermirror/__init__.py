@@ -8,12 +8,7 @@ from canonical.launchpad.scripts.supermirror.jobmanager import (
 
 
 def mirror(managerClass=JobManager, urllibOpener=urllib.urlopen):
-    """Mirror the given branches into the directory specified in
-    config.supermirror.branchesdest.
-    
-    branches must be a list of canonical.launchpad.database.branch.Branch
-    objects.
-    """
+    """Mirror all current branches that need to be mirrored."""
     mymanager = managerClass()
     try:
         mymanager.lock()
