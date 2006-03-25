@@ -18,11 +18,11 @@
         metal:fill-slot="heading">Add a branch</h1>
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      <div tal:condition="context/bug/private"
-           class="portalMessage">
+      <p tal:condition="context/bug/private"
+           class="warning message">
         This bug is private. Only private branches should be linked to
         this bug.
-     </div>
+     </p>
 
       Adding a bzr branch to a bug allows you to notify others
       about where work is going on to fix this bug.

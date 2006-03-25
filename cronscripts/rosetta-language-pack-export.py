@@ -43,7 +43,9 @@ def parse_options(args):
         '--update',
         dest='update',
         default=False,
-        action='store_true'
+        action='store_true',
+        help='Whether the generated language pack should be an update from'
+             ' the previous export.'
         )
 
     # Add the verbose/quiet options.
@@ -53,7 +55,17 @@ def parse_options(args):
         '--component',
         dest='component',
         default=None,
-        action='store'
+        action='store',
+        help='Select a concrete archive component to export.'
+        )
+
+    parser.add_option(
+        '--force-utf8-encoding',
+        dest='force_utf8',
+        default=False,
+        action='store_true',
+        help='Whether the exported files should be exported using UTF-8'
+             ' encoding.'
         )
 
     options, args = parser.parse_args(args)
@@ -80,6 +92,7 @@ def main(argv):
         release_name=release_name,
         component=options.component,
         update=options.update,
+        force_utf8=options.force_utf8,
         output_file=options.output,
         email_addresses=options.email_addresses,
         logger=logger_object)

@@ -46,6 +46,8 @@ class IBinaryPackageRelease(Interface):
 
     title = TextLine(required=True, readonly=True)
     name = Attribute("Binary Package Name")
+    sourcepackagename = Attribute(
+        "The name of the source package from where this binary was built.")
 
     # properties
     distributionsourcepackagerelease = Attribute("The sourcepackage "

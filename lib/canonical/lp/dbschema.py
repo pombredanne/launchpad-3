@@ -2417,6 +2417,12 @@ class BugTaskStatus(DBSchema):
         affected software.
         """)
 
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The status of this bug task is unknown.
+        """)
+
 
 class BugTaskPriority(DBSchema):
     """Bug Task Priority
@@ -2426,6 +2432,12 @@ class BugTaskPriority(DBSchema):
     maintainer's desire to fix the task. This schema documents the
     priorities Malone allows.
     """
+
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The priority of this bug task is unknown.
+        """)
 
     HIGH = Item(40, """
         High
@@ -2459,6 +2471,12 @@ class BugTaskSeverity(DBSchema):
     extent to which the bug impairs the stability and security of
     the distribution or upstream in which it was reported.
     """
+
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The severity of this bug task is unknown.
+        """)
 
     CRITICAL = Item(50, """
         Critical

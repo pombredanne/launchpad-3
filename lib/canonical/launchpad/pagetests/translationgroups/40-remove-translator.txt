@@ -28,6 +28,6 @@ And on that page, we should see the removal message.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...The PolyGlot Translation Group...
-    <p class="portalMessage">Hoary Gnome Team removed as translator for Abkhazian (ab).</p>
+  ...<p class="informational message">Hoary Gnome Team removed as translator for Abkhazian (ab).</p>
   ...
 

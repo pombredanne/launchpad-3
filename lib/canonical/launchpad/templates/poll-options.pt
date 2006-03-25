@@ -36,10 +36,9 @@
       </table>
     </tal:block>
 
-    <p class="portalMessage" tal:condition="not: context/getAllOptions">
-      This poll doesn't have any options for people to vote on. Please add
-      some poll options before the poll opens, so that people have a choice
-      of options when they vote!
+    <p class="warning message" tal:condition="not: context/getAllOptions">
+      This poll doesn't have any options for people to vote on yet.
+      Make sure you add some options before the poll opens!
     </p>
 
   </div>

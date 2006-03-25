@@ -12,14 +12,40 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
+from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine
 
+from canonical.config import config
 from canonical.lp.dbschema import BranchLifecycleStatus
 
 from canonical.launchpad import _
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
+
+class BranchUrlField(TextLine):
+
+    def _validate(self, url):
+        # import here to avoid circular import
+        from canonical.launchpad.webapp import canonical_url
+        url = url.rstrip('/')
+        TextLine._validate(self, url)
+        if IBranch.providedBy(self.context) and self.context.url == url:
+            return # url was not changed
+        if (url + '/').startswith(config.launchpad.supermirror_root):
+            message = _(
+                "Don't manually register a bzr branch on "
+                "<code>bazaar.launchpad.net</code>. Create it by SFTP, and it "
+                "is registered automatically.")
+            raise LaunchpadValidationError(message)
+        branch = getUtility(IBranchSet).getByUrl(url)
+        if branch is not None:
+            message = _(
+                "The bzr branch <a href=\"%s\">%s</a> is already registered "
+                "with this URL.")
+            raise LaunchpadValidationError(
+                message, canonical_url(branch), branch.displayname)
 
 
 class IBranch(IHasOwner):
@@ -39,8 +65,8 @@ class IBranch(IHasOwner):
         title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will also be "
         "displayed in most branch listings."))
-    url = TextLine(
-        title=_('Branch URL'), required=False,
+    url = BranchUrlField(
+        title=_('Branch URL'), required=True,
         description=_("The URL where the branch is hosted. This is usually"
             " the URL used to checkout the branch. Leave that empty if the"
             " branch is hosted on bazaar.launchpad.net."),
@@ -73,6 +99,12 @@ class IBranch(IHasOwner):
         title=_("Product Locked"),
         description=_("Whether the product name specified within the branch "
                       " is overriden by the product name set in Launchpad."))
+
+    # Display names
+    unique_name = Attribute(
+        "Unique name of the branch, including the owner and product names.")
+    displayname = Attribute(
+        "The branch title if provided, or the unique_name.")
 
     # Display names
     unique_name = Attribute(
@@ -185,6 +217,15 @@ class IBranchSet(Interface):
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
         """Create a new branch."""
+
+    def getByUrl(url, default=None):
+        """Find a branch by URL.
+
+        Either from the external specified in Branch.url, or from the
+        supermirror URL on http://bazaar.launchpad.net/.
+
+        Return the default value if no match was found.
+        """
 
     def get_supermirror_pull_queue():
         """Get a list of branches the supermirror should pull now."""

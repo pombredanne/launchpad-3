@@ -20,32 +20,37 @@ been updated in the last 23 hours.
 
     >>> bug_watches = mozilla_bugzilla.watches
     >>> print bug_watches.count()
-    4
+    5
 
     >>> print bug_watches[0].remotebug, bug_watches[0].bug.id
-    2000 1
+    1234 9
     >>> bug_watches[0].lastchecked = None
 
     >>> print bug_watches[1].remotebug, bug_watches[1].bug.id
-    123543 1
+    2000 1
     >>> bug_watches[1].lastchecked = now
 
     >>> print bug_watches[2].remotebug, bug_watches[2].bug.id
-    42 1
+    123543 1
     >>> bug_watches[2].lastchecked = now - timedelta(hours=12)
 
 Note that bugtracker.watches may produce multiple watches for the same
 remote bug.
 
     >>> print bug_watches[3].remotebug, bug_watches[3].bug.id
-    42 2
+    42 1
     >>> bug_watches[3].lastchecked = now - timedelta(hours=36)
+
+    >>> print bug_watches[4].remotebug, bug_watches[4].bug.id
+    42 2
+    >>> bug_watches[4].lastchecked = now - timedelta(days=1)
 
     >>> flush_database_updates()
     >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate(23):
     ...     print bug_watch.remotebug, bug_watch.bug.id
-    2000 1
+    1234 9
     42 2
+    42 1
 
 
 Top Bug Trackers
@@ -57,4 +62,4 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
 
     >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=3)
     >>> [(tracker.name, tracker.watches.count()) for tracker in top_trackers]
-    [(u'mozilla.org', 4), (u'gnome-bugzilla', 1), (u'debbugs', 0)]
+    [(u'mozilla.org', 5), (u'gnome-bugzilla', 1), (u'debbugs', 0)]

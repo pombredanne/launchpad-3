@@ -167,6 +167,7 @@ def test_decorator():
     NORMAL
     MAJOR
     CRITICAL
+    UNKNOWN
 
     We can retrieve an Item by value
 

@@ -1,17 +1,5 @@
-<p
-  class="portalMessage"
-  tal:define="status view/process_form"
-  tal:condition="status"
-  tal:content="status"
-/>
-
-<div class="portalError"
-  tal:repeat="top_of_page_error view/top_of_page_errors"
-  tal:content="structure top_of_page_error">
-  Schema validation errors.
-</div>
-
-<p tal:condition="context/bug/duplicateof" class="portalMessage">
+<tal:process define="status view/process_form" />
+<p tal:condition="context/bug/duplicateof" class="informational message">
   This bug is a duplicate of
   <a
     href="#"
@@ -26,7 +14,7 @@
   <p
     tal:define="errors view/errors|nothing"
     tal:condition="errors"
-    class="portalMessage"
+    class="error message"
     i18n:translate=""
   >
     There are
@@ -38,9 +26,15 @@
     Please fix them and try again.
   </p>
   <p
-    tal:condition="not: context/required:launchpad.Edit"
-    class="portalMessage"
-  >
+    tal:define="errors view/errors|nothing"
+    tal:condition="errors"
+    tal:repeat="error errors"
+    tal:content="error"
+    class="error message"
+  >Individual error.</p>
+      
+
+  <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the assignee, or the maintainer of
     <tal:context replace="context/targetname">product</tal:context>,
     so you cannot edit this bug's status.
@@ -76,7 +70,7 @@
         </tr>
       </tal:distrotask>
       <tal:upstreamtask condition="python:context.product">
-        <tr>
+        <tr tal:condition="view/product_widget">
           <td colspan="2">
             <label
               tal:attributes="for view/product_widget/name"
@@ -84,7 +78,7 @@
             >Upstream product</label>
           </td>
         </tr>
-        <tr>
+        <tr tal:condition="view/product_widget">
           <td colspan="2" tal:content="structure view/product_widget" nowrap />
         </tr>
       </tal:upstreamtask>
@@ -109,7 +103,7 @@
             tal:content="view/priority_widget/label"
           >Priority</label>
         </td>
-        <td>
+        <td tal:condition="view/milestone_widget">
           <label
             tal:attributes="for view/milestone_widget/name"
             tal:content="view/milestone_widget/label"
@@ -120,7 +114,8 @@
         <td tal:content="structure view/status_widget" />
         <td tal:content="structure view/severity_widget" />
         <td tal:content="structure view/priority_widget" />
-        <td tal:content="structure view/milestone_widget" />
+        <td tal:condition="view/milestone_widget"
+            tal:content="structure view/milestone_widget" />
       </tr>
     </table>
     <table>
@@ -136,7 +131,7 @@
         <td nowrap tal:content="structure view/assignee_widget" colspan="2" />
       </tr>
     </table>
-    <table>
+    <table tal:condition="view/bugwatch_widget">
       <tr>
         <td>
           <label
@@ -159,6 +154,25 @@
       <tr>
         <td nowrap tal:content="structure view/bugwatch_widget" colspan="2" />
       </tr>
+      <tr>
+        <td class="formHelp" colspan="2">
+        The information about this bug in Launchpad is
+        automatically pulled daily from the remote bug.
+        <tal:has_bugwatch tal:condition="context/bugwatch">
+          <tal:has_been_pulled 
+              tal:condition="context/bugwatch/lastchecked">
+            This information was last pulled 
+            <b tal:content="context/bugwatch/lastchecked/fmt:datetime">
+              2006-03-01 23:15 UTC
+            </b>.
+          </tal:has_been_pulled>
+          <tal:has_not_been_pulled 
+              tal:condition="not:context/bugwatch/lastchecked">
+            This information hasn't been pulled yet.
+          </tal:has_not_been_pulled>
+        </tal:has_bugwatch>
+        </td>
+      </tr>
     </table>
   </div>
   <div class="field">
@@ -168,7 +182,7 @@
     </div>
   </div>
   <div class="field">
-    <div tal:attributes="class python:view.comment_on_change_error and 'portalError' or ''">
+    <div tal:attributes="class python:view.comment_on_change_error and 'error' or ''">
       <label for="comment_on_change">Comment on this change (optional)</label>
       <textarea
         cols="62"
@@ -177,13 +191,12 @@
         rows="4"
         tal:content="request/comment_on_change|nothing"
       ></textarea>
+      <div
+        tal:condition="view/comment_on_change_error"
+        class="message"
+        tal:content="view/comment_on_change_error"
+      >An error on comment on change.</div>
     </div>
-    <tal:haserror condition="view/comment_on_change_error">
-      <img src="/@@/info_icon.gif" />
-      <span class="error" tal:content="view/comment_on_change_error">
-        An error on comment on change.
-      </span>
-    </tal:haserror>
   </div>
   <div class="actions" tal:condition="context/required:launchpad.Edit">
     <input
