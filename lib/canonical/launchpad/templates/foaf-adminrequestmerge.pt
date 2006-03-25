@@ -15,10 +15,12 @@
     <tal:block tal:condition="not: view/shouldShowConfirmationPage" >
       <h1>Admin interface to merge two accounts</h1>
 
-      <div tal:condition="view/errormessages" class="portalMessage"
-           tal:repeat="errors view/errormessages"
-           tal:content="structure errors">
-      </div>
+      <p
+        tal:condition="view/errormessages"
+        tal:repeat="errors view/errormessages"
+        tal:content="structure errors"
+        class="error message"
+      />
 
       <label>Duplicated Account:</label>
       <br>

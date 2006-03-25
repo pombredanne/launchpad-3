@@ -212,7 +212,7 @@ class LaunchpadLoginSource:
         principal = LaunchpadPrincipal(
             person.id,
             person.browsername,
-            '%s %s' % (person.givenname, person.familyname),
+            person.displayname,
             person.password,
             )
         principal.__parent__ = self

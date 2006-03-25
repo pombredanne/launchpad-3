@@ -16,12 +16,13 @@
             our <a href="/faq">FAQ</a>.
           </p>
        </div>
-       <div class="portalMessage" metal:fill-slot="extra_top"
-            tal:condition="view/errors" tal:content="structure view/errors">
-       </div>
-     </div>
-   </div>
-   </body>
- </html>
-
-
+        <p
+          metal:fill-slot="extra_top"
+          tal:condition="view/errors"
+          tal:content="structure view/errors"
+          class="error message"
+        />
+      </div>
+    </div>
+  </body>
+</html>

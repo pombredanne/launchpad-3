@@ -1,0 +1,290 @@
+Distribution Mirrors
+====================
+
+A distribution mirror must always be associated with a single distribution, so
+to create a new mirror you should use the Distribution.newMirror method.
+
+    >>> from datetime import datetime
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet, ICountrySet, IDistroReleaseSet,
+    ...     IDistroArchReleaseSet, IDistributionMirrorSet)
+    >>> from canonical.lp.dbschema import (
+    ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
+    ...     MirrorPulseType)
+    >>> mirrorset = getUtility(IDistributionMirrorSet)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> ubuntu = distroset.get(1)
+    >>> owner = getUtility(IPersonSet).getByName('name16')
+    >>> name = "foobarmirror"
+    >>> speed = MirrorSpeed.S2M
+    >>> country = getUtility(ICountrySet)['BR']
+    >>> content = MirrorContent.ARCHIVE
+    >>> pulse_type = MirrorPulseType.PUSH
+    >>> http_base_url = 'http://foo.bar.com/pub'
+    >>> new_mirror = ubuntu.newMirror(owner, name, speed, country, content,
+    ...                               pulse_type, http_base_url=http_base_url)
+    >>> new_mirror.isOfficial()
+    False
+
+
+The contents of a distribution mirror are represented by its associated
+MirrorDistroArchReleases and MirrorDistroReleaseSources. This data is updated
+at least once a day by the distributionmirror-prober cronscript, to make sure
+the information we have is always up to date.
+
+    >>> new_mirror.source_releases.count()
+    0
+    >>> new_mirror.arch_releases.count()
+    0
+
+To create a new MirrorDistroArchRelease (or MirrorDistroReleaseSource)
+associated with a given mirror, we use the ensureMirrorDistroArchRelease
+(or ensureMirrorDistroReleaseSource) method.
+
+    >>> warty = getUtility(IDistroReleaseSet).get(1)
+    >>> warty_i386 = getUtility(IDistroArchReleaseSet).get(1)
+    >>> pocket = PackagePublishingPocket.RELEASE
+    >>> warty_component = warty.components[0]
+    >>> warty_i386_mirror = new_mirror.ensureMirrorDistroArchRelease(
+    ...     warty_i386, pocket, warty_component)
+
+    >>> warty_mirror = new_mirror.ensureMirrorDistroReleaseSource(
+    ...     warty, pocket, warty_component)
+
+    >>> new_mirror.source_releases.count()
+    1
+    >>> new_mirror.arch_releases.count()
+    1
+
+If we try to create another MirrorDistroArchRelease with the same arch release
+and pocket, that method will simply return the existing one.
+
+    >>> same_warty_i386_mirror = new_mirror.ensureMirrorDistroArchRelease(
+    ...     warty_i386, pocket, warty_component)
+    >>> same_warty_i386_mirror == warty_i386_mirror
+    True
+
+    >>> same_warty_mirror = new_mirror.ensureMirrorDistroReleaseSource(
+    ...     warty, pocket, warty_component)
+    >>> same_warty_mirror == warty_mirror
+    True
+
+It's also possible to delete a MirrorDistroArchRelease/MirrorDistroReleaseSource
+if we find out their contents are not in a mirror where they used to be.
+
+    >>> new_mirror.deleteMirrorDistroReleaseSource(
+    ...     warty, pocket, warty_component)
+    >>> new_mirror.deleteMirrorDistroArchRelease(
+    ...     warty_i386, pocket, warty_component)
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> new_mirror.source_releases.count()
+    0
+    >>> new_mirror.arch_releases.count()
+    0
+
+From every distribution, you can easily get a list with its official mirrors
+and another with all mirrors. This is available through the
+enabled_official_mirrors and enabled_mirrors properties of IDistribution.
+
+    >>> [(mirror.name, mirror.country.name) 
+    ...  for mirror in ubuntu.enabled_official_mirrors]
+    [(u'valid-mirror', u'Afghanistan')]
+
+    >>> [(mirror.name, mirror.country.name) 
+    ...  for mirror in ubuntu.enabled_mirrors]
+    [(u'valid-mirror', u'Afghanistan'),
+     (u'invalid-mirror', u'British Indian Ocean Territory'),
+     (u'unreachable-mirror', u'British Indian Ocean Territory'),
+     (u'archive-404-mirror', u'British Indian Ocean Territory')]
+
+
+Probing the mirrors
+-------------------
+
+The distributionmirror-prober script is used to check what a mirror contains
+and when it was last updated. This script should run at least once a day, so
+we know the information we display is always up to date.
+
+This script will probe only enabled ARCHIVE mirrors that weren't probed in the 
+last 24 hours.
+
+    >>> [mirror.name for mirror in mirrorset.getMirrorsToProbe()]
+    [u'valid-mirror', u'archive-404-mirror']
+
+    >>> valid_mirror = mirrorset[1]
+    >>> valid_mirror.name
+    u'valid-mirror'
+    >>> valid_mirror.enabled is True
+    True
+    >>> from StringIO import StringIO
+    >>> log_file = StringIO()
+    >>> log_file.write("Fake probe, nothing useful here.")
+    >>> proberecord = valid_mirror.newProbeRecord(log_file)
+    >>> flush_database_updates()
+
+    >>> [mirror.name for mirror in mirrorset.getMirrorsToProbe()]
+    [u'archive-404-mirror']
+
+    Now we change the date of the MirrorProbeRecord we've just created, to 
+    make sure this mirror is probed by our prober script.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_record = removeSecurityProxy(proberecord)
+    >>> naked_record.destroySelf()
+    >>> flush_database_updates()
+
+If when we finish probing a mirror, that mirror doesn't have any
+MirrorDistroReleaseSource of MirrorDistroArchRelease, that mirror is marked as
+disabled and a notification is sent to its owner. This is done using
+IDistributionMirror.disableAndNotifyOwner().
+
+    >>> other_mirror = mirrorset[2]
+    >>> other_mirror.enabled
+    True
+    >>> other_mirror.disableAndNotifyOwner()
+
+    Commit, so the email is actually sent.
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> import email
+    >>> from canonical.launchpad.mail import stub
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'Foo Bar <foo.bar@canonical.com>'
+    >>> other_mirror.enabled
+    False
+
+    Enable the mirror again.
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+    >>> other_mirror.enabled = True
+    >>> transaction.commit()
+
+
+- Checking what content is mirrored
+
+After obtaining the list of mirrors that we need to probe, the script will
+then check what content is mirrored in each mirror. This is done by checking
+the existence of some control files on that mirror. These files are 
+Packages.gz (one file per [arch_release, component, pocket] tuple) and 
+Sources.gz (one per [release, component, pocket] tuple). The paths to these
+files are given by the guessPackagesPaths() and guessSourcesPaths() methods
+of IDistributionMirror.
+
+    >>> [path 
+    ...  for (release, pocket, component, path) in mirror.guessPackagesPaths()
+    ...  if 'hoary' in path]
+    [u'dists/hoary/main/binary-i386/Packages.gz',
+     u'dists/hoary/restricted/binary-i386/Packages.gz',
+     u'dists/hoary-backports/main/binary-i386/Packages.gz',
+     u'dists/hoary-backports/restricted/binary-i386/Packages.gz',
+     u'dists/hoary-security/main/binary-i386/Packages.gz',
+     u'dists/hoary-security/restricted/binary-i386/Packages.gz',
+     u'dists/hoary-updates/main/binary-i386/Packages.gz',
+     u'dists/hoary-updates/restricted/binary-i386/Packages.gz',
+     u'dists/hoary-proposed/main/binary-i386/Packages.gz',
+     u'dists/hoary-proposed/restricted/binary-i386/Packages.gz']
+
+    >>> [path 
+    ...  for (release, pocket, component, path) in mirror.guessSourcesPaths()
+    ...  if 'hoary' in path]
+    [u'dists/hoary/main/source/Sources.gz',
+     u'dists/hoary/restricted/source/Sources.gz',
+     u'dists/hoary-backports/main/source/Sources.gz',
+     u'dists/hoary-backports/restricted/source/Sources.gz',
+     u'dists/hoary-security/main/source/Sources.gz',
+     u'dists/hoary-security/restricted/source/Sources.gz',
+     u'dists/hoary-updates/main/source/Sources.gz',
+     u'dists/hoary-updates/restricted/source/Sources.gz',
+     u'dists/hoary-proposed/main/source/Sources.gz',
+     u'dists/hoary-proposed/restricted/source/Sources.gz']
+
+
+- Checking how up-to-date the content is
+
+After knowing what content a mirror is expected to contain, we need to check
+when that mirror last synced its contents. 
+
+To do that we use the getURLsToCheckUpdateness() of either
+MirrorDistroReleaseSource or MirrorDistroArchRelease. This method returns a
+dictionary mapping MirrorStatuses to URLs on that mirror. 
+
+The prober would then check, between all reachable URLs, which one has the
+status which corresponds to the most recent sync, and then set that as the
+mirror's status.
+
+On the warty release, component 'main' and pocket RELEASE , we had two uploads
+between 2005-09-15 and 2005-09-17, so at that time we could've checked if 
+that mirror's last sync was in the last one or two days.
+
+    >>> urls = warty_mirror.getURLsToCheckUpdateness(when=datetime(2005, 9, 17))
+    >>> [(status.name, url) for (status, url) in urls.items()]
+    [('ONEDAYBEHIND',
+      u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc'),
+     ('TWODAYSBEHIND',
+      u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
+
+But if we were to check that mirror today, we could only check if the last
+upload was mirrored and then mark the mirror as up-to-date. This is because
+there were no recent uploads there.
+
+    >>> urls = warty_mirror.getURLsToCheckUpdateness()
+    >>> [(status.name, url) for (status, url) in urls.items()]
+    [('UP', u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc')]
+
+
+The same goes for the warty i386 mirror, in which we had one upload on
+2005-06-18 and another on 2005-06-20.
+
+    >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=datetime(2005, 6, 22))
+    >>> [(status.name, url) for (status, url) in urls.items()]
+    [('TWODAYSBEHIND',
+      u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_0.1-1_all.deb'),
+     ('ONEWEEKBEHIND',
+      u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
+
+    >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=datetime(2005, 6, 20))
+    >>> [(status.name, url) for (status, url) in urls.items()]
+    [('UP', 
+      u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_0.1-1_all.deb'),
+     ('TWODAYSBEHIND',
+      u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
+
+
+Running the prober script
+-------------------------
+
+First we need to run the http server that's going to answer our requests and
+the Librarian, so we can send the log files to it.
+
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> from canonical.launchpad.daemons.tachandler import TacTestSetup
+    >>> from canonical.launchpad.scripts.ftests.test_distributionmirror_prober \
+    ...     import HTTPServerTestSetup
+    >>> http_server = HTTPServerTestSetup()
+    >>> http_server.setUp()
+    >>> LibrarianTestSetup().setUp()
+
+Now we run the prober as another process, and check that the generated output
+doesn't contain any errors and that the number of mirrors probed is correct.
+
+    >>> import subprocess
+    >>> prober = subprocess.Popen(
+    ...     'cronscripts/distributionmirror-prober.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
+    ...     stderr=subprocess.PIPE)
+    >>> stdout, stderr = prober.communicate()
+    >>> print stdout
+    <BLANKLINE>
+    >>> print stderr
+    INFO    Probing Distribution Mirrors
+    INFO    Probed 2 mirrors.
+    INFO    Done.
+    <BLANKLINE>
+
+    >>> LibrarianTestSetup().tearDown()
+    >>> http_server.tearDown()

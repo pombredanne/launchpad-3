@@ -1,4 +1,4 @@
-<p class="portalMessage" tal:define="message view/performQueueAction"
+<p class="informational message" tal:define="message view/performQueueAction"
    tal:condition="message" tal:content="structure message" />
 
 <div class="queue_list" tal:condition="not: view/setupQueueList">
