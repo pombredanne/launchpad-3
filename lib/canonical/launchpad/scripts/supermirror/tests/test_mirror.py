@@ -68,12 +68,12 @@ class TestMockJobManager(unittest.TestCase):
         # maybe
         manager = MockJobManager()
         manager.lock()
-        manager.branchStreamToBranchList(StringIO("data"))
+        manager.branchStreamToBranchList(StringIO("1 2"))
         manager.unlock()
         # we want a list of tuples, one tuple for each api called.
         self.assertEquals(
             manager._call_log, 
-            [("__init__",), ("lock",), ("branchStreamToBranchList", "data"), 
+            [("__init__",), ("lock",), ("branchStreamToBranchList", "1 2"),
              ("unlock",)])
 
 
@@ -97,7 +97,7 @@ class MockJobManager:
 
     def branchStreamToBranchList(self, arg, client=None):
         self._call_log.append(("branchStreamToBranchList", arg.getvalue()))
-        return []
+        return [FakeMirrorRequest()]
 
     def unlock(self):
         MockJobManager.locked = False
@@ -105,6 +105,17 @@ class MockJobManager:
 
     def run(self):
         self._call_log.append(("run",))
+
+
+class FakeMirrorRequest(object):
+    """A fake mirror request.
+
+    This allows the mirror() call to have a branch to add which lets us
+    test that it does indeed call manager.add().
+    """
+
+    def mirror():
+        pass
 
 
 class TestMockurllib(unittest.TestCase):

@@ -11,7 +11,7 @@ class BranchStatusClient:
 
     def __init__(self):
         self.client = xmlrpclib.ServerProxy(
-            config.branchpuller.authserver_url)
+            config.supermirror.authserver_url)
 
     def startMirroring(self, branch_id):
         assert isinstance(branch_id, int)

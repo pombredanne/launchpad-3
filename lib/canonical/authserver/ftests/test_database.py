@@ -33,6 +33,7 @@ class TestDatabaseSetup(LaunchpadTestCase):
         super(TestDatabaseSetup, self).tearDown()
 
 class DatabaseStorageTestCase(TestDatabaseSetup):
+
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
                                      DatabaseUserDetailsStorage(None)))
@@ -543,12 +544,14 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_mirrorFailed(self):
         self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                mirror_status_message
                 FROM branch WHERE id = 1""")
         row = self.cursor.fetchone()
         self.assertEqual(row[0], None)
         self.assertEqual(row[1], None)
         self.assertEqual(row[2], 0)
+        self.assertEqual(row[3], None)
 
         storage = DatabaseBranchDetailsStorage(None)
         success = storage._startMirroringInteraction(self.cursor, 1)
@@ -557,12 +560,14 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(success, True)
 
         self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                mirror_status_message
                 FROM branch WHERE id = 1""")
         row = self.cursor.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[1], None)
         self.assertEqual(row[2], 1)
+        self.assertEqual(row[3], 'failed')
 
     def test_mirrorComplete(self):
         self.cursor.execute("""

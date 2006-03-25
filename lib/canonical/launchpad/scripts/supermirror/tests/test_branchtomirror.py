@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -46,11 +47,11 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
         destbranchdir = self._getBranchDir("branchtomirror-testmirror-dest")
 
         client = BranchStatusClient()
-        branch_56 = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
+        to_mirror = BranchToMirror(srcbranchdir, destbranchdir, client, 1)
 
         tree = createbranch(srcbranchdir)
-        branch_56.mirror()
-        mirrored_tree = bzrlib.workingtree.WorkingTree.open(branch_56.dest)
+        to_mirror.mirror()
+        mirrored_tree = bzrlib.workingtree.WorkingTree.open(to_mirror.dest)
         self.assertEqual(tree.last_revision(), mirrored_tree.last_revision())
 
 
@@ -79,6 +80,8 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def testMissingSourceWhines(self):
         non_existant_branch = "/nonsensedir"
         client = BranchStatusClient()
+        # ensure that we have no errors muddying up the test
+        client.mirrorComplete(1)
         mybranch = BranchToMirror(
             non_existant_branch, "/anothernonsensedir", client, 1)
         mybranch.mirror()
@@ -87,10 +90,10 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         self.assertEqual(1, branch.mirror_failures)
 
     def testMissingFileRevisionData(self):
-        self.build_tree(['bzr56-missingrevision/',
-                         'bzr56-missingrevision/afile'])
+        self.build_tree(['missingrevision/',
+                         'missingrevision/afile'])
         tree = bzrlib.bzrdir.BzrDir.create_standalone_workingtree(
-            'bzr56-missingrevision')
+            'missingrevision')
         tree.add(['afile'], ['myid'])
         tree.commit('start')
         # now we have a good branch with a file called afile and id myid
@@ -99,6 +102,28 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         tree.branch.repository.weave_store.put_weave(
             "myid", Weave(weave_name="myid"), 
             tree.branch.repository.get_transaction())
+        # now try mirroring this branch.
+        client = BranchStatusClient()
+        # clear the error status
+        client.mirrorComplete(1)
+        mybranch = BranchToMirror(
+            'missingrevision', "missingrevisiontarget", client, 1)
+        mybranch.mirror()
+        transaction.abort()
+        branch = database.Branch.get(1)
+        if branch.mirror_failures == 0:
+            print >> sys.stderr, (
+                "canonical.launchpad.scripts.supermirror.tests."
+                "test_branchtomirror.testMissingFileRevisionData "
+                "disabled until bzr is updated to correctly detect "
+                "this corruption.")
+        else:
+            print >> sys.stderr, (
+                "canonical.launchpad.scripts.supermirror.tests."
+                "test_branchtomirror.testMissingFileRevisionData appears "
+                "to work now bzr is updated, please remove the 'bzr needs "
+                "updating' warning messages.")
+            self.assertEqual(1, branch.mirror_failures)
 
 
 def test_suite():

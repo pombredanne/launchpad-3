@@ -8,6 +8,11 @@ from bzrlib.errors import NotBranchError
 
 
 class BranchToMirror:
+    """This class represents a single branch that needs mirroring.
+
+    It has a source URL, a destination URL, a database id and a 
+    status client which is used to report on the mirror progress.
+    """
 
     def __init__(self, src, dest, branch_status_client, branch_id):
         self.source = src
@@ -25,11 +30,16 @@ class BranchToMirror:
             self.branch_status_client.mirrorFailed(self.branch_id, str(e))
             return
         try:
-            destdir = bzrlib.bzrdir.BzrDir.open(self.dest)
-            destdir.open_branch().pull(srcbranch, overwrite=True)
+            dest_branch = bzrlib.bzrdir.BzrDir.open(self.dest).open_branch()
         except bzrlib.errors.NotBranchError:
             os.makedirs(self.dest) 
-            destdir = srcbranch.bzrdir.clone(self.dest)
+            dest_branch = bzrlib.bzrdir.BzrDir.create_branch_convenience(
+                self.dest, force_new_repo=True, force_new_tree=False,
+                #when we update our bzrdir
+                # format=srcbranch.bzrdir._format
+                )
+        try:
+            dest_branch.pull(srcbranch, overwrite=True)
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
@@ -42,6 +52,6 @@ class BranchToMirror:
         return self.source == other.source and self.dest == other.dest
 
     def __repr__(self):
-        return ("BranchToMirror <source=%s dest=%s at %x>" % 
+        return ("<BranchToMirror source=%s dest=%s at %x>" % 
                 (self.source, self.dest, id(self)))
 

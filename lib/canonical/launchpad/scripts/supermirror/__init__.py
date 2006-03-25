@@ -11,12 +11,13 @@ from canonical.authserver.client.branchstatus import BranchStatusClient
 def mirror(managerClass=JobManager, urllibOpener=urllib.urlopen):
     """Mirror all current branches that need to be mirrored."""
     mymanager = managerClass()
+    client = BranchStatusClient()
+
     try:
         mymanager.lock()
     except LockError:
         return 0
 
-    client = BranchStatusClient()
     try:
         branchdata = urllibOpener(config.supermirror.branchlistsource)
         for branch in mymanager.branchStreamToBranchList(branchdata, client):
