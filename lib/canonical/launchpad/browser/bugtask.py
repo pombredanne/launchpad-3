@@ -507,6 +507,7 @@ class BugTaskEditView(GeneralFormView):
             if not changed:
                 self.comment_on_change_error = (
                     "You provided a change comment without changing anything.")
+                self.errors.append(self.comment_on_change_error)
                 # Pass the comment_on_change_error as a list here, because
                 # WidgetsError expects a list of errors.
                 raise WidgetsError([self.comment_on_change_error])
@@ -578,8 +579,7 @@ class BugTaskEditView(GeneralFormView):
             bugtask.bug.newMessage(
                 owner=getUtility(ILaunchBag).user,
                 subject=bugtask.bug.followup_subject(),
-                content=comment_on_change,
-                publish_create_event=False)
+                content=comment_on_change)
 
             bugtask.statusexplanation = comment_on_change
         else:
@@ -590,8 +590,7 @@ class BugTaskEditView(GeneralFormView):
                 SQLObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
-                    edited_fields=field_names,
-                    comment_on_change=comment_on_change))
+                    edited_fields=field_names))
 
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):

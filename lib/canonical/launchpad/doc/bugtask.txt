@@ -188,8 +188,8 @@ For a person:
      u'evolution (Ubuntu)',
      u'evolution (upstream)',
      u'linux-source-2.6.15 (Ubuntu)',
-     u'mozilla-firefox (debian)',
-     u'mozilla-firefox (ubuntu)',
+     u'mozilla-firefox (Debian)',
+     u'mozilla-firefox (Ubuntu)',
      u'thunderbird (Ubuntu)']
 
 It's also possible to search bugs that a person is subscribed to:
@@ -337,7 +337,7 @@ task. It concatenates the display names of the distribution,
 
     >>> bugtask = bugtaskset.get(17)
     >>> bugtask.targetname
-    u'mozilla-firefox (ubuntu)'
+    u'mozilla-firefox (Ubuntu)'
 
 distro release, or product;
 
@@ -756,9 +756,9 @@ Let's just make sure that the tasks on bug_one sort correctly.
     firefox (upstream)
     Ubuntu
     evolution (Ubuntu)
-    mozilla-firefox (ubuntu)
+    mozilla-firefox (Ubuntu)
     Ubuntu Warty
-    mozilla-firefox (debian)
+    mozilla-firefox (Debian)
 
 BugTask Adaptation
 ------------------

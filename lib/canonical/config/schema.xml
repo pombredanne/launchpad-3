@@ -53,6 +53,8 @@
             default="launchpad-error-reports@lists.canonical.com" />
         <key name="bugs_domain" datatype="string" required="no"
             default="bugs.launchpad.net" />
+        <key name="specs_domain" datatype="string" required="no"
+            default="specs.launchpad.net" />
         <key name="oops_root_url" datatype="string" required="no"
             default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
@@ -87,9 +89,13 @@
                 This value is usually not meaningful to change, so it should
                 generally not be set explicitly so the default value is used.
 
-                This should end with a slash.
-            </description>
-            <example>http://bazaar.launchpad.net/</example>
+		This should end with a slash.
+
+		If that value is changed in production, the
+		branch_url_constraint_not_supermirror database constraint
+		should be updated.
+	    </description>
+	    <example>http://bazaar.launchpad.net/</example>
         </key>
         <key name="bzr_imports_root_url" datatype="canonical.config.urlbase"
             required="no" default="http://escudero.ubuntu.com:680/">

@@ -22,6 +22,7 @@
     <include file="bugextref.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
+    <include file="bugnotification.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="bugtask.zcml" />

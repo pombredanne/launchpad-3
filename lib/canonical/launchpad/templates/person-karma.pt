@@ -22,10 +22,13 @@
     type.
   </p>
 
-  <p class="portalMessage" tal:condition="not: context/karma_category_caches">
-    No karma has yet been assigned to <span
-    tal:replace="context/browsername" />. We update this data on a daily
-    basis, so have another look tomorrow.
+  <p
+    tal:condition="not: context/karma_category_caches"
+    class="informational message"
+  >
+    No karma has yet been assigned to
+    <span tal:replace="context/browsername" />.
+    Karma is updated daily.
   </p>
 
   <table class="listing sortable" id="karma"

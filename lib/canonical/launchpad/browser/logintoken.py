@@ -522,12 +522,11 @@ class NewAccountView(AddView, BaseLoginTokenView):
         """
         try:
             person, email = getUtility(IPersonSet).createPersonAndEmail(
-                    self.context.email, displayname=data['displayname'], 
-                    givenname=data['givenname'], familyname=data['familyname'],
+                    self.context.email, displayname=data['displayname'],
                     password=data['password'], passwordEncrypted=True)
         except EmailAddressAlreadyTaken, e:
             self.top_of_page_errors.append(str(e))
-            raise WidgetsError(self.top_of_page_errors) 
+            raise WidgetsError(self.top_of_page_errors)
 
         notify(ObjectCreatedEvent(person))
         notify(ObjectCreatedEvent(email))
