@@ -10,7 +10,7 @@ from bzrlib.weave import Weave
 
 import transaction
 from canonical.launchpad import database
-from canonical.launchpad.scripts.supermirror.tests import createbranch
+from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
     BranchToMirror)
 from canonical.authserver.client.branchstatus import BranchStatusClient
