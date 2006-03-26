@@ -1658,8 +1658,8 @@ class NascentUpload:
                     archive_version = override.binarypackagerelease.version
                     archtag = uploaded_file.architecture
                     if archtag == "all":
-                        archindep = self.distrorelease.nominatedarchindep
-                        archtag = archindep.architecturetag
+                        arch_indep = self.distrorelease.nominatedarchindep
+                        archtag = arch_indep.architecturetag
                     if (override.distroarchrelease ==
                         self.distrorelease[archtag]):
                         self._checkVersion(

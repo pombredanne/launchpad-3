@@ -49,8 +49,20 @@
         <th>Status:</th>
         <td tal:content="context/lifecycle_status/title">Stable</td>
       </tr>
+      <tr tal:condition="context/mirror_failures">
+        <th>Failures:</th>
+        <td>
+          This branch failed to mirror 
+          <span tal:replace="context/mirror_failures" /> times.
+        </td>
+      </tr>
+      <tr tal:condition="context/mirror_status_message">
+        <th>Last Failure:</th>
+        <td tal:content="context/mirror_status_message">
+        </td>
+      </tr>
       <tr tal:condition="context/whiteboard">
-        <td><b>Whiteboard:</b></td>
+        <th>Whiteboard:</th>
         <td tal:content="context/whiteboard">whiteboard</td>
       </tr>
     </tbody>
