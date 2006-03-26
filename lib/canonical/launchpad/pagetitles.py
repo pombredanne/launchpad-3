@@ -475,6 +475,8 @@ person_assignedbugs = ContextDisplayName('Bugs assigned to %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
+person_branches = ContextDisplayName('Bazaar branches for %s')
+
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
 person_changepassword = 'Change your password'
