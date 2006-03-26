@@ -17,7 +17,7 @@
 <div metal:fill-slot="main">
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="portalMessage">
+     class="error message">
     notice goes here
   </p>
 
@@ -46,6 +46,15 @@
     in the branch.
   </p>
 
+  <p class="error message" tal:condition="context/mirror_failures">
+    <b>Mirror Failures:</b> This branch failed to mirror 
+    <span tal:replace="context/mirror_failures" /> times.
+    <tal:has_mirror_msg condition="context/mirror_status_message">
+      The last failure message was:
+      <span tal:replace="context/mirror_status_message">Error 1</span>
+    </tal:has_mirror_msg>
+  </p>
+
   <p class="informational message" tal:condition="context/whiteboard">
     <b>Whiteboard:</b><br />
     <span tal:replace="context/whiteboard">whiteboard</span>
@@ -71,7 +80,9 @@
       <tr tal:repeat="rev_no context/latest_revisions">
         <td tal:content="rev_no/sequence">1</td>
         <td tal:content="rev_no/revision/revision_date/fmt:date">2005-10-05</td>
-        <td tal:condition="view/user" tal:content="rev_no/revision/revision_author/name">John Doe &lt;jdoe@example.com&gt;</td>
+        <td tal:condition="view/user"
+            tal:content="rev_no/revision/revision_author/name"
+            >John Doe &lt;jdoe@example.com&gt;</td>
         <td tal:content="rev_no/revision/log_body">The revision commit message.</td>
       </tr>
     </tbody>

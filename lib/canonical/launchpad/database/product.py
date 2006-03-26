@@ -33,11 +33,13 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.supportcontact import SupportContact
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
     )
+from canonical.launchpad.helpers import shortlist
 
 
 class Product(SQLBase, BugTargetBase):
@@ -180,7 +182,7 @@ class Product(SQLBase, BugTargetBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner, product=self)
 
     def getTicket(self, ticket_num):
@@ -194,6 +196,34 @@ class Product(SQLBase, BugTargetBase):
         if ticket.target != self:
             return None
         return ticket
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return False
+        SupportContact(
+            product=self.id, person=person.id,
+            sourcepackagename=None, distribution=None)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            productID=self.id, personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(productID=self.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
 
     @property
     def translatable_packages(self):

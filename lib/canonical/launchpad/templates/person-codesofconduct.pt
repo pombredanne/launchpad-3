@@ -17,53 +17,68 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Code of Conduct Signatures</h1>
+      <h1>Code of Conduct signatures</h1>
 
   <tal:dummy tal:condition="view/performCoCChanges"/>
 
-  <p class="documentDescription">The Ubuntu Code of Conduct is a commitment
+      <p>Launchpad records codes of conduct you sign as commitments
   to the principles of collaboration, tolerance and open communication that
   drive the open source community.</p>
 
   <p tal:condition="not: view/signedcocsCount">
-     <span tal:replace="context/displayname"/> has never signed the Ubuntu
-     Code of Conduct.</p> 
+        <tal:name replace="context/displayname"/> has never signed a
+        code of conduct.
+      </p>
 
   <div tal:condition="context/activesignatures">
     <form name="coc" action="" method="POST">
 
-    <h2>Active signatures</h2>
-
-    <div>
-
-     <p>If you change your mind about agreeing to the Code of Conduct, 
-       you can deactivate your signature.</p>
-
-      <div tal:repeat="sig context/activesignatures">      
-        <input type="checkbox" name="DEACTIVATE_SIGNATURE"
-               tal:attributes="value sig/id"/>
-	<span tal:replace="sig/displayname">SIGNATURE</span>
+      <h2>Active signatures</h2>
+          <p>
+            If you change your mind about agreeing to a code of conduct, 
+        you can deactivate your signature.</p>
+          <table>
+            <tbody>
+              <tr tal:repeat="sig context/activesignatures">
+                <td class="icon left">
+                  <input
+                    type="checkbox"
+                    name="DEACTIVATE_SIGNATURE"
+                    tal:attributes="value sig/id; id string:code${sig/id}"
+                  />
+                </td>
+                <td>
+                  <div>
+                    <label
+                      tal:attributes="for string:code${sig/id}"
+                      tal:content="sig/signedcode"
+                    >blah</label>
+                  </div>
+                  <div
+                    class="discreet"
+                    tal:content="sig/displayname"
+                  >SIGNATURE</div>
+                </td>
+              </tr>
+            <tbody>
+          </table>
+          <input type="submit" value="Deactivate"/>
+        </form>
       </div>
-    </div>
-
-    <input type="submit" value="Deactivate"/>
-    </form>
- 
- </div>
 
 
   <div tal:condition="context/inactivesignatures">
-    <p>Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
-       member of <a href="/people/admins">Launchpad Administrator Team<a>.</p>
 
     <h2>Inactive signatures</h2>
 
-    <div>
+        <p>
+          Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
+          <a href="/people/admins">Launchpad Administrator<a>.
+        </p>
       <ul> 
          <li tal:repeat="sig context/inactivesignatures"
              tal:content="sig/displayname"/>
       </ul>
-    </div>
   </div>
 
   <p><a href="/codeofconduct">See or sign new code of conduct releases</a></p>

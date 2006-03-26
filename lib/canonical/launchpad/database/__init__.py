@@ -20,6 +20,7 @@ from canonical.launchpad.database.bugtask import *
 from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
+from canonical.launchpad.database.bugnotification import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
@@ -87,6 +88,7 @@ from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.sprintattendance import *
 from canonical.launchpad.database.sprintspecification import *
+from canonical.launchpad.database.supportcontact import *
 from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *

@@ -246,11 +246,15 @@ class ProductSupportMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'support'
-    links = ['new']
+    links = ['new', 'support_contact']
 
     def new(self):
         text = 'Request Support'
         return Link('+addticket', text, icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):

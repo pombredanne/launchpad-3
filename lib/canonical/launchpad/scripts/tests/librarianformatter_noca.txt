@@ -23,7 +23,7 @@ formatter. Each call generates a unique Logger.
 
 Now setup two identical Logger instances except for their formatter
 
->>> normal_log, normal_out= make_logger(logging.Formatter)
+>>> normal_log, normal_out = make_logger(logging.Formatter)
 >>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
 
 Output from the standard formatter should match the output from
@@ -43,6 +43,7 @@ Now send some identical log messages to the loggers.
 ...     log.info('Some crap')
 ...     log.error('Oops!', exc_info=exception)
 ...     log.error('Error %d occurred', 42)
+>>> if normal_out.getvalue() != librarian_out.getvalue(): print "%r, %r" % (normal_out.getvalue(), librarian_out.getvalue())
 >>> normal_out.getvalue() == librarian_out.getvalue()
 True
 
