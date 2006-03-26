@@ -13,6 +13,7 @@ from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import (
     Navigation, stepto, enabled_with_permission, ApplicationMenu, Link)
 import canonical.launchpad.layers
+from canonical.cachedproperty import cachedproperty
 
 
 class BazaarBranchesMenu(ApplicationMenu):
@@ -33,12 +34,19 @@ class BazaarBranchesMenu(ApplicationMenu):
         summary = 'Listing every branch registered in The Bazaar'
         return Link(target, text, summary, icon='branch')
 
+
 class BazaarApplicationView:
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.seriesset = getUtility(IProductSeriesSourceSet)
+
+    def branches(self):
+        """Return all branches in the system, prejoined to product,
+        author."""
+        branches = self.context.all
+        return branches
 
     def import_count(self):
         return self.seriesset.importcount()

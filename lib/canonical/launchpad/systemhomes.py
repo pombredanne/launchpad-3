@@ -71,8 +71,9 @@ class BazaarApplication:
         self.title = 'The Open Source Bazaar'
 
     @property
-    def branches(self):
-        return getUtility(IBranchSet)
+    def all(self):
+        branches = getUtility(IBranchSet).all
+        return branches
 
     def getMatchingBranches(self):
         """See IBazaarApplication."""

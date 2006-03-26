@@ -28,6 +28,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
+
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
@@ -184,16 +185,22 @@ class BranchSet:
             raise NotFoundError(branch_id)
         return branch
 
+    def __iter__(self):
+        """See IBranchSet."""
+        return iter(Branch.select())
+
+    @property
+    def all(self):
+        branches = Branch.select()
+        branches.prejoin(['author', 'product'])
+        return branches
+
     def get(self, branch_id, default=None):
         """See IBranchSet."""
         try:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
-
-    def __iter__(self):
-        """See IBranchSet."""
-        return iter(Branch.select())
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,

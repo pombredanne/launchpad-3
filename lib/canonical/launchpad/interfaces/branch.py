@@ -172,14 +172,16 @@ class IBranchSet(Interface):
         Raise NotFoundError if there is no such branch.
         """
 
+    def __iter__():
+        """Return an iterator that will go through all branches."""
+
+    all = Attribute("All branches in the system.")
+
     def get(branch_id, default=None):
         """Return the branch with the given id.
 
         Return the default value if there is no such branch.
         """
-
-    def __iter__():
-        """Return an iterator that will go through all branches."""
 
     def new(name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
