@@ -3,6 +3,11 @@
   table.
 */
 
+/* Branch */
+
+COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+
 /* Bug */
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
