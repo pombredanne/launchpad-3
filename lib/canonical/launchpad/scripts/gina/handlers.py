@@ -942,8 +942,7 @@ class PersonHandler:
 
     def createPerson(self, emailaddress, displayname):
         """Create a new Person"""
-        givenname = displayname.split()[0]
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            email=emailaddress, displayname=displayname, givenname=givenname)
+            email=emailaddress, displayname=displayname)
         return person
 

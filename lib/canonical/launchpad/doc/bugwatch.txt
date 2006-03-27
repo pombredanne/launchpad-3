@@ -25,6 +25,14 @@ Bug watches are accessed via a utility that provides IBugWatchSet.
     u'2000'
     >>> bugwatch.url
     u'https://bugzilla.mozilla.org//show_bug.cgi?id=2000'
+    >>> getUtility(IBugWatchSet).get(98765)
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 98765
+    >>> getUtility(IBugWatchSet)[98765]
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 98765
 
 Bug watches can also be accessed as a property of a bug tracker, with
 the .watches attribute.

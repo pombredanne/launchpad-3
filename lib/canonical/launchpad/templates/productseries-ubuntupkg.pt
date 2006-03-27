@@ -25,7 +25,7 @@
       relevant Ubuntu package.
     </p>
 
-    <p class="portalMessage"
+    <p class="error message"
        tal:condition="not:request/lp:person">
        Please log in to edit the mapping from this product branch to its
        Ubuntu package.

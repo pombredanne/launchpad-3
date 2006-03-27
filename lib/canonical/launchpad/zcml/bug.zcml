@@ -29,14 +29,14 @@
                         notificationRecipientAddresses hasBranch" />
         <require
             permission="launchpad.Edit"
-            attributes="addWatch linkCVE unlinkCVE findCvesInText newMessage
-                        linkMessage addBranch" />
-        <require
-            permission="launchpad.Edit"
+            attributes="addChangeNotification addCommentNotification addWatch
+                        linkCVE unlinkCVE findCvesInText newMessage
+                        linkMessage addBranch"
             set_attributes="datecreated name title description ownerID
                             owner duplicateof communityscore communitytimestamp
                             hits hitstimestamp activityscore activitytimestamp
-                            activity initial_message private" />
+                            activity initial_message private"
+            />
     </content>
 
     <browser:defaultView

@@ -16,8 +16,12 @@
 
     <h1>Your wiki names</h1>
 
-    <div tal:define="feedback view/processWikiForm" tal:condition="feedback" 
-         tal:content="structure feedback" class="portalMessage" />
+    <p
+      tal:define="feedback view/processWikiForm"
+      tal:condition="feedback" 
+      tal:content="structure feedback"
+      class="error message"
+    />
 
     <form name="edit_wikiname" action="" method="POST">
     <table>

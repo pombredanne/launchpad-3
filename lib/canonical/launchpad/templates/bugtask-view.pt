@@ -15,8 +15,7 @@
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
-      <p tal:condition="context/bug/duplicateof"
-         class="portalMessage">
+      <p tal:condition="context/bug/duplicateof" class="informational message">
         This bug is a duplicate of
         <a href="#"
            tal:attributes="href context/bug/duplicateof/fmt:url">bug
@@ -24,7 +23,7 @@
       </p>
 
       <p tal:condition="not: context/required:launchpad.Edit"
-         class="portalMessage">
+         class="informational message">
         <span tal:condition="not: request/lp:person">
           To <a href="+editstatus">change this information</a>,
           you must be logged in.
@@ -33,13 +32,13 @@
 
       <div metal:define-macro="editform">
           <div metal:define-macro="formbody">
-            <p class="portalMessage"
+            <p class="error message"
                tal:define="status view/update|nothing"
                tal:condition="status"
                tal:content="status" />
             <p tal:define="errors view/errors|nothing"
                tal:condition="errors"
-               class="portalMessage"
+               class="error message"
                i18n:translate="">
               There are <strong
               tal:content="view/errors/count:len"
