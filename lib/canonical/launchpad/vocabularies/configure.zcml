@@ -86,6 +86,11 @@
     />
 
   <vocabulary
+      name="Component"
+      factory="canonical.launchpad.vocabularies.ComponentVocabulary"
+      />
+
+  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
@@ -196,6 +201,11 @@
     />
 
   <vocabulary
+    name="PersonActiveMembership"
+    factory="canonical.launchpad.vocabularies.PersonActiveMembershipVocabulary"
+    />
+
+  <vocabulary
     name="PollAlgorithm"
     factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
     />
@@ -233,6 +243,21 @@
   <vocabulary
     name="Project"
     factory="canonical.launchpad.vocabularies.ProjectVocabulary"
+    />
+
+  <vocabulary
+    name="RemoteBugTaskStatus"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
+    />
+
+  <vocabulary
+    name="RemoteBugTaskPriority"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskPriorityVocabulary"
+    />
+
+  <vocabulary
+    name="RemoteBugTaskSeverity"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskSeverityVocabulary"
     />
 
   <vocabulary

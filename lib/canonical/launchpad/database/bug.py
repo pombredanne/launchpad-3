@@ -25,8 +25,9 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
+from canonical.launchpad.database.bugnotification import BugNotification
 from canonical.launchpad.database.message import (
-    Message, MessageChunk)
+    MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
     BugTask, BugTaskSet, bugtask_sort_key)
@@ -47,7 +48,6 @@ class Bug(SQLBase):
     # db field names
     name = StringCol(unique=True, default=None)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False,
                             default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -154,15 +154,22 @@ class Bug(SQLBase):
 
         return sorted(emails)
 
-    # XXX, Brad Bollenbach, 2006-01-13: Setting publish_create_event to False
-    # allows us to suppress the create event when we *don't* want to have a
-    # separate email generated containing just the comment, e.g., when the user
-    # adds a comment on +editstatus. This is hackish though. See:
-    #
-    # https://launchpad.net/products/malone/+bug/25724
-    def newMessage(self, owner=None, subject=None, content=None,
-                   parent=None, publish_create_event=True):
-        """Create a new Message and link it to this ticket."""
+    def addChangeNotification(self, text, person, when=None):
+        """See IBug."""
+        if when is None:
+            when = UTC_NOW
+        message = MessageSet().fromText(
+            self.followup_subject(), text, owner=person, datecreated=when)
+        BugNotification(
+            bug=self, is_comment=False, message=message, date_emailed=None)
+
+    def addCommentNotification(self, message):
+        """See IBug."""
+        BugNotification(
+            bug=self, is_comment=True, message=message, date_emailed=None)
+
+    def newMessage(self, owner=None, subject=None, content=None, parent=None):
+        """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
@@ -170,8 +177,7 @@ class Bug(SQLBase):
 
         bugmsg = BugMessage(bug=self, message=msg)
 
-        if publish_create_event:
-            notify(SQLObjectCreatedEvent(bugmsg, user=owner))
+        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
 
         return bugmsg.message
 
@@ -320,7 +326,7 @@ class BugSet:
 
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None, datecreated=None,
+        description=None, msg=None, datecreated=None,
         title=None, private=False, owner=None):
         """See IBugSet."""
         # Make sure that the factory has been passed enough information.
@@ -348,8 +354,7 @@ class BugSet:
             datecreated = UTC_NOW
 
         bug = Bug(
-            title=title, summary=summary,
-            description=description, private=private,
+            title=title, description=description, private=private,
             owner=owner.id, datecreated=datecreated)
 
         bug.subscribe(owner)

@@ -1650,15 +1650,17 @@ class NascentUpload:
                 if candidates:
                     self.logger.debug("%d possible binar{y,ies}"
                                       % len(candidates))
-
-                    self.logger.debug("%d: (binary) exists" % (
+                    self.logger.debug("%s: (binary) exists" % (
                         uploaded_file.package))
                     override = candidates[0]
                     proposed_version = uploaded_file.version
                     archive_version = override.binarypackagerelease.version
-
+                    archtag = uploaded_file.architecture
+                    if archtag == "all":
+                        arch_indep = self.distrorelease.nominatedarchindep
+                        archtag = arch_indep.architecturetag
                     if (override.distroarchrelease ==
-                        self.distrorelease[uploaded_file.archtecture]):
+                        self.distrorelease[archtag]):
                         self._checkVersion(
                             proposed_version, archive_version,
                             filename=uploaded_file.filename)

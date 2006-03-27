@@ -17,13 +17,6 @@ cached list of Person.id that are considered 'valid'.
     >>> is_valid(stub_id)
     True
 
-Remove names from sabdfl to avoid triggering the valid_team_fields constraint
-
-    >>> cur.execute("""
-    ...     UPDATE Person SET givenname=NULL, familyname=NULL, language=NULL
-    ...     WHERE id = %(sabdfl_id)s
-    ...     """, vars())
-
 This table is maintained by triggers, so that relevant changes to the data
 will be automatically reflected in the cache
 

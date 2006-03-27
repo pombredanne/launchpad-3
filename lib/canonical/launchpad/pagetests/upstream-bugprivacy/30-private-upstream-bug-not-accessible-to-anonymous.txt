@@ -12,10 +12,10 @@ XXX: Brad Bollenbach, 2005-09-30: The redirect URL below is unexpected. See
 https://launchpad.net/products/launchpad/+bug/2730
 
   >>> print http(r"""
-  ... GET /products/firefox/+bug/10 HTTP/1.1
+  ... GET /products/firefox/+bug/11 HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/products/firefox/+bug/10/+index/+login
+  Location: http://localhost:9000/products/firefox/+bug/11/+index/+login
   ...
   <BLANKLINE>

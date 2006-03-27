@@ -28,7 +28,7 @@
     information to link a source package in a distribution to an upstream
     product series.
   </p>
-  <p class="portalMessage" tal:condition="not: packagings">
+  <p tal:condition="not: packagings" class="informational message">
     There are no links between packages in <span
     tal:replace="context/displayname">Hoary</span> and upstream.
     By adding packaging information for specific packages in this release that

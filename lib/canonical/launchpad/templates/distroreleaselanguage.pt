@@ -43,12 +43,14 @@
              apache2-dev
           </a>
         </td>
-        <td>
+        <td span style="white-space: nowrap">
           <tal:comment condition="nothing">
             This text is used for the sorting.
           </tal:comment>
-          <span style="display: none" tal:content="pf/translatedPercentage"/>
-          <div tal:replace="structure pf/@@+barchart" />
+          <span style="display: none" 
+                tal:content="pf/translatedPercentage"/>
+          <span style="white-space: nowrap"
+                tal:content="structure pf/@@+barchart" />
         </td>
         <td>
           <span tal:condition="pf/latestsubmission"

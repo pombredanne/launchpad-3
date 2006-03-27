@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    ContentNameField, Title, Summary, BugField)
+    ContentNameField, Title, BugField)
 
 
 class BugNameField(ContentNameField):
@@ -59,11 +59,6 @@ class IBug(IMessageTarget):
     title = Title(
         title=_('Summary'), required=True,
         description=_("""A one-line summary of the problem."""))
-    summary = Summary(
-        title=_('Short Description'), required=False,
-        description=_("""A single paragraph
-        description that should capture the essence of the bug, where it
-        has been observed, and what triggers it."""))
     description = Text(
         title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
@@ -141,6 +136,12 @@ class IBug(IMessageTarget):
         addresses.
         """
 
+    def addChangeNotification(text, person):
+        """Add a bug change notification."""
+
+    def addCommentNotification(message):
+        """Add a bug comment notification."""
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
@@ -176,12 +177,10 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
-    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
-    title = Attribute("The new bug title or None.")
-    summary = Attribute("The new bug summary or None.")
-    description = Attribute("The new bug description or None.")
+    title = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
@@ -269,7 +268,7 @@ class IBugSet(Interface):
 
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None, datecreated=None,
+        description=None, msg=None, datecreated=None,
         title=None, private=False, owner=None):
         """Create a bug and return it.
 
@@ -277,9 +276,6 @@ class IBugSet(Interface):
 
           * if no description is passed, the comment will be used as the
             description
-
-          * if summary is not passed then the summary will be the
-            first sentence of the description
 
           * the reporter will be subscribed to the bug
 
