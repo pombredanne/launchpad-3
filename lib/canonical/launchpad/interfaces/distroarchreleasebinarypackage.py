@@ -42,19 +42,21 @@ class IDistroArchReleaseBinaryPackage(Interface):
     publishing_history = Attribute("Return a list of publishing "
         "records for this binary package in this distribution.")
 
+    current_published = Attribute("is last BinaryPackagePublishing "
+                                  "record that is in PUBLISHED status.")
+
     def __getitem__(version):
         """Return the DistroArchReleaseBinaryPackageRelease with the given
         version, or None if there has never been a release with that
         version, in this architecture release.
         """
 
-    def current_published():
-        """Returns the last BinaryPackagePublishing record that is in
-        PUBLISHED status."""
-
     def changeOverride(new_component, new_section, new_priority):
         """Change the component, section and/or priority of a
         DistroArchReleaseBinaryPackageRelease."""
         
     def supersede():
-        """Supersede a DistroArchReleaseBinaryPackageRelease."""
+        """Supersede a DistroArchReleaseBinaryPackageRelease.
+
+        Return the modified IBinaryPackagePublishingHistory object.
+        """

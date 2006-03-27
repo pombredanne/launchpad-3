@@ -73,7 +73,7 @@
       <browser:widget
         field="summary"
         class="zope.app.form.browser.TextAreaWidget"
-        width="60"
+        width="30"
         height="5" />
     </browser:editform>
 

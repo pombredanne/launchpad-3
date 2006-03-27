@@ -124,9 +124,10 @@ class ImporterHandler:
         self.imported_sources = []
         self.imported_bins = {}
 
-        self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings, 
+        self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings,
                                               pocket)
-        self.bphandler = BinaryPackageHandler(self.sphandler, archive_root)
+        self.bphandler = BinaryPackageHandler(self.sphandler, archive_root,
+                                              pocket)
 
         self.sppublisher = SourcePackagePublisher(self.distrorelease, pocket)
         # This is initialized in ensure_archinfo
@@ -324,7 +325,7 @@ class ImporterHandler:
                 return sourcepackage
 
             log.warn("Nope, couldn't find it. Could it be a "
-                     "bin-only-NMU? Checking...")
+                     "bin-only-NMU? Checking version %s" % version)
 
             # XXX: testing a third cycle of this loop isn't done
 
@@ -649,12 +650,13 @@ class SourcePackagePublisher:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
-    def __init__(self, sphandler, archive_root):
+    def __init__(self, sphandler, archive_root, pocket):
         # Create other needed object handlers.
         self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.source_handler = sphandler
         self.archive_root = archive_root
+        self.pocket = pocket
 
     def checkBin(self, binarypackagedata, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
@@ -796,6 +798,14 @@ class BinaryPackageHandler:
         distribution = distroarchrelease.distrorelease.distribution
         clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
 
+        # XXX: this method doesn't work for real bin-only NMUs that are
+        # new versions of packages that were picked up by Gina before.
+        # The reason for that is that these bin-only NMUs' corresponding
+        # source package release will already have been built at least
+        # once, and the two checks below will of course blow up when
+        # doing it the second time.
+        #   -- kiko, 2006-02-03
+
         query = ("Build.sourcepackagerelease = %d AND "
                  "Build.distroarchrelease = DistroArchRelease.id AND " 
                  "DistroArchRelease.distrorelease = DistroRelease.id AND "
@@ -833,13 +843,12 @@ class BinaryPackageHandler:
             build = Build(processor=processor.id,
                           distroarchrelease=distroarchrelease.id,
                           buildstate=BuildStatus.FULLYBUILT,
-                          gpgsigningkey=key,
                           sourcepackagerelease=srcpkg.id,
                           buildduration=None,
                           buildlog=None,
                           builder=None,
-                          changes=None,
-                          datebuilt=None)
+                          datebuilt=None,
+                          pocket=self.pocket)
         return build
 
 

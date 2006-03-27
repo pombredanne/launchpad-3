@@ -46,6 +46,11 @@
     />
 
   <vocabulary
+    name="BugBranchStatus"
+    factory="canonical.launchpad.vocabularies.BugBranchStatusVocabulary"
+    />
+
+  <vocabulary
     name="BugRef"
     factory="canonical.launchpad.vocabularies.BugRefVocabulary"
     />
@@ -93,6 +98,11 @@
   <vocabulary
     name="Distribution"
     factory="canonical.launchpad.vocabularies.DistributionVocabulary"
+    />
+
+  <vocabulary
+    name="DistributionUsingMalone"
+    factory="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
     />
 
   <vocabulary
@@ -206,6 +216,11 @@
     />
 
   <vocabulary
+    name="ProductBranch"
+    factory="canonical.launchpad.vocabularies.ProductBranchVocabulary"
+    />
+
+  <vocabulary
     name="ProductRelease"
     factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
     />
@@ -253,6 +268,11 @@
   <vocabulary
     name="SpecificationStatus"
     factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
+    />
+
+  <vocabulary
+    name="SpecificationGoalStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationGoalStatusVocabulary"
     />
 
   <vocabulary

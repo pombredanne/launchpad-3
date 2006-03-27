@@ -14,17 +14,17 @@ from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
-from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
@@ -35,8 +35,6 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
-from zope.i18n import MessageIDFactory
-_ = MessageIDFactory("launchpad")
 
 
 class Bug(SQLBase):
@@ -49,7 +47,6 @@ class Bug(SQLBase):
     # db field names
     name = StringCol(unique=True, default=None)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False,
                             default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -68,31 +65,34 @@ class Bug(SQLBase):
     private = BoolCol(notNull=True, default=False)
 
     # useful Joins
-    activity = MultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
+    activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
     messages = RelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            orderBy='datecreated')
-    productinfestations = MultipleJoin(
+    productinfestations = SQLMultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
-    packageinfestations = MultipleJoin(
+    packageinfestations = SQLMultipleJoin(
             'BugPackageInfestation', joinColumn='bug', orderBy='id')
-    watches = MultipleJoin('BugWatch', joinColumn='bug')
-    externalrefs = MultipleJoin(
+    watches = SQLMultipleJoin(
+        'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
+    externalrefs = SQLMultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
     cves = RelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
-    cve_links = MultipleJoin('BugCve', joinColumn='bug', orderBy='id')
-    subscriptions = MultipleJoin(
+    cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
-    duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = MultipleJoin('BugAttachment', joinColumn='bug', orderBy='id')
+    duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
+    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
+        orderBy='id')
     specifications = RelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
     tickets = RelatedJoin('Ticket', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
+    bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
 
     @property
     def displayname(self):
@@ -191,6 +191,21 @@ class Bug(SQLBase):
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
 
+    def hasBranch(self, branch):
+        """See canonical.launchpad.interfaces.IBug."""
+        branch = BugBranch.selectOneBy(branchID=branch.id, bugID=self.id)
+
+        return branch is not None
+
+    def addBranch(self, branch, whiteboard=None):
+        """See canonical.launchpad.interfaces.IBug."""
+        for bug_branch in shortlist(self.bug_branches):
+            if bug_branch.branch == branch:
+                return bug_branch
+
+        return BugBranch(
+            branch=branch, bug=self, whiteboard=whiteboard)
+
     def linkCVE(self, cve, user=None):
         """See IBug."""
         if cve not in self.cves:
@@ -235,7 +250,11 @@ class BugSet:
                 raise NotFoundError(
                     "Unable to locate bug with ID %s" % str(bugid))
         else:
-            bug = self.get(bugid)
+            try:
+                bug = self.get(bugid)
+            except ValueError:
+                raise NotFoundError(
+                    "Unable to locate bug with nickname %s" % str(bugid))
         return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
@@ -247,8 +266,9 @@ class BugSet:
         admins = getUtility(ILaunchpadCelebrities).admin
         if user:
             if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users, so that
-                # they can only see the private bugs that they're allowed to see.
+                # Enforce privacy-awareness for logged-in, non-admin users, 
+                # so that they can only see the private bugs that they're 
+                # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
                       Bug.id in (
@@ -299,7 +319,7 @@ class BugSet:
 
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None, datecreated=None,
+        description=None, msg=None, datecreated=None,
         title=None, private=False, owner=None):
         """See IBugSet."""
         # Make sure that the factory has been passed enough information.
@@ -327,8 +347,7 @@ class BugSet:
             datecreated = UTC_NOW
 
         bug = Bug(
-            title=title, summary=summary,
-            description=description, private=private,
+            title=title, description=description, private=private,
             owner=owner.id, datecreated=datecreated)
 
         bug.subscribe(owner)

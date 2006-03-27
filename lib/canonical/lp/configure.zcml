@@ -3,7 +3,8 @@
     xmlns:browser="http://namespaces.zope.org/browser">
 
   <class class="canonical.lp.dbschema.Item">
-      <allow attributes="name title value description schema" />
+      <allow attributes="name title value description schema
+                         sortkey __sqlrepr__" />
   </class>
 
   <browser:pages for="*" permission="zope.Public" >
@@ -14,6 +15,10 @@
       <browser:page
           name="main_template"
           template="../launchpad/templates/main-template.pt"
+          />
+      <browser:page
+          name="main_template_2col"
+          template="../launchpad/templates/main-template-2col.pt"
           />
   </browser:pages>
 

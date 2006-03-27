@@ -12,18 +12,14 @@ __all__ = [
     'BuildRecordsView',
     ]
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-
 from canonical.lp.dbschema import BuildStatus
 
-from canonical.launchpad.interfaces import IHasBuildRecords
-
-from canonical.launchpad.interfaces import IBuild
+from canonical.launchpad.interfaces import IHasBuildRecords, IBuild
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough,
-    ApplicationMenu, LaunchpadView, enabled_with_permission)
+    StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
+    LaunchpadView, enabled_with_permission)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class BuildNavigation(GetitemNavigation):
@@ -40,15 +36,7 @@ class BuildOverviewMenu(ApplicationMenu):
     """Overview menu for build records """
     usedfor = IBuild
     facet = 'overview'
-    links = ['changes', 'buildlog', 'reset']
-
-    def changes(self):
-        text = 'View Changes'
-        return Link('+changes', text, icon='info')
-
-    def buildlog(self):
-        text = 'View Buildlog'
-        return Link('+buildlog', text, icon='info')
+    links = ['reset']
 
     @enabled_with_permission('launchpad.Admin')
     def reset(self):
@@ -77,7 +65,7 @@ class BuildView(LaunchpadView):
         # invoke context method to reset the build record
         self.context.reset()
         return '<p>Build Record reset.</p>'
-        
+
 
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
@@ -110,13 +98,7 @@ class BuildRecordsView(LaunchpadView):
 
         # request context build records according the selected state
         builds = self.context.getBuildRecords(state_map[self.state])
-
-        # recover batch page
-        start = int(self.request.get('batch_start', 0))
-
-        # setup the batched list to present
-        self.batch = Batch(builds, start)
-        self.batchnav = BatchNavigator(self.batch, self.request)
+        self.batchnav = BatchNavigator(builds, self.request)
 
 
     def showBuilderInfo(self):
@@ -126,3 +108,4 @@ class BuildRecordsView(LaunchpadView):
         in its result table or not. It's only ommited in builder-index page.
         """
         return True
+

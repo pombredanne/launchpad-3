@@ -6,7 +6,7 @@ __all__ = ['POTemplateNameSet', 'POTemplateName']
 from zope.interface import implements
 
 from sqlobject import (
-    StringCol, MultipleJoin, SQLObjectNotFound, OR, CONTAINSSTRING)
+    StringCol, SQLMultipleJoin, SQLObjectNotFound, OR, CONTAINSSTRING)
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad import helpers
@@ -93,5 +93,5 @@ class POTemplateName(SQLBase):
     description = StringCol(dbName='description', notNull=False, default=None)
     translationdomain = StringCol(dbName='translationdomain', notNull=True,
         unique=True, alternateID=True)
-    potemplates = MultipleJoin('POTemplate', joinColumn='potemplatename')
+    potemplates = SQLMultipleJoin('POTemplate', joinColumn='potemplatename')
 

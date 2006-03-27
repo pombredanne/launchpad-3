@@ -1,3 +1,4 @@
+# Copyright 2004-2006 Canonical Ltd. All rights reserved.
 
 __all__ = [
     'validate_url',
@@ -6,11 +7,15 @@ __all__ = [
     'valid_rsync_url',
     'valid_webref',
     'non_duplicate_bug',
+    'non_duplicate_branch',
     'valid_bug_number',
+    'valid_cve_sequence',
     'valid_emblem',
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
+    'valid_distrotask',
+    'valid_upstreamtask'
     ]
 
 import urllib
@@ -22,11 +27,19 @@ from zope.exceptions import NotFoundError
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
+from canonical.launchpad.searchbuilder import NULL
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.cve import valid_cve
+from canonical.launchpad.validators.url import valid_absolute_url
 from canonical.lp.dbschema import MirrorPulseType
 
+#XXX matsubara 2006-03-15: The validations functions that deals with URLs
+# should be in validators/ and we should have them as separete constraints in
+# trusted.sql.  
+# https://launchpad.net/products/launchpad/+bug/35077
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
 
@@ -59,8 +72,7 @@ def validate_url(url, valid_schemes):
     scheme, host = urllib.splittype(url)
     if not scheme in valid_schemes:
         return False
-    host, path = urllib.splithost(host)
-    if not host:
+    if not valid_absolute_url(url):
         return False
     return True
 
@@ -150,14 +162,36 @@ def non_duplicate_bug(value):
     else:
         return True
 
+
+def non_duplicate_branch(value):
+    """Ensure that this branch hasn't already been linked to this bug."""
+    current_bug = getUtility(ILaunchBag).bug
+    if current_bug.hasBranch(value):
+        raise LaunchpadValidationError(_(dedent("""
+            This branch is already registered on this bug.
+            """)))
+
+    return True
+
+
 def valid_bug_number(value):
     from canonical.launchpad.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
     try:
         bugset.get(value)
     except NotFoundError:
-        return False
+        raise LaunchpadValidationError(_(
+            "Bug %i doesn't exist." % value))
     return True
+
+
+def valid_cve_sequence(value):
+    """Check if the given value is a valid CVE otherwise raise an exception."""
+    if valid_cve(value):
+        return True
+    else:
+        raise LaunchpadValidationError(_(
+            "%s is not a valid CVE number" % value))
 
 
 def _valid_image(image, max_size, max_dimensions):
@@ -234,3 +268,55 @@ def validate_distribution_mirror_schema(form_values):
 
     if errors:
         raise WidgetsError(errors)
+
+
+def valid_distrotask(bug, distribution, sourcepackagename=None):
+    """Check if a distribution bugtask already exists for a given bug.
+    
+    If it exists, WidgetsError will be raised.
+    """
+    from canonical.launchpad.helpers import shortlist
+    errors = []
+    if sourcepackagename is not None:
+        msg = LaunchpadValidationError(_(
+            'A fix for this bug has already been requested for %s (%s)' %
+            (sourcepackagename.name, distribution.displayname)))
+    else:
+        msg = LaunchpadValidationError(_(
+            'A fix for this bug has already been requested for %s' % 
+            distribution.displayname))
+        sourcepackagename = NULL
+    user = getUtility(ILaunchBag).user
+    params = BugTaskSearchParams(
+        user, bug=bug, sourcepackagename=sourcepackagename)
+    bugtasks = shortlist(distribution.searchTasks(params), longest_expected=1)
+    if bugtasks: 
+        # We have to raise WidgetsError if a bugtask is found, the only case we
+        # should skip it is when we're removing a sourcepackagename from a
+        # existing bugtask
+        assert len(bugtasks) == 1
+        if bugtasks[0].sourcepackagename is not None and (
+            sourcepackagename is None):
+            return
+        errors.append(msg)
+            
+    if errors:
+        raise WidgetsError(errors)
+
+
+def valid_upstreamtask(bug, product):
+    """Check if a product bugtask already exists for a given bug.
+
+    If it exists, WidgetsError will be raised.
+    """
+    errors = []
+    user = getUtility(ILaunchBag).user
+    params = BugTaskSearchParams(user, bug=bug)
+    if product.searchTasks(params):
+        errors.append(LaunchpadValidationError(_(
+            'A fix for this bug has already been requested for %s' % 
+            product.displayname)))
+
+    if errors:
+        raise WidgetsError(errors)
+

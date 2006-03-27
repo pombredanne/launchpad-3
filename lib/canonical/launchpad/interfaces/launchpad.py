@@ -11,13 +11,13 @@ from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Bool
+from zope.schema import Bool, Int
 from persistent import IPersistent
 
 _ = MessageIDFactory('launchpad')
 
 __all__ = [
-    'NotFoundError', 'NameNotAvailable',
+    'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
     'ILaunchpadRoot', 'ILaunchpadApplication',
     'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
     'IBazaarApplication', 'IFOAFApplication', 'IPasswordEncryptor',
@@ -25,7 +25,7 @@ __all__ = [
     'IZODBAnnotation', 'IAuthorization',
     'IHasOwner', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
-    'IAging', 'IHasDateCreated',
+    'IAging', 'IHasDateCreated', 'IHasBug',
     'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
     'ILinkData', 'ILink', 'IFacetLink', 'IStructuredString',
     'IMenu', 'IMenuBase', 'IFacetMenu',
@@ -42,17 +42,18 @@ __all__ = [
 class NotFoundError(zope.exceptions.NotFoundError):
     """Launchpad object not found."""
 
-
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose is not available."""
 
+class UnexpectedFormData(AssertionError):
+    """Got form data that is not what is expected by a form handler."""
 
 class ILaunchpadCelebrities(Interface):
     """Well known things.
 
     Celebrities are SQLBase instances that have a well known name.
     """
-    buttsource = Attribute("The 'buttsource' team.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
     admin = Attribute("The 'admins' team.")
     ubuntu = Attribute("The ubuntu Distribution.")
     debian = Attribute("The debian Distribution.")
@@ -275,6 +276,12 @@ class IHasProduct(Interface):
     product = Attribute("The object's product")
 
 
+class IHasBug(Interface):
+    """An object linked to a bug, e.g., a bugtask or a bug branch."""
+
+    bug = Int(title=_("Bug #"))
+
+
 class IHasProductAndAssignee(IHasProduct, IHasAssignee):
     """An object that has a product attribute and an assigned attribute.
     See IHasProduct and IHasAssignee."""
@@ -413,7 +420,9 @@ class IMenu(Interface):
 class IMenuBase(IMenu):
     """Common interface for facets, menus, extra facets and extra menus."""
 
-    context = Attribute('The object that has this menu')
+    context = Attribute('The object that has this menu.')
+
+    request = Attribute('The request the menus is used in.')
 
 
 class IFacetMenu(IMenuBase):

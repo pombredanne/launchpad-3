@@ -12,7 +12,7 @@ Let's take a look at a bug. It currently has no attachments at all:
     ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet)
     >>> bugset = getUtility(IBugSet)
     >>> bug_one = bugset.get(1)
-    >>> len(bug_one.attachments)
+    >>> bug_one.attachments.count()
     0
 
 Create attachments
@@ -38,7 +38,7 @@ Now we can create the bug attachment:
     >>> attachment = attachmentset.create(
     ...     bug=bug_one, filealias=filealias, title='Some info.',
     ...     message=message)
-    >>> len(bug_one.attachments)
+    >>> bug_one.attachments.count()
     1
 
     >>> attachment.type.title

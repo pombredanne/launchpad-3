@@ -103,17 +103,16 @@ class DistroArchReleaseBinaryPackage:
         """See IDistroArchReleaseBinaryPackage."""
         query = """
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        BinaryPackagePublishingHistory.status = %s AND
         BinaryPackagePublishingHistory.binarypackagerelease =
             BinaryPackageRelease.id AND
         BinaryPackageRelease.version = %s AND
         BinaryPackageRelease.binarypackagename = %s
-        """ % sqlvalues(self.distroarchrelease.id,
-                        PackagePublishingStatus.PUBLISHED,
-                        version, self.binarypackagename.id)
+        """ % sqlvalues(self.distroarchrelease.id, version,
+                        self.binarypackagename.id)
 
-        bpph = BinaryPackagePublishingHistory.selectOne(
-            query, clauseTables=['binarypackagerelease'])
+        bpph = BinaryPackagePublishingHistory.selectFirst(
+            query, clauseTables=['binarypackagerelease'],
+            orderBy=["-datecreated"])
 
         if bpph is None:
             return None
@@ -187,15 +186,19 @@ class DistroArchReleaseBinaryPackage:
     @property
     def current_published(self):
         """See IDistroArchReleaseBinaryPackage."""
+        current = BinaryPackagePublishingHistory.selectFirst("""
+            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename = %s AND
+            BinaryPackagePublishingHistory.status = %s
+            """ % sqlvalues(self.distroarchrelease.id,
+                            self.binarypackagename.id,
+                            PackagePublishingStatus.PUBLISHED),
+            clauseTables=['BinaryPackageRelease'],
+            orderBy='-datecreated')
 
-        # Retrieve current publishing info
-        current = None
-        for publishing in self.publishing_history:
-            if publishing.status == PackagePublishingStatus.PUBLISHED:
-                current = publishing
-                break
-
-        if not current:
+        if current is None:
             raise NotFoundError("Binary package %s not published in %s/%s"
                                 % (self.binarypackagename.name,
                                    self.distroarchrelease.distrorelease.name,
@@ -241,13 +244,11 @@ class DistroArchReleaseBinaryPackage:
             pocket=current.pocket,
             embargo=False,
             )
-        
+
     def supersede(self):
         """See IDistroArchReleaseBinaryPackage."""
-
         # Retrieve current publishing info
         current = self.current_published
-
         current = SecureBinaryPackagePublishingHistory.get(current.id)
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW

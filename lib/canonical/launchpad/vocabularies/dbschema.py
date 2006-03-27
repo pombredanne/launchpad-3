@@ -15,6 +15,7 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
+    'BugBranchStatusVocabulary',
     'BugTaskPriorityVocabulary',
     'BugTaskSeverityVocabulary',
     'BugTaskStatusVocabulary',
@@ -34,6 +35,7 @@ __all__ = [
     'SpecificationDeliveryVocabulary',
     'SpecificationPriorityVocabulary',
     'SpecificationStatusVocabulary',
+    'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
     'TicketPriorityVocabulary',
@@ -74,6 +76,7 @@ BranchLifecycleStatusVocabulary = \
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
+BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
 BugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
@@ -95,6 +98,7 @@ PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
+SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)

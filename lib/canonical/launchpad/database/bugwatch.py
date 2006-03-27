@@ -12,7 +12,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQL imports
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, MultipleJoin
+from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
 from canonical.lp.dbschema import BugTrackerType
 
@@ -45,7 +45,7 @@ class BugWatch(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     # useful joins
-    bugtasks = MultipleJoin('BugTask', joinColumn='bugwatch',
+    bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
         orderBy=['-datecreated'])
 
     @property
@@ -180,7 +180,6 @@ class BugWatchSet(BugSetBase):
     def createBugWatch(self, bug, owner, bugtracker, remotebug):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
         return BugWatch(
-            bug=bug, owner=owner, datecreated=UTC_NOW,
-            lastchanged=UTC_NOW, lastchecked=UTC_NOW,
+            bug=bug, owner=owner, datecreated=UTC_NOW, lastchanged=UTC_NOW, 
             bugtracker=bugtracker, remotebug=remotebug)
 

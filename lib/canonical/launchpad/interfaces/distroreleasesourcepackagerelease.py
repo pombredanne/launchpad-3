@@ -48,13 +48,15 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
         "a source package of this name was ever uploaded to this "
         "distrorelease.")
 
-    def current_published():
-        """Returns the last SourcePackagePublishing record that is in
-        PUBLISHED status."""
+    current_published = Attribute("is last SourcePackagePublishing record "
+                                  "that is in PUBLISHED status.")
 
     def changeOverride(new_component, new_section):
         """Change the component and/or section of a
         DistroReleaseSourcePackageRelease."""
 
     def supersede():
-        """Supersede a DistroReleaseSourcePackageRelease."""
+        """Supersede a DistroReleaseSourcePackageRelease.
+
+        Return the modified ISourcePackagePublishingHistory object.
+        """

@@ -13,11 +13,6 @@
             interface="canonical.launchpad.interfaces.IPOFile"
             set_attributes="header pluralforms path"
             />
-        <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IRawFileData"
-            set_attributes="rawimportstatus"
-            />
     </content>
 
     <browser:url
@@ -69,17 +64,9 @@
     </browser:pages>
 
     <browser:page
-        name="+edit"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.POFileView"
-        for="canonical.launchpad.interfaces.IPOFile"
-        template="../templates/pofile-edit.pt"
-        />
-
-    <browser:page
         name="+upload"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.POFileView"
+        class="canonical.launchpad.browser.POFileUploadView"
         for="canonical.launchpad.interfaces.IPOFile"
         template="../templates/pofile-upload.pt"
         />
@@ -89,7 +76,7 @@
         for="canonical.launchpad.interfaces.IPOFile"
         permission="launchpad.AnyPerson"
         template="../templates/pofile-translate.pt"
-        class="canonical.launchpad.browser.POFileView"
+        class="canonical.launchpad.browser.POFileTranslateView"
         />
 
     <browser:page
@@ -99,6 +86,18 @@
         template="../templates/pofile-export.pt"
         class="canonical.launchpad.browser.POExportView"
         />
+
+    <!-- Note: This is a POMsgSet page. This registration is duplicated
+      in pomsgset.zcml, so that they can work on pages where IPOFile is the
+      context.) -->
+    <browser:pages
+      for="canonical.launchpad.interfaces.IPOFile"
+      class="canonical.launchpad.browser.POMsgSetView"
+      permission="zope.Public">
+      <browser:page
+        name="+pomsgset-translate"
+        template="../templates/pomsgset-translate.pt" />
+    </browser:pages>
 
     <!-- Dummy PO File -->
     <content class="canonical.launchpad.database.DummyPOFile">

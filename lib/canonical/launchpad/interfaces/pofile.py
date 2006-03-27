@@ -1,7 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from canonical.launchpad.interfaces.rawfiledata import ICanAttachRawFileData
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
@@ -13,7 +12,7 @@ class ZeroLengthPOExportError(Exception):
     """An exception raised when a PO file export generated an empty file."""
 
 
-class IPOFile(IRosettaStats, ICanAttachRawFileData):
+class IPOFile(IRosettaStats):
     """A PO File."""
 
     id = Attribute("This PO file's id.")
@@ -108,7 +107,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         """Return an iterator over Current IPOMessageSets in this PO file."""
 
     def getPOMsgSet(msgid_text, onlyCurrent=False):
-        """Return the IPOMsgSet in this IPOFile identified by :msgid_text: or
+        """Return the IPOMsgSet in this IPOFile identified by msgid_text or
         None.
 
         :msgid_text: is an unicode string.
@@ -116,7 +115,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         """
 
     def __getitem__(msgid_text):
-        """Return the IPOMsgSet in this IPOFile identified by :msgid_text:.
+        """Return the active IPOMsgSet in this IPOFile identified by msgid_text.
 
         :msgid_text: is an unicode string.
 
@@ -229,6 +228,16 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
     def isPORevisionDateOlder(header):
         """Return if the given header has a less current field
         'PORevisionDate' than IPOFile.header.
+        """
+
+    def getNextToImport():
+        """Return the next entry on the import queue to be imported."""
+
+    def importFromQueue(logger=None):
+        """Execute the import of the next entry on the queue, if needed.
+
+        If a logger argument is given, any problem found with the
+        import will be logged there.
         """
 
 

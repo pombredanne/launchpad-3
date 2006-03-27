@@ -4,15 +4,14 @@ __metaclass__ = type
 __all__ = ['Bounty', 'BountySet']
 
 
-import datetime
 from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from sqlobject import ForeignKey, IntCol, StringCol, IntervalCol
+from sqlobject import ForeignKey, StringCol 
 from sqlobject import CurrencyCol
-from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, RelatedJoin
 
 from canonical.launchpad.interfaces import IBounty, IBountySet, NotFoundError
 
@@ -49,7 +48,7 @@ class Bounty(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     # useful joins
-    subscriptions = MultipleJoin('BountySubscription', joinColumn='bounty',
+    subscriptions = SQLMultipleJoin('BountySubscription', joinColumn='bounty',
         orderBy='id')
     products = RelatedJoin('Product', joinColumn='bounty',
         intermediateTable='ProductBounty', otherColumn='product',

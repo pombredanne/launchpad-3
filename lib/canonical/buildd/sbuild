@@ -478,7 +478,7 @@ $pgp_options = "-us -uc";
 $log_dir = "$main::HOME/logs";
 $mailto = "";
 $purge_build_directory = "successful";
-@toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+\+', 'libc[\d.]+-dev$', 'linux-kernel-headers$' );
+@toolchain_regex = ( 'binutils$', 'gcc-[\d.]+$', 'g\+\+-[\d.]+$', 'libstdc\+\+', 'libc[\d.]+-dev$', 'linux-kernel-headers$', 'dpkg-dev$', 'make$' );
 $stalled_pkg_timeout = 90; # minutes
 $srcdep_lock_wait = 1; # minutes
 %individual_stalled_pkg_timeout = ();
@@ -487,8 +487,8 @@ $path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6
 require "/etc/sbuild.conf" if -r "/etc/sbuild.conf";
 require "$HOME/.sbuildrc" if -r "$HOME/.sbuildrc";
 # some checks
-die "mailprog binary $conf::mailprog does not exist or isn't executable\n"
-	if !-x $conf::mailprog;
+#die "mailprog binary $conf::mailprog does not exist or isn't executable\n"
+#	if !-x $conf::mailprog;
 die "sudo binary $conf::sudo does not exist or isn't executable\n"
 	if !-x $conf::sudo;
 die "apt-get binary $conf::apt_get does not exist or isn't executable\n"
@@ -497,7 +497,7 @@ die "apt-cache binary $conf::apt_cache does not exist or isn't executable\n"
 	if !-x $conf::apt_cache;
 die "dpkg-source binary $conf::dpkg_source does not exist or isn't executable\n"
 	if !-x $conf::dpkg_source;
-die "$conf::log_dir is not a directory\n" if ! -d $conf::log_dir;
+#die "$conf::log_dir is not a directory\n" if ! -d $conf::log_dir;
 die "$conf::srcdep_lock_dir is not a directory\n" if ! -d $conf::srcdep_lock_dir;
 die "conf::mailto not set\n" if !$conf::mailto;
 package main;
@@ -527,7 +527,7 @@ $main::auto_giveback = 0;
 $main::nomail = 0;
 $main::build_arch_all = 0;
 $main::build_source = 0;
-$main::jobs_file = "build-progress";
+$main::jobs_file = cwd() . "/build-progress";
 $main::max_lock_trys = 120;
 $main::lock_interval = 5;
 $main::cwd = cwd();
@@ -537,6 +537,7 @@ $main::chroot_dir = "";
 $main::chroot_build_dir = "";
 $main::chroot_apt_options = "";
 @main::toolchain_pkgs = ();
+$main::component="";
 
 $main::new_dpkg = 0;
 check_dpkg_version();
@@ -561,6 +562,12 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	elsif (/^-s$/ || /^--source$/) {
 		$main::build_source++;
 		$conf::purge_build_directory = "never";
+	}
+	elsif (/^--archive=(.)/) {
+		$main::archive=$1.$';
+	}
+	elsif (/^--comp=(.)/) {
+		$main::component=$1.$';
 	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
@@ -626,6 +633,8 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::auto_giveback = 1;
 		if ($2) {
 			my @parts = split( '@', $2 );
+			$main::auto_giveback_socket  = "$main::HOME/build" if @parts > 3;
+			$main::auto_giveback_socket .= $parts[$#parts-3] if @parts > 3;
 			$main::auto_giveback_wb_user = $parts[$#parts-2] if @parts > 2;
 			$main::auto_giveback_user    = $parts[$#parts-1] if @parts > 1;
 			$main::auto_giveback_host    = $parts[$#parts];
@@ -736,7 +745,7 @@ foreach $pkgv (@ARGV) {
   cleanup_close:
 	analyze_fail_stage( $pkgv );
 	if( $main::pkg_status eq 'failed' ) {
-	    $main::pkg_status = 'failed ' . $main::pkg_fail_stage;
+		$main::pkg_status = 'failed ' . $main::pkg_fail_stage;
 	}
 	write_jobs_file( $main::pkg_status );
 	close_pkg_log( $pkgv );
@@ -921,7 +930,7 @@ sub build {
 	# count build time from now, ignoring the installation of source deps
 	$main::pkg_start_time = time;
 	$main::this_space = 0;
-	$pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+-]+)/;
+	$pkgv =~ /^([a-zA-Z\d.+-]+)_([a-zA-Z\d:.+~-]+)/;
 	my ($pkg, $version) = ($1,$2);
 	(my $sversion = $version) =~ s/^\d+://;
 	my $tmpunpackdir = $dsc;
@@ -1129,7 +1138,8 @@ EOF
 	}
 
 	open CURRENT, ">$main::cwd/$main::chroot_dir/CurrentlyBuilding" or die "$main::cwd/$main::chroot_dir/CurrentlyBuilding open failed";
-	print CURRENT "$pkg\n";
+	# Package: must be first
+	print CURRENT "Package: $pkg\nComponent: $main::component\n";
 	close CURRENT;
 
 	$main::build_start_time = time;
@@ -1219,6 +1229,33 @@ EOF
 		print PLOG "FAILED [dpkg-buildpackage died]\n";
 	}
 	else {
+		my $trans_oldfmt="$main::chroot_build_dir${pkg}_${version}_translations.tar.gz";
+		my $trans_newfmt="$main::chroot_build_dir${pkg}_${version}_${main::arch}_translations.tar.gz";
+		my $translations="";
+		if (-r $trans_newfmt) {
+			$translations = $trans_newfmt;
+		} elsif (-r $trans_oldfmt) {
+			$translations = $trans_oldfmt;
+		}
+		if ($translations) {
+			print PLOG "Publishing $translations for rosetta.\n";
+			my $date = strftime '%Y%m%d',gmtime;
+			my $target = "$main::HOME/public_html/translations/$date/";
+			system "mkdir -p $target";
+			if (system("cp",$translations,$target) != 0) {
+				print PLOG "ERROR: Could not move $translations to $target\n";
+			} else {
+				open TRANS, ">>$target/translations.txt";
+				print TRANS	"File: " . basename(${translations}) . "\n".
+						"Distribution: ${main::archive}\n".
+						"Release: ${main::distribution}\n".
+						"Component: ${main::component}\n".
+						"Source: ${pkg}\n".
+						"Version: ${version}\n\n";
+				close TRANS;
+			}
+		}
+
 		if (-r "$dir/debian/files") {
 			my @debs;
 			my @files;
@@ -1274,8 +1311,14 @@ EOF
 						print F2 "Distribution: $main::distribution\n";
 					}
 					else {
-						print PLOG $_;
 						print F2 $_;
+						while (length $_ > 989)
+						{
+							my $index = rindex($_,' ',989);
+							print PLOG substr ($_,0,$index) . "\n";
+							$_ = '        ' . substr ($_,$index+1);
+						}
+						print PLOG $_;
 					}
 				}
 				close( F2 );
@@ -1371,9 +1414,12 @@ sub analyze_fail_stage {
 		$main::pkg_status = "given-back";
 		print PLOG "Giving back package $pkgv after failure in ".
 			       "$main::pkg_fail_stage stage.\n";
+		chdir( $main::cwd );
 		my $cmd = "";
 		$cmd = "ssh -l$main::auto_giveback_user $main::auto_giveback_host "
 			if $main::auto_giveback_host;
+		$cmd .= "-S $main::auto_giveback_socket "
+			if ($main::auto_giveback_socket and -S "$main::auto_giveback_socket");
 		$cmd .= "wanna-build --give-back --no-down-propagation ".
 			    "--dist=$main::distribution";
 		$cmd .= " --database=$main::database" if $main::database;
@@ -1473,7 +1519,7 @@ sub install_deps {
 		print "Removed were: @rmvd2\n" if $main::debug;
 		# remove additional packages
 		print PLOG "Trying to uninstall newly installed packages:\n";
-		uninstall_debs( "remove", @instd );
+		uninstall_debs( $main::chroot_dir ? "purge" : "remove", @instd );
 		unlock_file( "$main::ilock_file" );
 		return 0;
 	}
@@ -1481,7 +1527,7 @@ sub install_deps {
 	set_removed( @rmvd );
 	
 	print "Removing negative dependencies: @negative\n" if $main::debug;
-	if (!uninstall_debs( "remove", @negative )) {
+	if (!uninstall_debs( $main::chroot_dir ? "purge" : "remove", @negative )) {
 		print PLOG "Removal of packages failed\n";
 		unlock_file( "$main::ilock_file" );
 		return 0;
@@ -1667,7 +1713,7 @@ sub uninstall_deps {
 
 sub uninstall_debs {
 	my $mode = shift;
-	my $output;
+	local (*PIPE);
 	
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
@@ -1675,10 +1721,20 @@ sub uninstall_debs {
 		$main::chroot_dir ? "--root=$main::cwd/$main::chroot_dir" : "";
 	print PLOG "  $conf::sudo dpkg $chroot_opt --$mode @_\n";
   repeat:
-	$output = `cd $main::chroot_dir/ && $conf::sudo $conf::dpkg $chroot_opt --$mode @_ 2>&1 </dev/null`;
-	print PLOG $output;
+	my $output;
+	if (!open( PIPE, "cd $main::chroot_dir/ && $conf::sudo $conf::dpkg $chroot_opt --$mode @_ 2>&1 </dev/null |")) {
+		print PLOG "Can't open pipe to dpkg: $!\n";
+		return 0;
+	}
+	while ( <PIPE> ) {
+		$output .= $_;
+		print PLOG $_;
+	}
+	close( PIPE );
+
 	if ($output =~ /status database area is locked/mi) {
 		print PLOG "Another dpkg is running -- retrying later\n";
+		$output = "";
 		sleep( 2*60 );
 		goto repeat;
 	}
@@ -1908,10 +1964,10 @@ sub filter_dependencies {
 			if (!$rel || version_cmp( $ivers, $rel, $vers )) {
 				print "$name: pos dep, installed, no versioned dep or ",
 					  "version ok\n" if $main::debug;
-				print PLOG "$name: already installed";
-				print PLOG " (in sufficient version $ivers $rel $vers)"
+				print PLOG "$name: already installed ($ivers";
+				print PLOG " $rel $vers is satisfied"
 					if $rel;
-				print PLOG "\n";
+				print PLOG ")\n";
 				$is_satisfied = 1;
 				last;
 			}
@@ -3323,7 +3379,7 @@ sub fixup_pkgv {
 	
 	$$pkgv =~ s,^.*/,,; # strip path
 	$$pkgv =~ s/\.(dsc|diff\.gz|tar\.gz|deb)$//; # strip extension
-	$$pkgv =~ s/_[a-zA-Z\d+-]+\.(changes|deb)$//; # strip extension
+	$$pkgv =~ s/_[a-zA-Z\d+~-]+\.(changes|deb)$//; # strip extension
 }
 
 sub format_deps {
@@ -3456,7 +3512,7 @@ sub shutdown {
 	if (open( F, ">>$f" )) {
 		foreach $job (@npkgs) {
 			next if grep( /^\Q$job\E\s/, @pkgs );
-			print F "$job $main::distribution\n";
+			print F "$job $main::distribution $main::component\n";
 		}
 		close( F );
 	}

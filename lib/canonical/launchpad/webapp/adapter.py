@@ -8,14 +8,16 @@ import warnings
 
 from zope.interface import implements
 from zope.app.rdb import ZopeConnection
+from zope.app.rdb.interfaces import DatabaseException
 
-from psycopgda.adapter import PsycopgAdapter
+from psycopgda.adapter import PsycopgAdapter, PsycopgConnection, PsycopgCursor
 import psycopg
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import connect
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
+import canonical.lp
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -24,6 +26,7 @@ __all__ = [
     'set_request_started',
     'clear_request_started',
     'get_request_statements',
+    'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
@@ -61,17 +64,24 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
         using a thread local.
         """
         if not self.isConnected():
-            self._v_connection = ZopeConnection(
-                self._connection_factory(_dbuser=_dbuser), self)
+            try:
+                self._v_connection = PsycopgConnection(
+                    self._connection_factory(_dbuser=_dbuser), self
+                    )
+            except psycopg.Error, error:
+                raise DatabaseException, str(error)
 
     def _connection_factory(self, _dbuser=None):
         """Override method provided by PsycopgAdapter to pull
         connection settings from the config file
         """
-        self._registerTypes()
-        if _dbuser is None:
-            _dbuser = config.launchpad.dbuser
-        connection = connect(_dbuser, config.dbname)
+        self.setDSN('dbi://%s@%s/%s' % (
+            _dbuser or config.launchpad.dbuser,
+            config.dbhost or '',
+            config.dbname
+            ))
+
+        connection = PsycopgAdapter._connection_factory(self)
 
         if config.launchpad.db_statement_timeout is not None:
             cursor = connection.cursor()
@@ -136,6 +146,19 @@ def get_request_statements():
     return getattr(_local, 'request_statements', [])
 
 
+def get_request_duration(now=None):
+    """Get the duration of the current request in seconds.
+
+    """
+    starttime = getattr(_local, 'request_start_time', None)
+    if starttime is None:
+        return -1
+
+    if now is None:
+        now = time.time()
+    return now - starttime
+
+
 def _log_statement(starttime, endtime, statement):
     """Log that a database statement was executed."""
     request_starttime = getattr(_local, 'request_start_time', None)
@@ -175,8 +198,8 @@ class RequestExpired(RuntimeError):
     implements(IRequestExpired)
 
 
-class RequestQueryTimedOut(RequestExpired):
-    """A query that was part of a request timed out."""
+class RequestStatementTimedOut(RequestExpired):
+    """A statement that was part of a request timed out."""
 
 
 class ConnectionWrapper:
@@ -234,9 +257,11 @@ class CursorWrapper:
         except psycopg.ProgrammingError, error:
             if len(error.args):
                 errorstr = error.args[0]
-                if errorstr.startswith(
-                    'ERROR:  canceling query due to user request'):
-                    raise RequestQueryTimedOut(statement, errorstr)
+                if (errorstr.startswith(
+                    'ERROR:  canceling query due to user request') or
+                    errorstr.startswith(
+                    'ERROR:  canceling statement due to statement timeout')):
+                    raise RequestStatementTimedOut(statement)
             raise
 
     def __getattr__(self, attr):

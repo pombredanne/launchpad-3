@@ -1,6 +1,7 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
 <!-- Error pages -->
@@ -8,7 +9,7 @@
   <browser:page
       for="zope.interface.common.interfaces.IException"
       name="index.html"
-      template="../templates/launchpad-oops.pt"
+      template="../templates/oops.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
@@ -39,15 +40,6 @@
       template="../templates/launchpad-requestexpired.pt"
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
-
-  <!-- OOPS -->
-  <browser:page
-      for="zope.publisher.interfaces.http.IHTTPRequest"
-      name="+oopsmessage"
-      permission="zope.Public"
-      template="../templates/request-oopsmessage.pt"
-      />
-
 
 <facet facet="overview">
 
@@ -162,5 +154,13 @@
       permission="zope.Public"
       />
 </facet>
+
+<!-- self-test xmlrpc api -->
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.ILaunchpadRoot"
+  interface="canonical.launchpad.xmlrpc.ISelfTest"
+  class="canonical.launchpad.xmlrpc.SelfTest"
+  permission="zope.Public"
+  />
 
 </configure>

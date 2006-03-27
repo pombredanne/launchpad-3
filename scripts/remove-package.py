@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 # General purpose package removal tool for ftpmaster
-# Copyright (C) 2006  James Troup <james.troup@canonical.com>
 # Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005  James Troup <james@nocrew.org>
+# Copyright (C) 2006  James Troup <james.troup@canonical.com>
 
 ################################################################################
 
@@ -42,6 +42,14 @@ Options = None
 Lock = None
 Log = None
 ztm = None
+
+################################################################################
+
+def game_over():
+    answer = dak_utils.our_raw_input("Continue (y/N)? ").lower()
+    if answer != "y":
+        print "Aborted."
+        sys.exit(1)
 
 ################################################################################
 
@@ -173,7 +181,7 @@ ztm = None
 #     if dep_problem:
 #         print "Dependency problem found."
 #         if Options.action:
-#             dak_utils.game_over()
+#             game_over()
 #     else:
 #         print "No dependency problem found."
 #     print
@@ -250,7 +258,7 @@ def init():
 
     Log.debug("Initialising connection.")
     ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
-                       dbhost="emperor")
+                       dbhost="jubany")
 
     execute_zcml_for_scripts()
 
@@ -331,21 +339,16 @@ def what_to_remove(packages):
             for bpp in bpp_list:
                     package=bpp.binarypackagerelease.binarypackagename.name
                     version=bpp.binarypackagerelease.version
-                    distroarch=bpp.distroarchrelease.architecturetag
-                    archall = not bpp.binarypackagerelease.architecturespecific
-                    if Options.architecture:
-                        if archall:
-                            if 'all' not in Options.architecture:
-                                continue
-                        else:
-                            if distroarch not in Options.architecture:
-                                continue
+                    architecture=bpp.distroarchrelease.architecturetag
+                    if Options.architecture and \
+                           architecture not in Options.architecture:
+                        continue
                     if Options.component and \
                            bpp.component.name not in Options.component:
                         continue
                     d = dak_utils.Dict(type="binary",publishing=bpp,
                                        package=package, version=version,
-                                       architecture=distroarch)
+                                       architecture=architecture)
                     to_remove.append(d)
 
             if not Options.binaryonly:
@@ -361,6 +364,23 @@ def what_to_remove(packages):
                     to_remove.append(d)
 
     return to_remove
+
+################################################################################
+
+def do_removal(removal):
+    """Perform published package removal.
+
+    Mark provided publishing record as SUPERSEDED, such that the Domination
+    procedure will sort out its eventual removal appropriately; obeying the
+    rules for archive consistency.
+    """
+    current = removal["publishing"]
+    if removal["type"] == "binary":
+        real_current = SecureBinaryPackagePublishingHistory.get(current.id)
+    else:
+        real_current = SecureSourcePackagePublishingHistory.get(current.id)
+    real_current.status = PackagePublishingStatus.SUPERSEDED
+    real_current.datesuperseded = UTC_NOW
 
 ################################################################################
 
@@ -402,7 +422,7 @@ def main ():
         sys.exit(0)
 
     print "Going to remove the packages now."
-    dak_utils.game_over()
+    game_over()
 
     whoami = dak_utils.whoami()
     date = commands.getoutput('date -R')
@@ -424,13 +444,7 @@ def main ():
     print "Deleting...",
     ztm.begin()
     for removal in to_remove:
-        current = removal["publishing"]
-        if removal["type"] == "binary":
-            current = SecureBinaryPackagePublishingHistory.get(current.id)
-        else:
-            current = SecureSourcePackagePublishingHistory.get(current.id)
-        current.status = PackagePublishingStatus.SUPERSEDED
-        current.datesuperseded = UTC_NOW
+        do_removal(removal)
     print "done."
     ztm.commit()
 

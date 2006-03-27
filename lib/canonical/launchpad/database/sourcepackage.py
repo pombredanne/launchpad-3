@@ -5,8 +5,13 @@ __all__ = [
     'SourcePackage',
     ]
 
+import apt_pkg
+# apt_pkg requires this sillyness
+apt_pkg.InitSystem()
+
 from warnings import warn
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
@@ -16,12 +21,12 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket,
-    BuildStatus)
+    PackagingType, PackagePublishingPocket, BuildStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords)
+    ISourcePackage, IHasBuildRecords, ILaunchpadCelebrities)
+from canonical.launchpad.components.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
@@ -34,12 +39,15 @@ from canonical.launchpad.database.distributionsourcepackagerelease import \
     DistributionSourcePackageRelease
 from canonical.launchpad.database.distroreleasesourcepackagerelease import \
     DistroReleaseSourcePackageRelease
-
 from canonical.launchpad.database.build import Build
-from sourcerer.deb.version import Version
 
 
-class SourcePackage:
+def compare_version(a, b):
+    """Safely compares the version of two source packages"""
+    return apt_pkg.VersionCompare(a.version, b.version)
+
+
+class SourcePackage(BugTargetBase):
     """A source package, e.g. apache2, in a distrorelease.  This object
     implements the MagicSourcePackage specification. It is not a true
     database object, but rather attempts to represent the concept of a
@@ -53,31 +61,38 @@ class SourcePackage:
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
-        # XXX: jamesh, please check this.
-        #      from stevea, 2006-01-28
-        package = SourcePackagePublishing.selectFirst("""
+    def _get_ubuntu(self):
+        # XXX: Ideally, it would be possible to just do 
+        # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        # and not need this method. However, importd currently depends
+        # on SourcePackage methods that require the ubuntu celebrity,
+        # and given it does not execute_zcml_for_scripts, we are forced
+        # here to do this hack instead of using components. Ideally,
+        # imports is rewritten to not use SourcePackage, or it
+        # initializes the component architecture correctly.
+        from canonical.launchpad.database.distribution import Distribution
+        return Distribution.byName("ubuntu")
+
+    @property
+    def currentrelease(self):
+        pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease = 
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distrorelease.id),
-            orderBy='datepublished',
+            orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
-        if package is None:
-            self.currentrelease = None
-        else:
-            self.currentrelease = DistroReleaseSourcePackageRelease(
-                distrorelease=self.distrorelease,
-                sourcepackagerelease=SourcePackageRelease.get(
-                    package.sourcepackagerelease.id))
+        if pkg is None:
+            return None
+        currentrelease = DistroReleaseSourcePackageRelease(
+            distrorelease=self.distrorelease,
+            sourcepackagerelease=pkg.sourcepackagerelease)
+        return currentrelease
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        # XXX: 20051219 jamesh
-        # Is the orderBy clause here correct, or just to avoid the warning?
-        # I've changed this to selectOne() with a limit to avoid the
-        # len() usage.
         pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -86,20 +101,12 @@ class SourcePackage:
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(version, self.sourcepackagename.id,
                             self.distrorelease.id),
-            orderBy='id',
+            orderBy='-datepublished',
             clauseTables=['SourcePackageRelease'])
         if pkg is None:
             return None
         return DistroReleaseSourcePackageRelease(
             self.distrorelease, pkg.sourcepackagerelease)
-
-    def _get_ubuntu(self):
-        """This is a temporary measure while
-        getUtility(IlaunchpadCelebrities) is bustificated here."""
-        # XXX: fix and get rid of this and clean up callsites
-        #   -- kiko, 2005-09-23
-        from canonical.launchpad.database.distribution import Distribution
-        return Distribution.byName('ubuntu')
 
     @property
     def displayname(self):
@@ -176,7 +183,7 @@ class SourcePackage:
 
         # sort by version number
         releases = sorted(shortlist(ret, longest_expected=15),
-            key=lambda item: Version(item.version))
+                          cmp=compare_version)
         return [DistributionSourcePackageRelease(
             distribution=self.distribution,
             sourcepackagerelease=release) for release in releases]
@@ -195,17 +202,11 @@ class SourcePackage:
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
 
         # sort by debian version number
-        return sorted(list(ret), key=lambda item: Version(item.version))
+        return sorted(list(ret), cmp=compare_version)
 
     @property
     def name(self):
         return self.sourcepackagename.name
-
-    @property
-    def bugtasks(self):
-        querystr = "distribution=%s AND sourcepackagename=%s" % sqlvalues(
-            self.distribution.id, self.sourcepackagename.id)
-        return BugTask.select(querystr)
 
     @property
     def potemplates(self):
@@ -244,20 +245,10 @@ class SourcePackage:
     def direct_packaging(self):
         """See ISourcePackage."""
         # get any packagings matching this sourcepackage
-        packagings = Packaging.selectBy(
+        return Packaging.selectFirstBy(
             sourcepackagenameID=self.sourcepackagename.id,
             distroreleaseID=self.distrorelease.id,
             orderBy='packaging')
-        # now, return any Primary Packaging's found
-        for pkging in packagings:
-            if pkging.packaging == PackagingType.PRIME:
-                return pkging
-        # ok, we're scraping the bottom of the barrel, send the first
-        # packaging we have
-        if packagings.count() > 0:
-            return packagings[0]
-        # capitulate
-        return None
 
     @property
     def packaging(self):
@@ -273,15 +264,12 @@ class SourcePackage:
         if result is not None:
             return result
 
-        # ubuntu is used as a special case below
-        #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         ubuntu = self._get_ubuntu()
-
         # if we are an ubuntu sourcepackage, try the previous release of
         # ubuntu
         if self.distribution == ubuntu:
             ubuntureleases = self.distrorelease.previous_releases
-            if ubuntureleases.count() > 0:
+            if ubuntureleases:
                 previous_ubuntu_release = ubuntureleases[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distrorelease=previous_ubuntu_release)
@@ -303,10 +291,7 @@ class SourcePackage:
         revision control is in place and working.
         """
 
-        # ubuntu is used as a special case below
-        #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         ubuntu = self._get_ubuntu()
-
         if self.distribution != ubuntu:
             return False
         ps = self.productseries
@@ -371,35 +356,6 @@ class SourcePackage:
         # and make sure this change is immediately available
         flush_database_updates()
 
-    def bugsCounter(self):
-        # XXX: where does self.bugs come from?
-        #   -- kiko, 2005-09-23
-        ret = [len(self.bugs)]
-        severities = [
-            BugTaskSeverity.CRITICAL,
-            BugTaskSeverity.MAJOR,
-            BugTaskSeverity.NORMAL,
-            BugTaskSeverity.MINOR,
-            BugTaskSeverity.WISHLIST,
-            BugTaskStatus.FIXED,
-            BugTaskStatus.ACCEPTED,
-            ]
-        for severity in severities:
-            n = BugTask.selectBy(
-                severity=int(severity),
-                sourcepackagenameID=self.sourcepackagename.id,
-                distributionID=self.distribution.id).count()
-            ret.append(n)
-        return ret
-
-    def getVersion(self, version):
-        """See ISourcePackage."""
-        # XXX: untested and broken
-        dsp = DistributionSourcePackage(
-            self.distribution,
-            self.sourcepackagename)
-        return dsp.getVersion(version)
-
     # ticket related interfaces
     def tickets(self, quantity=None):
         """See ITicketTarget."""
@@ -446,8 +402,8 @@ class SourcePackage:
 
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
-        clauseTables=['SourcePackageRelease',
-                      'SourcePackagePublishingHistory']
+        clauseTables = ['SourcePackageRelease',
+                        'SourcePackagePublishingHistory']
         orderBy = ["-datebuilt"]
 
         condition_clauses = ["""
@@ -464,6 +420,10 @@ class SourcePackage:
             "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
+        # XXX cprov 20060214: still not ordering ALL results (empty status)
+        # properly, the pending builds will pre presented in the DESC
+        # 'datebuilt' order. bug # 31392
+
         if status is not None:
             condition_clauses.append("Build.buildstate=%s"
                                      % sqlvalues(status))
@@ -471,7 +431,7 @@ class SourcePackage:
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
         if status == BuildStatus.NEEDSBUILD:
-            orderBy = "BuildQueue.lastscore"
+            orderBy = "-BuildQueue.lastscore"
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
 

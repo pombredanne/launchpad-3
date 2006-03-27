@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITranslationImportQueueEntry,
-    ITranslationImportQueue, IDistributionMirror)
+    ITranslationImportQueue, IDistributionMirror, IHasBug)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -74,13 +74,22 @@ class EditDistributionMirrorByOwnerOrMirrorAdmins(AuthorizationBase):
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
+    """We want everybody "related" to a specification to be able to edit it.
+    You are related if you have a role on the spec, or if you have a role on
+    the spec target (distro/product) or goal (distrorelease/productseries).
+    """
+
     permission = 'launchpad.Edit'
     usedfor = ISpecification
 
     def checkAuthenticated(self, user):
         assert self.obj.target
         admins = getUtility(ILaunchpadCelebrities).admin
+        distroreleaseowner = None
+        if self.obj.distrorelease:
+            distroreleaseowner = self.obj.distrorelease.owner
         return (user.inTeam(self.obj.target.owner) or 
+                user.inTeam(distroreleaseowner) or 
                 user.inTeam(self.obj.owner) or 
                 user.inTeam(self.obj.drafter) or 
                 user.inTeam(self.obj.assignee) or 
@@ -112,13 +121,13 @@ class EditSprintSpecification(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class AdminSeriesSourceByButtSource(AuthorizationBase):
+class AdminSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IProductSeriesSourceAdmin
 
     def checkAuthenticated(self, user):
-        buttsource = getUtility(ILaunchpadCelebrities).buttsource
-        return user.inTeam(buttsource)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return user.inTeam(vcs_imports)
 
 
 class EditRequestedCDsByRecipientOrShipItAdmins(AuthorizationBase):
@@ -172,13 +181,13 @@ class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
     usedfor = IShippingRequestSet
 
 
-class EditSeriesSourceByButtSource(AuthorizationBase):
+class EditSeriesSourceByVCSImports(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IProductSeriesSource
 
     def checkAuthenticated(self, user):
-        buttsource = getUtility(ILaunchpadCelebrities).buttsource
-        if user.inTeam(buttsource):
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        if user.inTeam(vcs_imports):
             return True
         elif not self.obj.syncCertified():
             return True
@@ -320,46 +329,43 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
 class AdminDistroRelease(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
-    and distroreleases to the Launchpad admin team."""
+    and distroreleases to the Launchpad admin team.
+    
+    NB: Please consult with SABDFL before modifying this permission.
+    """
     permission = 'launchpad.Admin'
     usedfor = IDistroRelease
 
 
-class EditDistroRelease(AdminByAdminsTeam):
-    """Soyuz involves huge chunks of data in the archive and librarian,
-    so for the moment we are locking down admin and edit on distributions
-    and distroreleases to the Launchpad admin team."""
+class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of the distro release should be able to modify some of the
+    fields on the IDistroRelease
+    
+    NB: there is potential for a great mess if this is not done correctly so
+    please consult with SABDFL before modifying these permissions.
+    """
     permission = 'launchpad.Edit'
     usedfor = IDistroRelease
 
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins))
 
-# Mark Shuttleworth - I've commented out the below configuration, because
-# of the risk of a distrorelease edit causing huge movements of files in the
-# archive and publisher and librarian. Please discuss with me before
-# changing it.
-#
-#class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
-#    permission = 'launchpad.Edit'
-#    usedfor = IDistroRelease
-#
-#    def checkAuthenticated(self, user):
-#        admins = getUtility(ILaunchpadCelebrities).admin
-#        return (user.inTeam(self.obj.owner) or
-#                user.inTeam(self.obj.distribution.owner) or
-#                user.inTeam(admins))
 
 
 class EditBugTask(AuthorizationBase):
-    """Permission checker for IBugTask editing.
+    """Permission checker for editing objects linked to a bug.
 
-    Allow any logged-in user to edit public bugtasks. Allow only
-    explicit subscribers to edit private bugtasks.
+    Allow any logged-in user to edit objects linked to public
+    bugs. Allow only explicit subscribers to edit objects linked to
+    private bugs.
     """
     permission = 'launchpad.Edit'
-    usedfor = IBugTask
+    usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-        """Check whether the user has permissions to edit this IBugTask."""
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
@@ -383,22 +389,21 @@ class EditBugTask(AuthorizationBase):
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     permission = 'launchpad.View'
-    usedfor = IBugTask
+    usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-        """Check whether the user has permissions to view this IBugTask."""
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
-            # Admins can always edit bugtasks, whether they're reported on a
-            # private bug or not.
+            # Admins can always edit bugs, whether they're public or
+            # private.
             return True
 
         if not self.obj.bug.private:
             # This is a public bug.
             return True
         else:
-            # This is a private bug
+            # This is a private bug.
             for subscription in self.obj.bug.subscriptions:
                 if user.inTeam(subscription.person):
                     return True
