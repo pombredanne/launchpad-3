@@ -1,0 +1,14 @@
+Security Teams
+==============
+
+Responsibility for security-related bugs, whether undisclosed or public,
+are modelled in Launchpad by having a "security contact" on a
+Distribution or a Product.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProductSet, IPersonSet)
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> firefox = getUtility(IProductSet).get(4)
+
+Security contacts are set with simple attributes.
