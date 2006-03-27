@@ -127,7 +127,9 @@ class TranslationImportQueueEntry(SQLBase):
             productseries=self.productseries)
         for entry in entries:
             if (os.path.dirname(entry.path) == os.path.dirname(
-                guessed_potemplate.path)):
+                guess_potemplate.path) and
+                entry.status not in (
+                RosettaImportStatus.IMPORTED, RosettaImportStatus.DELETED)):
                 # There is a .pot entry pending to be imported that has the
                 # same path.
                 return None
