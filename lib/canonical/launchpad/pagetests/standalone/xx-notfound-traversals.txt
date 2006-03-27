@@ -142,6 +142,8 @@ spider -- StuartBishop 20050822
 >>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
 ...       auth=True)
+>>> check("/distros/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
+...       auth=True)
 >>> check_not_found("/distros/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check_not_found(
 ...     '/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')

@@ -122,13 +122,17 @@ class SourcePackageSupportMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'support'
-    links = ['addticket', 'gethelp']
+    links = ['addticket', 'support_contact', 'gethelp']
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')
 
     def addticket(self):
         return Link('+addticket', 'Request Support', icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class SourcePackageTranslationsMenu(ApplicationMenu):
@@ -263,4 +267,6 @@ class SourcePackageView(BuildRecordsView):
         potemplatenames = set([p.potemplatename for p in potemplates])
         return sorted(potemplatenames, key=lambda item: item.name)
 
+    def searchName(self):
+        return False
 

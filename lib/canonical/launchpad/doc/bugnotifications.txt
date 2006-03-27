@@ -4,31 +4,25 @@ Malone Bug Notifications
 What is a bug notification?
 ---------------------------
 
-A bug notification is an email that gets sent to Cc'd subscribers of a bug when
-something interesting happens to that bug.
+A bug notification gets added when something interesting happens to the
+bug. It's stored in a a table, and later on a cronscript constructs an
+email and sends the notification to the bug's subscribers.
 
-When do bug notifications get sent?
+When do bug notifications get added?
 -----------------------------------
 
-Not *every* change on a bug causes a notification to be sent. This section will
-give a rundown of the things that do cause notifications to be sent. To start
-with, let's login:
+Not *every* change on a bug causes a notification to be added. This
+section will give a rundown of the things that do cause notifications to
+be sent. To start with, let's login:
 
     >>> login("test@canonical.com")
 
-Then, let's get a handle to our mailer. This is the thing we'll examine to show
-what email has been sent, to whom, and what the body of the message contains:
-
-    >>> from canonical.launchpad.mail import stub
-
-And with that, here are the things that cause bug notifications to be sent, and
-what those notifications look like.
+Here are the things that cause bug notifications to be add, and what
+those notifications look like.
 
 1. Filing a new bug
 
-    >>> import email
     >>> from zope.event import notify
-    >>> from zope.component import getUtility
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
@@ -45,55 +39,15 @@ what those notifications look like.
     ...     comment="this is a comment", owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes))
 
-    >>> import transaction
-    >>> transaction.commit()
+    >>> from canonical.launchpad.database import BugNotification
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-Before we examine the results, we'll define a small helper function
-that we will use to sort sent emails by recipient addresses in various
-examples throughout the rest of this document.
-
-    >>> def by_to_addrs(a, b):
-    ...     return cmp(a[1], b[1])
-
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    2
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> print to_addr
-    ['test@canonical.com']
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug ...] firefox crashes all the time'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox; status=Unconfirmed; priority=None;\n\tassignee=None; ']
-
-All bug notification emails include an absolute URL to the bug:
-
-    >>> print msg.get_payload(decode=True)
-    Public bug reported:
-    http://.../malone/bugs/...
-    ...
-
-Lastly, let's verify that dilys also received her own notification of
-this bug report. Note that each recipient receives their own copy of
-the bugmail to overcome issues with Reply-To-All causing people to get
-duplicate copies of messages. By having exactly one email address as
-the recipient, this issue is avoided:
-
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print to_addr
-    ['dilys@muse.19inch.net']
-
-    >>> stub.test_emails = []
+    >>> latest_notification.is_comment
+    True
+    >>> print latest_notification.message.text_contents
+    this is a comment
 
 2. Editing a bug
 
@@ -113,24 +67,20 @@ the recipient, this issue is avoided:
     ...     ["description"])
     >>> notify(firefox_crashes_modified)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    2
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['test@canonical.com']]
-
-    >>> stub.test_emails = []
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Description changed:
+    ...
 
 3. Filing a new task on an existing bug
 
 There are three kinds of tasks that can be added to an existing
-bug. Let's take a look at each type, demonstrating the implications
-they each have on notification recipients.
+bug. Let's take a look at each type.
 
   3.1 Distro Task
 
@@ -148,39 +98,15 @@ they each have on notification recipients.
     ...     owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_debian))
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    2
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug ...] firefox crashes all the time'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox; status=Unconfirmed; priority=None;\n\tassignee=None; ',
-     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
-      status=Unconfirmed; priority=None; assignee=None;']
-
-    >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    http://.../malone/bugs/...
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Also affects: mozilla-firefox (Debian)
     ...
-
-    >>> stub.test_emails = []
 
   3.2 Distro Release Task
 
@@ -195,39 +121,15 @@ they each have on notification recipients.
     ...     sourcepackagename=firefox_source, owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_sid))
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    2
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug ...] firefox crashes all the time'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    http://.../malone/bugs/...
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Also affects: mozilla-firefox (Debian Sid)
     ...
-
-    >>> stub.test_emails = []
 
   3.3 Upstream Task
 
@@ -245,40 +147,16 @@ they each have on notification recipients.
     ...     bug=firefox_crashes, product=evolution, owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(evolution_crashes_too))
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    2
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug ...] firefox crashes all the time'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=evolution;...',
-     'product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    http://.../malone/bugs/...
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Also affects: evolution (upstream)
     ...
 
-    >>> stub.test_emails = []
 
 4. Commenting on a bug
 
@@ -291,100 +169,42 @@ they each have on notification recipients.
     ...     bug=firefox_crashes, owner=current_user)
     >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian))
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    2
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug ...] firefox crashes all the time'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=evolution;...',
-     'product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode = True)
-    Public bug report changed:
-    http://.../malone/bugs/...
-    ...
-
-    >>> stub.test_emails = []
+    >>> latest_notification.is_comment
+    True
+    >>> print latest_notification.message.text_contents
+    just a test comment
 
 5. Editing a task.
 
 Let's demonstrate a notification email where Sample Person marks a
-task Accepted, assigns himself to it, and adds a status note.
+task Fixed, and assigns himself to it.
 
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.helpers import Snapshot
 
-    >>> class MockObject(object):
-    ...     implements(IDistroBugTask)
-
-    >>> bugtask_before_modification = MockObject()
-    >>> for name in ["status", "priority", "severity", "product",
-    ...              "distribution", "distrorelease", "sourcepackagename",
-    ...              "bug", "assignee", "binarypackagename", "bugwatch",
-    ...              "milestone"]:
-    ...     setattr(bugtask_before_modification, name,
-    ...             getattr(firefox_crashes_in_debian, name))
+    >>> bugtask_before_modification = Snapshot(
+    ...     firefox_crashes_in_debian, providing=IDistroBugTask)
     >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXRELEASED
-    >>> firefox_crashes_in_debian.assignee = bug_submitter.id
+    >>> firefox_crashes_in_debian.assignee = bug_submitter
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
     ...     ["status", "assignee"])
     >>> notify(debian_task_modified)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    2
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug ...] firefox crashes all the time'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=evolution;...',
-     'product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/...
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Changed in: mozilla-firefox (Debian)
     ...
-
-    >>> stub.test_emails = []
 
 6. Adding and editing a bug watch.
 
@@ -398,39 +218,15 @@ pretending we've just added a watch to a bug.
     >>> bugwatch_added = SQLObjectCreatedEvent(bugwatch)
     >>> notify(bugwatch_added)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    3
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug 1] Firefox does not support SVG'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Bug watch added: The Mozilla.org Bug Tracker #2000
     ...
-
-    >>> stub.test_emails = []
 
 If the bug watch is modified, a notification is sent out describing
 the changes made:
@@ -438,6 +234,7 @@ the changes made:
     >>> bugwatch_before_modification = MockObject()
     >>> bugwatch_before_modification.bugtracker = bugwatch.bugtracker
     >>> bugwatch_before_modification.remotebug = bugwatch.remotebug
+    >>> bugwatch_before_modification.url = bugwatch.url
     >>> bugwatch.remotebug = "2001"
     >>> bugwatch_modified = SQLObjectModifiedEvent(
     ...     object = bugwatch,
@@ -446,39 +243,15 @@ the changes made:
 
     >>> notify(bugwatch_modified)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    3
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug 1] Firefox does not support SVG'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Bug watch removed: The Mozilla.org Bug Tracker #2000
     ...
-
-    >>> stub.test_emails = []
 
 7. Adding and editing a CVE ref.
 
@@ -495,39 +268,14 @@ this document:
     >>> bug = Bug.get(1)
     >>> bugcve = cve.linkBug(bug) # note this creates the event and notifies
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    3
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug 1] Firefox does not support SVG'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
-    ...
-
-    >>> stub.test_emails = []
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** CVE added: http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2004-0276
 
 8. Adding an external URL reference.
 
@@ -543,39 +291,14 @@ publishing an object created event.
     >>> extref_added = SQLObjectCreatedEvent(extref)
     >>> notify(extref_added)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    3
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug 1] Firefox does not support SVG'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
-    ...
-
-    >>> stub.test_emails = []
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Web link added: http://www.example.com
 
 When a link is edited, the notification will look as follows:
 
@@ -590,39 +313,16 @@ When a link is edited, the notification will look as follows:
     ...     edited_fields=("url",))
     >>> notify(extref_changed)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    3
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug 1] Firefox does not support SVG'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
-
-    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
-    ...
-
-    >>> stub.test_emails = []
+    >>> latest_notification.is_comment
+    False
+    >>> print latest_notification.message.text_contents
+    ** Web link removed: http://www.example.com
+    <BLANKLINE>
+    ** Web link added: http://www.example.com/somewhere.html
 
 9. Marking a bug as a duplicate
 
@@ -641,42 +341,28 @@ duplicate.
     ...     bug_two, bug_two_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    5
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net'],
-     ['mark@hbd.com'], ['test@canonical.com'], ['test@canonical.com']]
+    >>> latest_notification.is_comment
+    False
+    >>> latest_notification.bug.id
+    1
+    >>> print latest_notification.message.text_contents
+    ** Bug 2 has been marked a duplicate of this bug
 
-    >>> sample_person_mails = [email.message_from_string(raw_message)
-    ...                        for from_, to, raw_message in test_emails
-    ...                        if 'test@canonical.com' in to]
-    >>> sample_person_mails.sort(key=lambda msg: msg['Subject'])
-    >>> bug_one_notification = sample_person_mails[0]
-    >>> print bug_one_notification['Subject']
-    [Bug 1] Firefox does not support SVG
-    >>> body = bug_one_notification.get_payload(decode=True)
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
-    http://.../malone/bugs/1
-    ...
-    *** Bug 2 has been marked a duplicate of this bug ***
+    >>> latest_notification = BugNotification.select(orderBy='-id')[1]
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> bug_two_notification = sample_person_mails[1]
-    >>> print bug_two_notification['Subject']
-    [Bug 2] Blackhole Trash folder
-    >>> body = bug_two_notification.get_payload(decode=True)
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/2
-    ...
-    *** This bug has been marked a duplicate of bug 1 ***
-
-    >>> stub.test_emails = []
+    >>> latest_notification.is_comment
+    False
+    >>> latest_notification.bug.id
+    2
+    >>> print latest_notification.message.text_contents
+    ** This bug has been marked a duplicate of bug 1
+       Firefox does not support SVG
 
 Now we change the target of a bug that's already marked as a dupe and
 check if the correct notification message is sent.
@@ -689,35 +375,31 @@ check if the correct notification message is sent.
     ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.select(orderBy='-id')[1]
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    2
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net']]
-    >>> all_dup_notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for ignored, ignored, raw_message in test_emails]
-    >>> all_dup_notifications.sort(
-    ...     lambda x, y: cmp(x['Subject'], y['Subject']))
-
-    >>> bug_six_notification = all_dup_notifications.pop()
-    >>> print bug_six_notification['Subject']
-    [Bug 6] Firefox crashes when Save As dialog for a nonexistent...
-    >>> body = bug_six_notification.get_payload(decode=True)
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/6
+    >>> latest_notification.is_comment
+    False
+    >>> latest_notification.bug.id
+    6
+    >>> print latest_notification.message.text_contents
+    ** This bug is no longer a duplicate of bug 5
+       Firefox install instructions should be complete
     <BLANKLINE>
-    *** This bug is no longer a duplicate of bug 5 ***
-    <BLANKLINE>
-    *** This bug has been marked a duplicate of bug 3 ***
+    ** This bug has been marked a duplicate of bug 3
+       Bug Title Test
 
-    >>> stub.test_emails = []
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
+
+    >>> latest_notification.is_comment
+    False
+    >>> latest_notification.bug.id
+    3
+    >>> print latest_notification.message.text_contents
+    ** Bug 6 has been marked a duplicate of this bug
 
 Now we unduplicate the above bug and check if the correct notification message is sent.
 
@@ -728,162 +410,14 @@ Now we unduplicate the above bug and check if the correct notification message i
     ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
-    >>> transaction.commit()
+    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print latest_notification.message.owner.displayname
+    Sample Person
 
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    1
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net']]
-    >>> all_dup_notifications = [
-    ...     email.message_from_string(raw_message)
-    ...     for ignored, ignored, raw_message in test_emails]
-    >>> all_dup_notifications.sort(
-    ...     lambda x, y: cmp(x['Subject'], y['Subject']))
-
-    >>> bug_six_notification = all_dup_notifications.pop()
-    >>> print bug_six_notification['Subject']
-    [Bug 6] Firefox crashes when Save As dialog for a nonexistent...
-    >>> body = bug_six_notification.get_payload(decode=True)
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/6
-    ...
-    *** This bug is no longer a duplicate of bug 3 ***
-
-    >>> stub.test_emails = []
-
-Implications of Bug Privacy
----------------------------
-
-Making a bug private changes notification semantics. When a bug is
-made private, the only users that will receive notifcations for that
-bug are those who are explicitly CC'd to the bug.
-
-To learn more of the specifics of these semantics, consult the
-BugPrivacy spec:
-
-    https://wiki.launchpad.canonical.com/BugPrivacy
-
-and as well, the system document:
-
-    lib/canonical/launchpad/doc/bugsubscription.txt
-
-To demonstrate what we mean, let's make the firefox crashing bug
-report private:
-
-    >>> firefox_bug = getUtility(IBugSet).get(firefox_crashes.id)
-
-    >>> new_values = {"private" : True}
-    >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
-    ...     firefox_bug, new_values)
-
-    >>> notify(bug_will_be_set_private)
-
-    >>> firefox_bug.private = True
-    >>> bug_before_modification = MockObject()
-    >>> bug_before_modification.title = firefox_bug.title
-    >>> bug_before_modification.description = firefox_bug.description
-    >>> bug_before_modification.name = firefox_bug.name
-    >>> bug_before_modification.id = firefox_bug.id
-    >>> bug_before_modification.private = False
-    >>> bug_before_modification.subscriptions = firefox_bug.subscriptions
-    >>> bug_before_modification.bugtasks = firefox_bug.bugtasks
-    >>> bug_before_modification.duplicateof = firefox_bug.duplicateof
-    >>> bug_modified = SQLObjectModifiedEvent(
-    ...     firefox_bug, bug_before_modification,
-    ...     ["private"])
-
-    >>> notify(bug_modified)
-
-    >>> transaction.commit()
-    >>> stub.test_emails = []
-
-Now, when we add a new task to that bug, the maintainer of the task
-target will *not* get a notification (when a bug is marked private,
-implicit subscription is disabled):
-
-XXX: Brad Bollenbach, 2005-03-07: This is a totally CONTRIVED example!
-I should be adding this to another source package in another distro,
-but that would mean adding more sample sourcepackage data, which I
-don't want to do until after Nukesourcepackage is implemented, because
-the SourcePackage table is going to be blown away anyway.
-
-    >>> applets = getUtility(IProductSet).get(9)
-    >>> applets_crashes_too = getUtility(IBugTaskSet).createTask(
-    ...     bug=firefox_crashes, product=applets, owner=bug_submitter)
-
-Normally, you might expect to see the maintainer of applets (Foo Bar,
-email foo.bar@canonical.com) now be included in the list of recipients
-that will get notified of changes on this bug. Because the bug is
-private, and Foo Bar is not an explicit subscriber to the bug, he will
-*not* be included in the list of recipients!
-
-    >>> notify(SQLObjectCreatedEvent(applets_crashes_too))
-
-    >>> transaction.commit()
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    1
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    bounces@canonical.com
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["From"]
-    'Sample Person <test@canonical.com>'
-    >>> msg["Subject"]
-    '[Bug ...] firefox crashes all the time'
-    >>> msg["Reply-To"]
-    'Bug ... <...@bugs...>'
-    >>> msg["Sender"]
-    'bounces@canonical.com'
-    >>> msg.get_all("X-Launchpad-Bug")
-    ['product=applets;...',
-     'product=evolution;...',
-     'product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
-
-    >>> stub.test_emails = []
-
-If, for some odd reason, none of the subscribers on a bug have a
-preferred email set, no attempt to send a notification email will
-occur. Let's use another example to demonstrate what we mean; the same
-thing as the previous example, but this time let's "mock out" the
-bug's notificationRecipientAddresses method to pretend there are no
-recipient addresses:
-
-    >>> from canonical.launchpad.interfaces import IBugTask
-    >>> from canonical.launchpad.database import Bug
-    >>> from canonical.launchpad import mailnotification
-
-    >>> class MockBugNoRecipientAddresses(Bug):
-    ...     _table = 'Bug'
-    ...     def notificationRecipientAddresses(self):
-    ...         return []
-    >>> class MockBugTask(object):
-    ...     implements(IBugTask)
-    ...     def __init__(self, bugtask):
-    ...         self.bugtask = bugtask
-    ...         self.bug = MockBugNoRecipientAddresses.get(1)
-    ...     def __getattr__(self, name):
-    ...         return getattr(self.bugtask, name)
-
-    >>> old_global_emails = mailnotification.GLOBAL_NOTIFICATION_EMAIL_ADDRS
-    >>> mailnotification.GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
-    >>> task_with_no_subscribers = MockBugTask(evolution_crashes_too)
-    >>> notify(SQLObjectCreatedEvent(task_with_no_subscribers))
-
-    >>> transaction.commit()
-
-    >>> len(stub.test_emails)
-    0
-    >>> mailnotification.GLOBAL_NOTIFICATION_EMAIL_ADDRS = old_global_emails
+    >>> latest_notification.is_comment
+    False
+    >>> latest_notification.bug.id
+    6
+    >>> print latest_notification.message.text_contents
+    ** This bug is no longer a duplicate of bug 3
+       Bug Title Test

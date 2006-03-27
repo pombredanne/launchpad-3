@@ -127,7 +127,9 @@ class TranslationImportQueueEntry(SQLBase):
             productseries=self.productseries)
         for entry in entries:
             if (os.path.dirname(entry.path) == os.path.dirname(
-                guessed_potemplate.path)):
+                guess_potemplate.path) and
+                entry.status not in (
+                RosettaImportStatus.IMPORTED, RosettaImportStatus.DELETED)):
                 # There is a .pot entry pending to be imported that has the
                 # same path.
                 return None
@@ -238,6 +240,22 @@ class TranslationImportQueueEntry(SQLBase):
         client = getUtility(ILibrarianClient)
         return client.getFileByAlias(self.content.id).read()
 
+    def getTemplatesOnSameDirectory(self):
+        """See ITranslationImportQueueEntry."""
+        query = 'path LIKE %s AND id <> %s' % sqlvalues(
+            '%s/%%.pot' % os.path.dirname(self.path), self)
+        if self.distrorelease is not None:
+            query += ' AND distrorelease = %s' % sqlvalues(
+                self.distrorelease)
+        if self.sourcepackagename is not None:
+            query += ' AND sourcepackagename = %s' % sqlvalues(
+                self.sourcepackagename)
+        if self.productseries is not None:
+            query += ' AND productseries = %s' % sqlvalues(
+                self.productseries)
+
+        return TranslationImportQueueEntry.select(query)
+
 
 class TranslationImportQueue:
     implements(ITranslationImportQueue)
@@ -328,11 +346,18 @@ class TranslationImportQueue:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
 
+            if entry.status == RosettaImportStatus.IMPORTED:
+                # The entry was already imported, so we need to update its
+                # dateimported field so it doesn't get preference over old
+                # entries.
+                entry.dateimported = UTC_NOW
+
             if (entry.status == RosettaImportStatus.DELETED or
-                entry.status == RosettaImportStatus.FAILED):
+                entry.status == RosettaImportStatus.FAILED or
+                entry.status == RosettaImportStatus.IMPORTED):
                 # We got an update for this entry. If the previous import is
-                # deleted or failed we should retry the import now, just in
-                # case it can be imported now.
+                # deleted or failed or was already imported we should retry
+                # the import now, just in case it can be imported now.
                 entry.status = RosettaImportStatus.NEEDS_REVIEW
 
             entry.date_status_changed = UTC_NOW
@@ -405,7 +430,7 @@ class TranslationImportQueue:
 
         return TranslationImportQueueEntry.select(query)
 
-    def executeAutomaticReviews(self, ztm):
+    def executeOptimisticApprovals(self, ztm):
         """See ITranslationImportQueue."""
         there_are_entries_approved = False
         for entry in self.iterNeedsReview():
@@ -444,6 +469,39 @@ class TranslationImportQueue:
             ztm.commit()
 
         return there_are_entries_approved
+
+    def executeOptimisticBlock(self):
+        """See ITranslationImportQueue."""
+        num_blocked = 0
+        there_are_entries_blocked = False
+        for entry in self.iterNeedsReview():
+            if entry.path.endswith('.pot'):
+                # .pot files cannot be managed automatically, ignore them and
+                # wait for an admin to do it.
+                continue
+            # As kiko would say... this method is crack, I know it, but we
+            # need it to save time to our poor Rosetta Experts while handling
+            # the translation import queue...
+            # We need to look for all .pot files that we have on the same
+            # directory for the entry we are processin and check that all
+            # them are blocked. If there is at least one not blocked,
+            # we cannot block the entry.
+            templates = entry.getTemplatesOnSameDirectory()
+            has_templates = False
+            has_templates_unblocked = False
+            for template in templates:
+                has_templates = True
+                if template.status != RosettaImportStatus.BLOCKED:
+                    # This template is not set as blocked, so we note it.
+                    has_templates_unblocked = True
+
+            if has_templates and not has_templates_unblocked:
+                # All .pot templates on the same directory that this entry is,
+                # are blocked, so we can block it too.
+                entry.status = RosettaImportStatus.BLOCKED
+                num_blocked += 1
+
+        return num_blocked
 
     def cleanUpQueue(self):
         """See ITranslationImportQueue."""

@@ -13,23 +13,23 @@
     :notifications: An object implementing INotificationList.
   </tal:comment>
 
-  <div class="error-notification"
+  <div class="error message"
     tal:repeat="notification notifications/error"
     tal:content="structure notification/message"
   >An error notification message</div>
-  <div class="warning-notification"
+  <div class="warning message"
     tal:repeat="notification notifications/warning"
     tal:content="structure notification/message"
   >A warning notification message</div>
-  <div class="notice-notification"
+  <div class="informational message"
     tal:repeat="notification notifications/notice"
     tal:content="structure notification/message"
   >A notice notification message</div>
-  <div class="info-notification"
+  <div class="informational message"
     tal:repeat="notification notifications/info"
     tal:content="structure notification/message"
   >An info notification message</div>
-  <div class="debug-notification"
+  <div class="debug message"
     tal:repeat="notification notifications/debug"
     tal:content="structure notification/message"
   >A debug notification message, only displayed for developers.</div>

@@ -35,7 +35,7 @@ sample data.
 
     >>> [bug_branch.branch.name for bug_branch in
     ...  bug.bug_branches]
-    [u'mozilla@arch.ubuntu.com_mozilla--release--0.9.2']
+    [u'release-0.9.2']
 
 By default, a bug branch is in the state BugBranchStatus.INPROGRESS.
 
@@ -75,5 +75,5 @@ Bugs Related to Branches
 The bugs related to a branch are accessible via the related_bugs
 property.
 
-    >>> [bug.id for bug in branch.related_bugs]
-    [1]
+    >>> sorted([bug.id for bug in branch.related_bugs])
+    [1, 4, 5]

@@ -89,7 +89,7 @@ You can also use the IProductSet to see some statistics on products.
     >>> print productset.count_bounties()
     2
     >>> print productset.count_buggy()
-    3
+    4
     >>> print productset.count_reviewed()
     1
 
