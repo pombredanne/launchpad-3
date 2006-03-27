@@ -23,6 +23,7 @@ class LibraryFileContent(SQLBase):
     datemirrored = UtcDateTimeCol(default=None)
     filesize = IntCol(notNull=True)
     sha1 = StringCol(notNull=True)
+    md5 = StringCol()
     deleted = BoolCol(notNull=True, default=False)
 
 

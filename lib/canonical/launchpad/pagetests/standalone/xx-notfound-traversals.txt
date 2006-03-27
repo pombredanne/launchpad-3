@@ -116,14 +116,40 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
->>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
 >>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
+>>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
+
 >>> check("/distros/ubuntu/hoary/+source/pmount")
 >>> check("/distros/ubuntu/hoary/+source/libstdc++")
+>>> check("/distros/ubuntu/hoary/+package/pmount")
 >>> check("/distros/ubuntu/hoary/i386/pmount/0.1-1")
+>>> check("/distros/ubuntu/warty/i386/pmount/0.1-1")
+>>> check("/distros/debian/woody/i386/pmount")
 
+>>> check("/distros/ubuntu/hoary/+source/mozilla-firefox")
+>>> check("/distros/ubuntu/hoary/+package/mozilla-firefox")
+>>> check("/distros/ubuntu/warty/+package/mozilla-firefox")
+
+>>> check("/distros/ubuntu/hoary/+source/evolution/")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
 >>> check("/distros/ubuntu/+source/evolution/+portlet-bugfilters")
+
+>>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
+>>> check("/distros/ubuntu/hoary/+source/evolution/+gethelp")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+translate")
+>>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
+...       auth=True)
+>>> check("/distros/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
+...       auth=True)
+>>> check_not_found("/distros/ubuntu/hoary/+source/evolution/+buildlog")
+>>> check_not_found(
+...     '/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
+
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+portlet-bugfilters")
 
 >>> check("/distros/kubuntu/+bugs")
 >>> check("/distros/kubuntu/+specs")
@@ -141,25 +167,8 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/hoary/i386")
 >>> check("/distros/ubuntu/hoary/i386/+search")
 
->>> check("/distros/ubuntu/hoary/+source/mozilla-firefox")
->>> check("/distros/ubuntu/hoary/+source/evolution/")
->>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
-
 # FIXME: disable while HCT transitions to bzr. See bug #4117. -- RobertCollins.
 #>>> check("/distros/ubuntu/hoary/+source/evolution/+hctstatus")
-
->>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
->>> check_not_found("/distros/ubuntu/hoary/+source/evolution/+buildlog")
->>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
->>> check("/distros/ubuntu/hoary/+source/evolution/+gethelp")
->>> check("/distros/ubuntu/hoary/+source/evolution/+translate")
->>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
->>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
-...       auth=True)
-
-
->>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
->>> check("/distros/ubuntu/hoary/+source/evolution/+portlet-bugfilters")
 
 >>> check("/malone")
 >>> check_redirect("/malone/assigned")
@@ -271,7 +280,6 @@ Test /people traversals.
 >>> check("/people/+requestmerge", auth=True)
 >>> check("/people/+portlet-about")
 
-
 This is for a team:
 
 >>> check("/people/name18/+teamhierarchy")
@@ -294,6 +302,10 @@ And this is for a person:
 
 >>> check("/people/name16/+edit", auth=True)
 >>> check("/people/name16/+branches")
+>>> check("/people/name12/+branch/gnome-terminal/pushed/")
+>>> check("/people/name12/+branch/gnome-terminal/pushed/+edit", auth=True)
+>>> check_redirect("/people/name12/+branch/gnome-terminal/pushed/+lifecycle")
+>>> check("/people/name12/+branch/gnome-terminal/pushed/+lifecycle", auth=True)
 >>> check("/people/name16/+karma")
 >>> check_redirect("/people/name16/+bugs")
 >>> check("/people/name16/+reportedbugs")
@@ -334,10 +346,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 # XXX: See bug 2151
 # >>> check("/distros/ubuntu/hoary/i386/+edit")
 
->>> check_not_found(
-...     '/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
-
-
-Soyuz pages
 >>> check("/+builds/+build/7/")
 >>> check("/+builds/+build/7/pmount/")
+

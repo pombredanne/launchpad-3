@@ -7,16 +7,18 @@ __metaclass__ = type
 __all__ = [
     'IHasTickets',
     'ITicketTarget',
+    'IManageSupportContacts',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
+from zope.schema import Bool, Choice, List
 
 _ = MessageIDFactory('launchpad')
 
 class IHasTickets(Interface):
     """An object that has tickets attached to it.
-    
+
     Thus far, this is true of people, distros, products.
     """
 
@@ -46,3 +48,35 @@ class ITicketTarget(IHasTickets):
         If there is no such ticket number for this target, return None
         """
 
+    def addSupportContact(person):
+        """Adds a new support contact.
+
+        Returns True if the person was added, False if he already was a
+        support contact.
+        """
+
+    def removeSupportContact(person):
+        """Removes a support contact.
+
+        Returns True if the person was removed, False if he isn't a
+        support contact.
+        """
+
+    support_contacts = List(
+        title=_("Support Contacts"),
+        description=_(
+            "Persons that will be automatically subscribed to new support"
+            " requests."),
+        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+
+
+class IManageSupportContacts(Interface):
+    """Schema for managing support contacts."""
+
+    want_to_be_support_contact = Bool(
+        title=_("Subscribe me automatically to new suppport request"),
+        required=False)
+    support_contact_teams = List(
+        title=_("Team support contacts"),
+        value_type=Choice(vocabulary="PersonActiveMembership"),
+        required=False)

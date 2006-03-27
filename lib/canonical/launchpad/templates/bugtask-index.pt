@@ -25,57 +25,97 @@
 
 <div metal:fill-slot="main">
 
+  <tal:block condition="view/process" />
   <tal:block condition="view/reportBugInContext" />
   <tal:block condition="view/handleSubscriptionRequest" />
 
-  <p class="portalMessage"
+  <p class="informational message"
      tal:condition="view/notices"
      tal:repeat="notice view/notices"
      tal:content="notice">
      Reported this bug as also occurring in upstream firefox
   </p>
 
-  <p class="portalMessage" tal:condition="context/bug/duplicateof"
-     style="margin-bottom: 1em">
-    This bug is a duplicate of
+  <p tal:condition="context/bug/duplicateof" class="informational message">
+    This report is a duplicate of
     <a href="#"
        tal:attributes="href context/bug/duplicateof/fmt:url;
                        title context/bug/duplicateof/title"
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
 
-  <div class="portalMessage" tal:condition="not:view/isReportedInContext" 
-       style="margin-bottom: 1em">
-    This bug has <b>not yet been reported</b> in
+  <p class="error message" tal:condition="not:view/isReportedInContext">
+
+        <form name="alsooccursin" method="POST">
+
+    This bug is not recorded as needing to be fixed in the
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
-       tal:content="context/targetname">upstream firefox</a>.
+       tal:content="context/targetname">upstream firefox</a>
+    <tal:product condition="context/product">product.</tal:product>
+    <tal:package condition="context/sourcepackagename">package.</tal:package>
+    <tal:distribution
+      condition="python: (not context.product) and (not context.sourcepackagename)"
+    >distribution.</tal:distribution>
 
     <tal:loggedin condition="request/lp:person">
-      Do you want to report it?<br /><br />
 
-      <form name="alsooccursin" method="POST">
-        <input type="submit" name="reportbug"
-               tal:attributes="value string:Yes, I want to report this bug in ${context/targetname}" />
-      </form>
+        <input
+          type="submit"
+          name="reportbug"
+          value="Also Needs Fixing Here"
+        />
     </tal:loggedin>
     <tal:notloggedin condition="not:request/lp:person">
       If you wish report it in <tal:block content="context/targetname" />,
       you must <a href="+login">log in</a> first.
     </tal:notloggedin>
-  </div>
 
-  <p class="documentDescription"
-     tal:condition="context/bug/summary"
-     tal:content="context/bug/summary">
-     $bug.summary
+        </form>
+
   </p>
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
-    <tal:description
-      content="structure context/bug/description/fmt:text-to-html">
-      $Bug.description
-    </tal:description>
+  <tal:description
+    content="structure context/bug/description/fmt:text-to-html">
+    $Bug.description
+  </tal:description>
+
+  <form action="."
+      tal:attributes="action request/URL"
+      method="POST">
+
+  <tal:branches define="bug_branches context/bug/bug_branches"
+                condition="bug_branches">
+    <strong>Related Branches</strong>
+    <p tal:condition="context/bug/private"
+         class="warning message">
+      This bug is private, so avoid adding public branches here.
+    </p>
+
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>Bugfix Status</th>
+          <th>Developer</th>
+          <th>Revision Hint</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bug_branch bug_branches">
+          <td>
+            <a href="#"
+               tal:attributes="href string:${bug_branch/fmt:url}/+status"
+               tal:content="bug_branch/status/title">
+              Under Development
+            </a>
+          </td>
+          <td tal:content="bug_branch/branch/owner/displayname"></td>
+          <td tal:content="bug_branch/revision_hint"></td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:branches>
 
   <tal:message repeat="message context/bug/messages">
     <div class="boardComment"
@@ -112,13 +152,11 @@
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">
       <legend>Add comment to this bug</legend>
-        <form action="+addmessage" method="post">
           <b>Subject:</b>
-          <input name="field.subject" type="text" size="50"
+          <input name="subject" type="text" size="50"
                  tal:attributes="value context/bug/followup_subject" /><br />
-          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
-        <input type="submit" name="UPDATE_SUBMIT" value="Post Comment" />
-        </form>
+          <b>Comment:</b> <textarea name="comment" rows="10"></textarea>
+          <input type="submit" name="save" value="Add Comment" />
     </fieldset>
   </tal:logged-in>
   <tal:not-logged-in condition="not: request/lp:person">
@@ -126,6 +164,7 @@
       To post a comment you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
+  </form>
 
 </div>
 </body>

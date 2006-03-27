@@ -29,8 +29,7 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PersonSupportMenu PersonCodeMenu PeopleContextMenu
-          TeamBugsMenu"
+          PersonSpecsMenu PersonSupportMenu PeopleContextMenu TeamBugsMenu"
       />
 
   <browser:url
@@ -44,7 +43,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IPerson"
       label="Review person"
-      fields="name displayname givenname familyname password"
+      fields="name displayname password"
       permission="launchpad.Admin"
       template="../templates/person-review.pt"
       lp:url="/people/$person.id/+review">
@@ -60,7 +59,7 @@
       schema="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditView"
       label="Edit personal details"
-      fields="name displayname givenname familyname hide_email_addresses
+      fields="name displayname hide_email_addresses
               timezone"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt"
@@ -383,7 +382,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.BranchTargetView"
     permission="zope.Public"
-    facet="code"
+    facet="overview"
     >
     <!-- there is trickery here, in the view class, which detects the view
     name and then gives the template a different set of branches to work
@@ -518,13 +517,13 @@
       schema="canonical.launchpad.interfaces.IBranch"
       fields="product name owner lifecycle_status url title summary home_page author"
       class="canonical.launchpad.browser.BranchAddView"
-      facet="code"
+      facet="overview"
       keyword_arguments="product name owner lifecycle_status url title summary home_page author"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt">
       <browser:widget
           field="url"
-          class="zope.app.form.browser.TextWidget"
+          class="canonical.launchpad.browser.BranchUrlWidget"
           displayWidth="30" />
       <browser:widget
           field="home_page"

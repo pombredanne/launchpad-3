@@ -12,7 +12,8 @@
     <b>Untranslated:</b>
     <span tal:replace="context/untranslatedCount">N</span>
     <br />
-    <span tal:replace="structure context/@@+barchart">--</span>
+    <span style="white-space: nowrap"
+          tal:content="structure context/@@+barchart">--</span>
     <br />
 
   </div>

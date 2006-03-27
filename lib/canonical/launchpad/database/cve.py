@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import re
-from datetime import datetime
 
 # Zope
 from zope.interface import implements
@@ -16,13 +15,13 @@ from zope.event import notify
 
 # SQL imports
 from sqlobject import (
-    ForeignKey, StringCol, RelatedJoin, MultipleJoin, SQLObjectNotFound)
+    StringCol, RelatedJoin, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import ICve, ICveSet
 from canonical.launchpad.validators.cve import valid_cve
 
 from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectModifiedEvent, SQLObjectDeletedEvent)
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
 from canonical.lp.dbschema import EnumCol, CveStatus
 
@@ -50,8 +49,8 @@ class Cve(SQLBase):
     # joins
     bugs = RelatedJoin('Bug', intermediateTable='BugCve',
         joinColumn='cve', otherColumn='bug', orderBy='id')
-    bug_links = MultipleJoin('BugCve', joinColumn='cve', orderBy='id')
-    references = MultipleJoin('CveReference', joinColumn='cve', orderBy='id')
+    bug_links = SQLMultipleJoin('BugCve', joinColumn='cve', orderBy='id')
+    references = SQLMultipleJoin('CveReference', joinColumn='cve', orderBy='id')
 
     @property
     def url(self):
@@ -117,6 +116,10 @@ class CveSet:
             return Cve.bySequence(sequence)
         except SQLObjectNotFound:
             return None
+
+    def getAll(self):
+        """See ICveSet."""
+        return Cve.select(orderBy="-datemodified")
 
     def __iter__(self):
         """See ICveSet."""

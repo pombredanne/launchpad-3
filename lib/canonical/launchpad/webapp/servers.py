@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
+from zope.publisher.xmlrpc import XMLRPCRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
 from zope.app.publication.interfaces import IPublicationRequestFactory
@@ -14,7 +15,8 @@ import zope.publisher.publish
 
 import canonical.launchpad.layers
 #from zope.publisher.http import HTTPRequest
-from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
+from canonical.launchpad.interfaces import (
+    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest)
 from canonical.launchpad.webapp.notifications import (
         NotificationRequest, NotificationResponse, NotificationList
         )
@@ -100,24 +102,20 @@ class StepsToGo:
         return bool(self._stack)
 
 
-class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
-                              ErrorReportRequest):
+class BasicLaunchpadRequest:
+    """Mixin request class to provide stepstogo and breadcrumbs."""
 
-    implements(ILaunchpadBrowserApplicationRequest)
+    implements(IBasicLaunchpadRequest)
 
     def __init__(self, body_instream, outstream, environ, response=None):
         self.breadcrumbs = []
         self.traversed_objects = []
-        super(LaunchpadBrowserRequest, self).__init__(
+        super(BasicLaunchpadRequest, self).__init__(
             body_instream, outstream, environ, response)
 
     @property
     def stepstogo(self):
         return StepsToGo(self)
-
-    def _createResponse(self, outstream):
-        """As per zope.publisher.browser.BrowserRequest._createResponse"""
-        return LaunchpadBrowserResponse(outstream)
 
     def getNearest(self, *some_interfaces):
         """See ILaunchpadBrowserApplicationRequest.getNearest()"""
@@ -126,6 +124,23 @@ class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
                 if iface.providedBy(context):
                     return context, iface
         return None, None
+
+
+class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
+                              NotificationRequest, ErrorReportRequest):
+    """Integration of launchpad mixin request classes to make an uber
+    launchpad request class.
+    """
+
+    implements(ILaunchpadBrowserApplicationRequest)
+
+    def __init__(self, body_instream, outstream, environ, response=None):
+        super(LaunchpadBrowserRequest, self).__init__(
+            body_instream, outstream, environ, response)
+
+    def _createResponse(self, outstream):
+        """As per zope.publisher.browser.BrowserRequest._createResponse"""
+        return LaunchpadBrowserResponse(outstream)
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
@@ -150,7 +165,7 @@ def adaptRequestToResponse(request):
 
 class LaunchpadTestRequest(TestRequest):
     """Mock request for use in unit and functional tests.
-    
+
     >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
 
     This class subclasses TestRequest - the standard Mock request object
@@ -208,6 +223,33 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
         if self._notifications is None:
             self._notifications = NotificationList()
         return self._notifications
+
+
+class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
+                             ErrorReportRequest):
+    """Request type for doing XMLRPC in Launchpad."""
+
+
+class XMLRPCPublicationRequestFactory:
+
+    implements(IPublicationRequestFactory)
+
+    def __init__(self, db):
+        from canonical.publication import LaunchpadBrowserPublication
+        LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
+        self._xmlrpc = LaunchpadXMLRPCPublication(db)
+
+    def __call__(self, input_stream, output_steam, env):
+        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        method = env.get('REQUEST_METHOD', 'GET').upper()
+
+        if method in ['POST']:
+            request = LaunchpadXMLRPCRequest(input_stream, output_steam, env)
+            request.setPublication(self._xmlrpc)
+        else:
+            raise NotImplementedError()
+
+        return request
 
 
 class HTTPPublicationRequestFactory:
@@ -280,6 +322,16 @@ class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
             request, canonical.launchpad.layers.InternalHTTPLayer)
         return request
 
+# XXX: SteveAlexander, 2006-03-16.  We'll replace these different servers
+#      with fewer ones, and switch based on the Host: header.
+#      http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxypreservehost
+
+xmlrpc = ServerType(
+    PublisherHTTPServer,
+    XMLRPCPublicationRequestFactory,
+    CommonAccessLogger,
+    8080,
+    True)
 
 http = ServerType(
     PublisherHTTPServer,

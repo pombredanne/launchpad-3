@@ -45,10 +45,11 @@ BugDistroReleaseTargetDetails.
 
   >>> for item in release_target_details:
   ...     print item.release.name
+  breezy-autotest
   grumpy
   warty
 
-  >>> release_target_details[0].release.name
+  >>> release_target_details[1].release.name
   u'grumpy'
   >>> release_target_details[0].istargeted == False
   True
@@ -60,7 +61,7 @@ BugDistroReleaseTargetDetails.
   True
 
   >>> release_target_details[1].release.name
-  u'warty'
+  u'grumpy'
   >>> release_target_details[1].istargeted == False
   True
   >>> release_target_details[1].sourcepackage.sourcepackagename == spnameset.get(1)

@@ -45,18 +45,19 @@
         path_expression="string:+branch/${product_name}/${name}"
         attribute_to_parent="owner" />
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BranchNavigation" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IBranch"
-        facet="code"
+        facet="overview"
         permission="zope.Public"
         class="canonical.launchpad.browser.BranchView" >
         <browser:page
             name="+index"
             template="../templates/branch-index.pt"
             lp:url="bazaar/branches/$Branch.id/" />
-        <browser:page
-            name="+summary-listing"
-            template="../templates/branch-summary-listing.pt" />
         <browser:page
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt" />
@@ -69,9 +70,29 @@
     </browser:pages>
 
   <browser:pages
+      for="canonical.launchpad.interfaces.IBranch"
+      facet="overview"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.BranchInProductView" >
+    <browser:page      
+      name="+product-summary-listing"
+      template="../templates/branch-summary-listing.pt" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IBranch"
+      facet="overview"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.BranchInPersonView" >
+    <browser:page
+        name="+person-summary-listing"
+        template="../templates/branch-summary-listing.pt" />
+  </browser:pages>
+
+  <browser:pages
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchView"
-    facet="code"
+    facet="overview"
     permission="launchpad.AnyPerson">
     <browser:page
       name="+subscribe"
@@ -82,7 +103,7 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="code"
+    facet="overview"
     label="Edit branch details"
     fields="url title summary home_page author whiteboard"
     permission="launchpad.Edit"
@@ -93,7 +114,7 @@
       height="5" />
     <browser:widget
       field="url"
-      class="zope.app.form.browser.TextWidget"
+      class="canonical.launchpad.browser.BranchUrlWidget"
       displayWidth="30" />
     <browser:widget
       field="home_page"
@@ -113,7 +134,7 @@
     name="+lifecycle"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="code"
+    facet="overview"
     label="Set branch status"
     fields="lifecycle_status whiteboard"
     permission="launchpad.Edit"
@@ -128,7 +149,7 @@
     name="+admin"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
-    facet="code"
+    facet="overview"
     label="Branch administration"
     fields="owner product name whiteboard"
     permission="launchpad.Admin"

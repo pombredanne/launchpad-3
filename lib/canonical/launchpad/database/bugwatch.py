@@ -12,9 +12,10 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQL imports
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, MultipleJoin
+from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
-from canonical.lp.dbschema import BugTrackerType
+from canonical.lp.dbschema import (
+    BugTrackerType, BugTaskPriority, BugTaskSeverity)
 
 from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
@@ -45,7 +46,7 @@ class BugWatch(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     # useful joins
-    bugtasks = MultipleJoin('BugTask', joinColumn='bugwatch',
+    bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
         orderBy=['-datecreated'])
 
     @property
@@ -96,6 +97,18 @@ class BugWatch(SQLBase):
     def needscheck(self):
         """See canonical.launchpad.interfaces.IBugWatch."""
         return True
+
+    def updateStatus(self, remote_status, malone_status):
+        """See IBugWatch."""
+        self.remotestatus = remote_status
+        self.lastchanged = UTC_NOW
+        for linked_bugtask in self.bugtasks:
+            linked_bugtask.status = malone_status
+            # We don't yet support updating the following values.
+            linked_bugtask.priority = BugTaskPriority.UNKNOWN
+            linked_bugtask.severity = BugTaskSeverity.UNKNOWN
+            linked_bugtask.assignee = None
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""

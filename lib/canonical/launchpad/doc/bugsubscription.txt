@@ -23,7 +23,7 @@ IBug.subscriptions attribute:
     >>> from zope.component import getUtility
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
-    >>> len(bug.subscriptions)
+    >>> bug.subscriptions.count()
     2
 
 This is slightly misleading though, because this only gives us the

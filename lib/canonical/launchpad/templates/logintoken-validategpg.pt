@@ -13,9 +13,11 @@
       <h1>Confirm OpenPGP key: <span tal:replace="context/fingerprint"/> by 
          <span tal:replace="context/requester/displayname"/></h1>
 
-      <div tal:condition="view/errormessage" class="portalMessage"
-           tal:content="structure view/errormessage">
-      </div>
+        <p
+          tal:condition="view/errormessage"
+          tal:content="structure view/errormessage"
+          class="error message"
+        />
 
       <p>To confirm your OpenPGP key, please enter your Launchpad password.</p>
 
