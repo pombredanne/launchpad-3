@@ -2,7 +2,7 @@
 Start out by verifying the members page is sane.
 
   >>> print http(r"""
-  ... GET /people/name17/+members/ HTTP/1.1
+  ... GET /people/ubuntu-team/+members/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -17,7 +17,7 @@ Let's take a look at Colin's subscription page. Colin is an
 administrator and his subscription never expires.
 
   >>> print http(r"""
-  ... GET /people/name17/+member/kamion/+index HTTP/1.1
+  ... GET /people/ubuntu-team/+member/kamion/+index HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -42,7 +42,7 @@ see that the values returned in the form are reasonable -- i.e., he is
 no longer set as an admin, and he has expires=date checked.
 
   >>> print http(r"""
-  ... POST /people/name17/+member/kamion/+index HTTP/1.1
+  ... POST /people/ubuntu-team/+member/kamion/+index HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ...
@@ -57,7 +57,7 @@ no longer set as an admin, and he has expires=date checked.
   ...
   ...name="admin" id="notadmin" checked="checked" />...
   ...
-  ...<p class="portalError">...date...
+  ...error...date...
   ...
   ...id="never" value="never" name="expires" />...
   ...
@@ -68,7 +68,7 @@ Give up on change and revisit +members. Nothing should have changed with
 Kamion:
 
   >>> print http(r"""
-  ... GET /people/name17/+members/ HTTP/1.1
+  ... GET /people/ubuntu-team/+members/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -88,7 +88,7 @@ Now revoke Kamion's administrator status and make him expire in November
 next year -- succcessfully.
 
   >>> print http(r"""
-  ... POST /people/name17/+member/kamion/+index HTTP/1.1
+  ... POST /people/ubuntu-team/+member/kamion/+index HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 
@@ -96,14 +96,14 @@ next year -- succcessfully.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/people/name17/+members
+  Location: http://localhost:9000/people/ubuntu-team/+members
   ...
 
 Now check Jeff's subscription. Jeff's also an administrator and his
 subscription never expires.
 
   >>> print http(r"""
-  ... GET /people/name17/+member/jdub HTTP/1.1
+  ... GET /people/ubuntu-team/+member/jdub HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -125,7 +125,7 @@ And now change it to expire in the past. It will expire automatically
 and set the expiration date to `today`.
 
   >>> print http(r"""
-  ... POST /people/name17/+member/jdub HTTP/1.1
+  ... POST /people/ubuntu-team/+member/jdub HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -133,13 +133,15 @@ and set the expiration date to `today`.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/people/name17/+members
+  Location: http://localhost:9000/people/ubuntu-team/+members
   ...
 
-Now check to see if everybody's looking good.
+Now check to see if everybody's looking good. Only team admins see inactive
+members.
 
   >>> print http(r"""
-  ... GET /people/name17/+members/ HTTP/1.1
+  ... GET /people/ubuntu-team/+members/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

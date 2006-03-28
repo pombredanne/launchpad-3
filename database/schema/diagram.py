@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
@@ -204,7 +205,7 @@ def main():
         tartup('autodoc.dot', '+%s.dot' % section, section)
 
         # Render
-        for lang in ['ps', 'svg']:
+        for lang in ['svg', 'ps']:
             cmd = config.get(section, '%s_command' % lang)
 
             print (

@@ -23,8 +23,11 @@
           <p>ShipIt lets you request Ubuntu 5.10 (Breezy Badger) CDs that will
           be posted to you free of charge.</p>
 
-          <p class="portalMessage" tal:condition="view/announcement|nothing"
-             tal:content="view/announcement" />
+          <p
+            tal:condition="view/announcement|nothing"
+            tal:content="view/announcement"
+            class="informational message"
+          />
 
           <p>To make orders, or view or change existing orders, you need to
           sign in using your <a href="https://launchpad.net">Launchpad</a>

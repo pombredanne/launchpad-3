@@ -9,6 +9,8 @@ POOL_DEBIAN = object()
 
 from sets import Set
 import os
+import tempfile
+
 
 class Poolifier(object):
     """The Poolifier takes a (source name, component) tuple and tells you
@@ -62,17 +64,77 @@ class Poolifier(object):
                 return p[0], p[2], p[3]
             return p[0], p[2], None
 
+
+def relative_symlink(src_path, dst_path):
+    """os.symlink replacement that creates relative symbolic links."""
+    path_sep = os.path.sep
+    src_path = os.path.normpath(src_path)
+    dst_path = os.path.normpath(dst_path)
+    src_path_elems = src_path.split(path_sep)
+    dst_path_elems = dst_path.split(path_sep)
+    if os.path.isabs(src_path):
+        if not os.path.isabs(dst_path):
+            dst_path = os.path.abspath(dst_path)
+        # XXX: dsilvers: 20060315: Note that os.path.commonprefix does not
+        # require that the common prefix be full path elements. As a result
+        # the common prefix of /foo/bar/baz and /foo/barbaz is /foo/bar.
+        # This isn't an issue here in the pool code but it could be a
+        # problem if this code is transplanted elsewhere.
+        common_prefix = os.path.commonprefix([src_path_elems, dst_path_elems])
+        backward_elems = ['..'] * (len(dst_path_elems)-len(common_prefix)-1)
+        forward_elems = src_path_elems[len(common_prefix):]
+        src_path = path_sep.join(backward_elems + forward_elems)
+    os.symlink(src_path, dst_path)
+
+class _diskpool_atomicfile:
+    """Simple file-like object used by the pool to atomically move into place
+    a file after downloading from the librarian.
+
+    This class is designed to solve a very specific problem encountered in
+    the publisher. Namely that should the publisher crash during the process
+    of publishing a file to the pool, an empty or incomplete file would be
+    present in the pool. Its mere presence would fool the publisher into
+    believing it had already downloaded that file to the pool, resulting
+    in failures in the apt-ftparchive stage.
+
+    By performing a rename() when the file is guaranteed to have been
+    fully written to disk (after the fd.close()) we can be sure that if
+    the filename is present in the pool, it is definitely complete.
+    """
+
+    def __init__(self, targetfilename, mode, rootpath="/tmp"):
+        if mode == "w":
+            mode = "wb"
+        assert mode == "wb"
+        self.targetfilename = targetfilename
+        fd, name = tempfile.mkstemp(prefix=".temp-download.", dir=rootpath)
+        self.fd = os.fdopen(fd, mode)
+        self.tempname = name
+        self.write = self.fd.write
+
+    def close(self):
+        """Make the atomic move into place having closed the temp file."""
+        self.fd.close()
+        os.chmod(self.tempname, 0644)
+        # Note that this will fail if the target and the temp dirs are on
+        # different filesystems.
+        os.rename(self.tempname, self.targetfilename)
+
+
 class AlreadyInPool:
     """Raised when an attempt is made to add a file already in the pool."""
 
+
 class NotInPool:
     """Raised when an attempt is made to remove a non-existent file."""
+
 
 class DiskPoolEntry:
     def __init__(self, source=''):
         self.defcomp = ''
         self.comps = Set()
         self.source = source
+
 
 class DiskPool:
     """Scan a pool on the filesystem and record information about it."""
@@ -149,7 +211,7 @@ class DiskPool:
                                            sourcename, leafname)
                 if not os.path.exists(os.path.dirname(targetpath)):
                     os.makedirs(os.path.dirname(targetpath))
-                os.symlink(sourcepath, targetpath)
+                relative_symlink(sourcepath, targetpath)
                 self.files[leafname].comps.add(component)
                 self.components[component][leafname] = True
             raise AlreadyInPool()
@@ -162,7 +224,7 @@ class DiskPool:
         self.components[component][leafname] = False
         self.files[leafname] = DiskPoolEntry(sourcename)
         self.files[leafname].defcomp = component
-        return file(targetpath,"w")
+        return _diskpool_atomicfile(targetpath, "wb", rootpath=self.rootpath)
     
     def removeFile(self, component, sourcename, leafname):
         """Remove a file from a given component.
@@ -234,7 +296,7 @@ class DiskPool:
             except OSError:
                 # Do nothing because it's almost certainly a not found
                 pass
-            os.symlink(targetpath, newpath)
+            relative_symlink(targetpath, newpath)
 
     def sanitiseLinks(self, preferredcomponents):
         """Go through the files and ensure that wherever a file is in more

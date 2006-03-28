@@ -1,13 +1,15 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:content="structure context/@@+portlet-team-assignedbugs" />
+  </metal:leftportlets>
+
   <div metal:fill-slot="main">
 
-    <div style="margin-left: 0; width: 74%; float: left">
       <h1>Bugs assigned to <span tal:replace="context/browsername" /></h1>
 
       <div tal:define="batch_navigator view/search">
@@ -19,6 +21,12 @@
              tal:attributes="href string:${context/fmt:url}/+assignedbugs-advanced-search">
             <small>Advanced</small>
           </a>
+          <div style="margin-top: 5px">
+            <small>
+              Sort by:
+              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+            </small>
+          </div>
         </form>
         <script>
           <!--
@@ -27,11 +35,6 @@
         </script>
         <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
-      </div>
-    </div>
-    <div id="portal-column-two">
-      <metal:macro use-macro="context/@@main_template/action-menu" />
-      <div tal:content="structure context/@@+portlet-team-assignedbugs" />
     </div>
     <div class="visualClear">&nbsp;</div>
 
@@ -39,4 +42,3 @@
 
 </body>
 </html>
-</tal:layout>

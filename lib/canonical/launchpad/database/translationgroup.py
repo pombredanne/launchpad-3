@@ -6,7 +6,7 @@ __all__ = ['TranslationGroup', 'TranslationGroupSet']
 from zope.interface import implements
 
 from sqlobject import (
-    DateTimeCol, ForeignKey, StringCol, MultipleJoin, RelatedJoin,
+    DateTimeCol, ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import (
@@ -35,12 +35,13 @@ class TranslationGroup(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     # useful joins
-    products = MultipleJoin('Product', joinColumn='translationgroup')
-    projects = MultipleJoin('Project', joinColumn='translationgroup')
-    distributions = MultipleJoin('Distribution', joinColumn='translationgroup')
+    products = SQLMultipleJoin('Product', joinColumn='translationgroup')
+    projects = SQLMultipleJoin('Project', joinColumn='translationgroup')
+    distributions = SQLMultipleJoin('Distribution',
+        joinColumn='translationgroup')
     languages = RelatedJoin('Language', joinColumn='translationgroup',
         intermediateTable='Translator', otherColumn='language')
-    translators = MultipleJoin('Translator', joinColumn='translationgroup')
+    translators = SQLMultipleJoin('Translator', joinColumn='translationgroup')
 
     # used to note additions
     def add(self, content):

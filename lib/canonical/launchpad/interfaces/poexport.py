@@ -22,19 +22,34 @@ class IPOFileOutput(Interface):
 class IPOTemplateExporter(Interface):
     """Export PO files for a PO template."""
 
-    def export_pofile(language, variant=None, include_obsolete=True):
-        """Export a single PO file.
+    def export_pofile(language, variant=None, include_obsolete=True,
+        force_utf8=False):
+        """Return the contents of the PO file as a string.
 
-        Return the contents of the PO file as a string.
-        If include_obsolete is False, the obsolete entries are not exported.
+        :language: The language that we want to export.
+        :variant: The variant for the given :language:.
+        :include_obsolete: Whether the obsolete entries are not exported.
+        :force_utf8: Whether the exported string should be encoded as UTF-8.
         """
 
     def export_pofile_to_file(filehandle, language, variant=None,
-                              included_obsolete=True):
-        """Export a single PO file to a file handle.
+                              included_obsolete=True, force_utf8=False):
+        """Return the contents of the PO file to a file handle.
 
-        If included_obsolete is False, the obsolete entries are not exported.
+        :language: The language that we want to export.
+        :variant: The variant for the given :language:.
+        :include_obsolete: Whether the obsolete entries are not exported.
+        :force_utf8: Whether the exported string should be encoded as UTF-8.
         """
+
+    def export_potemplate():
+        """Export a single PO template.
+
+        Return the contents of the PO template as a string.
+        """
+
+    def export_potemplate_to_file(filehandle):
+        """Export a single PO template to a file handle."""
 
     def export_tarball():
         """Export all translations in a tarball.

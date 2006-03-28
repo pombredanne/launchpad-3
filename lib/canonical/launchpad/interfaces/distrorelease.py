@@ -139,7 +139,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
 
         The name given may be an IBinaryPackageName or a string.
         """
-        
+
     def getSourcePackageRelease(sourcepackagerelease):
         """Return a IDistroReleaseSourcePackageRelease
 
@@ -150,11 +150,19 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
-    def getPublishedReleases(sourcepackage_or_name, pocket=None):
+    def getPublishedReleases(sourcepackage_or_name, pocket=None,
+                             include_pending=False, exclude_pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+
+        if exclude_pocket is specified we exclude results matching that pocket.
+
+        If 'include_pending' is True, we return also the pending publication
+        records, those packages that will get published in the next publisher
+        run (it's only useful when we need to know if a given package is
+        known during a publisher run, mostly in pre-upload checks)
         """
 
     def getAllReleasesByStatus(status):
@@ -201,6 +209,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         list for this distrorelease.
         """
 
+    def addComponent(component):
+        """SQLObject provided method to fill a related join key component."""
+
+    def addSection(section):
+        """SQLObject provided method to fill a related join key section."""
+
     def getBinaryPackagePublishing(name, version, archtag, sourcename, orderBy):
         """Get BinaryPackagePublishings in a DistroRelease.
 
@@ -241,12 +255,6 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
 
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
-
-    def getQueueItems(status=DistroReleaseQueueStatus):
-        """Get the queue items for this distrorelease that are in the given
-        queue state. If status is not supplied, default to the ACCEPTED items
-        in the queue.
-        """
 
     def initialiseFromParent():
         """Copy in all of the parent distrorelease's configuration. This

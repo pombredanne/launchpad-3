@@ -8,7 +8,7 @@ import gettextpo
 from zope.interface import implements, providedBy
 from zope.event import notify
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
-                       MultipleJoin, SQLObjectNotFound)
+                       SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.launchpad.event.sqlobjectevent import (SQLObjectCreatedEvent,
     SQLObjectModifiedEvent)
@@ -23,6 +23,21 @@ from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
 
+def _get_pluralforms(pomsgset):
+    if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
+        if pomsgset.pofile.language.pluralforms is not None:
+            entries = pomsgset.pofile.language.pluralforms
+        elif pomsgset.pofile.pluralforms is not None:
+            entries = pomsgset.pofile.pluralforms
+        else:
+            # Don't know anything about plural forms for this
+            # language, fallback to the most common case, 2
+            entries = 2
+    else:
+        # It's a singular form
+        entries = 1
+    return entries
+
 class DummyPOMsgSet:
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
     that POFile and POTMsgSet.
@@ -36,9 +51,14 @@ class DummyPOMsgSet:
         self.commenttext = None
 
     @property
+    def pluralforms(self):
+        """See IPOMsgSet."""
+        return _get_pluralforms(self) 
+
+    @property
     def active_texts(self):
         """See IPOMsgSet."""
-        return [None] * self.pofile.pluralforms
+        return [None] * self.pluralforms
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
@@ -83,19 +103,13 @@ class POMsgSet(SQLBase):
         notNull=True)
     obsolete = BoolCol(dbName='obsolete', notNull=True)
 
-    selections = MultipleJoin('POSelection', joinColumn='pomsgset',
+    selections = SQLMultipleJoin('POSelection', joinColumn='pomsgset',
         orderBy='pluralform')
 
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
-        if len(list(self.potmsgset.messageIDs())) > 1:
-            # this messageset has plurals so return the expected number of
-            # pluralforms for this language
-            return self.pofile.pluralforms
-        else:
-            # this messageset is singular only
-            return 1
+        return _get_pluralforms(self) 
 
     @property
     def published_texts(self):
@@ -141,7 +155,8 @@ class POMsgSet(SQLBase):
                 self.id, pluralform))
         return selection
 
-    def activeSubmission(self, pluralform):
+    def getActiveSubmission(self, pluralform):
+        """See IPOMsgSet."""
         return POSubmission.selectOne(
             """POSelection.pomsgset = %d AND
                POSelection.pluralform = %d AND
@@ -168,14 +183,14 @@ class POMsgSet(SQLBase):
         # First, check that the translations are correct.
         potmsgset = self.potmsgset
         msgids_text = [messageid.msgid
-                       for messageid in potmsgset.messageIDs()]
+                       for messageid in potmsgset.getPOMsgIDs()]
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
 
         # Fix the trailing and leading whitespaces
         for index, value in new_translations.items():
-            new_translations[index] = potmsgset.apply_sanity_fixes(value)
+            new_translations[index] = potmsgset.applySanityFixes(value)
 
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
@@ -239,6 +254,9 @@ class POMsgSet(SQLBase):
                 validation_status=validation_status,
                 force_edition_rights=is_editor)
 
+            # Flush the database cache
+            flush_database_updates()
+
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:
             if published:
@@ -248,7 +266,7 @@ class POMsgSet(SQLBase):
                 # the web flag
                 matches = 0
                 for pluralform in range(self.pluralforms):
-                    if (self.activeSubmission(pluralform) ==
+                    if (self.getActiveSubmission(pluralform) ==
                         self.getPublishedSubmission(pluralform)):
                         matches += 1
                 if matches == self.pluralforms:
@@ -515,7 +533,7 @@ class POMsgSet(SQLBase):
                 self.pofile.language.id, self.potmsgset.primemsgid_ID,
                 pluralform))
 
-        active_submission = self.activeSubmission(pluralform)
+        active_submission = self.getActiveSubmission(pluralform)
 
         if (active_submission is not None and
             active_submission.potranslation is not None):
@@ -556,7 +574,7 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         posubmission_ids = self.potmsgset.getCurrentSubmissionsIDs(
             self.pofile.language, pluralform)
-        active = self.activeSubmission(pluralform)
+        active = self.getActiveSubmission(pluralform)
 
         if active is not None and active.id in posubmission_ids:
             posubmission_ids.remove(active.id)

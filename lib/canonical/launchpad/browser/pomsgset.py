@@ -8,6 +8,8 @@ import gettextpo
 from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants)
@@ -45,20 +47,22 @@ class POMsgSetView(LaunchpadView):
         self._suggested_submissions = None
         self._second_language_submissions = None
 
-        self.msgids = list(self.potmsgset.messageIDs())
-
-        assert len(self.msgids) > 0, (
-            'Found a POTMsgSet without any POMsgIDSighting')
-
         # Handle any form submission.
         self.process_form()
+
+    @cachedproperty
+    def msgids(self):
+        msgids = helpers.shortlist(self.potmsgset.getPOMsgIDs())
+        assert len(msgids) > 0, (
+            'Found a POTMsgSet without any POMsgIDSighting')
+        return msgids
 
     @property
     def is_plural(self):
         """Return whether there are plural forms."""
         return len(self.msgids) > 1
 
-    @property
+    @cachedproperty
     def max_lines_count(self):
         """Return the max number of lines a multiline entry will have
 
@@ -175,9 +179,13 @@ class POMsgSetView(LaunchpadView):
 
         if index in self.translation_range:
             translation = self.translations[index]
-            # We store newlines as '\n' but forms should have them as '\r\n'
-            # so we need to change them before showing them.
-            return helpers.unix2windows_newlines(translation)
+            # We store newlines as '\n', '\r' or '\r\n', depending on the
+            # msgid but forms should have them as '\r\n' so we need to change
+            # them before showing them.
+            if translation is not None:
+                return helpers.convert_newlines_to_web_form(translation)
+            else:
+                return None
         else:
             raise IndexError('Translation out of range')
 
@@ -256,7 +264,7 @@ class POMsgSetView(LaunchpadView):
             return self._suggested_submissions
 
         sugg = self.context.getSuggestedSubmissions(index)
-        self._suggested_submissions = list(sugg[:3])
+        self._suggested_submissions = helpers.shortlist(sugg[:3])
         return self._suggested_submissions
 
     def get_alternate_language_submissions(self, index):
@@ -347,10 +355,8 @@ class POMsgSetView(LaunchpadView):
             if msgset_ID_LANGCODE_translation_PLURALFORM not in self.form:
                 break
             value = self.form[msgset_ID_LANGCODE_translation_PLURALFORM]
-            translation_normalized = (
-                helpers.normalize_newlines(value))
             self.form_posted_translations[pluralform] = (
-                helpers.contract_rosetta_tabs(translation_normalized))
+                helpers.contract_rosetta_tabs(value))
         else:
             raise AssertionError("There were more than 100 plural forms!")
 
@@ -382,7 +388,7 @@ class POMsgSetView(LaunchpadView):
             # needs review.
 
             msgids_text = [pomsgid.msgid
-                           for pomsgid in self.potmsgset.messageIDs()]
+                           for pomsgid in self.potmsgset.getPOMsgIDs()]
 
             # Validate the translation we got from the translation form
             # to know if gettext is happy with the input.

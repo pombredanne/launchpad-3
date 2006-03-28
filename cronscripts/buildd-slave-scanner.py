@@ -7,14 +7,15 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import sys
-import logging
-import os
 from optparse import OptionParser
 
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
+from canonical.config import config
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
 
 from canonical.launchpad.scripts.builddmaster import BuilddMaster
@@ -26,17 +27,15 @@ from canonical.launchpad.scripts import (
 _default_lockfile = '/var/lock/buildd-master.lock'
 
 def doSlaveScan(logger):
-    """Proceed the Slave Scanning Process."""    
-    # XXX cprov 20051019
-    # retrive the user infromation from the config file
-    
+    """Proceed the Slave Scanning Process."""
+
     # setup a transaction manager
-    tm = initZopeless(dbuser='fiera')
+    tm = initZopeless(dbuser=config.builddmaster.dbuser)
 
     buildMaster = BuilddMaster(logger, tm)
 
     logger.info("Setting Builders.")
-    
+
     # For every distroarchrelease we can find;
     # put it into the build master
     for archrelease in getUtility(IDistroArchReleaseSet):
@@ -60,7 +59,7 @@ def doSlaveScan(logger):
     # Now that the slaves are free, ask the buildmaster to calculate
     # the set of build candiates
     buildCandidatesSortedByProcessor = buildMaster.sortAndSplitByProcessor()
-    
+
     logger.info("Dispatching Jobs.")
     # Now that we've gathered in all the builds;
     # dispatch the pending ones
@@ -85,7 +84,7 @@ if __name__ == '__main__':
     try:
         locker.acquire()
     except OSError:
-        logger.info("Cannot acquire lock.")
+        log.info("Cannot acquire lock.")
         sys.exit(1)
 
     try:

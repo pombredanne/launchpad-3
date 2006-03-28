@@ -1,36 +1,28 @@
 digraph g {
 graph [
     /* A4 */
-    page="11.69,8.27",
-    size="10.69,7.27",
-    /* A3
-    page="16.54,11.69",
-    size="15.54,10.69",
-    */
+    /*page="8.27,11.69",*/
+    /*size="7.27,10.69!",*/
     fontsize=22,
-    ratio=compress,
 
-/*
-    overlap=false,
-    ratio=fill,
-    dpi=144,
-    pack=true,
-    rankdir="LR",
-    concentrate=false,
+    /* Don't let edges cross nodes */
+    overlap="999:portho",
     splines=true,
-    sep=.1,
-    dim=2,
-    maxiter=60000,
-    k=1,
-    damping=0.9,
-*/
+    sep=0.05,
+
+    /* Try to get a good layout */
+    maxiter=50000,
+    K=0.2,
+    pack=true,
+    packmode="node",
 ];
 node [
-    shape = plaintext, fontsize=6
+    shape = plaintext,
+    fontsize=8,
 ];
 edge [
-    fontsize=6
-/*, len=.1, w=1000*/
+    fontsize=8,
+    len=0.15
 ];
 <TMPL_LOOP name="schemas">
     <TMPL_LOOP name="tables">

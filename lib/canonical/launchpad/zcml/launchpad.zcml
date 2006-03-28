@@ -1,6 +1,7 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
 <!-- Error pages -->
@@ -153,5 +154,19 @@
       permission="zope.Public"
       />
 </facet>
+
+<!-- self-test xmlrpc api -->
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.ILaunchpadRoot"
+  interface="canonical.launchpad.xmlrpc.ISelfTest"
+  class="canonical.launchpad.xmlrpc.SelfTest"
+  permission="zope.Public"
+  />
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.IRosettaApplication"
+  interface="canonical.launchpad.xmlrpc.IRosettaSelfTest"
+  class="canonical.launchpad.xmlrpc.RosettaSelfTest"
+  permission="zope.Public"
+  />
 
 </configure>
