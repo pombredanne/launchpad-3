@@ -269,7 +269,7 @@ class IBugSet(Interface):
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, datecreated=None,
-        title=None, private=False, owner=None):
+        title=None, security_related=False, private=False, owner=None):
         """Create a bug and return it.
 
         Things to note when using this factory:

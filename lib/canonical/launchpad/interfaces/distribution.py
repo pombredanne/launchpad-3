@@ -77,6 +77,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
             "The person or team who will receive all bugmail for this "
             "distribution"),
         required=False, vocabulary='ValidPersonOrTeam')
+    securitycontact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,

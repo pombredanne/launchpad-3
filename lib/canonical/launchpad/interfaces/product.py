@@ -69,6 +69,13 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
             "product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
+    securitycontact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this product"),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     name = ProductNameField(
         title=_('Name'),
         constraint=name_validator,

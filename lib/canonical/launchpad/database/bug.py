@@ -327,7 +327,7 @@ class BugSet:
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, datecreated=None,
-        title=None, private=False, owner=None):
+        title=None, security_related=False, private=False, owner=None):
         """See IBugSet."""
         # Make sure that the factory has been passed enough information.
         if comment is description is msg is None:

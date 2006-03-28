@@ -14,7 +14,7 @@
             set_attributes="displayname title summary description
                             translationgroup translationpermission
                             members owner bugcontact official_malone
-                            official_rosetta"
+                            official_rosetta securitycontact"
             />
     </content>
 

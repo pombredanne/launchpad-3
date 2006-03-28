@@ -2,13 +2,61 @@ Security Teams
 ==============
 
 Responsibility for security-related bugs, whether undisclosed or public,
-are modelled in Launchpad by having a "security contact" on a
-Distribution or a Product.
+are modelled in Launchpad with a "security contact" on a Distribution or
+a Product.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet, IPersonSet)
     >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> firefox = getUtility(IProductSet).get(4)
+    >>> personset = getUtility(IPersonSet)
 
-Security contacts are set with simple attributes.
+    >>> sabdfl = personset.get(1)
+    >>> ubuntu_team = personset.get(17)
+
+Security contacts are set with properties.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> ubuntu.securitycontact = sabdfl
+    >>> firefox.securitycontact = ubuntu_team
+
+    >>> print ubuntu.securitycontact.name
+    sabdfl
+
+    >>> print firefox.securitycontact.name
+    name12
+
+When creating a bug, use the security_related flag to indicate that the
+bug should be flagged as security-related, and the security contact
+subscribed to the bug. Note that the security setting of a bug is
+completely independent of the visibility of the bug, and no relationship
+should be assumed between them.
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> bug = ubuntu.createBug(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="a security bug",
+    ...     comment="this is an example security bug",
+    ...     security_related=True)
+
+The reporter, Foo Bar, and the Ubuntu security contact, Mark
+Shuttleworth are both subscribed to the bug.
+
+    >>> sorted([subscription.person.name for subscription in bug.subscriptions])
+    [u'name12', u'sabdfl']
+
+Likewise, filing a security-related bug on Firefox will subscribe the
+security contact, the Ubuntu team, to the bug.
+
+    >>> bug = firefox.createBug(
+    ...     owner=getUtility(ILaunchBag).user,
+    ...     title="another security bug",
+    ...     comment="this is another security bug",
+    ...     security_related=True)
+
+    >>> sorted([subscription.person.name for subscription in bug.subscriptions])
+    [u'name16', u'ubuntu-team']
