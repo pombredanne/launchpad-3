@@ -5,7 +5,7 @@ __all__ = ['BugSetBase']
 
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
-from canonical.launchpad.interfaces import IBugSet
+from canonical.launchpad.interfaces import IBugSet, NotFoundError
 
 class BugSetBase:
     implements(IBugSet, IAddFormCustomization)

@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
 from canonical.launchpad.mail import stub
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -95,6 +96,16 @@ def supportTrackerTearDown(test):
     LibrarianTestSetup().tearDown()
     LaunchpadZopelessTestSetup().tearDown()
 
+def branchStatusSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='launchpad').setUp()
+    test._authserver = AuthserverTacTestSetup()
+    test._authserver.setUp()
+
+def branchStatusTearDown(test):
+    test._authserver.tearDown()
+    LaunchpadZopelessTestSetup().tearDown()
+
 
 # Files that have special needs can construct their own suite
 special = {
@@ -106,7 +117,9 @@ special = {
 
     # And these tests want minimal environments too.
     'enumcol.txt': DocFileSuite('../doc/enumcol.txt'),
-    'poparser.txt': DocFileSuite('../doc/poparser.txt'),
+    'poparser.txt': DocFileSuite(
+            '../doc/poparser.txt', optionflags=default_optionflags
+            ),
 
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
@@ -141,10 +154,12 @@ special = {
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
+    'branch-status-client.txt': FunctionalDocFileSuite(
+            '../doc/branch-status-client.txt',
+            setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
     'translationimportqueue.txt': FunctionalDocFileSuite(
             '../doc/translationimportqueue.txt',
-            setUp=librarianSetUp, tearDown=librarianTearDown
-            )
+            setUp=librarianSetUp, tearDown=librarianTearDown),
     }
 
 def test_suite():

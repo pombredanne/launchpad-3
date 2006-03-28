@@ -17,10 +17,12 @@
     <include file="branchsubscription.zcml" />
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
+    <include file="bugbranch.zcml" />
     <include file="bugcve.zcml" />
     <include file="bugextref.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
+    <include file="bugnotification.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="bugtask.zcml" />
@@ -99,6 +101,7 @@
     <include file="specification.zcml" />
     <include file="specificationdependency.zcml" />
     <include file="specificationfeedback.zcml" />
+    <include file="specificationgoal.zcml" />
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
     <include file="sprint.zcml" />

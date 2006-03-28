@@ -25,7 +25,7 @@ from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, StrippingTextLine 
+from canonical.launchpad.fields import ContentNameField, StrippingTextLine
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -41,7 +41,7 @@ class EmailAddressAlreadyTaken(Exception):
 
 
 class PersonNameField(ContentNameField):
-    
+
     errormessage = _("%s is already in use by another person/team.")
 
     @property
@@ -71,16 +71,6 @@ class IPerson(IHasSpecifications):
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
             "here.")
-            )
-    givenname = TextLine(
-            title=_('Given Name'), required=False, readonly=False,
-            description=_("Your first name or given name, such as "
-                "Mark, or Richard, or Joanna.")
-            )
-    familyname = TextLine(
-            title=_('Family Name'), required=False, readonly=False,
-            description=_("Your family name, the name "
-                "you acquire from your parents.")
             )
     password = Password(
             title=_('Password'), required=True, readonly=False,
@@ -169,7 +159,10 @@ class IPerson(IHasSpecifications):
     # Properties of the Person object.
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
-    is_ubuntero = Attribute("Ubuntero Flag")
+    is_valid_person = Bool(
+            title=_("This is a active user and not a team."), readonly=True
+            )
+    is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
@@ -356,7 +349,7 @@ class IPerson(IHasSpecifications):
     def pastShipItRequests():
         """Return the requests made by this person that can't be changed
         anymore.
-        
+
         Any request that is cancelled, denied or sent for shipping can't be
         changed.
         """
@@ -368,7 +361,7 @@ class IPerson(IHasSpecifications):
 
     def currentShipItRequest():
         """Return this person's unshipped ShipIt request, if there's one.
-        
+
         Return None otherwise.
         """
 
@@ -380,12 +373,19 @@ class IPerson(IHasSpecifications):
         Return an iterable of matching results.
         """
 
-    def maintainedPackages():
-        """Return all SourcePackageReleases maintained by this person."""
+    def latestMaintainedPackages():
+        """Return SourcePackageReleases maintained by this person.
 
-    def uploadedButNotMaintainedPackages(self):
-        """Return all SourcePackageReleases created by this person but not
-        maintained by him.
+        This method will only include the latest source package release
+        for each source package name, distribution release combination.
+        """
+
+    def latestUploadedButNotMaintainedPackages(self):
+        """Return SourcePackageReleases created by this person but 
+           not maintained by him.
+
+        This method will only include the latest source package release
+        for each source package name, distribution release combination.
         """
 
     def validateAndEnsurePreferredEmail(email):
@@ -530,8 +530,8 @@ class IPersonSet(Interface):
     def topPeople():
         """Return the top 5 people by Karma score in the Launchpad."""
 
-    def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
-            familyname=None, password=None, passwordEncrypted=False):
+    def createPersonAndEmail(email, name=None, displayname=None,
+            password=None, passwordEncrypted=False):
         """Create a new Person and an EmailAddress for that Person.
 
         Return the newly created Person and EmailAddress if everything went
@@ -621,8 +621,8 @@ class IPersonSet(Interface):
         """
 
     def find(text, orderBy=None):
-        """Return all non-merged Persons and Teams whose name, displayname,
-        givenname, familyname or email address match <text>.
+        """Return all non-merged Persons and Teams whose name, displayname or
+        email address match <text>.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -636,7 +636,7 @@ class IPersonSet(Interface):
 
     def findPerson(text="", orderBy=None):
         """Return all non-merged Persons with at least one email address whose
-        name, displayname, givenname, familyname or email address match <text>.
+        name, displayname or email address match <text>.
 
         If text is an empty string, all persons with at least one email
         address will be returned.
@@ -652,8 +652,8 @@ class IPersonSet(Interface):
         """
 
     def findTeam(text, orderBy=None):
-        """Return all Teams whose name, displayname, givenname, familyname or
-        email address match <text>.
+        """Return all Teams whose name, displayname or email address
+        match <text>.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -667,7 +667,7 @@ class IPersonSet(Interface):
 
     def getUbunteros(orderBy=None):
         """Return a set of person with valid Ubuntero flag.
-        
+
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
@@ -745,7 +745,7 @@ class IAdminRequestPeopleMerge(Interface):
         title=_('Account'), required=True,
         vocabulary='PersonAccountToMerge',
         description=_("The account to be merged on"))
-                        
+
 
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""

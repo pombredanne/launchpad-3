@@ -1,7 +1,7 @@
 
 <p tal:condition="not: view/workload">
-  <i><span tal:replace="context/browsername">Ubuntu</span> is not currently
-  responsible for any specifications.</i>
+  <i><span tal:replace="context/browsername">James Blackwell</span> is not
+  currently responsible for any specifications that meet your criteria.</i>
 </p>
 
 <tal:workload condition="view/workload">
@@ -12,15 +12,15 @@
       <tr>
         <th>Priority</th>
         <th>Specification</th>
-        <th>Defn.</th>
+        <th>Definition</th>
         <th>Delivery</th>
-        <th>Assgn</th>
-        <th>Drft</th>
-        <th>Apprv</th>
+        <th>Assign</th>
+        <th>Draft</th>
+        <th>Approve</th>
       </tr>
     </thead>
-    <tbody>
-      <tr tal:repeat="spec view/workload" class="lesser">
+    <tbody class="lesser">
+      <tr tal:repeat="spec view/workload">
         <td width="80">
           <span style="display: none"
                 tal:content="spec/spec/priority/value" />

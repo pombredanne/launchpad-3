@@ -13,6 +13,8 @@ __all__ = [
     'TranslationImportQueueView',
     ]
 
+import datetime
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
@@ -58,6 +60,33 @@ class TranslationImportQueueEntryView(GeneralFormView):
         self.request = request
         self.initialize()
         GeneralFormView.__init__(self, context, request)
+
+    @property
+    def initial_values(self):
+        """Initialize some values on the form, when it's possible."""
+        field_values = {}
+        # Fill the know values.
+        if self.context.sourcepackagename is not None:
+            field_values['sourcepackagename'] = self.context.sourcepackagename
+        if self.context.potemplate is not None:
+            field_values['potemplatename'] = (
+                self.context.potemplate.potemplatename.name)
+        if self.context.pofile is not None:
+            field_values['language'] = self.context.pofile.language
+            field_values['variant'] = self.context.pofile.variant
+        else:
+            # We try to guess the values.
+            (language, variant) = self.context.guessed_language_and_variant
+            if language is not None:
+                field_values['language'] = language
+                # Need to warn the user that we guessed the language information.
+                self.request.response.addWarningNotification(
+                    "Review the language selection as we guessed it and could"
+                    " not be accurated.")
+            if variant is not None:
+                field_values['variant'] = variant
+
+        return field_values
 
     def initialize(self):
         """Set the fields that will be shown based on the 'context' values.
@@ -301,6 +330,10 @@ class TranslationImportQueueView(LaunchpadView):
                 raise UnexpectedFormData(
                     'Ignored the request to change the status from %s to %s.'
                         % (entry.status.name, new_status_name))
+
+            # Update the date_status_change field.
+            UTC = pytz.timezone('UTC')
+            entry.date_status_changed = datetime.datetime.now(UTC)
 
         if number_of_changes == 0:
             self.request.response.addWarningNotification(

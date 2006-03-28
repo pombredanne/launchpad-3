@@ -78,11 +78,15 @@ class ITranslationImportQueueEntry(Interface):
 
     sourcepackage = Attribute("The sourcepackage associated with this entry.")
 
-    guess_potemplate = Attribute(
+    guessed_potemplate = Attribute(
         "The IPOTemplate that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 
-    guess_pofile = Attribute(
+    guessed_language_and_variant = Attribute(
+        "A set with the ILanguage and a variant that we think this entry is"
+        "for.")
+
+    guessed_pofile = Attribute(
         "The IPOFile that we can guess this entry could be imported into."
         " None if we cannot guess it.")
 
@@ -107,6 +111,12 @@ class ITranslationImportQueueEntry(Interface):
 
     def getFileContent():
         """Return the imported file content as a stream."""
+
+    def getTemplatesOnSameDirectory():
+        """Return import queue entries stored on the same directory as self.
+
+        The returned entries will be only .pot entries.
+        """
 
 
 class ITranslationImportQueue(Interface):
@@ -197,13 +207,22 @@ class ITranslationImportQueue(Interface):
         filtering purposes.
         """
 
-    def executeAutomaticReviews(ztm):
+    def executeOptimisticApprovals(ztm):
         """Try to move entries from the Needs Review status to Approved one.
 
         :arg ztm: Zope transaction manager object.
 
         This method moves all entries that we know where should they be
         imported from the Needs Review status to the Accepted one.
+        """
+
+    def executeOptimisticBlock():
+        """Try to move entries from the Needs Review status to Blocked one.
+
+        This method moves all .po entries that are on the same directory that
+        a .pot entry that has the status Blocked to that same status.
+
+        Return the number of items blocked.
         """
 
     def cleanUpQueue():

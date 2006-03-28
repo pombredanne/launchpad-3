@@ -23,6 +23,21 @@ from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
 
+def _get_pluralforms(pomsgset):
+    if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
+        if pomsgset.pofile.language.pluralforms is not None:
+            entries = pomsgset.pofile.language.pluralforms
+        elif pomsgset.pofile.pluralforms is not None:
+            entries = pomsgset.pofile.pluralforms
+        else:
+            # Don't know anything about plural forms for this
+            # language, fallback to the most common case, 2
+            entries = 2
+    else:
+        # It's a singular form
+        entries = 1
+    return entries
+
 class DummyPOMsgSet:
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
     that POFile and POTMsgSet.
@@ -36,9 +51,14 @@ class DummyPOMsgSet:
         self.commenttext = None
 
     @property
+    def pluralforms(self):
+        """See IPOMsgSet."""
+        return _get_pluralforms(self) 
+
+    @property
     def active_texts(self):
         """See IPOMsgSet."""
-        return [None] * self.pofile.pluralforms
+        return [None] * self.pluralforms
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
@@ -89,13 +109,7 @@ class POMsgSet(SQLBase):
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
-        if len(list(self.potmsgset.getPOMsgIDs())) > 1:
-            # this messageset has plurals so return the expected number of
-            # pluralforms for this language
-            return self.pofile.pluralforms
-        else:
-            # this messageset is singular only
-            return 1
+        return _get_pluralforms(self) 
 
     @property
     def published_texts(self):
@@ -239,6 +253,9 @@ class POMsgSet(SQLBase):
                 published=published,
                 validation_status=validation_status,
                 force_edition_rights=is_editor)
+
+            # Flush the database cache
+            flush_database_updates()
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:

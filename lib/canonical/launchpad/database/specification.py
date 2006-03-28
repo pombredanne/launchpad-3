@@ -26,6 +26,7 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.helpers import contactEmailAddresses
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -155,6 +156,19 @@ class Specification(SQLBase):
                 reqlist.append(fbreq)
         return reqlist
 
+    def notificationRecipientAddresses(self):
+        """See ISpecification."""
+        related_people = [
+            self.owner, self.assignee, self.approver, self.drafter]
+        related_people = [
+            person for person in related_people if person is not None]
+        subscribers = [
+            subscription.person for subscription in self.subscriptions]
+        addresses = set()
+        for person in related_people + subscribers:
+            addresses.update(contactEmailAddresses(person))
+        return sorted(addresses)
+
     # emergent properties
     @property
     def is_incomplete(self):
@@ -184,9 +198,8 @@ class Specification(SQLBase):
     @property
     def has_release_goal(self):
         """See ISpecification."""
-        if self.distrorelease is not None:
-            return True
-        if self.productseries is not None:
+        if (self.goal is not None and
+            self.goalstatus == SpecificationGoalStatus.ACCEPTED):
             return True
         return False
 
@@ -325,23 +338,25 @@ class Specification(SQLBase):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def all_deps(self, higher=[]):
+    def all_deps(self, higher=None):
+        if higher is None:
+            higher = []
         deps = set(higher)
         for dep in self.dependencies:
             if dep not in deps:
                 deps.add(dep)
                 deps = deps.union(dep.all_deps(higher=deps))
-        return sorted(deps, key=lambda a: (a.status, a.priority,
-            a.title))
+        return sorted(deps, key=lambda s: (s.status, s.priority, s.title))
 
-    def all_blocked(self, higher=[]):
+    def all_blocked(self, higher=None):
+        if higher is None:
+            higher = []
         blocked = set(higher)
         for block in self.blocked_specs:
             if block not in blocked:
                 blocked.add(block)
                 blocked = blocked.union(block.all_blocked(higher=blocked))
-        return sorted(blocked, key=lambda a: (a.status, a.priority,
-            a.title))
+        return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
 
 
 class SpecificationSet:

@@ -254,3 +254,25 @@ It's possible to set Return-Path manually if needed.
     >>> sent_msg = email.message_from_string(raw_message)
     >>> sent_msg['Return-Path']
     '<>'
+
+If we want to bounce messages, we can manually specify which addresses
+the mail should be sent to. When we do this, the 'To' and 'CC' headers
+are ignored.
+
+    >>> msg = email.MIMEText.MIMEText("Some content")
+    >>> msg['From'] = 'foo.bar@canonical.com'
+    >>> msg['To'] = 'test@canonical.com'
+    >>> msg['CC'] = 'foo.bar@canonical.com'
+    >>> msg['Subject'] = "test"
+    >>> msgid = sendmail(msg, to_addrs=['no-priv@canonical.com'])
+    >>> transaction.commit()
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> to_addrs
+    ['no-priv@canonical.com']
+
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_msg['To']
+    'test@canonical.com'
+    >>> sent_msg['CC']
+    'foo.bar@canonical.com'

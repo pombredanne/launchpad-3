@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 import os.path
+import re
 from urlparse import urljoin
 
 from zope.interface import implements
@@ -22,8 +23,8 @@ from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
@@ -40,6 +41,7 @@ class Branch(SQLBase):
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
+    mirror_status_message = StringCol(default=None)
     started_at = ForeignKey(
         dbName='started_at', foreignKey='RevisionNumber', default=None)
 
@@ -87,11 +89,29 @@ class Branch(SQLBase):
         'Person', joinColumn='branch', otherColumn='person',
         intermediateTable='BranchSubscription', orderBy='name')
 
+    bug_branches = SQLMultipleJoin(
+        'BugBranch', joinColumn='branch', orderBy='id')
+
+    @property
+    def related_bugs(self):
+        return [bug_branch.bug for bug_branch in self.bug_branches]
+
     @property
     def product_name(self):
         if self.product is None:
             return '+junk'
         return self.product.name
+
+    @property
+    def unique_name(self):
+        return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
+
+    @property
+    def displayname(self):
+        if self.title:
+            return self.title
+        else:
+            return self.unique_name
 
     def revision_count(self):
         return RevisionNumber.selectBy(branchID=self.id).count()
@@ -188,6 +208,47 @@ class BranchSet:
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page)
+
+    def getByUrl(self, url, default=None):
+        """See IBranchSet."""
+        assert not url.endswith('/')
+        prefix = config.launchpad.supermirror_root
+        if url.startswith(prefix):
+            branch = self.getByUniqueName(url[len(prefix):])
+        else:
+            branch = Branch.selectOneBy(url=url)
+        if branch is None:
+            return default
+        else:
+            return branch
+
+    def getByUniqueName(self, unique_name, default=None):
+        """Find a branch by its ~owner/product/name unique name."""
+        # import locally to avoid circular imports
+        from canonical.launchpad.database.person import Person
+        from canonical.launchpad.database.product import Product
+        match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
+        if match is None:
+            return default
+        owner_name, product_name, branch_name = match.groups()
+        if product_name == '+junk':
+            query = ("Branch.owner = Person.id"
+                     + " AND Branch.product IS NULL"
+                     + " AND Person.name = " + quote(owner_name)
+                     + " AND Branch.name = " + quote(branch_name))
+            tables=['Person']
+        else:
+            query = ("Branch.owner = Person.id"
+                     + " AND Branch.product = Product.id"
+                     + " AND Person.name = " + quote(owner_name)
+                     + " AND Product.name = " + quote(product_name)
+                     + " AND Branch.name = " + quote(branch_name))
+            tables=['Person', 'Product']            
+        branch = Branch.selectOne(query, clauseTables=tables)
+        if branch is None:
+            return default
+        else:
+            return branch
 
     def get_supermirror_pull_queue(self):
         """See IBranchSet.get_supermirror_pull_queue."""
