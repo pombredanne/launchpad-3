@@ -579,8 +579,7 @@ class BugTaskEditView(GeneralFormView):
             bugtask.bug.newMessage(
                 owner=getUtility(ILaunchBag).user,
                 subject=bugtask.bug.followup_subject(),
-                content=comment_on_change,
-                publish_create_event=False)
+                content=comment_on_change)
 
             bugtask.statusexplanation = comment_on_change
         else:
@@ -591,8 +590,7 @@ class BugTaskEditView(GeneralFormView):
                 SQLObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
-                    edited_fields=field_names,
-                    comment_on_change=comment_on_change))
+                    edited_fields=field_names))
 
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):

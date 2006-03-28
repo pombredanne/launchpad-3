@@ -53,6 +53,8 @@
             default="launchpad-error-reports@lists.canonical.com" />
         <key name="bugs_domain" datatype="string" required="no"
             default="bugs.launchpad.net" />
+        <key name="specs_domain" datatype="string" required="no"
+            default="specs.launchpad.net" />
         <key name="oops_root_url" datatype="string" required="no"
             default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
@@ -88,6 +90,10 @@
                 generally not be set explicitly so the default value is used.
 
 		This should end with a slash.
+
+		If that value is changed in production, the
+		branch_url_constraint_not_supermirror database constraint
+		should be updated.
 	    </description>
 	    <example>http://bazaar.launchpad.net/</example>
         </key>
@@ -607,6 +613,17 @@
 
     <sectiontype name="supermirror">
         <key name="dbuser" datatype="string" default="supermirror" />
+        <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
+        <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
+        <key name="branchlistsource" datatype="string" 
+             default="http://gangotri.ubuntu.com:9000/supermirror-pull-list.txt" />
+        <key name="authserver_url" datatype="string"
+             default="http://localhost:8999/branch/">
+            <description>
+                The XML-RPC endpoint URL for talking to the auth server
+                to update branch mirror details.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="supermirrorsftp">
