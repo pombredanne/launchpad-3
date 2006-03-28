@@ -30,8 +30,8 @@ def name_validator(name):
     if not valid_name(name):
         raise LaunchpadValidationError(_(dedent("""
             Invalid name '%s'. Names must start with a letter or
-            number and be lowercase. The characers <kbd>+</kbd>,
-            <kbd>-</kbd> and <kbd>.</kbd> are also allowed after the
+            number and be lowercase. The characters <samp>+</samp>,
+            <samp>-</samp> and <samp>.</samp> are also allowed after the
             first character.
             """)), name)
     return True

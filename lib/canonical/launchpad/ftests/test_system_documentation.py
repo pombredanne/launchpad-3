@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
 from canonical.launchpad.mail import stub
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -103,6 +104,16 @@ def karmaUpdaterTearDown(test):
     LaunchpadTestSetup().force_dirty_database()
     tearDown(test)
 
+def branchStatusSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='launchpad').setUp()
+    test._authserver = AuthserverTacTestSetup()
+    test._authserver.setUp()
+
+def branchStatusTearDown(test):
+    test._authserver.tearDown()
+    LaunchpadZopelessTestSetup().tearDown()
+
 
 # Files that have special needs can construct their own suite
 # XXX: Note the wierd path differences between specifying a DocFileSuite
@@ -160,6 +171,9 @@ special = {
             optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
             ),
+    'branch-status-client.txt': FunctionalDocFileSuite(
+            '../doc/branch-status-client.txt',
+            setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
     'translationimportqueue.txt': FunctionalDocFileSuite(
             'launchpad/doc/translationimportqueue.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
@@ -168,6 +182,7 @@ special = {
 
 special['poexport.txt'].layer = ZopelessLayer
 special['support-tracker-emailinterface.txt'].layer = ZopelessLayer
+special['branch-status-client.txt'].layer = ZopelessLayer
 
 def test_suite():
     suite = unittest.TestSuite()

@@ -43,11 +43,7 @@ class ISignedCodeOfConduct(Interface):
         )
         )
 
-    signedcode = Text(title=_("Signed Code"),
-                      description=_("""OpenPGP-signed Code of Conduct.
-                      It should contain a clearsigned copy of current
-                      Code of Conduct version (use: `gpg --clearsign`).""")
-                      )
+    signedcode = Text(title=_("Signed Code"))
 
     signingkey = Choice(title=_('Signing OpenPGP Key'),
                         description=_("""OpenPGP key ID used to sign the

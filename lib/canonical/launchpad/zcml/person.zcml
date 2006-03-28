@@ -43,7 +43,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IPerson"
       label="Review person"
-      fields="name displayname givenname familyname password"
+      fields="name displayname password"
       permission="launchpad.Admin"
       template="../templates/person-review.pt"
       lp:url="/people/$person.id/+review">
@@ -59,7 +59,7 @@
       schema="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditView"
       label="Edit personal details"
-      fields="name displayname givenname familyname hide_email_addresses
+      fields="name displayname hide_email_addresses
               timezone"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt"
@@ -523,7 +523,7 @@
       template="../templates/person-branch-add.pt">
       <browser:widget
           field="url"
-          class="zope.app.form.browser.TextWidget"
+          class="canonical.launchpad.browser.BranchUrlWidget"
           displayWidth="30" />
       <browser:widget
           field="home_page"

@@ -1,13 +1,19 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <tal:block content="structure context/@@+portlet-bugfilters" />
+    <tal:releasebugs
+       tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
+       tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
+  </metal:leftportlets>
+
   <div metal:fill-slot="main">
 
-    <div style="margin-left: 0; width: 74%; float: left">
       <h1>Bugs in <span tal:replace="context/displayname" /></h1>
 
       <div tal:define="batch_navigator view/search">
@@ -33,14 +39,6 @@
         </script>
         <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
-      </div>
-    </div>
-    <div id="portal-column-two">
-      <metal:macro use-macro="context/@@main_template/action-menu" />
-      <tal:block content="structure context/@@+portlet-bugfilters" />
-      <tal:releasebugs
-         tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
-         tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
     </div>
     <div class="visualClear">&nbsp;</div>
   </div>
@@ -48,4 +46,3 @@
 </body>
 
 </html>
-</tal:layout>

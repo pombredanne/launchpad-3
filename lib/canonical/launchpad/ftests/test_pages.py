@@ -20,6 +20,8 @@ from canonical.launchpad.ftests.harness import (
 from canonical.launchpad.ftests import logout
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.launchpad.ftests import logout
+from canonical.launchpad.mail import stub
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -63,6 +65,7 @@ class EndStory(unittest.TestCase):
         LaunchpadTestSetup().tearDown()
         global _db_is_setup
         _db_is_setup = False
+        stub.test_emails = []
 
     def test_tearDownDatabase(self):
         # Fake test to ensure tearDown is called.

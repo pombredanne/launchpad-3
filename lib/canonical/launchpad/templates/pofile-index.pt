@@ -38,11 +38,10 @@
       </li>
     </ul>
 
-    <p class="portalMessage" tal:condition="not: context/contributors">
-      No contributors recorded for this PO file.
-    </p>
-
-</div>
-
-</body>
+      <p
+        tal:condition="not: context/contributors"
+        class="informational message"
+      >No contributors recorded for this PO file.</p>
+    </div>
+  </body>
 </html>

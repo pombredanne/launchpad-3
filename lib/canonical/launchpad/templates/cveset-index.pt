@@ -30,7 +30,7 @@
     </p>
   </form>
 
-  <p class="portalMessage" tal:repeat="notice view/notices"
+  <p class="error message" tal:repeat="notice view/notices"
      tal:content="notice">
     Message Goes Here
   </p>

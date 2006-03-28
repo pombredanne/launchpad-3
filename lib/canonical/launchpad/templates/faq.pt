@@ -46,36 +46,6 @@
             </ul>
             </dd>
 
-        <dt>How do I sign the Ubuntu Code of Conduct?</dt>
-
-            <dd>
-              You need to follow these steps, in order:
-
-              <ol>
-                <li>Go to <a href="https://launchpad.net/codeofconduct/1.0/"
-                  >https://launchpad.net/codeofconduct/1.0/</a>
-                </li>
-                <li>Click on the "Download This Version" link and save it with
-                  the name <em>ubuntu-coc.txt</em> in your home directory
-                </li>
-                <li>Open it with your favorite text editor and read it 
-                  carefully
-                </li>
-                <li>Now, open a terminal and run the command 
-                  <code>gpg --clearsign ~/ubuntu-coc.txt</code>.
-                  (This will create a file named <em>ubuntu-coc.txt.asc</em>)
-                </li>
-                <li>Open the <em>ubuntu-coc.txt.asc</em> file with your favorite
-                  text editor and copy all its contents
-                </li>
-                <li>Go to <a href="https://launchpad.net/codeofconduct/1.0/+sign"
-                  >https://launchpad.net/codeofconduct/1.0/+sign</a>,
-                  paste that file's contents in that page and submit it
-                </li>
-              </ol>
-
-            </dd>
-
         <dt>I have discovered I have two accounts registered in
         Launchpad. How did that happen, and how do I fix it?</dt>
 
