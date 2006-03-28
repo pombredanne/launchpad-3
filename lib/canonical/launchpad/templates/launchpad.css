@@ -1156,7 +1156,7 @@ dl.faq ol {
 }
 .error {background-color: #f0cccc; color: black;}
 .error.message, .error .message {
-  background-image: url(/@@/stop);
+  background-image: url(/@@/error);
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {

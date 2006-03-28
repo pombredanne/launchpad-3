@@ -44,9 +44,12 @@
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
 
-  <p class="error message" tal:condition="not:view/isReportedInContext">
-
-        <form name="alsooccursin" method="POST">
+      <form
+        tal:condition="not:view/isReportedInContext"
+        class="error message"
+        name="alsooccursin"
+        method="POST"
+      >
 
     This bug is not recorded as needing to be fixed in the
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
@@ -71,8 +74,6 @@
     </tal:notloggedin>
 
         </form>
-
-  </p>
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
