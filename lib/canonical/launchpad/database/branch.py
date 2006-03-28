@@ -3,6 +3,8 @@
 __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
+import os.path
+import re
 from urlparse import urljoin
 
 from zope.interface import implements
@@ -168,8 +170,8 @@ class Branch(SQLBase):
         else:
             # This is a push branch, hosted on the supermirror (pushed there by
             # users via SFTP).
-            prefix = config.launchpad.bzr_push_root_url
-            return urljoin(prefix, split_branch_id(self.id))
+            prefix = config.supermirrorsftp.branches_root
+            return os.path.join(prefix, split_branch_id(self.id))
 
 
 class BranchSet:
@@ -206,15 +208,52 @@ class BranchSet:
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page)
 
+    def getByUrl(self, url, default=None):
+        """See IBranchSet."""
+        assert not url.endswith('/')
+        prefix = config.launchpad.supermirror_root
+        if url.startswith(prefix):
+            branch = self.getByUniqueName(url[len(prefix):])
+        else:
+            branch = Branch.selectOneBy(url=url)
+        if branch is None:
+            return default
+        else:
+            return branch
+
+    def getByUniqueName(self, unique_name, default=None):
+        """Find a branch by its ~owner/product/name unique name."""
+        # import locally to avoid circular imports
+        from canonical.launchpad.database.person import Person
+        from canonical.launchpad.database.product import Product
+        match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
+        if match is None:
+            return default
+        owner_name, product_name, branch_name = match.groups()
+        if product_name == '+junk':
+            query = ("Branch.owner = Person.id"
+                     + " AND Branch.product IS NULL"
+                     + " AND Person.name = " + quote(owner_name)
+                     + " AND Branch.name = " + quote(branch_name))
+            tables=['Person']
+        else:
+            query = ("Branch.owner = Person.id"
+                     + " AND Branch.product = Product.id"
+                     + " AND Person.name = " + quote(owner_name)
+                     + " AND Product.name = " + quote(product_name)
+                     + " AND Branch.name = " + quote(branch_name))
+            tables=['Person', 'Product']            
+        branch = Branch.selectOne(query, clauseTables=tables)
+        if branch is None:
+            return default
+        else:
+            return branch
+
     def get_supermirror_pull_queue(self):
         """See IBranchSet.get_supermirror_pull_queue."""
         return Branch.select("(last_mirror_attempt is NULL "
                              " OR (%s - last_mirror_attempt > '1 day'))"
                              % UTC_NOW)
-
-    def getByURL(self, url):
-        """XXX: Temporary method until David lands his branch."""
-        return Branch.selectOneBy(url=url)
 
 
 class BranchRelationship(SQLBase):

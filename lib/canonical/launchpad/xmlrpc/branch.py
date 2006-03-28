@@ -71,7 +71,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
     def link_branch_to_bug(self, branch_url, bug_id, whiteboard):
         """See IBranchSetAPI."""
-        branch = getUtility(IBranchSet).getByURL(url=branch_url)
+        branch = getUtility(IBranchSet).getByUrl(url=branch_url)
         if branch is None:
             return xmlrpclib.Fault(30, 'No such branch: %s' % branch_url)
         try:

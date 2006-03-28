@@ -364,7 +364,7 @@
         template="../templates/product-branch-add.pt">
         <browser:widget
             field="url"
-            class="zope.app.form.browser.TextWidget"
+            class="canonical.launchpad.browser.BranchUrlWidget"
             displayWidth="30" />
         <browser:widget
             field="home_page"
