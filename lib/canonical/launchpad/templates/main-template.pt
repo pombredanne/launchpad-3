@@ -35,7 +35,6 @@
         />
       </tr>
     </table>
-
     <div class="body">
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
       <tal:layout condition="columns1|nothing">
@@ -77,6 +76,15 @@
       id="portal-column-two"
       metal:define-slot="column_two"
     >
+      <metal:portlets define-slot="portlets_two">
+      </metal:portlets>
+    </div>
+    <!-- start of the left (by default at least) column -->
+    <div
+          id="portal-column-one"
+          metal:define-slot="column_one"
+    >
+      <div tal:replace="structure context/@@+sitemap" />
       <metal:macro define-macro="action-menu">
         <tal:notlogin condition="python: '+login' not in request.getURL()">
           <ul
@@ -126,16 +134,6 @@
           </ul>
         </tal:notlogin>
       </metal:macro>
-      <metal:portlets define-slot="portlets_two">
-      </metal:portlets>
-    </div>
-    <!-- start of the left (by default at least) column -->
-    <div
-          id="portal-column-one"
-          metal:define-slot="column_one"
-    >
-      <div tal:replace="structure context/@@+sitemap" />
-
       <metal:portlets define-slot="portlets_one">
 
       </metal:portlets>
