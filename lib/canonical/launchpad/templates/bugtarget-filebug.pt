@@ -5,6 +5,11 @@
 
   <div metal:fill-slot="main">
 
+  <p class="error message"
+     tal:define="status view/update"
+     tal:condition="status"
+     tal:content="status" />
+
   <tal:uses_malone tal:condition="context/official_malone">
     <p>
       Before reporting a bug, please ensure it hasn&#8217;t been <a
@@ -24,6 +29,11 @@
     </p>
   </tal:not_uses_malone>
 
+  <form action="." 
+        tal:attributes="action request/URL" 
+        method="post"
+        enctype="multipart/form-data">
+
   <div tal:condition="view/packagename_widget|nothing">
     <label tal:attributes="for view/packagename_widget/name">
       In what package did you find this bug?
@@ -37,7 +47,8 @@
         </label>
       </li>
       <li style="margin-top: 4px">
-        <input type="radio" name="packagename_option" value="choose" />
+        <input type="radio" name="packagename_option" value="choose"
+               id="choose" />
         <span tal:content="structure view/packagename_widget" />
       </li>
     </ul>
@@ -65,7 +76,9 @@
       <i tal:condition="context/security_contact">
         The security contact for
         <span tal:content="context/displayname" />,
-        <span tal:content="context/security_contact/displayname" />,
+        <a href="#"
+            tal:content="context/security_contact/displayname"
+            tal:attributes="href context/security_contact/fmt:url" />,
         will be Cc'd to this bug
       </i>
       <i tal:condition="not:context/security_contact">
@@ -87,6 +100,11 @@
     </label>
   </div>
 
+  <div style="margin-top: 1em">
+    <input type="submit" name="UPDATE_SUBMIT" value="Submit Bug Report" />
+  </div>
+
+  </form>
   </div>
 
 </html>

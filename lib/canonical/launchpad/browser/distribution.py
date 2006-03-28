@@ -111,8 +111,9 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'editbugcontact', 'reassign', 'addrelease', 'builds',
-             'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
+             'editbugcontact', 'securitycontact', 'reassign', 'addrelease',
+             'builds', 'officialmirrors', 'allmirrors', 'newmirror',
+             'launchpad_usage']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -123,6 +124,11 @@ class DistributionOverviewMenu(ApplicationMenu):
     def editbugcontact(self):
         text = 'Change Bug Contact'
         return Link('+editbugcontact', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change Security Contact'
+        return Link('+securitycontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):

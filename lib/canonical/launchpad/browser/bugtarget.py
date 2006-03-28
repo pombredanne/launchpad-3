@@ -6,12 +6,14 @@ __metaclass__ = type
 
 __all__ = ["FileBugView"]
 
+from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import setUpWidgets
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IProduct, NotFoundError)
-from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.webapp import canonical_url
 
 class FileBugView(SQLObjectAddView):
     """Browser view for filebug forms.
@@ -23,7 +25,7 @@ class FileBugView(SQLObjectAddView):
     notification = "Thank you for your bug report."
 
     def create(self, title=None, comment=None, private=False,
-               packagename=None, distribution=None):
+               packagename=None, distribution=None, security_related=False):
         """Add a bug to this IBugTarget."""
         current_user = getUtility(ILaunchBag).user
         context = self.context
@@ -54,15 +56,18 @@ class FileBugView(SQLObjectAddView):
                             "was not published in %s."
                             % (packagename, context.displayname))
                 bug = context.createBug(
-                    title=title, comment=comment, private=private, owner=current_user)
+                    title=title, comment=comment, private=private,
+                    security_related=security_related, owner=current_user)
             else:
                 bugtarget = context.getSourcePackage(sourcepackagename.name)
                 bug = bugtarget.createBug(
-                    title=title, comment=comment, private=private, owner=current_user,
+                    title=title, comment=comment, private=private,
+                    security_related=security_related, owner=current_user,
                     binarypackagename=binarypackagename)
         else:
             bug = context.createBug(
-                title=title, comment=comment, private=private, owner=current_user)
+                title=title, comment=comment, private=private,
+                security_related=security_related, owner=current_user)
 
         self.addedBug = bug
         return self.addedBug
@@ -74,3 +79,7 @@ class FileBugView(SQLObjectAddView):
         task = self.addedBug.bugtasks[0]
         return canonical_url(task)
 
+    def _setUpWidgets(self):
+        # Customize the onKeyPress event of the package name chooser.
+        setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames)
+        self.packagename_widget.onKeyPress = "selectWidget('choose', event)"

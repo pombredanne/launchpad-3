@@ -361,9 +361,9 @@ class BugSet:
         bug.subscribe(owner)
         # Subscribe the security contact, for security-related bugs.
         if security_related:
-            if product:
+            if product and product.security_contact:
                 bug.subscribe(product.security_contact)
-            else:
+            elif distribution and distribution.security_contact:
                 bug.subscribe(distribution.security_contact)
 
         # Link the bug to the message.
