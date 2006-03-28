@@ -75,8 +75,8 @@ class Distribution(SQLBase, BugTargetBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
-    securitycontact = ForeignKey(
-        dbName='securitycontact', foreignKey='Person', notNull=False,
+    security_contact = ForeignKey(
+        dbName='security_contact', foreignKey='Person', notNull=False,
         default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',

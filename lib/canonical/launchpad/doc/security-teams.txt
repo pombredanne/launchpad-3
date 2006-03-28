@@ -7,10 +7,15 @@ a Product.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IProductSet, IPersonSet)
+    ...     IDistributionSet, IProductSet, IPersonSet, IHasSecurityContact)
     >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> firefox = getUtility(IProductSet).get(4)
     >>> personset = getUtility(IPersonSet)
+
+    >>> IHasSecurityContact.providedBy(ubuntu)
+    True
+    >>> IHasSecurityContact.providedBy(firefox)
+    True
 
     >>> sabdfl = personset.get(1)
     >>> ubuntu_team = personset.get(17)
@@ -19,14 +24,14 @@ Security contacts are set with properties.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> ubuntu.securitycontact = sabdfl
-    >>> firefox.securitycontact = ubuntu_team
+    >>> ubuntu.security_contact = sabdfl
+    >>> firefox.security_contact = ubuntu_team
 
-    >>> print ubuntu.securitycontact.name
+    >>> print ubuntu.security_contact.name
     sabdfl
 
-    >>> print firefox.securitycontact.name
-    name12
+    >>> print firefox.security_contact.name
+    ubuntu-team
 
 When creating a bug, use the security_related flag to indicate that the
 bug should be flagged as security-related, and the security contact
@@ -43,11 +48,14 @@ should be assumed between them.
     ...     comment="this is an example security bug",
     ...     security_related=True)
 
+    >>> bug.security_related
+    True
+
 The reporter, Foo Bar, and the Ubuntu security contact, Mark
 Shuttleworth are both subscribed to the bug.
 
     >>> sorted([subscription.person.name for subscription in bug.subscriptions])
-    [u'name12', u'sabdfl']
+    [u'name16', u'sabdfl']
 
 Likewise, filing a security-related bug on Firefox will subscribe the
 security contact, the Ubuntu team, to the bug.
@@ -58,5 +66,8 @@ security contact, the Ubuntu team, to the bug.
     ...     comment="this is another security bug",
     ...     security_related=True)
 
+    >>> bug.security_related
+    True
+
     >>> sorted([subscription.person.name for subscription in bug.subscriptions])
-    [u'name16', u'ubuntu-team']
+    [u'name12', u'name16', u'ubuntu-team']

@@ -87,7 +87,11 @@ class IBug(IMessageTarget):
         "security vulnerability. Before you set this, make sure you "
         "have subscribed anyone who needs to see this bug."),
         default=False)
-
+    security_related = Bool(
+        title=_("Security related"), required=False,
+        description=_(
+        "Select this option if the bug is a security issue"),
+        default=False)
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')

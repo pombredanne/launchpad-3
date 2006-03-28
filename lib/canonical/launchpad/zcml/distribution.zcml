@@ -14,7 +14,7 @@
             set_attributes="displayname title summary description
                             translationgroup translationpermission
                             members owner bugcontact official_malone
-                            official_rosetta securitycontact"
+                            official_rosetta security_contact"
             />
     </content>
 
@@ -215,17 +215,17 @@
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report a bug in a Linux distribution"
-        fields="packagename title comment private"
+        fields="packagename title comment private security_related"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
-        keyword_arguments="packagename title comment private"
+        keyword_arguments="packagename title comment private security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/distros/$Distribution.name/+filebug">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
+           displayWidth="50" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"

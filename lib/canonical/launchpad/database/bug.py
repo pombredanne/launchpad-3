@@ -64,6 +64,7 @@ class Bug(SQLBase):
     activitytimestamp = UtcDateTimeCol(dbName='activitytimestamp',
                                        notNull=True, default=DEFAULT)
     private = BoolCol(notNull=True, default=False)
+    security_related = BoolCol(notNull=True, default=False)
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
@@ -329,7 +330,6 @@ class BugSet:
         description=None, msg=None, datecreated=None,
         title=None, security_related=False, private=False, owner=None):
         """See IBugSet."""
-        # Make sure that the factory has been passed enough information.
         if comment is description is msg is None:
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
@@ -355,9 +355,16 @@ class BugSet:
 
         bug = Bug(
             title=title, description=description, private=private,
-            owner=owner.id, datecreated=datecreated)
+            owner=owner.id, datecreated=datecreated,
+            security_related=security_related)
 
         bug.subscribe(owner)
+        # Subscribe the security contact, for security-related bugs.
+        if security_related:
+            if product:
+                bug.subscribe(product.security_contact)
+            else:
+                bug.subscribe(distribution.security_contact)
 
         # Link the bug to the message.
         BugMessage(bug=bug, message=msg)

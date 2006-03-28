@@ -52,8 +52,8 @@ class Product(SQLBase, BugTargetBase):
         foreignKey="Person", dbName="owner", notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
-    securitycontact = ForeignKey(
-        dbName='securitycontact', foreignKey='Person', notNull=False,
+    security_contact = ForeignKey(
+        dbName='security_contact', foreignKey='Person', notNull=False,
         default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
