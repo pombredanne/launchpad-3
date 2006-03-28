@@ -141,10 +141,9 @@ label {
   font-weight: bold;
 }
 pre {
-    border: 1px dashed #8cacbb;
-    color: Black;
-    background-color: #dee7ec;
-    overflow: auto;
+  color: black;
+  background-color: #dee7ec;
+  padding: 0.5em;
 }
 table {
   margin-left: auto;
