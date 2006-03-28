@@ -24,6 +24,19 @@
     template="../templates/tickettarget-portlet-latesttickets.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ITicketTarget"
+    name="+support-contact"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.ManageSupportContactView"
+    template="../templates/tickettarget-manage-supportcontacts.pt" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ITicketTarget"
+      name="+portlet-supportcontacts"
+      permission="zope.Public"
+      template="../templates/tickettarget-portlet-supportcontacts.pt" />
+
   <browser:addform
     name="+addticket"
     for="canonical.launchpad.interfaces.ITicketTarget"

@@ -8,9 +8,11 @@ __all__ = [
     'BranchAddView',
     'BranchContextMenu',
     'BranchEditView',
+    'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
     'BranchPullListing',
+    'BranchUrlWidget',
     'BranchView',
     ]
 
@@ -18,15 +20,31 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
+from zope.app.form.browser import TextWidget
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
-
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.interfaces import (
+    IBranch, IBranchSet, ILaunchBag, IBugSet)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation, stepthrough)
+
+
+class BranchNavigation(Navigation):
+
+    usedfor = IBranch
+
+    @stepthrough("+bug")
+    def traverse_bug_branch(self, bugid):
+        """Traverses to an IBugBranch."""
+        bug = getUtility(IBugSet).get(bugid)
+
+        for bug_branch in bug.bug_branches:
+            if bug_branch.branch == self.context:
+                return bug_branch
 
 
 class BranchContextMenu(ContextMenu):
@@ -147,14 +165,13 @@ class BranchInProductView(BranchView):
 
 
 class BranchEditView(SQLObjectEditView):
-    def __init__(self, context, request):
 
+    def __init__(self, context, request):
         self.fieldNames = list(self.fieldNames)
         if context.url is None and 'url' in self.fieldNames:
             # This is to prevent users from converting push/import
             # branches to pull branches.
             self.fieldNames.remove('url')
-
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
@@ -168,16 +185,24 @@ class BranchAddView(SQLObjectAddView):
     def create(self, name, owner, author, product, url, title,
                lifecycle_status, summary, home_page):
         """Handle a request to create a new branch for this product."""
-        branch_set = getUtility(IBranchSet)
-        branch = branch_set.new(
-            name=name, owner=owner, author=author, product=product, url=url,
-            title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page)
+        stripped_url = url.rstrip('/')
+        branch = getUtility(IBranchSet).new(
+            name=name, owner=owner, author=author, product=product,
+            url=stripped_url, title=title, summary=summary,
+            lifecycle_status=lifecycle_status, home_page=home_page)
         self._nextURL = canonical_url(branch)
 
     def nextURL(self):
         assert self._nextURL is not None, 'nextURL was called before create()'
         return self._nextURL
+
+
+class BranchUrlWidget(TextWidget):
+    """Simple text line widget that ignores trailing slashes."""
+
+    def _toFieldValue(self, input):
+        value = TextWidget._toFieldValue(self, input)
+        return value.rstrip('/')
 
 
 class BranchPullListing(LaunchpadView):

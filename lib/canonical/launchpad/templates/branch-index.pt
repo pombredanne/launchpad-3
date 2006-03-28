@@ -17,7 +17,7 @@
 <div metal:fill-slot="main">
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="portalMessage">
+     class="error message">
     notice goes here
   </p>
 
@@ -49,8 +49,20 @@
         <th>Status:</th>
         <td tal:content="context/lifecycle_status/title">Stable</td>
       </tr>
+      <tr tal:condition="context/mirror_failures">
+        <th>Failures:</th>
+        <td>
+          This branch failed to mirror 
+          <span tal:replace="context/mirror_failures" /> times.
+        </td>
+      </tr>
+      <tr tal:condition="context/mirror_status_message">
+        <th>Last Failure:</th>
+        <td tal:content="context/mirror_status_message">
+        </td>
+      </tr>
       <tr tal:condition="context/whiteboard">
-        <td><b>Whiteboard:</b></td>
+        <th>Whiteboard:</th>
         <td tal:content="context/whiteboard">whiteboard</td>
       </tr>
     </tbody>
@@ -83,8 +95,22 @@
   </table>
   </tal:history_available>
 
-      <h1>Nearby</h1>
-      <ul>
+  <tal:related_bugs condition="context/related_bugs">
+    <h2>Related Bugs</h2>
+    <ul style="list-style: none">
+      <span tal:repeat="bug context/related_bugs"
+            tal:omit-tag="">
+        <li tal:condition="bug/required:launchpad.View">
+          <a href="#"
+             tal:content="string:${bug/id}. ${bug/title}"
+             tal:attributes="href bug/fmt:url">Foo is Broken</a>
+        </li>
+      </span>
+    </ul>
+  </tal:related_bugs>
+
+      <h2>Nearby</h2>
+      <ul style="list-style: none">
         <li tal:condition="context/product">
           <a tal:attributes="href string:${context/product/fmt:url}/+branches">
             Other <tal:product replace="context/product/displayname" />

@@ -129,6 +129,8 @@ def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
+bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
+
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = ContextTitle('%s')
@@ -148,6 +150,8 @@ bug_secrecy = ContextId('Bug #%d - Set visibility')
 bug_subscription = ContextId('Subscription to bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
+
+bugbranch_status = "Edit branch fix status"
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 
@@ -199,6 +203,8 @@ build_changes = ContextTitle('Changes in %s')
 build_index = ContextTitle('Build details for %s')
 
 build_reset = ContextTitle('Reset %s')
+
+build_rescore = ContextTitle('Rescore %s')
 
 builders = 'Launchpad build farm'
 
@@ -253,15 +259,11 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
-distributionmirror_addarchrelease = ContextTitle(
-    'Add new Arch Release for mirror %s')
-
-distributionmirror_addsourcerelease = ContextTitle(
-    'Add new Source Release for mirror %s')
-
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
+
+distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
@@ -333,6 +335,8 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
 
 distrorelease_builds = ContextTitle('Builds for %s')
+
+distrorelease_queue = ContextTitle('Queue for %s')
 
 distroreleasebinarypackage_index = ContextTitle('%s')
 
@@ -885,6 +889,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
 translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
 translationgroups = 'Rosetta translation groups'

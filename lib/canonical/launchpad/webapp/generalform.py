@@ -20,8 +20,8 @@ from zope.security.checker import defineChecker, NamesChecker
 
 from zope.app import zapi
 from zope.app.i18n import ZopeMessageIDFactory as _
-from zope.app.form.interfaces import WidgetsError
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.interfaces import (
+    IInputWidget, WidgetsError, ErrorContainer)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.pagetemplate.simpleviewclass import SimpleViewClass
 from zope.app.form.utility import setUpWidgets, getWidgetsData
@@ -69,6 +69,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
     # Fall-back template
     generated_form = ViewPageTemplateFile('../templates/launchpad-generalform.pt')
+    process_status = None
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self.errors = ErrorContainer()
+        self.process_status = None
+        self._setUpWidgets()
+
 
     # methods that should be overridden
     def process(self, *args, **kw):
@@ -101,18 +109,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         """
         return {}
 
-    # internal methods, should not be overridden
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+    def _setUpWidgets(self, context=None):
+        """Set up the widgets.
 
-        self.errors = {}
-        self.process_status = None
-
-        self._setUpWidgets()
-
-    def _setUpWidgets(self):
+        :param context: The context to use. If it's None, self.context
+                        is used.
+        """
         setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames,
-                     initial=self.initial_values)
+                     initial=self.initial_values, context=context)
 
     def setPrefix(self, prefix):
         for widget in self.widgets():
@@ -132,7 +136,7 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
             # computed.
             return self.process_status
 
-        if "FORM_SUBMIT" not in self.request:
+        if not self.submitted():
             self.process_status = ''
             if self.request.method == 'POST':
                 self.process_status = 'Please fill in the form.'
@@ -149,11 +153,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         # Do custom validation defined in subclasses. This would generally
         # include form-level validation, or validation of fields shown on the
         # form that don't map to schema fields, and thus don't have "widgets" in
-        # the Zope 3 sense.
+        # the Zope 3 sense. We set both self.error and self.top_of_page_errors
+        # so we can provide an easy way of both getting the total number of errors,
+        # and of displaying more specific errors at the top of the page.
         try:
             self.validate(data)
         except WidgetsError, errors:
             self.top_of_page_errors = errors
+            self.errors = errors
             self._abortAndSetStatus()
             return self.process_status
 
@@ -177,6 +184,10 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
         return self.process_status
 
+    def submitted(self):
+        """Has the form been submitted?"""
+        return "FORM_SUBMIT" in self.request
+
     def update(self):
         """NoRenderingOnRedirect class calls this method."""
         return self.process_form()
@@ -188,13 +199,14 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
 
     def __call__(self):
         #XXX: BrowserView doesn't define __call__(), but somehow
-        #     NoRenderingOnRedirect.__call__() won't be called unless we
-        #     define this method and call it explicitly. It's probably
-        #     due to some ZCML magic which should be removed.
+        #     NoRenderingOnRedirect.__call__() won't be called unless
+        #     we define this method and call it explicitly. It's
+        #     probably due to some ZCML magic which should be removed.
         #     -- Bjorn Tillenius, 2006-02-22
 
         # We call initialize explicitly here (it's normally called by
-        # GeneralFormView.__call__), because of the hack Bjorn mentions above.
+        # GeneralFormView.__call__), because of the hack Bjorn
+        # mentions above.
         self.initialize()
 
         return NoRenderingOnRedirect.__call__(self)
