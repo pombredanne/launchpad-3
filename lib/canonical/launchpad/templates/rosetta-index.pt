@@ -23,7 +23,16 @@
       any language. <a href="+about">More about Rosetta.</a>
     </p>
 
-    <h2>Translations in Ubuntu</h2>
+      <h2>Translation groups</h2>
+    
+      <p>
+        Most translators in Rosetta are organized into translation teams by language,
+        and then into <a href="groups">translation groups</a>.
+        If the thing you want to translate has a translation group already,
+        join or create that group&#8217;s team for your language.
+      </p>
+
+      <h2>Translations in Ubuntu</h2>
 
       <p>
         Rosetta is the primary translation system for the Ubuntu distribution.

@@ -1,37 +1,40 @@
-<html xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template_2col/master"
-    i18n:domain="launchpad">
-
-<body>
-
-    <metal:leftportlets fill-slot="portlets_one">
-    </metal:leftportlets>
-
-    <metal:rightportlets fill-slot="portlets_two">
-    </metal:rightportlets>
-
-
-<div metal:fill-slot="main">
-
-  <h1>Rosetta translation groups</h1>
-
-  <div class="documentDescription">
-    This is a listing of all of the registered translation groups in
-    Rosetta. Click on a group for further information about it.
-  </div>
-
-    <table class="sortable listing" id="translation-groups" width="100%">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en" lang="en"
+  metal:use-macro="context/@@main_template_2col/master"
+  i18n:domain="rosetta"
+>
+  <body>
+    <div metal:fill-slot="main">
+      <h1>Rosetta translation groups</h1>
+      <p>
+        A <dfn>translation group</dfn> is a set of teams
+        chosen by the owner of a distribution or product to do its translations.
+        Each team in a group concentrates on a language or group of languages.
+      </p>
+      <p>
+        Where contributions are &#8220;Reviewed&#8221;,
+        members of the translation group have the final say on translations in their
+        languages.
+        Where contributions are &#8220;Closed&#8221;,
+        members of the translation group have the final say for any language.
+      </p>
+      <table class="sortable listing" id="translation-groups" width="100%">
         <thead>
           <tr>
-              <th>Translations</th>
-              <th>Group</th>
-              <th>Date Created</th>
+            <th>Translation Group</th>
+            <th>Translates</th>
+            <th>Date Created</th>
           </tr>
         </thead>
         <tbody>
           <tr tal:repeat="group context">
+            <td>
+              <a
+                tal:content="group/title/fmt:shorten/57"
+                tal:attributes="href group/name"
+              >title</a>
+            </td>
             <td>
               <span tal:condition="group/distributions" tal:omit-tag="">
                 <span tal:repeat="distro group/distributions" tal:omit-tag>
@@ -48,9 +51,6 @@
                   <span tal:replace="product/name">a52dec</span>,
                 </span>
               </span>
-            </td>
-            <td><a tal:content="group/title/fmt:shorten/57"
-                   tal:attributes="href group/name">title</a>
             </td>
             <td tal:content="python:group.datecreated.strftime('%d %b %y')">
               date
