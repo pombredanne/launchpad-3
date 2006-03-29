@@ -504,6 +504,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -733,6 +739,7 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (23, 3, '2006-02-24 21:34:52.613258', 16, 'mozilla-firefox: statusexplanation', NULL, '', NULL);
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (24, 10, '2006-02-22 19:42:21.890299', 16, 'bug', NULL, NULL, 'added bug');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (25, 2, '2006-03-06 10:11:02.729077', 16, 'bug', NULL, NULL, 'assigned to Ubuntu');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (26, 7, '2006-03-29 16:45:45.054836', 12, 'bug', NULL, NULL, 'assigned to evolution (Debian)');
 
 
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
@@ -750,13 +757,6 @@ ALTER TABLE bugbranch DISABLE TRIGGER ALL;
 INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (1, '2006-03-22 18:44:27.438982', 5, 1, NULL, 20, NULL);
 INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (2, '2006-03-22 18:45:08.75694', 4, 10, NULL, 10, NULL);
 INSERT INTO bugbranch (id, datecreated, bug, branch, revision_hint, status, whiteboard) VALUES (3, '2006-03-22 18:45:50.344434', 4, 1, NULL, 20, NULL);
-
-
-ALTER TABLE bugbranch ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugbranch DISABLE TRIGGER ALL;
-
 
 
 ALTER TABLE bugbranch ENABLE TRIGGER ALL;
@@ -805,6 +805,13 @@ INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 16);
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
 
 
+ALTER TABLE bugnotification DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugnotification ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
 
 
@@ -846,9 +853,9 @@ ALTER TABLE bugtask DISABLE TRIGGER ALL;
 
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL, NULL, NULL, '''ubuntu'':1B ''upstream'':2B', 'ubuntu (upstream)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, NULL, NULL, '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 999, 999, 999, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, 8, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':12C ''won'':9C ''said'':6C ''bother'':11C ''debian'':4B ''firefox'':3B ''mozilla'':2B ''upstream'':5C ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, NULL, NULL, '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 999, 999, 999, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, 10, '', '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian)');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':7C ''task'':10C ''explan'':5C ''inform'':12C ''provid'':9C ''specif'':11C ''status'':4C ''firefox'':1B ''upstream'':2B', 'firefox (upstream)');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)');
@@ -863,6 +870,7 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (24, 9, 8, NULL, NULL, NULL, NULL, 999, 999, 999, NULL, '2006-02-23 16:43:25.744534', '2006-02-23 16:43:25.744534', 12, NULL, 6, NULL, '''upstream'':2B ''thunderbird'':1B', 'thunderbird (upstream)');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (25, 10, NULL, 1, NULL, 22, NULL, 10, NULL, 30, NULL, '2006-02-22 19:42:21.890299', '2006-02-22 19:42:21.890299', 16, NULL, NULL, NULL, '''linux'':2B ''sourc'':3B ''2.6.15'':4B ''ubuntu'':5B ''linux-source-2'':1B', 'linux-source-2.6.15 (Ubuntu)');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (26, 2, NULL, 1, NULL, NULL, NULL, 10, NULL, 30, NULL, '2006-03-06 10:11:02.729077', '2006-03-06 10:11:02.729077', 16, NULL, NULL, NULL, '''ubuntu'':1B', 'Ubuntu');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (27, 7, NULL, 3, NULL, 9, NULL, 999, 999, 999, NULL, '2006-03-29 16:45:45.054836', '2006-03-29 16:45:45.054836', 12, NULL, 7, NULL, '''debian'':2B ''evolut'':1B', 'evolution (Debian)');
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -887,6 +895,10 @@ INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged,
 INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1);
 INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (5, 1, 1, '42', 'FUBAR', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', '2004-09-24 20:59:04.740841', 12);
 INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (6, 9, 1, '1234', NULL, '2006-02-23 16:43:25.744534', NULL, '2006-02-23 16:43:25.744534', 12);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (7, 7, 3, '280883', NULL, '2006-03-29 16:45:45.054836', NULL, '2006-03-29 16:45:45.054836', 12);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (8, 1, 3, '304014', NULL, '2006-03-29 16:46:54.407686', NULL, '2006-03-29 16:46:54.407686', 12);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (9, 2, 3, '327452', NULL, '2006-03-29 16:47:51.515017', NULL, '2006-03-29 16:47:51.515017', 12);
+INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (10, 3, 3, '327549', NULL, '2006-03-29 16:48:18.807764', NULL, '2006-03-29 16:48:18.807764', 12);
 
 
 ALTER TABLE bugwatch ENABLE TRIGGER ALL;
@@ -2814,42 +2826,42 @@ ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
 
 ALTER TABLE libraryfilecontent DISABLE TRIGGER ALL;
 
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (1, '2005-04-07 16:46:05.265391', NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (2, '2005-04-07 16:46:05.266763', NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (3, '2005-04-07 16:46:05.26727', NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (4, '2005-04-07 16:46:05.267803', NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (5, '2005-05-18 08:03:28.021862', NULL, 4381, '9b1f78faa39fb09a9fd955d744002c2d8f32d88d', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (6, '2005-05-18 08:03:28.021862', NULL, 7910, 'afdf21d698587a6601e2ffed0f44292b7ad5dd07', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (7, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (8, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (9, '2005-05-18 08:03:28.021862', NULL, 2655, 'ca3b107af84c05eaf98ba073376153986566ec28', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (10, '2005-05-18 08:03:28.021862', NULL, 13110, 'bc7bebca1e3c5c166838b19f0eeb7f171e51805d', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (11, '2005-05-18 08:03:28.021862', NULL, 13499, '78a26efee75a54f113063b78783b2d4612fee409', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (12, '2005-05-18 08:03:28.021862', NULL, 12695, '8812d04c170ca90bb1423e188ce9706869aa03d7', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (13, '2005-05-18 08:03:28.021862', NULL, 13133, 'db1b50cbde7142d344bd8ef9b2e1fe3b3116f77c', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (14, '2005-05-18 08:03:28.021862', NULL, 13641, 'e19cc1446e3004f10475c37b2cd363f75b8ae89a', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (15, '2005-05-18 08:03:28.021862', NULL, 13269, 'fc8cab1cb1e5fb1efa3c3c475b8f7c8dc5038d50', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (16, '2005-05-18 08:03:28.021862', NULL, 13983, 'e17ee3031bd29dcd1e5905c0fd17945600a91ccf', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (17, '2005-05-18 08:03:28.021862', NULL, 12652, '07b01d1e6fe9a729f911e72dfe674a5e0abdc4ee', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (18, '2005-05-18 08:03:28.021862', NULL, 13240, '801dc911c2bd67e17eff087516fdc63a2ac322ce', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (19, '2005-05-18 08:03:28.021862', NULL, 4165, 'fca78a2292e4034b8dfbb2de6f69e17ebeecaaa1', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (20, '2005-05-18 08:03:28.021862', NULL, 4093, 'fc67a1770f78c45c396b4724195aeb10683aa2fd', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (21, '2005-05-18 08:03:28.021862', NULL, 3635, '4ab2ca308dafe152789640942488e23a33e4f46c', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (22, '2005-05-18 08:03:28.021862', NULL, 3553, '20815563ee33368d51e3213354f97c05b4685968', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (23, '2005-05-18 08:03:28.021862', NULL, 3778, '965968d3e6668f39ebc64bc11a3f1a5cd07c213b', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (24, '2005-05-18 08:03:28.021862', NULL, 3666, 'cca8fb78e05a34481e07683cea8c3a47f01c609e', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (25, '2005-05-18 08:03:28.021862', NULL, 3793, '28a7accfb491a2b4895b49b810ca7cda0badc787', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (26, '2005-05-18 08:03:28.021862', NULL, 4773, '03efb176f04f3897de7d5e6484864b0559fd6cd6', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (27, '2005-05-18 08:03:28.021862', NULL, 2961, '4468039e1d2cbdfc78d2e53477e5fe0537bae302', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (28, '2005-05-18 08:03:28.021862', NULL, 3558, 'd6c2ddacdab7618ce2a555c20a4a730fcdb42600', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (29, '2005-05-18 08:03:28.021862', NULL, 3561, '9eb09455e6a568605c1bbab4cdf1936eee92222d', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (30, '2005-05-18 08:03:28.021862', NULL, 3305, 'b45b170da29f9b22650315657505124766c93720', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false);
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (36, '2005-10-30 18:00:27.899028', NULL, 3, '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', true);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (1, '2005-04-07 16:46:05.265391', NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (2, '2005-04-07 16:46:05.266763', NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (3, '2005-04-07 16:46:05.26727', NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (4, '2005-04-07 16:46:05.267803', NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (5, '2005-05-18 08:03:28.021862', NULL, 4381, '9b1f78faa39fb09a9fd955d744002c2d8f32d88d', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (6, '2005-05-18 08:03:28.021862', NULL, 7910, 'afdf21d698587a6601e2ffed0f44292b7ad5dd07', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (7, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (8, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (9, '2005-05-18 08:03:28.021862', NULL, 2655, 'ca3b107af84c05eaf98ba073376153986566ec28', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (10, '2005-05-18 08:03:28.021862', NULL, 13110, 'bc7bebca1e3c5c166838b19f0eeb7f171e51805d', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (11, '2005-05-18 08:03:28.021862', NULL, 13499, '78a26efee75a54f113063b78783b2d4612fee409', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (12, '2005-05-18 08:03:28.021862', NULL, 12695, '8812d04c170ca90bb1423e188ce9706869aa03d7', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (13, '2005-05-18 08:03:28.021862', NULL, 13133, 'db1b50cbde7142d344bd8ef9b2e1fe3b3116f77c', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (14, '2005-05-18 08:03:28.021862', NULL, 13641, 'e19cc1446e3004f10475c37b2cd363f75b8ae89a', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (15, '2005-05-18 08:03:28.021862', NULL, 13269, 'fc8cab1cb1e5fb1efa3c3c475b8f7c8dc5038d50', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (16, '2005-05-18 08:03:28.021862', NULL, 13983, 'e17ee3031bd29dcd1e5905c0fd17945600a91ccf', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (17, '2005-05-18 08:03:28.021862', NULL, 12652, '07b01d1e6fe9a729f911e72dfe674a5e0abdc4ee', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (18, '2005-05-18 08:03:28.021862', NULL, 13240, '801dc911c2bd67e17eff087516fdc63a2ac322ce', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (19, '2005-05-18 08:03:28.021862', NULL, 4165, 'fca78a2292e4034b8dfbb2de6f69e17ebeecaaa1', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (20, '2005-05-18 08:03:28.021862', NULL, 4093, 'fc67a1770f78c45c396b4724195aeb10683aa2fd', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (21, '2005-05-18 08:03:28.021862', NULL, 3635, '4ab2ca308dafe152789640942488e23a33e4f46c', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (22, '2005-05-18 08:03:28.021862', NULL, 3553, '20815563ee33368d51e3213354f97c05b4685968', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (23, '2005-05-18 08:03:28.021862', NULL, 3778, '965968d3e6668f39ebc64bc11a3f1a5cd07c213b', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (24, '2005-05-18 08:03:28.021862', NULL, 3666, 'cca8fb78e05a34481e07683cea8c3a47f01c609e', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (25, '2005-05-18 08:03:28.021862', NULL, 3793, '28a7accfb491a2b4895b49b810ca7cda0badc787', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (26, '2005-05-18 08:03:28.021862', NULL, 4773, '03efb176f04f3897de7d5e6484864b0559fd6cd6', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (27, '2005-05-18 08:03:28.021862', NULL, 2961, '4468039e1d2cbdfc78d2e53477e5fe0537bae302', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (28, '2005-05-18 08:03:28.021862', NULL, 3558, 'd6c2ddacdab7618ce2a555c20a4a730fcdb42600', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (29, '2005-05-18 08:03:28.021862', NULL, 3561, '9eb09455e6a568605c1bbab4cdf1936eee92222d', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (30, '2005-05-18 08:03:28.021862', NULL, 3305, 'b45b170da29f9b22650315657505124766c93720', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (36, '2005-10-30 18:00:27.899028', NULL, 3, '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', true, NULL);
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3064,6 +3076,7 @@ ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
 
 
 ALTER TABLE mirrordistroarchrelease DISABLE TRIGGER ALL;
+
 
 
 ALTER TABLE mirrordistroarchrelease ENABLE TRIGGER ALL;
@@ -9195,6 +9208,13 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
+
+
+ALTER TABLE supportcontact DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE supportcontact ENABLE TRIGGER ALL;
 
 
 ALTER TABLE teammembership DISABLE TRIGGER ALL;
