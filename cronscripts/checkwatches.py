@@ -55,7 +55,7 @@ def main():
                 error.bugtrackertypename)
         except externalbugtracker.BugTrackerConnectError:
             log.exception("Got error trying to contact %s", bug_tracker.name)
-        except externalsystem.UnsupportedBugTrackerVersion, error:
+        except externalbugtracker.UnsupportedBugTrackerVersion, error:
             log.warning(str(error))
         else:
             number_of_watches = bug_watches_to_update.count()

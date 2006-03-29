@@ -235,6 +235,11 @@ def setup(con, configuration=DEFAULT_CONFIG):
     shared_func = r'''
         import re
 
+        # I think this method would be more robust if we used a real
+        # tokenizer and parser to generate the query string, but we need
+        # something suitable for use as a stored procedure which currently
+        # means no external dependancies.
+
         # Convert to Unicode
         query = args[0].decode('utf8')
         ## plpy.debug('1 query is %s' % repr(query))
@@ -274,9 +279,13 @@ def setup(con, configuration=DEFAULT_CONFIG):
         ## plpy.debug('3.2 query is %s' % repr(query))
 
         # Insert & between tokens without an existing boolean operator
+        # ( not proceeded by (|&!
+        query = re.sub(r"(?<![\(\|\&\!])\s*\(", "&(", query)
+        ## plpy.debug('4.1 query is %s' % repr(query))
         # Whitespace not proceded by (|&! not followed by &|
+        # XXX: Remove \s's here
         query = re.sub(r"(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
-        ## plpy.debug('4 query is %s' % repr(query))
+        ## plpy.debug('4.2 query is %s' % repr(query))
 
         # Detect and repair syntax errors - we are lenient because
         # this input is generally from users.
@@ -302,7 +311,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
         # An & or | following a (
         query = re.sub(r"(?<=\()[\&\|\s]+", "", query)
-        ##  plpy.debug('7 query is %s' % repr(query))
+        ## plpy.debug('7 query is %s' % repr(query))
 
         # An &, | or ! immediatly before a )
         query = re.sub(r"[\&\|\!\s]*[\&\|\!]+(?=\))", "", query)
