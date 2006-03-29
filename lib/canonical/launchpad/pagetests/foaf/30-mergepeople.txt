@@ -59,7 +59,7 @@
   ...
 
 
-  Then we find the dupe account and request the merge.
+  Then we find the duplicate account and request the merge.
 
   >>> print http(r"""
   ... POST /people/+requestmerge HTTP/1.1
@@ -88,7 +88,7 @@
   >>> from canonical.launchpad.database import PersonSet
   >>> dupe = PersonSet().getByName('foo')
 
-  This is the page which displays all email addresses owned by the dupe
+  This is the page which displays all email addresses owned by the duplicate
   account. Here the user choses the ones which he want to claim.
 
   >>> print http(r"""
@@ -167,7 +167,7 @@
 
 
   The user types his password and then proves that he is the owner of that
-  email address, but the merge wasn't finished because the dupe account still
+  e-mail address, but the merge wasn't finished because the duplicate account still
   have a registered email adresses.
 
   >>> print http(r"""
@@ -214,7 +214,7 @@
   ...
 
 
-  And now the merge is concluded with success.
+  And now the merge is completed successfully.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -226,7 +226,7 @@
   ...
   Location: http://localhost:9000/people/no-priv
   ...
-  ...informational message">The merge you requested was concluded with success...
+  ...informational message">The accounts have been merged successfully...
 
 
   Hack to start a new transaction and clear caches etc.
@@ -334,7 +334,7 @@
   ##...
   ##Location: http://localhost:9000/people/no-priv
   ##...
-  ##...<div class="informational message">The merge you requested was concluded with success. Now, everything that was owned by the duplicated account should be owned by your user account.</div>...
+  ##...<div class="informational message">The accounts have been merged successfully. Everything that belonged to the duplicated account should now belong to your own account.</div>...
   ##...
 
 
