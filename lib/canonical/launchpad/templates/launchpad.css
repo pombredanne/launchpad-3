@@ -140,10 +140,9 @@ label {
   font-weight: bold;
 }
 pre {
-    border: 1px dashed #8cacbb;
-    color: Black;
-    background-color: #dee7ec;
-    overflow: auto;
+  color: black;
+  background-color: #dee7ec;
+  padding: 0.5em;
 }
 table {
   margin-left: auto;
@@ -1156,7 +1155,7 @@ dl.faq ol {
 }
 .error {background-color: #f0cccc; color: black;}
 .error.message, .error .message {
-  background-image: url(/@@/stop);
+  background-image: url(/@@/error);
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {

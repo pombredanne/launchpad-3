@@ -246,6 +246,7 @@
                                      tal:attributes="for widget_id">
                                 dapper
                               </label>
+                              <br />
                             </span>
                           </span>
                           <span tal:condition="not:widget_values">
