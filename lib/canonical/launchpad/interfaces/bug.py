@@ -82,10 +82,7 @@ class IBug(IMessageTarget):
         title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
-        description=_(
-        "Select this option if, for instance, this bug exposes a "
-        "security vulnerability. Before you set this, make sure you "
-        "have subscribed anyone who needs to see this bug."),
+        description=_("Make this bug visible only to its subscribers"),
         default=False)
     security_related = Bool(
         title=_("Security related"), required=False,
@@ -186,6 +183,8 @@ class IBugDelta(Interface):
     title = Attribute("A dict with two keys, 'old' and 'new', or None.")
     description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    security_related = Attribute(
+        "A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "

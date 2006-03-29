@@ -34,6 +34,11 @@ class FileBugView(SQLObjectAddView):
             # set the chosen distribution as the context.
             context = distribution
 
+        # Ensure that no package information is used, if the user
+        # enters a package name but then selects "I don't know".
+        if self.request.form.get("packagename_option") == "none":
+            packagename = None
+
         if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
@@ -80,6 +85,8 @@ class FileBugView(SQLObjectAddView):
         return canonical_url(task)
 
     def _setUpWidgets(self):
-        # Customize the onKeyPress event of the package name chooser.
+        # Customize the onKeyPress event of the package name chooser,
+        # so that it's corresponding radio button is selected.
         setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames)
-        self.packagename_widget.onKeyPress = "selectWidget('choose', event)"
+        if "packagename" in self.fieldNames:
+            self.packagename_widget.onKeyPress = "selectWidget('choose', event)"

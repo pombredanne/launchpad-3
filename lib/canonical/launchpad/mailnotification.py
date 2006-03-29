@@ -335,6 +335,13 @@ def generate_bug_edit_email(bug_delta):
             visibility = "Public"
         change_info += u"** Visibility changed to: %s\n" % visibility
 
+    if bug_delta.security_related is not None:
+        if bug_delta.security_related['new']:
+            change_info += u"** This bug has been flagged as a security issue\n"
+        else:
+            change_info += (
+                u"** This bug is no longer flagged as a security issue\n")
+
     if bug_delta.external_reference is not None:
         old_ext_ref = bug_delta.external_reference.get('old')
         if old_ext_ref is not None:
@@ -626,7 +633,7 @@ def get_bug_delta(old_bug, new_bug, user):
     changes = {}
 
     for field_name in ("title", "description",  "name", "private",
-                       "duplicateof"):
+                       "security_related", "duplicateof"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)

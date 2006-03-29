@@ -16,25 +16,13 @@
       tal:attributes="href string:${context/fmt:url}/+bugs">reported
       already</a>.
     </p>
-  </tal:uses_malone>
-
-  <tal:not_uses_malone tal:condition="not: context/official_malone">
-    <p class="error message">
-      <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
-    </p>
-
-    <p>
-      To report a bug about <span tal:replace="context/displayname">Alsa Utils</span>,
-      please use its official bug tracker.
-    </p>
-  </tal:not_uses_malone>
-
   <form action="." 
         tal:attributes="action request/URL" 
         method="post"
         enctype="multipart/form-data">
 
-  <div tal:condition="view/packagename_widget|nothing">
+  <div tal:condition="view/packagename_widget|nothing"
+       style="margin-top: 1em">
     <label tal:attributes="for view/packagename_widget/name">
       In what package did you find this bug?
     </label>
@@ -79,7 +67,7 @@
         <a href="#"
             tal:content="context/security_contact/displayname"
             tal:attributes="href context/security_contact/fmt:url" />,
-        will be Cc'd to this bug
+        will be subscribed to this bug
       </i>
       <i tal:condition="not:context/security_contact">
         There is no
@@ -88,7 +76,7 @@
           security contact for
           <span tal:content="context/displayname" />
         </a>
-        so no security contact will be Cc'd to this bug.
+        so no security contact will be subscribed to this bug.
       </i>
     </div>
   </div>
@@ -96,7 +84,7 @@
   <div style="margin-top: 1em">
     <span tal:content="structure view/private_widget" />
     <label tal:attributes="for view/private_widget/name">
-      This bug should only be visible to people on the Cc list
+      This bug should be visible only to its subscribers
     </label>
   </div>
 
@@ -105,6 +93,20 @@
   </div>
 
   </form>
+
+  </tal:uses_malone>
+
+  <tal:not_uses_malone tal:condition="not: context/official_malone">
+    <p class="error message">
+      <span tal:replace="context/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+    </p>
+
+    <p>
+      To report a bug about <span tal:replace="context/displayname">Alsa Utils</span>,
+      please use its official bug tracker.
+    </p>
+  </tal:not_uses_malone>
+
   </div>
 
 </html>
