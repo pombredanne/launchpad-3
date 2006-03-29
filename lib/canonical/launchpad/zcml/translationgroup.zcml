@@ -73,7 +73,7 @@
         permission="launchpad.Edit"
         content_factory="canonical.launchpad.database.Translator"
         class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
-        template="../templates/translationgroup-appoint.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="/rosetta/groups/$TranslationGroup.name/+appoint">
         <browser:widget
             field="translationgroup"
