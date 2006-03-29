@@ -71,13 +71,13 @@
         <p tal:condition="not:view/binaries">
           No binaries have been generated for this release.
         </p>
-        <ul tal:condition="view/binaries">
-          <li tal:repeat="binary view/binaries" >
+        <ul tal:define="binaries view/binaries" tal:condition="binaries">
+          <li tal:repeat="bin_name binaries">
  
-        <span tal:replace="binary" /> 
-        <span tal:repeat="archtag python:binaries[binary]">
+        <span tal:replace="bin_name" /> 
+        <span tal:repeat="archtag python:binaries[bin_name]">
           (<a tal:content="archtag" tal:attributes="href 
-                           string:../../${archtag}/${binary}" />) 
+                           string:../../${archtag}/${bin_name}" />) 
         </span>
  
           </li>
