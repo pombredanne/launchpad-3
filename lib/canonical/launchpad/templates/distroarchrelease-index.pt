@@ -10,8 +10,7 @@
       >
         <tal:distro replace="distro/displayname">Fooix</tal:distro>
         <tal:release replace="distrorelease/displayname">3.1</tal:release> for
-        <tal:arch replace="context/architecturetag">i386</tal:arch>:
-        Overview
+        <tal:arch replace="context/architecturetag">i386</tal:arch>
       </h1>
     </metal:heading>
 

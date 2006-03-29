@@ -5,7 +5,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/summary">Summary Goes Here</h1>
+      <h1 tal:content="context/title">Name of package</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
