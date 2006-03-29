@@ -9,7 +9,6 @@ __all__ = [
 import tarfile
 import os.path
 import datetime
-import magic
 from StringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
@@ -376,9 +375,10 @@ class TranslationImportQueue:
         sourcepackagename=None, distrorelease=None, productseries=None,
         potemplate=None):
         """See ITranslationImportQueue."""
-        magic_cookie = magic.open(magic.MAGIC_MIME)
-        magic_cookie.load()
-        if magic_cookie.buffer(content) == 'application/x-bzip2':
+        # We need to know if we are handling .bz2 files, we could use the
+        # python2.4-magic but it makes no sense to add that dependency just
+        # for this check as the .bz2 files start with the 'BZh' string.
+        if content.startswith('BZh'):
             # Workaround for the bug #1982. Python's bz2 support is not able
             # to handle external file objects.
             tarball = tarfile.open('', 'r|bz2', StringIO(content))
