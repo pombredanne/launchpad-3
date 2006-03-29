@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import md5
 import sha
 import urllib
 import urllib2
@@ -113,7 +114,8 @@ class FileUploadClient:
             self._sendLine('')
             
             # Prepare to the upload the file
-            digester = sha.sha()
+            shaDigester = sha.sha()
+            md5Digester = md5.md5()
             bytesWritten = 0
 
             # Read in and upload the file 64kb at a time, by using the two-arg
@@ -122,7 +124,8 @@ class FileUploadClient:
             for chunk in iter(lambda: file.read(1024*64), ''):
                 self.f.write(chunk)
                 bytesWritten += len(chunk)
-                digester.update(chunk)
+                shaDigester.update(chunk)
+                md5Digester.update(chunk)
             
             assert bytesWritten == size, (
                 'size is %d, but %d were read from the file' 
@@ -136,7 +139,8 @@ class FileUploadClient:
 
             # Add rows to DB
             LibraryFileContent(id=contentID, filesize=size,
-                            sha1=digester.hexdigest())
+                            sha1=shaDigester.hexdigest(),
+                            md5=md5Digester.hexdigest())
             LibraryFileAlias(id=aliasID, contentID=contentID, filename=name,
                             mimetype=contentType, expires=expires)
 

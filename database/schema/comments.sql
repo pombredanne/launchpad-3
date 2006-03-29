@@ -3,6 +3,11 @@
   table.
 */
 
+/* Branch */
+
+COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+
 /* Bug */
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
@@ -47,6 +52,16 @@ the remote bug watch.';
 COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related content for bugs.';
 COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
 COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
+
+
+-- BugNotification
+
+COMMENT ON TABLE BugNotification IS 'The text representation of changes to a bug, which are used to send email notifications to bug changes.';
+COMMENT ON COLUMN BugNotification.bug IS 'The bug that was changed.';
+COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textual representation of the change.';
+COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
+COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
+
 
 /* BugPackageInfestation */
 
@@ -902,6 +917,7 @@ COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this libr
 COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file\'s contents';
+COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file\'s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 
 -- LibraryFileAlias

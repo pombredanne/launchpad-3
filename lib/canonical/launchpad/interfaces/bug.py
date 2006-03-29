@@ -136,6 +136,12 @@ class IBug(IMessageTarget):
         addresses.
         """
 
+    def addChangeNotification(text, person):
+        """Add a bug change notification."""
+
+    def addCommentNotification(message):
+        """Add a bug comment notification."""
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
@@ -171,11 +177,10 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
-    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
-    title = Attribute("The new bug title or None.")
-    description = Attribute("The new bug description or None.")
+    title = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
