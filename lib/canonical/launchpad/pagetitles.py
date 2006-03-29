@@ -472,7 +472,7 @@ person_branch_add = ContextDisplayName('Register a new branch for %s')
 
 person_changepassword = 'Change your password'
 
-person_codesofconduct = ContextDisplayName('%s Signed codes of conduct')
+person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
 person_edit = ContextDisplayName(smartquote("%s's details"))
 
