@@ -449,6 +449,7 @@ These packages must now be in the publishing history. Let's check it.
   >>> from canonical.launchpad.database import (
   ...    SecureSourcePackagePublishingHistory as SSPPH)
   >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> package_names.sort()
   >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
@@ -457,8 +458,9 @@ These packages must now be in the publishing history. Let's check it.
   ...         print name, sspph.status.title
   ...     else:
   ...         print name, 'not Published'
-  etherwake Pending
   drdsl not Published
+  etherwake Pending
+
 
 Invoke Publisher script against the 'ubuntutest' distribution:
 
