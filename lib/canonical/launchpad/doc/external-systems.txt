@@ -167,3 +167,4 @@ bug tracker, an error is logged.
     ...     lambda self, data: '<invalid xml>')
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
     ERROR:...:Failed to parse XML description...
+
