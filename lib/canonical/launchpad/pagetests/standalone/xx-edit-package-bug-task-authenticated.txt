@@ -126,6 +126,7 @@ Any authenticated user can edit a source package bug task.
   HTTP/1.1 303 See Other
   ...
   Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
+  ...
   <BLANKLINE>
 
   >>> print http(r"""
