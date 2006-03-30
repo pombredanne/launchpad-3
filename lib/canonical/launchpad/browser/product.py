@@ -209,16 +209,16 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'editbugcontact']
+    links = ['filebug', 'bugcontact']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
-    def editbugcontact(self):
+    def bugcontact(self):
         text = 'Change Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
+        return Link('+bugcontact', text, icon='edit')
 
 
 class ProductSupportMenu(ApplicationMenu):

@@ -1,9 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div><a href="../../+allmirrors">Distribution mirrors</a>:</div>
+      <h1 tal:content="context/title">name</h1>
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -11,9 +15,6 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
-    <h1><span tal:replace="context/title">TITLE</span>:
-      Distribution Mirror Overview</h1>
 
     <tal:comment condition="nothing">
       XXX: This use of "python:" here is to workaround
@@ -63,9 +64,9 @@
       </tal:has-last-probe>
     </tal:last-probe>
 
-    <h2>Arch Releases Mirrored</h2>
+    <h2>Architecture releases mirrored</h2>
     <div tal:condition="not: context/arch_releases">
-      This mirror has no registered Arch Releases.
+      This mirror has no registered architecture releases.
     </div>
 
     <table tal:condition="context/arch_releases" class="listing">
@@ -89,9 +90,9 @@
     </tbody>
     </table>
 
-    <h2>Source Releases Mirrored</h2>
+    <h2>Source releases mirrored</h2>
     <div tal:condition="not: context/source_releases">
-      This mirror has no registered Source Releases.
+      This mirror has no registered source releases.
     </div>
 
     <table tal:condition="context/source_releases" class="listing">

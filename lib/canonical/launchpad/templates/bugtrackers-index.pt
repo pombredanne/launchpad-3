@@ -1,8 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
-<body>
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Bug trackers registered in Malone</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-info" />
@@ -10,16 +14,11 @@
 
 <div metal:fill-slot="main">
 
-  <p class="documentDescription">
-    This page lists the bug tracking systems that have been registered with
-    The Launchpad.
-  </p>
-  
-  <p>
-    Registering a bug tracker allows you to link Malone bugs with
-    the upstream bug, so that bug assignees will get a notification when the
-    upstream bug changes state.
-  </p>
+      <p>
+        Registering a bug tracker lets you link Malone bug reports with reports
+        in that bug tracker, so that assignees in Malone will be notified
+        when the upstream bug report changes state.
+      </p>
 
   <table class="sortable listing" id="trackers">
     <thead>

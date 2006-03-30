@@ -12,10 +12,8 @@
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
     <link rel="shortcut icon" href="/@@/launchpad_favicon.png" />
-
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-
   <body>
     <table class="header" style="width: 100%;">
       <tr>
@@ -39,6 +37,10 @@
     <div class="body">
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
       <tal:layout condition="columns1|nothing">
+        <div class="pageheading">
+          <metal:block define-slot="pageheading">
+          </metal:block>
+        </div>
         <tal:notifications
           define="notifications request/notifications"
           condition="notifications"
@@ -52,12 +54,10 @@
       <tal:layout condition="not: columns1|nothing">
         <div id="portal-columns">
           <div id="portal-column-content">
-            <h2 class="lpcontext">
-              <metal:block
-                define-slot="titleheader"
-                tal:content="context/title | default"
-              >Launchpad</metal:block>
-            </h2>    
+            <div class="pageheading">
+              <metal:block define-slot="pageheading">
+              </metal:block>
+            </div>
             <div id="region-content">
               <tal:block
                 define="notifications request/notifications"

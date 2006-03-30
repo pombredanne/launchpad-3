@@ -37,12 +37,10 @@
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
         <div id="portal-columns">
           <div id="layout2col-main">
-            <h2 class="lpcontext">
-              <metal:block
-                define-slot="titleheader"
-                tal:content="context/title | default"
-              >Launchpad</metal:block>
-            </h2>    
+            <div class="pageheading">
+              <metal:block define-slot="pageheading">
+              </metal:block>
+            </div>
             <div id="region-content">
               <tal:block
                 define="notifications request/notifications"
