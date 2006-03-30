@@ -208,10 +208,13 @@ class AssigneeDisplayWidget(BrowserWidget):
 
     implements(IDisplayWidget)
 
+    def __init__(self, context, vocabulary, request):
+        super(AssigneeDisplayWidget, self).__init__(context, request)
+
     def __call__(self):
         assignee_field = self.context
         bugtask = assignee_field.context
-        if self._renderedValueSet(): 
+        if self._renderedValueSet():
             assignee = self._data
         else:
             assignee = assignee_field.get(bugtask)
@@ -232,6 +235,9 @@ class DBItemDisplayWidget(BrowserWidget):
     """A widget for displaying a bugtask dbitem."""
 
     implements(IDisplayWidget)
+
+    def __init__(self, context, vocabulary, request):
+        super(DBItemDisplayWidget, self).__init__(context, request)
 
     def __call__(self):
         dbitem_field = self.context

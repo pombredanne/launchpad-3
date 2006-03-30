@@ -24,7 +24,7 @@ First, we need to feed the import queue.
   ... 
   ... Request Upload
   ... -----------------------------428463014358220843450431786--
-  ... """ % tarball.read())
+  ... """ % tarball.read(), handle_errors=False)
   HTTP/1.1 200 Ok
   ...Thank you for your upload. 2 files from the tarball will be reviewed...
 

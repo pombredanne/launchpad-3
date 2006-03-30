@@ -24,7 +24,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 class FunctionalLayer:
     def setUp(cls):
-        FunctionalTestSetup()
+        FunctionalTestSetup().setUp()
     setUp = classmethod(setUp)
 
     def tearDown(cls):
@@ -52,7 +52,7 @@ class PageTestLayer:
     change this and save a few seconds on a full test suite run.
     '''
     def setUp(cls):
-        FunctionalTestSetup()
+        FunctionalTestSetup().setUp()
     setUp = classmethod(setUp)
 
     def tearDown(cls):
@@ -83,11 +83,9 @@ class FunctionalTestCase(unittest.TestCase):
     def setUp(self):
         """Prepares for a functional test case."""
         super(FunctionalTestCase, self).setUp()
-        FunctionalTestSetup().setUp()
 
     def tearDown(self):
         """Cleans up after a functional test case."""
-        FunctionalTestSetup().tearDown()
         super(FunctionalTestCase, self).tearDown()
 
     def getRootFolder(self):
@@ -198,6 +196,8 @@ def FunctionalDocFileSuite(*paths, **kw):
             log.setLoggerLevel(stdout_logging_level)
             log.install()
             test.globs['log'] = log
+            # Store here as well in case test overwrites 'log' global
+            test.globs['_functional_log'] = log
     kw['setUp'] = setUp
 
     kwtearDown = kw.get('tearDown')
@@ -205,7 +205,7 @@ def FunctionalDocFileSuite(*paths, **kw):
         if kwtearDown is not None:
             kwtearDown(test)
         if stdout_logging:
-            test.globs['log'].uninstall()
+            test.globs['_functional_log'].uninstall()
     kw['tearDown'] = tearDown
 
     suite = zope.app.testing.functional.FunctionalDocFileSuite(*paths, **kw)

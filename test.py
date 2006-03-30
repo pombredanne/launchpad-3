@@ -70,6 +70,9 @@ warnings.filterwarnings(
         'ignore', 'The concrete concept of a view has been deprecated.',
         DeprecationWarning
         )
+warnings.filterwarnings(
+        'ignore', 'bzrlib.*was deprecated', DeprecationWarning
+        )
 
 # This warning will be triggered if the beforeTraversal hook fails. We
 # want to ensure it is not raised as an error, as this will mask the real

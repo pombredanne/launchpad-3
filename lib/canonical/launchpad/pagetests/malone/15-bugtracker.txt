@@ -63,7 +63,7 @@ get a nice error message.
   ... """)
   HTTP/1.1 200 Ok 
   ...
-          <p class="portalMessage">An error occurred.</p>
+          <p class="error message">An error occurred.</p>
   ...
   Invalid name 'TesTTrac'. Names must start with a letter or
   ...
@@ -164,9 +164,9 @@ a nice error message.
   ... """)
   HTTP/1.1 200 Ok
   ...
-  <p class="portalMessage">An error occurred.</p>
+  <p class="error message">An error occurred.</p>
   ...
-  <span class="error">testtrac is already in use by another bugtracker.</span>
+  <div class="message">testtrac is already in use by another bugtracker.</div>
   ...
 
 

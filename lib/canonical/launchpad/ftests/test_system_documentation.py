@@ -172,7 +172,7 @@ special = {
             stdout_logging_level=logging.WARNING
             ),
     'branch-status-client.txt': FunctionalDocFileSuite(
-            '../doc/branch-status-client.txt',
+            'launchpad/doc/branch-status-client.txt',
             setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
     'translationimportqueue.txt': FunctionalDocFileSuite(
             'launchpad/doc/translationimportqueue.txt',

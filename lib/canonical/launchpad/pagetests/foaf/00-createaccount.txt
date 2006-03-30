@@ -134,10 +134,10 @@
   ... """ % path)
   HTTP/1.1 200 Ok
   ...
-          <p class="portalMessage">An error occurred.</p>
+          <p class="error message">An error occurred.</p>
   <BLANKLINE>
   <BLANKLINE>
-          <div class="portalError">The email address foobarino@baz.com.br is already registered.</div>
+          <div class="error message">The email address foobarino@baz.com.br is already registered.</div>
   ...
 
 
@@ -193,8 +193,7 @@
 
 
   Fill in invalid information to create the new account and submit it.
-  Here we are testing that password validation is fine and display name is
-  required.
+  Here we are testing that display name is required.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -202,6 +201,35 @@
   ... 
   ... -----------------------------17483551342125833225531652773
   ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.password"
+  ... foo
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.password_dupe"
+  ... foo
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------17483551342125833225531652773--
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  ...
+  ...Required input is missing....
+  ...
+
+  Here we are testing that password validation is fine.
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Content-Type: multipart/form-data; boundary=---------------------------17483551342125833225531652773
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... foo
   ... 
   ... -----------------------------17483551342125833225531652773
   ... Content-Disposition: form-data; name="field.password"
@@ -220,8 +248,7 @@
   ...
   ...Required input is missing....
   ...
-  ...Passwords do not match....
-  ...
+
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -295,14 +322,13 @@
   If you are comming from shipit to create a new account, you'll get
   redirected back to shipit after you finish the account creation.
 
-  >>> http.resetCookies()
   >>> print http(r"""
   ... GET /+login HTTP/1.1
   ... Referer: https://shipit.ubuntu.com
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Log in or register with Launchpad</title>
+  ...Log in or register with Launchpad...
   ...<input type="hidden" name="redirection_url"...
   ...value="https://shipit.ubuntu.com"...
   ...
