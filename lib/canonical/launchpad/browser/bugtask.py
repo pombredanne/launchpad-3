@@ -769,7 +769,7 @@ class BugTaskSearchListingView(LaunchpadView):
         elif distribution_context or distrorelease_context:
             return ["id", "summary", "packagename", "importance", "status"]
         elif project_context:
-            return ["id", "summary", "targetname", "importance", "status"]
+            return ["id", "summary", "productname", "importance", "status"]
 
     def initialize(self):
         if self._personContext():
