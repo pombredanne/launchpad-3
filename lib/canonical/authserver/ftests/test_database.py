@@ -185,20 +185,22 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(self.cursor, 12, 6, 'foo')
-        # assert branchID now appears in database
+        # Assert branchID now appears in database.  Note that title and summary
+        # should be NULL, and author should be set to the owner.
         self.cursor.execute("""
-            SELECT owner, product, name FROM Branch
+            SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((12, 6, 'foo'), self.cursor.fetchone())
+        self.assertEqual((12, 6, 'foo', None, None, 12), self.cursor.fetchone())
 
         # Create a branch with NULL product too:
         branchID = storage._createBranchInteraction(self.cursor, 1, None, 'foo')
         self.cursor.execute("""
-            SELECT owner, product, name FROM Branch
+            SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((1, None, 'foo'), self.cursor.fetchone())
+        self.assertEqual((1, None, 'foo', None, None, 1), 
+                         self.cursor.fetchone())
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
