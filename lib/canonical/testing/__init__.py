@@ -28,6 +28,12 @@ def reset_logging():
     for handler in root.handlers:
         root.removeHandler(handler)
 
+    # Clean out the guts of the logging module. We don't want handlers that
+    # have already been closed hanging around for the atexit handler to barf
+    # on, for example.
+    del logging._handlerList[:]
+    logging._handlers.clear()
+
     # Reset the setup
     import zope.testing.testrunner
     zope.testing.testrunner.configure_logging()
