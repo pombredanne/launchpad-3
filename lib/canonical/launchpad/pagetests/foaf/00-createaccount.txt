@@ -137,7 +137,7 @@
           <p class="error message">An error occurred.</p>
   <BLANKLINE>
   <BLANKLINE>
-          <div class="error message">The email address foobarino@baz.com.br is already registered.</div>
+          <p class="error message">The email address foobarino@baz.com.br is already registered.</p>
   ...
 
 

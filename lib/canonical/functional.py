@@ -20,6 +20,7 @@ import canonical.launchpad.layers
 from canonical.chunkydiff import elided_source
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.testing import reset_logging
 
 
 class FunctionalLayer:
@@ -28,6 +29,7 @@ class FunctionalLayer:
     setUp = classmethod(setUp)
 
     def tearDown(cls):
+        reset_logging()
         raise NotImplementedError
     tearDown = classmethod(tearDown)
 
@@ -37,6 +39,7 @@ class  ZopelessLayer:
     setUp = classmethod(setUp)
 
     def tearDown(cls):
+        reset_logging()
         raise NotImplementedError
     tearDown = classmethod(tearDown)
 
@@ -56,6 +59,7 @@ class PageTestLayer:
     setUp = classmethod(setUp)
 
     def tearDown(cls):
+        reset_logging()
         raise NotImplementedError('tearDown not supported to enforce isolation')
     tearDown = classmethod(tearDown)
 
@@ -70,6 +74,7 @@ class SystemDoctestLayer:
     setUp = classmethod(setUp)
 
     def tearDown(cls):
+        reset_logging()
         raise NotImplementedError('tearDown not supported to enforce isolation')
     tearDown = classmethod(tearDown)
 

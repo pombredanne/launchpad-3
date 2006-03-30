@@ -18,6 +18,7 @@ First, we need to feed the import queue.
   ... -----------------------------428463014358220843450431786
   ... Content-Disposition: form-data; name="file"; filename="test-autofilling.tar.gz"
   ... Content-Type: application/x-gzip
+  ... 
   ... %s
   ... -----------------------------428463014358220843450431786
   ... Content-Disposition: form-data; name="translations_upload"
