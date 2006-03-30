@@ -32,6 +32,7 @@ class TestDatabaseSetup(LaunchpadTestCase):
         self.connection.close()
         super(TestDatabaseSetup, self).tearDown()
 
+
 class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_verifyInterface(self):
@@ -157,30 +158,48 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual('', productID)
 
     def test_getBranchesForUser(self):
+        # Although user 12 has lots of branches in the sample data, they only
+        # have one push branch: a branch named "pushed" on the "gnome-terminal"
+        # product.
         storage = DatabaseUserDetailsStorageV2(None)
         branches = storage._getBranchesForUserInteraction(self.cursor, 12)
-        gnomeTermProduct, junkProduct = branches
+        self.assertEqual(1, len(branches))
+        gnomeTermProduct = branches[0]
+        gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
+        self.assertEqual(6, gnomeTermID)
+        self.assertEqual('gnome-terminal', gnomeTermName)
+        self.assertEqual([(25, 'pushed')], gnomeTermBranches)
+
+    def test_getBranchesForUserNullProduct(self):
+        # getBranchesForUser returns branches for hosted branches with no
+        # product.
+
+        # First, insert a push branch (url is NULL) with a NULL product.
+        self.cursor.execute("""
+            INSERT INTO Branch 
+                (owner, product, name, title, summary, author, url)
+            VALUES 
+                (12, NULL, 'foo-branch', NULL, NULL, 12, NULL)
+            """)
+
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchInfo = storage._getBranchesForUserInteraction(self.cursor, 12)
+        self.assertEqual(2, len(branchInfo))
+
+        gnomeTermProduct, junkProduct = branchInfo
         # Results could come back in either order, so swap if necessary.
         if gnomeTermProduct[0] is None:
             gnomeTermProduct, junkProduct = junkProduct, gnomeTermProduct
         
-        # Check that the details and branches for the junk product are correct
+        # Check that the details and branches for the junk product are correct:
+        # empty ID and name for the product, with a single branch named
+        # 'foo-branch'.
         junkID, junkName, junkBranches = junkProduct
         self.assertEqual('', junkID)
         self.assertEqual('', junkName)
-        self.assertEqual(
-            [(20, 'junk.dev'), (21, 'junk.contrib')],
-            sorted(junkBranches))
-
-        # Check that the details and branches for gnome-terminal are correct
-        gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
-        self.assertEqual(6, gnomeTermID)
-        self.assertEqual('gnome-terminal', gnomeTermName)
-        self.assertEqual(
-            [(15, 'main'), (16, '2.6'), (17, '2.4'), (18, 'klingon'), 
-             (19, 'slowness'), (25, 'pushed')],
-            sorted(gnomeTermBranches)
-        )
+        self.assertEqual(1, len(junkBranches))
+        fooBranchID, fooBranchName = junkBranches[0]
+        self.assertEqual('foo-branch', fooBranchName)
     
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
@@ -201,6 +220,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
             % branchID)
         self.assertEqual((1, None, 'foo', None, None, 1), 
                          self.cursor.fetchone())
+        
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
@@ -614,9 +634,5 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(DatabaseStorageTestCase))
-    suite.addTest(unittest.makeSuite(ExtraUserDatabaseStorageTestCase))
-    suite.addTest(unittest.makeSuite(BranchDetailsDatabaseStorageTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
 
