@@ -154,7 +154,7 @@
                   <legend>Import status</legend>
 
                   <p>The current import status is:
-                    <b tal:content="context/importstatus"/>.
+                    <b tal:content="context/importstatus/title"/>.
                   </p>
 
                   <div tal:condition="context/autoTestFailed">
