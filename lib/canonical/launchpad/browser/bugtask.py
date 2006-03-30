@@ -701,7 +701,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS', 'NEEDSINFO']
+    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS', 'NEEDSINFO', 'FIXCOMMITTED']
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': dbschema.BugTaskStatus.REJECTED}, IBugTaskSearch)
