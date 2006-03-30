@@ -143,9 +143,8 @@ def get_email_notifications(bug_notifications, date_emailed=None):
                 notification.date_emailed = date_emailed
             if notification.is_comment and has_comment:
                 yield construct_email_notification(notifications_to_send)
-                has_comment = False
                 notifications_to_send = []
-            elif notification.is_comment:
+            if notification.is_comment:
                 has_comment = True
             notifications_to_send.append(notification)
         if notifications_to_send:
