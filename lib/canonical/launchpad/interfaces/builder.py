@@ -73,9 +73,8 @@ class IBuilder(IHasOwner):
                    )
 
     manual = Bool(title=_('Manual Mode'), required=False,
-                   description=_('Whether not the builder is MANUAL MODE. '
-                                 'Auto Build System does not dispach jobs '
-                                 'automatically for slaves in that state')
+                   description=_('The auto-build system does not dispatch jobs '
+                                 'automatically for slaves in manual mode.')
                    )
 
     builderok = Bool(title=_('Builder State OK'), required=False,
