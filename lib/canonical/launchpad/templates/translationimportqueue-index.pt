@@ -1,20 +1,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Translation files waiting to be imported</h1>
+    </metal:heading>
 
 <div metal:fill-slot="main">
 
-  <h1>Translation files pending to be imported</h1>
-
   <tal:block condition="view/has_entries">
-    <div class="documentDescription">
-      <tal:loggedin condition="not:request/lp:person">
-      <a href="+login">Log in</a> if you would like to change items in this
-      list.</tal:loggedin>
-    </div>
+    <p tal:condition="not:request/lp:person">
+      <a href="+login">Log in</a> to change items in this list.
+    </p>
 
     <!-- Filtering options. -->
     <div>
@@ -142,12 +141,9 @@
     </tal:block>
   </tal:block>
 
-  <tal:block condition="not:view/has_entries">
-    <div class="documentDescription">
-      There are no pending files to be imported into Rosetta.
+      <p tal:condition="not:view/has_entries">
+        There are no files waiting to be imported into Rosetta.
+      </p>
     </div>
-  </tal:block>
-</div>
-
-</body>
+  </body>
 </html>

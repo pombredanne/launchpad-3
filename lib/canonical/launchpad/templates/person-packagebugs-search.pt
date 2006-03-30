@@ -1,18 +1,20 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1 tal:content="string:${context/displayname}'s bug reports by package">
+        Foo Bar's bug reports by package
+      </h1>
+    </metal:heading>
 
-<body>
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:content="structure context/@@+portlet-otherpackages" />
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-      <h2 class="lpcontext"
-          tal:content="string:${context/displayname}'s package bug reports">
-        Sample Person package bug reports
-      </h2>
       <strong>
         <small tal:content="view/current_package/displayname">
           mozilla-firefox (Ubuntu)
@@ -22,10 +24,10 @@
         <form method="GET" name="search" action="">
           <tal:widget content="structure view/distribution_widget/hidden" />
           <tal:widget content="structure view/sourcepackagename_widget/hidden" />
-          <input type="text" name="field.searchtext" size="40"
+          <input type="text" name="field.searchtext" size="20"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
-          <span style="color: #A8A8A8"><small>(Advanced search coming soon)</small></span>
+          <span class="discreet">(Advanced search coming soon)</span>
           <div style="margin-top: 5px">
             <small>
               Sort by:
@@ -38,7 +40,6 @@
               document.forms["search"].elements['field.searchtext'].focus();
             -->
         </script>
-        <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
     </div>
     <div class="visualClear">&nbsp;</div>

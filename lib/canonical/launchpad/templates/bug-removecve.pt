@@ -3,9 +3,18 @@
   xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-
-<body>
+  i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/fmt:url"
+        >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
+        <tal:title replace="context/title">Something doesn't work</tal:title>
+      </div>
+      <h1>Remove link to <abbr>CVE</abbr> report</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -16,11 +25,11 @@
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
+    <p metal:fill-slot="extra_info">
       Are you sure you want to remove the link between
       <span tal:replace="context/displayname">Bug #123</span> and the
-      CVE entry?
-    </div>
+      <abbr>CVE</abbr> entry?
+    </p>
 
   </div>
 
