@@ -4,9 +4,11 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad"
 >
-
-<body>
-
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Bounties registered in Launchpad</h1>
+    </metal:heading>
+    
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-about" />
   <div tal:replace="structure context/@@+portlet-details" />
@@ -14,7 +16,7 @@
 
 <div metal:fill-slot="main">
 
-  <p class="documentDescription">
+    <p>
     In Launchpad, a bounty is an offer of payment
     for development work.
     <tal:block condition="request/lp:person">
@@ -26,7 +28,7 @@
       and you&#8217;ll be able to register bounties,
       or sign up for bounties offered by other people.
     </tal:block>
-  </p>
+    </p>
 
   <table class="listing sortable" width="100%" id="bountylist">
     <thead>

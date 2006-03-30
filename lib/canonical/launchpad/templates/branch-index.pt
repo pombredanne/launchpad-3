@@ -1,13 +1,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<metal:main_template fill-slot="titleheader">
-   <tal:display_name replace="context/displayname" />
-</metal:main_template>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>
+        &ldquo;<tal:branch replace="context/displayname">Name</tal:branch>&rdquo;
+        branch
+      </h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -32,7 +34,7 @@
            should be changed when bug #5313 is fixed to comply with DNRY.
            -- DavidAllouche 2005-12-02 -->
     </tal:comment>
-    <img src="/++resource++edit.gif" />
+    <img src="/@@/edit.gif" />
     <a tal:attributes="href view/edit_link_url">Edit branch details</a>.
     This branch has no summary. 
   </p>

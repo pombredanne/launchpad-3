@@ -1,9 +1,12 @@
 v<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Cancel job</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -11,8 +14,6 @@ v<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
 
   <div metal:fill-slot="main" tal:define="job context/currentjob">
 
-    <h1>Cancel <span tal:replace="context/title"/></h1>
- 
     <div tal:condition="job">
 
     <p
@@ -22,7 +23,10 @@ v<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       class="informational message" 
     />
 
-    <p><dfn tal:content="context/title">BUILDER</dfn> is processing:</p>
+      <p>
+        <tal:builder replace="context/title">BUILDER</tal:builder>
+        is processing:
+      </p>
 
     <table class="listing rowNavigation" width="100%">
       <thead>

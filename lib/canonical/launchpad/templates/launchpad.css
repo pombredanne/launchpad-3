@@ -77,6 +77,11 @@ thead th, tr.thead th {
 
 /* === Global Launchpad design: === */
 
+.debug {
+  background: none;
+  color: #f09;
+}
+
 body {
   background-color: #fcfcfc;
   color: black;
@@ -118,15 +123,11 @@ h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
 h1 {
   font-size: 1.6em;
   margin-bottom: 0.5em;
+  padding-top: 0;
 }
 h2 {
   font-size: 1.25em;
   margin: 0.5em 0;
-}
-h2.lpcontext {
-  font-size: 1.5em;
-  margin-top: 0;
-  padding-top: 0;
 }
 h3, h4, h5, h6 {
   font-size: 1em;
@@ -322,6 +323,9 @@ input[type="radio"] {
 .header td, .footer {
   font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   padding: 0.25em 1em;
+}
+.header td {
+  padding-bottom: 0;
 }
 .header {
   font-size: 0.875em;
@@ -1155,7 +1159,7 @@ dl.faq ol {
 }
 .error {background-color: #f0cccc; color: black;}
 .error.message, .error .message {
-  background-image: url(/@@/stop);
+  background-image: url(/@@/error);
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {

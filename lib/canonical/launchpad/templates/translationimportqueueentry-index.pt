@@ -23,8 +23,7 @@
         metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
     <p metal:fill-slot="extra_info">
-      Select the PO file or template to which this
-      translation import queue entry should be attached.
+      Select the PO file or PO template this entry should be attached to.
     </p>
 
   </div>

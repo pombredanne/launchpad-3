@@ -1,9 +1,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>
+        <tal:distro replace="context/displayname">TITLE</tal:distro>
+        distribution overview
+      </h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -23,16 +29,13 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:replace="context/title">TITLE</span>:
-    Distribution overview</h1>
-
   <p class="documentDescription" tal:content="context/summary">
       Distribution Summary
   </p>
 
-  <tal:description replace="structure context/description/fmt:text-to-html">
-    Distribution description
-  </tal:description>
+      <tal:description replace="structure context/description/fmt:text-to-html">
+        Distribution description
+      </tal:description>
 
   <h2>Source packages in <span tal:replace="context/title"/></h2>
 
@@ -46,12 +49,6 @@
     <input type="submit" value="Search"/>
 
   </form>
-
-  <p class="discreet">
-    Search for a software package in this distribution using the form above.
-    You will be shown a list of matching source packages, and can explore
-    the archive from there.
-  </p>
 
 </div>
 

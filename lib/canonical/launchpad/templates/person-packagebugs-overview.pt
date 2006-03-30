@@ -1,15 +1,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Package bugs</h1>
+    </metal:heading>
 
-<body>
-
-  <div metal:fill-slot="main">
-    <p>
-      <tal:name content="context/displayname">Sample Person</tal:name>
-      is a bug contact for these packages:
-    </p>
+    <div metal:fill-slot="main">
+      <p>
+        <tal:person content="context/displayname">Sample Person</tal:person>
+        is a bug contact for these packages.
+      </p>
     <table class="listing">
       <thead>
       <tr>

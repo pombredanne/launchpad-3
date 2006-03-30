@@ -5,8 +5,10 @@
   i18n:domain="rosetta"
 >
   <body>
-    <div metal:fill-slot="main">
+    <metal:heading fill-slot="pageheading">
       <h1>Rosetta translation groups</h1>
+    </metal:heading>
+    <div metal:fill-slot="main">
       <p>
         A <dfn>translation group</dfn> is a set of teams
         chosen by the owner of a distribution, project, or product
@@ -56,12 +58,9 @@
             <td tal:content="python:group.datecreated.strftime('%d %b %y')">
               date
             </td>
-        </tr>
-      </tbody>
-    </table>
-
-  </div>
-
-</body>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
 </html>
-
