@@ -332,6 +332,13 @@
             required="yes" />
         <key name="buglist_batch_size" datatype="integer"
             required="no" default="20" />
+        <key name="bugnotification_dbuser"
+             datatype="string" required="no" default="bugnotification">
+            <description>
+                The database user wich will be used to send bug
+                notifications.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="poimport">
