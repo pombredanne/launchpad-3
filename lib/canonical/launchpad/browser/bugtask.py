@@ -29,7 +29,7 @@ from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
 from zope.app.form.utility import (
-    setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -43,11 +43,11 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IBugSet, IProduct, IProject, IDistribution,
     IDistroRelease, IBugTask, IBugTaskSet, IDistroReleaseSet,
     ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
-    IUpstreamBugTask, IDistroBugTask, IComponent,
-    IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
-    IBugExternalRefSet, IBugWatchSet, NotFoundError,
-    IDistributionSourcePackage, ISourcePackage, IPersonBugTaskSearch,
-    UNRESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
+    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
+    NotFoundError, IDistributionSourcePackage, ISourcePackage,
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
+    valid_distrotask, valid_upstreamtask,
     BugDistroReleaseTargetDetails, IRemoteBugTask)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
