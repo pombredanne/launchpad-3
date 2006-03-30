@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -16,11 +16,11 @@
     <table class="listing">
       <thead>
       <tr>
-        <th>Package</th>
-        <th>Open</th>
-        <th>Critical</th>
-        <th>Unassigned</th>
-        <th>In Progress</th>
+        <th class="amount" width="40%">Package</th>
+        <th class="amount" width="15%">Open</th>
+        <th class="amount" width="15%">Critical</th>
+        <th class="amount" width="15%">Unassigned</th>
+        <th class="amount" width="15%">In&nbsp;Progress</th>
       </tr>
       </thead>
       <tbody>
@@ -32,22 +32,22 @@
             mozilla-firefox (Ubuntu)
           </a>
         </td>
-        <td class="bugcount">
+        <td class="amount">
           <a href="#"
              tal:attributes="href package_bug_counts/open_bugs_url"
              tal:content="package_bug_counts/open_bugs_count">2</a>
         </td>
-        <td class="bugcount">
+        <td class="amount">
           <a href="#"
              tal:attributes="href package_bug_counts/critical_bugs_url"
              tal:content="package_bug_counts/critical_bugs_count">2</a>
         </td>
-        <td class="bugcount">
+        <td class="amount">
           <a href="#"
              tal:attributes="href package_bug_counts/unassigned_bugs_url"
              tal:content="package_bug_counts/unassigned_bugs_count">2</a>
         </td>
-        <td class="bugcount">
+        <td class="amount">
           <a href="#"
              tal:attributes="href package_bug_counts/inprogress_bugs_url"
              tal:content="package_bug_counts/inprogress_bugs_count">2</a>

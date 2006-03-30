@@ -55,10 +55,9 @@
               </metal:main>
             </div>
           </div>
-          <div id="layout2col-portlets" metal:define-slot="column_two">
+          <div id="layout2col-portlets">
             <div tal:replace="structure context/@@+sitemap" />
-            <metal:macro define-macro="action-menu">
-              <tal:notlogin condition="python: '+login' not in request.getURL()">
+            <tal:notlogin condition="python: '+login' not in request.getURL()">
                 <ul
                   tal:define="facetmenu CONTEXTS/menu:facet"
                   tal:condition="facetmenu"
@@ -104,8 +103,7 @@
                     />
                   </tal:facet>
                 </ul>
-              </tal:notlogin>
-            </metal:macro>
+            </tal:notlogin>
             <metal:portlets define-slot="portlets_two">
             </metal:portlets>
             <metal:portlets define-slot="portlets_one">

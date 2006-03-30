@@ -25,6 +25,16 @@
     English.
   </p>
 
+      <h2>How do I get my software translated in Rosetta?</h2>
+      <p>
+        Rosetta can let people translate any open-source software that uses the
+        <a href="http://www.gnu.org/software/gettext/"><abbr>GNU</abbr> gettext</a>
+        system for internationalization.
+        For more information, see the
+        <a href="https://wiki.launchpad.canonical.com/RosettaNewImportPolicy">import
+        policy</a>.
+      </p>
+
   <h2>Join the Rosetta community</h2>
 
   <p>
@@ -34,20 +44,11 @@
     issues.
   </p>
 
-  <h2>Learn how to work with Rosetta</h2>
-
-  <p>
-    If you want more info about Rosetta or how to do something with it, please
-    take a look to the <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta
-    FAQ guide</a>.
-  </p>
-
-  <p>
-    You can also find some other useful information about Rosetta taking a
-    look to its main <a href="https://wiki.ubuntu.com/Rosetta">Wiki page</a>
-  </p>
-
-</div>
-
-</body>
+      <h2>More about Rosetta</h2>
+      <ul>
+        <li><a href="https://wiki.ubuntu.com/RosettaFAQ">The Rosetta FAQ</a></li>
+        <li><a href="https://wiki.ubuntu.com/Rosetta">Main Rosetta Wiki page</a></li>
+      </ul>
+    </div>
+  </body>
 </html>

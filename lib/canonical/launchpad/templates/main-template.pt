@@ -33,7 +33,6 @@
         />
       </tr>
     </table>
-
     <div class="body">
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
       <tal:layout condition="columns1|nothing">
@@ -73,17 +72,19 @@
             </div>
     </div>
     <!-- start of right (by default at least) column -->
-    <div
-      id="portal-column-two"
-      metal:define-slot="column_two"
-    >
-      <metal:macro define-macro="action-menu">
-        <tal:notlogin condition="python: '+login' not in request.getURL()">
+    <div id="portal-column-two">
+      <metal:portlets define-slot="portlets_two">
+      </metal:portlets>
+    </div>
+    <!-- start of the left (by default at least) column -->
+    <div id="portal-column-one">
+      <div tal:replace="structure context/@@+sitemap" />
+      <tal:notlogin condition="python: '+login' not in request.getURL()">
           <ul
              tal:define="facetmenu CONTEXTS/menu:facet"
              tal:condition="facetmenu"
              class="facets"
-             >
+          >
             <tal:facet repeat="link facetmenu">
               <tal:available condition="link/enabled">
                 <li
@@ -124,21 +125,9 @@
                  />
             </tal:facet>
           </ul>
-        </tal:notlogin>
-      </metal:macro>
-      <metal:portlets define-slot="portlets_two">
-      </metal:portlets>
-    </div>
-    <!-- start of the left (by default at least) column -->
-    <div
-          id="portal-column-one"
-          metal:define-slot="column_one"
-    >
-      <div tal:replace="structure context/@@+sitemap" />
-
-      <metal:portlets define-slot="portlets_one">
-
-      </metal:portlets>
+      </tal:notlogin>
+      <div metal:define-slot="portlets_one">
+      </div>
     </div>
   </div>
   <!-- end column wrapper -->

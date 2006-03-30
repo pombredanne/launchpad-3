@@ -33,9 +33,9 @@
       Distribution Summary
   </p>
 
-      <div tal:replace="structure context/description/fmt:text-to-html">
+      <tal:description replace="structure context/description/fmt:text-to-html">
         Distribution description
-      </div>
+      </tal:description>
 
   <h2>Source packages in <span tal:replace="context/title"/></h2>
 
