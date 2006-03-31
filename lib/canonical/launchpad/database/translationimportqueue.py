@@ -89,7 +89,6 @@ class TranslationImportQueueEntry(SQLBase):
         """
         assert self.path.endswith('.po'), (
             "We cannot handle the file %s here." % self.path)
-
         potemplateset = getUtility(IPOTemplateSet)
         translationimportqueue = getUtility(ITranslationImportQueue)
         subset = potemplateset.getSubset(
@@ -103,8 +102,8 @@ class TranslationImportQueueEntry(SQLBase):
                 # We already got a winner, should check if we could have
                 # another one, which means we cannot be sure which one is the
                 # right one.
-                if (os.path.dirname(
-                    guessed_potemplate.path) == os.path.dirname(potemplate.path)):
+                if (os.path.dirname(guessed_potemplate.path) ==
+                    os.path.dirname(potemplate.path)):
                     # Two matches, cannot be sure which one is the good one.
                     return None
                 else:
@@ -127,7 +126,7 @@ class TranslationImportQueueEntry(SQLBase):
             productseries=self.productseries)
         for entry in entries:
             if (os.path.dirname(entry.path) == os.path.dirname(
-                guess_potemplate.path) and
+                guessed_potemplate.path) and
                 entry.status not in (
                 RosettaImportStatus.IMPORTED, RosettaImportStatus.DELETED)):
                 # There is a .pot entry pending to be imported that has the
@@ -189,7 +188,6 @@ class TranslationImportQueueEntry(SQLBase):
         """See ITranslationImportQueueEntry."""
         assert self.path.endswith('.po'), (
             "We cannot handle the file %s here." % self.path)
-
         if self.potemplate is None:
             # We don't have the IPOTemplate object associated with this entry.
             # Try to guess it from the file path.
@@ -483,7 +481,6 @@ class TranslationImportQueue:
     def executeOptimisticBlock(self):
         """See ITranslationImportQueue."""
         num_blocked = 0
-        there_are_entries_blocked = False
         for entry in self.iterNeedsReview():
             if entry.path.endswith('.pot'):
                 # .pot files cannot be managed automatically, ignore them and

@@ -15,6 +15,7 @@ Here we have some imports and utility fetch.
 
     >>> import transaction
     >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.database import ProductSeries
@@ -35,7 +36,6 @@ Attach the file to the product series, without associate it with any potemplate.
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     'po/sr.po', 'foo', True, rosetta_expert,
     ...      productseries=evolution_productseries)
-    >>> transaction.commit()
 
 This entry has no information about the IPOFile where it should be attached to:
 
@@ -122,25 +122,63 @@ Need to update our saved date_status_changed to detect if it changes now.
 
 Do the new upload.
 
-    >>> entry = translationimportqueue.addOrUpdateEntry(
+    >>> po_sr_entry = translationimportqueue.addOrUpdateEntry(
     ...     'po/sr.po', 'foo', True, rosetta_expert,
     ...      distrorelease=hoary_distrorelease,
     ...      sourcepackagename=evolution_sourcepackagename)
-    >>> transaction.commit()
 
 And the new status is
 
-    >>> entry.status.title
+    >>> po_sr_entry.status.title
     'Needs Review'
 
 The dateimported remains the same as it was already waiting to be imported.
 
-    >>> entry.dateimported > previous_dateimported
+    >>> po_sr_entry.dateimported > previous_dateimported
     True
 
 And the date_status_changed is newer
 
-    >>> entry.date_status_changed > previous_date_status_changed
+    >>> po_sr_entry.date_status_changed > previous_date_status_changed
+    True
+
+First, we import a new .pot file.
+
+    >>> pot_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/evolution-2.2.pot', 'foo', True, rosetta_expert,
+    ...      distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=evolution_sourcepackagename)
+
+Reset any pofile/potemplate information we have for the po_sr_entry.
+
+    >>> po_sr_entry.potemplate = None
+
+Change the pofile.path value
+
+    >>> pofile = po_sr_entry.guessed_pofile
+    >>> if pofile is not None:
+    ...     pofile.path = u'po/sr-old.po'
+
+XXX: CarlosPerelloMarin 20060331 If flush_database_updates is removed from
+here we don't see the pofile.path change and the internal code path that we
+want to check here doesn't work. For more information, see bug #3989
+
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+Now, let's check that we cannot find the pot_entry as a POTemplate because
+the way our code works, we cannot guess it while we have a .pot file pending
+to be imported.
+
+    >>> pot_entry.status.title
+    'Needs Review'
+    >>> po_sr_entry.guessed_pofile is not None
+    False
+
+But if that entry is imported, the guessing algorithm works.
+
+    >>> pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> po_sr_entry.guessed_pofile is not None
     True
 
 
@@ -149,18 +187,6 @@ executeOptimisticBlock
 
 This method looks on the queue to find entries to block based on other .pot
 entries that are stored on the same directory and are already blocked.
-
-First, we import a new .pot file.
-
-    >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/foo.pot', 'foo', True, rosetta_expert,
-    ...      distrorelease=hoary_distrorelease,
-    ...      sourcepackagename=evolution_sourcepackagename)
-
-And block it.
-
-    >>> entry.status = RosettaImportStatus.BLOCKED
-    >>> transaction.commit()
 
 Check the number of entries on the queue.
 
@@ -183,9 +209,11 @@ First, let's check the status of the existing entries.
 
     >>> entry3 = translationimportqueue.get(3)
     >>> entry3.path
-    u'po/foo.pot'
-    >>> entry3.status == RosettaImportStatus.BLOCKED
-    True
+    u'po/evolution-2.2.pot'
+
+We need it blocked for this test.
+
+    >>> entry3.status = RosettaImportStatus.BLOCKED
 
 Let's see how many entries are blocked.
 
@@ -217,7 +245,7 @@ And the .pot entry is still blocked.
 
     >>> entry3 = translationimportqueue.get(3)
     >>> entry3.path
-    u'po/foo.pot'
+    u'po/evolution-2.2.pot'
     >>> entry3.status == RosettaImportStatus.BLOCKED
     True
 
@@ -238,7 +266,6 @@ directory that a given entry.
 For the first entry, we don't have any .pot file on that directory.
 
     >>> entry1.status = RosettaImportStatus.NEEDS_REVIEW
-    >>> transaction.commit()
     >>> entries = entry1.getTemplatesOnSameDirectory()
     >>> entries.count()
     0
@@ -246,7 +273,6 @@ For the first entry, we don't have any .pot file on that directory.
 For the second entry, we have one.
 
     >>> entry2.status = RosettaImportStatus.NEEDS_REVIEW
-    >>> transaction.commit()
     >>> entries = entry2.getTemplatesOnSameDirectory()
     >>> entries.count()
     1
@@ -261,7 +287,6 @@ obviously, we are not returning it as being at the same directory as it makes
 no sense at all.
 
     >>> entry3.status = RosettaImportStatus.NEEDS_REVIEW
-    >>> transaction.commit()
     >>> entries = entry3.getTemplatesOnSameDirectory()
     >>> entries.count()
     0
