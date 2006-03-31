@@ -190,6 +190,59 @@ If we insert yet another comment, it will be sent as a separate email.
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
+If we add three comments, three notifications will be sent:
+
+    >>> new_comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(new_comment)
+    >>> new_comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'another comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(new_comment)
+    >>> new_comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'yet another comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(new_comment)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    3
+
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
+    ...     pending_notifications):
+    ...     print_notification(to_addresses, email)
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] subject
+    <BLANKLINE>
+    a comment.
+    --
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
+    <BLANKLINE>
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] subject
+    <BLANKLINE>
+    another comment.
+    --
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
+    <BLANKLINE>
+    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] subject
+    <BLANKLINE>
+    yet another comment.
+    --
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
+
+    >>> for notification in pending_notifications:
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
 If Sample Person does a few changes, and Foo Bar steps in a does a
 change in between, three notifications will be sent:
 
@@ -281,10 +334,10 @@ but Foo Bar does a change in between:
     4
     >>> for notification in pending_notifications:
     ...     print notification.id, notification.message.owner.displayname
-    21 Sample Person
-    22 Sample Person
-    23 Sample Person
-    24 Foo Bar
+    24 Sample Person
+    25 Sample Person
+    26 Sample Person
+    27 Foo Bar
 
     >>> from canonical.launchpad.database import BugNotification
     >>> for notification in BugNotification.select():
