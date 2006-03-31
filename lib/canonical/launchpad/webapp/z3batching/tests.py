@@ -15,7 +15,7 @@
 """
 import unittest
 
-from canonical.launchpad.webapp.z3batching import _Batch
+from canonical.launchpad.webapp.z3batching.batch import _Batch
 from canonical.launchpad.webapp.z3batching.interfaces import IBatch
 
 class BatchTest(unittest.TestCase):
@@ -89,6 +89,8 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(list(iter(prevprev)), ['four', 'five', 'six'])
         prev = _Batch(self.getData(), 0, 3).prevBatch()
         self.assertEqual(prev, None)
+        prev = _Batch(self.getData(), 2, 3).prevBatch()
+        self.assertEqual(list(iter(prev)), ['one', 'two', 'three'])
         last = _Batch(self.getData(), 99, 3).prevBatch()
         self.assertEqual(list(iter(last)), ['ten'])
 
