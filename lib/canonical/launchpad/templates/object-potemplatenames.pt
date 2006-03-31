@@ -1,27 +1,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="rosetta"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>
+        PO template names for
+        <tal:thing replace="context/displayname">product or source package</tal:thing>
+      </h1>
+    </metal:heading>
 
-<body>
-
-<metal:rightportlets fill-slot="portlets_two">
-
-<div class="portlet portletBody portletContent">
-          <ul>
-            <li class="add">
-              <a href="/potemplatenames/+add">New PO Template Name</a>
-            </li>
-          </ul>
-</div>
-
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-    <h1>PO template names for
-        <span tal:content='context/title'>context.title</span>
-    </h1>
 
     <div tal:condition="view/potemplatenames">
 
@@ -53,7 +44,11 @@
 
     </div>
 
-</div>
-
-</body>
+      <ul>
+        <li class="add">
+          <a href="/potemplatenames/+add">Add a PO template name</a>
+        </li>
+      </ul>
+    </div>
+  </body>
 </html>

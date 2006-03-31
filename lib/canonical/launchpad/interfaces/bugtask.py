@@ -46,10 +46,10 @@ UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.UNCONFIRMED,
     dbschema.BugTaskStatus.CONFIRMED,
     dbschema.BugTaskStatus.INPROGRESS,
-    dbschema.BugTaskStatus.NEEDSINFO)
+    dbschema.BugTaskStatus.NEEDSINFO,
+    dbschema.BugTaskStatus.FIXCOMMITTED)
 
 RESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.FIXCOMMITTED,
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 

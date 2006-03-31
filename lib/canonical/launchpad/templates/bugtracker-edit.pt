@@ -4,9 +4,12 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Change bug tracker details</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -16,15 +19,10 @@
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
-          <h1 tal:condition="view/label"
-              tal:content="view/label"
-              metal:fill-slot="heading"
-              >Form Label will come from ZCML label="xxx"</h1>
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      If you need to change the type of bug tracker, then please ask for
+    <p metal:fill-slot="extra_info">
+      If you need to change the type of bug tracker, please ask for
       admin support on #launchpad (see the bottom of the page for details).
-    </div>
+    </p>
 
   </div>
     

@@ -3,9 +3,14 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="context/title">Bounty name</h1>
+      <h2 tal:condition="not: view/subscription">Subscribe to bounty</h2>
+      <h2 tal:condition="view/subscription">Unsubscribe from bounty</h2>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -14,14 +19,11 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to bounty</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe from bounty</h1>
-
-  <p class="documentDescription">
-    Bounty subscribers will be emailed copies of any comments made on
-    this bounty. If you subscribe to a bounty it will show up on your
-    personal pages, too.
-  </p>
+      <p>
+        Bounty subscribers will be e-mailed copies of any comments made on
+        this bounty. If you subscribe to a bounty it will show up on your
+        personal pages, too.
+      </p>
 
   <form action="." method="POST">
 

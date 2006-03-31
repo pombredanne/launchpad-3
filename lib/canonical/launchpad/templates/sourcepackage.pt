@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1 tal:content="context/title">source package name</h1>
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -19,7 +22,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Versions published</h1>
+  <h2>Versions published</h2>
 
   <p class="warning message" tal:condition="not:context/currentrelease">
     There is no current release of this source package 
@@ -65,19 +68,20 @@
       </div>
 
     <h2>Binary packages</h2>
-        
-    <ul tal:define="binaries view/binaries">
-      <li class="alert" tal:condition="not:binaries">
-        <i>No binaries generated for this SourcePackageRelease</i>
-      </li>
-      <li tal:repeat="bin_name binaries" >
+        <p tal:condition="not:view/binaries">
+          No binaries have been generated for this release.
+        </p>
+        <ul tal:define="binaries view/binaries" tal:condition="binaries">
+          <li tal:repeat="bin_name binaries">
+ 
         <span tal:replace="bin_name" /> 
         <span tal:repeat="archtag python:binaries[bin_name]">
           (<a tal:content="archtag" tal:attributes="href 
                            string:../../${archtag}/${bin_name}" />) 
         </span>
-      </li>
-    </ul>
+ 
+          </li>
+        </ul>
 
     <h2 tal:condition="view/has_build_depends">
         Package relationship
