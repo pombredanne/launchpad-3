@@ -207,6 +207,9 @@ class IBugTaskSearch(Interface):
     has_patch = Bool(
         title=_('Show only bugs with patches available'), required=False,
         default=False)
+    has_no_package = Bool(
+        title=_('Exclude bugs with packages specified'),
+        required=False, default=False)
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
