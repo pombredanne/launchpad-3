@@ -16,7 +16,7 @@
 
   <h1>Specification assignments</h1>
 
-  <p class="portalMessage" tal:condition="not: view/specs">
+  <p class="informational message" tal:condition="not: view/specs">
     No specifications to display.
   </p>
 

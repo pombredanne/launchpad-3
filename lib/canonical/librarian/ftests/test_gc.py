@@ -22,7 +22,9 @@ from canonical.librarian.client import LibrarianClient
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.database.sqlbase import cursor, SQLObjectNotFound
+from canonical.database.sqlbase import (
+        connect, cursor, SQLObjectNotFound, AUTOCOMMIT_ISOLATION,
+        )
 from canonical.database.constants  import UTC_NOW
 
 class MockLogger:
@@ -77,11 +79,17 @@ class TestLibrarianGarbageCollection(TestCase):
                 open(path, 'w').write('whatever')
         self.ztm.abort()
 
+        self.con = connect(config.librarian.gc.dbuser)
+        self.con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+
     def tearDown(self):
+        self.con.rollback()
+        self.con.close()
+        del self.con
+        self.ztm.uninstall()
+        librariangc.log = None
         LibrarianTestSetup().tearDown()
         LaunchpadTestSetup().tearDown()
-        librariangc.log = None
-        self.ztm.uninstall()
 
     def _makeDupes(self):
         """Create two duplicate LibraryFileContent entries with one
@@ -125,7 +133,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
     def test_MergeDuplicates(self):
         # Merge the duplicates
-        librariangc.merge_duplicates(self.ztm)
+        librariangc.merge_duplicates(self.con)
 
         # merge_duplicates should have committed
         self.ztm.begin()
@@ -150,7 +158,7 @@ class TestLibrarianGarbageCollection(TestCase):
         self.ztm.abort()
 
         # Delete unreferenced aliases
-        librariangc.delete_unreferenced_aliases(self.ztm)
+        librariangc.delete_unreferenced_aliases(self.con)
 
         # This should have committed
         self.ztm.begin()
@@ -168,7 +176,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Merge the duplicates. Both our aliases now point to the same
         # LibraryFileContent
-        librariangc.merge_duplicates(self.ztm)
+        librariangc.merge_duplicates(self.con)
 
         # Flag one of our LibraryFileAliases as being recently accessed
         self.ztm.begin()
@@ -179,7 +187,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Delete unreferenced LibraryFileAliases. This should remove neither
         # of our example aliases, as one of them was accessed recently
-        librariangc.delete_unreferenced_aliases(self.ztm)
+        librariangc.delete_unreferenced_aliases(self.con)
 
         # Make sure both our example files are still there
         self.ztm.begin()
@@ -191,7 +199,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Merge the duplicates. Both our aliases now point to the same
         # LibraryFileContent
-        librariangc.merge_duplicates(self.ztm)
+        librariangc.merge_duplicates(self.con)
 
         # Flag one of our LibraryFileAliases with an expiry date in the past
         self.ztm.begin()
@@ -204,7 +212,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Delete unreferenced LibraryFileAliases. This should remove our
         # example aliases, as one is unreferenced with a NULL expiry and
         # the other is unreferenced with an expiry in the past.
-        librariangc.delete_unreferenced_aliases(self.ztm)
+        librariangc.delete_unreferenced_aliases(self.con)
 
         # Make sure both our example files are gone
         self.ztm.begin()
@@ -218,7 +226,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Merge the duplicates. Both our aliases now point to the same
         # LibraryFileContent
-        librariangc.merge_duplicates(self.ztm)
+        librariangc.merge_duplicates(self.con)
 
         # Flag one of our LibraryFileAliases with an expiry date in the
         # recent past.
@@ -231,7 +239,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Delete unreferenced LibraryFileAliases. This should not remove our
         # example aliases, as one is unreferenced with a NULL expiry and
         # the other is unreferenced with an expiry in the recent past.
-        librariangc.delete_unreferenced_aliases(self.ztm)
+        librariangc.delete_unreferenced_aliases(self.con)
 
         # Make sure both our example files are still there
         self.ztm.begin()
@@ -240,7 +248,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
     def test_DeleteUnreferencedContent(self):
         # Merge the duplicates. This creates an unreferenced LibraryFileContent
-        librariangc.merge_duplicates(self.ztm)
+        librariangc.merge_duplicates(self.con)
 
         self.ztm.begin()
 
@@ -265,7 +273,7 @@ class TestLibrarianGarbageCollection(TestCase):
         self.failUnless(os.path.exists(path))
 
         # Delete unreferenced content
-        librariangc.delete_unreferenced_content(self.ztm)
+        librariangc.delete_unreferenced_content(self.con)
 
         # Make sure the file is gone
         self.failIf(os.path.exists(path))
@@ -301,7 +309,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # that this all works.
 
         # Merge the duplicates. This creates an unreferenced LibraryFileContent
-        librariangc.merge_duplicates(self.ztm)
+        librariangc.merge_duplicates(self.con)
 
         self.ztm.begin()
 
@@ -330,7 +338,7 @@ class TestLibrarianGarbageCollection(TestCase):
         self.failIf(os.path.exists(path))
 
         # Delete unreferenced content
-        librariangc.delete_unreferenced_content(self.ztm)
+        librariangc.delete_unreferenced_content(self.con)
 
         # Make sure the file is gone
         self.failIf(os.path.exists(path))

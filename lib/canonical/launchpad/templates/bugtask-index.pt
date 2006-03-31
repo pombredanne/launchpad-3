@@ -29,27 +29,27 @@
   <tal:block condition="view/reportBugInContext" />
   <tal:block condition="view/handleSubscriptionRequest" />
 
-  <div class="notice-notification"
+  <p class="informational message"
      tal:condition="view/notices"
      tal:repeat="notice view/notices"
      tal:content="notice">
      Reported this bug as also occurring in upstream firefox
-  </div>
+  </p>
 
-  <p class="portalMessage" tal:condition="context/bug/duplicateof"
-     style="margin-bottom: 1em">
-    This bug is a duplicate of
+  <p tal:condition="context/bug/duplicateof" class="informational message">
+    This report is a duplicate of
     <a href="#"
        tal:attributes="href context/bug/duplicateof/fmt:url;
                        title context/bug/duplicateof/title"
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
 
-  <div class="portalMessage"
-       tal:condition="not:view/isReportedInContext"
-       style="margin-bottom: 1em">
-
-        <form name="alsooccursin" method="POST">
+      <form
+        tal:condition="not:view/isReportedInContext"
+        class="error message"
+        name="alsooccursin"
+        method="POST"
+      >
 
     This bug is not recorded as needing to be fixed in the
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
@@ -75,8 +75,6 @@
 
         </form>
 
-  </div>
-
   <div tal:replace="structure context/@@+headline-tasks" />
 
   <tal:description
@@ -91,17 +89,17 @@
   <tal:branches define="bug_branches context/bug/bug_branches"
                 condition="bug_branches">
     <strong>Related Branches</strong>
-    <div tal:condition="context/bug/private"
-         class="portalMessage">
-      This bug is private. All branches below should be private.
-    </div>
+    <p tal:condition="context/bug/private"
+         class="warning message">
+      This bug is private, so avoid adding public branches here.
+    </p>
 
     <table class="listing">
       <thead>
         <tr>
           <th>Bugfix Status</th>
           <th>Developer</th>
-          <th>Fix Revision</th>
+          <th>Revision Hint</th>
         </tr>
       </thead>
       <tbody>
@@ -114,7 +112,7 @@
             </a>
           </td>
           <td tal:content="bug_branch/branch/owner/displayname"></td>
-          <td tal:content="bug_branch/fixed_in_revision"></td>
+          <td tal:content="bug_branch/revision_hint"></td>
         </tr>
       </tbody>
     </table>

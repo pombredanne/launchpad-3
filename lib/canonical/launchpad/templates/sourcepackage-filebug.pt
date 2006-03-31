@@ -1,12 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+      i18n:domain="malone"
+>
+  <body>
+    <div metal:fill-slot="main">
 
-  <div metal:fill-slot="main">
-
-  <tal:uses_malone tal:condition="context/distribution/official_malone">
-    <div metal:use-macro="context/@@launchpad_addform/addform">
+      <tal:uses_malone tal:condition="context/distribution/official_malone">
+        <div metal:use-macro="context/@@launchpad_addform/addform">
 
           <h1 metal:fill-slot="heading">
             Report a bug about
@@ -25,22 +26,19 @@
               <div><label>Source package name</label></div>
               <div class="field" tal:content="context/name" />
           </div>
-
+        </div>
+      </tal:uses_malone>
+      <tal:not_malone tal:condition="not: context/distribution/official_malone">
+        <p class="informational message">
+          <span tal:replace="context/distribution/displayname">Debian</span>
+          does not use Malone as its bug tracker.
+        </p>
+        <p>
+          To report a bug about
+          <span tal:replace="context/distribution/displayname">Debian</span>,
+          please use its official bug tracker.
+        </p>
+      </tal:not_malone>
     </div>
-  </tal:uses_malone>
-
-  <tal:not_uses_malone 
-      tal:condition="not: context/distribution/official_malone">
-    <p class="portalMessage">
-      <span tal:replace="context/distribution/displayname">Debian</span> does not use Malone as its bug tracker.
-    </p>
-
-    <div>
-    In order to file a bug on <span tal:replace="context/distribution/displayname">Debian</span>, please do so in its official bug tracker or on its package in the distribution you're using.
-    </div>
-  </tal:not_uses_malone>
-
-  </div>
-
+  </body>
 </html>
-

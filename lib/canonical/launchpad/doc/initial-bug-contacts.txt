@@ -130,19 +130,14 @@ package is already subscribed to the bug:
     >>> import transaction
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.helpers import capture_state
-    >>> from canonical.launchpad.components.bugtask import mark_task
+    >>> from canonical.launchpad.helpers import Snapshot
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.launchpad.mail import stub
 
     >>> ubuntu_pmount.addBugContact(sample_person)
 
-    >>> old_state = capture_state(
-    ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IDistroBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
@@ -175,8 +170,8 @@ priority, etc.
     >>> test_emails.sort(by_to_addrs)
 
     >>> len(test_emails)
-    4
-    >>> from_addr, to_addr, raw_message = test_emails.pop(1)
+    1
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
     >>> print to_addr
@@ -187,9 +182,8 @@ priority, etc.
     '[Bug 1] Firefox does not support SVG'
     >>> print msg.get_payload(decode=True)
     Public bug reported:
-    http://.../malone/bugs/...
-    ...
-    Affects: pmount (Ubuntu)
+    <BLANKLINE>
+    Affects: firefox (upstream)
     ...
 
     >>> stub.test_emails = []
@@ -247,15 +241,6 @@ The Ubuntu Gnome team was subscribed to the bug:
     ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
     [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team']
 
-And since the team didn't have a contact address, a notification was
-sent to each member:
-
-    >>> print [
-    ...    to_addrs
-    ...    for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
-    [['dilys@muse.19inch.net'], ['foo.bar@canonical.com'],
-     ['mark@hbd.com'], ['test@canonical.com']]
-
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package. So, if Mark Shuttleworth
 becomes a bug contact for ubuntu mozilla-firefox:
@@ -269,12 +254,8 @@ and the bug is made private:
 
 and then the bug gets reassigned to mozilla firefox:
 
-    >>> old_state = capture_state(
-    ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IDistroBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_firefox.sourcepackagename)
@@ -325,12 +306,8 @@ Bar gets subscribed to the bug in the process:
     ...      bug_two_in_ubuntu.bug.subscriptions])
     [u'Steve Alexander']
 
-    >>> old_state = capture_state(
-    ...     bug_two_in_ubuntu, "id", "status", "severity", "product",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IUpstreamBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_two_in_ubuntu, providing=IUpstreamBugTask)
 
     >>> bug_two_in_ubuntu.product = mozilla_firefox
 
@@ -354,8 +331,8 @@ report:
     >>> test_emails.sort(by_to_addrs)
 
     >>> len(test_emails)
-    3
-    >>> from_addr, to_addr, raw_message = test_emails.pop(1)
+    1
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
     >>> print to_addr
@@ -366,7 +343,6 @@ report:
     '[Bug 2] Blackhole Trash folder'
     >>> print msg.get_payload(decode=True)
     Public bug reported:
-    http://.../malone/bugs/...
     <BLANKLINE>
     Affects: firefox (upstream)
     ...
