@@ -9,7 +9,7 @@
     </metal:heading>
 
 <div metal:fill-slot="main"
-    tal:define="bn view/getList">
+     tal:define="bn view/getList">
 
   <h1 tal:content="view/header" />
 
