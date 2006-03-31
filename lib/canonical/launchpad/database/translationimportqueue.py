@@ -375,22 +375,32 @@ class TranslationImportQueue:
         sourcepackagename=None, distrorelease=None, productseries=None,
         potemplate=None):
         """See ITranslationImportQueue."""
+        # We need to know if we are handling .bz2 files, we could use the
+        # python2.4-magic but it makes no sense to add that dependency just
+        # for this check as the .bz2 files start with the 'BZh' string.
+        if content.startswith('BZh'):
+            # Workaround for the bug #1982. Python's bz2 support is not able
+            # to handle external file objects.
+            tarball = tarfile.open('', 'r|bz2', StringIO(content))
+        else:
+            tarball = tarfile.open('', 'r', StringIO(content))
 
-        tarball = tarfile.open('', 'r', StringIO(content))
-        names = tarball.getnames()
+        num_files = 0
+        for tarinfo in tarball:
+            if tarinfo.name.endswith('.pot') or tarinfo.name.endswith('.po'):
+                # Only the .pot and .po files are interested here, ignore the
+                # others as we don't support any other file format.
+                file_content = tarball.extractfile(tarinfo).read()
+                self.addOrUpdateEntry(
+                    tarinfo.name, file_content, is_published, importer,
+                    sourcepackagename=sourcepackagename,
+                    distrorelease=distrorelease, productseries=productseries,
+                    potemplate=potemplate)
+                num_files += 1
 
-        files = [name
-                 for name in names
-                 if name.endswith('.pot') or name.endswith('.po')
-                ]
+        tarball.close()
 
-        for file in files:
-            content = tarball.extractfile(file).read()
-            self.addOrUpdateEntry(file, content, is_published, importer,
-            sourcepackagename=sourcepackagename, distrorelease=distrorelease,
-            productseries=productseries, potemplate=potemplate)
-
-        return len(files)
+        return num_files
 
     def get(self, id):
         """See ITranslationImportQueue."""
