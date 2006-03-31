@@ -296,6 +296,16 @@
                     </small>
                   </td>
                 </tr>
+                <tr tal:condition="view/shouldShowNoPackageWidget">
+                  <td>
+                    <small>
+                      <span tal:content="structure view/has_no_package_widget" />
+                      <label for="field.has_no_package">
+                        Exclude bugs with packages specified
+                      </label>
+                    </small>
+                  </td>
+                </tr>
               </table>
             </td>
           </tr>

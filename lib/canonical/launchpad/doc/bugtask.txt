@@ -208,6 +208,11 @@ To provide null-matching search criteria, use canonical.launchpad.searchbuilder.
     >>> print [bugtask.bug.id for bugtask in bugtasks]
     [4, 6]
 
+    >>> params = BugTaskSearchParams(sourcepackagename=NULL, user=None)
+    >>> bugtasks = ubuntu.searchTasks(params)
+    >>> print sorted([bugtask.bug.id for bugtask in bugtasks])
+    [1, 2]
+
 There's also support for searching tasks based on a string of text, e.g.:
 
     >>> params = BugTaskSearchParams(searchtext="instructions", user=None)
