@@ -168,3 +168,63 @@ bug tracker, an error is logged.
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
     ERROR:...:Failed to parse XML description...
 
+
+debbugs
+-------
+
+The debbugs syncing is done by reading from a local debbugs db, so we
+can use the real class for testing as well. We just need to point it to
+our test debbugs db. If we create it without specifying a db location,
+it will use the config value:
+
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     DebBugs)
+    >>> debbugs = DebBugs()
+    >>> debbugs.db_location == config.malone.debbugs_db_location
+    True
+
+We'll initialize it with our test db though:
+
+    >>> import os.path
+    >>> from canonical.launchpad.components.ftests import __file__
+    >>> test_db_location = os.path.join(
+    ...     os.path.dirname(__file__), 'debbugs_db')
+    >>> test_debbugs = DebBugs(db_location=test_db_location)
+    >>> test_debbugs.db_location == test_db_location
+    True
+
+    >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
+    >>> bug_watches = list(debbugs.getBugWatchesNeedingUpdate(23))
+    >>> len(bug_watches)
+    4
+
+    >>> external_debbugs = ExternalSystem(debbugs)
+    >>> external_debbugs.remotesystem = test_debbugs
+    >>> external_debbugs.updateBugWatches(bug_watches)
+    >>> for bug_watch in bug_watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    280883: done grave woody security
+    304014: open important
+    327452: done critical patch security
+    327549: open important security
+
+The lastchecked attribute got updated for each bug watch, so no more
+watches are in need of an update:
+
+    >>> flush_database_updates()
+    >>> debbugs.getBugWatchesNeedingUpdate(23).count()
+    0
+
+And the linked bugtasks got updated:
+
+    >>> bugtasks = []
+    >>> for bug_watch in bug_watches:
+    ...     bugtasks += list(bug_watch.bugtasks)
+    >>> for bugtask in sorted(bugtasks, key=lambda bugtask: bugtask.id):
+    ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
+    ...     print bugtask.severity.title
+    1 mozilla-firefox (Debian) Unconfirmed Unknown
+    3 mozilla-firefox (Debian) Unconfirmed Unknown
+    7 evolution (Debian) Fix Released Unknown
+

@@ -128,9 +128,10 @@ class Database:
         elif name == 'status':
             if bug.done is not None:
                 bug.status = 'done'
-            if bug.forwarded is not None:
+            elif bug.forwarded is not None:
                 bug.status = 'forwarded'
-            bug.status = 'open'
+            else:
+                bug.status = 'open'
         else:
             return False
 

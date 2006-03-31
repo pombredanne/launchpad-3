@@ -332,6 +332,8 @@
             required="yes" />
         <key name="buglist_batch_size" datatype="integer"
             required="no" default="20" />
+        <key name="debbugs_db_location" datatype="string"
+            required="no" default="/srv/bugs-mirror.debian.org/" />
     </sectiontype>
 
     <sectiontype name="poimport">

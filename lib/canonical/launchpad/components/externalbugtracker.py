@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import os.path
 import urllib
 import urllib2
 import xml.parsers.expat
@@ -11,9 +12,10 @@ from xml.dom import minidom
 
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
-from canonical.launchpad.scripts import log
+from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import IExternalBugtracker
 
 # The user agent we send in our requests
@@ -61,6 +63,8 @@ class ExternalSystem(object):
         self.remotesystem = None
         if self.bugtrackertype == BugTrackerType.BUGZILLA:
             self.remotesystem = Bugzilla(self.bugtracker.baseurl, version)
+        elif self.bugtrackertype == BugTrackerType.DEBBUGS:
+            self.remotesystem = DebBugs()
         if not self.remotesystem:
             raise UnknownBugTrackerTypeError(self.bugtrackertype.name,
                 self.bugtracker.name)
@@ -242,3 +246,69 @@ class Bugzilla(ExternalSystem):
 
         return result
 
+
+debbugsstatusmap = {'open':      BugTaskStatus.UNCONFIRMED,
+                    'forwarded': BugTaskStatus.CONFIRMED,
+                    'done':      BugTaskStatus.FIXRELEASED}
+
+
+class DebBugs(ExternalSystem):
+    """A class that deals with communications with a debbugs db."""
+
+    implements(IExternalBugtracker)
+
+    # We don't support different versions of debbugs.
+    version = None
+    debbugs_pl = os.path.join(
+        os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
+
+    def __init__(self, db_location=None):
+        if db_location is None:
+            self.db_location = config.malone.debbugs_db_location
+        else:
+            self.db_location = db_location
+
+    def convertRemoteStatus(self, remote_status):
+        """Convert a debbugs status to a Malone status.
+
+        A debbugs status consists of either two or three parts,
+        separated with space; the status and severity, followed by
+        optional tags. The tags are also separated with a space
+        character.
+        """
+        parts = remote_status.split(' ')
+        status = parts[0]
+        severity = parts[1]
+        tags = parts[2:]
+
+        # For the moment we only care about the status.
+        try:
+            malone_status = debbugsstatusmap[status]
+        except KeyError:
+            log.warn('Unknown debbugs status "%s"' % status)
+            malone_status = BugTaskStatus.UNKNOWN
+
+        return malone_status
+
+    def updateBugWatches(self, bug_watches):
+        """Update the given bug watches."""
+        debbugs_db = debbugs.Database(self.db_location, self.debbugs_pl)
+        bug_watches_by_remote_bug = {}
+        for bug_watch in bug_watches:
+            #XXX: Use remotebug.strip() until bug 34105 is fixed.
+            #     -- Bjorn Tillenius, 2006-03-09
+            bug_watches_by_remote_bug[bug_watch.remotebug.strip()] = bug_watch
+        found_bug_ids = set()
+        bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
+        for bug_id in bug_ids_to_update:
+            bug_watch.lastchecked = UTC_NOW
+            if not bug_id.isdigit():
+                log.warn("Debbugs bug number not an integer: %s" % bug_id)
+                continue
+            debian_bug = debbugs_db[int(bug_id)]
+            new_remote_status = ' '.join(
+                [debian_bug.status, debian_bug.severity] + debian_bug.tags)
+            bug_watch = bug_watches_by_remote_bug[bug_id]
+            if new_remote_status != bug_watch.remotestatus:
+                malone_status = self.convertRemoteStatus(new_remote_status)
+                bug_watch.updateStatus(new_remote_status, malone_status)
