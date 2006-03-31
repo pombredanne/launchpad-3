@@ -4,8 +4,10 @@
       i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main">
+    <metal:heading fill-slot="pageheading">
       <h1>Bazaar branch sync requests</h1>
+    </metal:heading>
+    <div metal:fill-slot="main">
       <p class="documentDescription" tal:condition="not: context/forSyncReview">
           There are currently no repositories that require approval for
           production syncing.

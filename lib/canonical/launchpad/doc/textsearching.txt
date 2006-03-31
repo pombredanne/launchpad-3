@@ -174,6 +174,12 @@ Brackets are allowed to specify precidence
     >>> ftq('Hi(Big)Momma')
     hi&big&momma <=> 'hi' & 'big' & 'momma'
 
+    >>> ftq('foo(bar OR baz)') # Bug #32071
+    foo&(bar|baz) <=> 'foo' & ( 'bar' | 'baz' )
+
+    >>> ftq('foo (bar OR baz)')
+    foo&(bar|baz) <=> 'foo' & ( 'bar' | 'baz' )
+
 
 We also support negation
 

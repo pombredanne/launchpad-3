@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Specifications for <tal:thing replace="context/displayname" /></h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -75,8 +78,7 @@
   </p>
 
   <p class="discreet">
-    This page shows all specifications that have been accepted as goals for
-    <span tal:replace="context/title">Mozilla Firefox 1.0</span>. You can
+    You can
     <a href="+specs?show=declined">Show Declined</a> feature goals,
     and if you are a driver of <span tal:replace="context/name">1.0</span>
     then you can accept goals that have been proposed using the 

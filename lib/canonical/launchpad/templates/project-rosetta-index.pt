@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
-
-<body>
+      i18n:domain="rosetta"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1>Translation overview</h1>
+    </metal:heading>
 
 <metal:rightportlets fill-slot="portlets_two">
         <div tal:replace="structure context/@@+portlet-languages" />
@@ -11,8 +14,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-    <h1>Translation overview: <span tal:replace="context/title">NAME</span></h1>
 
     <div style="float: right; clear: both; margin-top: 0.25em;">
     Project home page:
