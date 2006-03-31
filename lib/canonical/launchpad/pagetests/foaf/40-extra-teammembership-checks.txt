@@ -182,14 +182,16 @@ Dave Miller is a proposed member in Ubuntu Gnome Team.
 If two people try to accept him as a member at the same time, the first one
 should succeed and the second one receive a nice error message.
 
-  >>> from canonical.launchpad.database import PersonSet 
-  >>> from canonical.lp.dbschema import TeamMembershipStatus
-  >>> dave = PersonSet().getByName('justdave')
-  >>> ubuntu_gnome = PersonSet().getByName('name18')
-  >>> status = TeamMembershipStatus.APPROVED
-  >>> ubuntu_gnome.setMembershipStatus(dave, status) 
-  >>> dave.inTeam(ubuntu_gnome)
-  True
+  >>> print http(r"""
+  ... POST /people/name18/+member/justdave/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... day=14&month=4&year=2050&comment=&editproposed=Approve""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../people/name18/+members
+  ...
 
   >>> print http(r"""
   ... POST /people/name18/+member/justdave/ HTTP/1.1
@@ -198,5 +200,5 @@ should succeed and the second one receive a nice error message.
   ... 
   ... day=14&month=4&year=2050&comment=&editproposed=Approve""")
   HTTP/1.1 200 Ok
-  ...error message...Dave Miller membership has already been processed...
+  ...error message...The membership request for Dave Miller has already been processed...
   ...
