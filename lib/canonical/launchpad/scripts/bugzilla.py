@@ -222,7 +222,7 @@ class Bug:
             'blocker': BugTaskImportance.CRITICAL,
             'critical': BugTaskImportance.CRITICAL,
             'major': BugTaskImportance.MAJOR,
-            'normal': BugTaskImportance.MODERATE,
+            'normal': BugTaskImportance.MEDIUM,
             'minor': BugTaskImportance.MINOR,
             'trivial': BugTaskImportance.MINOR,
             'enhancement': BugTaskImportance.WISHLIST

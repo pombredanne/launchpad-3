@@ -34,7 +34,7 @@
         <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
             tal:condition="context/show_column/packagename|nothing"
             nowrap>mozilla-firefox (Ubuntu)</td>
-        <td tal:content="bugtask/severity/title"
+        <td tal:content="bugtask/importance/title"
             tal:condition="context/show_column/importance|nothing">Critical</td>
         <td tal:content="bugtask/status/title"
             tal:condition="context/show_column/status|nothing">Confirmed</td>

@@ -215,13 +215,7 @@ def generate_bug_add_email(bug):
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
         bug_info += u"Affects: %s\n" % bugtask.targetname
-        bug_info += u"       Severity: %s\n" % bugtask.severity.title
-
-        if bugtask.priority:
-            priority = bugtask.priority.title
-        else:
-            priority = "(none set)"
-        bug_info += u"       Priority: %s\n" % priority
+        bug_info += u"     Importance: %s\n" % bugtask.importance.title
 
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
@@ -383,8 +377,8 @@ def generate_bug_edit_email(bug_delta):
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("binarypackagename", "name"), ("severity", "title"),
-                ("priority", "title"), ("bugwatch", "title")):
+                ("binarypackagename", "name"), ("importance", "title"),
+                ("bugwatch", "title")):
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -433,12 +427,8 @@ def generate_bug_edit_email(bug_delta):
                 change_info += u"   %s\n" % added_bugtask.bugwatch.url
             else:
                 change_info += u"** Also affects: %s\n" % added_bugtask.targetname
-            change_info += u"%13s: %s\n" % (u"Severity", added_bugtask.severity.title)
-            if added_bugtask.priority:
-                priority_title = added_bugtask.priority.title
-            else:
-                priority_title = "(none set)"
-            change_info += u"%13s: %s\n" % (u"Priority", priority_title)
+            change_info += u"%13s: %s\n" % (u"Importance",
+                added_bugtask.importance.title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
                 change_info += u"%13s: %s <%s>\n" % (
@@ -680,7 +670,7 @@ def get_task_delta(old_task, new_task):
 
     # calculate the differences in the fields that both types of tasks
     # have in common
-    for field_name in ("status", "severity", "priority",
+    for field_name in ("status", "importance",
                        "assignee", "bugwatch", "milestone"):
         old_val = getattr(old_task, field_name)
         new_val = getattr(new_task, field_name)
