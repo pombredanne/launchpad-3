@@ -242,6 +242,11 @@ ol {
   margin: 0.5em 0 0 1.5em;
 }
 
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {
+    display: none;
+}
+
 .portlet {
   border: none;
   font-size: smaller;
