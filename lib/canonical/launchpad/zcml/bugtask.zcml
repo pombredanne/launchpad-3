@@ -42,7 +42,7 @@
                         bugwatch dateassigned datecreated age owner
                         targetname title related_tasks statusdisplayhtml
                         statuselsewhere asEmailHeaderValue
-                        bugtask_branches" />
+                        target_uses_malone bugtask_branches" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setSeverityFromDebbugs
