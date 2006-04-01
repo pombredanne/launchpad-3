@@ -42,6 +42,7 @@ GeneralFormView validate->process->redirect workflow.
     ...     form={'FORM_SUBMIT': "Save"})
     >>> foobar = object()
     >>> dummy_view = DummyView(foobar, request)
+    >>> dummy_view.initialize()
 
     >>> dummy_view.validate_called
     False

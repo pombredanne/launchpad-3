@@ -45,6 +45,10 @@
         path_expression="string:+branch/${product_name}/${name}"
         attribute_to_parent="owner" />
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BranchNavigation" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IBranch"
         facet="overview"
@@ -100,7 +104,6 @@
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
     facet="overview"
-    label="Edit branch details"
     fields="url title summary home_page author whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
@@ -110,7 +113,7 @@
       height="5" />
     <browser:widget
       field="url"
-      class="zope.app.form.browser.TextWidget"
+      class="canonical.launchpad.browser.BranchUrlWidget"
       displayWidth="30" />
     <browser:widget
       field="home_page"

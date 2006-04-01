@@ -34,6 +34,7 @@ __all__ = (
 'BranchRelationships',
 'BranchLifecycleStatus',
 'BranchReviewStatus',
+'BugBranchStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -736,6 +737,38 @@ class GPGKeyAlgorithm(DBSchema):
         G
 
         ElGamal, compromised""")
+
+
+class BugBranchStatus(DBSchema):
+    """The status of a bugfix branch."""
+
+    ABANDONED = Item(10, """
+        Abandoned Attempt
+
+        A fix for this bug is no longer being worked on in this
+        branch.
+        """)
+
+    INPROGRESS = Item(20, """
+        Fix In Progress
+
+        Development to fix this bug is currently going on in this
+        branch.
+        """)
+
+    FIXAVAILABLE = Item(30, """
+        Fix Available
+
+        This branch contains a potentially useful fix for this bug.
+        """)
+
+    BESTFIX = Item(40, """
+        Best Fix Available
+
+        This branch contains a fix agreed upon by the community as
+        being the best available branch from which to merge to fix
+        this bug.
+        """)
 
 
 class BranchRelationships(DBSchema):
@@ -2384,12 +2417,24 @@ class BugTaskStatus(DBSchema):
         affected software.
         """)
 
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The status of this bug task is unknown.
+        """)
+
 
 class BugTaskPriority(DBSchema):
     """Bug Task Priority
 
     This field is no longer used, but is left in case we want to resurrect it later.
     """
+
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The priority of this bug task is unknown.
+        """)
 
     HIGH = Item(40, """
         High
@@ -2423,6 +2468,12 @@ class BugTaskImportance(DBSchema):
     extent to which the bug impairs the stability and security of
     the distribution or upstream in which it was reported.
     """
+
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The severity of this bug task is unknown.
+        """)
 
     CRITICAL = Item(50, """
         Critical

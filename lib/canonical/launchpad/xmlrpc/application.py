@@ -2,7 +2,7 @@
 """XMLRPC API to the application roots."""
 
 __metaclass__ = type
-__all__ = ['ISelfTest', 'SelfTest']
+__all__ = ['ISelfTest', 'SelfTest', 'IRosettaSelfTest', 'RosettaSelfTest']
 
 from zope.interface import Interface, implements
 import xmlrpclib
@@ -31,4 +31,18 @@ class SelfTest(LaunchpadXMLRPCView):
     def concatenate(self, string1, string2):
         """Return the concatenation of the two given strings."""
         return u'%s %s' % (string1, string2)
+
+
+class IRosettaSelfTest(Interface):
+
+    def run_test():
+        return "OK"
+
+
+class RosettaSelfTest(LaunchpadXMLRPCView):
+
+    implements(IRosettaSelfTest)
+
+    def run_test(self):
+        return "OK"
 

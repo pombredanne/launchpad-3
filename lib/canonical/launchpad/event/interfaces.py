@@ -25,7 +25,6 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
         "The list of fields that were edited. A field name may appear in this "
         "list if it were shown on an edit form, but not actually changed.")
     user = Attribute("The user who modified the object.")
-    comment_on_change = Attribute("An optional comment for this change.")
 
 
 class ISQLObjectToBeModifiedEvent(IObjectEvent):

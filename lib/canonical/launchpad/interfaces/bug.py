@@ -17,8 +17,9 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    non_duplicate_bug, IMessageTarget, NotFoundError)
+from canonical.launchpad.interfaces.validation import non_duplicate_bug
+from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     ContentNameField, Title, BugField)
@@ -106,6 +107,9 @@ class IBug(IMessageTarget):
     attachments = Attribute("List of bug attachments.")
     tickets = Attribute("List of support tickets related to this bug.")
     specifications = Attribute("List of related specifications.")
+    bug_branches = Attribute(
+        "Branches associated with this bug, usually "
+        "branches on which this bug is being fixed.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
@@ -132,9 +136,24 @@ class IBug(IMessageTarget):
         addresses.
         """
 
+    def addChangeNotification(text, person):
+        """Add a bug change notification."""
+
+    def addCommentNotification(message):
+        """Add a bug comment notification."""
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
+        """
+
+    def hasBranch(branch):
+        """Is this branch linked to this bug?"""
+
+    def addBranch(branch, status):
+        """Associate a branch with this bug.
+
+        Returns an IBugBranch.
         """
 
     # CVE related methods
@@ -158,11 +177,10 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
-    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
-    title = Attribute("The new bug title or None.")
-    description = Attribute("The new bug description or None.")
+    title = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(

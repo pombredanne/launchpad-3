@@ -96,7 +96,7 @@ Let's see some examples of how this works:
 
 Lastly, some cleanup:
 
-  >>> high_priority_task.status = removeSecurityProxy(ORIGINAL_STATUS)
+  >>> high_priority_task.status = ORIGINAL_STATUS
   >>> high_priority_task.assignee = ORIGINAL_ASSIGNEE
 
 Status Elsewhere
@@ -133,4 +133,4 @@ Fixed, and see how the statuselsewhere value is affected:
   >>> wontfix_priority_task.statuselsewhere
   'fixed in 1 of 3 places'
 
-  >>> related_task.status = removeSecurityProxy(ORIGINAL_STATUS)
+  >>> related_task.status = ORIGINAL_STATUS

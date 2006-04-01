@@ -10,8 +10,8 @@ import urllib
 import cgi
 import datetime
 
-from sqlobject import ForeignKey, StringCol
-from sqlobject import SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 import pytz
 
@@ -137,16 +137,36 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-
-        if self.product is not None:
-            # This is an upstream task.
+        # We use the forbidden underscore attributes below because, with
+        # SQLObject, hitting self.product means querying and
+        # instantiating an object; prejoining doesn't help because this
+        # happens when the bug task is being instantiated -- too early
+        # in cases where we prejoin other things in.
+        # XXX: we should use a specific SQLObject API here to avoid the
+        # privacy violation.
+        #   -- kiko, 2006-03-21
+        if self._SO_val_productID is not None:
             mark_task(self, IUpstreamBugTask)
-        elif self.distrorelease is not None:
-            # This is a distro release task.
+        elif self._SO_val_distroreleaseID is not None:
             mark_task(self, IDistroReleaseBugTask)
-        else:
-            # This is a distro task.
+        elif self._SO_val_distributionID is not None:
+            # If nothing else, this is a distro task.
             mark_task(self, IDistroBugTask)
+        else:
+            raise AssertionError, "Task %d is floating" % self.id
+
+    @property
+    def target_uses_malone(self):
+        """See IBugTask"""
+        if IUpstreamBugTask.providedBy(self):
+            root_target = self.product
+        elif IDistroReleaseBugTask.providedBy(self):
+            root_target = self.distrorelease.distribution
+        elif IDistroBugTask.providedBy(self):
+            root_target = self.distribution
+        else:
+            raise AssertionError, "Task %d is floating" % self.id
+        return bool(root_target.official_malone)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
         # We need to overwrite this method to make sure whenever we change a
@@ -275,7 +295,7 @@ class BugTask(SQLBase, BugTaskMixin):
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (dbschema.BugTaskStatus.REJECTED, 
+            if status in (dbschema.BugTaskStatus.REJECTED,
                           dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
             else:
@@ -406,6 +426,30 @@ class BugTaskSet:
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
 
+        if params.component:
+            clauseTables += ["SourcePackagePublishing", "SourcePackageRelease"]
+            distrorelease = None
+            if params.distribution:
+                distrorelease = params.distribution.currentrelease
+            elif params.distrorelease:
+                distrorelease = params.distrorelease
+            assert distrorelease, (
+                "Search by component requires a context with a distribution "
+                "or distrorelease")
+
+            if zope_isinstance(params.component, any):
+                component_ids = sqlvalues(*params.component.query_values)
+            else:
+                component_ids = sqlvalues(params.component)
+
+            extra_clauses.extend([
+                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename",
+                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease",
+                "SourcePackagePublishing.distrorelease = %d" % distrorelease.id,
+                "SourcePackagePublishing.component IN (%s)" % ', '.join(component_ids),
+                "SourcePackagePublishing.status = %s" %
+                    dbschema.PackagePublishingStatus.PUBLISHED.value])
+
         clause = self._getPrivacyFilter(params.user)
         if clause:
             extra_clauses.append(clause)
@@ -432,6 +476,7 @@ class BugTaskSet:
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
             query, prejoinClauseTables=["Bug"], clauseTables=clauseTables,
+            prejoins=['sourcepackagename', 'product'],
             orderBy=orderby_arg)
 
         return bugtasks
@@ -473,7 +518,7 @@ class BugTaskSet:
             assert distrorelease != distrorelease.distribution.currentrelease, (
                 'Bugtasks cannot be opened on the current release.')
 
-        return BugTask(
+        bugtask = BugTask(
             bug=bug,
             product=product,
             distribution=distribution,
@@ -486,6 +531,12 @@ class BugTaskSet:
             assignee=assignee,
             owner=owner,
             milestone=milestone)
+        if not bugtask.target_uses_malone:
+            bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
+            bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
+            bugtask.status = dbschema.BugTaskStatus.UNKNOWN
+
+        return bugtask
 
     def maintainedBugTasks(self, person, minimportance=None, minpriority=None,
                            showclosed=False, orderBy=None, user=None):

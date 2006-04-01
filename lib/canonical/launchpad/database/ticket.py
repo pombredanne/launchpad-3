@@ -69,13 +69,11 @@ class Ticket(SQLBase):
         orderBy='id')
     bugs = RelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
+    messages = RelatedJoin('Message', joinColumn='ticket',
+        otherColumn='message',
+        intermediateTable='TicketMessage', orderBy='datecreated')
     reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
-
-    def _create(self, id, **kwargs):
-        """Subscribe the owner to the ticket when it's created."""
-        SQLBase._create(self, id, **kwargs)
-        self.subscribe(self.owner)
 
     # attributes
     @property
@@ -123,6 +121,10 @@ class Ticket(SQLBase):
     def can_be_reopened(self):
         return self.status in [
             TicketStatus.ANSWERED, TicketStatus.REJECTED]
+
+    def isSubscribed(self, person):
+        return bool(TicketSubscription.selectOneBy(ticketID=self.id,
+                                                   personID=person.id))
 
     def reopen(self, reopener):
         """See ITicket."""
@@ -181,16 +183,9 @@ class Ticket(SQLBase):
                 sub.destroySelf()
                 return
 
-    # messages
-    messages = RelatedJoin('Message', joinColumn='ticket',
-        otherColumn='message',
-        intermediateTable='TicketMessage', orderBy='datecreated')
-
     def newMessage(self, owner=None, subject=None, content=None,
-                   when=None):
+                   when=UTC_NOW):
         """Create a new Message and link it to this ticket."""
-        if when is None:
-            when = UTC_NOW
         msg = Message(
             owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
             datecreated=when)
@@ -252,13 +247,28 @@ class TicketSet:
         return Ticket.select(orderBy='-datecreated')[:10]
 
     def new(self, title=None, description=None, owner=None,
-            product=None, distribution=None, when=None):
+            product=None, distribution=None, sourcepackagename=None,
+            when=None):
         """See ITicketSet."""
         if when is None:
             when = UTC_NOW
-        return Ticket(
+        ticket = Ticket(
             title=title, description=description, owner=owner,
-            product=product, distribution=distribution, datecreated=when)
+            product=product, distribution=distribution,
+            sourcepackagename=sourcepackagename, datecreated=when)
+
+        support_contacts = list(ticket.target.support_contacts)
+        if ticket.sourcepackagename:
+            source_package = ticket.target.getSourcePackage(
+                ticket.sourcepackagename.name)
+            support_contacts += source_package.support_contacts
+
+        # Subscribe the submitter and the support contacts.
+        ticket.subscribe(owner)
+        for support_contact in support_contacts:
+            ticket.subscribe(support_contact)
+
+        return ticket
 
     def getAnsweredTickets(self):
         """See ITicketSet."""
@@ -270,3 +280,4 @@ class TicketSet:
             return Ticket.get(ticket_id)
         except SQLObjectNotFound:
             return default
+

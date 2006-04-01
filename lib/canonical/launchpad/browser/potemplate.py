@@ -18,6 +18,8 @@ from zope.interface import implements
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
@@ -114,10 +116,14 @@ class POTemplateView(LaunchpadView):
 
     def initialize(self):
         """Get the requested languages and submit the form."""
-        self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
-
         self.submitForm()
+
+    @property
+    def request_languages(self):
+        # if this is accessed multiple times in a same request, consider
+        # changing this to a cachedproperty
+        return helpers.request_languages(self.request)
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -136,15 +142,10 @@ class POTemplateView(LaunchpadView):
         Where the template has no POFile for that language, we use
         a DummyPOFile.
         """
-        # Languages the template has been translated into.
-        translated_languages = set(self.context.languages())
-        # The user's languages.
-        prefered_languages = set(self.request_languages)
-        # Merge the sets, convert them to a list, and sort them.
-        languages = sorted(translated_languages | prefered_languages,
-                           key=lambda x: x.englishname)
-
-        for language in languages:
+        # Union the languages the template has been translated into with
+        # The user's selected languages.
+        languages = set(self.context.languages()) | set(self.request_languages)
+        for language in sorted(languages, key=lambda x: x.englishname):
             pofile = self.context.getPOFileByLang(language.code)
             if pofile is None:
                 pofileset = getUtility(IPOFileSet)

@@ -6,6 +6,6 @@ will show such information in a prominent way.
   ... """)
   HTTP/1.1 200 Ok
   ...
-        This bug is a duplicate of
+        This report is a duplicate of
         <a href="...">bug #1</a>
   ...

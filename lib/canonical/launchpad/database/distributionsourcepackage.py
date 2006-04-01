@@ -15,6 +15,8 @@ from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
+from canonical.lp.dbschema import PackagePublishingStatus
+
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
 from canonical.launchpad.components.bugtarget import BugTargetBase
@@ -31,7 +33,8 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.supportcontact import SupportContact
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.helpers import shortlist
 
 _arg_not_provided = object()
@@ -83,7 +86,8 @@ class DistributionSourcePackage(BugTargetBase):
             """ % sqlvalues(self.distribution.id, self.sourcepackagename.id,
                             version),
             orderBy='-datecreated',
-            clauseTables=['distrorelease', 'sourcepackagerelease'])
+            prejoinClauseTables=['SourcePackageRelease'],
+            clauseTables=['DistroRelease', 'SourcePackageRelease'])
         if spph.count() == 0:
             return None
         return DistributionSourcePackageRelease(
@@ -193,7 +197,16 @@ class DistributionSourcePackage(BugTargetBase):
     @property
     def publishing_history(self):
         """See IDistributionSourcePackage."""
-        return SourcePackagePublishingHistory.select("""
+        return self._getPublishingHistoryQuery()
+
+    @property
+    def current_publishing_records(self):
+        """See IDistributionSourcePackage."""
+        status = PackagePublishingStatus.PUBLISHED
+        return self._getPublishingHistoryQuery(status)
+
+    def _getPublishingHistoryQuery(self, status=None):
+        query = """
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
@@ -201,8 +214,15 @@ class DistributionSourcePackage(BugTargetBase):
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
+                            self.sourcepackagename.id)
+
+        if status is not None:
+            query += ("AND SourcePackagePublishingHistory.status = %s"
+                      % sqlvalues(status))
+
+        return SourcePackagePublishingHistory.select(query,
             clauseTables=['DistroRelease', 'SourcePackageRelease'],
+            prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
     @property
@@ -241,7 +261,7 @@ class DistributionSourcePackage(BugTargetBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
@@ -259,6 +279,39 @@ class DistributionSourcePackage(BugTargetBase):
         if ticket.sourcepackagename != self.sourcepackagename:
             return None
         return ticket
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return False
+        SupportContact(
+            product=None, person=person.id,
+            sourcepackagename=self.sourcepackagename.id,
+            distribution=self.distribution.id)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
 
     def __eq__(self, other):
         """See IDistributionSourcePackage."""

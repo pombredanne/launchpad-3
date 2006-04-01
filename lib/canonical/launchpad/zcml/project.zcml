@@ -150,7 +150,6 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Edit project details"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"

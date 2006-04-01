@@ -19,13 +19,15 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.bugcve import BugCve
+from canonical.launchpad.database.bugnotification import BugNotification
 from canonical.launchpad.database.message import (
-    Message, MessageChunk)
+    MessageSet, Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import (
     BugTask, BugTaskSet, bugtask_sort_key)
@@ -91,6 +93,7 @@ class Bug(SQLBase):
     tickets = RelatedJoin('Ticket', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
+    bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
 
     @property
     def displayname(self):
@@ -151,15 +154,22 @@ class Bug(SQLBase):
 
         return sorted(emails)
 
-    # XXX, Brad Bollenbach, 2006-01-13: Setting publish_create_event to False
-    # allows us to suppress the create event when we *don't* want to have a
-    # separate email generated containing just the comment, e.g., when the user
-    # adds a comment on +editstatus. This is hackish though. See:
-    #
-    # https://launchpad.net/products/malone/+bug/25724
-    def newMessage(self, owner=None, subject=None, content=None,
-                   parent=None, publish_create_event=True):
-        """Create a new Message and link it to this ticket."""
+    def addChangeNotification(self, text, person, when=None):
+        """See IBug."""
+        if when is None:
+            when = UTC_NOW
+        message = MessageSet().fromText(
+            self.followup_subject(), text, owner=person, datecreated=when)
+        BugNotification(
+            bug=self, is_comment=False, message=message, date_emailed=None)
+
+    def addCommentNotification(self, message):
+        """See IBug."""
+        BugNotification(
+            bug=self, is_comment=True, message=message, date_emailed=None)
+
+    def newMessage(self, owner=None, subject=None, content=None, parent=None):
+        """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
@@ -167,8 +177,7 @@ class Bug(SQLBase):
 
         bugmsg = BugMessage(bug=self, message=msg)
 
-        if publish_create_event:
-            notify(SQLObjectCreatedEvent(bugmsg, user=owner))
+        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
 
         return bugmsg.message
 
@@ -188,6 +197,21 @@ class Bug(SQLBase):
         # ok, we need a new one
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
+
+    def hasBranch(self, branch):
+        """See canonical.launchpad.interfaces.IBug."""
+        branch = BugBranch.selectOneBy(branchID=branch.id, bugID=self.id)
+
+        return branch is not None
+
+    def addBranch(self, branch, whiteboard=None):
+        """See canonical.launchpad.interfaces.IBug."""
+        for bug_branch in shortlist(self.bug_branches):
+            if bug_branch.branch == branch:
+                return bug_branch
+
+        return BugBranch(
+            branch=branch, bug=self, whiteboard=whiteboard)
 
     def linkCVE(self, cve, user=None):
         """See IBug."""

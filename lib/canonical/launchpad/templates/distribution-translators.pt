@@ -4,9 +4,12 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Select a new translation group</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -16,16 +19,12 @@
 
       <div metal:use-macro="context/@@launchpad_editform/editform">
 
-          <div metal:fill-slot="extra_info" class="documentDescription">
-            Select the Translation Group that will be responsible for
-            translations in
-            <span tal:replace="context/title">Ubuntu Linux</span>. Also, set
-            the translation permissions used by the distribution.
-          </div>
-
+        <p metal:fill-slot="extra_info">
+          Select the translation group that will be responsible for translations in
+          <tal:distro replace="context/title">Ubuntu Linux</tal:distro>,
+          and the translation permissions used by the distribution.
+        </p>
       </div>
-
     </div>
-
   </body>
 </html>
