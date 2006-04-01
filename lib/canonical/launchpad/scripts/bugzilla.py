@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
+    BugTaskImportance, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -217,16 +217,16 @@ class Bug:
         return self._attachments
 
     def mapSeverity(self, bugtask):
-        """Set a Launchpad bug task's severity based on this bug's severity."""
+        """Set a Launchpad bug task's importance based on this bug's severity."""
         bugtask.severity = {
-            'blocker': BugTaskSeverity.CRITICAL,
-            'critical': BugTaskSeverity.CRITICAL,
-            'major': BugTaskSeverity.MAJOR,
-            'normal': BugTaskSeverity.NORMAL,
-            'minor': BugTaskSeverity.MINOR,
-            'trivial': BugTaskSeverity.MINOR,
-            'enhancement': BugTaskSeverity.WISHLIST
-            }.get(self.bug_severity, BugTaskSeverity.NORMAL)
+            'blocker': BugTaskImportance.CRITICAL,
+            'critical': BugTaskImportance.CRITICAL,
+            'major': BugTaskImportance.MAJOR,
+            'normal': BugTaskImportance.MODERATE,
+            'minor': BugTaskImportance.MINOR,
+            'trivial': BugTaskImportance.MINOR,
+            'enhancement': BugTaskImportance.WISHLIST
+            }.get(self.bug_severity, BugTaskImportance.UNKNOWN)
 
     def mapPriority(self, bugtask):
         """Set a Launchpad bug task's priority based on this bug's priority."""
@@ -236,7 +236,7 @@ class Bug:
             'P3': BugTaskPriority.MEDIUM,
             'P4': BugTaskPriority.LOW,
             'P5': BugTaskPriority.LOW
-            }.get(self.priority, BugTaskPriority.MEDIUM)
+            }.get(self.priority, BugTaskPriority.UNKNOWN)
 
     def mapStatus(self, bugtask):
         """Set a Launchpad bug task's status based on this bug's status.

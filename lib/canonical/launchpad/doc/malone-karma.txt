@@ -132,15 +132,16 @@ Accept a bug task:
     >>> make_sure_karma_is_added('bugaccepted', event, 5)
     True
 
-Change a bug task's severity:
+Change a bug task's importance:
 
-    >>> from canonical.lp.dbschema import BugTaskSeverity
-    >>> for severity in BugTaskSeverity.items:
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> for importance in BugTaskImportance.items:
     ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    ...     bugtask.severity = severity
-    ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['severity'])
+    ...     bugtask.importance = importance
+    ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance'])
     ...     print severity.name, make_sure_karma_is_added(
-    ...         'bugtaskseveritychanged', event, 1)
+    ...         'bugtaskimportancechanged', event, 1)
+    UNTRIAGED True
     WISHLIST True
     MINOR True
     NORMAL True

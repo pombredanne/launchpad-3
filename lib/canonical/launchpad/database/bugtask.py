@@ -533,7 +533,7 @@ class BugTaskSet:
             milestone=milestone)
         if not bugtask.target_uses_malone:
             bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
-            bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
+            bugtask.importance = dbschema.BugTaskImportance.UNKNOWN
             bugtask.status = dbschema.BugTaskStatus.UNKNOWN
 
         return bugtask

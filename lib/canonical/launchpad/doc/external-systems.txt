@@ -130,13 +130,13 @@ from a bug task.
     >>> thunderbird_task.bugwatch.remotestatus is None
     True
 
-We don't yet support updating the priority and severity for Bugzilla
+We don't yet support updating the priority and importance for Bugzilla
 bugs, so let's set them to some bogus value, to see that they get set
 to UNKNOWN.
 
-    >>> from canonical.lp.dbschema import BugTaskPriority, BugTaskSeverity
+    >>> from canonical.lp.dbschema import BugTaskPriority, BugTaskImportance
     >>> thunderbird_task.priority = BugTaskPriority.HIGH
-    >>> thunderbird_task.severity = BugTaskSeverity.MAJOR
+    >>> thunderbird_task.importance = BugTaskImportance.MAJOR
 
 We need to create a new ExternalSystem for the Mozilla tracker:
 
@@ -155,7 +155,7 @@ synced:
     Confirmed
     >>> print thunderbird_task.priority.title
     Unknown
-    >>> print thunderbird_task.severity.title
+    >>> print thunderbird_task.importance.title
     Unknown
     >>> print thunderbird_task.bugwatch.remotestatus
     ASSIGNED

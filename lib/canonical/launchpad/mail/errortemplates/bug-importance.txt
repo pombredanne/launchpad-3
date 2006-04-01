@@ -1,0 +1,5 @@
+To make Malone simpler, "priority" and "severity" are not used any more.
+They are now combined into "importance".
+
+Recognized values for importance are
+"untriaged", "wishlist", "minor", "moderate", "major", and "critical".

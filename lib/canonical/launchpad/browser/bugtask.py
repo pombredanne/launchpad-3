@@ -55,7 +55,7 @@ from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.lp.dbschema import (
-    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
+    BugTaskPriority, BugTaskImportance, BugTaskStatus)
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, DBItemDisplayWidget)
 
@@ -66,7 +66,7 @@ def get_sortorder_from_request(request):
         return request.get("orderby").split(",")
     else:
         # No sort ordering specified, so use a reasonable default.
-        return ["-priority", "-severity"]
+        return ["-importance"]
 
 
 class BugTargetTraversalMixin:
@@ -447,7 +447,7 @@ class BugTaskEditView(GeneralFormView):
                 ]
             self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
             self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-            self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.milestone_widget = None
         else:
@@ -559,7 +559,7 @@ class BugTaskEditView(GeneralFormView):
             #     -- Bjorn Tillenius, 2006-03-01
             bugtask.status = BugTaskStatus.UNKNOWN
             bugtask.priority = BugTaskPriority.UNKNOWN
-            bugtask.severity = BugTaskSeverity.UNKNOWN
+            bugtask.importance = BugTaskImportance.UNKNOWN
             bugtask.assignee = None
 
         if milestone_cleared:
@@ -614,7 +614,7 @@ class BugTaskStatusView(LaunchpadView):
         task or not.
         """
         field_names = [
-            'status', 'priority', 'severity', 'assignee', 'statusexplanation']
+            'status', 'importance', 'assignee', 'statusexplanation']
         if not self.context.target_uses_malone:
             field_names += ['bugwatch']
             self.milestone_widget = None
@@ -630,8 +630,7 @@ class BugTaskStatusView(LaunchpadView):
 
         self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
         self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-        self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
-        self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+        self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
 
         setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
 
@@ -664,7 +663,7 @@ class BugListingPortletView(LaunchpadView):
         """Return the URL for critical bugs on this bug target."""
         return self.getSearchFilterURL(
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
-            severity=dbschema.BugTaskSeverity.CRITICAL.title)
+            importance=dbschema.BugTaskImportance.CRITICAL.title)
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
@@ -708,9 +707,9 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     ['REJECTED']
 
     >>> initial = getInitialValuesFromSearchParams(
-    ...     {'severity': [dbschema.BugTaskSeverity.CRITICAL,
-    ...                   dbschema.BugTaskSeverity.MAJOR]}, IBugTaskSearch)
-    >>> [severity.name for severity in initial['severity']]
+    ...     {'importance': [dbschema.BugTaskImportance.CRITICAL,
+    ...                   dbschema.BugTaskImportance.MAJOR]}, IBugTaskSearch)
+    >>> [importance.name for importance in initial['severity']]
     ['CRITICAL', 'MAJOR']
 
     >>> getInitialValuesFromSearchParams(
@@ -810,8 +809,8 @@ class BugTaskSearchListingView(LaunchpadView):
             getWidgetsData(
                 self, self.schema,
                 names=[
-                    "searchtext", "status", "assignee", "severity",
-                    "priority", "owner", "omit_dupes", "has_patch",
+                    "searchtext", "status", "assignee", "importance",
+                    "owner", "omit_dupes", "has_patch",
                     "milestone", "component", "has_no_package"]))
 
         if extra_params:
@@ -894,9 +893,9 @@ class BugTaskSearchListingView(LaunchpadView):
         """Return data used to render the priority checkboxes."""
         return self.getWidgetValues(vocabulary_name="BugTaskPriority")
 
-    def getSeverityWidgetValues(self):
-        """Return data used to render the severity checkboxes."""
-        return self.getWidgetValues("BugTaskSeverity")
+    def getImportanceWidgetValues(self):
+        """Return data used to render the Importance checkboxes."""
+        return self.getWidgetValues("BugTaskImportance")
 
     def getMilestoneWidgetValues(self):
         """Return data used to render the milestone checkboxes."""

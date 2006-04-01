@@ -26,7 +26,7 @@ from canonical.launchpad.event.interfaces import (
 from canonical.launchpad.searchbuilder import NULL
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, BugTaskPriority)
+    BugTaskStatus, BugTaskImportance, BugTaskPriority)
 
 
 def get_error_message(filename, **interpolation_items):
@@ -313,7 +313,9 @@ class AffectsEmailCommand(EmailCommand):
     """Either creates a new task, or edits an existing task."""
 
     implements(IBugTaskEmailCommand)
-    _subCommandNames = ['status', 'severity', 'assignee', 'priority']
+    _subCommandNames = ['status', 'importance', 'assignee']
+    _subObsoleteCommandNames = ['severity', 'priority']
+    # XXX mpt 20060401: Remove _subObsoleteCommandNames after a month.
 
     def execute(self, bug):
         """See IEmailCommand."""
@@ -360,10 +362,14 @@ class AffectsEmailCommand(EmailCommand):
                 subcmd_args = []
 
             if subcmd_name not in self._subCommandNames:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'affects-unexpected-argument.txt',
-                        argument=subcmd_name))
+                # XXX mpt 20060401: Remove _subObsoleteCommandNames after a month.
+                if subcmd_name in self._subObsoleteCommandNames:
+                    raise EmailProcessingError(get_error_message('bug-importance.txt'))
+                else
+                    raise EmailProcessingError(
+                        get_error_message(
+                            'affects-unexpected-argument.txt',
+                            argument=subcmd_name))
 
             command = emailcommands.get(subcmd_name, subcmd_args)
             bugtask, event = command.execute(bugtask, event)
@@ -470,14 +476,9 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
     dbschema = BugTaskStatus
 
 
-class SeverityEmailCommand(DBSchemaEditEmailCommand):
+class ImportanceEmailCommand(DBSchemaEditEmailCommand):
     """Changes a bug task's severity."""
-    dbschema = BugTaskSeverity
-
-
-class PriorityEmailCommand(DBSchemaEditEmailCommand):
-    """Changes the bug task's priority."""
-    dbschema = BugTaskPriority
+    dbschema = BugTaskImportance
 
 
 class NoSuchCommand(KeyError):
@@ -496,9 +497,8 @@ class EmailCommands:
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
         'status': StatusEmailCommand,
-        'priority': PriorityEmailCommand,
-        'severity': SeverityEmailCommand,
     }
+    _obsoleteCommands = ['priority', 'severity']
 
     def names(self):
         """Returns all the command names."""
@@ -512,7 +512,10 @@ class EmailCommands:
         """
         command_class = self._commands.get(name)
         if command_class is None:
-            raise NoSuchCommand(name)
+            if name in _obsoleteCommands:
+                # XXX Raise some sort of friendly error here
+            else:
+                raise NoSuchCommand(name)
         return command_class(name, string_args)
 
 emailcommands = EmailCommands()

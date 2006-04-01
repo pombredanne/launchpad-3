@@ -5,7 +5,7 @@ Bugs are problems in software. When a bug gets assigned to a specific
 upstream or distro/sourcepackagename/binarypackagename, a bug /task/ is
 created. In essence, a bug task is a bug that needs to be fixed in a specific
 place. Where a bug has things like a title, comments and subscribers, it's
-the bug task that tracks priority, severity, assignee, etc.
+the bug task that tracks priority, importance, assignee, etc.
 
 Working with Bug Tasks in Launchpad
 ===================================
@@ -41,14 +41,14 @@ to access those other objects:
     >>> bug_one = bugset.get(1)
     >>> sabdfl = personset.get(1)
 
-Next, we need to grab some values to provide for priority, severity and status.
+Next, we need to grab some values to provide for priority, importance, and status.
 
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskSeverity,
+    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance,
     ...     BugTaskPriority)
     >>> STATUS_UNCONFIRMED = BugTaskStatus.UNCONFIRMED
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
-    >>> SEVERITY_NORMAL = BugTaskSeverity.NORMAL
+    >>> IMPORTANCE_NORMAL = BugTaskImportance.NORMAL
     >>> PRIORITY_MEDIUM = BugTaskPriority.MEDIUM
 
   i. Upstream -- a bug that has to be fixed in an upstream product
@@ -57,7 +57,7 @@ Next, we need to grab some values to provide for priority, severity and status.
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=evolution, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     importance=IMPORTANCE_NORMAL)
     >>> upstream_task.product == evolution
     True
 
@@ -71,7 +71,7 @@ Next, we need to grab some values to provide for priority, severity and status.
     >>> distro_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     importance=IMPORTANCE_NORMAL)
     >>> distro_task.distribution == ubuntu
     True
 
@@ -87,7 +87,7 @@ Next, we need to grab some values to provide for priority, severity and status.
     >>> distro_release_task = bugtaskset.createTask(
     ...     bug=bug_one, distrorelease=warty, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     importance=IMPORTANCE_NORMAL)
     >>> distro_release_task.distrorelease == warty
     True
 
@@ -102,7 +102,7 @@ make sense to "backport a fix" to the current release:
     >>> distro_release_task = bugtaskset.createTask(
     ...     bug=bug_one, distrorelease=hoary, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     importance=IMPORTANCE_NORMAL)
     Traceback (most recent call last):
       ...
     AssertionError: Bugtasks cannot be opened on the current release.
@@ -179,7 +179,7 @@ For a person:
     >>> ubuntu_evolution_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=foobar,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL, sourcepackagename=evolution_sourcepackage)
+    ...     importance=IMPORTANCE_NORMAL, sourcepackagename=evolution_sourcepackage)
     >>> flush_database_updates()
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
     ...                              orderby='targetname')
@@ -525,7 +525,7 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.milestone is None
     True
-    >>> null_bugtask.severity is None
+    >>> null_bugtask.importance is None
     True
     >>> null_bugtask.assignee is None
     True
@@ -789,7 +789,7 @@ Of course, it's also computed and set when a bugtask is created.
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=netapplet, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     importance=IMPORTANCE_NORMAL)
     >>> upstream_task.targetname
     u'netapplet (upstream)'
 
@@ -830,9 +830,8 @@ Of course, it's also computed and set when a bugtask is created.
 Remote BugTasks
 ---------------
 
-If a bug tasks's target isn't using Malone officially, we say that it's
-a remote bug tasks. Such bug tasks allow the status, priority and
-severity to have an UNKNOWN value.
+If a bug task's target isn't using Malone officially, we say that it's a remote
+bug task. Such bug tasks let the status, priority and importance be UNKNOWN.
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> evolution_task = bug_one.bugtasks[0]
@@ -886,7 +885,7 @@ ProgrammingError
     >>> try: bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distrorelease=warty,
     ...     owner=sabdfl, status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
+    ...     importance=IMPORTANCE_NORMAL)
     ... except DatabaseError: print sys.exc_value
     ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
     <BLANKLINE>

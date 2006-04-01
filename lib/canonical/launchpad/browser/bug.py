@@ -35,7 +35,7 @@ from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
 from canonical.lp.dbschema import (
-    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
+    BugTaskPriority, BugTaskImportance, BugTaskStatus)
 
 
 class BugSetNavigation(Navigation):
@@ -343,7 +343,7 @@ class BugAlsoReportInView(GeneralFormView):
             # its status to be None when created.
             taskadded.status = BugTaskStatus.UNKNOWN
             taskadded.priority = BugTaskPriority.UNKNOWN
-            taskadded.severity = BugTaskSeverity.UNKNOWN
+            taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
         self._nextURL = canonical_url(taskadded)
@@ -480,7 +480,7 @@ class BugTextView(LaunchpadView):
         else:
             text.append('priority: ')
 
-        text.append('severity: %s' % task.severity.title)
+        text.append('importance: %s' % task.importance.title)
 
         if task.assignee:
             text.append('assignee: %s' % self.person_text(task.assignee))

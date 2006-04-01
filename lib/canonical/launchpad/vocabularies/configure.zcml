@@ -256,8 +256,8 @@
     />
 
   <vocabulary
-    name="RemoteBugTaskSeverity"
-    factory="canonical.launchpad.vocabularies.RemoteBugTaskSeverityVocabulary"
+    name="RemoteBugTaskImportance"
+    factory="canonical.launchpad.vocabularies.RemoteBugTaskImportanceVocabulary"
     />
 
   <vocabulary
