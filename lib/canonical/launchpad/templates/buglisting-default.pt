@@ -18,19 +18,14 @@
 
       <div tal:define="batch_navigator view/search">
         <form method="GET" name="search" action="">
-          <input type="text" name="field.searchtext" size="20"
+          <input type="text" name="field.searchtext"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
+          <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
           <input type="submit" name="search" value="Search" />
           <a href="#"
              tal:attributes="href string:${context/fmt:url}/+bugs-advanced-search">
             <small>Advanced</small>
           </a>
-          <div style="margin-top: 5px">
-            <small>
-              Sort by:
-              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-            </small>
-          </div>
         </form>
         <script>
           <!--
