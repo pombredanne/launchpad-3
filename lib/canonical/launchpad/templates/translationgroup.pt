@@ -33,12 +33,6 @@
 
   <tal:translators condition="context/translators">
 
-  <p>
-    These are the translators in this group.
-    You can <a href="+appoint">appoint additional translators</a>,
-    as well as changing or removing translators in the list.
-  </p>
-
   <table class="sortable listing" id="group-members">
     <thead>
       <tr>
@@ -77,9 +71,16 @@
     </tr>
   </table>
 
-  <p style="float: right;"><img src="/@@/add.gif">
-    <a href="+appoint">Appoint New Translator</a>
-  </p>
+        <ul tal:condition="context/required:launchpad.Edit" class="menu">
+          <li class="add">
+            <a href="+appoint">Appoint additional translators</a>
+          </li>
+        </ul>
+        <ul tal:condition="not:request/lp:person" class="menu">
+          <li class="locked">
+            <a href="+appoint">Appoint additional translators</a>
+          </li>
+        </ul>
 
   </tal:translators>
 

@@ -238,6 +238,9 @@ ul {
   list-style-image: url(/@@/bullet.gif);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
+ul.menu {
+  font-size: smaller;
+}
 ol {
   margin: 0.5em 0 0 1.5em;
 }
@@ -827,9 +830,6 @@ ul.locked>li, li.locked {
 }
 ul.mail>li, li.mail {
   list-style-image: url(/@@/mail_icon.gif);
-}
-ul.menu>li, li.menu {
-  list-style-image: url(/@@/favorite_icon.gif);
 }
 ul.milestone>li, li.milestone {
   list-style-image: url(/@@/target);
