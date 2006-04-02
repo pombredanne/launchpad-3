@@ -71,13 +71,11 @@
     </tr>
   </table>
 
-        <ul tal:condition="context/required:launchpad.Edit" class="menu">
-          <li class="add">
+        <ul class="menu">
+          <li tal:condition="context/required:launchpad.Edit" class="add">
             <a href="+appoint">Appoint additional translators</a>
           </li>
-        </ul>
-        <ul tal:condition="not:request/lp:person" class="menu">
-          <li class="locked">
+          <li tal:condition="not:request/lp:person" class="locked">
             <a href="+appoint">Appoint additional translators</a>
           </li>
         </ul>
