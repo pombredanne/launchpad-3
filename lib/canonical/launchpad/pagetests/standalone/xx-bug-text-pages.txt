@@ -20,7 +20,7 @@ Get text page for a single bug.
   status: Unconfirmed
   reporter: Sample Person (name12)
   priority: Wontfix
-  severity: Minor
+  importance: Minor
   assignee: Mark Shuttleworth (sabdfl)
   milestone: 
   <BLANKLINE>
@@ -28,7 +28,7 @@ Get text page for a single bug.
   status: Unconfirmed
   reporter: Foo Bar (name16)
   priority: Medium
-  severity: Normal
+  importance: Medium
   assignee: 
   milestone: 
   <BLANKLINE>
@@ -36,7 +36,7 @@ Get text page for a single bug.
   status: Confirmed
   reporter: Sample Person (name12)
   priority: High
-  severity: Minor
+  importance: Minor
   assignee: 
   milestone: 
   <BLANKLINE>

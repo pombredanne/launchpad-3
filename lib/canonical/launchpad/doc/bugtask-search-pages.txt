@@ -21,7 +21,7 @@ The simple search form returns only open bugtasks.
     >>> form_values = {
     ...     'search': 'Search',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_search_listingview = create_view(
     ...     debian, "+bugs", form_values)
@@ -37,7 +37,7 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'advanced': 1,
     ...     'field.status': 'Fix Released',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(debian, '+bugs', form_values)
     >>> fix_released_bugtasks = list(distro_advanced_search_listingview.search().batch)
@@ -53,7 +53,7 @@ A triager may find it useful to query for bugs with no package:
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.has_no_package': 'on',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     ubuntu, '+bugs', form_values)
@@ -73,7 +73,7 @@ The simple search form returns only open bugtasks.
     >>> form_values = {
     ...     'search': 'Search',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distrorelease_search_listingview = create_view(
     ...     woody, "+bugs", form_values)
@@ -101,7 +101,7 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'advanced': 1,
     ...     'field.status': 'Rejected',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distrorelease_advanced_search_view = create_view(woody, '+bugs', form_values)
     >>> rejected_bugtasks = list(distrorelease_advanced_search_view.search().batch)

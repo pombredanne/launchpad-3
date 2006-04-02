@@ -139,7 +139,7 @@ Change a bug task's importance:
     ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     ...     bugtask.importance = importance
     ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance'])
-    ...     print severity.name, make_sure_karma_is_added(
+    ...     print importance.name, make_sure_karma_is_added(
     ...         'bugtaskimportancechanged', event, 1)
     UNTRIAGED True
     WISHLIST True

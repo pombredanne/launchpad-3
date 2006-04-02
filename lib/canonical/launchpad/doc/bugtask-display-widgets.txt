@@ -62,8 +62,8 @@ assignee yet:
 DBItemDisplayWidget
 -------------------
 
-This widgets is used for displaying DBItem attributes of the bug task,
-like status, priority and severity. It displays the title of the item
+This widget is used for displaying DBItem attributes of the bug task,
+like status, priority, and importance. It displays the title of the item
 in a span with the appropriate css class:
 
     >>> from canonical.widgets.bugtask import DBItemDisplayWidget

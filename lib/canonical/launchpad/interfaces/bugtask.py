@@ -68,7 +68,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
-    # XXX: the status, severity and priority's vocabularies do not
+    # XXX: the status, importance, and priority's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,

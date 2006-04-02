@@ -477,7 +477,7 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
 
 
 class ImportanceEmailCommand(DBSchemaEditEmailCommand):
-    """Changes a bug task's severity."""
+    """Changes a bug task's importance."""
     dbschema = BugTaskImportance
 
 

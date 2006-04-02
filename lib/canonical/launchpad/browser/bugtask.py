@@ -709,7 +709,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'importance': [dbschema.BugTaskImportance.CRITICAL,
     ...                   dbschema.BugTaskImportance.MAJOR]}, IBugTaskSearch)
-    >>> [importance.name for importance in initial['severity']]
+    >>> [importance.name for importance in initial['importance']]
     ['CRITICAL', 'MAJOR']
 
     >>> getInitialValuesFromSearchParams(

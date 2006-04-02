@@ -9,7 +9,7 @@
   <table class="listing" width="67%"
          tal:define="tasks task_batch_navigator/batch;
                      default_columns python:['id', 'title', 'status',
-                                             'priority', 'severity'];
+                                             'importance'];
                      listing_columns listing_columns|default_columns">
 
     <thead tal:define="listing_columns listing_columns|default_columns">
@@ -34,8 +34,7 @@
 
   <table class="sortable listing" id="bugtask-table" width="67%"
          tal:define="default_columns python:['id', 'product-or-package',
-                                             'title', 'status', 'priority',
-                                             'severity'];
+                                             'title', 'status', 'importance'];
                      listing_columns listing_columns|default_columns">
     <thead>
       <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
@@ -77,9 +76,9 @@
         tal:attributes="class python:view.getSortClass('product')">
       <a href="#" tal:attributes="href python:view.getSortLink('product')">Product</a>
     </th>
-    <th tal:condition="python:'severity' in listing_columns"
-        tal:attributes="class python:view.getSortClass('severity')">
-      <a href="#" tal:attributes="href python:view.getSortLink('severity')">Severity</a>
+    <th tal:condition="python:'importance' in listing_columns"
+        tal:attributes="class python:view.getSortClass('importance')">
+      <a href="#" tal:attributes="href python:view.getSortLink('importance')">Importance</a>
     </th>
     <th tal:condition="python:'priority' in listing_columns"
         tal:attributes="class python:view.getSortClass('priority')">
@@ -128,8 +127,8 @@
     <th tal:condition="python:'product-or-package' in listing_columns">
       Target
     </th>
-    <th tal:condition="python:'severity' in listing_columns">
-      Severity
+    <th tal:condition="python:'importance' in listing_columns">
+      Importance
     </th>
     <th tal:condition="python:'priority' in listing_columns">
       Priority
@@ -192,9 +191,9 @@
     </span>
 
   </td>
-  <td tal:condition="python:'severity' in listing_columns"
-      tal:content="task/severity/title"
-      tal:attributes="class string:severity${task/severity/title}">
+  <td tal:condition="python:'importance' in listing_columns"
+      tal:content="task/importance/title"
+      tal:attributes="class string:importance${task/importance/title}">
       Medium
   </td>
   <tal:priority condition="python:'priority' in listing_columns">

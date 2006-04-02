@@ -108,15 +108,15 @@
                     <table>
                       <tr>
                         <td>
-                          <small><strong>Severity</strong></small>
+                          <small><strong>Importance</strong></small>
                         </td>
                       </tr>
                       <tr>
                         <td>
                           <small>
-                            <span tal:repeat="widget_value view/getSeverityWidgetValues">
-                              <span tal:define="widget_id string:severity.${widget_value/title}">
-                                <input name="field.severity:list"
+                            <span tal:repeat="widget_value view/getImportanceWidgetValues">
+                              <span tal:define="widget_id string:importance.${widget_value/title}">
+                                <input name="field.importance:list"
                                        type="checkbox"
                                        tal:attributes="value widget_value/value;
                                                        checked widget_value/checked;

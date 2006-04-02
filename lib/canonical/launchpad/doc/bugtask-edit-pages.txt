@@ -23,7 +23,7 @@ Person:
     ...     form={
     ...         'FORM_SUBMIT': '',
     ...         'field.status': 'In Progress',
-    ...         'field.severity': ubuntu_thunderbird_task.severity.title,
+    ...         'field.importance': ubuntu_thunderbird_task.importance.title,
     ...         'field.field.assignee.option': 'assign_to_nobody',
     ...         'field.sourcepackagename':
     ...             ubuntu_thunderbird_task.sourcepackagename.name})
@@ -68,7 +68,7 @@ to show that the milestone value is cleared.
     ...     'FORM_SUBMIT': 'Save Changes',
     ...     'field.product': 'ubuntu',
     ...     'field.status': bug_one_in_firefox.status.title,
-    ...     'field.severity': bug_one_in_firefox.severity.title,
+    ...     'field.importance': bug_one_in_firefox.importance.title,
     ...     'field.priority': bug_one_in_firefox.priority.title}
 
 

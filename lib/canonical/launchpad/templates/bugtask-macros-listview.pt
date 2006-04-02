@@ -71,14 +71,6 @@
   <select name="orderby" id="orderby" size="1"
           tal:define="orderby request/orderby|string:-importance">
     <option
-      value="datecreated"
-      tal:attributes="selected python:orderby == 'datecreated'"
-    >oldest first</option>
-    <option
-      value="-datecreated"
-      tal:attributes="selected python:orderby == '-datecreated'"
-    >newest first</option>
-    <option
       value="-importance"
       tal:attributes="selected python:orderby == '-importance'"
     >by importance</option>
@@ -86,9 +78,19 @@
       value="milestone"
       tal:attributes="selected python:orderby == 'milestone'"
     >by milestone</option>
-    <option tal:condition="view/shouldShowTargetName|nothing"
-            tal:attributes="selected python:orderby == 'targetname'"
-            value="targetname">location</option>
+    <option
+      tal:condition="view/shouldShowTargetName|nothing"
+      tal:attributes="selected python:orderby == 'targetname'"
+      value="targetname"
+    >by location</option>
+    <option
+      value="datecreated"
+      tal:attributes="selected python:orderby == 'datecreated'"
+    >oldest first</option>
+    <option
+      value="-datecreated"
+      tal:attributes="selected python:orderby == '-datecreated'"
+    >newest first</option>
   </select>
 
 </metal:item>

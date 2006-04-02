@@ -128,19 +128,11 @@ enters in action.
   ... 
   ... 1
   ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... Medium
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.severity"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
   ... Minor
   ... -----------------------------6732896103366711491579814469
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------6732896103366711491579814469

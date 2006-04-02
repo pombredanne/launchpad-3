@@ -115,12 +115,12 @@ Subscribed bugs
 ---------------
 
 All bug tasks someone is subscribed to. By default we'll get bug tasks
-with any severity.
+with any importance.
 
     >>> name12 = getUtility(IPersonSet).get(12)
     >>> subscribed_bugtasks_view = create_view(name12, '+subscribedbugs')
     >>> subscribed_bugtasks = list(subscribed_bugtasks_view.search().batch)
-    >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
      (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
@@ -160,7 +160,7 @@ from these reports, simply by hacking the URL.
 
 Let's look at some example searches:
 
-No search criteria (ordered by priority, then severity):
+No search criteria (ordered by importance):
 
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
@@ -212,7 +212,7 @@ Unassigned, and In Progress bug lists.
     u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
 
     >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
-    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
 
     >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
     u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.unassigned=on&search=Search'
@@ -262,7 +262,7 @@ render the overview report.
     >>> ubuntu_firefox_bugcounts['open_bugs_url']
     u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['critical_bugs_url']
-    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['unassigned_bugs_url']
     u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.unassigned=on&search=Search'
     >>> ubuntu_firefox_bugcounts['inprogress_bugs_url']

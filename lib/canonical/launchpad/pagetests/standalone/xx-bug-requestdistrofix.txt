@@ -118,19 +118,11 @@ But it's not possible to change a bugtask to a existing one.
   ... 
   ... 1
   ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Low
+  ... Medium
   ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------16131040782095479517127443199

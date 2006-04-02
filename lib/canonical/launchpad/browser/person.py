@@ -834,7 +834,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def getCriticalBugsURL(self, distributionsourcepackage):
         """Return the URL for critical bugs on distributionsourcepackage."""
         critical_bugs_params = {
-            'field.status': [], 'field.severity': "Critical"}
+            'field.status': [], 'field.importance': "Critical"}
 
         for status in UNRESOLVED_BUGTASK_STATUSES:
             critical_bugs_params["field.status"].append(status.title)

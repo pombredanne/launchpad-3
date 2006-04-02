@@ -153,8 +153,8 @@ function will be used:
   ...             print '    Assignee:', task.assignee.displayname
   ...         if task.priority:
   ...             print '    Priority:', task.priority.name
-  ...         if task.severity:
-  ...             print '    Severity:', task.severity.name
+  ...         if task.importance:
+  ...             print '    Importance:', task.importance.name
   ...         if task.statusexplanation:
   ...             print '    Explanation:', task.statusexplanation
   ...         if task.milestone:
@@ -198,7 +198,7 @@ Now we import bug #1 and check the results:
       Binary package: mozilla-firefox
       Assignee: Sample Person
       Priority: MEDIUM
-      Severity: NORMAL
+      Importance: MEDIUM
       Explanation: status (Bugzilla status=NEW, product=Ubuntu, component=mozilla-firefox)
       Milestone: ubuntu-5.10
   Messages:
@@ -293,7 +293,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
       Source package: netapplet
       Assignee: Foo Bar
       Priority: HIGH
-      Severity: CRITICAL
+      Importance: CRITICAL
       Explanation: Bugzilla status=ASSIGNED, product=Ubuntu, component=netapplet
   CVEs:
       CVE-2005-1234
@@ -338,7 +338,7 @@ Next we import a fixed bug:
       Binary package: mozilla-firefox
       Assignee: Sample Person
       Priority: HIGH
-      Severity: CRITICAL
+      Importance: CRITICAL
       Explanation: Bugzilla status=CLOSED FIXED, product=Ubuntu, component=mozilla-firefox
   Messages:
       Author: Sample Person
@@ -365,7 +365,7 @@ and attach a watch to the upstream bug tracker:
   Task: evolution (upstream)
       Status: UNCONFIRMED
       Product: evolution
-      Severity: NORMAL
+      Importance: MEDIUM
       Watch: http://bugzilla.gnome.org//show_bug.cgi?id=273041
   Task: evolution (Ubuntu)
       Status: UNCONFIRMED
@@ -373,14 +373,14 @@ and attach a watch to the upstream bug tracker:
       Source package: evolution
       Assignee: Sample Person
       Priority: HIGH
-      Severity: CRITICAL
+      Importance: CRITICAL
       Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
   Task: evolution (Debian)
       Status: UNKNOWN
       Distro: debian
       Source package: evolution
       Priority: UNKNOWN
-      Severity: UNKNOWN
+      Importance: UNKNOWN
       Watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
   Messages:
       Author: Sample Person
@@ -395,7 +395,7 @@ and attach a watch to the upstream bug tracker:
 Severity Mapping
 ----------------
 
-Bugzilla severities are mapped to the equivalent Launchpad values:
+Bugzilla severities are mapped to the equivalent Launchpad importance values:
 
   >>> bug = bugzilla.Bug(bz.backend, 1)
   >>> class FakeBugTask:
@@ -409,7 +409,7 @@ Bugzilla severities are mapped to the equivalent Launchpad values:
   blocker      CRITICAL
   critical     CRITICAL
   major        MAJOR
-  normal       NORMAL
+  normal       MEDIUM
   minor        MINOR
   trivial      MINOR
   enhancement  WISHLIST
