@@ -95,7 +95,7 @@ body {
 
 :visited {
   background: none;
-  color: #8888bb;
+  color: #66a;
 }
 :link, .hierarchy :visited, .footer :visited,
 .facets :visited, #pillars :visited, #subpillars :visited, .portlet :visited {
