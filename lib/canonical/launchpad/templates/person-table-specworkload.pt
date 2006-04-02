@@ -22,28 +22,28 @@
     <tbody class="lesser">
       <tr tal:repeat="spec view/workload">
         <td width="80">
-          <span class="revsortkey" tal:content="spec/spec/priority/value" />
-          <span tal:content="spec/spec/priority/title"
+          <span class="revsortkey" tal:content="spec/priority/value" />
+          <span tal:content="spec/priority/title"
                 tal:attributes="
-                class string:specpriority${spec/spec/priority/name}">High
+                class string:specpriority${spec/priority/name}">High
           </span>
         </td>
         <td>
-          <a tal:content="spec/spec/name"
-             tal:attributes="href spec/spec/fmt:url">foo-bar</a>
+          <a tal:content="spec/name"
+             tal:attributes="href spec/fmt:url">foo-bar</a>
         </td>
         <td width="80">
-          <span class="sortkey" tal:content="spec/spec/status/value" />
-          <span tal:content="spec/spec/status/title"
+          <span class="sortkey" tal:content="spec/status/value" />
+          <span tal:content="spec/status/title"
                 tal:attributes="
-                class string:specstatus${spec/spec/status/name}">Approved
+                class string:specstatus${spec/status/name}">Approved
           </span>
         </td>
         <td width="80">
-          <span class="sortkey" tal:content="spec/spec/delivery/value" />
-          <span tal:content="spec/spec/delivery/title"
+          <span class="sortkey" tal:content="spec/delivery/value" />
+          <span tal:content="spec/delivery/title"
                 tal:attributes="
-                class string:specdelivery${spec/spec/delivery/name}">Slow
+                class string:specdelivery${spec/delivery/name}">Slow
           </span>
         </td>
         <td width="40">

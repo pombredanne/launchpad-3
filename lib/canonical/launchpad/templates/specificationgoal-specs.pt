@@ -42,10 +42,10 @@
                  href spec/fmt:url;
                  title spec/title">foo-bar-baz</a></td>
         <td>
-          <span class="sortkey" tal:content="spec/spec/status/value" />
-          <span tal:content="spec/spec/status/title"
+          <span class="sortkey" tal:content="spec/status/value" />
+          <span tal:content="spec/status/title"
                 tal:attributes="
-                class string:specstatus${spec/spec/status/name}">Approved
+                class string:specstatus${spec/status/name}">Approved
           </span>
         </td>
         <td tal:attributes="class string:specdelivery${spec/delivery/name}"
