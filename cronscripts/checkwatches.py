@@ -54,18 +54,21 @@ def main():
             log.info(
                 "ExternalBugtracker for BugTrackerType '%s' is not known.",
                 error.bugtrackertypename)
-        except externalbugtracker.BugTrackerConnectError:
-            log.exception("Got error trying to contact %s", bug_tracker.name)
-        except externalbugtracker.UnsupportedBugTrackerVersion, error:
-            log.warning(str(error))
         else:
             number_of_watches = bug_watches_to_update.count()
             if number_of_watches > 0:
                 log.info(
                     "Updating %i watches on %s" % (
                         number_of_watches, bug_tracker.baseurl))
-                remotesystem.updateBugWatches(bug_watches_to_update)
-                txn.commit()
+                try:
+                    remotesystem.updateBugWatches(bug_watches_to_update)
+                except externalbugtracker.BugTrackerConnectError:
+                    log.exception(
+                        "Got error trying to contact %s", bug_tracker.name)
+                except externalbugtracker.UnsupportedBugTrackerVersion, error:
+                    log.warning(str(error))
+                else:
+                    txn.commit()
             else:
                 log.info("No watches to update on %s" % bug_tracker.baseurl)
 

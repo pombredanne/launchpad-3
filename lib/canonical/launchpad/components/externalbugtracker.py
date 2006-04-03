@@ -133,13 +133,7 @@ class Bugzilla(ExternalBugTracker):
         if baseurl[-1] == "/":
             baseurl = baseurl[:-1]
         self.baseurl = baseurl
-        if version != None:
-            self.version = version
-        else:
-            self.version = self._probe_version()
-        if not self.version or self.version < '2.16':
-            raise UnsupportedBugTrackerVersion(
-                "Unsupported version %r for %s" % (self.version, baseurl))
+        self.version = version
 
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
@@ -219,6 +213,13 @@ class Bugzilla(ExternalBugTracker):
 
     def _initializeRemoteBugDB(self, bug_ids):
         """See ExternalBugTracker."""
+        if self.version is None:
+            self.version = self._probe_version()
+            if not self.version or self.version < '2.16':
+                raise UnsupportedBugTrackerVersion(
+                    "Unsupported version %r for %s" % (
+                        self.version, self.baseurl))
+
         data = {'form_name'   : 'buglist.cgi',
                 'bug_id_type' : 'include',
                 'bug_id'      : ','.join(bug_ids),
