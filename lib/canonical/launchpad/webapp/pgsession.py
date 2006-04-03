@@ -64,25 +64,19 @@ class PGSessionDataContainer:
         """See zope.app.session.interfaces.ISessionDataContainer"""
         cursor = self.cursor
         self._sweep(cursor)
-        query = "SELECT COUNT(*) FROM %s WHERE client_id = %%(client_id)s" % (
-                self.session_data_table_name
-                )
-        cursor.execute(query.encode(PG_ENCODING), vars())
-        if cursor.fetchone()[0] == 0:
-            # Note that we don't raise a KeyError here - if the client_id
-            # is not yet a valid session identifier, make it so. If we fail
-            # to do this, the session machinery will do it for us, but will
-            # create a default SessionData instance instead of our customized
-            # PGSessionData.
-            self[client_id] = 'ignored'
+        # Ensure the row in session_data_table_name exists in the database.
+        # __setitem__ handles this for us.
+        self[client_id] = 'ignored'
         return PGSessionData(self, client_id)
 
     def __setitem__(self, client_id, session_data):
         """See zope.app.session.interfaces.ISessionDataContainer"""
-        query = "INSERT INTO %s (client_id) VALUES (%%(client_id)s)" % (
-                self.session_data_table_name
-                )
-        client_id = client_id.encode(PG_ENCODING)
+        query = """
+            INSERT INTO %s (client_id)
+                SELECT %%(client_id)s WHERE NOT EXISTS (
+                    SELECT TRUE FROM %s WHERE client_id=%%(client_id)s
+                    )
+            """ % (self.session_data_table_name, self.session_data_table_name)
         self.cursor.execute(query, vars())
 
     _last_sweep = datetime.utcnow()
@@ -160,8 +154,8 @@ class PGSessionPkgData(DictMixin):
     def _populate(self):
         self._data_cache = {}
         query = """
-            SELECT key, pickle FROM %s
-            WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
+            SELECT key, pickle FROM %s WHERE client_id = %%(client_id)s
+                AND product_id = %%(product_id)s
             """ % self.table_name
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
@@ -182,30 +176,31 @@ class PGSessionPkgData(DictMixin):
         cursor = self.cursor
 
         org_key = key
+
         key = key.encode(PG_ENCODING)
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
-        if self._data_cache.has_key(org_key):
-            query = """
-                UPDATE %s SET pickle = %%(pickled_value)s
+        table = self.table_name
+
+        # Insert a new row into table_name if one does not already exist
+        query = """
+            INSERT INTO %(table)s (client_id, product_id, key, pickle) SELECT
+                %%(client_id)s, %%(product_id)s, %%(key)s, %%(pickled_value)s
+                WHERE NOT EXISTS (
+                    SELECT TRUE FROM %(table)s WHERE client_id = %%(client_id)s
+                        AND product_id = %%(product_id)s AND key = %%(key)s
+                    )
+            """ % vars()
+        cursor.execute(query, vars())
+
+        # Update any existing row in table_name if it has changed
+        query = """
+            UPDATE %(table)s SET pickle = %%(pickled_value)s
                 WHERE client_id = %%(client_id)s
                     AND product_id = %%(product_id)s AND key = %%(key)s
-                """ % self.table_name
-            # NB. This might update 0 rows if another thread has deleted
-            # the key. If this happens we just don't care.
-            cursor.execute(query, vars())
-        
-        else:
-            # Inserting a new row. Because we are running in SERIALIZED
-            # transaction isolation level, if another thread has inserted
-            # this key already a serialization exception will be raised,
-            # which we need to deal with as normal.
-            query = """
-                INSERT INTO %s (client_id, product_id, key, pickle) VALUES (
-                    %%(client_id)s, %%(product_id)s, %%(key)s,
-                    %%(pickled_value)s)
-                """ % self.table_name
-            cursor.execute(query, vars())
+                    AND pickle <> %%(pickled_value)s
+            """ % vars()
+        cursor.execute(query, vars())
 
         # Store the value in the cache too
         self._data_cache[org_key] = value
@@ -214,17 +209,18 @@ class PGSessionPkgData(DictMixin):
         """Delete an item.
         
         Note that this will never fail in order to avoid
-        race conditions in code using the session machinery (well - it might
-        raise a normal serialization exception).
+        race conditions in code using the session machinery
         """
         try:
             del self._data_cache[key]
         except KeyError:
-            return # Not in the cache, then it won't be in the DB.
+            # Not in the cache, then it won't be in the DB. Or if it is,
+            # another process has inserted it and we should keep our grubby
+            # fingers out of it.
+            return
         query = """
-            DELETE FROM %s
-            WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
-                AND key = %%(key)s
+            DELETE FROM %s WHERE client_id = %%(client_id)s
+                AND product_id = %%(product_id)s AND key = %%(key)s
             """ % self.table_name
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)

@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Change package bug contacts</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -15,8 +18,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-  <h1>Manage Package Bug Contacts</h1>
 
   <tal:call-process-method condition="view/processBugmailSettings" />
 

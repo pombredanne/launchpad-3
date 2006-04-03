@@ -3,9 +3,17 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/fmt:url"
+        >Bug #<tal:bug replace="context/id">3252543</tal:bug></a>:
+        <tal:title replace="context/title">Foo doesn't work</tal:title>
+      </div>
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -21,21 +29,11 @@
   <h1 tal:condition="not: view/subscription">Subscribe to bug report</h1>
   <h1 tal:condition="view/subscription">Unsubscribe from bug report</h1>
 
-  <p tal:condition="not: view/subscription" class="documentDescription">
-    If you subscribe to a bug it will show up on your
-    personal pages, and you will receive copies of all comments by email as
-    well as notification of any changes to the status of the bug upstream
-    and in different distributions.
-  </p>
-
   <p tal:condition="not: view/subscription">
-    Choose "Subscribe" to become a subscriber to this bug, or "Cancel" to
-    return to the bug page.
-  </p>
-
-  <p tal:condition="view/subscription">
-    Choose "Unsubscribe" to unsubscribe from this bug, or "Cancel" to
-    return to the bug page.
+    If you subscribe to a bug it shows up on your
+    personal pages, you receive copies of all comments by email,
+    and notification of any changes to the status of the bug upstream
+    and in different distributions.
   </p>
 
   <form action="." method="POST">

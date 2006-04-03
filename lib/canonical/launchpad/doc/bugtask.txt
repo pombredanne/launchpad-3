@@ -208,6 +208,11 @@ To provide null-matching search criteria, use canonical.launchpad.searchbuilder.
     >>> print [bugtask.bug.id for bugtask in bugtasks]
     [4, 6]
 
+    >>> params = BugTaskSearchParams(sourcepackagename=NULL, user=None)
+    >>> bugtasks = ubuntu.searchTasks(params)
+    >>> print sorted([bugtask.bug.id for bugtask in bugtasks])
+    [1, 2]
+
 There's also support for searching tasks based on a string of text, e.g.:
 
     >>> params = BugTaskSearchParams(searchtext="instructions", user=None)
@@ -826,50 +831,39 @@ Remote BugTasks
 ---------------
 
 If a bug tasks's target isn't using Malone officially, we say that it's
-a remote bug tasks. Such bug tasks provide IRemoteBugTask, which allows the
-status, piroity and severity to have an UNKNOWN value.
+a remote bug tasks. Such bug tasks allow the status, priority and
+severity to have an UNKNOWN value.
 
-    >>> from canonical.launchpad.interfaces import IRemoteBugTask
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> evolution_task = bug_one.bugtasks[0]
     >>> evolution_task.target.name
     u'evolution'
-    >>> evolution_task.target.official_malone
+    >>> evolution_task.target_uses_malone
     True
-    >>> IRemoteBugTask.providedBy(evolution_task)
-    False
 
     >>> thunderbird_task = bug_one.bugtasks[2]
     >>> thunderbird_task.target.name
     u'thunderbird-ng'
-    >>> thunderbird_task.target.official_malone
+    >>> thunderbird_task.target_uses_malone
     False
-    >>> IRemoteBugTask.providedBy(thunderbird_task)
-    True
 
     >>> ubuntu_task = bug_one.bugtasks[3]
     >>> ubuntu_task.target.name
     u'ubuntu'
-    >>> ubuntu_task.target.official_malone
+    >>> ubuntu_task.target_uses_malone
     True
-    >>> IRemoteBugTask.providedBy(ubuntu_task)
-    False
 
     >>> ubuntu_mozilla_task = bug_one.bugtasks[5]
     >>> ubuntu_mozilla_task.targetname
     u'mozilla-firefox (Ubuntu)'
-    >>> ubuntu_mozilla_task.target.distribution.official_malone
+    >>> ubuntu_mozilla_task.target_uses_malone
     True
-    >>> IRemoteBugTask.providedBy(ubuntu_mozilla_task)
-    False
 
     >>> debian_mozilla_task = bug_one.bugtasks[7]
     >>> debian_mozilla_task.targetname
     u'mozilla-firefox (Debian)'
-    >>> debian_mozilla_task.target.distribution.official_malone
+    >>> debian_mozilla_task.target_uses_malone
     False
-    >>> IRemoteBugTask.providedBy(debian_mozilla_task)
-    True
 
 Handling IntegrityError and ProgrammingError
 --------------------------------------------
