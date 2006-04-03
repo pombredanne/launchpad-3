@@ -1110,7 +1110,12 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
             if not filename.endswith("orig.tar.gz"):
                 dak_utils.fubar("%s (from %s) is in the DB but isn't an orig.tar.gz.  Help?" % (filename, pkg))
             if len(spfp_l) != 1:
-                dak_utils.fubar("%s (from %s) returns multiple IDs for orig.tar.gz.  Help?" % (filename, pkg))
+                # XXX If I could distinct on libraryfilealias, I'd do that, but I don't know how
+                xx_d = {}
+                for i in spfp_l:
+                    xx_d[i.libraryfilealias] = ""
+                if len(xx_d.keys()) > 1:
+                    dak_utils.fubar("%s (from %s) returns multiple IDs for orig.tar.gz.  Help?" % (filename, pkg))
             spfp = spfp_l[0]
             have_orig_tar_gz = filename
             print "  - <%s: already in distro - downloading from librarian>" % (filename)
