@@ -71,6 +71,11 @@
     </tr>
   </table>
 
+        </tal:translators>
+
+        <p tal:condition="not: context/translators">
+          There are no translators appointed in this group yet.
+        </p>
         <ul class="menu">
           <li tal:condition="context/required:launchpad.Edit" class="add">
             <a href="+appoint">Appoint additional translators</a>
@@ -79,15 +84,6 @@
             <a href="+appoint">Appoint additional translators</a>
           </li>
         </ul>
-
-  </tal:translators>
-
-  <p tal:condition="not: context/translators">There are no translators yet
-  appointed in this group. You can <a href="+appoint">appoint a
-  translator</a> for any language to this group now.
-  </p>
-
-</div>
-
-</body>
+    </div>
+  </body>
 </html>
