@@ -60,35 +60,16 @@ class BugNotFound(Exception):
     """The bug was not found in the external bug tracker."""
 
 
-class ExternalSystem(object):
-    """
-    Generic class for a remote system.  This is a pass-through class
-    which loads and calls through to a subclass for each system type
-    we know about,
-    """
-
-    implements(IExternalBugtracker)
-
-    def __init__(self, bugtracker, version=None):
-        self.bugtracker = bugtracker
-        self.bugtrackertype = bugtracker.bugtrackertype
-        self.remotesystem = None
-        if self.bugtrackertype == BugTrackerType.BUGZILLA:
-            self.remotesystem = Bugzilla(self.bugtracker.baseurl, version)
-        elif self.bugtrackertype == BugTrackerType.DEBBUGS:
-            self.remotesystem = DebBugs()
-        if not self.remotesystem:
-            raise UnknownBugTrackerTypeError(self.bugtrackertype.name,
-                self.bugtracker.name)
-        self.version = self.remotesystem.version
-
-    def convertRemoteStatus(self, remote_status):
-        """See IExternalBugtracker."""
-        return self.remotesystem.convertRemoteStatus(remote_status)
-
-    def updateBugWatches(self, bug_watches):
-        """See IExternalBugtracker."""
-        return self.remotesystem.updateBugWatches(bug_watches)
+def get_external_bugtracker(bugtracker, version=None):
+    """Return an ExternalBugTracker for bugtracker."""
+    bugtrackertype = bugtracker.bugtrackertype
+    if bugtrackertype == BugTrackerType.BUGZILLA:
+        return Bugzilla(bugtracker.baseurl, version)
+    elif bugtrackertype == BugTrackerType.DEBBUGS:
+        return DebBugs()
+    else:
+        raise UnknownBugTrackerTypeError(bugtrackertype.name,
+            bugtracker.name)
 
 
 class ExternalBugTracker:

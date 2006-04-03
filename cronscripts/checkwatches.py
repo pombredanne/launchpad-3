@@ -48,10 +48,11 @@ def main():
         bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate(23)
 
         try:
-            remotesystem = externalbugtracker.ExternalSystem(bug_tracker)
+            remotesystem = externalbugtracker.get_external_bugtracker(
+                bug_tracker)
         except externalbugtracker.UnknownBugTrackerTypeError, error:
             log.info(
-                "ExternalSystem for BugTrackerType '%s' is not known.",
+                "ExternalBugtracker for BugTrackerType '%s' is not known.",
                 error.bugtrackertypename)
         except externalbugtracker.BugTrackerConnectError:
             log.exception("Got error trying to contact %s", bug_tracker.name)
