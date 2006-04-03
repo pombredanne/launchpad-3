@@ -116,6 +116,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
+>>> check("/distros/debian/+milestone/3.1")
 >>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
 >>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
 

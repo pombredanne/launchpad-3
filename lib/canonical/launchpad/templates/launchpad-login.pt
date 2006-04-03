@@ -1,4 +1,5 @@
 <tal:do-this-first tal:content="view/process_form" />
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -178,3 +179,4 @@
     </div>
   </body>
 </html>
+</tal:layout>

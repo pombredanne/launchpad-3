@@ -1,20 +1,22 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="launchpad">
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1>Bugs assigned to <span tal:replace="context/browsername" /></h1>
+    </metal:heading>
 
-<body>
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:content="structure context/@@+portlet-team-assignedbugs" />
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
 
-      <h1>Bugs assigned to <span tal:replace="context/browsername" /></h1>
-
       <div tal:define="batch_navigator view/search">
         <form method="GET" name="search" action="">
-          <input type="text" name="field.searchtext" size="40"
+          <input type="text" name="field.searchtext" size="20"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
           <a href="#"

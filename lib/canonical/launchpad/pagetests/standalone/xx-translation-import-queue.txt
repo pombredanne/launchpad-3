@@ -6,7 +6,7 @@ initial template uploads.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...Here you can upload either a single file...
+  ...Upload either a single file...
 
 Time to do the upload...
 
@@ -14,7 +14,7 @@ Time to do the upload...
   >>> import os.path
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/standalone/test.tar.gz')
+  ...     'pagetests/standalone/xx-translation-import-queue.tar.gz')
   >>> tarball = open(test_file_name)
   >>> print http(r"""
   ... POST /products/firefox/+series/1.0/+translations-upload HTTP/1.1
@@ -34,8 +34,8 @@ Time to do the upload...
   ... -----------------------------1318994232199907263719102121--
   ... """ % tarball.read())
   HTTP/1.1 200 Ok
-  ...Thank you for your upload. 1 files from the tarball will be reviewed...
   ...Upload new translation resources for Mozilla Firefox Series...
+  ...Thank you for your upload. 1 files from the tarball will be reviewed...
 
 We check now that the upload is available from the translation import queue page
 and the status is static as we are not logged in.
@@ -346,6 +346,8 @@ remove it.
   Location: http://localhost:9000/rosetta/imports/+index
   Set-Cookie: launchpad=...
 
+The entry appears now deleted.
+
   >>> print http(r"""
   ... GET /rosetta/imports/+index HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -356,3 +358,29 @@ remove it.
   ...status-3...
   ...selected="yes" value="DELETED"...
   ...No Privileges Person...
+
+Let's check tar.bz2 uploads. They work ;-)
+
+  >>> test_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/standalone/xx-translation-import-queue.tar.bz2')
+  >>> tarball = open(test_file_name)
+  >>> print http(r"""
+  ... POST /products/evolution/+series/main/+translations-upload HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 514
+  ... Content-Type: multipart/form-data; boundary=---------------------------1779376820857032061648075468
+  ... 
+  ... -----------------------------1779376820857032061648075468
+  ... Content-Disposition: form-data; name="file"; filename="temp.tar.bz2"
+  ... Content-Type: application/x-bzip
+  ... %s
+  ... -----------------------------1779376820857032061648075468
+  ... Content-Disposition: form-data; name="translations_upload"
+  ... 
+  ... Request Upload
+  ... -----------------------------1779376820857032061648075468--
+  ... """ % tarball.read())
+  HTTP/1.1 200 Ok
+  ...
+  ...Thank you for your upload. 2 files from the tarball will be reviewed...

@@ -48,7 +48,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
     IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
     valid_distrotask, valid_upstreamtask,
-    BugDistroReleaseTargetDetails, IRemoteBugTask)
+    BugDistroReleaseTargetDetails)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -433,7 +433,7 @@ class BugTaskEditView(GeneralFormView):
         bug task, where everything should be editable except for the bug
         watch.
         """
-        if IRemoteBugTask.providedBy(self.context):
+        if not self.context.target_uses_malone:
             edit_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Should be possible to edit the product as well,
@@ -617,7 +617,7 @@ class BugTaskStatusView(LaunchpadView):
         """
         field_names = [
             'status', 'priority', 'severity', 'assignee', 'statusexplanation']
-        if IRemoteBugTask.providedBy(self.context):
+        if not self.context.target_uses_malone:
             field_names += ['bugwatch']
             self.milestone_widget = None
         else:
@@ -702,7 +702,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS', 'NEEDSINFO']
+    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS', 'NEEDSINFO', 'FIXCOMMITTED']
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': dbschema.BugTaskStatus.REJECTED}, IBugTaskSearch)
@@ -817,7 +817,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 names=[
                     "searchtext", "status", "assignee", "severity",
                     "priority", "owner", "omit_dupes", "has_patch",
-                    "milestone", "component"]))
+                    "milestone", "component", "has_no_package"]))
 
         if extra_params:
             data.update(extra_params)
@@ -839,6 +839,12 @@ class BugTaskSearchListingView(LaunchpadView):
             has_patch = data.pop("has_patch", False)
             if has_patch:
                 data["attachmenttype"] = dbschema.BugAttachmentType.PATCH
+
+            # Filter appropriately if the user wants to restrict the
+            # search to only bugs with no package information.
+            has_no_package = data.pop("has_no_package", False)
+            if has_no_package:
+                data["sourcepackagename"] = NULL
 
         if data.get("omit_dupes") is None:
             # The "omit dupes" parameter wasn't provided, so default to omitting
@@ -925,6 +931,15 @@ class BugTaskSearchListingView(LaunchpadView):
             IDistroRelease.providedBy(context) or
             ISourcePackage.providedBy(context) or
             IDistributionSourcePackage.providedBy(context))
+
+    def shouldShowNoPackageWidget(self):
+        """Should the widget to filter on bugs with no package be shown?
+
+        The widget will be shown only on a distribution or
+        distrorelease's advanced search page.
+        """
+        return (IDistribution.providedBy(self.context) or
+                IDistroRelease.providedBy(self.context))
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
