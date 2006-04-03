@@ -7,7 +7,8 @@ depending on which version of the bugtracker they talk to. If it's an
 unknown version, UnsupportedBugTrackerVersion is raised:
 
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> Bugzilla('http://foo.com/', version='2.15')
+    >>> external_bugzilla = Bugzilla('http://foo.com/', version='2.15')
+    >>> external_bugzilla.updateBugWatches([])
     Traceback (most recent call last):
       ...
     UnsupportedBugTrackerVersion: Unsupported version '2.15' for http://foo.com
@@ -222,4 +223,34 @@ And the linked bugtasks got updated:
     1 mozilla-firefox (Debian) Unconfirmed Unknown
     3 mozilla-firefox (Debian) Unconfirmed Unknown
     7 evolution (Debian) Fix Released Unknown
+
+This updating and syncing of bug watches is done by a cronscript. We
+can't test it properly, since we don't yet have a mock HTTP server we
+can use for testing, so let's make sure that it doesn't try to contact
+any external servers.
+
+    >>> from canonical.database.sqlbase import cursor
+    >>> from canonical.database.constants import UTC_NOW
+    >>> cur = cursor()
+    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" % UTC_NOW)
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/checkwatches.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out
+    ''
+    >>> process.returncode
+    0
+
+    >>> print err
+    INFO    creating lockfile
+    INFO    No watches to update on http://bugs.debian.org
+    INFO    No watches to update on http://bugzilla.gnome.org/
+    INFO    No watches to update on https://bugzilla.mozilla.org/
+    INFO    Skipping updating Ubuntu Bugzilla watches.
 

@@ -215,10 +215,9 @@ class Bugzilla(ExternalBugTracker):
         """See ExternalBugTracker."""
         if self.version is None:
             self.version = self._probe_version()
-            if not self.version or self.version < '2.16':
-                raise UnsupportedBugTrackerVersion(
-                    "Unsupported version %r for %s" % (
-                        self.version, self.baseurl))
+        if self.version < '2.16':
+            raise UnsupportedBugTrackerVersion(
+                "Unsupported version %r for %s" % (self.version, self.baseurl))
 
         data = {'form_name'   : 'buglist.cgi',
                 'bug_id_type' : 'include',
