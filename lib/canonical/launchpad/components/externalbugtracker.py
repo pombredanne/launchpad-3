@@ -323,6 +323,19 @@ class DebBugs(ExternalBugTracker):
         except KeyError:
             log.warn('Unknown debbugs status "%s"' % status)
             malone_status = BugTaskStatus.UNKNOWN
+        if status == 'open':
+            confirmed_tags = [
+                'help', 'confirmed', 'fixed', 'upstream', 'fixed-upstream',
+                'wontfix']
+            fix_committed_tags = ['pending', 'fixed-in-experimental']
+            if 'moreinfo' in tags:
+                malone_status = BugTaskStatus.NEEDSINFO
+            for confirmed_tag in confirmed_tags:
+                if confirmed_tag in tags:
+                    malone_status = BugTaskStatus.CONFIRMED
+            for fix_committed_tag in fix_committed_tags:
+                if fix_committed_tag in tags:
+                    malone_status = BugTaskStatus.FIXCOMMITTED
 
         return malone_status
 

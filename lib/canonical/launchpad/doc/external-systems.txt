@@ -224,6 +224,50 @@ And the linked bugtasks got updated:
     3 mozilla-firefox (Debian) Unconfirmed Unknown
     7 evolution (Debian) Fix Released Unknown
 
+Let's take closer look at the status conversion.
+
+    >>> print external_debbugs.convertRemoteStatus('done normal').title
+    Fix Released
+
+    >>> print external_debbugs.convertRemoteStatus('open normal').title
+    Unconfirmed
+
+    >>> print external_debbugs.convertRemoteStatus('open normal wontfix').title
+    Confirmed
+
+    >>> print external_debbugs.convertRemoteStatus('open normal moreinfo').title
+    Needs Info
+
+    >>> print external_debbugs.convertRemoteStatus('open normal unreproducible').title
+    Unconfirmed
+
+    >>> print external_debbugs.convertRemoteStatus('open normal help').title
+    Confirmed
+
+    >>> print external_debbugs.convertRemoteStatus('open normal pending').title
+    Fix Committed
+
+    >>> print external_debbugs.convertRemoteStatus('open normal fixed').title
+    Confirmed
+
+    >>> print external_debbugs.convertRemoteStatus('open normal upstream').title
+    Confirmed
+
+    >>> print external_debbugs.convertRemoteStatus('open normal confirmed').title
+    Confirmed
+
+    >>> print external_debbugs.convertRemoteStatus(
+    ...     'open normal fixed-upstream').title
+    Confirmed
+
+    >>> print external_debbugs.convertRemoteStatus(
+    ...     'open normal fixed-in-experimental').title
+    Fix Committed
+
+
+checkwatches.py
+---------------
+
 This updating and syncing of bug watches is done by a cronscript. We
 can't test it properly, since we don't yet have a mock HTTP server we
 can use for testing, so let's make sure that it doesn't try to contact
