@@ -50,11 +50,10 @@ If it's a remote bug task, where the information is pulled from a bug
 watch, 'unknown' is displayed, since we don't support pulling the
 assignee yet:
 
-    >>> from canonical.launchpad.interfaces import IRemoteBugTask
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_bugtask = bug_nine.bugtasks[0]
-    >>> IRemoteBugTask.providedBy(thunderbird_bugtask)
-    True
+    >>> thunderbird_bugtask.target_uses_malone
+    False
     >>> assignee_field = IBugTask['assignee'].bind(thunderbird_bugtask)
     >>> assignee_widget = AssigneeDisplayWidget(assignee_field, None)
     >>> print assignee_widget()

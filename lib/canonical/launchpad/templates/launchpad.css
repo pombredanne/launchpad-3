@@ -77,6 +77,11 @@ thead th, tr.thead th {
 
 /* === Global Launchpad design: === */
 
+.debug {
+  background: none;
+  color: #f09;
+}
+
 body {
   background-color: #fcfcfc;
   color: black;
@@ -90,7 +95,7 @@ body {
 
 :visited {
   background: none;
-  color: #8888bb;
+  color: #66a;
 }
 :link, .hierarchy :visited, .footer :visited,
 .facets :visited, #pillars :visited, #subpillars :visited, .portlet :visited {
@@ -118,15 +123,11 @@ h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
 h1 {
   font-size: 1.6em;
   margin-bottom: 0.5em;
+  padding-top: 0;
 }
 h2 {
   font-size: 1.25em;
   margin: 0.5em 0;
-}
-h2.lpcontext {
-  font-size: 1.5em;
-  margin-top: 0;
-  padding-top: 0;
 }
 h3, h4, h5, h6 {
   font-size: 1em;
@@ -140,10 +141,9 @@ label {
   font-weight: bold;
 }
 pre {
-    border: 1px dashed #8cacbb;
-    color: Black;
-    background-color: #dee7ec;
-    overflow: auto;
+  color: black;
+  background-color: #dee7ec;
+  padding: 0.5em;
 }
 table {
   margin-left: auto;
@@ -238,8 +238,16 @@ ul {
   list-style-image: url(/@@/bullet.gif);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
+ul.menu {
+  font-size: smaller;
+}
 ol {
   margin: 0.5em 0 0 1.5em;
+}
+
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {
+    display: none;
 }
 
 .portlet {
@@ -298,9 +306,6 @@ textarea {
   font-size: smaller;
   margin-bottom: 1em;
 }
-.portalError .fieldRequired {
-  color: #666;
-} 
 /* Temporarily make *all* buttons look plone-y. Ugh. */
 button {
   border: 1px solid #8cacbb;  
@@ -310,34 +315,6 @@ button {
 /* Don't give radiobuttons a square border in Opera: */
 input[type="radio"] {
   border: none;
-}
-
-/* -- Form errors: -- */
-.portalMessage {
-  background-color: #ffce7b;
-  border: 1px solid #ffa500;
-  color: black;
-  margin: 1em 0em 0em 0em;
-  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
-  vertical-align: middle;
-  background-position: 5px 0.75em;
-  background-image: url(/@@/info_icon.gif);
-  background-repeat: no-repeat;
-}
-.portalMessage a {
-  color: Black;
-}
-.portalError {
-  background-color: #ff9070;
-  border: 1px solid #998080;
-  color: Black;
-  padding: 0.25em;
-}
-.portalError .error {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 85%;
 }
 
 /* sabdfl says portlet links must not be underlined */
@@ -354,6 +331,9 @@ input[type="radio"] {
 .header td, .footer {
   font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   padding: 0.25em 1em;
+}
+.header td {
+  padding-bottom: 0;
 }
 .header {
   font-size: 0.875em;
@@ -554,7 +534,7 @@ ins {
 .field {
     top: 0;
     left: 0;
-    margin: 0 1em 1em 0;
+    margin: 0 0 1em 0;
 }
 
 .field .field {
@@ -564,16 +544,6 @@ ins {
 .formControls {
    margin: 1em 0 0 0; 
 }
-
-.error {
-    /* Class for error indication in forms */
-    background-color: #ffce7b;
-    border: 1px solid #ffa500;
-    padding: 1em;
-    margin: 0 0 1em 0;
-    width: 95% !important;
-}
-
 
 .discreet {
     color: #76797c;
@@ -776,7 +746,7 @@ tr.highlight {
   font-size: 80%;
   border: 1px solid #364970;
   border-style: none none solid none;
-  background-color: #d7d9da;
+  background-color: #eee;
   padding: 0.25em 12px;
 }
 
@@ -865,9 +835,6 @@ ul.locked>li, li.locked {
 }
 ul.mail>li, li.mail {
   list-style-image: url(/@@/mail_icon.gif);
-}
-ul.menu>li, li.menu {
-  list-style-image: url(/@@/favorite_icon.gif);
 }
 ul.milestone>li, li.milestone {
   list-style-image: url(/@@/target);
@@ -1163,22 +1130,6 @@ Calendar stuff.
   background-repeat: no-repeat;
 }
 
-.notice-notification,
-.info-notification,
-.debug-notification {
-  background-position: 5px 0.5em;
-  padding-left: 30px;
-  background-color: #ffffcc;
-  border: 1px solid #eeee00;
-  color: Black;
-  background-image: url(/@@/info_icon.gif);
-  font-size: 85%;
-  font-weight: bold;
-  margin: 1em 0em;
-  padding: 0.5em 1em 0.5em 3em;
-  background-repeat: no-repeat;
-}
-
 .oopsid {
   font-weight: bold;
   color: #cc0000;
@@ -1194,4 +1145,36 @@ dl.faq dd {
 
 dl.faq ol {
     margin: 0.5em 3em;
+}
+
+.error, .warning, .informational {
+  padding: 0.5em;
+}
+.message {
+  background: 5px 0.5em no-repeat;
+  font-size: smaller;
+  font-weight: bold;
+  margin: 1em 0 0.5em;
+  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
+}
+.error .message, .warning .message, .informational .message {
+  margin: 0.25em 0 0;
+  padding: 0 0 0 25px;
+  background: 0 0 no-repeat;
+}
+.error {background-color: #f0cccc; color: black;}
+.error.message, .error .message {
+  background-image: url(/@@/error);
+}
+.warning {background-color: #fcdd99; color: black;}
+.warning.message, .warning .message {
+  background-image: url(/@@/alert_icon.gif);
+}
+.informational {background-color: #fcfc99; color: black;}
+.informational.message, .informational .message {
+  background-image: url(/@@/info_icon.gif);
+}
+.debugging {background-color: #666; color: white;}
+.debugging.message, .debugging .message {
+  background-image: url(/@@/info_icon.gif);
 }

@@ -7,9 +7,8 @@
 
   <div metal:fill-slot="body">
 
-    <br />
     <tal:block condition="request/previous|nothing">
-      <p class="portalMessage">
+      <p class="informational message">
         The request #<span tal:replace="request/previous" />
         <span tal:condition="request/approved|nothing">was approved.</span>
         <span tal:condition="request/denied|nothing">was denied.</span>
@@ -28,10 +27,10 @@
 
     <tal:block condition="view/contextCancelledOrShipped">
       <p tal:condition="context/cancelled" 
-         class="portalMessage">This request was cancelled by 
+         class="informational message">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
-      <p tal:condition="context/shipment" class="portalMessage">
+      <p tal:condition="context/shipment" class="informational message">
         This request was sent to the shipping company on 
         <span tal:replace="context/shipment/shippingrun/datecreated/fmt:date" />.
       </p>
@@ -40,22 +39,22 @@
     <tal:block condition="not: view/contextCancelledOrShipped">
       <tal:block condition="context/isApproved">
         <br />
-        <p class="portalMessage">This request is currently approved.</p>
+        <p class="informational message">This request is currently approved.</p>
       </tal:block>
       <tal:block condition="context/isAwaitingApproval">
         <br />
-        <p style="margin-bottom: 1em" class="portalMessage">This request is
+        <p style="margin-bottom: 1em" class="informational message">This request is
         still waiting for approval.</p>
       </tal:block>
       <tal:block condition="context/isDenied">
         <br />
-        <p class="portalMessage">This request is currently denied.</p>
+        <p class="informational message">This request is currently denied.</p>
       </tal:block>
     </tal:block>
 
     <div tal:condition="view/recipientHasOtherShippedRequests"
          tal:define="shipped_requests context/recipient/shippedShipItRequests"
-         class="portalMessage">
+         class="informational message">
      <p>This person has other requests already sent to the shipping company.
      </p>
       <ul>
@@ -74,10 +73,10 @@
 
     <tal:block condition="view/contextCancelledOrShipped">
       <p tal:condition="context/cancelled" 
-         class="portalMessage">This request was cancelled by 
+         class="informational message">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
-      <p tal:condition="context/shipment" class="portalMessage">
+      <p tal:condition="context/shipment" class="informational message">
         This request was sent to the shipping company on 
         <span tal:replace="context/shipment/shippingrun/datecreated/fmt:date" />.
       </p>

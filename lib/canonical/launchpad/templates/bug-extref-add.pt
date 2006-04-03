@@ -3,9 +3,18 @@
   xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-
-<body>
+    i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/bug/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+        <h1>Add Web link</h1>
+      </div>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />

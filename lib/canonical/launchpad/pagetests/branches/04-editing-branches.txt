@@ -23,8 +23,8 @@ Then we click on that link and load the +edit page for the branch.
   HTTP/1.1 200 Ok
   ...
 
-Then, post the changes to the title and author. We should be redirected to the
-branch page.
+Then, post the changes to the author and summary. Also add a trailing
+slash to the URL. We should be redirected to the branch page.
 
   >>> print http(r"""
   ... POST /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
@@ -43,7 +43,7 @@ branch page.
   ... -----------------------------1106159639116752221293615818
   ... Content-Disposition: form-data; name="field.url"
   ... 
-  ... http://trekkies.example.com/gnome-terminal/klingon
+  ... http://trekkies.example.com/gnome-terminal/klingon/
   ... -----------------------------1106159639116752221293615818
   ... Content-Disposition: form-data; name="field.home_page"
   ... 
@@ -68,6 +68,17 @@ branch page.
   ...
   Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
 
+Load the page and check that our changes were taken into account. The trailing
+slash added to the URL must have been ignored.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Warriors' branch for developping and testing Klingon support in GNOME Terminal...
+  ..."http://trekkies.example.com/gnome-terminal/klingon"...
+  ...>Ubuntu Gnome Team<...
 
 Finally, set the author back to its previous value.
 

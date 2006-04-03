@@ -3,9 +3,12 @@
   xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Create a port</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -18,18 +21,16 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      PLEASE BE EXTREMELY CAUTIOUS. This form creates a new "port" for the
-      release of the distribution, to a particular architecture. Only admins
-      should use it. It will have large consequences for the archive, and of
-      course all mirrors. USE WITH CARE.
-    </div>
+    <p metal:fill-slot="extra_info" class="exception">
+      <strong>Adding a port has big consequences for the archive and all its mirrors.
+      Please be very careful.</strong>
+    </p>
 
   </div>
 
   <p>
     Once again, please make sure that you are certain you know what you are
-    doing and why before pressing the button...
+    doing and why before pressing the button.
   </p>
 
 </div>

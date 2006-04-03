@@ -9,6 +9,7 @@ import datetime
 
 from zope.component import getUtility
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import TeamMembershipStatus
 
@@ -156,6 +157,12 @@ class TeamMembershipEditView:
             self.request.response.redirect('%s/+members' % canonical_url(team))
 
     def processProposedMember(self):
+        if self.context.status != TeamMembershipStatus.PROPOSED:
+            self.errormessage = _(
+                'The membership request for %s has already been processed.' % 
+                    self.context.person.displayname)
+            return
+
         assert self.context.status == TeamMembershipStatus.PROPOSED
 
         action = self.request.form.get('editproposed')

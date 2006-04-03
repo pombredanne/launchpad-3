@@ -16,7 +16,7 @@ BATCH_SIZE = 1
 
 log = None
 
-def merge_duplicates(ztm):
+def merge_duplicates(con):
     """Merge duplicate LibraryFileContent rows
     
     This is the first step in a full garbage collection run. We assume files
@@ -28,8 +28,7 @@ def merge_duplicates(ztm):
 
     # Get a list of all (sha1, filesize) that are duplicated in
     # LibraryFileContent
-    ztm.begin()
-    cur = cursor()
+    cur = con.cursor()
     cur.execute("""
         SELECT sha1, filesize
         FROM LibraryFileContent
@@ -37,12 +36,10 @@ def merge_duplicates(ztm):
         HAVING COUNT(*) > 1
         """)
     rows = list(cur.fetchall())
-    ztm.abort()
 
     # Merge the duplicate entries, each one in a seperate transaction
     for sha1, filesize in rows:
-        ztm.begin()
-        cur = cursor()
+        cur = con.cursor()
 
         sha1 = sha1.encode('US-ASCII') # Can't pass Unicode to execute (yet)
 
@@ -82,7 +79,6 @@ def merge_duplicates(ztm):
                         "LibraryFileContent %d data is missing (%s)",
                         dupe1_id, dupe1_path
                         )
-            ztm.abort()
             continue
 
         # Do a manual check that they really are identical, because we
@@ -101,7 +97,6 @@ def merge_duplicates(ztm):
                         "byte-for-byte identical.",
                         dupe1_id, dupe2_id
                         )
-                ztm.abort()
                 sys.exit(1)
 
         # Update all the LibraryFileAlias entries to point to a single
@@ -119,10 +114,10 @@ def merge_duplicates(ztm):
                 """, vars())
 
         log.debug("Committing")
-        ztm.commit()
+        con.commit()
 
 
-def delete_unreferenced_aliases(ztm):
+def delete_unreferenced_aliases(con):
     """Delete unreferenced LibraryFileAliases and their LibraryFileContent
 
     This is the second step in a full garbage collection sweep. We determine
@@ -142,8 +137,7 @@ def delete_unreferenced_aliases(ztm):
     # with expiry dates not yet reached (these lurk in the database until
     # expired) and those that have been accessed in the last week (currently
     # in use, so leave them lurking a while longer)
-    ztm.begin()
-    cur = cursor()
+    cur = con.cursor()
     cur.execute("""
         SELECT c.id
         FROM LibraryFileContent AS c, LibraryFileAlias AS a
@@ -157,27 +151,21 @@ def delete_unreferenced_aliases(ztm):
                 )
         """)
     content_ids = set(row[0] for row in cur.fetchall())
-    ztm.abort()
     log.info(
         "Found %d LibraryFileContent entries possibly unreferenced",
         len(content_ids)
         )
 
     # Determine what columns link to LibraryFileAlias
-    ztm.begin()
-    cur = cursor()
     # references = [(table, column), ...]
     references = [
         tuple(ref[:2]) for ref in listReferences(cur, 'libraryfilealias', 'id')
         ]
     assert len(references) > 10, 'Database introspection returned nonsense'
-    ztm.abort()
     log.info("Found %d columns referencing LibraryFileAlias", len(references))
 
     # Remove all referenced LibraryFileContent ids from content_ids
     for table, column in references:
-        ztm.begin()
-        cur = cursor()
         cur.execute("""
             SELECT DISTINCT LibraryFileContent.id
             FROM LibraryFileContent, LibraryFileAlias, %(table)s
@@ -185,7 +173,6 @@ def delete_unreferenced_aliases(ztm):
                 AND LibraryFileAlias.id = %(table)s.%(column)s
             """ % vars())
         referenced_ids = set(row[0] for row in cur.fetchall())
-        ztm.abort()
         log.info(
                 "Found %d distinct LibraryFileAlias references in %s(%s)",
                 len(referenced_ids), table, column
@@ -204,8 +191,6 @@ def delete_unreferenced_aliases(ztm):
         in_content_ids = ','.join(
                 (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE])
                 )
-        ztm.begin()
-        cur = cursor()
         # First a sanity check to ensure we aren't removing anything we
         # shouldn't be.
         cur.execute("""
@@ -227,10 +212,10 @@ def delete_unreferenced_aliases(ztm):
         cur.execute("""
             DELETE FROM LibraryFileAlias WHERE content IN (%(in_content_ids)s)
             """ % vars())
-        ztm.commit()
+        con.commit()
 
 
-def delete_unreferenced_content(ztm):
+def delete_unreferenced_content(con):
     """Delete LibraryFileContent entries and their disk files that are
     not referenced by any LibraryFileAlias entries.
 
@@ -238,8 +223,7 @@ def delete_unreferenced_content(ztm):
     LibraryFileAlias, so all entries in this state are garbage no matter
     what their expires flag says.
     """
-    ztm.begin()
-    cur = cursor()
+    cur = con.cursor()
     cur.execute("""
         SELECT LibraryFileContent.id
         FROM LibraryFileContent
@@ -248,14 +232,11 @@ def delete_unreferenced_content(ztm):
         WHERE LibraryFileAlias.content IS NULL
         """)
     garbage_ids = [row[0] for row in cur.fetchall()]
-    ztm.abort()
 
     for i in range(0, len(garbage_ids), BATCH_SIZE):
         in_garbage_ids = ','.join(
             (str(garbage_id) for garbage_id in garbage_ids[i:i+BATCH_SIZE])
             )
-        ztm.begin()
-        cur = cursor()
 
         # Delete old LibraryFileContent entries. Note that this will fail
         # if we screwed up and still have LibraryFileAlias entries referencing
@@ -279,7 +260,7 @@ def delete_unreferenced_content(ztm):
         # file on disk, but that is OK as it will all be tidied up next run,
         # and the file is unreachable anyway so nothing will attempt to
         # access it between now and the next garbage collection run.
-        ztm.commit()
+        con.commit()
 
 
 def get_file_path(content_id):

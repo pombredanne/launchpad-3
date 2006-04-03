@@ -13,8 +13,11 @@
 
     <h1>Rescore <span tal:replace="context/title"/></h1>
 
-    <div class="portalMessage" tal:condition="message"
-         tal:content="structure message"/>
+    <p
+      tal:condition="message"
+      tal:content="structure message"
+      class="informational message"
+    />
 
     <div>
       <p> This build <span tal:replace="context/buildstate/name"/>.</p>
