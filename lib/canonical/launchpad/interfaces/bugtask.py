@@ -14,7 +14,6 @@ __all__ = [
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
-    'IRemoteBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
@@ -69,16 +68,22 @@ class IBugTask(IHasDateCreated, IHasBug):
         vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
+    # XXX: the status, severity and priority's vocabularies do not
+    # contain an UNKNOWN item in bugtasks that aren't linked to a remote
+    # bugwatch; this would be better described in a separate interface,
+    # but adding a marker interface during initialization is expensive,
+    # and adding it post-initialization is not trivial.
+    #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.UNCONFIRMED)
-    statusexplanation = Text(
-        title=_("Status notes (optional)"), required=False)
     priority = Choice(
         title=_('Priority'), vocabulary='BugTaskPriority', required=False)
     severity = Choice(
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
+    statusexplanation = Text(
+        title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
@@ -104,6 +109,8 @@ class IBugTask(IHasDateCreated, IHasBug):
             "datecreated and now."))
     owner = Int()
     target = Attribute("The software in which this bug should be fixed")
+    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
+                              "officially"))
     targetname = Attribute("The short, descriptive name of the target")
     title = Attribute("The title of the bug related to this bugtask")
     related_tasks = Attribute("IBugTasks related to this one, namely other "
@@ -317,16 +324,6 @@ class IDistroReleaseBugTask(IBugTask):
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
-
-
-class IRemoteBugTask(IBugTask):
-    """A bug task for products/distributions not using Malone.
-
-    The status of the bug will be updated from a remote bug watch.
-    """
-    status = Choice(title=_('Status'), vocabulary='RemoteBugTaskStatus')
-    severity = Choice(title=_('Severity'), vocabulary='RemoteBugTaskSeverity')
-    priority = Choice(title=_('Priority'), vocabulary='RemoteBugTaskPriority')
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed

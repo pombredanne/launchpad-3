@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/tickets">
 
   <h4>Related tickets:</h4>
 
@@ -10,11 +10,8 @@
         <a tal:attributes="href ticket/fmt:url"
            tal:content="ticket/title">spec title here</a>
       </li>
-      <li class="info" tal:condition="not: context/tickets">
-        <i>No related support tickets.</i>
-      </li>
     </ul>
-	
+
   </div>
 
 </div>
