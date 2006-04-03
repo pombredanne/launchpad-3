@@ -123,7 +123,7 @@ with any importance.
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
-     (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
+     (1, 'UNCONFIRMED', 'MEDIUM'), (4, 'UNCONFIRMED', 'MEDIUM')]
 
 Using the advanced form we can query for closed bugs someone is subscribed to. 
 

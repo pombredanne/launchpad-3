@@ -218,7 +218,7 @@ class Bug:
 
     def mapSeverity(self, bugtask):
         """Set a Launchpad bug task's importance based on this bug's severity."""
-        bugtask.severity = {
+        bugtask.importance = {
             'blocker': BugTaskImportance.CRITICAL,
             'critical': BugTaskImportance.CRITICAL,
             'major': BugTaskImportance.MAJOR,

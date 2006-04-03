@@ -459,8 +459,7 @@ initial message of the bug, it will result in a bug filed notification:
     Public bug reported:
     <BLANKLINE>
     Affects: Ubuntu
-           Severity: Normal
-           Priority: (none set)
+         Importance: Untriaged
              Status: Unconfirmed
     <BLANKLINE>
     Description:

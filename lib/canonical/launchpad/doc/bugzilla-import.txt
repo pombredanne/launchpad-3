@@ -256,7 +256,7 @@ to notice:
       Distro: ubuntu
       Assignee: Sample Person
       Priority: WONTFIX
-      Severity: WISHLIST
+      Importance: WISHLIST
       Explanation: Bugzilla status=RESOLVED WONTFIX, product=Ubuntu, component=unknown
   Messages:
       Author: Sample Person
@@ -405,7 +405,7 @@ Bugzilla severities are mapped to the equivalent Launchpad importance values:
   ...                  'minor', 'trivial', 'enhancement']:
   ...     bug.bug_severity = severity
   ...     bug.mapSeverity(bugtask)
-  ...     print '%-11s  %s' % (severity, bugtask.severity.name)
+  ...     print '%-11s  %s' % (severity, bugtask.importance.name)
   blocker      CRITICAL
   critical     CRITICAL
   major        MAJOR

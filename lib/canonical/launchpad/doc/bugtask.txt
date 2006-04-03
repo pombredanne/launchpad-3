@@ -48,7 +48,7 @@ Next, we need to grab some values to provide for priority, importance, and statu
     >>> STATUS_UNCONFIRMED = BugTaskStatus.UNCONFIRMED
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
-    >>> IMPORTANCE_NORMAL = BugTaskImportance.NORMAL
+    >>> IMPORTANCE_MEDIUM = BugTaskImportance.MEDIUM
     >>> PRIORITY_MEDIUM = BugTaskPriority.MEDIUM
 
   i. Upstream -- a bug that has to be fixed in an upstream product
@@ -57,7 +57,7 @@ Next, we need to grab some values to provide for priority, importance, and statu
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=evolution, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_NORMAL)
+    ...     importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.product == evolution
     True
 
@@ -71,7 +71,7 @@ Next, we need to grab some values to provide for priority, importance, and statu
     >>> distro_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_NORMAL)
+    ...     importance=IMPORTANCE_MEDIUM)
     >>> distro_task.distribution == ubuntu
     True
 
@@ -87,7 +87,7 @@ Next, we need to grab some values to provide for priority, importance, and statu
     >>> distro_release_task = bugtaskset.createTask(
     ...     bug=bug_one, distrorelease=warty, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_NORMAL)
+    ...     importance=IMPORTANCE_MEDIUM)
     >>> distro_release_task.distrorelease == warty
     True
 
@@ -102,7 +102,7 @@ make sense to "backport a fix" to the current release:
     >>> distro_release_task = bugtaskset.createTask(
     ...     bug=bug_one, distrorelease=hoary, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_NORMAL)
+    ...     importance=IMPORTANCE_MEDIUM)
     Traceback (most recent call last):
       ...
     AssertionError: Bugtasks cannot be opened on the current release.
@@ -179,7 +179,8 @@ For a person:
     >>> ubuntu_evolution_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=foobar,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_NORMAL, sourcepackagename=evolution_sourcepackage)
+    ...     importance=IMPORTANCE_MEDIUM,
+    ...     sourcepackagename=evolution_sourcepackage)
     >>> flush_database_updates()
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
     ...                              orderby='targetname')
@@ -789,7 +790,7 @@ Of course, it's also computed and set when a bugtask is created.
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=netapplet, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_NORMAL)
+    ...     importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.targetname
     u'netapplet (upstream)'
 
@@ -885,7 +886,7 @@ ProgrammingError
     >>> try: bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distrorelease=warty,
     ...     owner=sabdfl, status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_NORMAL)
+    ...     importance=IMPORTANCE_MEDIUM)
     ... except DatabaseError: print sys.exc_value
     ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
     <BLANKLINE>

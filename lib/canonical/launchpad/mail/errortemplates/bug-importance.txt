@@ -1,4 +1,4 @@
-To make Malone simpler, "priority" and "severity" are not used any more.
+Malone does not have "priority" or "severity" fields any more.
 They are now combined into "importance".
 
 Recognized values for importance are

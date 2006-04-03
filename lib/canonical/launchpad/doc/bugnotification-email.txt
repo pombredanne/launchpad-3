@@ -54,13 +54,15 @@ Let's take a look at what the notification email looks like:
     Public bug reported:
     <BLANKLINE>
     Affects: firefox (upstream)
-           Severity: Normal
-           Priority: Medium
+         Importance: Medium
              Status: Unconfirmed
     <BLANKLINE>
     Description:
     Malone pages that use more complex layouts with portlets and fancy CSS are
     sometimes not getting properly reflowed after rendering.
+
+(In reality, the importance of a newly-reported bug would not have been
+decided yet, so it would appear as Untriaged.)
 
 
 Editing a bug
@@ -192,8 +194,7 @@ pretend we had just added task five:
     u'[Bug 1] Firefox does not support SVG'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     ** Also affects: mozilla-firefox (Ubuntu)
-         Severity: Normal
-         Priority: Medium
+       Importance: Medium
            Status: Unconfirmed
 
 Editing a bug task
@@ -379,8 +380,7 @@ We can also add a bugwatch while adding a new bugtask.
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     ** Also affects: firefox (upstream) via
        https://bugzilla.mozilla.org//show_bug.cgi?id=42
-         Severity: Major
-         Priority: Medium
+       Importance: Major
            Status: Unconfirmed
 
 

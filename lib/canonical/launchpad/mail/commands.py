@@ -364,8 +364,9 @@ class AffectsEmailCommand(EmailCommand):
             if subcmd_name not in self._subCommandNames:
                 # XXX mpt 20060401: Remove _subObsoleteCommandNames after a month.
                 if subcmd_name in self._subObsoleteCommandNames:
-                    raise EmailProcessingError(get_error_message('bug-importance.txt'))
-                else
+                    raise EmailProcessingError(
+                        get_error_message('bug-importance.txt'))
+                else:
                     raise EmailProcessingError(
                         get_error_message(
                             'affects-unexpected-argument.txt',
@@ -513,7 +514,8 @@ class EmailCommands:
         command_class = self._commands.get(name)
         if command_class is None:
             if name in _obsoleteCommands:
-                # XXX Raise some sort of friendly error here
+                raise EmailProcessingError(
+                    get_error_message('bug-importance.txt'))
             else:
                 raise NoSuchCommand(name)
         return command_class(name, string_args)
