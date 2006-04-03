@@ -254,10 +254,10 @@ class IPOFileSet(Interface):
 
     def getPOFileByPathAndOrigin(self, path, productseries=None,
         distrorelease=None, sourcepackagename=None):
-        """Return an IPOFile that is stored at 'path' in source code and
-           came from the given arguments.
+        """Return an IPOFile that is stored at 'path' in source code.
+
+        We filter the IPOFiles to check only the ones related to the given
+        arguments 'productseries', 'distrorelease' and 'sourcepackagename'
 
         Return None if there is not such IPOFile.
         """
-
-
