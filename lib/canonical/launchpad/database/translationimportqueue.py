@@ -126,7 +126,7 @@ class TranslationImportQueueEntry(SQLBase):
               IPOTemplate where we should associate this .po file.
 
         """
-        assert self.path.endswith('.pot'), (
+        assert self.path.endswith('.po'), (
             "We cannot handle the file %s here." % self.path)
 
         if self.productseries is not None:
@@ -176,6 +176,8 @@ class TranslationImportQueueEntry(SQLBase):
 
         # We need to note the sourcepackagename from where this entry came.
         pofile.from_sourcepackagename = self.sourcepackagename
+
+        return pofile
 
     @property
     def _guessed_potemplate_for_pofile_from_path(self):
@@ -255,7 +257,8 @@ class TranslationImportQueueEntry(SQLBase):
             # so we cannot guess its language.
             return (None, None)
 
-        (language, variant) = _get_language_and_variant_from_string(lang_code)
+        (language, variant) = _get_language_and_variant_from_string(
+            guessed_language)
 
         if language is None or not language.visible:
             # Either we don't know the language or the language is hidden by
@@ -285,7 +288,7 @@ class TranslationImportQueueEntry(SQLBase):
             # are splitted across their own language packs so we cannot match
             # .po files with .pot files as they are on different
             # sourcepackages.
-            pofile = _guessed_kde_pofile()
+            pofile = self._guessed_kde_pofile
             if pofile is not None:
                 # This entry is a KDE .po file and we found a place where it
                 # should be imported.
