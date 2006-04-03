@@ -12,19 +12,19 @@
   <tr>
   <td width="80%">
   
-    <p class="portalMessage"
+    <p class="informational message"
        tal:define="status view/process_status"
        tal:condition="status"
        tal:content="status" />
 
-    <div class="portalError"
+    <div class="error message"
       tal:repeat="top_of_page_error view/top_of_page_errors"
       tal:content="structure top_of_page_error">
       Schema validation errors.
     </div>
 
     <tal:current_request condition="view/current_order">
-      <p class="portalMessage">
+      <p class="informational message">
         This request hasn't been shipped yet. You can change it now, if you
         want, and these changes will be applied before it's shipped.
       </p>
