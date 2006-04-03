@@ -48,6 +48,18 @@ class BugTrackerConnectError(Exception):
         return "%s: %s" % (self.url, self.error)
 
 
+class InvalidBugId(Exception):
+    """The bug id wasn't in the format the bug tracker expected.
+
+    For example, Bugzilla and debbugs expect the bug id to be an
+    integer.
+    """
+
+
+class BugNotFound(Exception):
+    """The bug was not found in the external bug tracker."""
+
+
 class ExternalSystem(object):
     """
     Generic class for a remote system.  This is a pass-through class
@@ -79,7 +91,59 @@ class ExternalSystem(object):
         return self.remotesystem.updateBugWatches(bug_watches)
 
 
-class Bugzilla(ExternalSystem):
+class ExternalBugTracker:
+    """Base class for an external bug tracker."""
+
+    implements(IExternalBugtracker)
+
+    def _initializeRemoteBugDB(self, bug_ids):
+        """Do any initialization before each bug watch is updated.
+
+        It's optional to override this method.
+        """
+
+    def _getRemoteStatus(self, bug_id):
+        """Return the remote status for the given bug id.
+
+        Raise BugNotFound if the bug can't be found.
+        Raise InvalidBugId if the bug id has an unexpected format.
+        """
+        raise NotImplementedError(self._getRemoteStatus)
+
+    def updateBugWatches(self, bug_watches):
+        """Update the given bug watches."""
+        bug_watches_by_remote_bug = {}
+        for bug_watch in bug_watches:
+            #XXX: Use remotebug.strip() until bug 34105 is fixed.
+            #     -- Bjorn Tillenius, 2006-03-09
+            bug_watches_by_remote_bug[bug_watch.remotebug.strip()] = bug_watch
+        not_found_bugs = []
+        bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
+        self._initializeRemoteBugDB(bug_ids_to_update)
+        for bug_id in bug_ids_to_update:
+            bug_watch = bug_watches_by_remote_bug[bug_id]
+            bug_watch.lastchecked = UTC_NOW
+            try:
+                new_remote_status = self._getRemoteStatus(bug_id)
+            except InvalidBugId, error:
+                continue
+            except BugNotFound:
+                not_found_bugs.append(bug_id)
+                continue
+            if new_remote_status != bug_watch.remotestatus:
+                malone_status = self.convertRemoteStatus(new_remote_status)
+                bug_watch.updateStatus(new_remote_status, malone_status)
+
+        for not_found_id in not_found_bugs:
+            log.warn(
+                "Didn't find bug #%s on %s." % (not_found_id, self.baseurl))
+            bug_watch = bug_watches_by_remote_bug[not_found_id]
+            bug_watch.remotestatus = 'UNKNOWN'
+            bug_watch.lastchanged = UTC_NOW
+            bug_watch.lastchecked = UTC_NOW
+
+
+class Bugzilla(ExternalBugTracker):
     """A class that deals with communications with a remote Bugzilla system."""
 
     implements(IExternalBugtracker)
@@ -172,18 +236,11 @@ class Bugzilla(ExternalSystem):
 
         return malone_status
 
-    def updateBugWatches(self, bug_watches):
-        """Update the given bug watches."""
-        bug_watches_by_remote_bug = {}
-        for bug_watch in bug_watches:
-            #XXX: Use remotebug.strip() until bug 34105 is fixed.
-            #     -- Bjorn Tillenius, 2006-03-09
-            bug_watches_by_remote_bug[bug_watch.remotebug.strip()] = bug_watch
-        bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
-
+    def _initializeRemoteBugDB(self, bug_ids):
+        """See ExternalBugTracker."""
         data = {'form_name'   : 'buglist.cgi',
                 'bug_id_type' : 'include',
-                'bug_id'      : ','.join(bug_ids_to_update),
+                'bug_id'      : ','.join(bug_ids),
                 }
         if self.version < '2.17.1':
             data.update({'format' : 'rdf'})
@@ -196,11 +253,11 @@ class Bugzilla(ExternalSystem):
             document = minidom.parseString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
             log.error('Failed to parse XML description for %s bugs %s: %s' %
-                      (self.baseurl, bug_ids_to_update, e))
-            return None
-        result = None
+                      (self.baseurl, bug_ids, e))
+            return False
+
         bug_nodes = document.getElementsByTagName('bz:bug')
-        found_bug_ids = set()
+        self.remote_bug_status = {}
         for bug_node in bug_nodes:
             bug_id_nodes = bug_node.getElementsByTagName("bz:id")
             assert len(bug_id_nodes) == 1, "Should be only one id node."
@@ -208,7 +265,6 @@ class Bugzilla(ExternalSystem):
             assert len(bug_id_node.childNodes) == 1, (
                 "id node should contain a non-empty text string.")
             bug_id = str(bug_id_node.childNodes[0].data)
-            found_bug_ids.add(bug_id)
 
             status_nodes = bug_node.getElementsByTagName(status_tag)
             assert len(status_nodes) == 1, "Should be only one status node."
@@ -226,25 +282,20 @@ class Bugzilla(ExternalSystem):
                 if resolution_nodes[0].childNodes:
                     resolution = resolution_nodes[0].childNodes[0].data
                     status += ' %s' % resolution
+            self.remote_bug_status[bug_id] = status
 
-            bug_watch = bug_watches_by_remote_bug[bug_id]
-            if bug_watch.remotestatus != status:
-                log.debug('Updating status for remote bug #%s' % bug_id)
-                malone_status = self.convertRemoteStatus(status)
-                bug_watch.updateStatus(status, malone_status)
+        return True
 
-            bug_watch.lastchecked = UTC_NOW
-
-        not_found_bugs = bug_ids_to_update.difference(found_bug_ids)
-        for not_found_id in not_found_bugs:
-            log.warn(
-                "Didn't find bug #%s on %s." % (not_found_id, self.baseurl))
-            bug_watch = bug_watches_by_remote_bug[not_found_id]
-            bug_watch.remotestatus = 'UNKNOWN'
-            bug_watch.lastchanged = UTC_NOW
-            bug_watch.lastchecked = UTC_NOW
-
-        return result
+    def _getRemoteStatus(self, bug_id):
+        """See ExternalBugTracker."""
+        if not bug_id.isdigit():
+            raise InvalidBugId(
+                "Bugzilla (%s) bug number not an integer: %s" % (
+                    self.baseurl, bug_id))
+        try:
+            return self.remote_bug_status[bug_id]
+        except KeyError:
+            raise BugNotFound(bug_id)
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.UNCONFIRMED,
@@ -252,7 +303,7 @@ debbugsstatusmap = {'open':      BugTaskStatus.UNCONFIRMED,
                     'done':      BugTaskStatus.FIXRELEASED}
 
 
-class DebBugs(ExternalSystem):
+class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
     implements(IExternalBugtracker)
@@ -267,6 +318,10 @@ class DebBugs(ExternalSystem):
             self.db_location = config.malone.debbugs_db_location
         else:
             self.db_location = db_location
+
+    @property
+    def baseurl(self):
+        return self.db_location
 
     def convertRemoteStatus(self, remote_status):
         """Convert a debbugs status to a Malone status.
@@ -290,25 +345,23 @@ class DebBugs(ExternalSystem):
 
         return malone_status
 
-    def updateBugWatches(self, bug_watches):
-        """Update the given bug watches."""
-        debbugs_db = debbugs.Database(self.db_location, self.debbugs_pl)
-        bug_watches_by_remote_bug = {}
-        for bug_watch in bug_watches:
-            #XXX: Use remotebug.strip() until bug 34105 is fixed.
-            #     -- Bjorn Tillenius, 2006-03-09
-            bug_watches_by_remote_bug[bug_watch.remotebug.strip()] = bug_watch
-        found_bug_ids = set()
-        bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
-        for bug_id in bug_ids_to_update:
-            bug_watch.lastchecked = UTC_NOW
-            if not bug_id.isdigit():
-                log.warn("Debbugs bug number not an integer: %s" % bug_id)
-                continue
-            debian_bug = debbugs_db[int(bug_id)]
-            new_remote_status = ' '.join(
-                [debian_bug.status, debian_bug.severity] + debian_bug.tags)
-            bug_watch = bug_watches_by_remote_bug[bug_id]
-            if new_remote_status != bug_watch.remotestatus:
-                malone_status = self.convertRemoteStatus(new_remote_status)
-                bug_watch.updateStatus(new_remote_status, malone_status)
+    def _initializeRemoteBugDB(self, bug_ids):
+        """See ExternalBugTracker."""
+        if not os.path.exists(os.path.join(self.db_location, 'db-h')):
+            log.error("There's no debbugs db at %s" % self.db_location)
+            self.debbugs_db = None
+        else:
+            self.debbugs_db = debbugs.Database(
+                self.db_location, self.debbugs_pl)
+
+    def _getRemoteStatus(self, bug_id):
+        """See ExternalBugTracker."""
+        if self.debbugs_db is None:
+            raise BugNotFound(bug_id)
+        if not bug_id.isdigit():
+            raise InvalidBugId(
+                "Debbugs bug number not an integer: %s" % bug_id)
+        debian_bug = self.debbugs_db[int(bug_id)]
+        new_remote_status = ' '.join(
+            [debian_bug.status, debian_bug.severity] + debian_bug.tags)
+        return new_remote_status
