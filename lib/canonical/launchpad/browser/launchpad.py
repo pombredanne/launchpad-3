@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'Breadcrumbs',
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
@@ -112,6 +113,36 @@ class MenuBox(LaunchpadView):
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""
 
+    sitemaptext = ("""
+    <ul id="launchPad" style="display: none">
+          <li id="p1">
+          <a href="/products">
+          Products
+          </a>
+          </li>
+          <li>
+          <a href="/distros">
+          Distributions
+          </a>
+          </li>
+          <li>
+          <a href="/people">
+          People
+          </a>
+          </li>
+          <li>
+          <a href="/projects">
+          Projects
+          </a>
+          </li>
+          <li>
+          <a href="/sprints">
+          Meetings
+          </a>
+          </li>
+    </ul>
+       """)
+
     def render(self):
         """Render the breadcrumbs text.
 
@@ -119,141 +150,52 @@ class Breadcrumbs(LaunchpadView):
         For each breadcrumb, breadcrumb.text is cgi escaped.  The last
         breadcrumb is made <strong>.
         """
-        breadcrumbs = self.request.breadcrumbs
-        if not breadcrumbs:
-            return ''
-        sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
-        crumbhtml = '<a href="%s">%s</a>'
-        all_but_last = [
-            crumbhtml % (breadcrumb.url, cgi.escape(breadcrumb.text))
-            for breadcrumb in breadcrumbs[:-1]]
-        lastcrumb = breadcrumbs[-1]
-        last_htmltext = crumbhtml % (lastcrumb.url, cgi.escape(lastcrumb.text))
-        last_htmltext = '<strong>%s</strong>' % last_htmltext
-        return sep.join(all_but_last + [last_htmltext])
+        crumbs = list(self.request.breadcrumbs)
+        if crumbs:
+            # Discard the first breadcrumb, as we know it will be the
+            # Launchpad one anyway.
+            firstcrumb = crumbs.pop(0)
+            assert firstcrumb.text == 'Launchpad'
 
+        L = []
+        firsturl = '/'
+        firsttext = 'Launchpad'
 
-class SiteMap(LaunchpadView):
-    """Page fragment to display the site map."""
-
-    _pillars = [
-        # (name, title, interface provided)
-        ('product', 'Products',      IProductSet),
-        ('distro',  'Distributions', IDistributionSet),
-        ('person',  'People',        IPersonSet),
-        ('project', 'Projects',      IProjectSet),
-        ('sprint',  'Meetings',      ISprintSet),
-        ]
-
-    def product_subpillar_links(self):
-        """Subpillars for the 'Products' pillar."""
-        product, dummy = self.request.getNearest(IProduct)
-        if product is None:
-            product_url = None
+        if not crumbs:
+            L.append(
+                '<li class="last">'
+                '<a href="%s">'
+                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '</a>'
+                '%s'
+                '</li>'
+                % (firsturl,
+                   cgi.escape(firsttext),
+                   self.sitemaptext))
         else:
-            product_url = canonical_url(product)
+            L.append(
+                '<li>'
+                '<a href="%s">'
+                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '</a>'
+                '%s'
+                '</li>'
+                % (firsturl,
+                   cgi.escape(firsttext),
+                   self.sitemaptext))
 
-        dummy, selected_iface = self.request.getNearest(
-            IProductSeries, IMilestone)
+            lastcrumb = crumbs.pop()
 
-        # Release Series
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Release Series',
-            enabled=False, # no +series page
-            selected=selected_iface == IProductSeries
-            ))
+            for crumb in crumbs:
+                L.append('<li><a href="%s">%s</a></li>'
+                         % (crumb.url, cgi.escape(crumb.text)))
 
-        # Branches
-        self.subpillar_links.append(dict(
-            target='%s/+branches' % product_url,
-            text='Branches',
-            enabled=product is not None,
-            selected=False # should be True if +code is being viewed
-            ))
-
-        # Milestones
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Milestones',
-            enabled=False,
-            selected=selected_iface == IMilestone
-            ))
-
-    def distro_subpillar_links(self):
-        """Subpillars for the 'Distributions' pillar."""
-        distro, dummy = self.request.getNearest(IDistribution)
-        if distro is None:
-            distro_url = None
-        else:
-            distro_url = canonical_url(distro)
-
-        dummy, selected_iface = self.request.getNearest(
-            IDistroRelease, IDistroArchRelease,
-            IDistributionSourcePackage, ISourcePackage,
-            IDistroArchReleaseBinaryPackage,
-            IDistroReleaseBinaryPackage)
-
-        # Releases
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Releases',
-            enabled=False, # no specific page for distro releases
-            selected=selected_iface == IDistroRelease
-            ))
-
-        # Ports
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Ports',
-            enabled=False, # no specific page for ports
-            selected=selected_iface == IDistroArchRelease
-            ))
-
-        # Source Packages
-        self.subpillar_links.append(dict(
-            target='%s/+search' % distro_url,
-            text='Source Packages',
-            enabled=distro is not None, 
-            selected=selected_iface in [IDistributionSourcePackage,
-                                        ISourcePackage]
-            ))
-
-        # Binary Packages
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Binary Packages',
-            enabled=False, # no specific page for binpkgs
-            selected=selected_iface in [IDistroArchReleaseBinaryPackage,
-                                        IDistroReleaseBinaryPackage]
-            ))
-
-    def initialize(self):
-        # get the current pillar
-        pillar_ifaces = [provided_iface
-                        for name, title, provided_iface in self._pillars]
-        obj, selected_iface = self.request.getNearest(*pillar_ifaces)
-        for name, title, provided_iface in self._pillars:
-            if provided_iface == selected_iface:
-                current_pillar = name
-                break
-        else:
-            current_pillar = None
-
-        self.pillar_links = []
-        for name, title, provided_iface in self._pillars:
-            self.pillar_links.append(dict(
-                target=canonical_url(getUtility(provided_iface)),
-                text=title,
-                enabled=True,
-                selected=name == current_pillar
-                ))
-
-        # call a function to create subpillar links
-        self.subpillar_links = []
-        function = getattr(self, '%s_subpillar_links' % current_pillar, None)
-        if function is not None:
-            function()
+            L.append(
+                '<li class="last">'
+                '<a href="%s">%s</a>'
+                '</li>'
+                % (lastcrumb.url, cgi.escape(lastcrumb.text)))
+        return u'\n'.join(L)
 
 
 class MaintenanceMessage:
