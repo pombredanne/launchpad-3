@@ -28,7 +28,7 @@ from canonical.lp.dbschema import RosettaImportStatus, EnumCol
 DAYS_TO_KEEP = 3
 
 def _get_language_and_variant_from_string(language_string):
-    """Return the ILanguage and variant that language_string represent."""
+    """Return the ILanguage and variant that language_string represents."""
     if language_string is None:
         return (None, None)
 
@@ -102,82 +102,6 @@ class TranslationImportQueueEntry(SQLBase):
             self.path, productseries=self.productseries,
             distrorelease=self.distrorelease,
             sourcepackagename=self.sourcepackagename)
-
-    @property
-    def _guessed_kde_pofile(self):
-        """Return an IPOFile that we think is related to this entry or None.
-
-        KDE has a non standard layout where the .pot files are stored inside
-        the sourcepackage with the binaries that will use it and the
-        translations are stored in external packages following the same
-        language pack ideas that we use with Ubuntu.
-        This layout breaks completely Rosetta because we don't have a way
-        to link the .po and .pot files coming from different packages.
-        This property uses some extra information to get that link between
-        different sourcepackages.
-
-        The info we use is:
-            - The sourcepackagename: All KDE language packs have
-              the sourcepackagename following this pattern:
-              kde-i18n-LANGCODE. We get from here the language where the .po
-              files belong.
-            - The .po filename: All .po files are stored using the translation
-              domain as its filename. This information helps us to get the
-              IPOTemplate where we should associate this .po file.
-
-        """
-        assert self.path.endswith('.po'), (
-            "We cannot handle the file %s here." % self.path)
-
-        if self.productseries is not None:
-            # This method only works for sourcepackages. It makes no sense use
-            # it with productseries.
-            return None
-
-        if not self.sourcepackagename.name.startswith('kde-i18n-'):
-            # We only know about kde-i18n-* packages, the others are ignored.
-            return None
-
-        # Here we have the set of language codes that have special meanings.
-        lang_mapping = {
-            'engb': 'en_GB',
-            'ptbr': 'pt_BR',
-            'srlatn': 'sr@Latn',
-            'zhcn': 'zh_CN',
-            'zhtw': 'zh_TW',
-            }
-
-        lang_code = self.sourcepackagename.name[len('kde-i18n-'):]
-        if lang_code in lang_mapping:
-            lang_code = lang_mapping[lang_code]
-
-        (language, variant) = _get_language_and_variant_from_string(lang_code)
-
-        if language is None or not language.visible:
-            # Either we don't know the language or the language is hidden by
-            # default what means that we got a bad import and that should be
-            # reviewed by someone before importing. The 'visible' check is to
-            # prevent the import of languages like 'es_ES' or 'fr_FR' instead
-            # of just 'es' or 'fr'.
-            return None
-
-        translation_domain, file_ext = os.path.basename(
-            self.path).split(u'.', 1)
-
-        potemplateset = getUtility(IPOTemplateSet)
-        potemplate_subset = potemplateset.getSubset(
-            distrorelease=self.distrorelease)
-        potemplate = potemplate_subset.getPOTemplateByName(
-            translation_domain.lower())
-
-        # Get or create an IPOFile based on the info we guess.
-        pofile = potemplate.getOrCreatePOFile(
-            language.code, variant=variant, owner=self.importer)
-
-        # We need to note the sourcepackagename from where this entry came.
-        pofile.from_sourcepackagename = self.sourcepackagename
-
-        return pofile
 
     @property
     def _guessed_potemplate_for_pofile_from_path(self):
@@ -288,7 +212,7 @@ class TranslationImportQueueEntry(SQLBase):
             # are splitted across their own language packs so we cannot match
             # .po files with .pot files as they are on different
             # sourcepackages.
-            pofile = self._guessed_kde_pofile
+            pofile = self._guess_kde_pofile()
             if pofile is not None:
                 # This entry is a KDE .po file and we found a place where it
                 # should be imported.
@@ -331,6 +255,81 @@ class TranslationImportQueueEntry(SQLBase):
         else:
             # We don't know where this entry should be imported.
             return None
+
+    def _guess_kde_pofile(self):
+        """Return an IPOFile that we think is related to this entry or None.
+
+        KDE has a non standard layout where the .pot files are stored inside
+        the sourcepackage with the binaries that will use it and the
+        translations are stored in external packages following the same
+        language pack ideas that we use with Ubuntu.
+        This layout breaks completely Rosetta because we don't have a way
+        to link the .po and .pot files coming from different packages.
+        This property uses some extra information to get that link between
+        different sourcepackages.
+
+        The info we use is:
+            - The sourcepackagename: All KDE language packs have
+              the sourcepackagename following this pattern:
+              kde-i18n-LANGCODE. We get from here the language where the .po
+              files belong.
+            - The .po filename: All .po files are stored using the translation
+              domain as its filename. This information helps us to get the
+              IPOTemplate where we should associate this .po file.
+
+        """
+        assert self.path.endswith('.po'), (
+            "We cannot handle the file %s here." % self.path)
+
+        if self.productseries is not None:
+            # This method only works for sourcepackages. It makes no sense use
+            # it with productseries.
+            return None
+
+        if not self.sourcepackagename.name.startswith('kde-i18n-'):
+            # We only know about kde-i18n-* packages, the others are ignored.
+            return None
+
+        # Here we have the set of language codes that have special meanings.
+        lang_mapping = {
+            'engb': 'en_GB',
+            'ptbr': 'pt_BR',
+            'srlatn': 'sr@Latn',
+            'zhcn': 'zh_CN',
+            'zhtw': 'zh_TW',
+            }
+
+        lang_code = self.sourcepackagename.name[len('kde-i18n-'):]
+        if lang_code in lang_mapping:
+            lang_code = lang_mapping[lang_code]
+
+        (language, variant) = _get_language_and_variant_from_string(lang_code)
+
+        if language is None or not language.visible:
+            # Either we don't know the language or the language is hidden by
+            # default what means that we got a bad import and that should be
+            # reviewed by someone before importing. The 'visible' check is to
+            # prevent the import of languages like 'es_ES' or 'fr_FR' instead
+            # of just 'es' or 'fr'.
+            return None
+
+        translation_domain, file_ext = os.path.basename(
+            self.path).split(u'.', 1)
+
+        potemplateset = getUtility(IPOTemplateSet)
+        potemplate_subset = potemplateset.getSubset(
+            distrorelease=self.distrorelease)
+        potemplate = potemplate_subset.getPOTemplateByName(
+            translation_domain.lower())
+
+        # Get or create an IPOFile based on the info we guess.
+        pofile = potemplate.getOrCreatePOFile(
+            language.code, variant=variant, owner=self.importer)
+
+        # We need to note the sourcepackagename from where this entry came.
+        pofile.from_sourcepackagename = self.sourcepackagename
+
+        return pofile
 
     def getFileContent(self):
         """See ITranslationImportQueueEntry."""
