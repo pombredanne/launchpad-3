@@ -362,10 +362,13 @@ class AffectsEmailCommand(EmailCommand):
                 subcmd_args = []
 
             if subcmd_name not in self._subCommandNames:
-                # XXX mpt 20060401: Remove _subObsoleteCommandNames after a month.
+                # XXX mpt 20060401:
+                # Remove _subObsoleteCommandNames after a month.
                 if subcmd_name in self._subObsoleteCommandNames:
                     raise EmailProcessingError(
-                        get_error_message('bug-importance.txt'))
+                        get_error_message(
+                            'bug-importance.txt',
+                            argument=subcmd_name))
                 else:
                     raise EmailProcessingError(
                         get_error_message(
@@ -498,6 +501,7 @@ class EmailCommands:
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
         'status': StatusEmailCommand,
+        'importance': ImportanceEmailCommand,
     }
     _obsoleteCommands = ['priority', 'severity']
 
@@ -513,7 +517,7 @@ class EmailCommands:
         """
         command_class = self._commands.get(name)
         if command_class is None:
-            if name in _obsoleteCommands:
+            if name in self._obsoleteCommands:
                 raise EmailProcessingError(
                     get_error_message('bug-importance.txt'))
             else:

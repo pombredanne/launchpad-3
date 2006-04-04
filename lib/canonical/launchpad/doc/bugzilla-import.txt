@@ -365,7 +365,7 @@ and attach a watch to the upstream bug tracker:
   Task: evolution (upstream)
       Status: UNCONFIRMED
       Product: evolution
-      Importance: MEDIUM
+      Importance: UNTRIAGED
       Watch: http://bugzilla.gnome.org//show_bug.cgi?id=273041
   Task: evolution (Ubuntu)
       Status: UNCONFIRMED
@@ -389,7 +389,8 @@ and attach a watch to the upstream bug tracker:
       First comment
   <BLANKLINE>
 
-
+XXX mpt 20060404: In sampledata Evolution uses Malone officially, so adding
+a watch to its external bug tracker is a bad example.
 
 
 Severity Mapping

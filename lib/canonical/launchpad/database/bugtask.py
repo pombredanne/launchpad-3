@@ -471,6 +471,8 @@ class BugTaskSet:
                 orderby_arg.append(self._ORDERBY_COLUMN[orderby_col])
 
         # Make sure that the result always is ordered.
+        if 'Bug.id' not in orderby_arg and '-Bug.id' not in orderby_arg:
+            orderby_arg.append('Bug.id')
         orderby_arg.append('BugTask.id')
 
         query = " AND ".join(extra_clauses)
