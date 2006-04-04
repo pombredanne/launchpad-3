@@ -4,15 +4,15 @@ import os
 import shutil
 import unittest
 
-from twisted.trial.unittest import TestCase
 from twisted.internet import defer
 from twisted.vfs.ivfs import VFSError, PermissionError
 
+from canonical.tests.test_twisted import TwistedTestCase
 from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
 from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot, SFTPServerBranch
 
 
-class AvatarTestBase(TestCase):
+class AvatarTestBase(TwistedTestCase):
     """Base class for tests that need an SFTPOnlyAvatar with some basic sample
     data."""
     def setUp(self):
@@ -186,10 +186,25 @@ class ProductDirsTestCase(AvatarTestBase):
 
             # The directory should exist on the disk.
             self.assert_(os.path.exists(branchDirectory.realPath))
+            return branchDirectory
 
         # Connect the callbacks, and wait for them to run.
         deferred.addCallback(_cb1).addCallback(_cb2)
         return deferred
+
+    def testRmdirBranchDenied(self):
+        # Deleting a branch directory should fail with a permission error.
+        
+        # Create an empty branch directory
+        deferred = self.testCreateBranch()
+        
+        # Now attempt to remove the new-branch directory
+        def _cb(branchDirectory):
+            return branchDirectory.remove()
+
+        # Connect the callbacks, and wait for them to run.
+        deferred.addCallback(_cb)
+        return self.assertFailure(deferred, PermissionError)
 
 
 def test_suite():

@@ -79,13 +79,14 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    sortingColumns = ['displayname', 'familyname', 'givenname', 'name']
+    # XXX: We should be sorting on person_sort_key(displayname,name), but
+    # SQLObject will not let us sort using a stored procedure.
+    # -- StuartBishop 20060323
+    sortingColumns = ['displayname', 'name']
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
     password = StringCol(dbName='password', default=None)
-    givenname = StringCol(dbName='givenname', default=None)
-    familyname = StringCol(dbName='familyname', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -231,18 +232,12 @@ class Person(SQLBase):
     def browsername(self):
         """Return a name suitable for display on a web page.
 
-        1. If we have a displayname, then browsername is the displayname.
-
-        2. If we have a familyname or givenname, then the browsername
-           is "FAMILYNAME Givenname".
-
-        3. If we have no displayname, no familyname and no givenname,
-           the browsername is self.name.
+        Originally, this was calculated but now we just use displayname.
+        You should continue to use this method, however, as we may want to
+        change again, such as returning '$displayname ($name)'.
 
         >>> class DummyPerson:
         ...     displayname = None
-        ...     familyname = None
-        ...     givenname = None
         ...     name = 'the_name'
         ...     # This next line is some special evil magic to allow us to
         ...     # unit test browsername in isolation.
@@ -255,48 +250,12 @@ class Person(SQLBase):
         >>> person.browsername
         'the_name'
 
-        Check with givenname and name.  Just givenname is used.
-
-        >>> person.givenname = 'the_givenname'
-        >>> person.browsername
-        'the_givenname'
-
-        Check with givenname, familyname and name.  Both givenname and
-        familyname are used.
-
-        >>> person.familyname = 'the_familyname'
-        >>> person.browsername
-        'THE_FAMILYNAME the_givenname'
-
-        Check with givenname, familyname, name and displayname.
-        Only displayname is used.
-
         >>> person.displayname = 'the_displayname'
         >>> person.browsername
         'the_displayname'
-
-        Remove familyname to check with givenname, name and displayname.
-        Only displayname is used.
-
-        >>> person.familyname = None
-        >>> person.browsername
-        'the_displayname'
-
         """
-        if self.displayname:
-            return self.displayname
-        elif self.familyname or self.givenname:
-            # Make a list containing either ['FAMILYNAME'] or
-            # ['FAMILYNAME', 'Givenname'] or ['Givenname'].
-            # Then turn it into a space-separated string.
-            L = []
-            if self.familyname is not None:
-                L.append(self.familyname.upper())
-            if self.givenname is not None:
-                L.append(self.givenname)
-            return ' '.join(L)
-        else:
-            return self.name
+        # Person.displayname is NOT NULL
+        return self.displayname
 
     def specifications(self, quantity=None, sort=None):
         query = """
@@ -440,20 +399,13 @@ class Person(SQLBase):
     @property
     def is_valid_person(self):
         """See IPerson."""
-        # XXX: Bug 35952 stops this from working. This method is preferred,
-        # as it keeps the 'what is a valid person' logic encapsulated in the
-        # ValidPersonOrTeamCache materialized view.
-        # return (ValidPersonOrTeamCache.get(self.id) is not None)
+        try:
+            if ValidPersonOrTeamCache.get(self.id) is not None:
+                return True
+        except SQLObjectNotFound:
+            pass
+        return False
         
-        # No need to make this a cachedproperty, as preferredemail is
-        # already cached.
-        return (
-                self.teamowner is None
-                and self.password is not None
-                and self.merged is None
-                and self.preferredemail is not None
-                )
-
     def assignKarma(self, action_name):
         """See IPerson."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
@@ -1004,8 +956,7 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(self, email, name=None, displayname=None,
-                             givenname=None, familyname=None, password=None,
-                             passwordEncrypted=False):
+                             password=None, passwordEncrypted=False):
         """See IPersonSet."""
         if name is None:
             try:
@@ -1020,22 +971,19 @@ class PersonSet:
             password = getUtility(IPasswordEncryptor).encrypt(password)
 
         displayname = displayname or name.capitalize()
-        person = self._newPerson(name, displayname, givenname=givenname,
-                                 familyname=familyname, password=password)
+        person = self._newPerson(name, displayname, password=password)
 
         email = getUtility(IEmailAddressSet).new(email, person.id)
         return person, email
 
-    def _newPerson(self, name, displayname, givenname=None, familyname=None,
-                   password=None):
+    def _newPerson(self, name, displayname, password=None):
         """Create a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
         assert self.getByName(name, ignore_merged=False) is None
-        person = Person(name=name, displayname=displayname, givenname=givenname,
-                        familyname=familyname, password=password)
+        person = Person(name=name, displayname=displayname, password=password)
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
                     person.displayname, wikinameset.exists)

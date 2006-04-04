@@ -9,7 +9,7 @@ __all__ = ['TacTestSetup', 'ReadyService', 'TacException']
 import sys
 import os
 import time
-from signal import SIGTERM
+from signal import SIGTERM, SIGKILL
 import subprocess
 
 from twisted.application import service
@@ -73,6 +73,7 @@ class TacTestSetup:
             while True:
                 count += 1
                 if count == 50:
+                    # XXX: this codepath is untested
                     os.kill(int(pid), SIGKILL)
                     break
                 try:

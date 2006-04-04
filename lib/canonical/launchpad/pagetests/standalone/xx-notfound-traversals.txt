@@ -116,6 +116,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
+>>> check("/distros/debian/+milestone/3.1")
 >>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
 >>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
 
@@ -141,6 +142,8 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/hoary/+source/evolution/+translate")
 >>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
+...       auth=True)
+>>> check("/distros/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
 ...       auth=True)
 >>> check_not_found("/distros/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check_not_found(

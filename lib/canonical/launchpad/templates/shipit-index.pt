@@ -28,8 +28,11 @@
           (Dapper Drake) CDs, please check back with us again at the beginning
           of May 2006.<strong></p>
 
-          <p class="portalMessage" tal:condition="view/announcement|nothing"
-             tal:content="view/announcement" />
+          <p
+            tal:condition="view/announcement|nothing"
+            tal:content="view/announcement"
+            class="informational message"
+          />
 
           <p>To make requests, or view or change existing requests, you need to
           sign in using your <a href="https://launchpad.net">Launchpad</a>

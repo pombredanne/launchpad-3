@@ -26,7 +26,7 @@
 
       <tal:block condition="view/orderCreated">
         <br />
-        <p class="portalMessage">New request
+        <p class="informational message">New request
           <tal:block condition="view/userIsShipItAdmin">
             #<span tal:content="order/id" />
           </tal:block>
@@ -36,12 +36,12 @@
 
       <tal:block condition="view/orderChanged">
         <br />
-        <p class="portalMessage">Request changed.</p>
+        <p class="informational message">Request changed.</p>
       </tal:block>
 
       <tal:block condition="view/hasErrorMessages">
         <br />
-        <p class="portalError">There were errors in your request.</p>
+        <p class="error message">There were errors in your request.</p>
       </tal:block>
 
     <tal:block condition="view/shouldShowOrderDetails">
@@ -163,7 +163,7 @@
       </tal:block>
 
       <tal:block condition="view/orderFormMessages">
-        <p class="portalError" tal:repeat="msg view/orderFormMessages"
+        <p class="error message" tal:repeat="msg view/orderFormMessages"
         tal:content="msg" />
       </tal:block>
       <br />
@@ -289,7 +289,7 @@
       <h1>Shipping address</h1>
 
       <tal:block condition="view/addressFormMessages">
-        <p class="portalError" tal:repeat="msg view/addressFormMessages" 
+        <p class="error message" tal:repeat="msg view/addressFormMessages" 
            tal:content="msg" />
         <br />
       </tal:block>

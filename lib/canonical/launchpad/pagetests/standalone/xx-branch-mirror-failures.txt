@@ -2,7 +2,7 @@ If a branch fails to mirror, that information is displayed in the mirror's
 page, together with the last failure message we got when mirroring.
 
   >>> print http(r"""
-  ... GET /people/jblack/+branch/+junk/arch@arch.ubuntu.com_arch--devel--1.0 HTTP/1.1
+  ... GET /people/jblack/+branch/+junk/devel-1.0 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Failures:...
@@ -14,7 +14,7 @@ If a branch failed to mirror but no failure message was stored, then we'll
 simply say that the branch failed to mirror.
 
   >>> thunderbird_mirror_page = str(http(r"""
-  ... GET /people/stevea/+branch/thunderbird/thunderbird@arch.ubuntu.com_thunderbird--MAIN--0 HTTP/1.1
+  ... GET /people/stevea/+branch/thunderbird/main HTTP/1.1
   ... """))
   >>> 'Failures' in thunderbird_mirror_page
   True

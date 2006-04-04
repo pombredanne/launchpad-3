@@ -29,7 +29,7 @@ First, we show that "evolution minicard" is not translated.
   HTTP/1.1 200 Ok
   ...<input style="width: 100%;" type="text" lang="af"
             dir="ltr" name="msgset_137_af_translation_0"
-            tabindex="22" />
+            tabindex=... />
   ...
 
 Now, we need to show that it is translated after a post. Let's go ahead and

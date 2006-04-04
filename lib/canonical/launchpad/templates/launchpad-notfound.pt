@@ -1,8 +1,10 @@
 <tal:layout define="columns1 default">
 <html metal:use-macro="context/@@main_template/master">
   <body>
-    <div metal:fill-slot="main">
+    <metal:heading fill-slot="pageheading">
       <h1 i18n:translate="">Page not found</h1>
+    </metal:heading>
+    <div metal:fill-slot="main">
       <p i18n:translate="">
         There&#8217;s no page with this address in Launchpad.
       </p>

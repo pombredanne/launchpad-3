@@ -31,7 +31,7 @@
 </pre>
     </tal:block>
 
-    <p tal:condition="not: context/changelog" class="portalMessage">
+    <p tal:condition="not: context/changelog" class="informational message">
       There is no changelog associated with this source package.
     </p>
 

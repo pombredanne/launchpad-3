@@ -3,7 +3,7 @@
       <div tal:replace="structure context/path/to/team/@@+teamlist" />
   </tal:block>
 
-  <p tal:condition="not: context/isTeam" class="portalMessage">
+  <p tal:condition="not: context/isTeam" class="error message">
     <span tal:replace="context/browsername" /> does not have members,
     because <span tal:replace="context/browsername" /> is not a team.
   </p>

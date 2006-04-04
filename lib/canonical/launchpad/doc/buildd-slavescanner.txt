@@ -451,7 +451,9 @@ Both access methods work as expected, remove the temporary file used here.
 Check uploader log storage:
 
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
-  >>> failed_upload = os.listdir(failed_dir)[0]
+  >>> failed_uploads = os.listdir(failed_dir)
+  >>> assert len(failed_uploads) == 1
+  >>> failed_upload = failed_uploads[0]
   >>> uploader_log = open(os.path.join(failed_dir, failed_upload,
   ...                                  'uploader.log'))
 
