@@ -181,6 +181,98 @@ But if that entry is imported, the guessing algorithm works.
     >>> po_sr_entry.guessed_pofile is not None
     True
 
+guessed_pofile with KDE
+-----------------------
+
+KDE has a non standard layout where the .pot files are stored inside the
+sourcepackage with the binaries that will use it and the translations are
+stored in external packages following the same language pack ideas that we
+use with Ubuntu. This layout breaks completely Rosetta because we don't have
+a way to link the .po and .pot files coming from different packages. For this
+case, we use some extra information to get that link between different
+sourcepackages.
+
+The info we use is:
+    - The sourcepackagename: All KDE language packs have
+      the sourcepackagename following this pattern:
+      kde-i18n-LANGCODE. We get from here the language where the .po
+      files belong.
+    - The .po filename: All .po files are stored using the translation
+      domain as its filename. This information helps us to get the
+      IPOTemplate where we should associate this .po file.
+
+To do this test, we are going to do all in a single transaction and will
+rollback it when it's finished.
+
+
+First, we are going to add three new sourcepackagenames for this test,
+kdebase, kde-i18n-es and kde-i18n-srlatn. The first is from where the .pot
+file come and the others have .po files.
+
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+    >>> kdebase = sourcepackagenameset.new('kdebase')
+    >>> kde_i18n_es = sourcepackagenameset.new('kde-i18n-es')
+    >>> kde_i18n_srlatn = sourcepackagenameset.new('kde-i18n-srlatn')
+
+Let's attach the .pot file
+
+    >>> kde_pot_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/kdebugdialog.pot', 'foo content', True, rosetta_expert,
+    ...      distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=kdebase)
+
+Create the template name and attach this new import to it.
+
+    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplatenameset = getUtility(IPOTemplateNameSet)
+    >>> kdebugdialog_template_name = potemplatenameset.new(
+    ...     'kdebugdialog', 'kdebugdialog')
+    >>> potemplateset = getUtility(IPOTemplateSet)
+    >>> subset = potemplateset.getSubset(
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=kdebase)
+    >>> kde_pot_entry.potemplate = subset.new(
+    ...     kdebugdialog_template_name, 'po/kdebugdialog.pot', rosetta_expert)
+    >>> kde_pot_entry.potemplate.title
+    u'Template "kdebugdialog" in Ubuntu Hoary package "kdebase"'
+
+And set this entry as already imported.
+
+    >>> kde_pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> flush_database_updates()
+
+Let's attach a .po file from kde-i18n-es
+
+    >>> es_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'messages/kdebase/kdebugdialog.po', 'foo content', True,
+    ...     rosetta_expert, distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=kde_i18n_es)
+
+And we will get the right IPOFile.
+
+    >>> es_entry.guessed_pofile.title
+    u'Spanish (es) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
+
+The kde-i18n-srlatn is a bit special, the language is sr@Latn and we should be
+able to know that.
+
+    >>> srlatn_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'messages/kdebase/kdebugdialog.po', 'foo content', True,
+    ...     rosetta_expert, distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=kde_i18n_srlatn)
+
+And we will get the right IPOFile.
+
+    >>> srlatn_entry.guessed_pofile.title
+    u'Serbian (sr) translation of kdebugdialog in Ubuntu Hoary package "kdebase"'
+    >>> srlatn_entry.guessed_pofile.variant
+    u'Latn'
+
+Finally, we abort the transaction to undo all changes done.
+
+    >>> transaction.abort()
+
 
 executeOptimisticBlock
 ---------------------
