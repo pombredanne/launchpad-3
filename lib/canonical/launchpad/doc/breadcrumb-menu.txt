@@ -31,17 +31,12 @@ attribute.
     ...     print Breadcrumbs(context, request).render()
 
 
-With no breadcrumbs, we get an empty string.
+With no breadcrumbs, we get a single <li> element for Launchpad, containing
+the sitemap.  As there is just a single <li> element, it gets the CSS class
+"last".  The URL of "/" is hardcoded for the first breadcrumb.
 
     >>> render_breadcrumbs()
-
-
-With a single breadcrumb, we get the "Launchpad" breadcrumb and the
-popup site map.
-
-    >>> request.addCrumb('http://localhost', 'Launchpad')
-    >>> render_breadcrumbs()
-    <li><a href="http://localhost"><img src="/@@/launchpad.png" alt="" /> Launchpad</a>
+    <li class="last"><a href="/"><img src="/@@/launchpad.png" alt="" /> Launchpad</a>
         <ul id="launchPad" style="display: none">
         ...href="/products"...
         Products
@@ -60,13 +55,25 @@ popup site map.
         ...
 
 
+With a single breadcrumb, we get the "Launchpad" breadcrumb and the
+popup site map.  As it is the only breadcrumb, it gets the CSS class "last".
+
+    >>> request.addCrumb('http://localhost', 'Launchpad')
+    >>> render_breadcrumbs()
+    <li class="last"><a href="/"><img src="/@@/launchpad.png" alt="" /> Launchpad</a>
+        <ul id="launchPad" style="display: none">
+        ...href="/products"...
+        Products
+        ...
+
+
 When we add another breadcrumb, it appears as a top level <li> after the
 initial "Launchpad" <li>.  Note that the last crumb's <li> has a CSS class
 of "last".
 
     >>> request.addCrumb('http://localhost/people', 'People')
     >>> render_breadcrumbs()
-    <li><a href="http://localhost"><img src="/@@/launchpad.png" alt="" /> Launchpad</a>
+    <li><a href="/"><img src="/@@/launchpad.png" alt="" /> Launchpad</a>
         <ul id="launchPad" style="display: none">
         ...
         </ul>
@@ -80,7 +87,7 @@ class of "last".
 
     >>> request.addCrumb('http://localhost/people/someone', 'Someone')
     >>> render_breadcrumbs()
-    <li><a href="http://localhost"><img src="/@@/launchpad.png" alt="" /> Launchpad</a>
+    <li><a href="/"><img src="/@@/launchpad.png" alt="" /> Launchpad</a>
         <ul id="launchPad" style="display: none">
         ...
         </ul>

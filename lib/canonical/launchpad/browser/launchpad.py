@@ -150,26 +150,27 @@ class Breadcrumbs(LaunchpadView):
         For each breadcrumb, breadcrumb.text is cgi escaped.  The last
         breadcrumb is made <strong>.
         """
-        breadcrumbs = self.request.breadcrumbs
-        if not breadcrumbs:
-            return ''
-
         crumbs = list(self.request.breadcrumbs)
-        L = []
+        if crumbs:
+            # Discard the first breadcrumb, as we know it will be the
+            # Launchpad one anyway.
+            firstcrumb = crumbs.pop(0)
+            assert firstcrumb.text == 'Launchpad'
 
-        firstcrumb = crumbs.pop(0)
+        L = []
+        firsturl = '/'
+        firsttext = 'Launchpad'
+
         if not crumbs:
             L.append(
-                '<li>'
-                #'<strong>'
+                '<li class="last">'
                 '<a href="%s">'
                 '<img src="/@@/launchpad.png" alt="" /> %s'
                 '</a>'
-                #'</strong>'
                 '%s'
                 '</li>'
-                % (firstcrumb.url,
-                   cgi.escape(firstcrumb.text),
+                % (firsturl,
+                   cgi.escape(firsttext),
                    self.sitemaptext))
         else:
             L.append(
@@ -179,8 +180,8 @@ class Breadcrumbs(LaunchpadView):
                 '</a>'
                 '%s'
                 '</li>'
-                % (firstcrumb.url,
-                   cgi.escape(firstcrumb.text),
+                % (firsturl,
+                   cgi.escape(firsttext),
                    self.sitemaptext))
 
             lastcrumb = crumbs.pop()
@@ -191,9 +192,7 @@ class Breadcrumbs(LaunchpadView):
 
             L.append(
                 '<li class="last">'
-                #'<strong>'
                 '<a href="%s">%s</a>'
-                #'</strong>'
                 '</li>'
                 % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
