@@ -69,7 +69,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
              'addpotemplate', 'review']
 
     def edit(self):
-        text = 'Edit Series Details'
+        text = 'Change Series Details'
         return Link('+edit', text, icon='edit')
 
     def editsource(self):

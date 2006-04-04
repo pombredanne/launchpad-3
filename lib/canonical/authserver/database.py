@@ -595,7 +595,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         transaction.execute(utf8('''
             SELECT Product.id, Product.name, Branch.id, Branch.name
             FROM Product RIGHT OUTER JOIN Branch ON Branch.product = Product.id
-            WHERE Branch.owner = %s
+            WHERE Branch.owner = %s AND Branch.url IS NULL
             ORDER BY Product.id
             '''
             % sqlvalues(personID))
@@ -650,12 +650,12 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         branchID = transaction.fetchone()[0]
 
         transaction.execute(utf8('''
-            INSERT INTO Branch (id, owner, product, name, title, summary)
-            VALUES (%s, %s, %s, %s, %s, %s)'''
-            % sqlvalues(branchID, personID, productID, branchName, branchName,
-                        branchName))
+            INSERT INTO Branch (id, owner, product, name, author)
+            VALUES (%s, %s, %s, %s, %s)'''
+            % sqlvalues(branchID, personID, productID, branchName, personID))
         )
         return branchID
+
 
 class DatabaseBranchDetailsStorage:
     """Launchpad-database backed implementation of IUserDetailsStorage"""

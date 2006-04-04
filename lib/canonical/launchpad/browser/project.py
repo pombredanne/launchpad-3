@@ -45,6 +45,9 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return self.context.displayname
 
+    def breadcrumb(self):
+        return self.context.displayname
+
     def traverse(self, name):
         return self.context.getProduct(name)
 
@@ -52,6 +55,9 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
 class ProjectSetNavigation(GetitemNavigation):
 
     usedfor = IProjectSet
+
+    def breadcrumb(self):
+        return 'Projects'
 
     def breadcrumb(self):
         return 'Projects'
@@ -75,11 +81,16 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bounties', 'calendar']
+    enable_only = ['overview', 'bugs', 'bounties', 'calendar']
 
     def overview(self):
         target = ''
         text = 'Overview'
+        return Link(target, text)
+
+    def bugs(self):
+        target = '+bugs'
+        text = 'Bugs'
         return Link(target, text)
 
     def calendar(self):
@@ -283,6 +294,9 @@ class ProjectAddProductView(AddView):
 
 
 class ProjectSetView(object):
+
+    header = "Projects registered in Launchpad"
+
     def __init__(self, context, request):
         self.context = context
         self.request = request

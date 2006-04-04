@@ -26,9 +26,6 @@
                                on the Mozilla code base.'''}];
                         ">
 
-<fieldset>
-    <legend>Package</legend>
-    
     <tal:noselection condition="not: selection">
         <form action=""
               style="float: right;"
@@ -115,8 +112,6 @@
         </div>
 
     </fieldset>
-
-</fieldset>
 
 </tal:testvalues>
 

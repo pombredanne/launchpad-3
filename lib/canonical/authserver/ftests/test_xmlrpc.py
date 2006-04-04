@@ -9,60 +9,29 @@ import unittest
 import os, sys, time, popen2
 import xmlrpclib
 
-from twisted.python.util import sibpath
+from twisted.application import strports
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.config import config
 
-class TwistdTestCase(LaunchpadTestCase):
-    # This test requires write access to the current working dir (it writes a
-    # twistd.log and twistd.pid (and deletes them), and also the launchpad_test
-    # DB created by running make in launchpad's database/schema directory.
+
+def _getPort():
+    portDescription = config.authserver.port
+    kind, args, kwargs = strports.parse(portDescription, None)
+    assert kind == 'TCP'
+    return int(args[0])
+
+
+class XMLRPCv1TestCase(LaunchpadTestCase):
     def setUp(self):
         LaunchpadTestCase.setUp(self)
-
-        # need to run different twistd depending on python version
-        ver = sys.version[:3]
-        os.system('kill `cat twistd.pid 2> /dev/null` > /dev/null 2>&1')
-        cmd = 'twistd%s -oy %s' % (ver, sibpath(__file__, 'test.tac'),)
-        rv = os.system(cmd)
-        self.failUnlessEqual(rv, 0)
-
-        # Wait for the server to be listening on a port, and find out what that
-        # port is
-        while True:
-            try:
-                # Make sure it's really ready, including having written the port
-                # to a file
-                open('twistd.ready').close()
-
-                # Get the file with the port number
-                f = open('twistd.port')
-            except IOError:
-                pass
-            else:
-                self.port = int(f.read())
-                f.close()
-                break
-
+        AuthserverTacTestSetup().setUp()
+        self.server = xmlrpclib.Server('http://localhost:%s/' % _getPort())
+    
     def tearDown(self):
-        pid = int(open('twistd.pid').read())
-        ret = os.system('kill `cat twistd.pid`')
-        # Wait for it to actually die
-        while True:
-            try:
-                os.kill(pid, 0)
-            except OSError:
-                break
-            time.sleep(0.1)
-        os.remove('twistd.log')
+        AuthserverTacTestSetup().tearDown()
         LaunchpadTestCase.tearDown(self)
-        self.failIf(ret)
-
-
-class XMLRPCv1TestCase(TwistdTestCase):
-    def setUp(self):
-        TwistdTestCase.setUp(self)
-        self.server = xmlrpclib.Server('http://localhost:%d/' % self.port)
 
     def test_getUser(self):
         # Check that getUser works, and returns the right contents
@@ -155,11 +124,16 @@ class XMLRPCv1TestCase(TwistdTestCase):
         self.assertEqual('DSA', keytype)
 
 
-class XMLRPCv2TestCase(TwistdTestCase):
+class XMLRPCv2TestCase(LaunchpadTestCase):
     """Like XMLRPCv1TestCase, but for the new, simpler, salt-less API."""
     def setUp(self):
-        TwistdTestCase.setUp(self)
-        self.server = xmlrpclib.Server('http://localhost:%d/v2/' % self.port)
+        LaunchpadTestCase.setUp(self)
+        AuthserverTacTestSetup().setUp()
+        self.server = xmlrpclib.Server('http://localhost:%s/v2/' % _getPort())
+    
+    def tearDown(self):
+        AuthserverTacTestSetup().tearDown()
+        LaunchpadTestCase.tearDown(self)
 
     def test_getUser(self):
         # Check that getUser works, and returns the right contents

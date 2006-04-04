@@ -3,9 +3,12 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Set goals for <tal:thing replace="context/displayname" /></h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -15,13 +18,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-  <h1>Set goals</h1>
-
-  <p class="documentDescription">
-    This page allows you to accept or decline specifications as goals for
-    <span tal:replace="context/displayname">Mozilla Firefox 1.0</span>.
-  </p>
 
   <p
     tal:condition="view/status_message"

@@ -3,9 +3,12 @@
   xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
-
-<body>
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Link a bounty</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -15,10 +18,6 @@
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
-
-        <h1 tal:condition="view/label"
-            tal:content="view/label"
-            metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
     <p metal:fill-slot="extra_info">
       A bounty that has already been created can be associated with
