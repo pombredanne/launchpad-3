@@ -326,23 +326,21 @@
         name="+addseries"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="name displayname summary"
+        fields="owner name summary"
         class="canonical.launchpad.browser.ProductSeriesAddView"
         facet="overview"
-        keyword_arguments="name displayname summary"
+        keyword_arguments="owner name summary"
         permission="launchpad.AnyPerson"
         template="../templates/productseries-new.pt"
         lp:url="/products/$Product.name/+addseries">
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
            class="zope.app.form.browser.TextWidget"
            displayWidth="15"
            extra="tabindex=1" />
-        <browser:widget
-           field="displayname"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="20"
-           extra="tabindex=2" />
         <browser:widget
            field="summary"
            class="zope.app.form.browser.TextAreaWidget"

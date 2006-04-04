@@ -301,9 +301,9 @@ class Product(SQLBase, BugTargetBase):
         """See IProduct."""
         return ProductSeries.selectOneBy(productID=self.id, name=name)
 
-    def newSeries(self, name, displayname, summary):
-        return ProductSeries(product=self, name=name, displayname=displayname,
-                             summary=summary)
+    def newSeries(self, owner, name, summary):
+        return ProductSeries(product=self, owner=owner, name=name,
+            summary=summary)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""

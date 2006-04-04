@@ -41,9 +41,10 @@ class ProductSeries(SQLBase):
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     name = StringCol(notNull=True)
-    displayname = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    owner = ForeignKey(
+        foreignKey="Person", dbName="owner", notNull=True)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -79,6 +80,10 @@ class ProductSeries(SQLBase):
                              orderBy=['version'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
+
+    @property
+    def displayname(self):
+        return self.name
 
     @property
     def potemplates(self):

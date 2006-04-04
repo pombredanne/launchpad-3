@@ -127,7 +127,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="name displayname summary"
+        fields="name summary"
         class="canonical.launchpad.browser.ProductSeriesEditView"
         facet="overview"
         permission="launchpad.Edit"

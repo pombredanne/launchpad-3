@@ -472,7 +472,7 @@ class ProductSeriesAddView(AddView):
         """Handle a request to create a new series for this product."""
         # Ensure series name is lowercase
         self.series = self.context.newSeries(
-            data["name"], data["displayname"], data["summary"])
+            data["owner"], data["name"], data["summary"])
 
     def nextURL(self):
         assert self.series
