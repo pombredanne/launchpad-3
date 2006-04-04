@@ -325,9 +325,8 @@ class DebBugs(ExternalBugTracker):
             malone_status = BugTaskStatus.UNKNOWN
         if status == 'open':
             confirmed_tags = [
-                'help', 'confirmed', 'fixed', 'upstream', 'fixed-upstream',
-                'wontfix']
-            fix_committed_tags = ['pending', 'fixed-in-experimental']
+                'help', 'confirmed', 'upstream', 'fixed-upstream', 'wontfix']
+            fix_committed_tags = ['pending', 'fixed', 'fixed-in-experimental']
             if 'moreinfo' in tags:
                 malone_status = BugTaskStatus.NEEDSINFO
             for confirmed_tag in confirmed_tags:
@@ -355,7 +354,10 @@ class DebBugs(ExternalBugTracker):
         if not bug_id.isdigit():
             raise InvalidBugId(
                 "Debbugs bug number not an integer: %s" % bug_id)
-        debian_bug = self.debbugs_db[int(bug_id)]
+        try:
+            debian_bug = self.debbugs_db[int(bug_id)]
+        except KeyError:
+            raise BugNotFound(bug_id)
         new_remote_status = ' '.join(
             [debian_bug.status, debian_bug.severity] + debian_bug.tags)
         return new_remote_status

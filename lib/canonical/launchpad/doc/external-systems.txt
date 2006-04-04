@@ -224,45 +224,113 @@ And the linked bugtasks got updated:
     3 mozilla-firefox (Debian) Unconfirmed Unknown
     7 evolution (Debian) Fix Released Unknown
 
-Let's take closer look at the status conversion.
+The retrevial of the remote status is done by _getRemoteStatus().
+
+    >>> external_debbugs._getRemoteStatus('304014')
+    'open important'
+
+If we pass a bug number that doesn't exist in the debbugs db,
+BugNotFound is raised.
+
+    >>> external_debbugs._getRemoteStatus('42')
+    Traceback (most recent call last):
+    ...
+    BugNotFound: 42
+
+If we pass a non-integer bug id, InvalidBugId is raised.
+
+    >>> external_debbugs._getRemoteStatus('foo')
+    Traceback (most recent call last):
+    ...
+    InvalidBugId: Debbugs bug number not an integer: foo
+
+Let's take closer look at the status conversion. Debbugs has basically
+only two statuses, 'open' and 'done', so in order to get a more fine
+grained mapping to Malone statuses, we need to look at the tags as
+well. The most simple mapping is from 'done', in debbugs it means that
+the bug has been fixed and a new package with the fix has been
+uploaded, so it maps to 'Fix Released.
 
     >>> print external_debbugs.convertRemoteStatus('done normal').title
     Fix Released
 
+If the status is simply 'open', we map it to 'Unconfirmed', since
+there's no way of knowing if the bug is confirmed or not.
+
     >>> print external_debbugs.convertRemoteStatus('open normal').title
     Unconfirmed
+
+If the 'wontfix' tag is present we map it to 'Confirmed', since even
+though the bug won't be fixed, it's still a confirmed bug.
 
     >>> print external_debbugs.convertRemoteStatus('open normal wontfix').title
     Confirmed
 
-    >>> print external_debbugs.convertRemoteStatus('open normal moreinfo').title
+If the 'moreinfo' tag is present, we map the status to 'Needs Info'.
+
+    >>> print external_debbugs.convertRemoteStatus(
+    ...     'open normal moreinfo').title
     Needs Info
 
-    >>> print external_debbugs.convertRemoteStatus('open normal unreproducible').title
-    Unconfirmed
+Of course, if the 'moreinfo' tag is present and the status is 'done',
+we still map to 'Fix Released'.
+
+    >>> print external_debbugs.convertRemoteStatus(
+    ...     'done normal moreinfo').title
+    Fix Released
+
+If the 'help' tag is present, it means that the maintainer is
+requesting help with the bug, so it's most likely a confirmed bug.
 
     >>> print external_debbugs.convertRemoteStatus('open normal help').title
     Confirmed
 
+The 'pending' tag means that a fix is about to be uploaded, so it maps
+to 'Fix Committed'.
+
     >>> print external_debbugs.convertRemoteStatus('open normal pending').title
     Fix Committed
 
+The 'fixed' tag means that the bug has been either fixed or work around
+somehow, but there's still an issue to be solved. We map it to 'Fix
+Committed', so that people can see that a fix is available.
+
     >>> print external_debbugs.convertRemoteStatus('open normal fixed').title
+    Fix Committed
+
+If the bug is forwarded upstream, it should mean that it's a confirmed
+bug.
+
+    >>> print external_debbugs.convertRemoteStatus(
+    ...     'open normal upstream').title
     Confirmed
 
-    >>> print external_debbugs.convertRemoteStatus('open normal upstream').title
+And of course, if the maintainer marked the bug as 'confirmed'.
+
+    >>> print external_debbugs.convertRemoteStatus(
+    ...     'open normal confirmed').title
     Confirmed
 
-    >>> print external_debbugs.convertRemoteStatus('open normal confirmed').title
-    Confirmed
+
+If it has been fixed upstream, it's definitely a confirmed bug.
 
     >>> print external_debbugs.convertRemoteStatus(
     ...     'open normal fixed-upstream').title
     Confirmed
 
+If it has been fixed in experimental, we mark it 'Fix Committed' until
+the fix has reached the unstable distribution.
+
     >>> print external_debbugs.convertRemoteStatus(
     ...     'open normal fixed-in-experimental').title
     Fix Committed
+
+All other tags we map to 'Unconfirmed'.
+
+    >>> print external_debbugs.convertRemoteStatus(
+    ...     'open normal unreproducible lfs woody').title
+    Unconfirmed
+
 
 
 checkwatches.py

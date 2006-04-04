@@ -224,8 +224,13 @@ class Database:
     def __iter__(self):
         return self.bug_iterator(self, None)
 
-    def __getitem__(self, bug):
-        return Bug(self, bug)
+    def __getitem__(self, bug_id):
+        bug = Bug(self, bug_id)
+        try:
+            self.load_summary(bug)
+        except SummaryMissing:
+            raise KeyError(bug_id)
+        return bug
 
 if __name__ == '__main__':
     import sys
