@@ -508,6 +508,10 @@ class Distribution(SQLBase, BugTargetBase):
 
     def searchSourcePackages(self, text):
         """See IDistribution."""
+        # The query below tries exact matching on the source package
+        # name as well; this is because source package names are
+        # notoriously bad for fti matching -- they can contain dots, or
+        # be short like "at", both things which users do search for.
         dspcaches = DistributionSourcePackageCache.select("""
             distribution = %s AND
             (fti @@ ftq(%s) OR
