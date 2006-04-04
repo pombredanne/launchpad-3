@@ -1,7 +1,6 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
@@ -34,7 +33,6 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-    <div style="margin-left: 0; width: 74%; float: left">
       <div style="border-width: 0px 0px 1px 0px; border-style: solid; margin-bottom: 5px">
         <strong tal:content="view/getAdvancedSearchPageHeading">
             Bugs in Ubuntu: Advanced Search
@@ -187,8 +185,10 @@
                           <small>
                             <input type="radio" name="assignee_option" value="any" checked> Doesn't matter<br />
                             <input type="radio" name="assignee_option" value="none"> Nobody<br />
-                            <input type="radio" name="assignee_option" value="choose">
-                            <span tal:content="structure view/assignee_widget" />
+                            <span style="white-space: nowrap">
+                              <input type="radio" name="assignee_option" value="choose">
+                              <span tal:content="structure view/assignee_widget" />
+                            </span>
                           </small>
                         </td>
                       </tr>
@@ -206,7 +206,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <td>
+                        <td style="white-space: nowrap">
                           <small>
                             <span tal:content="structure view/owner_widget" />
                           </small>
@@ -225,42 +225,53 @@
             </th>
           </tr>
           <tr>
-            <td class="section">
+            <td class="section"
+                tal:define="show_component_widget view/shouldShowComponentWidget">
               <table>
                 <tr>
                   <td>
                     <small>
-                      <label for="field.milestone">
-                        <strong>Target Milestone</strong>
-                      </label>
-                    </small>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <small tal:define="widget_values view/getMilestoneWidgetValues">
-                      <span tal:repeat="widget_value widget_values">
-                        <span tal:define="widget_id string:milestone.${widget_value/title}">
-                          <input name="field.milestone:list"
-                                 type="checkbox"
-                                 tal:attributes="value widget_value/value;
-                                                 checked widget_value/checked;
-                                                 id widget_id">
-                          <label tal:content="widget_value/title"
-                                 tal:attributes="for widget_id">
-                            dapper
-                          </label>
-                          <br />
+                      <span style="float: left">
+                        <label for="field.milestone">
+                          <strong>Target Milestone</strong>
+                        </label>
+                        <br />
+                        <span tal:define="widget_values view/getMilestoneWidgetValues">
+                          <span tal:repeat="widget_value widget_values">
+                            <span tal:define="widget_id string:milestone.${widget_value/title}">
+                            <input name="field.milestone:list"
+                                   type="checkbox"
+                                   tal:attributes="value widget_value/value;
+                                                   checked widget_value/checked;
+                                                   id widget_id">
+                              <label tal:content="widget_value/title"
+                                     tal:attributes="for widget_id">
+                                dapper
+                              </label>
+                              <br />
+                            </span>
+                          </span>
+                          <span tal:condition="not:widget_values">
+                            (none)
+                          </span>
                         </span>
                       </span>
-                      <span tal:condition="not:widget_values">
-                        (none)
+                      <span style="float: left; margin-left: 4em"
+                            tal:condition="show_component_widget">
+                        <label for="field.component">
+                          <strong>Component</strong>
+                        </label>
+                        <br />
+                        <span tal:content="structure view/component_widget"
+                              tal:condition="show_component_widget">
+                        </span>
                       </span>
                     </small>
                   </td>
                 </tr>
               </table>
             </td>
+          </tr>
           <tr>
             <th class="section-header">
               Other
@@ -270,7 +281,7 @@
             <td class="section">
               <table>
                 <tr>
-                  <td>
+                  <td style="white-space: nowrap">
                     <small>
                       <span tal:content="structure view/omit_dupes_widget" />
                       <label for="field.omit_dupes">
@@ -278,11 +289,21 @@
                       </label>
                     </small>
                   </td>
-                  <td>
+                  <td style="white-space: nowrap">
                     <small>
                       <span tal:content="structure view/has_patch_widget" />
                       <label for="field.has_patch">
                         Show only bugs with patches available
+                      </label>
+                    </small>
+                  </td>
+                </tr>
+                <tr tal:condition="view/shouldShowNoPackageWidget">
+                  <td>
+                    <small>
+                      <span tal:content="structure view/has_no_package_widget" />
+                      <label for="field.has_no_package">
+                        Exclude bugs with packages specified
                       </label>
                     </small>
                   </td>
@@ -307,12 +328,7 @@
             document.forms["search"].elements['field.searchtext'].focus();
           -->
       </script>
-    </div>
-    <div id="portal-column-two">
-      <metal:macro use-macro="context/@@main_template/action-menu" />
-    </div>
     <div class="visualClear">&nbsp;</div>
   </div>
 </body>
 </html>
-</tal:layout>

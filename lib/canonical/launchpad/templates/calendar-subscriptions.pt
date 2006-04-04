@@ -4,19 +4,21 @@
       xmlns:i18n="http://xml.zope.org/namespaces/tal/i18n"
       xml:lang="en" lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+      i18n:domain="launchpad"
+>
   <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Calendar subscriptions</h1>
+    </metal:heading>
 
     <div metal:fill-slot="main">
-      <h1>Calendar subscriptions</h1>
 
       <div tal:content="view/submit" />
 
-      <p class="formHelp">
-      To subscribe to a calendar not
-      listed here, go to the corresponding person, project or
-      package page.</p>
+      <p>
+        To subscribe to a calendar not listed here,
+        go to the corresponding person, project or package page.
+      </p>
 
       <form action="." tal:attributes="action request/URL" method="post">
         <table>

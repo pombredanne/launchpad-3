@@ -14,7 +14,6 @@ __all__ = [
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
-    'IRemoteBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
@@ -31,6 +30,7 @@ from canonical.lp import dbschema
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.bugwatch import IBugWatch
+from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
@@ -45,10 +45,10 @@ UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.UNCONFIRMED,
     dbschema.BugTaskStatus.CONFIRMED,
     dbschema.BugTaskStatus.INPROGRESS,
-    dbschema.BugTaskStatus.NEEDSINFO)
+    dbschema.BugTaskStatus.NEEDSINFO,
+    dbschema.BugTaskStatus.FIXCOMMITTED)
 
 RESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.FIXCOMMITTED,
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 
@@ -68,16 +68,22 @@ class IBugTask(IHasDateCreated, IHasBug):
         vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
+    # XXX: the status, severity and priority's vocabularies do not
+    # contain an UNKNOWN item in bugtasks that aren't linked to a remote
+    # bugwatch; this would be better described in a separate interface,
+    # but adding a marker interface during initialization is expensive,
+    # and adding it post-initialization is not trivial.
+    #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.UNCONFIRMED)
-    statusexplanation = Text(
-        title=_("Status notes (optional)"), required=False)
     priority = Choice(
         title=_('Priority'), vocabulary='BugTaskPriority', required=False)
     severity = Choice(
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
+    statusexplanation = Text(
+        title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
@@ -103,6 +109,8 @@ class IBugTask(IHasDateCreated, IHasBug):
             "datecreated and now."))
     owner = Int()
     target = Attribute("The software in which this bug should be fixed")
+    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
+                              "officially"))
     targetname = Attribute("The short, descriptive name of the target")
     title = Attribute("The title of the bug related to this bugtask")
     related_tasks = Attribute("IBugTasks related to this one, namely other "
@@ -175,35 +183,39 @@ class IBugTaskSearch(Interface):
     """
     searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
-        title=_('Status:'),
+        title=_('Status'),
         value_type=IBugTask['status'],
         default=list(UNRESOLVED_BUGTASK_STATUSES),
         required=False)
     severity = List(
-        title=_('Severity:'),
+        title=_('Severity'),
         value_type=IBugTask['severity'],
         required=False)
     priority = List(
-        title=_('Priority:'),
+        title=_('Priority'),
         value_type=IBugTask['priority'],
         required=False)
     assignee = Choice(
-        title=_('Assignee:'), vocabulary='ValidAssignee', required=False)
+        title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     owner = Choice(
-        title=_('Reporter:'), vocabulary='ValidAssignee', required=False)
+        title=_('Reporter'), vocabulary='ValidAssignee', required=False)
     omit_dupes = Bool(
         title=_('Omit duplicate bugs'), required=False,
         default=True)
     statusexplanation = TextLine(
-        title=_("Status notes:"), required=False)
+        title=_("Status notes"), required=False)
     has_patch = Bool(
         title=_('Show only bugs with patches available'), required=False,
         default=False)
+    has_no_package = Bool(
+        title=_('Exclude bugs with packages specified'),
+        required=False, default=False)
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
-        title=_('Target:'), value_type=IBugTask['milestone'], required=False)
-
+        title=_('Target'), value_type=IBugTask['milestone'], required=False)
+    component = List(
+        title=_('Component'), value_type=IComponent['name'], required=False)
 
 class IPersonBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a person."""
@@ -314,16 +326,6 @@ class IDistroReleaseBugTask(IBugTask):
         vocabulary='DistroRelease')
 
 
-class IRemoteBugTask(IBugTask):
-    """A bug task for products/distributions not using Malone.
-
-    The status of the bug will be updated from a remote bug watch.
-    """
-    status = Choice(title=_('Status'), vocabulary='RemoteBugTaskStatus')
-    severity = Choice(title=_('Severity'), vocabulary='RemoteBugTaskSeverity')
-    priority = Choice(title=_('Priority'), vocabulary='RemoteBugTaskPriority')
-
-
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
 # when spiv pushes a fix upstream for the bug that makes this hackery
 # necessary:
@@ -373,6 +375,7 @@ class BugTaskSearchParams:
     """
 
     product = None
+    project = None
     distribution = None
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
@@ -380,7 +383,8 @@ class BugTaskSearchParams:
                  assignee=None, sourcepackagename=None,
                  binarypackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
-                 orderby=None, omit_dupes=False, subscriber=None):
+                 orderby=None, omit_dupes=False, subscriber=None,
+                 component=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -397,6 +401,7 @@ class BugTaskSearchParams:
         self.orderby = orderby
         self.omit_dupes = omit_dupes
         self.subscriber = subscriber
+        self.component = component
 
         self._has_context = False
 
@@ -404,6 +409,12 @@ class BugTaskSearchParams:
         """Set the upstream context on which to filter the search."""
         assert not self._has_context
         self.product = product
+        self._has_context = True
+
+    def setProject(self, project):
+        """Set the upstream context on which to filter the search."""
+        assert not self._has_context
+        self.project = project
         self._has_context = True
 
     def setDistribution(self, distribution):

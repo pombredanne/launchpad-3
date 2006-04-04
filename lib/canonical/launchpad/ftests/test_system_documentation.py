@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
 from canonical.launchpad.mail import stub
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -75,7 +76,7 @@ def librarianSetUp(test):
 def librarianTearDown(test):
     LibrarianTestSetup().tearDown()
     tearDown(test)
-    
+
 def importdSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='importd').setUp()
@@ -93,6 +94,26 @@ def supportTrackerSetUp(test):
 
 def supportTrackerTearDown(test):
     LibrarianTestSetup().tearDown()
+    LaunchpadZopelessTestSetup().tearDown()
+
+def branchStatusSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='launchpad').setUp()
+    test._authserver = AuthserverTacTestSetup()
+    test._authserver.setUp()
+
+def branchStatusTearDown(test):
+    test._authserver.tearDown()
+    LaunchpadZopelessTestSetup().tearDown()
+
+def bugNotificationSendingSetup(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(
+        dbuser=config.malone.bugnotification_dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def bugNotificationSendingTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
 
@@ -143,10 +164,16 @@ special = {
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
+    'bugnotification-sending.txt': FunctionalDocFileSuite(
+            '../doc/bugnotification-sending.txt',
+            setUp=bugNotificationSendingSetup,
+            tearDown=bugNotificationSendingTearDown),
+    'branch-status-client.txt': FunctionalDocFileSuite(
+            '../doc/branch-status-client.txt',
+            setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
     'translationimportqueue.txt': FunctionalDocFileSuite(
             '../doc/translationimportqueue.txt',
-            setUp=librarianSetUp, tearDown=librarianTearDown
-            )
+            setUp=librarianSetUp, tearDown=librarianTearDown),
     }
 
 def test_suite():

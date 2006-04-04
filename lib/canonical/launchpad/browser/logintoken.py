@@ -522,12 +522,11 @@ class NewAccountView(AddView, BaseLoginTokenView):
         """
         try:
             person, email = getUtility(IPersonSet).createPersonAndEmail(
-                    self.context.email, displayname=data['displayname'], 
-                    givenname=data['givenname'], familyname=data['familyname'],
+                    self.context.email, displayname=data['displayname'],
                     password=data['password'], passwordEncrypted=True)
         except EmailAddressAlreadyTaken, e:
             self.top_of_page_errors.append(str(e))
-            raise WidgetsError(self.top_of_page_errors) 
+            raise WidgetsError(self.top_of_page_errors)
 
         notify(ObjectCreatedEvent(person))
         notify(ObjectCreatedEvent(email))
@@ -562,16 +561,16 @@ class MergePeopleView(BaseLoginTokenView):
             self._doMerge()
             if self.mergeCompleted: 
                 self.success(
-                        _('The merge you requested was concluded with success. '
-                          'Now, everything that was owned by the duplicated ' 
-                          'account should be owned by your user account.'))
+                        _('The accounts have been merged successfully. '
+                          'Everything that belonged to the duplicated ' 
+                          'account should now belong to your own account.'))
             else:
                 self.success(
-                        _('The email address %s have been assigned to you, but '
-                          'the dupe account you selected still have more ' 
-                          'registered email addresses. In order to actually ' 
+                        _('The e-mail address %s has been assigned to you, but '
+                          'the duplicate account you selected has other ' 
+                          'registered e-mail addresses too. To ' 
                           'complete the merge, you have to prove that you have '
-                          'access to all email addresses of that account.' %
+                          'access to all those e-mail addresses.' %
                           self.context.email))
             self.context.destroySelf()
 

@@ -26,6 +26,7 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.helpers import contactEmailAddresses
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -154,6 +155,19 @@ class Specification(SQLBase):
             if fbreq.reviewer.id == person.id:
                 reqlist.append(fbreq)
         return reqlist
+
+    def notificationRecipientAddresses(self):
+        """See ISpecification."""
+        related_people = [
+            self.owner, self.assignee, self.approver, self.drafter]
+        related_people = [
+            person for person in related_people if person is not None]
+        subscribers = [
+            subscription.person for subscription in self.subscriptions]
+        addresses = set()
+        for person in related_people + subscribers:
+            addresses.update(contactEmailAddresses(person))
+        return sorted(addresses)
 
     # emergent properties
     @property

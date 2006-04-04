@@ -12,9 +12,11 @@ from twisted.enterprise import adbapi
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
+from canonical.authserver.interfaces import (
+    IUserDetailsStorage, IBranchDetailsStorage)
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
-    IUserDetailsStorage)
+    DatabaseBranchDetailsStorage)
 from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
@@ -30,7 +32,9 @@ class TestDatabaseSetup(LaunchpadTestCase):
         self.connection.close()
         super(TestDatabaseSetup, self).tearDown()
 
+
 class DatabaseStorageTestCase(TestDatabaseSetup):
+
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
                                      DatabaseUserDetailsStorage(None)))
@@ -154,48 +158,69 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual('', productID)
 
     def test_getBranchesForUser(self):
+        # Although user 12 has lots of branches in the sample data, they only
+        # have one push branch: a branch named "pushed" on the "gnome-terminal"
+        # product.
         storage = DatabaseUserDetailsStorageV2(None)
         branches = storage._getBranchesForUserInteraction(self.cursor, 12)
-        gnomeTermProduct, junkProduct = branches
+        self.assertEqual(1, len(branches))
+        gnomeTermProduct = branches[0]
+        gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
+        self.assertEqual(6, gnomeTermID)
+        self.assertEqual('gnome-terminal', gnomeTermName)
+        self.assertEqual([(25, 'pushed')], gnomeTermBranches)
+
+    def test_getBranchesForUserNullProduct(self):
+        # getBranchesForUser returns branches for hosted branches with no
+        # product.
+
+        # First, insert a push branch (url is NULL) with a NULL product.
+        self.cursor.execute("""
+            INSERT INTO Branch 
+                (owner, product, name, title, summary, author, url)
+            VALUES 
+                (12, NULL, 'foo-branch', NULL, NULL, 12, NULL)
+            """)
+
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchInfo = storage._getBranchesForUserInteraction(self.cursor, 12)
+        self.assertEqual(2, len(branchInfo))
+
+        gnomeTermProduct, junkProduct = branchInfo
         # Results could come back in either order, so swap if necessary.
         if gnomeTermProduct[0] is None:
             gnomeTermProduct, junkProduct = junkProduct, gnomeTermProduct
         
-        # Check that the details and branches for the junk product are correct
+        # Check that the details and branches for the junk product are correct:
+        # empty ID and name for the product, with a single branch named
+        # 'foo-branch'.
         junkID, junkName, junkBranches = junkProduct
         self.assertEqual('', junkID)
         self.assertEqual('', junkName)
-        self.assertEqual(
-            [(20, 'junk.dev'), (21, 'junk.contrib')],
-            sorted(junkBranches))
-
-        # Check that the details and branches for gnome-terminal are correct
-        gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
-        self.assertEqual(6, gnomeTermID)
-        self.assertEqual('gnome-terminal', gnomeTermName)
-        self.assertEqual(
-            [(15, 'main'), (16, '2.6'), (17, '2.4'), (18, 'klingon'), 
-             (19, 'slowness'), (25, 'pushed')],
-            sorted(gnomeTermBranches)
-        )
+        self.assertEqual(1, len(junkBranches))
+        fooBranchID, fooBranchName = junkBranches[0]
+        self.assertEqual('foo-branch', fooBranchName)
     
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(self.cursor, 12, 6, 'foo')
-        # assert branchID now appears in database
+        # Assert branchID now appears in database.  Note that title and summary
+        # should be NULL, and author should be set to the owner.
         self.cursor.execute("""
-            SELECT owner, product, name FROM Branch
+            SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((12, 6, 'foo'), self.cursor.fetchone())
+        self.assertEqual((12, 6, 'foo', None, None, 12), self.cursor.fetchone())
 
         # Create a branch with NULL product too:
         branchID = storage._createBranchInteraction(self.cursor, 1, None, 'foo')
         self.cursor.execute("""
-            SELECT owner, product, name FROM Branch
+            SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((1, None, 'foo'), self.cursor.fetchone())
+        self.assertEqual((1, None, 'foo', None, None, 1), 
+                         self.cursor.fetchone())
+        
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
@@ -503,9 +528,111 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual({}, userDict)
 
 
+class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
+    def test_verifyInterface(self):
+        self.failUnless(verifyObject(IBranchDetailsStorage,
+                                     DatabaseBranchDetailsStorage(None)))
+
+    def test_startMirroring(self):
+        # verify that the last mirror time is None before hand.
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+
+        storage = DatabaseBranchDetailsStorage(None)
+        success = storage._startMirroringInteraction(self.cursor, 1)
+        self.assertEqual(success, True)
+
+        # verify that last_mirror_attempt is set
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[1], None)
+
+    def test_startMirroring_invalid_branch(self):
+        # verify that no branch exists with id == -1
+        self.cursor.execute("""
+            SELECT id FROM branch WHERE id = -1""")
+        self.assertEqual(self.cursor.rowcount, 0)
+        
+        storage = DatabaseBranchDetailsStorage(None)
+        success = storage._startMirroringInteraction(self.cursor, -11)
+        self.assertEqual(success, False)
+
+    def test_mirrorFailed(self):
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                mirror_status_message
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 0)
+        self.assertEqual(row[3], None)
+
+        storage = DatabaseBranchDetailsStorage(None)
+        success = storage._startMirroringInteraction(self.cursor, 1)
+        self.assertEqual(success, True)
+        success = storage._mirrorFailedInteraction(self.cursor, 1, "failed")
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                mirror_status_message
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 1)
+        self.assertEqual(row[3], 'failed')
+
+    def test_mirrorComplete(self):
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 0)
+
+        storage = DatabaseBranchDetailsStorage(None)
+        success = storage._startMirroringInteraction(self.cursor, 1)
+        self.assertEqual(success, True)
+        success = storage._mirrorCompleteInteraction(self.cursor, 1)
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[0], row[1])
+        self.assertEqual(row[2], 0)
+
+    def test_mirrorComplete_resets_failure_count(self):
+        # this increments the failure count ...
+        self.test_mirrorFailed()
+
+        storage = DatabaseBranchDetailsStorage(None)
+        success = storage._startMirroringInteraction(self.cursor, 1)
+        self.assertEqual(success, True)
+        success = storage._mirrorCompleteInteraction(self.cursor, 1)
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[0], row[1])
+        self.assertEqual(row[2], 0)
+
+
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(DatabaseStorageTestCase))
-    suite.addTest(unittest.makeSuite(ExtraUserDatabaseStorageTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
 

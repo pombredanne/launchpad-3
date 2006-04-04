@@ -17,7 +17,7 @@
       <span tal:replace="context/subscriptionpolicy/title">Open Team</span>)
     </p>
 
-    <p class="portalMessage" tal:condition="view/userHasMembershipEntry" 
+    <p class="informational message" tal:condition="view/userHasMembershipEntry" 
        tal:content="view/membershipStatusDesc" />
     <form class="actions" name="join" action="" method="POST">
         <input type="submit" name="goback" value="Cancel" />
@@ -26,12 +26,12 @@
   </tal:block>
 
   <tal:block tal:condition="not: view/userCanRequestToJoin">
-    <p tal:condition="view/joinAllowed" class="portalMessage">
+    <p tal:condition="view/joinAllowed" class="error message">
       <span tal:replace="view/membershipStatusDesc" />
       You can't join this team.
     </p>
 
-    <p tal:condition="not: view/joinAllowed" class="portalMessage">
+    <p tal:condition="not: view/joinAllowed" class="error message">
       <span tal:replace="context/browsername" /> is a restricted team.
       Only a team administrator can add new members.
     </p>

@@ -14,8 +14,7 @@
   </metal:macro>
   <metal:macro define-macro="error">
     <tr><td colspan="2">
-      &nbsp;
-      <p class="portalError" tal:condition="view/errormessage"
+      <p class="error message" tal:condition="view/errormessage"
          tal:content="view/errormessage" />
     </td></tr>
   </metal:macro>
@@ -90,7 +89,7 @@
 
           <tr>
             <th>Subscription expires:</th>
-            <td tal:condition="view/canChangeExpirationDate">
+            <td tal:condition="view/canChangeExpirationDate" style="white-space: nowrap">
               <metal:radios use-macro="template/macros/expiry-radios" />
               <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
             </td>
@@ -194,7 +193,7 @@
           If this is okay, select a membership expiration date if necessary
           before choosing <samp>Approve</samp>.
         </p>
-        <p class="portalMessage" tal:condition="view/errormessage"
+        <p class="error message" tal:condition="view/errormessage"
            tal:content="view/errormessage" />
 
         <form action="" method="POST" name="editproposed">

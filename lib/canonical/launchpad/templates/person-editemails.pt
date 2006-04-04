@@ -1,30 +1,29 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Your e-mail addresses</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
-  <h1>Your e-mail addresses</h1>
-
-  <tal:dummy tal:define="submitted view/emailFormSubmitted">
-  <div tal:condition="submitted">
-    <p class="portalMessage" tal:content="structure view/message"></p>
-  </div>
-  </tal:dummy>
+  <p
+    tal:define="submitted view/emailFormSubmitted"
+    tal:condition="submitted"
+    tal:content="structure view/message"
+    class="informational message"
+  />
   
   <form name="email" action="" method="POST">
 
-  <tal:block tal:condition="context/preferredemail">
+  <tal:block condition="context/preferredemail">
     <p>Your preferred contact address for all Launchpad e-mail is:</p>
     <ul>
       <li class="mail"><b tal:content="context/preferredemail/email" /></li>
@@ -74,12 +73,12 @@
 
   <form name="newemail" action="" method="POST">
 
-  <div>
+  <p>
     Add a new address:
     <input type="text" tal:attributes="value view/notWellFormedEmail|nothing"
            name="newemail" size="23"/>
     <input type="submit" value="Add" name="ADD_EMAIL" />
-  </div>
+  </p>
 
   </form>
 </div>
