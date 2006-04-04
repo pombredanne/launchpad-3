@@ -322,6 +322,11 @@ class TranslationImportQueueEntry(SQLBase):
         potemplate = potemplate_subset.getPOTemplateByName(
             translation_domain.lower())
 
+        if potemplate is None:
+            # The potemplate is not yet imported, we cannot attach this .po
+            # file.
+            return None
+
         # Get or create an IPOFile based on the info we guess.
         pofile = potemplate.getOrCreatePOFile(
             language.code, variant=variant, owner=self.importer)

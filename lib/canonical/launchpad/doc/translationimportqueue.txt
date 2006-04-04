@@ -269,6 +269,19 @@ And we will get the right IPOFile.
     >>> srlatn_entry.guessed_pofile.variant
     u'Latn'
 
+No, we are going to see what happens if we get a .po file for a template
+that is not yet imported.
+
+    >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'messages/kdebase/konqueror.po', 'foo content', True,
+    ...     rosetta_expert, distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=kde_i18n_es)
+
+We don't know the IPOFile where it should be imported.
+
+    >>> es_without_potemplate_entry.guessed_pofile is None
+    True
+
 Finally, we abort the transaction to undo all changes done.
 
     >>> transaction.abort()
