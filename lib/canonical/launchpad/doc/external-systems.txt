@@ -331,7 +331,12 @@ All other tags we map to 'Unconfirmed'.
     ...     'open normal unreproducible lfs woody').title
     Unconfirmed
 
+If we pass in a malformed status string, we map it to 'Unknown' and
+log an error.
 
+    >>> print external_debbugs.convertRemoteStatus('open').title
+    ERROR:...:Malformed debbugs status: 'open'
+    Unknown
 
 checkwatches.py
 ---------------

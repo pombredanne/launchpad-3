@@ -313,6 +313,9 @@ class DebBugs(ExternalBugTracker):
         character.
         """
         parts = remote_status.split(' ')
+        if len(parts) < 2:
+            log.error('Malformed debbugs status: %r' % remote_status)
+            return BugTaskStatus.UNKNOWN
         status = parts[0]
         severity = parts[1]
         tags = parts[2:]
