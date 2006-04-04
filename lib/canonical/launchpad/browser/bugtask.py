@@ -917,6 +917,10 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def getAdvancedSearchActionURL(self):
         """Return a URL to be used as the action for the advanced search."""
+        return self.getSimpleSearchURL()
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+bugs"
 
     def shouldShowAssigneeWidget(self):
