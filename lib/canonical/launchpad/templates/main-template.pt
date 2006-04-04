@@ -74,6 +74,7 @@
         <div id="portal-column-two">
           <metal:portlets define-slot="portlets_two">
           </metal:portlets>
+          &nbsp; <tal:x condition="nothing">Forces the left column to show up.</tal:x>
         </div>
         <!-- start of the left (by default at least) column -->
         <div id="portal-column-one">

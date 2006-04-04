@@ -186,10 +186,25 @@ class ProductDirsTestCase(AvatarTestBase):
 
             # The directory should exist on the disk.
             self.assert_(os.path.exists(branchDirectory.realPath))
+            return branchDirectory
 
         # Connect the callbacks, and wait for them to run.
         deferred.addCallback(_cb1).addCallback(_cb2)
         return deferred
+
+    def testRmdirBranchDenied(self):
+        # Deleting a branch directory should fail with a permission error.
+        
+        # Create an empty branch directory
+        deferred = self.testCreateBranch()
+        
+        # Now attempt to remove the new-branch directory
+        def _cb(branchDirectory):
+            return branchDirectory.remove()
+
+        # Connect the callbacks, and wait for them to run.
+        deferred.addCallback(_cb)
+        return self.assertFailure(deferred, PermissionError)
 
 
 def test_suite():
