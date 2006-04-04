@@ -274,12 +274,6 @@ Let's get all bugs on either main or universe:
     >>> sorted([bugtask.bug.id for bugtask in main_or_universe_tasks])
     [1, 10, 11L]
 
-It's also possible to iterate over all the bug tasks:
-
-    >>> bugtasks = [bugtask for bugtasks in bugtaskset]
-    >>> len(bugtasks)
-    24
-
 Bug Task Targets
 ----------------
 
