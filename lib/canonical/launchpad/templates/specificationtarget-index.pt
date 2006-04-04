@@ -29,7 +29,7 @@
     <tbody class="lesser">
       <tr tal:repeat="spec view/specs">
         <td>
-          <span class="revsortkey" tal:content="spec/priority/value" />
+          <span class="sortkey" tal:content="spec/priority/sortkey" />
           <span tal:content="spec/priority/title"
                 tal:attributes="
                 class string:specpriority${spec/priority/name}">High</span>
@@ -39,7 +39,7 @@
                  href spec/fmt:url;
                  title spec/title">foo-bar-baz</a></td>
         <td>
-          <span class="sortkey" tal:content="spec/status/value" />
+          <span class="sortkey" tal:content="spec/status/sortkey" />
           <span tal:content="spec/status/title"
                 tal:attributes="
                 class string:specstatus${spec/status/name}">Approved</span>

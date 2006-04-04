@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="view/latest_tickets">
 
   <h4>Recent support requests:</h4>
 

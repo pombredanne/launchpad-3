@@ -72,7 +72,7 @@ from canonical.launchpad.database import (
     BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
     IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet, IPerson, IProduct)
+    IMilestoneSet, IPerson, IProduct, IProject)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -879,6 +879,10 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         target = None
+        project = launchbag.project
+        if project is not None:
+            target = project
+        
         product = launchbag.product
         if product is not None:
             target = product
@@ -895,7 +899,13 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # This fixes an urgent bug though, so I think this problem should be
         # revisited after we've unblocked users.
         if target is not None:
-            milestones = shortlist(target.milestones, longest_expected=40)
+            if IProject.providedBy(target):
+                milestones = shortlist((milestone
+                                        for product in target.products
+                                        for milestone in product.milestones),
+                                       longest_expected=40)
+            else:
+                milestones = shortlist(target.milestones, longest_expected=40)
         else:
             # We can't use context to reasonably filter the milestones, so let's
             # just grab all of them.

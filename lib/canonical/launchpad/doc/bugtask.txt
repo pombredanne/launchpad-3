@@ -156,6 +156,20 @@ For upstream:
     >>> print bugtask_ids
     [2, 13, 14, 15]
 
+By project:
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    ...                                         BugTaskStatus.CONFIRMED),
+    ...                              orderby="id", user=None)
+    >>> bugtasks = mozilla_project.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+    >>> bugtask_ids = [bt.id for bt in bugtasks]
+    >>> print bugtask_ids
+    [2, 13, 14, 15]
+
 For a distribution:
 
     >>> debian = distroset.get(3)
