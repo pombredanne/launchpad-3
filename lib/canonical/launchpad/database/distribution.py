@@ -510,8 +510,9 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         dspcaches = DistributionSourcePackageCache.select("""
             distribution = %s AND
-            fti @@ ftq(%s)
-            """ % sqlvalues(self.id, text),
+            (fti @@ ftq(%s) OR
+             DistributionSourcePackageCache.name = %s)
+            """ % sqlvalues(self.id, text, text),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
             prejoins=["sourcepackagename"],
