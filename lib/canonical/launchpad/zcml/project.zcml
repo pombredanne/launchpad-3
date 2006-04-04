@@ -23,7 +23,7 @@
     <browser:menus
         module="canonical.launchpad.browser.project"
         classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
-                 ProjectSetContextMenu" />
+                 ProjectSpecificationsMenu ProjectSetContextMenu" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"

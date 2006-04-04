@@ -14,6 +14,8 @@
 
 <div metal:fill-slot="main">
 
+  <h1>Feature specifications</h1>
+
   <table class="listing sortable" id="speclisting"
         tal:condition="view/specs">
     <thead>

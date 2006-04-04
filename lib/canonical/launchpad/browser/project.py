@@ -85,16 +85,6 @@ class ProjectFacets(StandardLaunchpadFacets):
     enable_only = ['overview', 'bugs', 'bounties', 'calendar',
                    'specifications']
 
-    def overview(self):
-        target = ''
-        text = 'Overview'
-        return Link(target, text)
-
-    def bugs(self):
-        target = '+bugs'
-        text = 'Bugs'
-        return Link(target, text)
-
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
@@ -141,6 +131,25 @@ class ProjectBountiesMenu(ApplicationMenu):
     def link(self):
         text = 'Link Existing Bounty'
         return Link('+linkbounty', text, icon='edit')
+
+
+class ProjectSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'specifications'
+    links = ['listall', 'roadmap', 'assignments',]
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+roadmap', text, icon='info')
+
+    def assignments(self):
+        text = 'Assignments'
+        return Link('+assignments', text, icon='info')
 
 
 class ProjectView(object):

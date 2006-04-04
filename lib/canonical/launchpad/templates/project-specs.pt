@@ -66,6 +66,12 @@
     <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
   </p>
 
+  <p tal:condition="view/specs" class="discreet">
+    This listing shows by default all the unimplemented, unapproved
+    specifications currently associated with all products in 
+    <span tal:replace="context/displayname">Mozilla</span>.
+  </p>
+
 </div>
 </body>
 </html>

@@ -64,6 +64,9 @@
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />
     <browser:page
+      name="+listing-simple"
+      template="../templates/specification-listing-simple.pt" />
+    <browser:page
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />
     <browser:page

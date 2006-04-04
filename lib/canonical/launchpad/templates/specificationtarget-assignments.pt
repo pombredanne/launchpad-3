@@ -9,9 +9,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Specification assignments</h1>
@@ -66,9 +63,19 @@
         <td><a tal:condition="spec/approver"
                tal:content="spec/approver/name"
                tal:attributes="href spec/approver/fmt:url">Approver Foo</a></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </body>
+      </tr>
+    </tbody>
+  </table>
+
+  <p tal:condition="view/specs" class="discreet">
+    This listing shows the assignment of work for
+    specifications currently associated with 
+    <span tal:replace="context/displayname">Mozilla</span>.
+    The drafter is responsible for getting the specification correctly
+    written up and approved, the approver is usually the person who would
+    sign off on the spec.
+  </p>
+
+</div>
+</body>
 </html>
