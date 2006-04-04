@@ -95,7 +95,7 @@ body {
 
 :visited {
   background: none;
-  color: #8888bb;
+  color: #66a;
 }
 :link, .hierarchy :visited, .footer :visited,
 .facets :visited, #pillars :visited, #subpillars :visited, .portlet :visited {
@@ -238,8 +238,16 @@ ul {
   list-style-image: url(/@@/bullet.gif);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
+ul.menu {
+  font-size: smaller;
+}
 ol {
   margin: 0.5em 0 0 1.5em;
+}
+
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {
+    display: none;
 }
 
 .portlet {
@@ -738,7 +746,7 @@ tr.highlight {
   font-size: 80%;
   border: 1px solid #364970;
   border-style: none none solid none;
-  background-color: #d7d9da;
+  background-color: #eee;
   padding: 0.25em 12px;
 }
 
@@ -827,9 +835,6 @@ ul.locked>li, li.locked {
 }
 ul.mail>li, li.mail {
   list-style-image: url(/@@/mail_icon.gif);
-}
-ul.menu>li, li.menu {
-  list-style-image: url(/@@/favorite_icon.gif);
 }
 ul.milestone>li, li.milestone {
   list-style-image: url(/@@/target);

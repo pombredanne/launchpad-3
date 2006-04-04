@@ -185,3 +185,6 @@ class SFTPServerBranch(osfs.OSDirectory):
         # don't have any restrictions.
         return osfs.OSDirectory
 
+    def remove(self):
+        raise PermissionError(
+            "removing branch directory %r is not allowed." % self.name)

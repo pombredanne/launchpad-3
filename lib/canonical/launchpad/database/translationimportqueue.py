@@ -89,7 +89,6 @@ class TranslationImportQueueEntry(SQLBase):
         """
         assert self.path.endswith('.po'), (
             "We cannot handle the file %s here." % self.path)
-
         potemplateset = getUtility(IPOTemplateSet)
         translationimportqueue = getUtility(ITranslationImportQueue)
         subset = potemplateset.getSubset(
@@ -103,8 +102,8 @@ class TranslationImportQueueEntry(SQLBase):
                 # We already got a winner, should check if we could have
                 # another one, which means we cannot be sure which one is the
                 # right one.
-                if (os.path.dirname(
-                    guessed_potemplate.path) == os.path.dirname(potemplate.path)):
+                if (os.path.dirname(guessed_potemplate.path) ==
+                    os.path.dirname(potemplate.path)):
                     # Two matches, cannot be sure which one is the good one.
                     return None
                 else:
@@ -127,7 +126,7 @@ class TranslationImportQueueEntry(SQLBase):
             productseries=self.productseries)
         for entry in entries:
             if (os.path.dirname(entry.path) == os.path.dirname(
-                guess_potemplate.path) and
+                guessed_potemplate.path) and
                 entry.status not in (
                 RosettaImportStatus.IMPORTED, RosettaImportStatus.DELETED)):
                 # There is a .pot entry pending to be imported that has the
@@ -189,7 +188,6 @@ class TranslationImportQueueEntry(SQLBase):
         """See ITranslationImportQueueEntry."""
         assert self.path.endswith('.po'), (
             "We cannot handle the file %s here." % self.path)
-
         if self.potemplate is None:
             # We don't have the IPOTemplate object associated with this entry.
             # Try to guess it from the file path.
@@ -375,22 +373,32 @@ class TranslationImportQueue:
         sourcepackagename=None, distrorelease=None, productseries=None,
         potemplate=None):
         """See ITranslationImportQueue."""
+        # We need to know if we are handling .bz2 files, we could use the
+        # python2.4-magic but it makes no sense to add that dependency just
+        # for this check as the .bz2 files start with the 'BZh' string.
+        if content.startswith('BZh'):
+            # Workaround for the bug #1982. Python's bz2 support is not able
+            # to handle external file objects.
+            tarball = tarfile.open('', 'r|bz2', StringIO(content))
+        else:
+            tarball = tarfile.open('', 'r', StringIO(content))
 
-        tarball = tarfile.open('', 'r', StringIO(content))
-        names = tarball.getnames()
+        num_files = 0
+        for tarinfo in tarball:
+            if tarinfo.name.endswith('.pot') or tarinfo.name.endswith('.po'):
+                # Only the .pot and .po files are interested here, ignore the
+                # others as we don't support any other file format.
+                file_content = tarball.extractfile(tarinfo).read()
+                self.addOrUpdateEntry(
+                    tarinfo.name, file_content, is_published, importer,
+                    sourcepackagename=sourcepackagename,
+                    distrorelease=distrorelease, productseries=productseries,
+                    potemplate=potemplate)
+                num_files += 1
 
-        files = [name
-                 for name in names
-                 if name.endswith('.pot') or name.endswith('.po')
-                ]
+        tarball.close()
 
-        for file in files:
-            content = tarball.extractfile(file).read()
-            self.addOrUpdateEntry(file, content, is_published, importer,
-            sourcepackagename=sourcepackagename, distrorelease=distrorelease,
-            productseries=productseries, potemplate=potemplate)
-
-        return len(files)
+        return num_files
 
     def get(self, id):
         """See ITranslationImportQueue."""
@@ -473,7 +481,6 @@ class TranslationImportQueue:
     def executeOptimisticBlock(self):
         """See ITranslationImportQueue."""
         num_blocked = 0
-        there_are_entries_blocked = False
         for entry in self.iterNeedsReview():
             if entry.path.endswith('.pot'):
                 # .pot files cannot be managed automatically, ignore them and

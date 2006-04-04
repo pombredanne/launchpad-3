@@ -1,4 +1,4 @@
-<span style="display: none" tal:content="view/sortable_untranslated" />
+<span class="sortkey" tal:content="view/sortable_untranslated" />
 <img
   tal:condition="not: context/messageCount"
   src="/@@/red-bar.png"
