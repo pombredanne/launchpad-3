@@ -25,11 +25,12 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, NotFoundError)
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, ImportStatus)
+    EnumCol, TranslationPermission, ImportStatus, SpecificationSort)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 
@@ -97,6 +98,21 @@ class Project(SQLBase, BugTargetBase):
                 return None
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
+
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        results = Specification.select("""
+            Specification.product = Product.id AND
+            Product.project = %s
+            """ % self.id,
+            clauseTables=['Product'],
+            orderBy=order)[:quantity]
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def searchTasks(self, search_params):
         """See IBugTarget."""

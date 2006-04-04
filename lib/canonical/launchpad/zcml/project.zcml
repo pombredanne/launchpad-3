@@ -97,6 +97,25 @@
         attribute="__call__"
         />
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProject"
+    class="canonical.launchpad.browser.SpecificationTargetView"
+    facet="specifications"
+    permission="zope.Public">
+    <browser:page
+      name="+specs"
+      template="../templates/project-specs.pt" />
+    <browser:page
+      name="+assignments"
+      template="../templates/specificationtarget-assignments.pt" />
+    <browser:page
+      name="+roadmap"
+      template="../templates/specificationtarget-roadmap.pt" />
+    <browser:page
+      name="+portlet-latestspecs"
+      template="../templates/specificationtarget-portlet-latestspecs.pt" />
+  </browser:pages>
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
         permission="launchpad.Edit"

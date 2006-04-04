@@ -51,5 +51,10 @@ ALTER TABLE ProductSeries ALTER COLUMN owner SET NOT NULL;
 
 ALTER TABLE ProductSeries DROP COLUMN displayname;
 
+  -- in the ProductRelease, we have a manufactured .title, but we
+  -- want to be able to access the codename directly
+
+ALTER TABLE ProductRelease RENAME COLUMN title TO codename;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 79, 0);
 

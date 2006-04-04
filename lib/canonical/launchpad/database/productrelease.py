@@ -24,14 +24,7 @@ class ProductRelease(SQLBase):
     datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     version = StringCol(notNull=True)
-    # XXX: Carlos Perello Marin 2005-05-22:
-    # The DB field should be renamed to something better than title.
-    # A ProductRelease has a kind of title that is not really the final title,
-    # we use a method to create the title that we display based on
-    # ProductRelease.displayname and the title in the DB.
-    # See: https://launchpad.ubuntu.com/malone/bugs/736/
-    _title = StringCol(dbName='title', forceDBName=True, notNull=False,
-                       default=None)
+    codename = StringCol(notNull=False, default=None)
     summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
@@ -56,17 +49,13 @@ class ProductRelease(SQLBase):
     def displayname(self):
         return self.productseries.product.displayname + ' ' + self.version
 
-    # part of the get/set title property
+    @property
     def title(self):
         """See IProductRelease."""
         thetitle = self.displayname
-        if self._title:
-            thetitle += ' "' + self._title + '"'
+        if self.codename:
+            thetitle += ' "' + self.codename + '"'
         return thetitle
-
-    def set_title(self, title):
-        self._title = title
-    title = property(title, set_title)
 
     def addFileAlias(self, alias_id, file_type=UpstreamFileType.CODETARBALL):
         """See IProductRelease."""

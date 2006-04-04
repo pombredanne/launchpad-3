@@ -1364,7 +1364,8 @@ class SpecificationSort(DBSchema):
         Priority
 
         This indicates a preferred sort order of priority (highest first)
-        followed by status.
+        followed by status. This is the default sort order when retrieving
+        specifications from the system.
         """)
 
 

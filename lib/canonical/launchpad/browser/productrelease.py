@@ -61,7 +61,7 @@ class ProductReleaseAddView(AddView):
         user = getUtility(ILaunchBag).user
         newrelease = prset.new(
             data['version'], data['productseries'], user, 
-            title=data['title'], summary=data['summary'],
+            codename=data['codename'], summary=data['summary'],
             description=data['description'], changelog=data['changelog'])
         self._nextURL = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))

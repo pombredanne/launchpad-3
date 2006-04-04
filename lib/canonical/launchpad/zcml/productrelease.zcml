@@ -81,7 +81,7 @@
       class="canonical.launchpad.browser.productrelease.ProductReleaseEditView"
       facet="overview"
       label="Edit product release details"
-      fields="title summary description changelog"
+      fields="summary description changelog"
       permission="launchpad.Edit"
       template="../templates/productrelease-edit.pt"
       lp:url="/products/$Product.name/$ProductRelease.version/+edit">

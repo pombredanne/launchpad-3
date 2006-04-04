@@ -76,12 +76,14 @@ class ProjectSetContextMenu(ContextMenu):
         text = 'List All Projects'
         return Link('+all', text, icon='list')
 
+
 class ProjectFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'bounties', 'calendar']
+    enable_only = ['overview', 'bugs', 'bounties', 'calendar',
+                   'specifications']
 
     def overview(self):
         target = ''
