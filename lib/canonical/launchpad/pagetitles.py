@@ -99,19 +99,17 @@ binarypackagenames_index = 'Binary package name set'
 
 bounties_index = 'Bounties registered in Launchpad'
 
-bounty_add = 'Register a new bounty'
-
-bounty_add = 'Register a bounty in Launchpad'
+bounty_add = 'Register a bounty'
 
 bounty_edit = ContextTitle(smartquote('Edit bounty "%s"'))
 
 bounty_link = ContextTitle('Link a bounty to %s')
 
-bounty_index = ContextTitle(smartquote('Bounty "%s"'))
+bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_edit = ContextTitle(smartquote('Edit branch "%s"'))
+branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
 
 branch_index = ContextDisplayName(smartquote('Bzr branch "%s"'))
 
@@ -188,11 +186,12 @@ bugtask_view = BugTaskPageTitle()
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-bugtracker_edit = ContextTitle(smartquote('Edit bug tracker "%s"'))
+bugtracker_edit = ContextTitle(
+    smartquote('Change details for "%s" bug tracker'))
 
 bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
 
-bugtrackers_add = 'Register a bug tracker in Malone'
+bugtrackers_add = 'Register an external bug tracker'
 
 bugtrackers_index = 'Bug trackers registered in Malone'
 
@@ -224,7 +223,7 @@ calendar_event_addform = ContextTitle('Add event to %s')
 
 calendar_event_display = ContextTitle(smartquote('Event "%s"'))
 
-calendar_event_editform = ContextTitle(smartquote('Edit event "%s"'))
+calendar_event_editform = ContextTitle(smartquote('Change "%s" event details'))
 
 calendar_subscribe = ContextTitle(smartquote('Subscribe to "%s"'))
 
@@ -460,9 +459,10 @@ oops = 'Oops!'
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
-people_index = 'People registered with Launchpad'
+people_index = 'People and teams in Launchpad'
 
-people_list = 'People registered with Launchpad'
+def people_list(context, view):
+    return view.header
 
 person_assignedbugs = ContextDisplayName('Bugs assigned to %s')
 
@@ -472,7 +472,7 @@ person_branch_add = ContextDisplayName('Register a new branch for %s')
 
 person_changepassword = 'Change your password'
 
-person_codesofconduct = ContextDisplayName('%s Signed codes of conduct')
+person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
 person_edit = ContextDisplayName(smartquote("%s's details"))
 
@@ -644,9 +644,9 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Product and group registration in Launchpad'
 
-products_all = 'All Upstream Products registered in Launchpad'
+products_all = 'Upstream products registered in Launchpad'
 
-projects_all = 'All Projects registered in Launchpad'
+projects_all = 'Projects registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
@@ -665,7 +665,7 @@ rosetta_preferences = 'Rosetta: Preferences'
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
-    return '%s %s details' % (context.product.displayname, context.name)
+    return 'Change %s %s details' % (context.product.displayname, context.name)
 
 productseries_new = ContextDisplayName('Register a new %s release series')
 
@@ -895,10 +895,16 @@ template_new = 'EXAMPLE NEW TITLE'
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
 translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
+
+translationgroup_appoint = ContextTitle(
+    smartquote('Appoint a new translator to "%s"'))
+
 translationgroups = 'Rosetta translation groups'
 
-translationimportqueueentry_index = 'Translation Import Queue Entry'
-translationimportqueue_index = 'Translation Import Queue'
-translationimportqueue_blocked = 'Translation Import Queue - Blocked'
+translationimportqueueentry_index = 'Translation import queue entry'
+
+translationimportqueue_index = 'Translation import queue'
+
+translationimportqueue_blocked = 'Translation import queue - Blocked'
 
 unauthorized = 'Error: Not authorized'

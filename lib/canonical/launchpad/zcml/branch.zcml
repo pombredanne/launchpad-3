@@ -104,7 +104,6 @@
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
     facet="overview"
-    label="Edit branch details"
     fields="url title summary home_page author whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">

@@ -1,23 +1,37 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1>Projects registered in Launchpad</h1>
+    </metal:heading>
 
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <tal:statistics replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-  <div metal:fill-slot="main">
-
-    <h1>Projects in Launchpad</h1>
+    <div metal:fill-slot="main">
+      <tal:notsearching condition="not:view/searchrequested">
+        <p>
+          In Launchpad, <dfn>projects</dfn> are groups of software products
+          that share a development community.
+          Examples include <a href="gnome">Gnome</a>, <a href="kde"><abbr>KDE</abbr></a>,
+          and <a href="mozilla">Mozilla</a>.
+          There are currently
+          <a href="+all"><span tal:replace="context/count_all">5</span>
+          projects</a> registered.
+        </p>
+        <p>
+          For individual computer programs, see
+          <a href="/products">products</a>.
+        </p>
+        <p>
+          For groups of people, see
+          <a href="/people">Launchpad teams</a>.
+        </p>
+      </tal:notsearching>
 
     <form method="get">
-      <table>
-        <tr>
-          <td>
-            <input name="text" size="35" tal:attributes="value view/text" />
+        <label for="text">Search products:</label>
+            <input name="text" tal:attributes="value view/text" />
               <input
                 tal:condition="view/searchrequested"
                 type="submit"
@@ -28,15 +42,9 @@
                 type="submit"
                 value="Search"
               />
-          </td>
-        </tr>
-      </table>
-      <p class="formHelp">
-      Enter any part of the project name, title or
-      description.
-      </p>
-
     </form>
+
+
 
   <tal:searching condition="view/searchrequested">
 
@@ -57,10 +65,10 @@
           </tr>
           <tr tal:condition="not: view/matches">
             <td tal:condition="not: view/matches">
-              <strong>No projects matching
+              <p>No projects matching
               &#8220;<span tal:replace="view/text">moz</span>&#8221;
-              were found.</strong>
-              You can <a href="+new">register a new project </a>.
+              were found.
+              You can <a href="+new">register a new project</a>.</p>
            </td>
           </tr>
         </tbody>

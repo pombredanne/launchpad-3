@@ -214,16 +214,16 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'editbugcontact']
+    links = ['filebug', 'bugcontact']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
-    def editbugcontact(self):
+    def bugcontact(self):
         text = 'Change Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
+        return Link('+bugcontact', text, icon='edit')
 
 
 class ProductSupportMenu(ApplicationMenu):
@@ -326,12 +326,6 @@ class ProductView:
         self.request = request
         self.form = request.form
         self.status_message = None
-
-    @property
-    def languages(self):
-        # List of languages the user is interested on based on their
-        # browser, IP address and launchpad preferences.
-        return helpers.request_languages(request)
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.

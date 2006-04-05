@@ -149,6 +149,10 @@
 
       <tal:block condition="not: order">
         <h2>Request details</h2>
+
+        <p>We are currently taking requests for Ubuntu 5.10 (Breezy Badger). If
+        you are interested in requesting Ubuntu 6.06 (Dapper Drake), please
+        check back with us again at the beginning of May 2006.</p>
       </tal:block>
 
       <tal:block condition="order">

@@ -360,7 +360,7 @@ class CommonMenuLinks:
     @enabled_with_permission('launchpad.Edit')
     def common_edithomepage(self):
         target = '+edithomepage'
-        text = 'Edit Home Page'
+        text = 'Home Page'
         return Link(target, text, icon='edit')
 
     def common_packages(self):
@@ -383,31 +383,31 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
-        text = 'Edit Personal Details'
+        text = 'Personal Details'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
-        text = 'Edit Email Addresses'
+        text = 'E-mail Addresses'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editwikinames(self):
         target = '+editwikinames'
-        text = 'Edit Wiki Names'
+        text = 'Wiki Names'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editircnicknames(self):
         target = '+editircnicknames'
-        text = 'Edit IRC Nicknames'
+        text = 'IRC Nicknames'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editjabberids(self):
         target = '+editjabberids'
-        text = 'Edit Jabber IDs'
+        text = 'Jabber IDs'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -427,7 +427,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
-        text = 'Edit SSH Keys'
+        text = 'SSH Keys'
         summary = (
             'Used if %s stores code on the Supermirror' %
             self.context.browsername)
@@ -436,14 +436,14 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editpgpkeys(self):
         target = '+editpgpkeys'
-        text = 'Edit OpenPGP Keys'
+        text = 'OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edithackergotchi(self):
         target = '+edithackergotchi'
-        text = 'Edit Hackergotchi'
+        text = 'Hackergotchi'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -566,7 +566,7 @@ class BaseListView:
 
 class PeopleListView(BaseListView):
 
-    header = "People List"
+    header = "People Launchpad knows about"
 
     def getList(self):
         return self.getPeopleList()
@@ -574,7 +574,7 @@ class PeopleListView(BaseListView):
 
 class TeamListView(BaseListView):
 
-    header = "Team List"
+    header = "Teams registered in Launchpad"
 
     def getList(self):
         return self.getTeamsList()
@@ -582,7 +582,7 @@ class TeamListView(BaseListView):
 
 class UbunteroListView(BaseListView):
 
-    header = "Ubuntero List"
+    header = "Ubunteros registered in Launchpad"
 
     def getList(self):
         return self.getUbunterosList()
@@ -811,7 +811,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
         if advanced:
-            return person_url + '/+packagebugs-advanced?%s' % query_string
+            return person_url + '/+packagebugs-advanced-search?%s' % query_string
         else:
             return person_url + '/+packagebugs-search?%s' % query_string
 
@@ -868,6 +868,19 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         # software, so for now I'll be simply hiding the search widgets.
         # -- Guilherme Salgado, 2005-11-05
         return False
+
+    # Methods that customize the advanced search form.
+    def getAdvancedSearchPageHeading(self):
+        return "Bugs in %s: Advanced Search" % self.current_package.displayname
+
+    def getAdvancedSearchButtonLabel(self):
+        return "Search bugs in %s" % self.current_package.displayname
+
+    def getAdvancedSearchActionURL(self):
+        return canonical_url(self.context) + "/+packagebugs-search"
+
+    def getSimpleSearchURL(self):
+        return self.getBugContactPackageSearchURL()
 
 
 class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):

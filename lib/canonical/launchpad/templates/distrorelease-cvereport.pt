@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>CVE report</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -11,13 +14,6 @@
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
-
-  <h1>CVE report</h1>
-
-  <p class="documentDescription">This page shows the known CVE issues in
-    <span tal:replace="context/fullreleasename">Ubuntu Hoary</span>. It also
-    shows the all the known CVE issues in <span tal:replace="context/distribution/displayname">Ubuntu</span> overall.
-  </p>
 
   <tal:open_issues define="bugtasks context/open_cve_bugtasks">
 

@@ -68,7 +68,6 @@
             owner name displayname description speed country content 
             http_base_url ftp_base_url rsync_base_url pulse_type pulse_source
             enabled official_candidate"
-        label="Register a new mirror"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
         <browser:widget 
@@ -214,7 +213,7 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a bug in a Linux distribution"
+        label="Report a bug"
         fields="packagename title comment private security_related"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
@@ -260,19 +259,17 @@
         schema="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         fields="members"
-        label="Select a new distribution members team"
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
 
     <browser:editform
-        name="+editbugcontact"
+        name="+bugcontact"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
-        facet="overview"
+        facet="bugs"
         fields="bugcontact"
-        label="Edit Bug Contact"
         permission="launchpad.Edit"
         template="../templates/distribution-bugcontact.pt"
         lp:url="/distros/$Distribution.name/+bugcontact" />
@@ -284,7 +281,6 @@
         facet="translations"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        label="Select a new translation group"
         template="../templates/distribution-translators.pt"
         lp:url="/distros/$Distribution.name/+changetranslators" />
 
@@ -294,7 +290,6 @@
       schema="canonical.launchpad.interfaces.IDistributionBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
       facet="bounties"
-      label="Link an existing bounty"
       fields="distribution bounty"
       keyword_arguments="distribution bounty"
       permission="launchpad.AnyPerson"
