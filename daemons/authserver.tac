@@ -20,10 +20,14 @@ from canonical.launchpad.daemons.tachandler import ReadyService
 from canonical.config import config
 
 application = service.Application("authserver")
+if config.dbhost is None:
+    dbhost = ''
+else:
+    dbhost = 'host=' + config.dbhost
 dbpool = ConnectionPool(
     'psycopg', 
-    'dbname=%s host=%s user=%s' 
-    % (config.dbname, config.dbhost, config.authserver.dbuser), 
+    'dbname=%s %s user=%s' 
+    % (config.dbname, dbhost, config.authserver.dbuser), 
     cp_reconnect=True)
 root = resource.Resource()
 versionOneAPI = UserDetailsResource(DatabaseUserDetailsStorage(dbpool))
