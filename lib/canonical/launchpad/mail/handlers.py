@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import re
+from urlparse import urlparse, urlunparse
 
 import transaction
 from zope.component import getUtility
@@ -318,6 +319,35 @@ class SpecificationHandler:
 
     _spec_changes_address = re.compile(r'^notifications@.*')
 
+    # The list of hosts where the Ubuntu wiki is located. We could do a
+    # more general solution, but this kind of setup is unusual, and it
+    # will be mainly the Ubuntu and Launchpad wikis that will use this
+    # notification forwarder.
+    UBUNTU_WIKI_HOSTS = [
+        'wiki.ubuntu.com', 'wiki.edubuntu.org', 'wiki.kubuntu.org']
+
+    def _getSpecByURL(self, url):
+        """Returns a spec that is associated with the URL.
+
+        It takes into account that the same Ubuntu wiki is on three
+        different hosts.
+        """
+        spec = getUtility(ISpecificationSet).getByURL(url)
+        if spec is None:
+            scheme, host, path, params, query, fragment = urlparse(url)
+            if host in self.UBUNTU_WIKI_HOSTS:
+                for ubuntu_wiki_host in self.UBUNTU_WIKI_HOSTS:
+                    if host == ubuntu_wiki_host:
+                        # We already tried this one.
+                        continue
+                    possible_url = urlunparse(
+                        (scheme, ubuntu_wiki_host, path, params, query,
+                         fragment))
+                    spec = getUtility(ISpecificationSet).getByURL(possible_url)
+                    if spec is not None:
+                        break
+        return spec
+
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
         match = self._spec_changes_address.match(to_addr)
@@ -347,7 +377,7 @@ class SpecificationHandler:
         if spec_url is not None:
             if log is not None:
                 log.debug('Found a spec URL: %s' % spec_url)
-            spec = getUtility(ISpecificationSet).getByURL(spec_url)
+            spec = self._getSpecByURL(spec_url)
             if spec is not None:
                 if log is not None:
                     log.debug('Found a corresponding spec: %s' % spec.name)

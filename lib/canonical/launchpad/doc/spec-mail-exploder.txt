@@ -83,6 +83,40 @@ is SpecificationHandler.
     >>> handler is not None
     True
 
+It has a helper method to help associate a URL with a specification. We
+use this method instead of simply ISpecificationSet.getByURL() since
+the Ubuntu wikis are special, they have more than one domain name
+mapping to the same wiki. So if we start with the correct URL, of
+course we get the specification with that URL.
+
+    >>> spec = handler._getSpecByURL(
+    ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
+    >>> spec.specurl
+    u'https://wiki.ubuntu.com/MediaIntegrityCheck'
+
+But if someone would edit the same wiki page on wiki.edubuntu.org, we
+would want the same spec's subscribers to be notified about it.
+
+    >>> spec = handler._getSpecByURL(
+    ...     'https://wiki.edubuntu.org/MediaIntegrityCheck')
+    >>> spec.specurl
+    u'https://wiki.ubuntu.com/MediaIntegrityCheck'
+
+And the same with wiki.kubuntu.org URLs.
+
+    >>> spec = handler._getSpecByURL(
+    ...     'https://wiki.kubuntu.org/MediaIntegrityCheck')
+    >>> spec.specurl
+    u'https://wiki.ubuntu.com/MediaIntegrityCheck'
+
+If no matching specification is found, None is returned.
+
+    >>> spec = handler._getSpecByURL(
+    ...     'https://wiki.kubuntu.org/NonExistant')
+    >>> spec is None
+    True
+
+
 We use a logger to see what the handler does:
 
     >>> from canonical.launchpad.scripts import log
@@ -202,6 +236,28 @@ Again, no emails were sent:
     >>> len(stub.test_emails)
     0
 
+Let's pass a kubuntu notification to the handler to see that it works
+as expected:
+
+    >>> kubuntu_change = read_test_message('moin-change-kubuntu.txt')
+    >>> log._log.setLevel(10)
+    >>> handler.process(
+    ...     kubuntu_change, 'notifications@specs.launchpad.net', log=log)
+    DEBUG:...:Found a spec URL: https://wiki.kubuntu.org/MediaIntegrityCheck
+    DEBUG:...:Found a corresponding spec: media-integrity-check
+    DEBUG:...:Sending notification to: test@canonical.com
+    True
+
+    >>> log._log.setLevel(OLD_LOG_LEVEL)
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> to_addrs == spec.notificationRecipientAddresses()
+    True
+
 Lastly, let's simulate sending a moin notification, and let
 handleMail() handle it, to see that everything works correctly.
 
@@ -230,6 +286,30 @@ handleMail() handle it, to see that everything works correctly.
 
     >>> sent_msg = email.message_from_string(raw_message)
     >>> sent_msg['Message-Id'] == moin_change['Message-Id']
+    True
+
+And the same with an edubuntu wiki notification:
+
+    >>> edubuntu_change = read_test_message('moin-change-edubuntu.txt')
+    >>> edubuntu_change['X-Original-To'] = "notifications@%s" % (
+    ...     config.launchpad.specs_domain)
+    >>> edubuntu_change['Sender'] = 'webmaster@ubuntu.com'
+
+    >>> sendmail(edubuntu_change)
+    '...'
+    >>> transaction.commit()
+    >>> handleMail()
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> to_addrs == spec.notificationRecipientAddresses()
+    True
+
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_msg['Message-Id'] == edubuntu_change['Message-Id']
     True
 
     >>> LibrarianTestSetup().tearDown()
