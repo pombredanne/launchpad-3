@@ -12,6 +12,9 @@
         <th tal:condition="context/show_column/packagename|nothing">
           Package
         </th>
+        <th tal:condition="context/show_column/productname|nothing">
+          Product
+        </th>
         <th tal:condition="context/show_column/importance|nothing">Importance</th>
         <th tal:condition="context/show_column/status|nothing">Status</th>
       </tr>
@@ -34,6 +37,9 @@
         <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
             tal:condition="context/show_column/packagename|nothing"
             nowrap>mozilla-firefox (Ubuntu)</td>
+        <td tal:content="structure bugtask/product/name|string:&mdash;"
+            tal:condition="context/show_column/productname|nothing"
+            nowrap>firefox</td>
         <td tal:content="bugtask/severity/title"
             tal:condition="context/show_column/importance|nothing">Critical</td>
         <td tal:content="bugtask/status/title"

@@ -388,6 +388,18 @@ class BugTaskSet:
                 clause += "IS NULL"
             extra_clauses.append(clause)
 
+        if params.project:
+            clauseTables.append("Product")
+            extra_clauses.append("BugTask.product = Product.id")
+            if isinstance(params.project, any):
+                extra_clauses.append("Product.project IN (%s)" % ",".join(
+                    [str(proj.id) for proj in params.project.query_values]))
+            elif params.project is NULL:
+                extra_clauses.append("Product.project IS NULL")
+            else:
+                extra_clauses.append("Product.project = %d" %
+                                     params.project.id)
+
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
 
