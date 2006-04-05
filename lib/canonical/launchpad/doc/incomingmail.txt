@@ -29,8 +29,8 @@ handle, and register them for some domains:
     >>> from canonical.config import config
     >>> class MockHandler:
     ...     implements(IMailHandler)
-    ...     def __init__(self, allow_anonymous=False):
-    ...         self.allow_anonymous = allow_anonymous
+    ...     def __init__(self, allow_unknown_users=False):
+    ...         self.allow_unknown_users = allow_unknown_users
     ...         self.handledMails = []
     ...     def process(self, mail, to_addr, filealias):
     ...         self.handledMails.append(mail['Message-Id'])
@@ -38,7 +38,7 @@ handle, and register them for some domains:
 
     >>> from canonical.launchpad.mail.handlers import mail_handlers
     >>> foo_handler = MockHandler()
-    >>> bar_handler = MockHandler(allow_anonymous=True)
+    >>> bar_handler = MockHandler(allow_unknown_users=True)
     >>> error_handler = MockHandler()
     >>> mail_handlers.add('foo.com', foo_handler)
     >>> mail_handlers.add('bar.com', bar_handler)
@@ -108,8 +108,8 @@ errors_address.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
-Mails from Persons not registered in Launchpad
-----------------------------------------------
+Mail from Persons not registered in Launchpad
+---------------------------------------------
 
 If a Person who isn't registered in Launchpad sends an email, we'll
 most of the time reject the email:
@@ -126,7 +126,7 @@ most of the time reject the email:
 
 However, bar_handler specifies that it can handle such emails:
 
-    >>> bar_handler.allow_anonymous
+    >>> bar_handler.allow_unknown_users
     True
 
 So if we send the mail to bar.com, bar_handler will handle the mail:

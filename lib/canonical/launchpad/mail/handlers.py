@@ -143,7 +143,7 @@ class MaloneHandler:
     """
     implements(IMailHandler)
 
-    allow_anonymous = False
+    allow_unknown_users = False
 
     def getCommands(self, signed_msg):
         """Returns a list of all the commands found in the email."""
@@ -281,7 +281,7 @@ class SupportTrackerHandler:
 
     implements(IMailHandler)
 
-    allow_anonymous = False
+    allow_unknown_users = False
 
     _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
 
@@ -315,7 +315,7 @@ class SpecificationHandler:
 
     implements(IMailHandler)
 
-    allow_anonymous = True
+    allow_unknown_users = True
 
     _spec_changes_address = re.compile(r'^notifications@.*')
 

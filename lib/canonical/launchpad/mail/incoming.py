@@ -210,7 +210,7 @@ def handleMail(trans=transaction):
                         file_alias_url)
                     continue
 
-                if principal is None and not handler.allow_anonymous:
+                if principal is None and not handler.allow_unknown_users:
                     _handle_error(
                         'Unknown user: %s ' % mail['From'], file_alias_url)
                     continue
