@@ -5,7 +5,7 @@ __metaclass__ = type
 import cgi, urllib
 
 from zope.interface import implements
-from canonical.launchpad.webapp.z3batching import _Batch
+from canonical.launchpad.webapp.z3batching.batch import _Batch
 from canonical.launchpad.webapp.interfaces import (
     IBatchNavigator, ITableBatchNavigator,
     )
@@ -34,18 +34,19 @@ class BatchNavigator:
              if key not in ['batch_start', 'batch_end']])
 
     def generateBatchURL(self, batch):
+        url = ""
+        if not batch:
+            return url
+
         qs = self.request.environment.get('QUERY_STRING', '')
         qs = self.cleanQueryString(qs)
         if qs:
             qs += "&"
 
-        url = ""
-        if not batch:
-            return url
-
-        url = "%s?%sbatch_start=%d&batch_end=%d" % \
-            (str(self.request.URL), qs, batch.startNumber() - 1,
-             batch.endNumber())
+        start = batch.startNumber() - 1
+        end = batch.endNumber()
+        url = "%s?%sbatch_start=%d&batch_end=%d" % (str(self.request.URL),
+                                                    qs, start, end)
         return url
 
     def getBatches(self):

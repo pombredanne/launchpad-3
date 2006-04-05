@@ -1,17 +1,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Build machines for Launchpad</h1>
+    </metal:heading>
 
 <metal:block fill-slot="head_epilogue">
     <meta http-equiv="refresh" content="300">
 </metal:block>
 
   <div metal:fill-slot="main">
-
-      <h1>Build machines for Launchpad</h1>
 
       <table class="listing sortable" tal:attributes="id string:builders">
       <thead>
@@ -39,10 +40,11 @@
             </td>
             <td tal:content="builder/status">STATUS</td>
           </tr>
-          <tr>
-            <td class="discreet" colspan="6">
-              <span tal:replace="builder/description">Description.</span>
-            </td>
+          <tr class="secondary">
+            <td
+              colspan="6"
+              tal:content="builder/description"
+            >Description.</td>
           </tr>
         </tal:builder>
       </tbody>

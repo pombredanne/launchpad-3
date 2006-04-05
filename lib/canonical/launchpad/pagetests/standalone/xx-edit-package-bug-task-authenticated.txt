@@ -58,7 +58,7 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Change
+  ... Save Changes
   ... -----------------------------89019536856698512711194452--
   ... """)
   HTTP/1.1 303 See Other
@@ -120,13 +120,13 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Change
+  ... Save Changes
   ... -----------------------------16131040782095479517127443199--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: 0
   ...
   Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
+  <BLANKLINE>
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1

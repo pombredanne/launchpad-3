@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>OpenPGP keys</h1> 
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -20,8 +23,6 @@
         tal:content="structure msg"
         class="error message"
       />
-
-    <h1>OpenPGP keys and Launchpad</h1> 
 
     <p>
       Launchpad lets you register OpenPGP keys,
