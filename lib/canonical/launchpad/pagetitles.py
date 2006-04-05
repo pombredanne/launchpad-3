@@ -587,6 +587,8 @@ product_edit = ContextTitle('%s in Launchpad')
 
 product_index = ContextTitle('%s in Launchpad')
 
+product_new = 'Register a product in the Launchpad'
+
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_translations = ContextTitle('Translations of %s in Rosetta')

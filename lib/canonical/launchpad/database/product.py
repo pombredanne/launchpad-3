@@ -284,10 +284,10 @@ class Product(SQLBase, BugTargetBase):
 
     def specifications(self, sort=None, quantity=None):
         """See IHasSpecifications."""
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
         results = Specification.selectBy(productID=self.id,
             orderBy=order)[:quantity]
         results.prejoin(['assignee', 'approver', 'drafter'])

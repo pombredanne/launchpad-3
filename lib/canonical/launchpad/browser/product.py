@@ -562,19 +562,10 @@ class ProductAddView(AddView):
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        fields = ["name",
-                  "displayname",
-                  "title",
-                  "summary",
-                  "description",
-                  "project",
-                  "homepageurl",
-                  "sourceforgeproject",
-                  "freshmeatproject",
-                  "wikiurl",
-                  "screenshotsurl",
-                  "downloadurl",
-                  "programminglang"]
+        fields = ["name", "displayname", "title", "summary", "description",
+                  "project", "homepageurl", "sourceforgeproject",
+                  "freshmeatproject", "wikiurl", "screenshotsurl",
+                  "downloadurl", "programminglang"]
         owner = IPerson(request.principal, None)
         if self.isVCSImport(owner):
             # vcs-imports members get it easy and are able to change this
@@ -611,20 +602,20 @@ class ProductAddView(AddView):
             reviewed = False
         productset = getUtility(IProductSet)
         product = productset.createProduct(owner=owner,
-                                           reviewed=reviewed,
-                                           name=data.get("name"),
-                                           displayname=data.get("displayname"),
-                                           title=data.get("title"),
-                                           summary=data.get("summary"),
-                                           description=data.get("description"),
-                                           project=data.get("project"),
-                                           homepageurl=data.get("homepageurl"),
-                                           screenshotsurl=data.get("screenshotsurl"),
-                                           wikiurl=data.get("wikiurl"),
-                                           downloadurl=data.get("downloadurl"),
-                                           freshmeatproject=data.get("freshmeatproject"),
-                                           sourceforgeproject=data.get("sourceforgeproject"))
+            reviewed=reviewed, name=data.get("name"),
+            displayname=data.get("displayname"), title=data.get("title"),
+            summary=data.get("summary"), description=data.get("description"),
+            project=data.get("project"), homepageurl=data.get("homepageurl"),
+            screenshotsurl=data.get("screenshotsurl"),
+            wikiurl=data.get("wikiurl"), downloadurl=data.get("downloadurl"),
+            freshmeatproject=data.get("freshmeatproject"),
+            sourceforgeproject=data.get("sourceforgeproject"))
         notify(ObjectCreatedEvent(product))
+        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
+            'represents the primary line of development rather than '
+            'a stable release branch. This is sometimes also called MAIN '
+            'or HEAD.')
+        notify(ObjectCreatedEvent(trunk))
         self._nextURL = data['name']
         return product
 

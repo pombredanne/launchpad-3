@@ -443,7 +443,7 @@
         facet="overview"
         class="canonical.launchpad.browser.ProductAddView"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/product-new.pt"
         >
         <browser:widget
            field="name"
