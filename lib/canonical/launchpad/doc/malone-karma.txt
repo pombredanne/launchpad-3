@@ -193,6 +193,8 @@ except for updating the obsolete "summary" and "priority":
     True
 
 XXX Matthew Paul Thomas 2006-03-22: On 2007-03-23, a year after bug summaries
-were removed, all the karma gained from updating bug summaries will have expired. Then the 'bugsummarychanged' row should be removed from the database, and summary_change can be removed from this test. The same applies to the
+were removed, all the karma gained from updating bug summaries will have
+expired. Then the 'bugsummarychanged' row should be removed from the database,
+and summary_change can be removed from this test. The same applies to the
 'bugtaskprioritychanged' row on about 2007-05-01, if priorities have not been
 resurrected before then.

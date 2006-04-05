@@ -29,9 +29,11 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
+from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.components.bugtarget import BugTargetBase
 
 
-class Project(SQLBase):
+class Project(SQLBase, BugTargetBase):
     """A Project"""
 
     implements(IProject, ICalendarOwner)
@@ -95,6 +97,15 @@ class Project(SQLBase):
                 return None
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
+
+    def searchTasks(self, search_params):
+        """See IBugTarget."""
+        search_params.setProject(self)
+        return BugTaskSet().search(search_params)
+
+    def createBug(self, title, comment, private=False):
+        """See IBugTarget."""
+        raise NotImplementedError('Can not file bugs against a project')
 
 
 class ProjectSet:

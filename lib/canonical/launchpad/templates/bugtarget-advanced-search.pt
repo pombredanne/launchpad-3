@@ -185,8 +185,10 @@
                           <small>
                             <input type="radio" name="assignee_option" value="any" checked> Doesn't matter<br />
                             <input type="radio" name="assignee_option" value="none"> Nobody<br />
-                            <input type="radio" name="assignee_option" value="choose">
-                            <span tal:content="structure view/assignee_widget" />
+                            <span style="white-space: nowrap">
+                              <input type="radio" name="assignee_option" value="choose">
+                              <span tal:content="structure view/assignee_widget" />
+                            </span>
                           </small>
                         </td>
                       </tr>
@@ -204,7 +206,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <td>
+                        <td style="white-space: nowrap">
                           <small>
                             <span tal:content="structure view/owner_widget" />
                           </small>
@@ -279,7 +281,7 @@
             <td class="section">
               <table>
                 <tr>
-                  <td>
+                  <td style="white-space: nowrap">
                     <small>
                       <span tal:content="structure view/omit_dupes_widget" />
                       <label for="field.omit_dupes">
@@ -287,7 +289,7 @@
                       </label>
                     </small>
                   </td>
-                  <td>
+                  <td style="white-space: nowrap">
                     <small>
                       <span tal:content="structure view/has_patch_widget" />
                       <label for="field.has_patch">
