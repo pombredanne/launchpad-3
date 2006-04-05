@@ -58,7 +58,13 @@
   </div>
 
   <div style="margin-top: 1em">
-    <span tal:content="structure view/security_related_widget" />
+    <span>
+      <input class="hiddenType" id="field.security_related.used"
+             name="field.security_related.used" type="hidden" value="" />
+      <input class="checkboxType" id="field.security_related"
+             name="field.security_related" type="checkbox" tabindex=3
+             onClick="selectPrivacyForSecurityBugs(this)" />
+    </span>
     <label tal:attributes="for view/security_related_widget/name">
       This bug is a security issue
     </label>
@@ -95,6 +101,16 @@
   </div>
 
   </form>
+
+  <script type="text/javascript">
+    <!--
+    function selectPrivacyForSecurityBugs(security_checkbox) {
+      if (security_checkbox.checked == true) {
+        document.getElementById("field.private").checked = true;
+      }
+    }
+    -->
+  </script>
 
   </tal:uses_malone>
 

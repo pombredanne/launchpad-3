@@ -93,6 +93,28 @@ class MailWrapper:
         return '\n'.join(wrapped_lines)
 
 
+def update_security_contact_subscriptions(modified_bugtask, event):
+    """Subscribe the new security contact when a bugtask's product changes.
+
+    No change is made for private bugs.
+    """
+    if event.object.bug.private:
+        return
+
+    if not IUpstreamBugTask.providedBy(event.object):
+        return
+
+    bugtask_before_modification = event.object_before_modification
+    bugtask_after_modification = event.object
+
+    if (bugtask_before_modification.product !=
+        bugtask_after_modification.product):
+        new_product = bugtask_after_modification.product
+        if new_product.security_contact:
+            bugtask_after_modification.bug.subscribe(
+                new_product.security_contact)
+
+
 def update_bug_contact_subscriptions(modified_bugtask, event):
     """Modify the bug Cc list when a bugtask is retargeted."""
     bugtask_before_modification = event.object_before_modification
@@ -772,6 +794,7 @@ def notify_bugtask_edited(modified_bugtask, event):
     send_bug_edit_notification(bug_delta)
 
     update_bug_contact_subscriptions(modified_bugtask, event)
+    update_security_contact_subscriptions(modified_bugtask, event)
 
 
 def notify_bug_comment_added(bugmessage, event):

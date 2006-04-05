@@ -13,6 +13,6 @@
       permission="launchpad.Edit"
       fields="security_contact"
       keyword_arguments="security_contact"
-      template="../templates/security-contact.pt"
+      template="../templates/securitycontact-edit.pt"
       />
 </configure>
