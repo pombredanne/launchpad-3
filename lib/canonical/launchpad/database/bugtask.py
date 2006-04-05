@@ -320,17 +320,7 @@ class BugTaskSet:
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated"}
 
-    def __init__(self):
-        self.title = 'A set of bug tasks'
-
-    def __getitem__(self, task_id):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        return self.get(task_id)
-
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        for task in BugTask.select():
-            yield task
+    title = "A set of bug tasks"
 
     def get(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -397,6 +387,18 @@ class BugTaskSet:
                 # arg_name.
                 clause += "IS NULL"
             extra_clauses.append(clause)
+
+        if params.project:
+            clauseTables.append("Product")
+            extra_clauses.append("BugTask.product = Product.id")
+            if isinstance(params.project, any):
+                extra_clauses.append("Product.project IN (%s)" % ",".join(
+                    [str(proj.id) for proj in params.project.query_values]))
+            elif params.project is NULL:
+                extra_clauses.append("Product.project IS NULL")
+            else:
+                extra_clauses.append("Product.project = %d" %
+                                     params.project.id)
 
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
@@ -584,4 +586,8 @@ class BugTaskSet:
                        TeamParticipation.person = %(personid)s AND
                        BugSubscription.person = TeamParticipation.team))
                          """ % sqlvalues(personid=user.id)
+
+    def dangerousGetAllTasks(self):
+        """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
+        return BugTask.select()
 
