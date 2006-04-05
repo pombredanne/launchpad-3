@@ -332,20 +332,17 @@ class SpecificationHandler:
         It takes into account that the same Ubuntu wiki is on three
         different hosts.
         """
-        spec = getUtility(ISpecificationSet).getByURL(url)
-        if spec is None:
-            scheme, host, path, params, query, fragment = urlparse(url)
-            if host in self.UBUNTU_WIKI_HOSTS:
-                for ubuntu_wiki_host in self.UBUNTU_WIKI_HOSTS:
-                    if host == ubuntu_wiki_host:
-                        # We already tried this one.
-                        continue
-                    possible_url = urlunparse(
-                        (scheme, ubuntu_wiki_host, path, params, query,
-                         fragment))
-                    spec = getUtility(ISpecificationSet).getByURL(possible_url)
-                    if spec is not None:
-                        break
+        scheme, host, path, params, query, fragment = urlparse(url)
+        if host in self.UBUNTU_WIKI_HOSTS:
+            for ubuntu_wiki_host in self.UBUNTU_WIKI_HOSTS:
+                possible_url = urlunparse(
+                    (scheme, ubuntu_wiki_host, path, params, query,
+                     fragment))
+                spec = getUtility(ISpecificationSet).getByURL(possible_url)
+                if spec is not None:
+                    break
+        else:
+            spec = getUtility(ISpecificationSet).getByURL(url)
         return spec
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):

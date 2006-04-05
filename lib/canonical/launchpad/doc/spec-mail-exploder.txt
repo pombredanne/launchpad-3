@@ -236,8 +236,10 @@ Again, no emails were sent:
     >>> len(stub.test_emails)
     0
 
-Let's pass a kubuntu notification to the handler to see that it works
-as expected:
+Let's pass a notification from wiki.kubuntu.org regarding
+MediaIntegrityCheck to see that the correct specification will be found,
+and that the notification will be forwarded to the specification's
+subscribers:
 
     >>> kubuntu_change = read_test_message('moin-change-kubuntu.txt')
     >>> log._log.setLevel(10)
@@ -258,8 +260,15 @@ as expected:
     >>> to_addrs == spec.notificationRecipientAddresses()
     True
 
-Lastly, let's simulate sending a moin notification, and let
-handleMail() handle it, to see that everything works correctly.
+Lastly, let's simulate sending a moin notification, and use
+handleMail() instead, to ensure that handler above handles the email.
+This will make sure that the handler is setup properly to handle
+unknown users, since webmaster@ubuntu.com doesn't belong to any Person
+in Launchpad:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> getUtility(IPersonSet).getByEmail('webmaster@ubuntu.com') is None
+    True
 
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> LibrarianTestSetup().setUp()
@@ -286,30 +295,6 @@ handleMail() handle it, to see that everything works correctly.
 
     >>> sent_msg = email.message_from_string(raw_message)
     >>> sent_msg['Message-Id'] == moin_change['Message-Id']
-    True
-
-And the same with an edubuntu wiki notification:
-
-    >>> edubuntu_change = read_test_message('moin-change-edubuntu.txt')
-    >>> edubuntu_change['X-Original-To'] = "notifications@%s" % (
-    ...     config.launchpad.specs_domain)
-    >>> edubuntu_change['Sender'] = 'webmaster@ubuntu.com'
-
-    >>> sendmail(edubuntu_change)
-    '...'
-    >>> transaction.commit()
-    >>> handleMail()
-
-    >>> transaction.commit()
-    >>> len(stub.test_emails)
-    1
-
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-    >>> to_addrs == spec.notificationRecipientAddresses()
-    True
-
-    >>> sent_msg = email.message_from_string(raw_message)
-    >>> sent_msg['Message-Id'] == edubuntu_change['Message-Id']
     True
 
     >>> LibrarianTestSetup().tearDown()
