@@ -691,7 +691,8 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
     changes += "Binary: %s\n" % (dsc["binary"])
     changes += "Architecture: source\n"
     changes += "Version: %s\n"% (dsc["version"])
-    changes += "Distribution: %s\n" % (suite)
+    # XXX: 'suite' forced to string to avoid unicode-vs-str grudge match
+    changes += "Distribution: %s\n" % (str(suite)) 
     changes += "Urgency: %s\n" % (urgency)
     changes += "Maintainer: %s\n" % (dsc["maintainer"])
     changes += "Changed-By: %s\n" % (requested_by)
