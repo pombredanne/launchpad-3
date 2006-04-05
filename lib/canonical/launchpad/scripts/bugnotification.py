@@ -8,13 +8,17 @@ from email.MIMEText import MIMEText
 from email.Utils import formatdate
 import rfc822
 
+from zope.component import getUtility
+
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces import IEmailAddressSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import (
     get_bugmail_replyto_address, generate_bug_add_email,
     GLOBAL_NOTIFICATION_EMAIL_ADDRS)
 from canonical.launchpad.webapp import canonical_url
+from canonical.lp.dbschema import EmailAddressStatus
 
 
 def construct_email_notification(bug_notifications):
@@ -105,8 +109,29 @@ def construct_email_notification(bug_notifications):
         references.insert(0, bug.initial_message.rfc822msgid)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-    msg['From'] = format_address(
-        person.displayname, person.preferredemail.email)
+
+    if person.preferredemail is not None:
+        msg['From'] = format_address(
+            person.displayname, person.preferredemail.email)
+    else:
+        # XXX: The person doesn't have a preferred email set, but he
+        #      added a comment via the email UI. It shouldn't be
+        #      possible to use the email UI if you don't have a
+        #      preferred email set, but work around it for now by
+        #      setting the from address as the first validated address,
+        #      or if that fails, simply anyone if his address.
+        #      -- Bjorn Tillenius, 2006-04-05
+        for email in getUtility(IEmailAddressSet).getByPerson(person):
+            if email.status == EmailAddressStatus.VALIDATED:
+                from_email = email.email
+                break
+        else:
+            # Since he added a comment, he's bound to have at least one
+            # address.
+            email = getUtility(IEmailAddressSet).getByPerson(person)[0]
+            from_email = email.email
+        msg['From'] = format_address(person.displayname, from_email)
+
     msg['Reply-To'] = get_bugmail_replyto_address(bug)
     msg['References'] = ' '.join(references)
     msg['Sender'] = config.bounce_address
@@ -145,7 +170,7 @@ def get_email_notifications(bug_notifications, date_emailed=None):
                 yield construct_email_notification(notifications_to_send)
                 has_comment = False
                 notifications_to_send = []
-            elif notification.is_comment:
+            if notification.is_comment:
                 has_comment = True
             notifications_to_send.append(notification)
         if notifications_to_send:

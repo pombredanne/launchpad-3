@@ -137,13 +137,15 @@ class Bugzilla(ExternalSystem):
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
         """
+        if not remote_status:
+            return BugTaskStatus.UNKNOWN
         if ' ' in remote_status:
             remote_status, resolution = remote_status.split(' ', 1)
         else:
             resolution = ''
 
         if remote_status == 'ASSIGNED':
-           malone_status = BugTaskStatus.CONFIRMED
+           malone_status = BugTaskStatus.INPROGRESS
         elif remote_status == 'NEEDINFO':
             malone_status = BugTaskStatus.NEEDSINFO
         elif remote_status == 'PENDINGUPLOAD':
@@ -157,7 +159,9 @@ class Bugzilla(ExternalSystem):
                 #     if we don't know of the resolution. Bug 31745.
                 #     -- Bjorn Tillenius, 2005-02-03
                 malone_status = BugTaskStatus.REJECTED
-        elif remote_status in ['UNCONFIRMED', 'REOPENED', 'NEW', 'UPSTREAM']:
+        elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM']:
+            malone_status = BugTaskStatus.CONFIRMED
+        elif remote_status in ['UNCONFIRMED']:
             malone_status = BugTaskStatus.UNCONFIRMED
         else:
             if remote_status != 'UNKNOWN':
@@ -224,10 +228,13 @@ class Bugzilla(ExternalSystem):
                     status += ' %s' % resolution
 
             bug_watch = bug_watches_by_remote_bug[bug_id]
-            if bug_watch.remotestatus != status:
+            new_malone_status = self.convertRemoteStatus(status)
+            old_malone_status = self.convertRemoteStatus(
+                bug_watch.remotestatus)
+            if (old_malone_status != new_malone_status or
+                bug_watch.remotestatus != status):
                 log.debug('Updating status for remote bug #%s' % bug_id)
-                malone_status = self.convertRemoteStatus(status)
-                bug_watch.updateStatus(status, malone_status)
+                bug_watch.updateStatus(status, new_malone_status)
 
             bug_watch.lastchecked = UTC_NOW
 

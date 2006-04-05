@@ -4,9 +4,18 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <a
+          tal:attributes="href context/fmt:url"
+          tal:content="context/title"
+        >Branch</a>
+      </div>
+      <h1>Change branch details</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -15,10 +24,6 @@
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Edit the branch details using the form below.
-    </div>
 
   </div>
 

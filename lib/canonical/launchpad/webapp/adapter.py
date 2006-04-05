@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 
+import os
+import sys
 import threading
+import traceback
 import time
 import warnings
 
@@ -250,6 +253,13 @@ class CursorWrapper:
             raise RequestExpired(statement)
         try:
             starttime = time.time()
+            if os.environ.get("LP_DEBUG_SQL_EXTRA"):
+                sys.stderr.write("-" * 70 + "\n")
+                traceback.print_stack()
+                sys.stderr.write("." * 70 + "\n")
+            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or 
+                os.environ.get("LP_DEBUG_SQL")):
+                sys.stderr.write(statement + "\n")
             try:
                 return self._cur.execute(statement, *args, **kwargs)
             finally:
