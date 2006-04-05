@@ -19,14 +19,26 @@ import CVS
 import cscvs.cmds.cache
 import cscvs.cmds.totla
 
+# Boilerplate to get getUtility working.
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IPersonSet, IBranchSet, IProductSet)
+from canonical.launchpad.utilities import LaunchpadCelebrities
+from canonical.launchpad.database import PersonSet, BranchSet, ProductSet
+from zope.app.tests.placelesssetup import setUp as zopePlacelessSetUp
+from zope.app.tests.placelesssetup import tearDown as zopePlacelessTearDown
+from zope.app.tests import ztapi
+
+
 from importd import archivemanager
 from importd import Job
+
 
 __all__ = [
     'SandboxHelper',
     'ArchiveManagerHelper',
     'BazTreeHelper',
     'ZopelessHelper',
+    'ZopelessUtilitiesHelper',
     'ZopelessTestCase',
     'ArchiveManagerTestCase',
     'BazTreeTestCase',
@@ -39,19 +51,24 @@ class SandboxHelper(object):
     def setUp(self):
         self.here = os.getcwd()
         self.home_dir = os.environ.get('HOME')
+        self.saved_editor = os.environ.get('EDITOR')
         self.sandbox_path = os.path.join(self.here, ',,job_test')
         shutil.rmtree(self.sandbox_path, ignore_errors=True)
         os.mkdir(self.sandbox_path)
         os.chdir(self.sandbox_path)
         os.environ['HOME'] = self.sandbox_path
+        del os.environ['EDITOR']
         arch.set_my_id("John Doe <jdoe@example.com>")
 
     def tearDown(self):
         os.environ['HOME'] = self.home_dir
+        if self.saved_editor is not None:
+            os.environ['EDITOR'] = self.saved_editor
         shutil.rmtree(self.sandbox_path, ignore_errors=True)
         os.chdir(self.here)
         del self.here
         del self.home_dir
+        del self.saved_editor
         del self.sandbox_path
 
     def mkdir(self, name):
@@ -79,9 +96,7 @@ class ArchiveManagerJobHelper(object):
     def makeJob(self):
         job = self.jobType()
         job.archivename = "importd@example.com"
-        job.category = "test"
-        job.branchto = "branch"
-        job.archversion = "0"
+        job.nonarchname = "test--branch--0"
         job.slave_home = self.sandbox_helper.sandbox_path
         job.archive_mirror_dir = self.sandbox_helper.path('mirrors')
         return job
@@ -106,8 +121,7 @@ class ArchiveManagerHelper(object):
 
     def makeVersion(self):
         job = self.job_helper.makeJob()
-        version_name = '%s/%s--%s--%s' % (
-            job.archivename, job.category, job.branchto, job.archversion)
+        version_name = '%s/%s' % (job.archivename, job.nonarchname)
         return arch.Version(version_name)
 
 
@@ -262,6 +276,23 @@ class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
         pgsql.uninstallFakeConnect()
 
 
+class ZopelessUtilitiesHelper(object):
+
+    def setUp(self):
+        self.zopeless_helper = ZopelessHelper()
+        self.zopeless_helper.setUp()
+        # Boilerplate to get getUtility working
+        zopePlacelessSetUp()
+        ztapi.provideUtility(ILaunchpadCelebrities, LaunchpadCelebrities())
+        ztapi.provideUtility(IPersonSet, PersonSet())
+        ztapi.provideUtility(IBranchSet, BranchSet())
+        ztapi.provideUtility(IProductSet, ProductSet())
+
+    def tearDown(self):
+        zopePlacelessTearDown()
+        self.zopeless_helper.tearDown()
+
+
 class SandboxTestCase(unittest.TestCase):
     """Base class for test cases that need a SandboxHelper."""
 
@@ -387,6 +418,7 @@ class TestHTTPRequestHandler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
+
 class WebserverHelper(SandboxHelper):
 
     HTTP_PORTS = range(13000, 0x8000)
@@ -459,22 +491,4 @@ class WebserverHelper(SandboxHelper):
             os.environ["http_proxy"] = self._http_proxy
         SandboxHelper.tearDown(self)
 
-class WebserverTestCase(unittest.TestCase):
-    """Base class for test cases that need a WebserverHelper."""
-
-    def setUp(self):
-        self.zopeless_helper = ZopelessHelper()
-        self.zopeless_helper.setUp()
-        self.webserver_helper = WebserverHelper()
-        self.webserver_helper.setUp()
-
-    def tearDown(self):
-        self.webserver_helper.tearDown()
-        self.zopeless_helper.tearDown()
-
-    def path(self, name):
-        return self.webserver_helper.path(name)
-
-    def url(self, name):
-        return self.webserver_helper.get_remote_url(name)
 
