@@ -40,7 +40,7 @@ from canonical.launchpad.scripts import (execute_zcml_for_scripts,
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.publishing import SourcePackageFilePublishing
 from canonical.librarian.client import LibrarianClient
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (IDistributionSet, ILibraryFileAliasSet)
 from canonical.lp import (dbschema, initZopeless)
 
 from contrib.glock import GlobalLock
@@ -57,6 +57,7 @@ re_bug_numbers = re.compile(r"\#?\s?(\d+)")
 
 Blacklisted = None
 Library = None
+LibraryFileAliasSet = None
 Lock = None
 Log = None
 Options = None
@@ -1111,12 +1112,38 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
             if not filename.endswith("orig.tar.gz"):
                 dak_utils.fubar("%s (from %s) is in the DB but isn't an orig.tar.gz.  Help?" % (filename, pkg))
             if len(spfp_l) != 1:
-                # XXX If I could distinct on libraryfilealias, I'd do that, but I don't know how
+                # XXX If I could distinct on libraryfilealias, I'd do
+                #     that, but I don't know how
                 xx_d = {}
                 for i in spfp_l:
                     xx_d[i.libraryfilealias] = ""
+                # XXX: see LP #38227.  Check the sha1sum + size, to
+                #      really find different orig.tar.gz's
                 if len(xx_d.keys()) > 1:
-                    dak_utils.fubar("%s (from %s) returns multiple IDs for orig.tar.gz.  Help?" % (filename, pkg))
+                    sha1 = None
+                    filesize = None
+                    broken = False
+                    for i in spfp_l:
+                        l = LibraryFileAliasSet[i.libraryfilealias]
+                        if sha1 is None:
+                            sha1 = l.content.sha1
+                        if filesize is None:
+                            filesize = l.content.filesize
+                        if sha1 != l.content.sha1 or filesize != l.content.filesize:
+                            broken = True
+                            break
+                    if broken:
+                        # We've found really differing duplicates - dump
+                        # some debug info and give up.
+                        for i in spfp_l:
+                            print "*****"
+                            print "[%s]: %s" % (i.libraryfilealias, i.libraryfilealiasfilename)
+                            l = LibraryFileAliasSet[i.libraryfilealias]
+                            print "sha1 & size: %s %s" % (l.content.sha1, l.content.filesize)
+                            print "distrorelease: %s, component: %s, source: %s, status: %s" \
+                                  % (i.distroreleasename, i.componentname, i.sourcepackagename,
+                                     i.publishingstatus)
+                        dak_utils.fubar("%s (from %s) returns multiple IDs for orig.tar.gz.  Help?" % (filename, pkg))
             spfp = spfp_l[0]
             have_orig_tar_gz = filename
             print "  - <%s: already in distro - downloading from librarian>" % (filename)
@@ -1354,7 +1381,7 @@ def objectize_options():
 ########################################
 
 def init():
-    global Blacklisted, Library, Lock, Log
+    global Blacklisted, Library, LibraryFileAliasSet, Lock, Log
 
     apt_pkg.init()
 
@@ -1372,6 +1399,7 @@ def init():
     execute_zcml_for_scripts()
 
     Library = LibrarianClient()
+    LibraryFileAliasSet = getUtility(ILibraryFileAliasSet)
 
     objectize_options()
 
