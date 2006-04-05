@@ -11,9 +11,15 @@ __metaclass__ = type
 
 import sys
 
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.plugins.bzrtools import baz_import
+from bzrlib.errors import NotBranchError
 from bzrlib.progress import DummyProgress
+from bzrlib.transport import get_transport
+import bzrlib.ui
+from bzrlib.ui import SilentUIFactory
+
+from bzrlib.plugins.bzrtools import baz_import
 import pybaz
 
 from zope.component import getUtility
@@ -47,11 +53,18 @@ class BatchProgress(DummyProgress):
             print '%d/%d %s' % (current, total, msg)
 
 
-def make_progress_bar(quiet):
-    if quiet:
-        return DummyProgress()
-    else:
+class BatchUIFactory(SilentUIFactory):
+    """A UI Factory that prints line-by-line progress."""
+
+    def progress_bar(self):
         return BatchProgress()
+
+
+def setup_ui_factory(quiet):
+    if quiet:
+        bzrlib.ui.ui_factory = SilentUIFactory()
+    else:
+        bzrlib.ui.ui_factory = BatchUIFactory()
 
 
 def make_printer(quiet):
@@ -79,6 +92,7 @@ def parse_arguments(args):
 
 def main(args):
     quiet, series_id, blacklist_path, push_prefix = parse_arguments(args)
+    setup_ui_factory(quiet)
     to_location = 'bzrworking'
     begin()
     series = ProductSeries.get(series_id)
@@ -90,7 +104,7 @@ def main(args):
         print "Not exporting to bzr"
         return 0
     from_branch = pybaz.Version(from_branch)
-    progress_bar = make_progress_bar(quiet)
+    progress_bar = bzrlib.ui.ui_factory.progress_bar()
     printer = make_printer(quiet)
     baz_import.import_version(
         to_location, from_branch, printer, 
@@ -102,38 +116,22 @@ def main(args):
     branch = branch_from_series(series)
     commit()
     push_to = push_prefix + ('%08x' % branch.id)
-    bzr_push(to_location, push_to, quiet)
+    bzr_push(to_location, push_to)
     return 0
 
-def bzr_push(from_location, to_location, quiet):
-    # Duplicate code from bzrlib so we can use our custom ProgressBar.
-    from bzrlib.transport import get_transport
-    from bzrlib.branch import Branch
-    from bzrlib.errors import NotBranchError
 
-    br_from = Branch.open(from_location)
-    
+def bzr_push(from_location, to_location):
+    """Simple implementation of 'bzr push' that does not depend on the cwd."""
+    branch_from = Branch.open(from_location)
     try:
-        br_to = Branch.open(to_location)
+        branch_to = Branch.open(to_location)
     except NotBranchError:
         # create a branch.
         transport = get_transport(to_location).clone('..')
         transport.mkdir(transport.relpath(to_location))
         # Do not create a working tree
-        br_to = BzrDir.create_branch_and_repo(to_location)
-    old_rh = br_to.revision_history()
-    br_from.lock_read()
-    try:
-        stop_revision = br_from.last_revision()
-        if stop_revision in br_to.revision_history():
-            return
-        pb = make_progress_bar(quiet)
-        br_to.fetch(br_from, stop_revision, pb)
-        pullable_revs = br_to.pullable_revisions(br_from, stop_revision)
-        if len(pullable_revs) > 0:
-            br_to.append_revision(*pullable_revs)
-    finally:
-        br_from.unlock()
+        branch_to = BzrDir.create_branch_and_repo(to_location)
+    branch_to.pull(branch_from)
 
 
 def arch_from_series(series):
