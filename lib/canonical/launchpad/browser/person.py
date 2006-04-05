@@ -811,7 +811,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
         if advanced:
-            return person_url + '/+packagebugs-advanced?%s' % query_string
+            return person_url + '/+packagebugs-advanced-search?%s' % query_string
         else:
             return person_url + '/+packagebugs-search?%s' % query_string
 
@@ -868,6 +868,19 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         # software, so for now I'll be simply hiding the search widgets.
         # -- Guilherme Salgado, 2005-11-05
         return False
+
+    # Methods that customize the advanced search form.
+    def getAdvancedSearchPageHeading(self):
+        return "Bugs in %s: Advanced Search" % self.current_package.displayname
+
+    def getAdvancedSearchButtonLabel(self):
+        return "Search bugs in %s" % self.current_package.displayname
+
+    def getAdvancedSearchActionURL(self):
+        return canonical_url(self.context) + "/+packagebugs-search"
+
+    def getSimpleSearchURL(self):
+        return self.getBugContactPackageSearchURL()
 
 
 class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):

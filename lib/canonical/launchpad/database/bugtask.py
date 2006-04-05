@@ -320,17 +320,7 @@ class BugTaskSet:
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated"}
 
-    def __init__(self):
-        self.title = 'A set of bug tasks'
-
-    def __getitem__(self, task_id):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        return self.get(task_id)
-
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        for task in BugTask.select():
-            yield task
+    title = "A set of bug tasks"
 
     def get(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -598,4 +588,8 @@ class BugTaskSet:
                        TeamParticipation.person = %(personid)s AND
                        BugSubscription.person = TeamParticipation.team))
                          """ % sqlvalues(personid=user.id)
+
+    def dangerousGetAllTasks(self):
+        """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
+        return BugTask.select()
 

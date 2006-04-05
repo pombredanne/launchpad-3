@@ -43,6 +43,13 @@
       <form name="search" method="GET" action="#"
             tal:attributes="action view/getAdvancedSearchActionURL">
         <input type="hidden" name="advanced" value="1" />
+        <span tal:condition="view/current_package|nothing">
+          <input type="hidden" name="field.distribution"
+                 tal:attributes="value view/current_package/distribution/name" />
+          <input type="hidden" name="field.sourcepackagename"
+                 tal:attributes="value view/current_package/sourcepackagename/name" />
+        </span>
+
         <table>
           <tr>
             <th class="section-header">
@@ -58,7 +65,7 @@
                        value="Search bugs in mozilla-firefox in ubuntu"
                        tal:attributes="value view/getAdvancedSearchButtonLabel" />
                 <a href="#"
-                   tal:attributes="href string:${context/fmt:url}/+bugs">
+                   tal:attributes="href view/getSimpleSearchURL">
                   Simple
                 </a>
                 <div style="margin-top: 5px">
