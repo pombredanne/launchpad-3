@@ -19,14 +19,18 @@ from canonical.authserver.database import (
 from canonical.launchpad.daemons.tachandler import ReadyService
 from canonical.config import config
 
-application = service.Application("authserver_test")
-dbpool = ConnectionPool('psycopg', 'dbname=%s user=%s' 
-                                    % (config.dbname, config.authserver.dbuser))
+application = service.Application("authserver")
+dbpool = ConnectionPool(
+    'psycopg', 
+    'dbname=%s host=%s user=%s' 
+    % (config.dbname, config.dbhost, config.authserver.dbuser), 
+    cp_reconnect=True)
 root = resource.Resource()
 versionOneAPI = UserDetailsResource(DatabaseUserDetailsStorage(dbpool))
-versionTwoAPI = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool), debug=True)
+versionTwoAPI = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool))
 branchAPI = BranchDetailsResource(DatabaseBranchDetailsStorage(dbpool))
 root.putChild('', versionOneAPI)
+root.putChild('RPC2', versionTwoAPI)
 root.putChild('v2', versionTwoAPI)
 root.putChild('branch', branchAPI)
 site = server.Site(root)
