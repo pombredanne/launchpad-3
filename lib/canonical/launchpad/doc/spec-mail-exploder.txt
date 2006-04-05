@@ -261,7 +261,7 @@ subscribers:
     True
 
 Lastly, let's simulate sending a moin notification, and use
-handleMail() instead, to ensure that handler above handles the email.
+handleMail() instead to ensure that handler above handles the email.
 This will make sure that the handler is setup properly to handle
 unknown users, since webmaster@ubuntu.com doesn't belong to any Person
 in Launchpad:

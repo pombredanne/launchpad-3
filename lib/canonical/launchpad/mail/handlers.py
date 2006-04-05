@@ -340,10 +340,9 @@ class SpecificationHandler:
                      fragment))
                 spec = getUtility(ISpecificationSet).getByURL(possible_url)
                 if spec is not None:
-                    break
+                    return spec
         else:
-            spec = getUtility(ISpecificationSet).getByURL(url)
-        return spec
+            return getUtility(ISpecificationSet).getByURL(url)
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
