@@ -142,6 +142,8 @@ class MaloneHandler:
     """
     implements(IMailHandler)
 
+    allow_anonymous = False
+
     def getCommands(self, signed_msg):
         """Returns a list of all the commands found in the email."""
         commands = []
@@ -278,6 +280,8 @@ class SupportTrackerHandler:
 
     implements(IMailHandler)
 
+    allow_anonymous = False
+
     _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
@@ -309,6 +313,8 @@ class SpecificationHandler:
     """Handles emails sent to specs.launchpad.net."""
 
     implements(IMailHandler)
+
+    allow_anonymous = True
 
     _spec_changes_address = re.compile(r'^notifications@.*')
 

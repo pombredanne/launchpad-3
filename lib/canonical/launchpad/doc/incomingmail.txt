@@ -29,7 +29,8 @@ handle, and register them for some domains:
     >>> from canonical.config import config
     >>> class MockHandler:
     ...     implements(IMailHandler)
-    ...     def __init__(self):
+    ...     def __init__(self, allow_anonymous=False):
+    ...         self.allow_anonymous = allow_anonymous
     ...         self.handledMails = []
     ...     def process(self, mail, to_addr, filealias):
     ...         self.handledMails.append(mail['Message-Id'])
@@ -37,7 +38,7 @@ handle, and register them for some domains:
 
     >>> from canonical.launchpad.mail.handlers import mail_handlers
     >>> foo_handler = MockHandler()
-    >>> bar_handler = MockHandler()
+    >>> bar_handler = MockHandler(allow_anonymous=True)
     >>> error_handler = MockHandler()
     >>> mail_handlers.add('foo.com', foo_handler)
     >>> mail_handlers.add('bar.com', bar_handler)
@@ -107,7 +108,37 @@ errors_address.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
+Mails from Persons not registered in Launchpad
+----------------------------------------------
 
+If a Person who isn't registered in Launchpad sends an email, we'll
+most of the time reject the email:
+
+    >>> moin_change = read_test_message('moin-change.txt')
+    >>> moin_change['X-Original-To'] = '123@foo.com'
+    >>> msgid = "<%s>" % sendmail(moin_change)
+    >>> transaction.commit()
+    >>> handleMail()
+    >>> msgid not in foo_handler.handledMails
+    True
+
+    >>> stub.test_emails = []
+
+However, bar_handler specifies that it can handle such emails:
+
+    >>> bar_handler.allow_anonymous
+    True
+
+So if we send the mail to bar.com, bar_handler will handle the mail:
+
+    >>> moin_change.replace_header('X-Original-To', '123@bar.com')
+    >>> msgid = "<%s>" % sendmail(moin_change)
+    >>> transaction.commit()
+    >>> handleMail()
+    >>> msgid in bar_handler.handledMails
+    True
+
+    >>> stub.test_emails = []
 
 X-Original-To
 -------------

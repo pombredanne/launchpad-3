@@ -201,3 +201,35 @@ Again, no emails were sent:
     >>> transaction.commit()
     >>> len(stub.test_emails)
     0
+
+Lastly, let's simulate sending a moin notification, and let
+handleMail() handle it, to see that everything works correctly.
+
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
+
+    >>> moin_change = read_test_message('moin-change.txt')
+    >>> moin_change['X-Original-To'] = "notifications@%s" % (
+    ...     config.launchpad.specs_domain)
+    >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
+
+    >>> from canonical.launchpad.mail.sendmail import sendmail
+    >>> from canonical.launchpad.mail.incoming import handleMail
+    >>> sendmail(moin_change)
+    '...'
+    >>> transaction.commit()
+    >>> handleMail()
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> to_addrs == spec.notificationRecipientAddresses()
+    True
+
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_msg['Message-Id'] == moin_change['Message-Id']
+    True
+
+    >>> LibrarianTestSetup().tearDown()
