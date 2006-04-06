@@ -4,14 +4,19 @@
 
 __metaclass__ = type
 
+from xml.sax.saxutils import escape
+
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.form.interfaces import IInputWidget, InputErrors, ConversionError
+from zope.app.form.browser.widget import BrowserWidget, renderElement
+from zope.app.form.interfaces import (
+    IDisplayWidget, IInputWidget, InputErrors, ConversionError)
 from zope.schema.interfaces import ValidationError
 from zope.app.form import Widget
 
 from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.exception import WidgetInputError
 
@@ -189,3 +194,47 @@ class BugTaskAssigneeWidget(Widget):
             else:
                 return self.assigned_to
 
+
+class AssigneeDisplayWidget(BrowserWidget):
+    """A widget for displaying an assignee."""
+
+    implements(IDisplayWidget)
+
+    def __call__(self):
+        assignee_field = self.context
+        bugtask = assignee_field.context
+        if self._renderedValueSet(): 
+            assignee = self._data
+        else:
+            assignee = assignee_field.get(bugtask)
+        if assignee:
+            person_img = renderElement(
+                'img', style="padding-bottom: 2px", src="/@@/user.gif", alt="")
+            return renderElement(
+                'a', href=canonical_url(assignee),
+                contents="%s %s" % (person_img, escape(assignee.browsername)))
+        else:
+            if bugtask.target_uses_malone:
+                return renderElement('i', contents='not assigned')
+            else:
+                return renderElement('i', contents='unknown')
+
+
+class DBItemDisplayWidget(BrowserWidget):
+    """A widget for displaying a bugtask dbitem."""
+
+    implements(IDisplayWidget)
+
+    def __call__(self):
+        dbitem_field = self.context
+        bugtask = dbitem_field.context
+        if self._renderedValueSet():
+            dbitem = self._data
+        else:
+            dbitem = dbitem_field.get(bugtask)
+        if dbitem:
+            return renderElement(
+                'span', contents=dbitem.title,
+                cssClass="%s%s" % (dbitem_field.__name__, dbitem.title))
+        else:
+            return renderElement('span', contents='&mdash;')

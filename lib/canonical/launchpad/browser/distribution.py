@@ -20,7 +20,6 @@ from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
-from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
@@ -32,6 +31,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, LaunchpadView,
     enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     canonical_url, redirection)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -111,16 +111,13 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'editbugcontact', 'reassign', 'addrelease', 'builds',
+             'reassign', 'addrelease', 'builds',
              'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
-
-    def editbugcontact(self):
-        text = 'Edit Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
@@ -143,10 +140,12 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'List All Packages'
         return Link('+allpackages', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def milestone_add(self):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
@@ -161,9 +160,10 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+addrelease', text, icon='add')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Builds'
         return Link('+builds', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
         return Link('+launchpad', text, icon='edit')
@@ -173,7 +173,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['new', 'cve_list']
+    links = ['new', 'bugcontact', 'cve_list']
 
     def cve_list(self):
         text = 'CVE List'
@@ -182,6 +182,10 @@ class DistributionBugsMenu(ApplicationMenu):
     def new(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    def bugcontact(self):
+        text = 'Change Bug Contact'
+        return Link('+bugcontact', text, icon='edit')
 
 
 class DistributionBountiesMenu(ApplicationMenu):
@@ -203,7 +207,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'new']
 
     def listall(self):
         text = 'List All'
@@ -217,10 +221,6 @@ class DistributionSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
 
-    def workload(self):
-        text = 'Workload'
-        return Link('+workload', text, icon='info')
-
     def new(self):
         text = 'New Specification'
         return Link('+addspec', text, icon='add')
@@ -230,7 +230,7 @@ class DistributionSupportMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'support'
-    links = ['new']
+    links = ['new', 'support_contact']
     # XXX: MatthewPaulThomas, 2005-09-20
     # Add 'help' once +gethelp is implemented for a distribution
 
@@ -241,6 +241,10 @@ class DistributionSupportMenu(ApplicationMenu):
     def new(self):
         text = 'Request Support'
         return Link('+addticket', text, icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class DistributionTranslationsMenu(ApplicationMenu):

@@ -21,7 +21,7 @@
 <div metal:fill-slot="main">
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="portalMessage">
+     class="informational message">
     notice goes here
   </p>
 

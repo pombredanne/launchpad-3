@@ -15,14 +15,14 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Register a new Bazaar branch associated to the
-      <span tal:replace="context/displayname">Product Name</span> product
-      using the form below.
-    </div>
-
-  </div>
-
-</div>    
-</body>
+        <metal:heading fill-slot="heading">
+          <h1>
+            Register a
+            <tal:product replace="context/displayname" />
+            branch
+          </h1>
+        </metal:heading>
+      </div>
+    </div>    
+  </body>
 </html>

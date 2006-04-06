@@ -130,6 +130,8 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
+    # XXX Matthew Paul Thomas 2006-03-22: NOTICE and INFO should be merged.
+    # https://launchpad.net/bugs/36287
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
     NOTICE = logging.INFO + 5 # action had effects you might not have intended
@@ -230,3 +232,32 @@ class IErrorReportRequest(Interface):
     oopsid = TextLine(
         description=u"""an identifier for the exception, or None if no 
         exception has occurred""")
+
+#
+# Batch Navigation
+#
+
+class IBatchNavigator(Interface):
+
+    batch = Attribute("The IBatch for which navigation links are provided.")
+
+    def prevBatchURL():
+        """Return a URL to the previous chunk of results."""
+
+    def nextBatchURL():
+        """Return a URL to the next chunk of results."""
+
+    def batchPageURLs():
+        """Return a list of links representing URLs to pages of
+        results."""
+
+
+class ITableBatchNavigator(IBatchNavigator):
+    """A batch navigator for tabular listings."""
+
+    # This attribute reads well in ZPT, e.g.:
+    #
+    # <tal:foo condition="batch_nav/show_column/foo">
+    show_column = Attribute(
+        "A dict keyed by column name. If the value is True, that column will "
+        "be shown in the list, otherwise it won't.")

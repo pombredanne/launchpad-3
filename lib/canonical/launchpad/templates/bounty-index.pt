@@ -2,9 +2,12 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="context/title">Bounty name</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -17,12 +20,10 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Bounty overview</h1>
-
   <p tal:repeat="notice view/notices"
      tal:content="notice"
-     class="portalMessage"
-     >Notification Message</p>
+     class="error message"
+     >Error message</p>
 
   <p class="documentDescription" tal:content="context/summary">
     $Bounty.summary goes here. This should be quite short,

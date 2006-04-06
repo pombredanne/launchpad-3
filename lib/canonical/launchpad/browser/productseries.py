@@ -22,7 +22,6 @@ from zope.publisher.browser import FileUpload
 from CVS.protocol import CVSRoot
 import pybaz
 
-from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import (
@@ -37,6 +36,7 @@ from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets
     )
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad import _
 
@@ -69,7 +69,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
              'addpotemplate', 'review']
 
     def edit(self):
-        text = 'Edit Series Details'
+        text = 'Change Series Details'
         return Link('+edit', text, icon='edit')
 
     def editsource(self):
@@ -222,9 +222,6 @@ class ProductSeriesView(LaunchpadView):
         else:
             self.default_targetarchbranch = self.context.name
         self.default_targetarchversion = '0'
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
         # Whether there is more than one PO template.
         self.has_multiple_templates = len(self.context.currentpotemplates) > 1
 
@@ -236,6 +233,10 @@ class ProductSeriesView(LaunchpadView):
 
         # Check the form submission.
         self.processForm()
+
+    @property
+    def languages(self):
+        return request_languages(self.request)
 
     def processForm(self):
         """Process a form if it was submitted."""

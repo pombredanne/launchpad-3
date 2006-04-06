@@ -116,6 +116,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
+>>> check("/distros/debian/+milestone/3.1")
 >>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
 >>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
 
@@ -141,6 +142,8 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/hoary/+source/evolution/+translate")
 >>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
+...       auth=True)
+>>> check("/distros/ubuntu/hoary/+source/pmount/+pots/pmount/apa/+translate",
 ...       auth=True)
 >>> check_not_found("/distros/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check_not_found(
@@ -171,6 +174,7 @@ spider -- StuartBishop 20050822
 >>> check("/malone")
 >>> check_redirect("/malone/assigned")
 >>> check_not_found("/malone/bugs/assigned")
+>>> check_redirect("/bugs/1")
 >>> check_redirect("/malone/bugs")
 >>> check_redirect("/malone/bugs/1")
 >>> check("/malone/distros")
@@ -205,13 +209,11 @@ been reported.
 
 Check a bug is traversable by nickname:
 
+>>> check_redirect("/bugs/blackhole")
 >>> check_redirect("/malone/bugs/blackhole")
 >>> check("/products/ubuntu/+bug/blackhole")
-
-Check a bug is traversable by nickname:
-
->>> check_redirect("/malone/bugs/blackhole")
->>> check("/products/ubuntu/+bug/blackhole")
+>>> check_not_found("/malone/bugs/invalid-nickname")
+>>> check_not_found("bugs/invalid-nickname")
 
 Viewing a bug in the context of a distribution where the bug has not
 yet been reported.
@@ -300,6 +302,10 @@ And this is for a person:
 
 >>> check("/people/name16/+edit", auth=True)
 >>> check("/people/name16/+branches")
+>>> check("/people/name12/+branch/gnome-terminal/pushed/")
+>>> check("/people/name12/+branch/gnome-terminal/pushed/+edit", auth=True)
+>>> check_redirect("/people/name12/+branch/gnome-terminal/pushed/+lifecycle")
+>>> check("/people/name12/+branch/gnome-terminal/pushed/+lifecycle", auth=True)
 >>> check("/people/name16/+karma")
 >>> check_redirect("/people/name16/+bugs")
 >>> check("/people/name16/+reportedbugs")

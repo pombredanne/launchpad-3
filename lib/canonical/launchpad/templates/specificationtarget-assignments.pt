@@ -16,7 +16,7 @@
 
   <h1>Specification assignments</h1>
 
-  <p class="portalMessage" tal:condition="not: view/specs">
+  <p class="informational message" tal:condition="not: view/specs">
     No specifications to display.
   </p>
 
@@ -24,31 +24,39 @@
     <thead>
       <tr>
         <th>Priority</th>
-        <th>Status</th>
         <th>Name</th>
+        <th>Definition</th>
+        <th>Delivery</th>
         <th>Assignee</th>
         <th>Drafter</th>
         <th>Approver</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="lesser">
       <tr tal:repeat="spec view/specs">
         <td>
-          <span style="display: none" tal:content="spec/priority/value" />
+          <span class="sortkey" tal:content="spec/priority/sortkey" />
           <span tal:content="spec/priority/title"
                 tal:attributes="
                 class string:specpriority${spec/priority/name}">High</span>
-        </td>
-        <td>
-          <span style="display: none" tal:content="spec/status/value" />
-          <span tal:content="spec/status/title"
-                tal:attributes="
-                class string:specstatus${spec/status/name}">Approved</span>
         </td>
         <td><a tal:content="spec/name/fmt:shorten/35"
                tal:attributes="
                  href spec/fmt:url;
                  title spec/title">foo-bar-baz</a></td>
+        <td>
+          <span class="sortkey" tal:content="spec/status/sortkey" />
+          <span tal:content="spec/status/title"
+                tal:attributes="
+                class string:specstatus${spec/status/name}">Approved</span>
+        </td>
+        <td>
+          <span class="sortkey" tal:content="spec/delivery/sortkey" />
+          <span tal:content="spec/delivery/title"
+                tal:attributes="
+                class string:specdelivery${spec/delivery/name}">Slow
+          </span>
+        </td>
         <td><a tal:condition="spec/assignee"
                tal:content="spec/assignee/name"
                tal:attributes="href spec/assignee/fmt:url">Assignee Bar</a></td>

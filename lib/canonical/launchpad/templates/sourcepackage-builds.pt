@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad">
 
 <body>
@@ -19,9 +19,8 @@
 
   <h1><span tal:replace="context/title"/> builds</h1>
 
-  <div tal:replace="structure context/@@+builds-list"/>    
+  <div tal:replace="structure context/@@+builds-list"/>
 </div>
 
 </body>
 </html>
- 

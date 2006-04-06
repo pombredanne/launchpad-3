@@ -9,7 +9,7 @@ __all__ = ['TacTestSetup', 'ReadyService', 'TacException']
 import sys
 import os
 import time
-from signal import SIGTERM
+from signal import SIGTERM, SIGKILL
 import subprocess
 
 from twisted.application import service
@@ -69,7 +69,13 @@ class TacTestSetup:
         if os.path.exists(pidfile):
             pid = open(pidfile,'r').read().strip()
             # Keep killing until it is dead
+            count = 0
             while True:
+                count += 1
+                if count == 50:
+                    # XXX: this codepath is untested
+                    os.kill(int(pid), SIGKILL)
+                    break
                 try:
                     os.kill(int(pid), SIGTERM)
                     time.sleep(0.1)

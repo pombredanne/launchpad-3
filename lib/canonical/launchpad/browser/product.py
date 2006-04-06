@@ -209,34 +209,38 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'editbugcontact']
+    links = ['filebug', 'bugcontact']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
-    def editbugcontact(self):
+    def bugcontact(self):
         text = 'Change Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
+        return Link('+bugcontact', text, icon='edit')
 
 
 class ProductSupportMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'support'
-    links = ['new']
+    links = ['new', 'support_contact']
 
     def new(self):
         text = 'Request Support'
         return Link('+addticket', text, icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'new']
 
     def listall(self):
         text = 'List All'
@@ -249,10 +253,6 @@ class ProductSpecificationsMenu(ApplicationMenu):
     def table(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
-
-    def workload(self):
-        text = 'Workload'
-        return Link('+workload', text, icon='info')
 
     def new(self):
         text = 'New Specification'
@@ -320,13 +320,7 @@ class ProductView:
         self.product = context
         self.request = request
         self.form = request.form
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = helpers.request_languages(request)
         self.status_message = None
-        self.branches = [
-            getView(branch, '+index', request)
-            for branch in self.context.branches]
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
@@ -517,7 +511,6 @@ class ProductSetView:
     __used_for__ = IProductSet
 
     def __init__(self, context, request):
-
         self.context = context
         self.request = request
         form = self.request.form

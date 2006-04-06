@@ -64,7 +64,7 @@ class BinaryPackageNameSet:
     def getOrCreateByName(self, name):
         try:
             return self[name]
-        except KeyError:
+        except NotFoundError:
             return self.new(name)
 
     def ensure(self, name):

@@ -10,7 +10,8 @@ __metaclass__ = type
 __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'nearest_menu', 'canonical_url', 'nearest', 'structured',
            'StandardLaunchpadFacets', 'enabled_with_permission',
-           'LaunchpadView', 'Navigation', 'stepthrough', 'redirection',
+           'LaunchpadView', 'LaunchpadXMLRPCView',
+           'Navigation', 'stepthrough', 'redirection',
            'stepto', 'GetitemNavigation', 'smartquote',
            'GeneralFormView', 'GeneralFormViewFactory',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse']
@@ -27,7 +28,7 @@ from canonical.launchpad.webapp.menu import (
     )
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
-    redirection, stepto)
+    redirection, stepto, LaunchpadXMLRPCView)
 from canonical.launchpad.webapp.servers import (
         LaunchpadBrowserRequest, LaunchpadBrowserResponse
         )

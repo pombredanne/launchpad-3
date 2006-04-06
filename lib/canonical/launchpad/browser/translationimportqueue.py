@@ -13,6 +13,8 @@ __all__ = [
     'TranslationImportQueueView',
     ]
 
+import datetime
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
@@ -23,9 +25,10 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
+
 from canonical.lp.dbschema import RosettaImportStatus
-from canonical.lp.batching import BatchNavigator
 
 class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
@@ -57,6 +60,33 @@ class TranslationImportQueueEntryView(GeneralFormView):
         self.request = request
         self.initialize()
         GeneralFormView.__init__(self, context, request)
+
+    @property
+    def initial_values(self):
+        """Initialize some values on the form, when it's possible."""
+        field_values = {}
+        # Fill the know values.
+        if self.context.sourcepackagename is not None:
+            field_values['sourcepackagename'] = self.context.sourcepackagename
+        if self.context.potemplate is not None:
+            field_values['potemplatename'] = (
+                self.context.potemplate.potemplatename.name)
+        if self.context.pofile is not None:
+            field_values['language'] = self.context.pofile.language
+            field_values['variant'] = self.context.pofile.variant
+        else:
+            # We try to guess the values.
+            (language, variant) = self.context.guessed_language_and_variant
+            if language is not None:
+                field_values['language'] = language
+                # Need to warn the user that we guessed the language information.
+                self.request.response.addWarningNotification(
+                    "Review the language selection as we guessed it and could"
+                    " not be accurated.")
+            if variant is not None:
+                field_values['variant'] = variant
+
+        return field_values
 
     def initialize(self):
         """Set the fields that will be shown based on the 'context' values.
@@ -154,11 +184,64 @@ class TranslationImportQueueContextMenu(ContextMenu):
 class TranslationImportQueueView(LaunchpadView):
     """View class used for Translation Import Queue management."""
 
+    def _validateFilteringOptions(self):
+        """Validate the filtering options for this form.
+
+        This method initialize self.status and self.file_extension depending
+        on the form values.
+
+        Raise UnexpectedFormData if we get something wrong.
+        """
+        # Get the filtering arguments.
+        self.status = str(self.form.get('status', 'all'))
+        # but the file_extension must be in lower case.
+        self.type = str(self.form.get('type', 'all'))
+
+        # Fix the case to our needs.
+        if self.status:
+            self.status = self.status.upper()
+        if self.type:
+            self.type = self.type.lower()
+
+        # Prepare the list of available status.
+        available_status = [
+            status.name
+            for status in RosettaImportStatus.items
+            ]
+        available_status.append('ALL')
+
+        # Sanity checks so we don't accept broken input.
+        if (not (self.status and self.type) or
+            (self.status not in available_status) or
+            (self.type not in ('all', 'po', 'pot'))):
+            raise UnexpectedFormData(
+                'The queue filtering got an unexpected value.')
+
+        # Set to None status and type if they have the default value.
+        if self.status == 'ALL':
+            # Selected all status, the status is None to get all values.
+            self.status = None
+        else:
+            # Get the DBSchema entry.
+            self.status = RosettaImportStatus.items[self.status]
+        if self.type == 'all':
+            # Selected all types, so the type is None to get all values.
+            self.type = None
+
     def initialize(self):
         """Useful initialization for this view class."""
+        # Get the filtering arguments.
         self.form = self.request.form
+
+        # Validate the filtering arguments.
+        self._validateFilteringOptions()
+
+        # Setup the batching for this page.
+        self.batchnav = BatchNavigator(self.context.getAllEntries(
+            status=self.status, file_extension=self.type), self.request)
+
+        # Flag to control whether the view page should be rendered.
         self.redirecting = False
-        self.batchnav = BatchNavigator(self.context.getAllEntries(), self.request)
 
         # Process the form.
         self.processForm()
@@ -248,6 +331,10 @@ class TranslationImportQueueView(LaunchpadView):
                     'Ignored the request to change the status from %s to %s.'
                         % (entry.status.name, new_status_name))
 
+            # Update the date_status_change field.
+            UTC = pytz.timezone('UTC')
+            entry.date_status_changed = datetime.datetime.now(UTC)
+
         if number_of_changes == 0:
             self.request.response.addWarningNotification(
                 "Ignored your status change request as you didn't select any"
@@ -256,6 +343,8 @@ class TranslationImportQueueView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Changed the status of %d queue entries." % number_of_changes)
 
+        # We do a redirect so the submit doesn't breaks if the rendering of
+        # the page takes too much time.
         url_string = self.request.getURL()
         query_string = self.request.environment.get("QUERY_STRING")
         if query_string:
@@ -290,6 +379,16 @@ class TranslationImportQueueView(LaunchpadView):
             contents=status.title,
             **selected)
 
+        return html
+
+    def getStatusFilteringSelect(self):
+        """Return a select html tag with all status for filtering purposes."""
+        selected_status = self.form.get('status', 'all')
+        html = ''
+        for status in RosettaImportStatus.items:
+            selected = (status.name.lower() == selected_status.lower())
+            html = '%s\n%s' % (
+                html, self.renderOption(status, selected=selected))
         return html
 
     def getStatusSelect(self, entry):

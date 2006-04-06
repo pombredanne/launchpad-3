@@ -1,11 +1,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+      i18n:domain="launchpad"
+>
   <body>
 
-  <div metal:fill-slot="main">
+    <div metal:fill-slot="main">
 
   <div tal:condition="nothing">
     This file is a modified version of zope/app/form/browser/add.pt for use
@@ -24,10 +24,11 @@
 
       <div metal:define-macro="formbody">
 
-        <h1 tal:condition="view/label"
-            tal:content="view/label"
-            metal:define-slot="heading"
-            >Add Something</h1>
+        <h1
+          tal:condition="view/label"
+          tal:content="view/label"
+          metal:define-slot="heading"
+        >Add Something</h1>
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the add form.
@@ -35,7 +36,7 @@
           and should explain a little bit about the form.
         </p>
 
-        <p class="portalMessage"
+        <p class="error message"
            tal:define="status view/update"
            tal:condition="status"
            tal:content="status" />

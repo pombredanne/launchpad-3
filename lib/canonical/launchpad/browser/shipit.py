@@ -20,10 +20,10 @@ from zope.app.form.interfaces import IInputWidget, WidgetInputError
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -753,8 +753,9 @@ class ShippingRequestAdminView:
 class ShipItReportsView(LaunchpadView):
     """The view for the list of shipit reports."""
 
-    def initialize(self):
-        self.reports = getUtility(IShipItReportSet).getAll()
+    @property
+    def reports(self):
+        return getUtility(IShipItReportSet).getAll()
 
 
 class ShipItExportsView:

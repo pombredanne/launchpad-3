@@ -14,40 +14,52 @@
 
 <div metal:fill-slot="main">
 
-  <p tal:replace="nothing">
-    This page will show relevant specifications as a simple table.
-  </p>
-
   <table class="listing sortable" id="speclisting"
         tal:condition="view/specs">
     <thead>
       <tr>
-        <th>
-          Priority
-        </th>
-        <th>
-          Specification
-        </th>
-        <th>
-          Status
-        </th>
-        <th>
-          Delivery
-        </th>
+        <th>Priority</th>
+        <th>Specification</th>
+        <th>Status</th>
+        <th>Delivery</th>
+        <th>Assignee</th>
+        <th tal:content="view/goaltitle">Hack!</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="lesser">
       <tr tal:repeat="spec view/specs">
-        <td tal:attributes="class string:specpriority${spec/priority/name}"
-            tal:content="spec/priority/title">High</td>
+        <td>
+          <span class="sortkey" tal:content="spec/priority/sortkey" />
+          <span tal:content="spec/priority/title"
+                tal:attributes="
+                class string:specpriority${spec/priority/name}">High</span>
+        </td>
         <td><a tal:content="spec/name/fmt:shorten/35"
                tal:attributes="
                  href spec/fmt:url;
                  title spec/title">foo-bar-baz</a></td>
-        <td tal:attributes="class string:specstatus${spec/status/name}"
-            tal:content="spec/status/title">Informational</td>
+        <td>
+          <span class="sortkey" tal:content="spec/status/sortkey" />
+          <span tal:content="spec/status/title"
+                tal:attributes="
+                class string:specstatus${spec/status/name}">Approved</span>
+        </td>
         <td tal:attributes="class string:specdelivery${spec/delivery/name}"
             tal:content="spec/delivery/title">Deployed</td>
+        <td>
+          <a tal:condition="spec/assignee"
+             tal:attributes="href spec/assignee/fmt:url"
+             tal:content="spec/assignee/browsername">
+            Carlos Perello Marin
+          </a>
+        </td>
+        <td>
+          <a tal:condition="spec/has_release_goal"
+             tal:attributes="href spec/goal/fmt:url"
+             tal:content="spec/goal/name">
+            Ubuntu 6.04
+          </a>
+        </td>
       </tr>
     </tbody>
   </table>

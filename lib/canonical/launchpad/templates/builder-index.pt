@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="context/title">Bob the Builder</h1>
+    </metal:heading>
 
 <metal:block fill-slot="head_epilogue">
     <meta http-equiv="refresh" content="300">
@@ -18,7 +21,7 @@
       <h2>Current status</h2>
 
       <tal:job condition="job">
-        <table class="listing">
+        <table class="listing sortable">
           <tbody>
             <tr>
               <td class="left icon"><img alt="" src="/@@/progress" /></td>

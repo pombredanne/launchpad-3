@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="context/title">PPC build of Foopy 1.1 in Fooix 2006</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -16,17 +19,23 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Build summary</h1>
-
       <table>
         <tbody>
           <tr>
             <th>Status:</th>
             <td tal:content="context/buildstate/title" />
           </tr>
+          <tr tal:condition="context/dependencies">
+            <th>Dependencies:</th>
+            <td tal:content="context/dependencies" />
+          </tr>
           <tr>
             <th>Date requested:</th>
             <td tal:content="context/datecreated/fmt:datetime" />
+          </tr>
+          <tr>
+            <th>Pocket:</th>
+            <td tal:content="context/pocket/name" />
           </tr>
           <tr>
             <th>Date built:</th>
@@ -62,10 +71,10 @@
             <td tal:condition="not:context/builder">
               <i>unknown</i>
             </td>
-            <td
-              tal:condition="context/builder"
-              tal:content="context/builder/title"
-            />
+            <td tal:condition="context/builder">
+	    <a tal:content="context/builder/title"
+               tal:attributes="href context/builder/fmt:url">BUILDER</a>
+            </td>
           </tr>
           <tr>
             <th>Processor:</th>

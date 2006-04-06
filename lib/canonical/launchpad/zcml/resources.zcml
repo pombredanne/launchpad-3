@@ -46,6 +46,9 @@
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="close_icon.png" file="../images/close_icon.png" />
     <resource name="cve" file="../images/cve.ico" />
+    <resource name="divider" file="../images/divider.png" />
+    <resource name="divider-highlighted"
+              file="../images/divider-highlighted.png" />
     <resource name="launchpad_favicon.png" file="../images/launchpad_favicon.png" />
     <resource name="ubuntuFavicon.ico" file="../images/ubuntuFavicon.ico" />
     <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
@@ -53,6 +56,7 @@
     <resource name="download.png" file="../images/download.png" />
     <resource name="edit.gif" file="../images/edit.gif" />
     <resource name="email" file="../images/mail_icon.gif" />
+    <resource name="error" file="../images/error.png" />
     <resource name="favicon.png" file="../images/launchpad_favicon.png" />
     <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
     <resource name="file" file="../images/file_icon.gif" />
@@ -83,6 +87,7 @@
     <resource name="product" file="../images/product_icon.gif" />
     <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="red-bar.png" file="../images/red-bar.png" />
+    <resource name="remove" file="../images/remove.gif" />
     <resource name="required.gif" file="../images/required.gif" />
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search_icon.gif" />

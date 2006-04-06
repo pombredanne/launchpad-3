@@ -7,7 +7,7 @@ of results.
 
 Imports:
 
-  >>> from canonical.lp.batching import BatchNavigator
+  >>> from canonical.launchpad.webapp.batching import BatchNavigator
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> def build_request(arg=None):
@@ -53,6 +53,14 @@ The next link will be empty when there are no further results:
   >>> last_reindeer_batch_navigator = BatchNavigator(reindeer, request=request)
   >>> last_reindeer_batch_navigator.nextBatchURL()
   ''
+
+The previous link should appear even when we start at a point between 0
+and the batch size:
+
+  >>> request = build_request({"batch_start": "2", "batch_end": "5"})
+  >>> last_reindeer_batch_navigator = BatchNavigator(reindeer, request=request)
+  >>> last_reindeer_batch_navigator.prevBatchURL()
+  'http://www.example.com/foo?batch_start=0&batch_end=9'
 
 This all works with query strings in the URLs, too:
 

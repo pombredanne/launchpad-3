@@ -33,19 +33,43 @@ class ImportProcess:
             entry_to_import = translation_import_queue.getFirstEntryToImport()
 
             if entry_to_import is None:
-                # There are no entries to import.
                 # Execute the auto approve algorithm to save Rosetta experts
                 # some work when possible.
-                if translation_import_queue.executeAutomaticReviews(self.ztm):
+                # We know there could be corner cases when an 'optimistic
+                # approval' could import a .po file to the wrong IPOFile (but
+                # the right language) but we take the risk due the amount of
+                # work it will save us. It would be only a problem if for a
+                # given productseries/sourcepackage we have two potemplates on
+                # the same directory with two sets of .po files too and for
+                # some reason, one of the .pot files has not been added to the
+                # queue so we would import both the wrong set of .po files to
+                # that template. This is not a big issue due the low amount of
+                # common msgid that both templates will share and specially
+                # because it's not a common layout on the free software world.
+                if translation_import_queue.executeOptimisticApprovals(self.ztm):
                     self.logger.info(
                         'The automatic approval system approved some entries.'
                         )
 
-                # Remove obsolete entries from the queue.
                 removed_entries = translation_import_queue.cleanUpQueue()
                 if removed_entries > 0:
                     self.logger.info('Removed %d entries from the queue.' %
                         removed_entries)
+                    self.ztm.commit()
+
+                # We need to block entries automatically to save Rosetta
+                # experts some work when a complete set of .po files and a
+                # .pot file should not be imported into the system.
+                # We have the same corner case as with the previous approval
+                # method, but in this case it's a matter of change the status
+                # back from blocked to needs review or approve it directly so
+                # no data will be lost and the amount of work saved is high.
+                blocked_entries = (
+                    translation_import_queue.executeOptimisticBlock())
+                if blocked_entries > 0:
+                    self.logger.info('Blocked %d entries from the queue.' %
+                        blocked_entries)
+                    self.ztm.commit()
                 # Exit the loop.
                 break
 

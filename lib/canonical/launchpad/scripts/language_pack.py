@@ -7,13 +7,9 @@ __metaclass__ = type
 
 import datetime
 import sys
-import tarfile
 import tempfile
-import time
 import transaction
-from StringIO import StringIO
 from shutil import copyfileobj
-from urllib2 import HTTPError
 
 from zope.component import getUtility
 
@@ -22,10 +18,9 @@ from canonical.database.sqlbase import (flush_database_updates, sqlvalues,
     cursor)
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 from canonical.launchpad.components.poexport import (DistroReleasePOExporter,
-    DistroReleaseTarballPOFileOutput)
+    DistroReleaseTarballPOFileOutput, RosettaWriteTarFile)
 from canonical.launchpad.interfaces import IDistributionSet, IVPOExportSet
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad import helpers
 
 def get_distribution(name):
     """Return the distribution with the given name."""
@@ -60,13 +55,18 @@ def iter_sourcepackage_translationdomain_mapping(release):
 
 
 
-def export(distribution_name, release_name, component, update, logger):
-    """Export a distribution's translations into a tarball.
+def export(distribution_name, release_name, component, update, force_utf8,
+    logger):
+    """Return a pair containing a filehandle from which the distribution's
+    translations tarball can be read and the size of the tarball i bytes.
 
-    Returns a pair containing a filehandle from which the exported tarball can
-    be read, and the size of the tarball in bytes.
+    :distribution_name: The name of the distribution.
+    :release_name: The name of the distribution release.
+    :component: The component name from the given distribution release.
+    :update: Whether the export should be an update from the last export.
+    :force_utf8: Whether the export should have all files exported as UTF-8.
+    :logger: The logger object.
     """
-
     release = get_release(distribution_name, release_name)
     exporter = DistroReleasePOExporter(release)
     export_set = getUtility(IVPOExportSet)
@@ -75,8 +75,9 @@ def export(distribution_name, release_name, component, update, logger):
 
     if update:
         if release.datelastlangpack is None:
-            raise ValueError(
-                "Can't create an update language pack without a base date.")
+            # It's the first language pack for this release so the update must
+            # be the released date for the distro release.
+            date = release.datereleased
         else:
             date = release.datelastlangpack
     else:
@@ -89,7 +90,7 @@ def export(distribution_name, release_name, component, update, logger):
     logger.info("Number of PO files to export: %d" % pofile_count)
 
     filehandle = tempfile.TemporaryFile()
-    archive = helpers.RosettaWriteTarFile(filehandle)
+    archive = RosettaWriteTarFile(filehandle)
     pofile_output = DistroReleaseTarballPOFileOutput(release, archive)
 
     for index, pofile in enumerate(pofiles):
@@ -97,9 +98,10 @@ def export(distribution_name, release_name, component, update, logger):
             (pofile.id, index + 1, pofile_count))
 
         try:
-            # We don't want obsolete entries here, it makes no sens for a
+            # We don't want obsolete entries here, it makes no sense for a
             # language pack.
-            contents = pofile.uncachedExport(included_obsolete=False)
+            contents = pofile.uncachedExport(
+                included_obsolete=False, force_utf8=force_utf8)
 
             pofile_output(
                 potemplate=pofile.potemplate,
@@ -153,7 +155,7 @@ def export(distribution_name, release_name, component, update, logger):
 def upload(filename, filehandle, size):
     """Upload a translation tarball to the Librarian.
 
-    Returns the file alias of the uploaded file.
+    Return the file alias of the uploaded file.
     """
 
     uploader = getUtility(ILibrarianClient)
@@ -202,13 +204,14 @@ def send_upload_notification(recipients, distribution_name, release_name,
             % (distribution_name, release_name, components, file_alias))
 
 def export_language_pack(distribution_name, release_name, component, update,
-        output_file, email_addresses, logger):
+        force_utf8, output_file, email_addresses, logger):
 
     # Export the translations to a tarball.
 
     try:
         filehandle, size = export(
-            distribution_name, release_name, component, update, logger)
+            distribution_name, release_name, component, update, force_utf8,
+            logger)
     except:
         # Bare except statements are used in order to prevent premature
         # termination of the script.

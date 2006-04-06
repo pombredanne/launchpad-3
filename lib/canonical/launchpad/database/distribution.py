@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
+__all__ = ['Distribution', 'DistributionSet']
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -9,6 +9,8 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
     SQLObjectNotFound)
+
+from canonical.cachedproperty import cachedproperty
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
@@ -18,7 +20,7 @@ from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.librarian import LibraryFileAlias
@@ -38,16 +40,18 @@ from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishing)
+from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus,
     TranslationPermission, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
@@ -87,12 +91,18 @@ class Distribution(SQLBase, BugTargetBase):
     milestones = SQLMultipleJoin('Milestone', joinColumn='distribution')
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
-    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
-        joinColumn='distribution', orderBy='name')
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+
+    @property
+    def source_package_caches(self):
+        # XXX: should be moved back to SQLMultipleJoin when it supports
+        # prejoin
+        cache = DistributionSourcePackageCache.selectBy(distributionID=self.id,
+                    orderBy="DistributionSourcePackageCache.name")
+        return cache.prejoin(['sourcepackagename'])
 
     @property
     def enabled_official_mirrors(self):
@@ -104,8 +114,10 @@ class Distribution(SQLBase, BugTargetBase):
     def enabled_mirrors(self):
         return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
 
-    @property
+    @cachedproperty
     def releases(self):
+        # This is used in a number of places and given it's already
+        # listified, why not spare the trouble of regenerating?
         ret = DistroRelease.selectBy(distributionID=self.id)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
@@ -175,6 +187,9 @@ class Distribution(SQLBase, BugTargetBase):
 
     @property
     def currentrelease(self):
+        # XXX: this should be just a selectFirst with a case in its
+        # order by clause -- kiko, 2006-03-18
+
         # If we have a frozen one, return that.
         for rel in self.releases:
             if rel.releasestatus == DistributionReleaseStatus.FROZEN:
@@ -204,14 +219,13 @@ class Distribution(SQLBase, BugTargetBase):
     def bugCounter(self):
         counts = []
 
-        severities = [
-            BugTaskStatus.NEW,
-            BugTaskStatus.ACCEPTED,
-            BugTaskStatus.REJECTED,
-            BugTaskStatus.FIXED]
+        severities = [BugTaskStatus.NEW,
+                      BugTaskStatus.ACCEPTED,
+                      BugTaskStatus.REJECTED,
+                      BugTaskStatus.FIXED]
 
-        query = ("bugtask.distribution = %s AND "
-                 "bugtask.bugstatus = %i")
+        query = ("BugTask.distribution = %s AND "
+                 "BugTask.bugstatus = %i")
 
         for severity in severities:
             query = query % (quote(self.id), severity)
@@ -266,8 +280,10 @@ class Distribution(SQLBase, BugTargetBase):
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        return Specification.selectBy(distributionID=self.id,
+        results = Specification.selectBy(distributionID=self.id,
             orderBy=order)[:quantity]
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -276,14 +292,15 @@ class Distribution(SQLBase, BugTargetBase):
     def tickets(self, quantity=None):
         """See ITicketTarget."""
         return Ticket.select("""
-            distribution = %s
+            Ticket.distribution = %s
             """ % sqlvalues(self.id),
-            orderBy='-datecreated',
+            orderBy='-Ticket.datecreated',
+            prejoins=['distribution', 'owner', 'sourcepackagename'],
             limit=quantity)
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner,
             distribution=self)
 
@@ -298,6 +315,36 @@ class Distribution(SQLBase, BugTargetBase):
         if ticket.target != self:
             return None
         return ticket
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return False
+        SupportContact(
+            product=None, person=person.id,
+            sourcepackagename=None, distribution=self)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOne(
+            "distribution = %d AND person = %d"
+            " AND sourcepackagename IS NULL" % (self.id, person.id))
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.select(
+            """distribution = %d AND sourcepackagename IS NULL""" % self.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
@@ -332,21 +379,23 @@ class Distribution(SQLBase, BugTargetBase):
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
         if source:
-            candidate = SourcePackageFilePublishing.selectOneBy(
-                distribution=self.id,
-                libraryfilealiasfilename=filename)
-            if candidate is not None:
-                return LibraryFileAlias.get(candidate.libraryfilealias)
+            candidate = SourcePackageFilePublishing.selectFirstBy(
+                distribution=self.id, libraryfilealiasfilename=filename,
+                orderBy=['id'])
+
         if binary:
-            candidate = BinaryPackageFilePublishing.selectOneBy(
+            candidate = BinaryPackageFilePublishing.selectFirstBy(
                 distribution=self.id,
-                libraryfilealiasfilename=filename)
-            if candidate is not None:
-                return LibraryFileAlias.get(candidate.libraryfilealias)
+                libraryfilealiasfilename=filename,
+                orderBy=["-id"])
+
+        if candidate is not None:
+            return LibraryFileAlias.get(candidate.libraryfilealias)
+
         raise NotFoundError(filename)
 
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords"""
         # Find out the distroarchreleases in question.
         arch_ids = []
@@ -355,7 +404,7 @@ class Distribution(SQLBase, BugTargetBase):
             arch_ids += [arch.id for arch in release.architectures]
 
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status)
+        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status, name)
 
     def removeOldCacheItems(self):
         """See IDistribution."""
@@ -459,16 +508,20 @@ class Distribution(SQLBase, BugTargetBase):
 
     def searchSourcePackages(self, text):
         """See IDistribution."""
+        # The query below tries exact matching on the source package
+        # name as well; this is because source package names are
+        # notoriously bad for fti matching -- they can contain dots, or
+        # be short like "at", both things which users do search for.
         dspcaches = DistributionSourcePackageCache.select("""
             distribution = %s AND
-            fti @@ ftq(%s)
-            """ % sqlvalues(self.id, text),
+            (fti @@ ftq(%s) OR
+             DistributionSourcePackageCache.name = %s)
+            """ % sqlvalues(self.id, text, text),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
+            prejoins=["sourcepackagename"],
             distinct=True)
-        return [DistributionSourcePackage(
-            distribution=self,
-            sourcepackagename=dspc.sourcepackagename) for dspc in dspcaches]
+        return [dspc.distributionsourcepackage for dspc in dspcaches]
 
     def getPackageNames(self, pkgname):
         """See IDistribution"""
@@ -580,11 +633,4 @@ class DistributionSet:
             members=members,
             owner=owner)
 
-class DistroPackageFinder:
-
-    implements(IDistroPackageFinder)
-
-    def __init__(self, distribution=None, processorfamily=None):
-        self.distribution = distribution
-        # XXX kiko: and what about processorfamily?
 

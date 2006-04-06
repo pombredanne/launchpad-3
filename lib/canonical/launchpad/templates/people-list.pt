@@ -1,56 +1,45 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="view/header">People/Teams/Ubunteros in Launchpad</h1>
+    </metal:heading>
 
-<body>
+<div metal:fill-slot="main"
+     tal:define="bn view/getList">
 
-<div metal:fill-slot="main">
-
-  <h1 tal:content="view/header"></h1>
-
-  <tal:block tal:define="bn view/getList;
-                         prev_url bn/prevBatchURL;
-                         next_url bn/nextBatchURL;">
+  <h1 tal:content="view/header" />
 
   <table>
-    <tr tal:repeat="person bn/currentBatch">      
+    <tr>
+      <td>
+        <tal:navigation
+         replace="structure bn/@@+navigation-links" />
+      </td>
+    </tr>
+    <tr tal:repeat="person bn/currentBatch">
       <td>
         <a tal:condition="person/browsername"
            tal:content="string: ${person/browsername} (${person/name})"
            tal:attributes="href person/name" />
 
         <a tal:condition="not: person/browsername"
-           tal:content="person/browsername"
+           tal:content="person/name"
            tal:attributes="href person/name" />
      </td>
-    </tr>    
+    </tr>
     <tr>
-    <td align="center">
-    <fieldset tal:condition="python:prev_url or next_url">
-    <div>
-    	  <table>
-	  <tr>
-          <th tal:condition="prev_url">
-	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
-	  </th>
-          <th tal:repeat="page_link bn/batchPageURLs">
-	     <a tal:attributes="href python:page_link.values()[0]"
-                tal:content="python:page_link.keys()[0]"></a>
-	  </th>
-          <th tal:condition="next_url" >
-	     <a tal:attributes="href next_url"><b>Next >></b></a>
-          </th>
-          </tr>
-	  </table>
-     </div>
-     </fieldset>
-    </td>
+      <td>
+        <tal:navigation
+         tal:condition="bn/currentBatch"
+         replace="structure bn/@@+navigation-links" />
+      </td>
     </tr>
   </table>
-  </tal:block>
 
- 
 </div>
 
 </body>

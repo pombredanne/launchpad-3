@@ -5,7 +5,7 @@ Builder View Classes and Pages
   >>> from zope.component import queryView
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.interfaces import IBuilderSet
-  >>> from canonical.lp.interfaces import IBatchNavigator
+  >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
 
   >>> builder = getUtility(IBuilderSet).get(1)
 
@@ -30,7 +30,7 @@ As expected we have a 'batched' list with the size requested in
 mock_form:
 
   >>> len(builder_view.batchnav.currentBatch())
-  2
+  4
 
 Let's instantiate the view for +cancel:
 
