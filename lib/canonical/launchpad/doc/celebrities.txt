@@ -12,21 +12,33 @@ which we want to give easy access to in the code.
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> celebs = getUtility(ILaunchpadCelebrities)
 
+The admins team will be renamed to the 'super' team in due course.  Meanwhile,
+we need to have the admins team in ILaunchpadCelebrities.
+
   >>> personset = getUtility(IPersonSet)
+  >>> admins = personset.getByName('admins')
+  >>> celebs.admin.__class__ == admins.__class__
+  True
+  >>> celebs.admin.id == admins.id
+  True
+
+The vcs-imports celebrity owns the branches created by importd.
+
   >>> vcs_imports = personset.getByName('vcs-imports')
   >>> celebs.vcs_imports.__class__ == vcs_imports.__class__
   True
   >>> celebs.vcs_imports.id == vcs_imports.id
   True
 
-The admins team will be renamed to the 'super' team in due course.  Meanwhile,
-we need to have the admins team in ILaunchpadCelebrities.
+The registry celebrity has permissions to perform registry gardening
+operations.
 
-  >>> admins = personset.getByName('admins')
-  >>> celebs.admin.__class__ == admins.__class__
+  >>> registry = personset.getByName('registry')
+  >>> celebs.registry.__class__ == registry.__class__
   True
-  >>> celebs.admin.id == admins.id
+  >>> celebs.registry.id == registry.id
   True
+
 
   TODO: add interface verification test.
         ask debonzi to add these in general.
