@@ -313,9 +313,7 @@ class AffectsEmailCommand(EmailCommand):
     """Either creates a new task, or edits an existing task."""
 
     implements(IBugTaskEmailCommand)
-    _subCommandNames = ['status', 'importance', 'assignee']
-    _subObsoleteCommandNames = ['severity', 'priority']
-    # XXX mpt 20060401: Remove _subObsoleteCommandNames after a month.
+    _numberOfArguments = 1
 
     def execute(self, bug):
         """See IEmailCommand."""
@@ -349,34 +347,6 @@ class AffectsEmailCommand(EmailCommand):
         if bugtask is None:
             bugtask = self._create_bug_task(bug, bug_target)
             event = SQLObjectCreatedEvent(bugtask)
-
-        # Process the sub commands.
-        while len(string_args) > 0:
-            # Get the sub command name.
-            subcmd_name = string_args.pop(0)
-            # Get the sub command's argument
-            try:
-                subcmd_args = [string_args.pop(0)]
-            except IndexError:
-                # Let the sub command handle the error.
-                subcmd_args = []
-
-            if subcmd_name not in self._subCommandNames:
-                # XXX mpt 20060401:
-                # Remove _subObsoleteCommandNames after a month.
-                if subcmd_name in self._subObsoleteCommandNames:
-                    raise EmailProcessingError(
-                        get_error_message(
-                            'bug-importance.txt',
-                            argument=subcmd_name))
-                else:
-                    raise EmailProcessingError(
-                        get_error_message(
-                            'affects-unexpected-argument.txt',
-                            argument=subcmd_name))
-
-            command = emailcommands.get(subcmd_name, subcmd_args)
-            bugtask, event = command.execute(bugtask, event)
 
         return bugtask, event
 
@@ -485,6 +455,15 @@ class ImportanceEmailCommand(DBSchemaEditEmailCommand):
     dbschema = BugTaskImportance
 
 
+class ReplacedByImportanceCommand(EmailCommand):
+    """This command has been replaced by the 'importance' command."""
+    implements(IBugTaskEditEmailCommand)
+
+    def execute(self, context, current_event):
+        raise EmailProcessingError(
+                get_error_message('bug-importance.txt', argument=self.name))
+
+
 class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
 
@@ -502,8 +481,9 @@ class EmailCommands:
         'assignee': AssigneeEmailCommand,
         'status': StatusEmailCommand,
         'importance': ImportanceEmailCommand,
+        'severity': ReplacedByImportanceCommand,
+        'priority': ReplacedByImportanceCommand,
     }
-    _obsoleteCommands = ['priority', 'severity']
 
     def names(self):
         """Returns all the command names."""
@@ -517,11 +497,7 @@ class EmailCommands:
         """
         command_class = self._commands.get(name)
         if command_class is None:
-            if name in self._obsoleteCommands:
-                raise EmailProcessingError(
-                    get_error_message('bug-importance.txt'))
-            else:
-                raise NoSuchCommand(name)
+            raise NoSuchCommand(name)
         return command_class(name, string_args)
 
 emailcommands = EmailCommands()

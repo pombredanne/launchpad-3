@@ -658,6 +658,14 @@ affects $path [assignee $name|$email]
               [status $status]
               [importance $importance]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+XXX: This section should be split into four different sections, one for
+     each command. It used to be possible to write
+     'affects /foo status confirmed', but it's not anymore.  'affects',
+     'status', 'importance' and 'assignee' are different commands, and
+     they need to be on separate lines. There's no such thing as a sub
+     command anymore.  -- Bjorn Tillenius, 2006-04-06
+
 Change the state of a bug in a specific context. $path can be of
 the following form:
 
@@ -698,8 +706,9 @@ We can change the assignee, status, and importance using the sub
 commands. It's possible to have these sub commands on separate lines:
 
     >>> submit_commands(
-    ...     bug_four, 'affects /distros/debian importance critical',
-    ...     'status confirmed', 'assignee test@canonical.com')
+    ...     bug_four, 'affects /distros/debian',
+    ...     'importance critical','status confirmed',
+    ...     'assignee test@canonical.com')
 
     >>> len(bug_four.bugtasks)
     2
@@ -737,7 +746,8 @@ together:
 
     >>> submit_commands(
     ...     bug_four,
-    ...     'affects /products/firefox importance critical',
+    ...     'affects /products/firefox',
+    ...     'importance critical',
     ...     'subscribe no-priv',
     ...     'status confirmed', 'assignee test@canonical.com')
 
