@@ -118,7 +118,7 @@ def construct_email_notification(bug_notifications):
     for bugtask in bug.bugtasks:
         msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
 
-    return bug_notifications, notified_addresses, msg
+    return bug_notifications, sorted(notified_addresses), msg
 
 
 def get_email_notifications(bug_notifications, date_emailed=None):
