@@ -420,9 +420,6 @@
         <browser:page
             name="+all"
             template="../templates/products-all.pt" />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/productset-portlet-details.pt" />
     </browser:pages>
 
     <browser:pages

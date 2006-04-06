@@ -539,7 +539,7 @@ class ProductSetView:
             except NotFoundError:
                 product = None
             if product is not None:
-                self.request.response.redirect(product.name)
+                self.request.response.redirect(canonical_url(product))
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match
