@@ -24,7 +24,7 @@
     </tr>
   </thead>
 
-  <tbody>
+  <tbody class="lesser">
     <tal:request repeat="bugtask context/bugtasks">
       <tal:whatever define="shouldExpand python:bugtask == view.currentBugTask() and view.user">
         <tr tal:define="tasklink python: view.taskLink(bugtask)"
