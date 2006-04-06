@@ -7,6 +7,7 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
@@ -40,7 +41,9 @@
         <td><a tal:content="spec/name/fmt:shorten/35"
                tal:attributes="
                  href spec/fmt:url;
-                 title spec/title">foo-bar-baz</a></td>
+                 title spec/title">foo-bar-baz</a>
+            <img src="/@@/info" tal:condition="spec/informational" />
+        </td>
         <td>
           <span class="sortkey" tal:content="spec/status/sortkey" />
           <span tal:content="spec/status/title"

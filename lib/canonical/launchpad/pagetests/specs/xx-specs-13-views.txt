@@ -1,6 +1,37 @@
 
-We should be able to see a "+portlet-latest-specs" view on sprint, product and
-distribution.
+We should be able to see a "+specs" and a "+portlet-latest-specs" view
+on sprint, product, person, project and distribution.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+portlet-latest-specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+portlet-latest-specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/+portlet-latest-specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /people/carlos/+portlet-latest-specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /sprints/ubz/+portlet-latest-specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
 
   >>> print http(r"""
   ... GET /products/firefox/+specs HTTP/1.1
@@ -10,6 +41,18 @@ distribution.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/+specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /people/carlos/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

@@ -510,6 +510,8 @@ person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
 person_review = ContextDisplayName("Review %s")
 
+person_specs = ContextDisplayName('Specification listing for %s')
+
 person_specworkload = ContextDisplayName('Specification workload for %s')
 
 person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')

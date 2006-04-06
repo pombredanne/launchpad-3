@@ -274,10 +274,10 @@ class Person(SQLBase):
                 )
             """ % {'my_id': self.id}
 
-        if sort is None or sort == SpecificationSort.DATE:
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name', 'id']
+        elif sort == SpecificationSort.DATE:
             order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
         else:
             raise AssertionError('Unknown sort %s' % sort)
 

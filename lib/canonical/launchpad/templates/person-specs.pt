@@ -26,7 +26,6 @@
         <th>Status</th>
         <th>Delivery</th>
         <th>Assignee</th>
-        <th tal:content="view/goaltitle">Hack!</th>
       </tr>
     </thead>
     <tbody class="lesser">
@@ -56,13 +55,6 @@
              tal:attributes="href spec/assignee/fmt:url"
              tal:content="spec/assignee/browsername">
             Carlos Perello Marin
-          </a>
-        </td>
-        <td>
-          <a tal:condition="spec/has_release_goal"
-             tal:attributes="href spec/goal/fmt:url"
-             tal:content="spec/goal/name">
-            Ubuntu 6.04
           </a>
         </td>
       </tr>

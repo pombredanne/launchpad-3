@@ -354,7 +354,7 @@
     with.-->
     <browser:page
         name="+specs"
-        template="../templates/specificationtarget-index.pt" />
+        template="../templates/person-specs.pt" />
   </browser:pages>
 
   <browser:pages

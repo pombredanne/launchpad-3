@@ -15,7 +15,8 @@
       set_attributes="title summary status specurl needs_discussion
                       superseded_by milestone productseries distrorelease
                       product distribution approver assignee drafter
-                      whiteboard man_days delivery goalstatus" />
+                      whiteboard man_days delivery goalstatus
+                      informational" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved name" />
@@ -144,7 +145,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Edit summary and title"
-    fields="title specurl summary whiteboard"
+    fields="title specurl summary informational whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-edit.pt">
     <browser:widget
