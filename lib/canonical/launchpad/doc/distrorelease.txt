@@ -104,7 +104,7 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> warty = DistroRelease.get(1)
     >>> bpp = warty.getBinaryPackagePublishing()
     >>> print bpp.count()
-    2
+    4
     >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
     mozilla-firefox
     >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
@@ -119,6 +119,23 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> bpp = warty.getBinaryPackagePublishing(sourcename="nosuchsource")
     >>> print bpp.count()
     0
+
+Package searching
+-----------------
+
+You can search through binary packages publishing in a distribution
+release by using the searchPackages method, which uses magical fti:
+
+    >>> len(warty.searchPackages("pmount"))
+    1
+
+This also works for small or weirdly named packages that don't work
+through fti:
+
+    >>> len(warty.searchPackages("linux-2.6.12"))
+    1
+    >>> len(warty.searchPackages("at"))
+    1
 
 CVE BugTasks on a Distro Release
 --------------------------------
