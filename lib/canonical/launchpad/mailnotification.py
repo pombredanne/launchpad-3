@@ -538,11 +538,11 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
             body=body, headers=headers)
 
 
-def send_bug_duplicate_notification(duplicate_bug, user):
-    """Send a notification that a bug was marked a dup of a bug.
+def add_bug_duplicate_notification(duplicate_bug, user):
+    """Add a notification that a bug was marked a dup of a bug.
 
-    The email is sent the duplicate_bug.duplicateOf's subscribers
-    telling them which bug ID has been marked as a dup of their bug.
+    An email will be sent the duplicate_bug.duplicateOf's subscribers
+    telling them which bug has been marked as a dup of their bug.
     duplicate_bug is an IBug whose .duplicateof is not
     None.
     """
@@ -703,7 +703,7 @@ def notify_bug_modified(modified_bug, event):
     if bug_delta.duplicateof is not None:
         # This bug was marked as a duplicate, so notify the dup
         # target subscribers of this as well.
-        send_bug_duplicate_notification(
+        add_bug_duplicate_notification(
             duplicate_bug=bug_delta.bug,
             user=event.user)
 
