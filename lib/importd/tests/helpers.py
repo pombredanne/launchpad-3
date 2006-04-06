@@ -49,6 +49,8 @@ __all__ = [
 class SandboxHelper(object):
 
     def setUp(self):
+        # overriding HOME and clearing EDITOR is part of the standard
+        # boilerplate to set up a baz sandbox.
         self.here = os.getcwd()
         self.home_dir = os.environ.get('HOME')
         self.saved_editor = os.environ.get('EDITOR')

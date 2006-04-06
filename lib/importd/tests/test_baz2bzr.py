@@ -96,7 +96,7 @@ class Baz2bzrTestCase(unittest.TestCase):
         self.sandbox_helper.tearDown()
         self.series_helper.tearDown()
 
-    def extractCannedArchive(self, number):
+    def extractCannedArchive(self, name):
         """Extract the canned archive with the given sequence number.
 
         Remove any previously extracted canned archive.
@@ -104,13 +104,13 @@ class Baz2bzrTestCase(unittest.TestCase):
         basedir = os.path.dirname(__file__)
         # Use the saved cwd to turn __file__ into an absolute path
         basedir = os.path.join(self.sandbox_helper.here, basedir)
-        tarball = os.path.join(basedir, 'importd@example.com-%d.tgz' % number)
+        tarball = os.path.join(basedir, 'importd@example.com-%s.tgz' % name)
         target_dir = self.sandbox_helper.path('archives')
         archive_path = os.path.join(target_dir, 'importd@example.com')
         if os.path.isdir(archive_path):
             shutil.rmtree(archive_path)
         retcode = call(['tar', 'xzf', tarball], cwd=target_dir)
-        assert retcode == 0, 'failed to extract canned archive %d' % number
+        assert retcode == 0, 'failed to extract canned archive %s' % name
 
     def registerCannedArchive(self):
         """Register a canned archive created by extractCannedArchive."""
@@ -283,30 +283,7 @@ class Baz2bzrTestCase(unittest.TestCase):
         
 
 class TestBaz2bzrImportFeature(Baz2bzrTestCase):
-
-    def test_conversion(self):
-        # test the initial import
-        self.extractCannedArchive(1)
-        self.registerCannedArchive()
-        self.callBaz2bzr(['-q', str(self.series_id), '/dev/null'])
-        branch = self.bzrBranch(self.bzrworking)
-        self.assertHistoryMatchesExpectedTwo(branch)
-        # test updating the bzr branch
-        self.extractCannedArchive(2)
-        self.callBaz2bzr(['-q', str(self.series_id), '/dev/null'])
-        self.assertHistoryMatchesExpectedThree(branch)
-
-    def test_pipe_output(self):
-        self.extractCannedArchive(1)
-        self.registerCannedArchive()
-        output = self.pipeBaz2bzr([str(self.series_id), '/dev/null'])
-        self.assertEqual(output, '\n'.join(self.expected_lines))
-
-    def test_pty_output(self):
-        self.extractCannedArchive(1)
-        self.registerCannedArchive()
-        output = self.ptyBaz2bzr([str(self.series_id), '/dev/null'])
-        self.assertEqual(output, '\r\n'.join(self.expected_lines))
+    """Test integration of baz2bzr with bzrtools.baz_import."""
 
     # expected_lines should be a reasonable amount of progress output. Enough
     # for the process no to spin for 20 minutes without producing output (and
@@ -320,8 +297,34 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
         'Import complete.',
         ''] # empty item denotes final newline
 
+    def test_conversion(self):
+        # Initial conversion creates a bzr branch
+        self.extractCannedArchive('two-revisions')
+        self.registerCannedArchive()
+        self.callBaz2bzr(['-q', str(self.series_id), '/dev/null'])
+        branch = self.bzrBranch(self.bzrworking)
+        self.assertHistoryMatchesExpectedTwo(branch)
+
+        # If the Arch branch has new revisions, subsequent conversion appends
+        # new revisions to the bzr branch
+        self.extractCannedArchive('three-revisions')
+        self.callBaz2bzr(['-q', str(self.series_id), '/dev/null'])
+        self.assertHistoryMatchesExpectedThree(branch)
+
+    def test_pipe_output(self):
+        self.extractCannedArchive('two-revisions')
+        self.registerCannedArchive()
+        output = self.pipeBaz2bzr([str(self.series_id), '/dev/null'])
+        self.assertEqual(output, '\n'.join(self.expected_lines))
+
+    def test_pty_output(self):
+        self.extractCannedArchive('two-revisions')
+        self.registerCannedArchive()
+        output = self.ptyBaz2bzr([str(self.series_id), '/dev/null'])
+        self.assertEqual(output, '\r\n'.join(self.expected_lines))
+
     def test_blacklist(self):
-        self.extractCannedArchive(1)
+        self.extractCannedArchive('two-revisions')
         self.registerCannedArchive()
         blacklist_path = self.sandbox_helper.path('blacklist')
         blacklist_file = open(blacklist_path, 'w')
@@ -336,6 +339,12 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
 
 
 class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
+    """Test publishing and registration of the branch produced by baz_import.
+
+    These tests effectively subsume their counterparts in
+    TestBaz2bzrImportFeature, but further factorisation would obscure the
+    logic. Most of the code is already factored out in Baz2bzrTestCase.
+    """
 
     def setUp(self):
         Baz2bzrTestCase.setUp(self)
@@ -346,11 +355,18 @@ class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
         return self.series_helper.getTestSeries()
     
     def test_publish(self):
-        # test the initial publishing
-        self.extractCannedArchive(1)
+        # baz2bzr pushes to a mirror branch (and creates it if it does not
+        # exist), and, if necessary, register the branch in Launchpad and
+        # associate it to the ProductSeries that contains the VCS details.
+        self.extractCannedArchive('two-revisions')
         self.registerCannedArchive()
         self.callBaz2bzr([
             '-q', str(self.series_id), '/dev/null', self.mirror_prefix])
+        # XXX: The bazb2zr script modifies the database and the rest of the
+        # test checks those modifications. At this point in the test we have
+        # not (as far as I know) started any transaction, so
+        # flush_database_caches merely tells SQLObject to stop being stupid.
+        # Removing it breaks the test. -- David Allouche 2005-04-06
         flush_database_caches()
         self.assertNotEqual(self.getTestSeries().branch, None)
         branch_id = self.getTestSeries().branch.id
@@ -359,21 +375,22 @@ class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
         self.failUnless(os.path.isdir(mirror_path))
         branch = self.bzrBranch(mirror_path)
         self.assertHistoryMatchesExpectedTwo(branch)
-        # test updating the bzr branch
-        self.extractCannedArchive(2)
+        # If the Arch branch has new revisions, the new bzr revisions are
+        # pushed to the existing mirror branch.
+        self.extractCannedArchive('three-revisions')
         self.callBaz2bzr([
             '-q', str(self.series_id), '/dev/null', self.mirror_prefix])
         self.assertHistoryMatchesExpectedThree(branch)
 
     def test_pipe_output(self):
-        self.extractCannedArchive(1)
+        self.extractCannedArchive('two-revisions')
         self.registerCannedArchive()
         output = self.pipeBaz2bzr([
             str(self.series_id), '/dev/null', self.mirror_prefix])
         self.assertEqual(output, '\n'.join(self.expected_lines))
 
     def test_pty_output(self):
-        self.extractCannedArchive(1)
+        self.extractCannedArchive('two-revisions')
         self.registerCannedArchive()
         output = self.ptyBaz2bzr([
             str(self.series_id), '/dev/null', self.mirror_prefix])
@@ -398,18 +415,18 @@ class TestBlacklistParser(unittest.TestCase):
         result = baz2bzr.parse_blacklist(stringio)
         self.assertEqual(list(result), expected)
 
-    def test_one(self):
+    def test_no_entry(self):
+        self.assertBlacklistParses('', [])
+        self.assertBlacklistParses('\n', [])
+        self.assertBlacklistParses(' \n', [])
+
+    def test_one_entry(self):
         self.assertBlacklistParses('foo\n', ['foo'])
         self.assertBlacklistParses('foo', ['foo'])
         self.assertBlacklistParses('\nfoo', ['foo'])
         self.assertBlacklistParses(' foo \n', ['foo'])
 
-    def test_empty(self):
-        self.assertBlacklistParses('', [])
-        self.assertBlacklistParses('\n', [])
-        self.assertBlacklistParses(' \n', [])
-
-    def test_two(self):
+    def test_two_entries(self):
         self.assertBlacklistParses('foo\nbar\n', ['foo', 'bar'])
         self.assertBlacklistParses('foo\nbar', ['foo', 'bar'])
         self.assertBlacklistParses('foo\n\nbar\n', ['foo', 'bar'])
@@ -456,11 +473,17 @@ class TestBranch(unittest.TestCase):
         return self.series_helper.getTestSeries()
 
     def testBranchFromSeries(self):
+        # Initially, our test series has no branch
         self.assertEqual(self.getTestSeries().branch, None)
+        # Calling branch_from_series on a series with no branch will create a
+        # branch. The new branch is returned, and can also be accessed via the
+        # "branch" attribute of the series.
         branch = baz2bzr.branch_from_series(self.series)
         self.assertEqual(self.getTestSeries().branch, branch)
+        # Subsequent calls to branch_from_series will return the already
+        # existing branch object.
         branch2 = baz2bzr.branch_from_series(self.series)
-        self.assertEqual(branch2, branch)
+        self.assert_(branch2 is branch)
         self.assertEqual(branch2, self.getTestSeries().branch)
 
     def testCreateBranchForSeries(self):

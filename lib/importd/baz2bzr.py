@@ -107,7 +107,7 @@ def main(args):
     progress_bar = bzrlib.ui.ui_factory.progress_bar()
     printer = make_printer(quiet)
     baz_import.import_version(
-        to_location, from_branch, printer, 
+        to_location, from_branch, printer,
         max_count=None, reuse_history_from=[],
         progress_bar=progress_bar)
     if push_prefix is None:
@@ -135,6 +135,18 @@ def bzr_push(from_location, to_location):
 
 
 def arch_from_series(series):
+    """Arch branch name used by the first vcs->arch stage.
+
+    Technically, this is an Arch version name. This name is either explicitely
+    (and manually) specified in the series, or is computed from the series id.
+
+    baz2bzr converts this Arch version to bzr using baz_import.
+
+    :param series: ProductSeries database object specifying a VCS import.
+    :return: Arch version name as a string
+    """
+    # XXX: This must stay consistent with importd.Job.Job._arch_from_series
+    # because we are breaking DNRY -- David Allouche 2006-04-06
     if series.targetarcharchive is None:
         assert series.targetarchcategory is None
         assert series.targetarchbranch is None
@@ -149,18 +161,28 @@ def arch_from_series(series):
 
 
 def branch_from_series(series):
+    """Retrieve or create the Branch registration for the VCS import.
+
+    :param series: ProductSeries database object specifying a VCS import.
+    :return: Branch database object used to publish that VCS import.
+    """
     if series.branch is None:
         series.branch = create_branch_for_series(series)
     return series.branch
 
 
 def create_branch_for_series(series):
+    """Create the Branch registration for the VCS import.
+
+    :param series: ProductSeries database object specifying a VCS import.
+    :return: Branch database object used to publish that VCS import.
+    """
     name = series.name
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     product = series.product
     branch = getUtility(IBranchSet).new(name, vcs_imports, product, url=None)
     return branch
-        
+
 
 def is_in_blacklist(from_branch, blacklist_path):
     blacklist = open(blacklist_path)

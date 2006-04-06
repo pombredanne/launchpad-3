@@ -168,6 +168,8 @@ class Job:
         If the importstatus is TESTING, and some arch namespace details are not
         filled in, we generate them.
         """
+        # XXX: This must stay consistent with importd.baz2bzr.arch_from_series
+        # because we are breaking DNRY -- David Allouche 2006-04-06
         archive = series.targetarcharchive
         category = series.targetarchcategory
         branch = series.targetarchbranch
