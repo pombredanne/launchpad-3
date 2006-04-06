@@ -56,5 +56,27 @@ ALTER TABLE ProductSeries DROP COLUMN displayname;
 
 ALTER TABLE ProductRelease RENAME COLUMN title TO codename;
 
+/* Informational Specs
+   Some specifications are never implemented, they are just "informational"
+   and describe how part of the system is supposed to be used. We currently
+   flag those with a status value, but it is really a separate property of
+   the spec. So let's go to that model.
+
+   The dbschema value for Informational (was) 55.
+
+*/
+
+ALTER TABLE Specification ADD COLUMN informational boolean;
+UPDATE Specification SET informational=FALSE;
+UPDATE Specification SET informational=TRUE, status=10, delivery=90
+    WHERE status=55;
+ALTER TABLE Specification ALTER COLUMN informational SET DEFAULT False;
+ALTER TABLE Specification ALTER COLUMN informational SET NOT NULL;
+
+COMMENT ON COLUMN Specification.informational IS 'An indicator as to whether
+or not the spec is purely informational, or is actually supposed to be
+implemented. High level overview specs, for example, are often marked
+"informational" and will be considered implemented once the spec is approved.';
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 79, 0);
 

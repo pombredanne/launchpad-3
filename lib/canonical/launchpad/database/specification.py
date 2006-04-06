@@ -74,6 +74,7 @@ class Specification(SQLBase):
     whiteboard = StringCol(notNull=False, default=None)
     needs_discussion = BoolCol(notNull=True, default=True)
     direction_approved = BoolCol(notNull=True, default=False)
+    informational = BoolCol(notNull=True, default=False)
     man_days = IntCol(notNull=False, default=None)
     delivery = EnumCol(schema=SpecificationDelivery, notNull=True,
         default=SpecificationDelivery.UNKNOWN)
@@ -178,14 +179,16 @@ class Specification(SQLBase):
     @property
     def is_complete(self):
         """See ISpecification."""
-        return self.status in [
-            SpecificationStatus.INFORMATIONAL,
-            SpecificationStatus.OBSOLETE,
-            SpecificationStatus.SUPERSEDED,
-            ] or self.delivery in [
-            SpecificationDelivery.IMPLEMENTED,
-            SpecificationDelivery.AWAITINGDEPLOYMENT
-            ]
+        return (self.status in [
+                    SpecificationStatus.OBSOLETE,
+                    SpecificationStatus.SUPERSEDED,
+                    ]
+                or self.delivery in [
+                    SpecificationDelivery.IMPLEMENTED,
+                    SpecificationDelivery.AWAITINGDEPLOYMENT
+                    ]
+                or (self.informational is True and
+                    self.status == SpecificationStatus.APPROVED))
 
     @property
     def is_blocked(self):

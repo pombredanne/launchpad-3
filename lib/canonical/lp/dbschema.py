@@ -1421,14 +1421,6 @@ class SpecificationStatus(DBSchema):
         presentation/UI issues.
         """)
 
-    INFORMATIONAL = Item(55, """
-        Informational
-
-        This specification does not need to be implemented. It is an
-        overview, or documentation spec, that describes high level behaviour
-        and links to actual specifications for implementation.
-        """)
-
     SUPERSEDED = Item(60, """
         Superseded
 
