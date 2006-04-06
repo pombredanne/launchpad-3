@@ -30,7 +30,12 @@ def update_bugtask_targetname_caches():
                        implicitBegin=False)
     bugtaskset = getUtility(IBugTaskSet)
     ztm.begin()
-    bugtask_ids = [bugtask.id for bugtask in bugtaskset]
+    # XXX: we use a special API here, which is kinda klunky, but which
+    # allows us to return all bug tasks (even private ones); this should
+    # eventually be changed to a more elaborate permissions scheme,
+    # pending the infrastructure to do so
+    #   -- kiko, 2006-03-23
+    bugtask_ids = [bugtask.id for bugtask in bugtaskset.dangerousGetAllTasks()]
     ztm.commit()
     for bugtask_id in bugtask_ids:
         ztm.begin()

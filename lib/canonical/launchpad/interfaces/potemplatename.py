@@ -6,6 +6,7 @@ from zope.schema import TextLine, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 
 __metaclass__ = type
@@ -74,6 +75,7 @@ class IPOTemplateName(Interface):
     name = POTemplateNameNameField(
         title=_("PO Template Name"),
         description=_("For example 'nautilus'."),
+        constraint=name_validator,
         required=True)
 
     title = TextLine(

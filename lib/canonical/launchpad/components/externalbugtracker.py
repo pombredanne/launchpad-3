@@ -111,9 +111,11 @@ class ExternalBugTracker:
             except BugNotFound:
                 not_found_bugs.append(bug_id)
                 continue
-            if new_remote_status != bug_watch.remotestatus:
-                malone_status = self.convertRemoteStatus(new_remote_status)
-                bug_watch.updateStatus(new_remote_status, malone_status)
+            new_malone_status = self.convertRemoteStatus(new_remote_status)
+            old_malone_status = self.convertRemoteStatus(bug_watch.remotestatus)
+            if (new_remote_status != bug_watch.remotestatus or
+                new_remote_status != old_malone_status):
+                bug_watch.updateStatus(new_remote_status, new_malone_status)
 
         for not_found_id in not_found_bugs:
             log.warn(
@@ -180,13 +182,15 @@ class Bugzilla(ExternalBugTracker):
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
         """
+        if not remote_status:
+            return BugTaskStatus.UNKNOWN
         if ' ' in remote_status:
             remote_status, resolution = remote_status.split(' ', 1)
         else:
             resolution = ''
 
         if remote_status == 'ASSIGNED':
-           malone_status = BugTaskStatus.CONFIRMED
+           malone_status = BugTaskStatus.INPROGRESS
         elif remote_status == 'NEEDINFO':
             malone_status = BugTaskStatus.NEEDSINFO
         elif remote_status == 'PENDINGUPLOAD':
@@ -200,7 +204,9 @@ class Bugzilla(ExternalBugTracker):
                 #     if we don't know of the resolution. Bug 31745.
                 #     -- Bjorn Tillenius, 2005-02-03
                 malone_status = BugTaskStatus.REJECTED
-        elif remote_status in ['UNCONFIRMED', 'REOPENED', 'NEW', 'UPSTREAM']:
+        elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM']:
+            malone_status = BugTaskStatus.CONFIRMED
+        elif remote_status in ['UNCONFIRMED']:
             malone_status = BugTaskStatus.UNCONFIRMED
         else:
             if remote_status != 'UNKNOWN':
@@ -312,6 +318,8 @@ class DebBugs(ExternalBugTracker):
         optional tags. The tags are also separated with a space
         character.
         """
+        if not remote_status:
+            return BugTaskStatus.UNKNOWN
         parts = remote_status.split(' ')
         if len(parts) < 2:
             log.error('Malformed debbugs status: %r' % remote_status)

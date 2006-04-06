@@ -27,7 +27,10 @@
           <input type="text" name="field.searchtext" size="20"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
-          <span class="discreet">(Advanced search coming soon)</span>
+          <a href="#"
+             tal:attributes="href view/getBugContactPackageAdvancedSearchURL">
+            <small>Advanced</small>
+          </a>
           <div style="margin-top: 5px">
             <small>
               Sort by:
