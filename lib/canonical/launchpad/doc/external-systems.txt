@@ -225,7 +225,7 @@ And the linked bugtasks got updated:
     3 mozilla-firefox (Debian) Unconfirmed Unknown
     7 evolution (Debian) Fix Released Unknown
 
-The retrevial of the remote status is done by _getRemoteStatus().
+The retrieval of the remote status is done by _getRemoteStatus().
 
     >>> external_debbugs._getRemoteStatus('304014')
     'open important'
