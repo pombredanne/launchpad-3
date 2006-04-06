@@ -575,6 +575,7 @@ whoami = "Ubuntu Archive Auto-Sync <katie@jackass.ubuntu.com>"
 
 uid_mappings = {
     "auto": whoami,
+    "sladen": "Paul Sladen <ubuntu@paul.sladen.org>",
     "minghua": "Ming Hua <minghua@rice.edu>",
     "lucas": "Lucas Nussbaum <lucas@ubuntu.com>",
     "laserjock": "Jordan Mantha <mantha@chem.unr.edu>",
