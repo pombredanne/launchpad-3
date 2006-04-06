@@ -38,9 +38,24 @@ class LoginToken(SQLBase):
     created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
+    date_consumed = UtcDateTimeCol(default=None)
     password = '' # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
+
+    def consume(self):
+        """See ILoginToken."""
+        self.date_consumed = UTC_NOW
+
+        if self.fingerprint is not None:
+            tokens = LoginTokenSet().searchByFingerprintAndRequester(
+                self.fingerprint, self.requester)
+        else:
+            tokens = LoginTokenSet().searchByEmailAndRequester(
+                self.email, self.requester)
+
+        for token in tokens:
+            token.date_consumed = UTC_NOW
 
     def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""

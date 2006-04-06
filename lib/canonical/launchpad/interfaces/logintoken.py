@@ -57,12 +57,24 @@ class ILoginToken(Interface):
         title=_('OpenPGP key fingerprint used to retrive key information when necessary.'),
         required=False,
         )
+    date_consumed = Datetime(
+        title=_('Date and time this was consumed'), 
+        required=False, readonly=False
+        )
 
     # used for launchpad page layout
     title = Attribute('Title')
 
     # Quick fix for Bug #2481
     password = Attribute('Password')
+
+    def consume():
+        """Mark this token as consumed by setting date_consumed.
+
+        As a consequence of a token being consumed, all tokens requested by
+        the same person and with the same requesteremail will also be marked
+        as consumed.
+        """
 
     def destroySelf():
         """Remove this LoginToken from the database.
