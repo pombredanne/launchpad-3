@@ -250,7 +250,7 @@ the changes made:
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    ** Bug watch removed: The Mozilla.org Bug Tracker #2000
+    ** Bug watch added: The Mozilla.org Bug Tracker #2001
     ...
 
 7. Adding and editing a CVE ref.
@@ -313,15 +313,16 @@ When a link is edited, the notification will look as follows:
     ...     edited_fields=("url",))
     >>> notify(extref_changed)
 
-    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> remove_notification, add_notification = BugNotification.select(
+    ...     orderBy='id')[-2:]
+    >>> print remove_notification.message.owner.displayname
     Sample Person
 
-    >>> latest_notification.is_comment
+    >>> add_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print remove_notification.message.text_contents
     ** Web link removed: http://www.example.com
-    <BLANKLINE>
+    >>> print add_notification.message.text_contents
     ** Web link added: http://www.example.com/somewhere.html
 
 9. Marking a bug as a duplicate
@@ -375,18 +376,26 @@ check if the correct notification message is sent.
     ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
-    >>> latest_notification = BugNotification.select(orderBy='-id')[1]
-    >>> print latest_notification.message.owner.displayname
+    >>> no_dupe_notification, dupe_notification = BugNotification.select(
+    ...     orderBy='id')[-3:-1]
+    >>> print no_dupe_notification.message.owner.displayname
+    Sample Person
+    >>> print dupe_notification.message.owner.displayname
     Sample Person
 
-    >>> latest_notification.is_comment
+    >>> no_dupe_notification.is_comment
     False
-    >>> latest_notification.bug.id
+    >>> dupe_notification.is_comment
+    False
+    >>> no_dupe_notification.bug.id
     6
-    >>> print latest_notification.message.text_contents
+    >>> dupe_notification.bug.id
+    6
+    >>> print no_dupe_notification.message.text_contents
     ** This bug is no longer a duplicate of bug 5
        Firefox install instructions should be complete
-    <BLANKLINE>
+
+    >>> print dupe_notification.message.text_contents
     ** This bug has been marked a duplicate of bug 3
        Bug Title Test
 

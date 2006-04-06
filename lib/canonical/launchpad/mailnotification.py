@@ -710,8 +710,8 @@ def notify_bug_modified(modified_bug, event):
 def add_bug_change_notifications(bug_delta):
     """Generate bug notifications and adds them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)
-    body = '\n\n'.join(changes)
-    bug_delta.bug.addChangeNotification(body, person=bug_delta.user)
+    for text_change in changes:
+        bug_delta.bug.addChangeNotification(text_change, person=bug_delta.user)
 
 
 def notify_bugtask_added(bugtask, event):
