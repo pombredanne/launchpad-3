@@ -117,6 +117,9 @@ stop: build
 	    utilities/killservice.py librarian trebuchet \
                                      buildsequencer launchpad
 
+harness:
+	PYTHONPATH=lib python -i lib/canonical/database/harness.py
+
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -i -c \ "from zope.app import Application;\
