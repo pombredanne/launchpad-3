@@ -949,7 +949,9 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
     # XXX Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
-    output_filename = "%s_%s_source.changes" % (dsc["source"], upstr_version)
+    output_filename = "%s_%s_source.changes" % (dsc["source"],
+                                                dak_utils.re_no_epoch.sub('', dsc["version"]))
+
     filehandle = open(output_filename, 'w')
     # XXX The additional '\n' is to work around a bug in parsing
     #     unsigned changes with our forked copy of parse_changes
