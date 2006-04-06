@@ -59,9 +59,10 @@ is logged.
     WARNING:...:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org
     'Unknown'
 
-UNKNOWN maps to Unknown without generating a warning.
+UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning.
 
-    >>> external_bugzilla.convertRemoteStatus('UNKNOWN').title
+    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+    >>> external_bugzilla.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
     'Unknown'
 
 
@@ -336,6 +337,11 @@ log an error.
 
     >>> print external_debbugs.convertRemoteStatus('open').title
     ERROR:...:Malformed debbugs status: 'open'
+    Unknown
+
+UNKNOWN_REMOTE_STATUS maps to Unknown.
+
+    >>> print external_debbugs.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
     Unknown
 
 checkwatches.py

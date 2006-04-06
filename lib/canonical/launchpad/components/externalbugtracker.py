@@ -16,7 +16,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
 from canonical.launchpad.scripts import log, debbugs
-from canonical.launchpad.interfaces import IExternalBugtracker
+from canonical.launchpad.interfaces import (
+    IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.1 (http://launchpad.net/malone)"
@@ -107,23 +108,17 @@ class ExternalBugTracker:
             try:
                 new_remote_status = self._getRemoteStatus(bug_id)
             except InvalidBugId, error:
-                continue
+                log.warn("Invalid bug id %r on %s" % (bug_id, self.baseurl))
+                new_remote_status = UNKNOWN_REMOTE_STATUS
             except BugNotFound:
-                not_found_bugs.append(bug_id)
-                continue
+                log.warn("Didn't find bug %r on %s" % (bug_id, self.baseurl))
+                new_remote_status = UNKNOWN_REMOTE_STATUS
+
             new_malone_status = self.convertRemoteStatus(new_remote_status)
             old_malone_status = self.convertRemoteStatus(bug_watch.remotestatus)
             if (new_remote_status != bug_watch.remotestatus or
                 new_remote_status != old_malone_status):
                 bug_watch.updateStatus(new_remote_status, new_malone_status)
-
-        for not_found_id in not_found_bugs:
-            log.warn(
-                "Didn't find bug #%s on %s." % (not_found_id, self.baseurl))
-            bug_watch = bug_watches_by_remote_bug[not_found_id]
-            bug_watch.remotestatus = 'UNKNOWN'
-            bug_watch.lastchanged = UTC_NOW
-            bug_watch.lastchecked = UTC_NOW
 
 
 class Bugzilla(ExternalBugTracker):
@@ -182,7 +177,7 @@ class Bugzilla(ExternalBugTracker):
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
         """
-        if not remote_status:
+        if not remote_status or remote_status == UNKNOWN_REMOTE_STATUS:
             return BugTaskStatus.UNKNOWN
         if ' ' in remote_status:
             remote_status, resolution = remote_status.split(' ', 1)
@@ -209,10 +204,9 @@ class Bugzilla(ExternalBugTracker):
         elif remote_status in ['UNCONFIRMED']:
             malone_status = BugTaskStatus.UNCONFIRMED
         else:
-            if remote_status != 'UNKNOWN':
-                log.warning(
-                    "Unknown Bugzilla status '%s' at %s" % (
-                        remote_status, self.baseurl))
+            log.warning(
+                "Unknown Bugzilla status '%s' at %s" % (
+                    remote_status, self.baseurl))
             malone_status = BugTaskStatus.UNKNOWN
 
         return malone_status
@@ -318,7 +312,7 @@ class DebBugs(ExternalBugTracker):
         optional tags. The tags are also separated with a space
         character.
         """
-        if not remote_status:
+        if not remote_status or remote_status == UNKNOWN_REMOTE_STATUS:
             return BugTaskStatus.UNKNOWN
         parts = remote_status.split(' ')
         if len(parts) < 2:
