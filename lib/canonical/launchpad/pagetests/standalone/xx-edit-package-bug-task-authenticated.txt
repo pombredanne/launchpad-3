@@ -79,7 +79,6 @@ Any authenticated user can edit a source package bug task.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1346
   ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
-  ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
   ... 
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.sourcepackagename"
