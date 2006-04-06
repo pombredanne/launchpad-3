@@ -80,9 +80,9 @@ class MaloneApplicationNavigation(Navigation):
         return getUtility(IProductSet)
 
     def traverse(self, name):
-        if name.isdigit():
-            # Make /bugs/$bug.id and /malone/$bug.id Just Work
-            return getUtility(IBugSet).get(name)
+        # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
+        # /malone/$bug.id Just Work
+        return getUtility(IBugSet).getByNameOrID(name)
 
 
 class MenuBox(LaunchpadView):
