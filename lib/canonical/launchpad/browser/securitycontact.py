@@ -6,8 +6,9 @@ __metaclass__ = type
 __all__ = ["SecurityContactEditView"]
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.generalform import GeneralFormView
 
-class SecurityContactEditView:
+class SecurityContactEditView(GeneralFormView):
     """Browser view for editing the security contact.
 
     self.context is assumed to implement IHasSecurityContact.

@@ -10,18 +10,21 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
+    <metal:heading fill-slot="pageheading">
+      <h1>Change security contact</h1>
+    </metal:heading>
 
+<div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <h1 tal:condition="view/label"
         tal:content="view/label"
         metal:fill-slot="heading">Form Label comes from ZCML label="xxx"</h1>
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
+    <p metal:fill-slot="extra_info">
       When a bug is reported as a security vulnerability, the security
       contact is automatically subscribed to the bug.
-    </div>
+    </p>
   </div>
 
 </div>

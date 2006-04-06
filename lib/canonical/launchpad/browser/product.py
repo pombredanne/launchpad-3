@@ -148,9 +148,9 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'reassign', 'securitycontact', 'distributions', 'packages',
-        'branches', 'branch_add', 'series_add', 'milestone_add',
-        'launchpad_usage', 'administer', 'rdf']
+        'edit', 'reassign', 'distributions', 'packages', 'branches',
+        'branch_add', 'series_add', 'milestone_add', 'launchpad_usage',
+        'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -161,11 +161,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def reassign(self):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        text = 'Change Security Contact'
-        return Link('+securitycontact', text, icon='edit')
 
     def distributions(self):
         text = 'Distributions'
@@ -214,7 +209,7 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'bugcontact']
+    links = ['filebug', 'bugcontact', 'securitycontact']
 
     def filebug(self):
         text = 'Report a Bug'
@@ -225,6 +220,10 @@ class ProductBugsMenu(ApplicationMenu):
         text = 'Change Bug Contact'
         return Link('+bugcontact', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change Security Contact'
+        return Link('+securitycontact', text, icon='edit')
 
 class ProductSupportMenu(ApplicationMenu):
 

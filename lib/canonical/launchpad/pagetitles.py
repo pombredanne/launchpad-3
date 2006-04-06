@@ -673,7 +673,7 @@ def productseries(context, view):
     return '%s release series: %s' % (
         context.product.displayname, context.displayname)
 
-security_contact = ContextDisplayName("Edit %s security contact")
+securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
 shipit_index = 'ShipIt'
 

@@ -9,7 +9,7 @@
       for="canonical.launchpad.interfaces.IHasSecurityContact"
       schema="canonical.launchpad.interfaces.IHasSecurityContact"
       class="canonical.launchpad.browser.securitycontact.SecurityContactEditView"
-      facet="overview"
+      facet="bugs"
       permission="launchpad.Edit"
       fields="security_contact"
       keyword_arguments="security_contact"
