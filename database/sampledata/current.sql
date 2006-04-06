@@ -530,6 +530,8 @@ ALTER TABLE binarypackagename DISABLE TRIGGER ALL;
 
 INSERT INTO binarypackagename (id, name) VALUES (8, 'mozilla-firefox');
 INSERT INTO binarypackagename (id, name) VALUES (13, 'pmount');
+INSERT INTO binarypackagename (id, name) VALUES (14, 'linux-2.6.12');
+INSERT INTO binarypackagename (id, name) VALUES (15, 'at');
 
 
 ALTER TABLE binarypackagename ENABLE TRIGGER ALL;
@@ -539,6 +541,8 @@ ALTER TABLE binarypackagerelease DISABLE TRIGGER ALL;
 
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', false, NULL, NULL, NULL, true, '''web'':3B,7C ''browser'':4B,8C ''firefox'':2B,6C ''mozilla'':1B,5C', '2005-10-19 17:50:10.874189');
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
 
 
 ALTER TABLE binarypackagerelease ENABLE TRIGGER ALL;
@@ -902,6 +906,8 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (11, '2006-02-14 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, 25, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (12, '2006-02-28 00:00:00', 1, 6, 3, '2006-02-28 00:00:01', '00:06:02', 1, 1, 27, 0, 'cpp (>= 4:4.0.1-3), gcc-4.0 (>= 4.0.1-2)');
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (13, '2006-03-21 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 17, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (14, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 28, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (15, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -1480,6 +1486,9 @@ ALTER TABLE distroreleasepackagecache DISABLE TRIGGER ALL;
 
 INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (1, 3, 13, 'pmount', 'pmount shortdesc', 'pmount description', 'pmount shortdesc', 'pmount description', '''pmount'':1A,2B,4C ''descript'':5C ''shortdesc'':3B');
 INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (2, 1, 8, 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', '''web'':6B,10C ''browser'':7B,11C ''firefox'':3A,5B,9C ''mozilla'':2A,4B,8C ''mozilla-firefox'':1A');
+INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (5, 1, 13, 'pmount', 'pmount shortdesc', 'pmount description', 'pmount shortdesc', 'pmount description', '''pmount'':1A,2B,4C ''descript'':5C ''shortdesc'':3B');
+INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (6, 1, 14, 'linux-2.6.12', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', '''boom'':7B,18C ''like'':11C ''linux'':2A ''templ'':16C ''2.6.12'':3A ''kernel'':5B,9C ''method'':14C ''crystal'':13C ''linux-2'':1A');
+INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (7, 1, 15, 'at', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', '''mad'':5B ''long'':7C ''safe'':15C ''believ'':20C ''enunci'':9C ''mountain'':3B,12C ''lovecraft'':6C');
 
 
 ALTER TABLE distroreleasepackagecache ENABLE TRIGGER ALL;
@@ -8673,6 +8682,8 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (14, 15, 7, 3, 3, 3, 40, '2006-01-26 00:00:00', NULL, '2006-01-28 00:00:00', NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (15, 12, 7, 2, 3, 3, 40, '2006-01-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (16, 15, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (17, 16, 1, 2, 1, 1, 10, '2005-07-06 00:00:00', '2005-08-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (18, 17, 1, 2, 1, 1, 10, '2005-08-07 00:00:00', '2005-08-22 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8780,7 +8791,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (10, 'netapplet');
 INSERT INTO sourcepackagename (id, name) VALUES (14, 'pmount');
 INSERT INTO sourcepackagename (id, name) VALUES (15, 'a52dec');
 INSERT INTO sourcepackagename (id, name) VALUES (16, 'mozilla');
-INSERT INTO sourcepackagename (id, name) VALUES (17, 'uberfrob');
+INSERT INTO sourcepackagename (id, name) VALUES (17, 'at');
 INSERT INTO sourcepackagename (id, name) VALUES (18, 'thunderbird');
 INSERT INTO sourcepackagename (id, name) VALUES (19, 'alsa-utils');
 INSERT INTO sourcepackagename (id, name) VALUES (20, 'cnews');
@@ -8815,6 +8826,7 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', NULL, NULL, NULL, NULL, 1, NULL, 16, 21, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (28, 1, '2.6.15.3', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 22, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (29, 1, '0.00', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 17, 3, 1);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;

@@ -656,11 +656,13 @@ class DistroRelease(SQLBase, BugTargetBase):
     def searchPackages(self, text):
         """See IDistroRelease."""
         drpcaches = DistroReleasePackageCache.select("""
-            distrorelease = %s AND
-            fti @@ ftq(%s)
-            """ % sqlvalues(self.id, text),
+            distrorelease = %s AND (
+            fti @@ ftq(%s) OR
+            DistroReleasePackageCache.name = %s)
+            """ % sqlvalues(self.id, text, text),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
+            prejoins=['binarypackagename'],
             distinct=True)
         return [DistroReleaseBinaryPackage(
             distrorelease=self,
