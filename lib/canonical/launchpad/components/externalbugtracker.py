@@ -99,7 +99,6 @@ class ExternalBugTracker:
             #XXX: Use remotebug.strip() until bug 34105 is fixed.
             #     -- Bjorn Tillenius, 2006-03-09
             bug_watches_by_remote_bug[bug_watch.remotebug.strip()] = bug_watch
-        not_found_bugs = []
         bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
         self._initializeRemoteBugDB(bug_ids_to_update)
         for bug_id in bug_ids_to_update:
