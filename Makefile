@@ -22,6 +22,9 @@ default: inplace
 schema: build
 	$(MAKE) -C database/schema
 
+newsampledata:
+	$(MAKE) -C database/schema newsampledata
+
 check_merge: build check importdcheck
 
 
