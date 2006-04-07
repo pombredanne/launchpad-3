@@ -12,6 +12,7 @@ from sqlobject import ForeignKey, BoolCol
 
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import IBugNotification, IBugNotificationSet
@@ -37,9 +38,7 @@ class BugNotificationSet:
             """date_emailed IS NULL""", orderBy=['bug', '-id']).distinct()
         pending_notifications = list(notifications)
         omitted_notifications = []
-        #XXX: We should make the interval a configuration option.
-        #     -- Bjorn Tillenius, 2006-03-20
-        interval = timedelta(minutes=5)
+        interval = timedelta(minutes=config.malone.bugnotification_interval)
         time_limit = (
             datetime.now(pytz.timezone('UTC')) - interval)
 
