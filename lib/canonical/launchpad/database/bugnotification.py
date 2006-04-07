@@ -38,7 +38,8 @@ class BugNotificationSet:
             """date_emailed IS NULL""", orderBy=['bug', '-id']).distinct()
         pending_notifications = list(notifications)
         omitted_notifications = []
-        interval = timedelta(minutes=config.malone.bugnotification_interval)
+        interval = timedelta(
+            minutes=int(config.malone.bugnotification_interval))
         time_limit = (
             datetime.now(pytz.timezone('UTC')) - interval)
 
