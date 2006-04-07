@@ -13,9 +13,11 @@ __all__ = [
     'ProductSupportMenu',
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
+    'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductSetContextMenu',
     'ProductView',
+    'ProductBranchView',
     'ProductEditView',
     'ProductSeriesAddView',
     'ProductRdfView',
@@ -94,7 +96,7 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'branches', 'calendar']
 
     links = StandardLaunchpadFacets.links
 
@@ -123,6 +125,12 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Bounties related to %s' % self.context.displayname
         return Link(target, text, summary)
 
+    def branches(self):
+        target = '+branches'
+        text = 'Branches'
+        summary = 'Branches for %s' % self.context.displayname
+        return Link(target, text, summary)
+
     def specifications(self):
         target = '+specs'
         text = 'Specifications'
@@ -149,7 +157,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'reassign', 'distributions', 'packages',
-        'branches', 'branch_add', 'series_add', 'milestone_add',
+        'branch_add', 'series_add', 'milestone_add',
         'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
@@ -175,12 +183,8 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
 
-    def branches(self):
-        summary = 'Bazaar Branches for %s' % self.context.displayname
-        return Link('+branches', 'Branches', icon='info', summary=summary)
-
     def branch_add(self):
-        text = 'Register Branch'
+        text = 'Add Bazaar Branch'
         return Link('+addbranch', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
@@ -219,6 +223,23 @@ class ProductBugsMenu(ApplicationMenu):
     def bugcontact(self):
         text = 'Change Bug Contact'
         return Link('+bugcontact', text, icon='edit')
+
+
+class ProductBranchesMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'branches'
+    links = ['listing', 'branch_add', ]
+
+    def branch_add(self):
+        text = 'Add Bazaar Branch'
+        summary='Register a new Bazaar branch for this product'
+        return Link('+addbranch', text, icon='add')
+
+    def listing(self):
+        text = 'Listing View'
+        summary = 'Show detailed branch listing'
+        return Link('+branchlisting', text, summary, icon='branch')
 
 
 class ProductSupportMenu(ApplicationMenu):
@@ -504,6 +525,14 @@ class ProductRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class ProductBranchView:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
 
 
 class ProductSetView:

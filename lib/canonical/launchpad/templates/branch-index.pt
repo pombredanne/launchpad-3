@@ -23,52 +23,44 @@
     notice goes here
   </p>
 
-  <p tal:condition="context/summary"
+  <p class="highlighted" tal:condition="context/summary"
      tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
   </p>
-  <p tal:condition="not:context/summary">
+
+  <p class="highlighted" tal:condition="not:context/summary">
     <tal:comment condition="nothing">
       <!-- XXX: That duplicates the 'edit' link from the action portlet and
            should be changed when bug #5313 is fixed to comply with DNRY.
-           -- DavidAllouche 2005-12-02 -->
+             DavidAllouche 2005-12-02
+      -->
     </tal:comment>
+    <i>This branch has no summary. You can 
     <img src="/@@/edit.gif" />
-    <a tal:attributes="href view/edit_link_url">Edit branch details</a>.
-    This branch has no summary. 
+    <a tal:attributes="href view/edit_link_url">edit branch details</a>.</i>
   </p>
 
-  <table>
-    <tbody>
-      <tr>
-        <th>URL:</th>
-        <td><tt><a tal:attributes="href view/url"
-                   tal:content="view/url"
-          >http://example.com/software/hello.devel</a></tt></td>
-      </tr>
-      <tr>
-        <th>Status:</th>
-        <td tal:content="context/lifecycle_status/title">Stable</td>
-      </tr>
-      <tr tal:condition="context/mirror_failures">
-        <th>Failures:</th>
-        <td>
-          This branch failed to mirror 
-          <span tal:replace="context/mirror_failures" /> times.
-        </td>
-      </tr>
-      <tr tal:condition="context/mirror_status_message">
-        <th>Last Failure:</th>
-        <td tal:content="context/mirror_status_message">
-        </td>
-      </tr>
-      <tr tal:condition="context/whiteboard">
-        <th>Whiteboard:</th>
-        <td tal:content="context/whiteboard">whiteboard</td>
-      </tr>
-    </tbody>
-  </table>
+  <p>
+    Click <a tal:attributes="href view/url">here</a> for the branch source
+    code. Note: this may not be a viewable web page, but you can
+    point the bzr revision control tool at this URL to retrieve the code
+    in the branch.
+  </p>
+
+  <p class="error message" tal:condition="context/mirror_failures">
+    <b>Mirror Failures:</b> This branch failed to mirror 
+    <span tal:replace="context/mirror_failures" /> times.
+    <tal:has_mirror_msg condition="context/mirror_status_message">
+      The last failure message was:
+      <span tal:replace="context/mirror_status_message">Error 1</span>
+    </tal:has_mirror_msg>
+  </p>
+
+  <p class="informational message" tal:condition="context/whiteboard">
+    <b>Whiteboard:</b><br />
+    <span tal:replace="context/whiteboard">whiteboard</span>
+  </p>
 
   <h2>Recent revisions</h2>
 
@@ -90,7 +82,9 @@
       <tr tal:repeat="rev_no context/latest_revisions">
         <td tal:content="rev_no/sequence">1</td>
         <td tal:content="rev_no/revision/revision_date/fmt:date">2005-10-05</td>
-        <td tal:condition="view/user" tal:content="rev_no/revision/revision_author/name">John Doe &lt;jdoe@example.com&gt;</td>
+        <td tal:condition="view/user"
+            tal:content="rev_no/revision/revision_author/name"
+            >John Doe &lt;jdoe@example.com&gt;</td>
         <td tal:content="rev_no/revision/log_body">The revision commit message.</td>
       </tr>
     </tbody>

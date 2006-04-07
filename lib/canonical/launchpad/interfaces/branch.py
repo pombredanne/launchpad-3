@@ -63,13 +63,14 @@ class IBranch(IHasOwner):
         "title is displayed in every branch list or report."))
     summary = Text(
         title=_('Summary'), required=False, description=_("A "
-        "single-paragraph description of the branch. This will also be "
-        "displayed in most branch listings."))
+        "single-paragraph description of the branch. This will be "
+        "displayed on the branch page."))
     url = BranchUrlField(
         title=_('Branch URL'), required=True,
-        description=_("The URL where the branch is hosted. This is usually"
-            " the URL used to checkout the branch. Leave that empty if the"
-            " branch is hosted on bazaar.launchpad.net."),
+        description=_("The URL where the Bazaar branch is hosted. This is "
+            "the URL used to checkout the branch. The only branch format "
+            "supported is that of the Bazaar revision control system, see "
+            "www.bazaar-vcs.org for more information."),
         constraint=valid_webref)
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
@@ -118,7 +119,7 @@ class IBranch(IHasOwner):
     # Home page attributes
     home_page = TextLine(
         title=_('Web Page'), required=False,
-        description=_("The URL of the Web page describing the branch, "
+        description=_("The URL of a web page describing the branch, "
                       "if there is such a page."), constraint=valid_webref)
     branch_home_page = Attribute(
         "The home page URL specified within the branch.")
@@ -130,8 +131,7 @@ class IBranch(IHasOwner):
     # Stats and status attributes
     lifecycle_status = Choice(
         title=_('Status'), vocabulary='BranchLifecycleStatus',
-        default=BranchLifecycleStatus.NEW, description=_("The current "
-        "status of this branch."))
+        default=BranchLifecycleStatus.NEW)
 
     # TODO: landing_target, needs a BranchVocabulaty. See bug #4119.
     # -- DavidAllouche 2005-09-05
@@ -207,14 +207,16 @@ class IBranchSet(Interface):
         Raise NotFoundError if there is no such branch.
         """
 
+    def __iter__():
+        """Return an iterator that will go through all branches."""
+
+    all = Attribute("All branches in the system.")
+
     def get(branch_id, default=None):
         """Return the branch with the given id.
 
         Return the default value if there is no such branch.
         """
-
-    def __iter__():
-        """Return an iterator that will go through all branches."""
 
     def new(name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,

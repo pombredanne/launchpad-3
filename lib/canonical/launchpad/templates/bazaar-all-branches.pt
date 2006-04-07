@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main" tal:define="branchviewset view/branches">
+
+  <h1>Bazaar Branches</h1>
+
+  <table class="listing sortable" id="branchtable"
+         tal:condition="branchviewset">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Author</th>
+        <th>Title</th>
+        <th>Name</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody class="lesser">
+      <tr tal:repeat="branch branchviewset">
+        <td>
+          <span tal:condition="branch/product"
+                tal:replace="branch/product/name">Name</span>
+        </td>
+        <td>
+          <span tal:condition="branch/author"
+                tal:replace="branch/author/browsername">Author</span>
+        </td>
+        <td>
+          <a tal:content="branch/title/fmt:shorten/50"
+             tal:attributes="href branch/fmt:url">Title Goes Here!</a>
+        </td>
+        <td tal:content="branch/name/fmt:shorten/30">Name</td>
+        <td>
+          <span tal:content="branch/lifecycle_status/sortkey"
+                style="display: none;">23</span>
+          <span tal:content="branch/lifecycle_status/title"
+                tal:attributes="
+                  class string:branchstatus${branch/lifecycle_status/name}">
+                  Status</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

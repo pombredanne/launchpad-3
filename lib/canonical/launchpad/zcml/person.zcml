@@ -29,7 +29,8 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PersonSupportMenu PeopleContextMenu TeamBugsMenu"
+          PersonSpecsMenu PersonSupportMenu PeopleContextMenu TeamBugsMenu
+          PersonBranchesMenu"
       />
 
   <browser:url
@@ -387,23 +388,26 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.BranchTargetView"
     permission="zope.Public"
-    facet="overview"
+    facet="branches"
     >
     <!-- there is trickery here, in the view class, which detects the view
     name and then gives the template a different set of branches to work
     with.-->
     <browser:page
         name="+branches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/person-branches.pt" />
+    <browser:page
+        name="+branchlisting"
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+authoredbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+registeredbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
     <browser:page
         name="+subscribedbranches"
-        template="../templates/branchtarget-branches.pt" />
+        template="../templates/branchtarget-branchlisting.pt" />
   </browser:pages>
 
   <!-- Team Views -->

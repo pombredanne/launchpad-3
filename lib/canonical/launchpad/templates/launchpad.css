@@ -723,6 +723,13 @@ tr.highlight {
 .specdeliveryAWAITINGDEPLOYMENT {color: Red; }
 .specdeliveryIMPLEMENTED        {color: Green; }
 
+.branchstatusNEW                {color: DarkGreen;}
+.branchstatusEXPERIMENTAL       {color: Red;}
+.branchstatusDEVELOPMENT        {color: Black;}
+.branchstatusMATURE             {color: Green;}
+.branchstatusMERGED             {color: Gray;}
+.branchstatusABANDONED          {color: Gray;}
+
 /* Board-like comment CSS */
 
 .boardComment {

@@ -54,11 +54,12 @@ class ILaunchpadCelebrities(Interface):
 
     Celebrities are SQLBase instances that have a well known name.
     """
-    vcs_imports = Attribute("The 'vcs-imports' team.")
     admin = Attribute("The 'admins' team.")
-    ubuntu = Attribute("The ubuntu Distribution.")
-    debian = Attribute("The debian Distribution.")
+    ubuntu = Attribute("The Ubuntu Distribution.")
+    debian = Attribute("The Debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
+    bazaar_expert = Attribute("The 'vcs-imports' team.")
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
     mirror_admin = Attribute("The Mirror Administrators.")
@@ -161,6 +162,11 @@ class IShipItApplication(ILaunchpadApplication):
 
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
+
+    all = Attribute("The full set of branches in The Bazaar")
+
+    def getMatchingBranches():
+        """Return the set of branches that match the given queries."""
 
 
 class IAuthApplication(Interface):

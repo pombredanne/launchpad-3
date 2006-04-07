@@ -21,6 +21,7 @@
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-latestbugs" />
     <div tal:replace="structure context/@@+portlet-latesttickets" />
+    <div tal:replace="structure context/@@+portlet-latestbranches" />
     <div tal:replace="structure context/@@+portlet-packages" />
     <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
@@ -83,26 +84,6 @@
     </tal:block>
 
   </tal:hasseries>
-
-  <tal:block condition="context/branches">
-
-    <h2>Bazaar branches</h2>
-
-    <div>
-
-      <ul>
-        <tal:for_each_branch repeat="branch context/branches">
-          <li>
-            <a tal:attributes="href branch/fmt:url"
-               tal:content="branch/displayname"
-            >branch displayname</a>
-          </li>
-        </tal:for_each_branch>
-      </ul>
-
-    </div>
-
-  </tal:block>
 
 </div>
 

@@ -29,7 +29,7 @@
         module="canonical.launchpad.browser"
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
-            ProductSupportMenu ProductSpecificationsMenu
+            ProductBranchesMenu ProductSupportMenu ProductSpecificationsMenu
             ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
             "
             />
@@ -124,13 +124,32 @@
     </browser:pages>
 
     <browser:pages
+      for="canonical.launchpad.interfaces.IProduct"
+      permission="zope.Public"
+      >
+      <browser:page
+         name="+portlet-latestbranches"
+         template="../templates/product-portlet-latestbranches.pt" />
+    </browser:pages>
+
+    <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.BranchTargetView"
+        facet="branches"
+        permission="zope.Public">
+        <browser:page
+            name="+branchlisting"
+            template="../templates/branchtarget-branchlisting.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductBranchView"
+        facet="branches"
         permission="zope.Public">
         <browser:page
             name="+branches"
-            facet="overview"
-            template="../templates/branchtarget-branches.pt" />
+            template="../templates/product-branches.pt" />
     </browser:pages>
 
     <browser:page
@@ -354,9 +373,10 @@
         name="+addbranch"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBranch"
-        fields="product name owner lifecycle_status url title summary home_page author"
+        fields="product url name owner lifecycle_status title summary
+                home_page author"
         class="canonical.launchpad.browser.BranchAddView"
-        facet="overview"
+        facet="branches"
         keyword_arguments="product name owner lifecycle_status url title summary home_page author"
         permission="launchpad.AnyPerson"
         template="../templates/product-branch-add.pt">

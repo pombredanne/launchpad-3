@@ -72,7 +72,7 @@ class StandardLaunchpadFacets(FacetMenu):
     #   usedfor = IWhatever
 
     links = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-             'translations', 'calendar']
+             'translations', 'branches', 'calendar']
 
     enable_only = ['overview', 'bugs', 'bounties', 'specifications',
                    'translations', 'calendar']
@@ -105,13 +105,13 @@ class StandardLaunchpadFacets(FacetMenu):
     def specifications(self):
         target = '+specs'
         text = 'Specifications'
-        summary = 'New Feature Specifications'
+        summary = 'Feature Specifications and Plans'
         return Link(target, text, summary)
 
     def bounties(self):
         target = '+bounties'
         text = 'Bounties'
-        summary = 'Bounties related to %s' % self.context.title
+        summary = 'View related bounty offers'
         return Link(target, text, summary)
 
     def calendar(self):
@@ -120,4 +120,11 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Calendar'
         return Link(target, text, enabled=False)
 
+    def branches(self):
+        # this is disabled by default, because relatively few objects have
+        # branch views
+        target = '+branches'
+        text = 'Branches'
+        summary = 'View related branches of code'
+        return Link(target, text, summary=summary)
 
