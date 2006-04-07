@@ -213,6 +213,17 @@ SQLObject doesn't necessarily give us the same intance back)
 >>> msg == msg2
 True
 
+Let's add another multipart message, this time we include a message in
+the message, like it is done when forwarding an email.
+
+    >>> forwarded_msg = read_test_message('forwarded-msg.txt')
+    >>> msg = msgset.fromEmail(forwarded_msg.as_string())
+    >>> print msg.text_contents
+    Forwarding test message.
+    <BLANKLINE>
+    <BLANKLINE>
+    Test message.
+
 
 fromEmail will set the parent of the message as well. We can only set
 the parent if it's already in the database, though. To ensure that
