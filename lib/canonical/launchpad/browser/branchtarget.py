@@ -84,19 +84,11 @@ class BranchTargetView:
                 categories[branch.lifecycle_status] = category
             category['branches'].append(branch)
         categories = categories.values()
-        return sorted(categories, key=self.category_display_order)
+        return sorted(categories, key=self.category_sortkey)
 
     @staticmethod
-    def category_display_order(category):
-        display_order = [
-            BranchLifecycleStatus.MATURE,
-            BranchLifecycleStatus.DEVELOPMENT,
-            BranchLifecycleStatus.EXPERIMENTAL,
-            BranchLifecycleStatus.MERGED,
-            BranchLifecycleStatus.ABANDONED,
-            BranchLifecycleStatus.NEW,
-            ]
-        return display_order.index(category['status'])
+    def category_sortkey(category):
+        return category['status'].sortkey
 
     @cachedproperty
     # A cache to avoid repulling data from the database, which can be
