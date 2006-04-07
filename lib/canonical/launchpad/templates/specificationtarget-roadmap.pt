@@ -5,6 +5,19 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div class="portlet">
+    <h4>About this page:</h4>
+    <div class="portletBody portletContent">
+      <img src="/@@/info" />
+      Specifications should be implemented in the order given.
+      This will ensure that the <b>most important</b> specifications
+      are implemented first, and that specification <b>dependencies</b>
+      are respected.
+    </div>
+  </div>
+</metal:leftportlets>
+
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
@@ -25,15 +38,8 @@
   </p>
 
   <tal:block condition="view/specPlan">
-    <p>
-      Specifications should be implemented in the order given.
-      This will ensure that the <b>most important</b> specifications
-      are implemented first, and that <b>specification dependencies</b>
-      are respected.
-    </p>
-
-      <div tal:repeat="spec view/specPlan"
-           tal:replace="structure spec/@@+listing-simple" />
+    <div tal:repeat="spec view/specPlan"
+         tal:replace="structure spec/@@+listing-simple" />
   </tal:block>
 
   <tal:block condition="view/danglingSpecs">

@@ -27,7 +27,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
-    SpecificationGoalStatus)
+    SpecificationGoalStatus, SpecificationFilter)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
@@ -255,14 +255,58 @@ class DistroRelease(SQLBase, BugTargetBase):
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
 
-    def specifications(self, sort=None, quantity=None):
+    def specifications(self, sort=None, quantity=None, filter=[]):
         """See IHasSpecifications."""
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        return Specification.selectBy(distroreleaseID=self.id,
-            orderBy=order)[:quantity]
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
+        # figure out what set of specifications we are interested in. for
+        # distroreleases, we need to be able to filter on the basis of:
+        #
+        #  - completeness.
+        #  - goal status.
+        #  - informational.
+        #
+        base = 'Specification.distrorelease = %s' % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # look for specs that have a particular goalstatus (proposed,
+        # accepted or declined)
+        if SpecificationFilter.ACCEPTED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.ACCEPTED.value)
+        elif SpecificationFilter.PROPOSED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.PROPOSED.value)
+        elif SpecificationFilter.DECLINED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.DECLINED.value)
+        
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
+
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

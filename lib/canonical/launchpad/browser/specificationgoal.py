@@ -6,15 +6,19 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 from canonical.launchpad.interfaces import ISpecificationGoal
-from canonical.lp.dbschema import SpecificationGoalStatus
+from canonical.lp.dbschema import (
+    SpecificationGoalStatus, SpecificationFilter)
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.helpers import shortlist
 
 
 __all__ = [
-    'GoalSetView'
+    'GoalSetView',
+    'SpecificationGoalView'
     ]
 
 
@@ -26,14 +30,11 @@ class GoalSetView(LaunchpadView):
     add/edit metaphor.
     """
 
-    @cachedproperty
     def specs(self):
         """Return the specifications which have been proposed for this goal.
-
-        For the moment, we just filter the list in Python.
         """
-        return [spec for spec in shortlist(self.context.specifications())
-                if spec.goalstatus == SpecificationGoalStatus.PROPOSED]
+        filter=[SpecificationFilter.PROPOSED]
+        return self.context.specifications(filter=filter)
 
     def initialize(self):
         self.status_message = None
@@ -90,10 +91,63 @@ class GoalSetView(LaunchpadView):
         self.status_message = '%s %d specification(s).' % (
             action, len(selected_specs))
 
-        if not self.specs:
+        if self.specs().count() == len(selected_specs):
             # they are all done, so redirect back to the spec listing page
             self.request.response.redirect(
                 canonical_url(self.context)+'/+specs')
 
         return self.status_message
+
+
+class SpecificationGoalView(HasSpecificationsView):
+
+    @cachedproperty
+    def specs(self):
+        """The list of specs that are going to be displayed in this view.
+
+        This method determines the appropriate filtering to be passed to
+        context.specifications(). See IHasSpecifications.specifications
+        for further details.
+
+        The method can review the URL and decide what will be included,
+        and what will not.
+
+        This particular implementation is used for IProductSeries and
+        IDistroRelease, the two objects which are an ISpecificationGoal.
+
+        The typical URL is of the form:
+
+           ".../name1/+specs?show=complete&acceptance=proposed"
+
+        """
+        show = self.request.form.get('show', None)
+        informational = self.request.form.get('informational', False)
+        acceptance = self.request.form.get('acceptance', None)
+
+        filter = []
+
+        # filter on completeness
+        if show == 'all':
+            filter.append(SpecificationFilter.ALL)
+        elif show == 'complete':
+            filter.append(SpecificationFilter.COMPLETE)
+        elif show == 'incomplete':
+            filter.append(SpecificationFilter.INCOMPLETE)
+
+        # filter for informational status
+        if informational is not False:
+            filter.append(SpecificationFilter.INFORMATIONAL)
+
+        # filter for acceptance state, show accepted specs by default
+        if acceptance == 'declined':
+            filter.append(SpecificationFilter.DECLINED)
+        elif show == 'proposed':
+            filter.append(SpecificationFilter.PROPOSED)
+        else:
+            filter.append(SpecificationFilter.ACCEPTED)
+
+        specs = self.context.specifications(filter=filter)
+
+        return specs
+
 

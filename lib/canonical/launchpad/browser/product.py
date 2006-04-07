@@ -240,23 +240,33 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'new']
+    links = ['listall', 'doc', 'roadmap', 'table', 'new']
 
     def listall(self):
         text = 'List All'
-        return Link('+specs?show=all', text, icon='info')
+        summary = 'Show all specifications for %s' %  self.context.title
+        return Link('+specs?show=all', text, summary, icon='info')
+
+    def doc(self):
+        text = 'Documentation'
+        summary = 'List all complete informational specifications'
+        return Link('+specs?informational&show=complete', text, summary,
+            icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
+        summary = 'Show the recommended sequence of specification implementation'
+        return Link('+roadmap', text, summary, icon='info')
 
     def table(self):
         text = 'Assignments'
-        return Link('+assignments', text, icon='info')
+        summary = 'Show the full assignment of work, drafting and approving'
+        return Link('+assignments', text, summary, icon='info')
 
     def new(self):
         text = 'New Specification'
-        return Link('+addspec', text, icon='add')
+        summary = 'Register a new specification for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 
 class ProductBountiesMenu(ApplicationMenu):

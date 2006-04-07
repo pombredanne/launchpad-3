@@ -19,7 +19,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort)
+    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationDelivery, SpecificationStatus)
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
@@ -282,14 +283,42 @@ class Product(SQLBase, BugTargetBase):
         # a better way.
         return max(perms)
 
-    def specifications(self, sort=None, quantity=None):
+    def specifications(self, sort=None, quantity=None, filter=[]):
         """See IHasSpecifications."""
+
+        # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
         elif sort == SpecificationSort.DATE:
             order = ['-datecreated', 'id']
-        results = Specification.selectBy(productID=self.id,
-            orderBy=order)[:quantity]
+
+        # figure out what set of specifications we are interested in. for
+        # products, we need to be able to filter on the basis of:
+        #
+        #  - completeness.
+        #  - informational.
+        #
+        base = 'Specification.product = %s' % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
         results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 

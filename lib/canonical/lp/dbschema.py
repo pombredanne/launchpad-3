@@ -1341,6 +1341,111 @@ class SpecificationPriority(DBSchema):
         """)
 
 
+class SpecificationFilter(DBSchema):
+    """An indicator of the kinds of specifications that should be returned
+    for a listing of specifications.
+
+    This is used by browser classes that are generating a list of
+    specifications for a person, or product, or project, to indicate what
+    kinds of specs they want returned. The different filters can be OR'ed so
+    that multiple pieces of information can be used for the filter.
+    """
+    ALL = Item(0, """
+        All
+
+        This indicates that the list should simply include ALL
+        specifications for the underlying object (person, product etc).
+        """)
+
+    COMPLETE = Item(5, """
+        Complete
+
+        This indicates that the list should include only the complete
+        specifications for this object.
+        """)
+
+    INCOMPLETE = Item(10, """
+        Incomplete
+        
+        This indicates that the list should include the incomplete items
+        only. The rules for determining if a specification is incomplete are
+        complex, depending on whether or not the spec is informational.
+        """)
+
+    INFORMATIONAL = Item(20, """
+        Informational
+
+        This indicates that the list should include only the informational
+        specifications.
+        """)
+
+    PROPOSED = Item(30, """
+        Proposed
+
+        This indicates that the list should include specifications that have
+        been proposed as goals for the underlying objects, but not yet
+        accepted or declined.
+        """)
+
+    DECLINED = Item(40, """
+        Declined
+
+        This indicates that the list should include specifications that were
+        declined as goals for the underlying productseries or distrorelease.
+        """)
+
+    ACCEPTED = Item(50, """
+        Accepted
+
+        This indicates that the list should include specifications that were
+        accepted as goals for the underlying productseries or distrorelease.
+        """)
+
+    CREATOR = Item(60, """
+        Creator
+
+        This indicates that the list should include specifications that the
+        person registered in Launchpad.
+        """)
+
+    ASSIGNEE = Item(70, """
+        Assignee
+
+        This indicates that the list should include specifications that the
+        person has been assigned to implement.
+        """)
+
+    APPROVER = Item(80, """
+        Approver
+
+        This indicates that the list should include specifications that the
+        person is supposed to review and approve.
+        """)
+
+    DRAFTER = Item(90, """
+        Drafter
+
+        This indicates that the list should include specifications that the
+        person is supposed to draft. The drafter is usually only needed
+        during spec sprints when there's a bottleneck on guys who are
+        assignees for many specs.
+        """)
+
+    SUBSCRIBER = Item(100, """
+        Subscriber
+
+        This indicates that the list should include all the specifications
+        to which the person has subscribed.
+        """)
+
+    FEEDBACK = Item(110, """
+        Feedback
+
+        This indicates that the list should include all the specifications
+        which the person has been asked to provide specific feedback on.
+        """)
+
+
 class SpecificationSort(DBSchema):
     """A preferred sorting scheme for the results of a query about
     specifications.

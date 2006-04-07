@@ -176,17 +176,34 @@ class Specification(SQLBase):
         """See ISpecification."""
         return not self.is_complete
 
+    # Several other classes need to generate lists of specifications, and
+    # one thing they often have to filter for is completeness. We maintain
+    # this single canonical query string here so that it does not have to be
+    # cargo culted into Product, Distribution, ProductSeries etc
+
+    # XXX should this be some sort of Specification class attribute?
+    completeness =  """
+                Specification.delivery = %d 
+                """ % SpecificationDelivery.IMPLEMENTED.value + """
+            OR 
+                Specification.status IN ( %d, %d ) 
+                """ % (SpecificationStatus.OBSOLETE.value,
+                       SpecificationStatus.SUPERSEDED.value) + """
+            OR 
+               (Specification.informational IS TRUE AND 
+                Specification.status = %d)
+                """ % SpecificationStatus.APPROVED.value
+
     @property
     def is_complete(self):
-        """See ISpecification."""
+        """See ISpecification. This should be a code implementation of the
+        SQL in self.completeness. Just for completeness.
+        """
         return (self.status in [
                     SpecificationStatus.OBSOLETE,
                     SpecificationStatus.SUPERSEDED,
                     ]
-                or self.delivery in [
-                    SpecificationDelivery.IMPLEMENTED,
-                    SpecificationDelivery.AWAITINGDEPLOYMENT
-                    ]
+                or self.delivery == SpecificationDelivery.IMPLEMENTED
                 or (self.informational is True and
                     self.status == SpecificationStatus.APPROVED))
 

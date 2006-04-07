@@ -4,12 +4,13 @@
 __metaclass__ = type
 
 __all__ = [
+    'HasSpecificationsView',
     'SpecificationTargetView',
     ]
 
 from canonical.lp.dbschema import (
     SpecificationSort, SpecificationStatus, SprintSpecificationStatus,
-    SpecificationGoalStatus)
+    SpecificationGoalStatus, SpecificationFilter)
 
 from canonical.launchpad.interfaces import (
     ISprint, IPerson, IProduct, IDistribution, IProductSeries,
@@ -20,7 +21,19 @@ from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 
 
-class SpecificationTargetView(LaunchpadView):
+class HasSpecificationsView(LaunchpadView):
+    """Base class for several context-specific views that involve lists of
+    specifications.
+
+    This base class knows how to handle and represent lists of
+    specifications, produced by a method view.specs(). The individual class
+    view objects each implement that method in a way that is appropriate for
+    them, because they each want to filter the list of specs in different
+    ways. For example, in the case of PersonSpecsView, you want to filter
+    based on the relationship the person has to the specs. In the case of a
+    ProductSpecsView you want to filter primarily based on the completeness
+    of the spec.
+    """
 
     def initialize(self):
         self._plan = None
@@ -55,103 +68,12 @@ class SpecificationTargetView(LaunchpadView):
         elif IDistribution.providedBy(self.context):
             self.goaltitle = 'Release'
 
-    @cachedproperty
     def specs(self):
-        """The list of specs that are going to be displayed in this view.
-
-        The method can review the URL and decide what will be included,
-        and what will not.
-
-        The typical URL is of the form:
-
-           ".../name1/+specs?role=creator&show=all"
-
-        This method will interpret the show= part based on the kind of
-        object that the ISpecificationTarget happens to be.
+        """This should be implemented in a subclass that knows how its
+        context can filter its list of specs.
         """
-        url = self.request.getURL()
-        show = self.request.form.get('show', None)
-        role = self.request.form.get('role', None)
-        if IPerson.providedBy(self.context):
-            # for a person, we need to figure out which set of specs to be
-            # showing, mostly based on the relationship of the person to the
-            # specs.
-            if role == 'created':
-                specs = self.context.created_specs
-            elif role == 'approver':
-                specs = self.context.approver_specs
-            elif role == 'assigned':
-                specs = self.context.assigned_specs
-            elif role == 'feedback':
-                specs = self.context.feedback_specs
-            elif role == 'drafter':
-                specs = self.context.drafted_specs
-            elif role == 'subscribed':
-                specs = self.context.subscribed_specs
-            else:
-                specs = shortlist(self.context.specifications())
 
-            # now we want to filter the list based on whether or not we are
-            # showing all of them or just the ones that are not complete
-            if show != 'all':
-                specs = [spec for spec in specs if not spec.is_complete]
-
-        elif IProductSeries.providedBy(self.context) or \
-             IDistroRelease.providedBy(self.context):
-            # produce a listing for a product series or distrorelease
-
-            specs = shortlist(self.context.specifications())
-
-            # filtering here is based on whether or not the spec has been
-            # approved or declined for this target
-            if show == 'all':
-                # we won't filter it if they ask for all specs
-                pass
-            elif show == 'declined':
-                specs = [
-                    spec
-                    for spec in specs
-                    if spec.goalstatus == SpecificationGoalStatus.DECLINED]
-            elif show == 'proposed':
-                specs = [
-                    spec
-                    for spec in specs
-                    if spec.goalstatus == SpecificationGoalStatus.PROPOSED]
-            else:
-                # the default is to show only accepted specs
-                specs = [
-                    spec
-                    for spec in specs
-                    if spec.goalstatus == SpecificationGoalStatus.ACCEPTED]
-
-        elif ISprint.providedBy(self.context):
-            # process this as if it were a sprint
-
-            spec_links = shortlist(self.context.specificationLinks())
-
-            # filter based on whether the topics were deferred or accepted
-            if show == 'deferred':
-                specs = [
-                    spec_link.specification
-                    for spec_link in spec_links
-                    if spec_link.status == SprintSpecificationStatus.DEFERRED]
-            else:
-                specs = [
-                    spec_link.specification
-                    for spec_link in spec_links
-                    if spec_link.is_confirmed is True]
-
-        else:
-            # This is neither a person, nor a distrorelease, nor a product
-            # series spec listing, nor a sprint
-            specs = shortlist(self.context.specifications())
-
-            # now we want to filter the list based on whether or not we are
-            # showing all of them or just the ones that are not complete
-            if show != 'all':
-                specs = [spec for spec in specs if not spec.is_complete]
-
-        return specs
+        raise NotImplementedError
 
     @property
     def categories(self):
@@ -255,4 +177,151 @@ class SpecificationTargetView(LaunchpadView):
         self._plan = plan
         self._dangling = dangling
 
+
+class SpecificationTargetView(HasSpecificationsView):
+
+    @cachedproperty
+    def specs(self):
+        """The list of specs that are going to be displayed in this view.
+
+        This method determines the appropriate filtering to be passed to
+        context.specifications(). See IHasSpecifications.specifications
+        for further details.
+
+        The method can review the URL and decide what will be included,
+        and what will not.
+
+        This particular implementation is used for IDistribution and
+        IProduct, the two objects which are an ISpecificationTarget.
+
+        The typical URL is of the form:
+
+           ".../name1/+specs?show=complete"
+
+        This method will interpret the show= part based on the kind of
+        object that is the context of this request.
+        """
+        show = self.request.form.get('show', None)
+        informational = self.request.form.get('informational', False)
+
+        filter = []
+
+        # filter on completeness, show incomplete if nothing is said
+        if show == 'all':
+            filter.append(SpecificationFilter.ALL)
+        elif show == 'complete':
+            filter.append(SpecificationFilter.COMPLETE)
+        elif show == None or show == 'incomplete':
+            filter.append(SpecificationFilter.INCOMPLETE)
+
+        # filter for informational status
+        if informational is not False:
+            filter.append(SpecificationFilter.INFORMATIONAL)
+
+        specs = self.context.specifications(filter=filter)
+
+        return specs
+
+
+    @cachedproperty
+    def OLD_specs(self):
+        """The list of specs that are going to be displayed in this view.
+
+        This method determines the appropriate filtering to be passed to
+        context.specifications(). See IHasSpecifications.specifications
+        for further details.
+
+        The method can review the URL and decide what will be included,
+        and what will not.
+
+        The typical URL is of the form:
+
+           ".../name1/+specs?role=creator&show=all"
+
+        This method will interpret the show= part based on the kind of
+        object that is the context of this request.
+        """
+        url = self.request.getURL()
+        show = self.request.form.get('show', None)
+        role = self.request.form.get('role', None)
+        if IPerson.providedBy(self.context):
+            # for a person, we need to figure out which set of specs to be
+            # showing, mostly based on the relationship of the person to the
+            # specs.
+            if role == 'created':
+                specs = self.context.created_specs
+            elif role == 'approver':
+                specs = self.context.approver_specs
+            elif role == 'assigned':
+                specs = self.context.assigned_specs
+            elif role == 'feedback':
+                specs = self.context.feedback_specs
+            elif role == 'drafter':
+                specs = self.context.drafted_specs
+            elif role == 'subscribed':
+                specs = self.context.subscribed_specs
+            else:
+                specs = shortlist(self.context.specifications())
+
+            # now we want to filter the list based on whether or not we are
+            # showing all of them or just the ones that are not complete
+            if show != 'all':
+                specs = [spec for spec in specs if not spec.is_complete]
+
+        elif IProductSeries.providedBy(self.context) or \
+             IDistroRelease.providedBy(self.context):
+            # produce a listing for a product series or distrorelease
+
+            specs = shortlist(self.context.specifications())
+
+            # filtering here is based on whether or not the spec has been
+            # approved or declined for this target
+            if show == 'all':
+                # we won't filter it if they ask for all specs
+                pass
+            elif show == 'declined':
+                specs = [
+                    spec
+                    for spec in specs
+                    if spec.goalstatus == SpecificationGoalStatus.DECLINED]
+            elif show == 'proposed':
+                specs = [
+                    spec
+                    for spec in specs
+                    if spec.goalstatus == SpecificationGoalStatus.PROPOSED]
+            else:
+                # the default is to show only accepted specs
+                specs = [
+                    spec
+                    for spec in specs
+                    if spec.goalstatus == SpecificationGoalStatus.ACCEPTED]
+
+        elif ISprint.providedBy(self.context):
+            # process this as if it were a sprint
+
+            spec_links = shortlist(self.context.specificationLinks())
+
+            # filter based on whether the topics were deferred or accepted
+            if show == 'deferred':
+                specs = [
+                    spec_link.specification
+                    for spec_link in spec_links
+                    if spec_link.status == SprintSpecificationStatus.DEFERRED]
+            else:
+                specs = [
+                    spec_link.specification
+                    for spec_link in spec_links
+                    if spec_link.is_confirmed is True]
+
+        else:
+            # This is neither a person, nor a distrorelease, nor a product
+            # series spec listing, nor a sprint
+            specs = shortlist(self.context.specifications())
+
+            # now we want to filter the list based on whether or not we are
+            # showing all of them or just the ones that are not complete
+            if show != 'all':
+                specs = [spec for spec in specs if not spec.is_complete]
+
+        return specs
 

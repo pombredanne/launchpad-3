@@ -345,7 +345,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SpecificationTargetView"
+    class="canonical.launchpad.browser.PersonSpecsView"
     facet="specifications"
     permission="zope.Public"
     >

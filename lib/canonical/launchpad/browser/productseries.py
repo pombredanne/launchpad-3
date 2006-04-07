@@ -124,18 +124,18 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Show All'
         return Link('+specs?show=all', text, icon='info')
 
-    def listapproved(self):
+    def listaccepted(self):
         text = 'Show Approved'
-        return Link('+specs?show=accepted', text, icon='info')
+        return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
         text = 'Show Proposed'
-        return Link('+specs?show=proposed', text, icon='info')
+        return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
         text = 'Show Declined'
         summary = 'Show the goals which have been declined'
-        return Link('+specs?show=declined', text, summary, icon='info')
+        return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     def setgoals(self):
         text = 'Set Goals'

@@ -23,7 +23,7 @@
       <tr>
         <th>Priority</th>
         <th>Specification</th>
-        <th>Status</th>
+        <th>Definition</th>
         <th>Delivery</th>
         <th>Assignee</th>
       </tr>
@@ -66,7 +66,7 @@
   </p>
 
   <p tal:condition="view/specs" class="discreet">
-    <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
+    <span tal:replace="view/specs/count">7</span> specification(s) listed.
   </p>
 
 </div>

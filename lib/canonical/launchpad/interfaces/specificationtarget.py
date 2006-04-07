@@ -21,11 +21,13 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    def specifications(quantity=None, sort=None):
-        """Specifications for this target, sorting based on the given
-        indicator (a dbschema).
+    def specifications(quantity=None, sort=None, filter=None):
+        """Specifications for this target.
 
-        If there is a quantity, then limit it to that number.
+        The sort is a dbschema which indicates the preferred sort order. The
+        filter is an indicator of the kinds of specs to be returned, and
+        appropriate filters depend on the kind of object this method is on.
+        If there is a quantity, then limit the result to that number.
         """
 
 

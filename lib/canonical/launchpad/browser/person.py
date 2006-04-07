@@ -27,6 +27,7 @@ __all__ = [
     'BugContactPackageBugsSearchListingView',
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
+    'PersonSpecsView',
     'PersonView',
     'TeamJoinView',
     'TeamLeaveView',
@@ -53,11 +54,13 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy)
+    TeamSubscriptionPolicy, SpecificationFilter)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -297,7 +300,7 @@ class PersonSpecsMenu(ApplicationMenu):
     def created(self):
         text = 'Registrant'
         summary = 'List specs registered by %s' % self.context.browsername
-        return Link('+specs?role=created', text, summary, icon='spec')
+        return Link('+specs?role=creator', text, summary, icon='spec')
 
     def approver(self):
         text = 'Approver'
@@ -309,12 +312,12 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Assignee'
         summary = 'List specs for which %s is the assignee' % (
             self.context.browsername)
-        return Link('+specs?role=assigned', text, summary, icon='spec')
+        return Link('+specs?role=assignee', text, summary, icon='spec')
 
     def drafted(self):
         text = 'Drafter'
         summary = 'List specs drafted by %s' % self.context.browsername
-        return Link('+specs?role=drafted', text, summary, icon='spec')
+        return Link('+specs?role=drafter', text, summary, icon='spec')
 
     def review(self):
         text = 'Feedback requested'
@@ -329,7 +332,7 @@ class PersonSpecsMenu(ApplicationMenu):
 
     def subscribed(self):
         text = 'Subscribed'
-        return Link('+specs?role=subscribed', text, icon='spec')
+        return Link('+specs?role=subscriber', text, icon='spec')
 
 
 class PersonSupportMenu(ApplicationMenu):
@@ -1513,6 +1516,69 @@ class PersonHackergotchiView(GeneralFormView):
             self.context.hackergotchi = hkg
         self._nextURL = canonical_url(self.context)
         return 'Success'
+
+
+class PersonSpecsView(HasSpecificationsView):
+
+    @cachedproperty
+    def specs(self):
+        """The list of specs that are going to be displayed in this view.
+
+        This method determines the appropriate filtering to be passed to
+        context.specifications(). See IHasSpecifications.specifications
+        for further details.
+
+        The method can review the URL and decide what will be included,
+        and what will not.
+
+        This particular implementation is used for IPerson and it makes sure
+        that we are linking in SOME way to the person.
+
+        The typical URL is of the form:
+
+           ".../name1/+specs?show=complete"
+
+        This method will interpret the show= part based on the kind of
+        object that is the context of this request.
+        """
+        url = self.request.getURL()
+        show = self.request.form.get('show', None)
+        role = self.request.form.get('role', None)
+        informational = self.request.form.get('informational', False)
+
+        filter = []
+
+        # filter on completeness, show incomplete if nothing is said
+        if show == 'all':
+            filter.append(SpecificationFilter.ALL)
+        elif show == 'complete':
+            filter.append(SpecificationFilter.COMPLETE)
+        elif show == None or show == 'incomplete':
+            filter.append(SpecificationFilter.INCOMPLETE)
+
+        # filter on relationship or role. the underlying class will give us
+        # the aggregate of everything if we don't explicitly select one or
+        # more
+        if role == 'creator':
+            filter.append(SpecificationFilter.CREATOR)
+        elif role == 'assignee':
+            filter.append(SpecificationFilter.ASSIGNEE)
+        elif role == 'drafter':
+            filter.append(SpecificationFilter.DRAFTER)
+        elif role == 'approver':
+            filter.append(SpecificationFilter.APPROVER)
+        elif role == 'feedback':
+            filter.append(SpecificationFilter.FEEDBACK)
+        elif role == 'subscriber':
+            filter.append(SpecificationFilter.SUBSCRIBER)
+
+        # filter for informational status
+        if informational is not False:
+            filter.append(SpecificationFilter.INFORMATIONAL)
+
+        specs = self.context.specifications(filter=filter)
+
+        return specs
 
 
 class TeamJoinView(PersonView):

@@ -25,7 +25,8 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, NotFoundError)
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, ImportStatus, SpecificationSort)
+    EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
+    SpecificationFilter)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
@@ -99,18 +100,46 @@ class Project(SQLBase, BugTargetBase):
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
 
-    def specifications(self, sort=None, quantity=None):
+    def specifications(self, sort=None, quantity=None, filter=[]):
         """See IHasSpecifications."""
+
+        # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
         elif sort == SpecificationSort.DATE:
             order = ['-datecreated', 'id']
-        results = Specification.select("""
+
+        # figure out what set of specifications we are interested in. for
+        # projects, we need to be able to filter on the basis of:
+        #
+        #  - completeness. by default, only incomplete specs shown
+        #  - informational.
+        #
+        base = """
             Specification.product = Product.id AND
             Product.project = %s
-            """ % self.id,
-            clauseTables=['Product'],
-            orderBy=order)[:quantity]
+            """ % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity,
+            clauseTables=['Product'])
         results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 

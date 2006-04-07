@@ -62,7 +62,7 @@ ALTER TABLE ProductRelease RENAME COLUMN title TO codename;
    flag those with a status value, but it is really a separate property of
    the spec. So let's go to that model.
 
-   The dbschema value for Informational (was) 55.
+   The dbschema value for SpecificationStatus.Informational (was) 55.
 
 */
 
