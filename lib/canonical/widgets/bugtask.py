@@ -41,7 +41,7 @@ class BugTaskAssigneeWidget(Widget):
 
         self.assignee_chooser_widget = SinglePopupWidget(
             context, context.vocabulary, request)
-        self.assignee_chooser_widget.onKeyPress = "selectAssignTo(this, event)"
+        self.assignee_chooser_widget.onKeyPress = "selectWidget('assign_to', event)"
 
         # Set some values that will be used as values for the input
         # widgets.

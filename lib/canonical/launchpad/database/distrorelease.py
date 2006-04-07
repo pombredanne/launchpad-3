@@ -700,11 +700,13 @@ class DistroRelease(SQLBase, BugTargetBase):
     def searchPackages(self, text):
         """See IDistroRelease."""
         drpcaches = DistroReleasePackageCache.select("""
-            distrorelease = %s AND
-            fti @@ ftq(%s)
-            """ % sqlvalues(self.id, text),
+            distrorelease = %s AND (
+            fti @@ ftq(%s) OR
+            DistroReleasePackageCache.name = %s)
+            """ % sqlvalues(self.id, text, text),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
+            prejoins=['binarypackagename'],
             distinct=True)
         return [DistroReleaseBinaryPackage(
             distrorelease=self,
@@ -853,7 +855,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return source_results.union(build_results.union(custom_results))
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug on an IDistroRelease,
         # because internally bugs are reported against IDistroRelease only when

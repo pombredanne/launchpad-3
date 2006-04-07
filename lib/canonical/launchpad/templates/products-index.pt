@@ -1,43 +1,41 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
-  <h1>Products in Launchpad</h1>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Products registered in Launchpad</h1>
+    </metal:heading>
+    <div metal:fill-slot="main">
+      <tal:notsearching condition="not:view/searchrequested">
+        <p>
+          In Launchpad, <dfn>products</dfn> are computer programs, libraries,
+          and documents that are developed as software.
+        </p>
+        <p>
+          There are <span tal:replace="context/count_all">5</span>
+          products registered in Launchpad, of which
+          <span tal:replace="context/count_buggy">5</span> have bugs reported,
+          <span tal:replace="context/count_translatable">5</span> 
+          have translations,
+          <span tal:replace="context/count_bounties">5</span> have bounties,
+          and <span tal:replace="context/count_reviewed">5</span>
+          have been reviewed.
+        </p>
+      </tal:notsearching>
 
   <form method="get">
   
-    <table>
-      <tr>
-        <td>
-          <input name="text" size="35" tal:attributes="value view/text" />
+          <input name="text" tal:attributes="value view/text" />
           <input tal:condition="view/searchrequested"
             type="submit"
             value="Search Again"
             />
           <input tal:condition="not: view/searchrequested"
             type="submit"
-            value="Search"
+            value="Search Products"
             />
-        </td>
-      </tr>
-    </table>
-
-    <p class="formHelp">
-      Enter any part of the product name, title or
-      description.
-    </p>
 
   </form>
 

@@ -256,18 +256,18 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        fields="title comment private"
+        fields="title comment private security_related"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
         arguments=""
-        keyword_arguments="title comment private"
+        keyword_arguments="title comment private security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/products/$Product.name/+filebug">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="30"
+           displayWidth="50"
            extra="tabindex=1" />
         <browser:widget
            field="comment"
@@ -275,9 +275,13 @@
            extra="tabindex=2"
            width="62" />
         <browser:widget
-           field="private"
+           field="security_related"
            class="zope.app.form.browser.CheckBoxWidget"
            extra="tabindex=3" />
+        <browser:widget
+           field="private"
+           class="zope.app.form.browser.CheckBoxWidget"
+           extra="tabindex=4" />
     </browser:addform>
 
     <browser:addform
@@ -418,9 +422,6 @@
         <browser:page
             name="+all"
             template="../templates/products-all.pt" />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/productset-portlet-details.pt" />
     </browser:pages>
 
     <browser:pages
