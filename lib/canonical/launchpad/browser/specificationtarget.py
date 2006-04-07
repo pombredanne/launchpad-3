@@ -39,8 +39,6 @@ class HasSpecificationsView(LaunchpadView):
         self._plan = None
         self._dangling = None
         self._categories = None
-        self.listing_detailed = True
-        self.listing_compact = False
 
         url = self.request.getURL()
         # XXX: SteveAlexander, 2006-03-06.  This url-sniffing view_title
@@ -60,13 +58,6 @@ class HasSpecificationsView(LaunchpadView):
             self.view_title = 'Subscribed by %s' % self.context.title
         else:
             self.view_title = ''
-
-        # Set a title for the "Goal" of any specs
-        self.goaltitle = ''
-        if IProduct.providedBy(self.context):
-            self.goaltitle = 'Series'
-        elif IDistribution.providedBy(self.context):
-            self.goaltitle = 'Release'
 
     def specs(self):
         """This should be implemented in a subclass that knows how its
@@ -142,13 +133,15 @@ class HasSpecificationsView(LaunchpadView):
         specs currently in the queue for this target. Save the plan in
         self._plan, and put any dangling specs in self._dangling.
         """
+        # XXX sabdfl 2006-04-07 this is incomplete and will not build a
+        # proper comprehensive roadmap
         plan = []
-        specs = set(self.context.specifications())
-        # filter out the ones that are already complete
-        specs = [spec for spec in specs if not spec.is_complete]
+        filter = [SpecificationFilter.INCOMPLETE]
+        specs = set(self.context.specifications(filter=filter))
         # sort the specs first by priority (most important first) then by
         # status (most complete first)
-        specs = sorted(specs, key=lambda a: (a.priority, -a.status.value),
+        specs = sorted(specs,
+            key=lambda a: (a.priority.sortkey, -a.status.sortkey),
             reverse=True)
         found_spec = True
         while found_spec:
@@ -221,6 +214,13 @@ class SpecificationTargetView(HasSpecificationsView):
         specs = self.context.specifications(filter=filter)
 
         return specs
+
+    @property
+    def goaltitle(self):
+        if IProduct.providedBy(self.context):
+            return 'Series'
+        elif IDistribution.providedBy(self.context):
+            return 'Release'
 
 
     @cachedproperty

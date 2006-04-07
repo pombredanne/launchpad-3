@@ -47,6 +47,11 @@ class Sprint(SQLBase):
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
 
+    # attributes
+    @property
+    def displayname(self):
+        return self.title
+
     # useful joins
     attendees = RelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',
@@ -95,11 +100,11 @@ class Sprint(SQLBase):
             query += ' AND SprintSpecification.status = %d' % (
                 SprintSpecificationStatus.ACCEPTED.value)
         elif SpecificationFilter.PROPOSED in filter:
-            query += ' AND Specification.goalstatus = %d' % (
-                SpecificationGoalStatus.PROPOSED.value)
+            query += ' AND SprintSpecification.status = %d' % (
+                SprintSpecificationStatus.PROPOSED.value)
         elif SpecificationFilter.DECLINED in filter:
-            query += ' AND Specification.goalstatus = %d' % (
-                SpecificationGoalStatus.DECLINED.value)
+            query += ' AND SprintSpecification.status = %d' % (
+                SprintSpecificationStatus.DECLINED.value)
         
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -119,7 +124,9 @@ class Sprint(SQLBase):
             query += ' AND SprintSpecification.status=%s' % sqlvalues(status)
         return SprintSpecification.select(query,
             clauseTables=['Specification'],
-            orderBy=['-Specification.priority', 'Specification.name'])
+            orderBy=['-Specification.priority', 
+                     'Specification.status',
+                     'Specification.name'])
 
     def getSpecificationLink(self, speclink_id):
         """See ISprint.

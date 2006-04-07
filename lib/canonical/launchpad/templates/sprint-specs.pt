@@ -26,7 +26,7 @@
         <th>Definition</th>
         <th>Delivery</th>
         <th>Assignee</th>
-        <th tal:content="view/goaltitle">Hack!</th>
+        <th>Release/Series</th>
       </tr>
     </thead>
     <tbody class="lesser">

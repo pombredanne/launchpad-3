@@ -48,7 +48,7 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus,
-    TranslationPermission, SpecificationSort)
+    TranslationPermission, SpecificationSort, SpecificationFilter)
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError,

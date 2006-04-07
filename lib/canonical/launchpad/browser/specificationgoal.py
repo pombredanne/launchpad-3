@@ -8,9 +8,14 @@ from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
+
 from canonical.launchpad.interfaces import ISpecificationGoal
+
 from canonical.lp.dbschema import (
     SpecificationGoalStatus, SpecificationFilter)
+
+from canonical.database.sqlbase import flush_database_updates
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.helpers import shortlist
@@ -87,11 +92,13 @@ class GoalSetView(LaunchpadView):
         for specname in selected_specs:
             action_fn(self.context.getSpecification(specname))
 
+        flush_database_updates()
+
         # For example: "Accepted 26 specification(s)."
         self.status_message = '%s %d specification(s).' % (
             action, len(selected_specs))
 
-        if self.specs().count() == len(selected_specs):
+        if self.specs().count() == 0:
             # they are all done, so redirect back to the spec listing page
             self.request.response.redirect(
                 canonical_url(self.context)+'/+specs')

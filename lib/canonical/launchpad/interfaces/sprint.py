@@ -30,6 +30,7 @@ class ISprint(IHasOwner, IHasSpecifications):
         'for this sprint, or conference, or meeting. This will part of '
         'the URL so pick something short. A single word is all you get.'),
         constraint=name_validator)
+    displayname = Attribute('A pseudonym for the title.')
     title = TextLine(
         title=_('Title'), required=True, description=_("Please provide "
         "a title for this meeting. This will be shown in listings of "

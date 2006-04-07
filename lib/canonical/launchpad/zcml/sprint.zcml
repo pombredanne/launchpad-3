@@ -47,6 +47,28 @@
       template="../templates/sprint-portlet-attendees.pt" />
   </browser:pages>
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.SprintSpecsView"
+    facet="specifications"
+    permission="zope.Public">
+    <browser:page
+      name="+specs"
+      template="../templates/sprint-specs.pt" />
+    <browser:page
+      name="+categorized"
+      template="../templates/specificationtarget-categorized.pt" />
+    <browser:page
+      name="+assignments"
+      template="../templates/specificationtarget-assignments.pt" />
+    <browser:page
+      name="+roadmap"
+      template="../templates/specificationtarget-roadmap.pt" />
+    <browser:page
+      name="+portlet-latestspecs"
+      template="../templates/specificationtarget-portlet-latestspecs.pt" />
+  </browser:pages>
+
   <browser:editform
     name="+edit"
     facet="overview"
@@ -71,6 +93,7 @@
     name="+attend"
     for="canonical.launchpad.interfaces.ISprint"
     schema="canonical.launchpad.interfaces.ISprintAttendance"
+    facet="overview"
     fields="attendee time_starts time_ends"
     arguments="attendee time_starts time_ends"
     class="canonical.launchpad.browser.SprintAttendanceAddView"
@@ -87,6 +110,7 @@
     for="canonical.launchpad.interfaces.ISprint"
     schema="canonical.launchpad.interfaces.ISprintAttendance"
     class="canonical.launchpad.browser.SprintAttendanceAddView"
+    facet="overview"
     fields="attendee time_starts time_ends"
     arguments="attendee time_starts time_ends"
     title="Register Someone Else"

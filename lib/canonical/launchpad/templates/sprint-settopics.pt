@@ -8,13 +8,14 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="speclinks view/speclinks">
 
   <h1>Set topics for discussion</h1>
 
@@ -27,19 +28,20 @@
      tal:condition="view/status_message"
      tal:content="view/status_message" />
 
-  <p tal:condition="not: view/speclinks">
+  <p tal:condition="not: speclinks">
     <i>There are no specifications currently proposed as topics for
     discussion at
     <span tal:replace="context/title">Ubuntu Below Zero</span>. You can
     check the list of specifications
-    <a href="+specs?show=declined">previously declined</a> for the agenda.</i>
+    <a href="+specs?acceptance=declined">previously declined</a> for the
+    agenda.</i>
   </p>
 
   <form tal:attributes="action request/URL" method="POST">
 
-    <table tal:condition="view/speclinks">
+    <table tal:condition="speclinks">
       <tbody>
-        <tr tal:repeat="speclink view/speclinks">
+        <tr tal:repeat="speclink speclinks">
           <td>
             <input type="checkbox" name="speclink"
                    tal:attributes="
@@ -59,7 +61,7 @@
       </tbody>
     </table>
 
-    <div tal:condition="view/speclinks" class="discreet">
+    <div tal:condition="speclinks" class="discreet">
       Select the specifications that you wish to accept or decline.
     </div>
 
@@ -67,11 +69,11 @@
       <input type="submit"
              name="SUBMIT_CANCEL"
              value="Cancel" />
-      <input tal:condition="view/speclinks"
+      <input tal:condition="speclinks"
              type="submit"
              name="SUBMIT_ACCEPT"
              value="Accept" />
-      <input tal:condition="view/speclinks"
+      <input tal:condition="speclinks"
              type="submit"
              name="SUBMIT_DECLINE"
              value="Decline" />

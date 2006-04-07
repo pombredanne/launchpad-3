@@ -1576,7 +1576,7 @@ class SpecificationGoalStatus(DBSchema):
 
 
 class SprintSpecificationStatus(DBSchema):
-    """The current approval status of the spec on this sprints agenda.
+    """The current approval status of the spec on this sprint's agenda.
     
     This enum allows us to know whether or not the meeting admin team has
     agreed to discuss an item.

@@ -12,6 +12,7 @@ __all__ = [
     'SprintView',
     'SprintAddView',
     'SprintEditView',
+    'SprintSpecsView',
     'SprintTopicSetView',
     ]
 
@@ -21,8 +22,13 @@ from canonical.launchpad.interfaces import ILaunchBag, ISprint, ISprintSet
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 
-from canonical.lp.dbschema import SprintSpecificationStatus
+from canonical.lp.dbschema import (
+    SprintSpecificationStatus, SpecificationFilter)
+
+from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
@@ -70,22 +76,27 @@ class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'deferred', 'settopics']
+    links = ['assignments', 'declined', 'settopics', 'roadmap']
 
     def assignments(self):
         text = 'Assignments'
         summary = 'View the specification assignments'
         return Link('+assignments', text, summary, icon='info')
 
-    def deferred(self):
-        text = 'Deferred Topics'
+    def declined(self):
+        text = 'Declined Topics'
         summary = 'Show topics that were not accepted for discussion'
-        return Link('+specs?show=deferred', text, summary, icon='info')
+        return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     def settopics(self):
         text = 'Set Topics'
         summary = 'Approve or defer topics for discussion'
         return Link('+settopics', text, summary, icon='edit')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        summary = 'Suggest a sequence of implementation for these features'
+        return Link('+roadmap', text, summary, icon='info')
 
 
 class SprintSetNavigation(GetitemNavigation):
@@ -109,7 +120,6 @@ class SprintView(LaunchpadView):
 
     def initialize(self):
         self._sprint_spec_links = None
-        self._count = None
         self.show = self.request.form.get('show', None)
 
         # XXX: These appear not to be used.  SteveAlexander 2006-03-06.
@@ -141,17 +151,16 @@ class SprintView(LaunchpadView):
         elif self.show == 'submitted':
             spec_links = self.context.specificationLinks(
                 status=SprintSpecificationStatus.PROPOSED)
-        sprint_spec_links = [
-            link for link in spec_links if link.specification.is_incomplete]
-        self._count = len(sprint_spec_links)
-        return sprint_spec_links
+        return spec_links
 
-    @property
+    @cachedproperty
     def count(self):
-        if self._count is None:
-            # creating list of spec links will set self._count as a side-effect
-            dummy = self.spec_links
-        return self._count
+        return self.spec_links.count()
+
+    @cachedproperty
+    def proposed_count(self):
+        return self.context.specificationLinks(
+            status=SprintSpecificationStatus.PROPOSED).count()
 
     @property
     def specs(self):
@@ -187,6 +196,57 @@ class SprintEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
+class SprintSpecsView(HasSpecificationsView):
+
+    @cachedproperty
+    def specs(self):
+        """The list of specs that are going to be displayed in this view.
+
+        This method determines the appropriate filtering to be passed to
+        context.specifications(). See IHasSpecifications.specifications
+        for further details.
+
+        The method can review the URL and decide what will be included,
+        and what will not.
+
+        The typical URL is of the form:
+
+           ".../name1/+specs?show=complete"
+
+        This method will interpret the show= part based on the kind of
+        object that is the context of this request.
+        """
+        show = self.request.form.get('show', None)
+        acceptance = self.request.form.get('acceptance', None)
+        informational = self.request.form.get('informational', False)
+
+        filter = []
+
+        # filter on completeness, show incomplete if nothing is said
+        if show == 'all':
+            filter.append(SpecificationFilter.ALL)
+        elif show == 'complete':
+            filter.append(SpecificationFilter.COMPLETE)
+        elif show == 'incomplete':
+            filter.append(SpecificationFilter.INCOMPLETE)
+
+        # filter for informational status
+        if informational is not False:
+            filter.append(SpecificationFilter.INFORMATIONAL)
+
+        # filter for acceptance state, show accepted specs by default
+        if acceptance == 'declined':
+            filter.append(SpecificationFilter.DECLINED)
+        elif show == 'proposed':
+            filter.append(SpecificationFilter.PROPOSED)
+        else:
+            filter.append(SpecificationFilter.ACCEPTED)
+
+        specs = self.context.specifications(filter=filter)
+
+        return specs
+
+
 class SprintTopicSetView(LaunchpadView):
     """Custom view class to process the results of this unusual page.
 
@@ -200,11 +260,11 @@ class SprintTopicSetView(LaunchpadView):
         self.status_message = None
         self.process_form()
 
-    @cachedproperty
     def speclinks(self):
-        """Return the specification links with PROPOSED status this sprint.
+        """Return the specification links with PROPOSED status for this
+        sprint.
         """
-        speclinks = self.context.specificationLinks(
+        return self.context.specificationLinks(
             status=SprintSpecificationStatus.PROPOSED)
 
     def process_form(self):
@@ -253,11 +313,13 @@ class SprintTopicSetView(LaunchpadView):
             sprintspec = self.context.getSpecificationLink(sprintspec_id)
             sprintspec.status = new_status
 
+        flush_database_updates()
+
         # Status message like: "Accepted 27 specification(s)."
         self.status_message = '%s %d specification(s).' % (
             action, len(selected_specs))
 
-        if not selected_specs:
+        if self.speclinks().count() == 0:
             # they are all done, so redirect back to the spec listing page
             self.request.response.redirect(
                 canonical_url(self.context)+'/+specs')

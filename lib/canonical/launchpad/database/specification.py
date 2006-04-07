@@ -269,11 +269,11 @@ class Specification(SQLBase):
     # subscriptions
     def subscribe(self, person):
         """See ISpecification."""
-        # first see if a relevant subscription exists, and if so, update it
+        # first see if a relevant subscription exists, and if so, return it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
                 return sub
-        # since no previous subscription existed, create a new one
+        # since no previous subscription existed, create and return a new one
         return SpecificationSubscription(specification=self, person=person)
 
     def unsubscribe(self, person):
@@ -358,14 +358,15 @@ class Specification(SQLBase):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def all_deps(self, higher=None):
-        if higher is None:
-            higher = []
-        deps = set(higher)
+    def __all_deps(self, deps):
         for dep in self.dependencies:
             if dep not in deps:
                 deps.add(dep)
-                deps = deps.union(dep.all_deps(higher=deps))
+                dep.__all_deps(deps)
+
+    def all_deps(self):
+        deps = set()
+        self.__all_deps(deps)
         return sorted(deps, key=lambda s: (s.status, s.priority, s.title))
 
     def all_blocked(self, higher=None):
