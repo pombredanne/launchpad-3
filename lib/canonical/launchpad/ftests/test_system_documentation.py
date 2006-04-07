@@ -76,7 +76,7 @@ def librarianSetUp(test):
 def librarianTearDown(test):
     LibrarianTestSetup().tearDown()
     tearDown(test)
-    
+
 def importdSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='importd').setUp()
@@ -104,6 +104,16 @@ def branchStatusSetUp(test):
 
 def branchStatusTearDown(test):
     test._authserver.tearDown()
+    LaunchpadZopelessTestSetup().tearDown()
+
+def bugNotificationSendingSetup(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(
+        dbuser=config.malone.bugnotification_dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def bugNotificationSendingTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
 
@@ -154,6 +164,10 @@ special = {
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             '../doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
+    'bugnotification-sending.txt': FunctionalDocFileSuite(
+            '../doc/bugnotification-sending.txt',
+            setUp=bugNotificationSendingSetup,
+            tearDown=bugNotificationSendingTearDown),
     'branch-status-client.txt': FunctionalDocFileSuite(
             '../doc/branch-status-client.txt',
             setUp=branchStatusSetUp, tearDown=branchStatusTearDown),

@@ -15,6 +15,28 @@
     <a tal:attributes="href string:${context/fmt:url}/+members"
        tal:content="context/members/browsername">members name</a><br /> 
 
+    <b>Bug contact:</b><br />
+    <span tal:condition="context/bugcontact">
+      <img src="/@@/user.gif">
+      <a tal:attributes="href string:${context/fmt:url}/+editbugcontact"
+         tal:content="context/bugcontact/browsername">foo bar</a>
+    </span>
+    <span tal:condition="not:context/bugcontact">
+      <i>None</i>
+    </span>
+    <br />
+
+    <b>Security contact:</b><br />
+    <span tal:condition="context/security_contact">
+      <img src="/@@/user.gif">
+      <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
+         tal:content="context/security_contact/browsername">sample person</a>
+    </span>
+    <span tal:condition="not:context/security_contact">
+      <i>None</i>
+    </span>
+    <br />
+
     <b>Translation group:</b><br />
     <img src="/@@/languages.gif">
     <tal:block condition="context/translationgroup">

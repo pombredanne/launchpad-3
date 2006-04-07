@@ -75,6 +75,9 @@ class Distribution(SQLBase, BugTargetBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+    security_contact = ForeignKey(
+        dbName='security_contact', foreignKey='Person', notNull=False,
+        default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)
@@ -144,11 +147,12 @@ class Distribution(SQLBase, BugTargetBase):
             official_candidate=official_candidate, enabled=enabled,
             pulse_source=pulse_source)
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         return BugSet().createBug(
             distribution=self, comment=comment, title=title, owner=owner,
-            private=private)
+            security_related=security_related, private=private)
 
     @property
     def open_cve_bugtasks(self):
@@ -508,10 +512,15 @@ class Distribution(SQLBase, BugTargetBase):
 
     def searchSourcePackages(self, text):
         """See IDistribution."""
+        # The query below tries exact matching on the source package
+        # name as well; this is because source package names are
+        # notoriously bad for fti matching -- they can contain dots, or
+        # be short like "at", both things which users do search for.
         dspcaches = DistributionSourcePackageCache.select("""
             distribution = %s AND
-            fti @@ ftq(%s)
-            """ % sqlvalues(self.id, text),
+            (fti @@ ftq(%s) OR
+             DistributionSourcePackageCache.name = %s)
+            """ % sqlvalues(self.id, text, text),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
             prejoins=["sourcepackagename"],

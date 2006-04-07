@@ -14,7 +14,6 @@ __all__ = [
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
-    'IRemoteBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
@@ -69,16 +68,22 @@ class IBugTask(IHasDateCreated, IHasBug):
         vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
+    # XXX: the status, severity and priority's vocabularies do not
+    # contain an UNKNOWN item in bugtasks that aren't linked to a remote
+    # bugwatch; this would be better described in a separate interface,
+    # but adding a marker interface during initialization is expensive,
+    # and adding it post-initialization is not trivial.
+    #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.UNCONFIRMED)
-    statusexplanation = Text(
-        title=_("Status notes (optional)"), required=False)
     priority = Choice(
         title=_('Priority'), vocabulary='BugTaskPriority', required=False)
     severity = Choice(
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
+    statusexplanation = Text(
+        title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
@@ -104,6 +109,8 @@ class IBugTask(IHasDateCreated, IHasBug):
             "datecreated and now."))
     owner = Int()
     target = Attribute("The software in which this bug should be fixed")
+    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
+                              "officially"))
     targetname = Attribute("The short, descriptive name of the target")
     title = Attribute("The title of the bug related to this bugtask")
     related_tasks = Attribute("IBugTasks related to this one, namely other "
@@ -200,6 +207,9 @@ class IBugTaskSearch(Interface):
     has_patch = Bool(
         title=_('Show only bugs with patches available'), required=False,
         default=False)
+    has_no_package = Bool(
+        title=_('Exclude bugs with packages specified'),
+        required=False, default=False)
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
@@ -316,16 +326,6 @@ class IDistroReleaseBugTask(IBugTask):
         vocabulary='DistroRelease')
 
 
-class IRemoteBugTask(IBugTask):
-    """A bug task for products/distributions not using Malone.
-
-    The status of the bug will be updated from a remote bug watch.
-    """
-    status = Choice(title=_('Status'), vocabulary='RemoteBugTaskStatus')
-    severity = Choice(title=_('Severity'), vocabulary='RemoteBugTaskSeverity')
-    priority = Choice(title=_('Priority'), vocabulary='RemoteBugTaskPriority')
-
-
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
 # when spiv pushes a fix upstream for the bug that makes this hackery
 # necessary:
@@ -375,6 +375,7 @@ class BugTaskSearchParams:
     """
 
     product = None
+    project = None
     distribution = None
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
@@ -410,6 +411,12 @@ class BugTaskSearchParams:
         self.product = product
         self._has_context = True
 
+    def setProject(self, project):
+        """Set the upstream context on which to filter the search."""
+        assert not self._has_context
+        self.project = project
+        self._has_context = True
+
     def setDistribution(self, distribution):
         """Set the distribution context on which to filter the search."""
         assert not self._has_context
@@ -439,12 +446,6 @@ class IBugTaskSet(Interface):
 
     title = Attribute('Title')
 
-    def __getitem__(task_id):
-        """Get an IBugTask."""
-
-    def __iter__():
-        """Iterate through IBugTasks for a given bug."""
-
     def get(task_id):
         """Retrieve a BugTask with the given id.
 
@@ -459,7 +460,7 @@ class IBugTaskSet(Interface):
         Note: only use this method of BugTaskSet if you want to query
         tasks across multiple IBugTargets; otherwise, use the
         IBugTarget's searchTasks() method.
-        
+
         search() returns the tasks that satisfy the query specified in
         the BugTaskSearchParams argument supplied.
         """
@@ -498,6 +499,18 @@ class IBugTaskSet(Interface):
         <user> is None, no private bugtasks will be returned.
         """
 
+    # XXX: get rid of this kludge when we have proper security for
+    # scripts   -- kiko, 2006-03-23
+    def dangerousGetAllTasks(self):
+        """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
+
+        Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not
+        use this method. DO NOT USE IT. I REPEAT: DO NOT USE IT.
+
+        This method exists solely for the purpose of scripts that need
+        to do gardening over all bug tasks; the current example is
+        update-bugtask-targetnamecaches.
+        """
 
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
@@ -512,5 +525,4 @@ class IAddBugTaskForm(Interface):
     remotebug = TextLine(
         title=_('Remote Bug'), required=False, description=_(
             "The bug number of this bug in the remote bug tracker."))
-
 
