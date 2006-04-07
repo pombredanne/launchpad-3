@@ -14,12 +14,13 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
+    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
+    ITicketTarget)
 from canonical.launchpad import _
 
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-    ITicketTarget):
+                    IHasSecurityContact, ITicketTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -74,6 +75,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team who will receive all bugmail for this "
             "distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this distribution"),
         required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),

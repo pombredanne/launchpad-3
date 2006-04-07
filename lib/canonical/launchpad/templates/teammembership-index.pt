@@ -89,7 +89,7 @@
 
           <tr>
             <th>Subscription expires:</th>
-            <td tal:condition="view/canChangeExpirationDate">
+            <td tal:condition="view/canChangeExpirationDate" style="white-space: nowrap">
               <metal:radios use-macro="template/macros/expiry-radios" />
               <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
             </td>

@@ -79,7 +79,7 @@ def librarianSetUp(test):
 def librarianTearDown(test):
     LibrarianTestSetup().tearDown()
     tearDown(test)
-    
+
 def importdSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='importd').setUp()
@@ -112,6 +112,16 @@ def branchStatusSetUp(test):
 
 def branchStatusTearDown(test):
     test._authserver.tearDown()
+    LaunchpadZopelessTestSetup().tearDown()
+
+def bugNotificationSendingSetup(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(
+        dbuser=config.malone.bugnotification_dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def bugNotificationSendingTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
 
@@ -171,6 +181,10 @@ special = {
             optionflags=default_optionflags,
             stdout_logging_level=logging.WARNING
             ),
+    'bugnotification-sending.txt': DocFileSuite(
+            '../doc/bugnotification-sending.txt',
+            setUp=bugNotificationSendingSetup,
+            tearDown=bugNotificationSendingTearDown),
     'branch-status-client.txt': FunctionalDocFileSuite(
             'launchpad/doc/branch-status-client.txt',
             setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
@@ -183,6 +197,7 @@ special = {
 special['poexport.txt'].layer = ZopelessLayer
 special['support-tracker-emailinterface.txt'].layer = ZopelessLayer
 special['branch-status-client.txt'].layer = ZopelessLayer
+special['bugnotification-sending.txt'].layer = ZopelessLayer
 
 def test_suite():
     suite = unittest.TestSuite()

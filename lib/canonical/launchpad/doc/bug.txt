@@ -131,7 +131,7 @@ Now we can mark bug #6 private:
 
     >>> old_state = capture_state(
     ...     firefox_crashes, "id", "title", "description", "name",
-    ...     "private", "duplicateof")
+    ...     "private", "duplicateof", "security_related")
     >>> firefox_crashes.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
@@ -194,7 +194,8 @@ And again, let's fake setting the bug private:
 
     >>> old_state = capture_state(
     ...     blackhole_trash_folder, "id", "title",
-    ...     "description", "name", "private", "duplicateof")
+    ...     "description", "name", "private", "duplicateof",
+    ...     "security_related")
     >>> blackhole_trash_folder.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,

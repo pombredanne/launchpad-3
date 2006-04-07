@@ -1,12 +1,32 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import TextLine, Text
+
 from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 
 __metaclass__ = type
 
 __all__ = ('IPOTemplateNameSet', 'IPOTemplateName')
+
+
+class POTemplateNameNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another PO template name.")
+
+    @property
+    def _content_iface(self):
+        return IPOTemplateName
+
+    def _getByName(self, name):
+        try:
+            return getUtility(IPOTemplateNameSet)[name]
+        except NotFoundError:
+            return None
 
 
 class IPOTemplateNameSet(Interface):
@@ -52,9 +72,10 @@ class IPOTemplateName(Interface):
 
     id = Attribute("The id for this PO template name.")
 
-    name = TextLine(
+    name = POTemplateNameNameField(
         title=_("PO Template Name"),
         description=_("For example 'nautilus'."),
+        constraint=name_validator,
         required=True)
 
     title = TextLine(

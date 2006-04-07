@@ -5,34 +5,26 @@
                     xml:lang default_language|default;">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
-    <!-- Launchpad style sheet -->
-    <style type="text/css"
-        media="screen">@import url(/@@/launchpad.css);</style>
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
+    <style type="text/css">
+      @import url("/@@/dynarch/skin-aqua.css");
+    </style>
+    <script type="text/javascript" src="/@@/dynarch/hmenu.js"></script>
+    <!-- Launchpad style sheet -->
+    <style type="text/css"
+        media="screen">@import url(/@@/launchpad.css);</style>
     <link rel="shortcut icon" href="/@@/launchpad_favicon.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
-  <body>
-    <table class="header" style="width: 100%;">
-      <tr>
-        <td class="hierarchy">
-          <a href="/">
-            <img
-              alt=""
-              src="/@@/launchpad.png"
-              style="vertical-align: bottom;"
-            />
-          </a>
-          <tal:hierarchy content="structure context/@@+breadcrumbs" />
-        </td>
-        <td
-          class="login"
-          tal:content="structure context/@@login_status"
-        />
-      </tr>
-    </table>
+  <body onload="DynarchMenu.setup('menu', {electric: true});" id="document">
+    <ul id="menu" class="hierarchy">
+      <tal:hierarchy content="structure context/@@+breadcrumbs" />
+    </ul>
+    <div class="userLog">
+      <tal:login tal:content="structure context/@@login_status" />
+    </div>
     <div class="body">
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
         <div id="portal-columns">
@@ -55,10 +47,8 @@
               </metal:main>
             </div>
           </div>
-          <div id="layout2col-portlets" metal:define-slot="column_two">
-            <div tal:replace="structure context/@@+sitemap" />
-            <metal:macro define-macro="action-menu">
-              <tal:notlogin condition="python: '+login' not in request.getURL()">
+          <div id="layout2col-portlets">
+            <tal:notlogin condition="python: '+login' not in request.getURL()">
                 <ul
                   tal:define="facetmenu CONTEXTS/menu:facet"
                   tal:condition="facetmenu"
@@ -104,8 +94,7 @@
                     />
                   </tal:facet>
                 </ul>
-              </tal:notlogin>
-            </metal:macro>
+            </tal:notlogin>
             <metal:portlets define-slot="portlets_two">
             </metal:portlets>
             <metal:portlets define-slot="portlets_one">

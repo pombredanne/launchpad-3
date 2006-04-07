@@ -221,6 +221,7 @@ def canonical_urldata_iterator(obj):
     Raises NoCanonicalUrl if canonical url data is not available.
     """
     current_object = obj
+    urldata = None
     # The while loop is to proceed the first time around because we're
     # on the initial object, and subsequent times, because there is an object
     # inside.

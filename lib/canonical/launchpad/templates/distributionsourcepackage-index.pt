@@ -11,34 +11,38 @@
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-releases" />
+    <div tal:replace="structure context/@@+portlet-bugcontacts" />
+    <div tal:replace="structure context/@@+portlet-latestbugs" />
+    <div tal:replace="structure context/@@+portlet-tickets" />
   </metal:leftportlets>
 
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-latestbugs" />
-    <div tal:replace="structure context/@@+portlet-tickets" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <h2>Publishing history</h2>
   <table class="listing">
-  <tr>
-    <td align="center">Datetime</td>
-    <td align="center">Status</td>
-    <td align="center">Target</td>
-    <td align="center">Pocket</td>
-    <td align="center">Component</td>
-    <td align="center">Section</td>
-    <td align="center">Version</td>
-    <td colspan="3" align="center">Info</td>
-  </tr>
+        <thead>
+          <tr>
+            <th>Datetime</th>
+            <th>Status</th>
+            <th>Target</th>
+            <th>Pocket</th>
+            <th>Component</th>
+            <th>Section</th>
+            <th>Version</th>
+            <th colspan="3">Info</th>
+          </tr>
+        </thead>
+        <tbody>
   <tal:block repeat="publishing context/publishing_history"
              replace="structure publishing/@@+listing-detailed">
   </tal:block>
-  </table>
-
-</div>
-</body>
+        </tbody>
+      </table>
+    </div>
+  </body>
 </html>
  

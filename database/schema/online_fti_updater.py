@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 """
 Rebuild the full text indexes in a more friendly fashion, enabling this to
 be done without downtime.
 """
+__metaclass__ = type
 
 from fti import ALL_FTI, quote_identifier
 import psycopg

@@ -181,11 +181,6 @@ def handleMail(trans=transaction):
                         file_alias_url)
                     continue
 
-                if principal is None:
-                    _handle_error(
-                        'Unknown user: %s ' % mail['From'], file_alias_url)
-                    continue
-
                 # Extract the domain the mail was sent to. Mails sent to
                 # Launchpad should have an X-Original-To header.
                 if mail.has_key('X-Original-To'):
@@ -213,6 +208,11 @@ def handleMail(trans=transaction):
                         "No handler registered for '%s' " % (
                             ', '.join(addresses)),
                         file_alias_url)
+                    continue
+
+                if principal is None and not handler.allow_unknown_users:
+                    _handle_error(
+                        'Unknown user: %s ' % mail['From'], file_alias_url)
                     continue
 
                 handled = handler.process(mail, email_addr, file_alias)

@@ -35,15 +35,15 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('UNCONFIRMED').title
     'Unconfirmed'
     >>> external_bugzilla.convertRemoteStatus('NEW').title
-    'Unconfirmed'
-    >>> external_bugzilla.convertRemoteStatus('ASSIGNED').title
     'Confirmed'
+    >>> external_bugzilla.convertRemoteStatus('ASSIGNED').title
+    'In Progress'
     >>> external_bugzilla.convertRemoteStatus('REOPENED').title
-    'Unconfirmed'
+    'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
     'Needs Info'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
-    'Unconfirmed'
+    'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('PENDINGUPLOAD').title
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
@@ -152,7 +152,7 @@ synced:
 
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
-    Confirmed
+    In Progress
     >>> print thunderbird_task.priority.title
     Unknown
     >>> print thunderbird_task.severity.title

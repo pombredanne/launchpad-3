@@ -17,7 +17,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description, Summary, Title)
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
+    IHasSecurityContact)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
@@ -34,7 +35,8 @@ class ProductNameField(ContentNameField):
         return getUtility(IProductSet).getByName(name)
 
 
-class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
+class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
+               IHasSecurityContact, ITicketTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -69,19 +71,23 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
             "product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this product"),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     name = ProductNameField(
         title=_('Name'),
         constraint=name_validator,
-        description=_("""The short name of this product, which must be
-            unique among all the products. It should be at least one
-            lowercase letters or number followed by one or more chars,
-            numbers, plusses, dots or hyphens and will be part of the url
-            to this product in the Launchpad."""))
+        description=_("""At least one lowercase letter or number, followed by
+            letters, dots, hyphens or plusses.
+            Keep this name short, as it is used in URLs."""))
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The display name of this product is the name of
-            this product as it would appear in a paragraph of text."""))
+        description=_("""The name of the product as it would appear in a paragraph."""))
 
     title = Title(
         title=_('Title'),

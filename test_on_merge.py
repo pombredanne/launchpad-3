@@ -169,7 +169,7 @@ def main():
 
         if proc.stdout in rlist:
             chunk = os.read(proc.stdout.fileno(), 1024)
-            print chunk,
+            sys.stdout.write(chunk)
             if chunk == "":
                 open_readers.remove(proc.stdout)
 

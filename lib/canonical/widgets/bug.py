@@ -21,7 +21,7 @@ class BugWidget(IntWidget):
             return self.context.missing_value
         else:
             try:
-                return getUtility(IBugSet).get(input)
+                return getUtility(IBugSet).getByNameOrID(input)
             except (NotFoundError, ValueError):
-                raise ConversionError("Not a valid bug number.")
+                raise ConversionError("Not a valid bug number or nickname.")
 
