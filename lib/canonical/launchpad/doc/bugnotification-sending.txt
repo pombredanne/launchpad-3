@@ -47,6 +47,7 @@ list of emails to send:
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -101,6 +102,7 @@ Let's add a few changes and see how it looks like:
     ** Summary changed to: New summary.
     <BLANKLINE>
     ** Visibility changed to: Private.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -142,6 +144,7 @@ in the order they were added:
     ** Summary changed to: Another summary.
     <BLANKLINE>
     ** Visibility changed to: Public.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -173,6 +176,7 @@ If we insert yet another comment, it will be sent as a separate email.
     ** Summary changed to: Another summary.
     <BLANKLINE>
     ** Visibility changed to: Public.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -217,6 +221,7 @@ If we add three comments, three notifications will be sent:
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -226,6 +231,7 @@ If we add three comments, three notifications will be sent:
     Subject: [Bug 1] subject
     <BLANKLINE>
     another comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -235,6 +241,7 @@ If we add three comments, three notifications will be sent:
     Subject: [Bug 1] subject
     <BLANKLINE>
     yet another comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -272,6 +279,7 @@ change in between, three notifications will be sent:
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -281,6 +289,7 @@ change in between, three notifications will be sent:
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Summary changed to: New summary.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -290,6 +299,7 @@ change in between, three notifications will be sent:
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Private.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -379,6 +389,7 @@ well:
     ** Visibility changed to: Private.
     <BLANKLINE>
     ** Visibility changed to: Private.
+    <BLANKLINE>
     --
     Blackhole Trash folder
     http://localhost:8086/malone/bugs/2
@@ -388,6 +399,7 @@ well:
     Subject: [Bug 2] Re: Blackhole Trash folder
     <BLANKLINE>
     ** Visibility changed to: Public.
+    <BLANKLINE>
     --
     Blackhole Trash folder
     http://localhost:8086/malone/bugs/2
@@ -401,6 +413,7 @@ well:
     ** Visibility changed to: Private.
     <BLANKLINE>
     ** Visibility changed to: Private.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -410,6 +423,7 @@ well:
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Public.
+    <BLANKLINE>
     --
     Firefox does not support SVG
     http://localhost:8086/malone/bugs/1
@@ -421,6 +435,16 @@ X-Launchpad-Bug headers were added:
     [u'distribution=debian; sourcepackage=mozilla-firefox; component=None;...',
      u'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
      u'product=firefox; status=Unconfirmed; priority=Wontfix;...']
+
+There's a blank line before the signature, and the signature marker has
+a trailing space.
+
+    >>> email.get_payload(decode=True).splitlines()
+    ['** Visibility changed to: Public.',
+     '',
+     '-- ',
+     'Firefox does not support SVG',
+     'http://localhost:8086/malone/bugs/1']
 
     >>> for notification in BugNotification.select():
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -465,6 +489,7 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     Description:
     a description of the bug.
+    <BLANKLINE>
     --
     new bug
     http://localhost:8086/malone/bugs/11
@@ -499,6 +524,7 @@ top of the email:
     *** This bug is a duplicate of bug 1 ***
     <BLANKLINE>
     a comment.
+    <BLANKLINE>
     --
     new bug
     http://localhost:8086/malone/bugs/11
