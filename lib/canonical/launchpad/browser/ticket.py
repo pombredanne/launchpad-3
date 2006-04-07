@@ -44,6 +44,10 @@ class TicketView:
         # figure out who the user is for this transaction
         self.user = getUtility(ILaunchBag).user
 
+        # see if this is the creator, or not
+        if self.user == self.context.owner:
+            self.is_owner = True
+
         if not self.user or request.method != "POST":
             # No post, nothing to do
             return
@@ -82,10 +86,6 @@ class TicketView:
             if self.context.reopen(self.user):
                 self.notices.append("You have reopened this request.")
                 modified_fields.add('status')
-
-        # see if this is the creator, or not
-        if self.user == self.context.owner:
-            self.is_owner = True
 
         # see if there has been an attempt to create a bug
         makebug = request.form.get('makebug', None)
