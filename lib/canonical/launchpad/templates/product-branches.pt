@@ -37,7 +37,7 @@
         <td tal:content="branch/name/fmt:shorten/30">Name</td>
         <td>
           <span tal:content="branch/lifecycle_status/sortkey"
-                style="display: none;">23</span>
+                style="sortkey">23</span>
           <span tal:content="branch/lifecycle_status/title"
                 tal:attributes="
                   class string:branchstatus${branch/lifecycle_status/name}">
