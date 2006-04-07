@@ -88,12 +88,11 @@ class LaunchbagBugID(SubstitutionHelper):
 
 # Functions and strings used as the titles of pages.
 
+bazaar_all_branches = 'All branches in the Launchpad Bazaar'
+
 bazaar_index = 'The Launchpad Bazaar'
 
 bazaar_sync_review = 'Review upstream repositories for Launchpad Bzr syncing'
-
-# special request from DDAA ;-)
-bazaar_all_branches = 'Shiny listing of all branches EVER in the Bazaar'
 
 def binarypackagerelease_index(context, view):
     return "%s binary package in Launchpad" % context.title
