@@ -17,7 +17,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description, Summary, Title)
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
+    IHasSecurityContact)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
@@ -34,7 +35,8 @@ class ProductNameField(ContentNameField):
         return getUtility(IProductSet).getByName(name)
 
 
-class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
+class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
+               IHasSecurityContact, ITicketTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -67,6 +69,13 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         description=_(
             "The person or team who will receive all bugmail for this "
             "product"),
+        required=False, vocabulary='ValidPersonOrTeam')
+
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
     name = ProductNameField(
