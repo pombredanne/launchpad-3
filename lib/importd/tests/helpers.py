@@ -59,7 +59,7 @@ class SandboxHelper(object):
         os.mkdir(self.sandbox_path)
         os.chdir(self.sandbox_path)
         os.environ['HOME'] = self.sandbox_path
-        del os.environ['EDITOR']
+        os.environ.pop('EDITOR', None) # delete 'EDITOR' if present
         arch.set_my_id("John Doe <jdoe@example.com>")
 
     def tearDown(self):
