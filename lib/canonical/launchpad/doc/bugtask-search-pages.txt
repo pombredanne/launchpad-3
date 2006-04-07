@@ -33,8 +33,11 @@ The simple search form returns only open bugtasks.
     ...     debian, "+bugs", form_values)
 
     >>> open_bugtasks = list(distro_search_listingview.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name) for bugtask in open_bugtasks]
-    [(1, 'CONFIRMED'), (2, 'CONFIRMED'), (3, 'UNCONFIRMED')]
+    >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
+    ...  for bugtask in open_bugtasks]
+    [(3, 'UNCONFIRMED', 'MEDIUM'),
+     (1, 'CONFIRMED', 'MINOR'),
+     (2, 'CONFIRMED', 'MINOR')]
 
 And the advanced form allows us to query for specific bug statuses.
 
@@ -85,8 +88,10 @@ The simple search form returns only open bugtasks.
     ...     woody, "+bugs", form_values)
 
     >>> open_bugtasks = list(distrorelease_search_listingview.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name) for bugtask in open_bugtasks]
-    [(3, 'UNCONFIRMED'), (2, 'UNCONFIRMED')]
+    >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
+    ...  for bugtask in open_bugtasks]
+    [(2, 'UNCONFIRMED', 'MEDIUM'),
+     (3, 'UNCONFIRMED', 'MEDIUM')]
 
 And now we'll change the status of one of the bugtasks, but first we need to
 be logged in.
@@ -97,7 +102,13 @@ be logged in.
     >>> login("test@canonical.com")
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> open_bugtasks[0].status = BugTaskStatus.REJECTED
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> open_bugtask = getUtility(IBugTaskSet).get(18)
+    >>> open_bugtask.status.name
+    'UNCONFIRMED'
+    >>> open_bugtask.bug.id
+    3
+    >>> open_bugtask.status = BugTaskStatus.REJECTED
     >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.
