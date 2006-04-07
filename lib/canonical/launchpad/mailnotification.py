@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 """Event handlers that send email notifications."""
 
@@ -556,6 +556,7 @@ def add_bug_duplicate_notification(duplicate_bug, user):
 
     bug.addChangeNotification(body, person=user)
 
+
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
 
@@ -569,32 +570,6 @@ def get_cc_list(bug):
     subscriptions += bug.notificationRecipientAddresses()
 
     return subscriptions
-
-
-# XXX: Brad Bollenbach, 2005-04-11: This function will probably be
-# supplanted by get_bug_delta and get_task_delta (see slightly further
-# down.)
-def get_changes(before, after, fields):
-    """Return what changed from the object before to after for the
-    passed-in fields. fields is a tuple of (field_name, display_value_func)
-    tuples, where display_value_func is used to convert the differences
-    in attribute values into something you could display in, for example,
-    a change notification email."""
-    changes = {}
-
-    for field_name, display_value_func in fields:
-        old_val = getattr(before, field_name, None)
-        new_val = getattr(after, field_name, None)
-        if old_val != new_val:
-            changes[field_name] = {}
-            if display_value_func:
-                changes[field_name]['old'] = display_value_func(old_val)
-                changes[field_name]['new'] = display_value_func(new_val)
-            else:
-                changes[field_name]['old'] = old_val
-                changes[field_name]['new'] = new_val
-
-    return changes
 
 
 def get_bug_delta(old_bug, new_bug, user):
@@ -682,7 +657,6 @@ def notify_bug_added(bug, event):
     Event must be an ISQLObjectCreatedEvent.
     """
 
-    subject, body = generate_bug_add_email(bug)
     bug.addCommentNotification(bug.initial_message)
 
 
@@ -707,8 +681,9 @@ def notify_bug_modified(modified_bug, event):
             duplicate_bug=bug_delta.bug,
             user=event.user)
 
+
 def add_bug_change_notifications(bug_delta):
-    """Generate bug notifications and adds them to the bug."""
+    """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)
     for text_change in changes:
         bug_delta.bug.addChangeNotification(text_change, person=bug_delta.user)
