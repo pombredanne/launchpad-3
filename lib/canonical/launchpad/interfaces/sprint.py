@@ -61,12 +61,6 @@ class ISprint(IHasOwner, IHasSpecifications):
     attendees = Attribute('The set of attendees at this sprint.')
     attendances = Attribute('The set of SprintAttendance records.')
     
-    def specifications(quantity=None):
-        """Inherited from IHasSpecifications. 
-        In this case it returns Specifications to be discussed at this 
-        sprint, and by default only shows specifications that are not 
-        complete."""
-    
     def specificationLinks(status=None):
         """Return the SprintSpecification records matching the status given,
         or all of them if no status is passed. They should be in order of

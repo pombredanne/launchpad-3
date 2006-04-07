@@ -132,22 +132,18 @@ class SprintView(LaunchpadView):
         """List all of the SprintSpecifications appropriate for this view."""
         if self.show is None:
             spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.CONFIRMED)
+                status=SprintSpecificationStatus.ACCEPTED)
         elif self.show == 'all':
             spec_links = self.context.specificationLinks()
         elif self.show == 'deferred':
             spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.DEFERRED)
+                status=SprintSpecificationStatus.DECLINED)
         elif self.show == 'submitted':
             spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.SUBMITTED)
+                status=SprintSpecificationStatus.PROPOSED)
         sprint_spec_links = [
             link for link in spec_links if link.specification.is_incomplete]
         self._count = len(sprint_spec_links)
-        if self._count > 5:
-            # XXX: These appear not to be used.  SteveAlexander 2006-03-06.
-            self.use_detailed_listing = False
-            self.use_compact_listing = True
         return sprint_spec_links
 
     @property
@@ -206,13 +202,10 @@ class SprintTopicSetView(LaunchpadView):
 
     @cachedproperty
     def speclinks(self):
-        """Return the specification links with SUBMITTED status this sprint.
-
-        For the moment, we just filter the list in Python.
+        """Return the specification links with PROPOSED status this sprint.
         """
-        speclinks = shortlist(self.context.specificationLinks())
-        return [speclink for speclink in speclinks
-                if speclink.status == SprintSpecificationStatus.SUBMITTED]
+        speclinks = self.context.specificationLinks(
+            status=SprintSpecificationStatus.PROPOSED)
 
     def process_form(self):
         """Largely copied from webapp/generalform.py, without the
@@ -252,9 +245,9 @@ class SprintTopicSetView(LaunchpadView):
             selected_specs = [selected_specs]
 
         if action == 'Accepted':
-            new_status = SprintSpecificationStatus.CONFIRMED
+            new_status = SprintSpecificationStatus.ACCEPTED
         else:
-            new_status = SprintSpecificationStatus.DEFERRED
+            new_status = SprintSpecificationStatus.DECLINED
 
         for sprintspec_id in selected_specs:
             sprintspec = self.context.getSpecificationLink(sprintspec_id)

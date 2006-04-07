@@ -306,7 +306,7 @@ class SpecificationTargetView(HasSpecificationsView):
                 specs = [
                     spec_link.specification
                     for spec_link in spec_links
-                    if spec_link.status == SprintSpecificationStatus.DEFERRED]
+                    if spec_link.status == SprintSpecificationStatus.DECLINED]
             else:
                 specs = [
                     spec_link.specification

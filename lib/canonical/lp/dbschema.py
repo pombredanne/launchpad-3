@@ -1582,26 +1582,26 @@ class SprintSpecificationStatus(DBSchema):
     agreed to discuss an item.
     """
 
-    CONFIRMED = Item(10, """
-        confirmed
+    ACCEPTED = Item(10, """
+        Accepted
 
         The meeting organisers have confirmed this topic for the meeting
         agenda.
         """)
 
-    DEFERRED = Item(20, """
-        deferred
+    DECLINED = Item(20, """
+        Declined
 
-        This spec has been deferred from the meeting agenda 
+        This spec has been declined from the meeting agenda 
         because of a lack of available resources, or uncertainty over
         the specific requirements or outcome desired.
         """)
 
-    SUBMITTED = Item(30, """
-        submitted
+    PROPOSED = Item(30, """
+        Proposed
 
         This spec has been submitted for consideration by the meeting
-        organisers. It has not yet been approved or declined for the meeting
+        organisers. It has not yet been accepted or declined for the 
         agenda.
         """)
 

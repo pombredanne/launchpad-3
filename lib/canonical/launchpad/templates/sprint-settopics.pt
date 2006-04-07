@@ -27,17 +27,17 @@
      tal:condition="view/status_message"
      tal:content="view/status_message" />
 
-  <p tal:condition="not: view/specs">
+  <p tal:condition="not: view/speclinks">
     <i>There are no specifications currently proposed as topics for
     discussion at
     <span tal:replace="context/title">Ubuntu Below Zero</span>. You can
-    check the list of specifications previously declined using the links
-    to the right of this page.</i>
+    check the list of specifications
+    <a href="+specs?show=declined">previously declined</a> for the agenda.</i>
   </p>
 
   <form tal:attributes="action request/URL" method="POST">
 
-    <table tal:condition="view/specs">
+    <table tal:condition="view/speclinks">
       <tbody>
         <tr tal:repeat="speclink view/speclinks">
           <td>
@@ -59,7 +59,7 @@
       </tbody>
     </table>
 
-    <div tal:condition="view/specs" class="discreet">
+    <div tal:condition="view/speclinks" class="discreet">
       Select the specifications that you wish to accept or decline.
     </div>
 
@@ -67,11 +67,11 @@
       <input type="submit"
              name="SUBMIT_CANCEL"
              value="Cancel" />
-      <input tal:condition="view/specs"
+      <input tal:condition="view/speclinks"
              type="submit"
              name="SUBMIT_ACCEPT"
              value="Accept" />
-      <input tal:condition="view/specs"
+      <input tal:condition="view/speclinks"
              type="submit"
              name="SUBMIT_DECLINE"
              value="Decline" />
