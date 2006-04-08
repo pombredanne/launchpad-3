@@ -68,8 +68,7 @@ class IBranch(IHasOwner):
     url = BranchUrlField(
         title=_('Branch URL'), required=True,
         description=_("The URL where the branch is hosted. This is usually"
-            " the URL used to checkout the branch. Leave that empty if the"
-            " branch is hosted on bazaar.launchpad.net."),
+            " the URL used to checkout the branch."),
         constraint=valid_webref)
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,

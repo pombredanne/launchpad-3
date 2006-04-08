@@ -3085,6 +3085,7 @@ ALTER TABLE mirrordistroarchrelease DISABLE TRIGGER ALL;
 
 
 
+
 ALTER TABLE mirrordistroarchrelease ENABLE TRIGGER ALL;
 
 
@@ -8965,6 +8966,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (122, 69, 78);
 INSERT INTO spokenin ("language", country, id) VALUES (126, 72, 242);
 INSERT INTO spokenin ("language", country, id) VALUES (129, 74, 241);
 INSERT INTO spokenin ("language", country, id) VALUES (132, 126, 238);
+INSERT INTO spokenin ("language", country, id) VALUES (132, 154, 345);
 INSERT INTO spokenin ("language", country, id) VALUES (132, 207, 234);
 INSERT INTO spokenin ("language", country, id) VALUES (132, 22, 230);
 INSERT INTO spokenin ("language", country, id) VALUES (132, 39, 232);
