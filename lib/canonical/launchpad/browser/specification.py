@@ -10,6 +10,7 @@ __all__ = [
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
+    'SpecificationGoalSetView',
     'SpecificationSupersedingView',
     'SpecificationRetargetingView',
     ]
@@ -26,6 +27,8 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, GeneralFormView)
+
+from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import (
     SpecificationStatus, SpecificationGoalStatus)
@@ -237,6 +240,32 @@ class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class SpecificationGoalSetView(GeneralFormView):
+
+    def process(self, productseries=None, distrorelease=None,
+        whiteboard=None):
+        if productseries and distrorelease:
+            return 'Please choose a series OR a release, not both.'
+        if not (productseries or distrorelease):
+            return 'Please choose a series or release for this spec.'
+        if productseries is not None:
+            self.context.productseries = productseries
+            goal = productseries
+        if distrorelease is not None:
+            self.context.distrorelease = distrorelease
+            goal = distrorelease
+        # By default, this new goal must be approved
+        self.context.goalstatus = SpecificationGoalStatus.PROPOSED
+        # Now we want to auto-approve the goal if the person making
+        # the proposal has permission to do this anyway
+        # XXX sabdfl we really want this to be the "drivers" only, when we
+        # have Roles in place we should recode this for that
+        if check_permission('launchpad.Edit', goal):
+            self.context.goalstatus = SpecificationGoalStatus.ACCEPTED
+        self._nextURL = canonical_url(self.context)
+        return 'Done.'
 
 
 class SpecificationRetargetingView(GeneralFormView):

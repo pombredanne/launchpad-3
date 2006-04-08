@@ -17,7 +17,7 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+    <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <p metal:fill-slot="extra_info">
       Select the release of

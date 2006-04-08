@@ -19,6 +19,10 @@
 
 <div metal:fill-slot="main">
 
+  <h3><span tal:replace="context/target/displayname">Firefox</span>
+      Feature Specification:</h3>
+  <h1 tal:content="context/title">Specification Title Here</h1>
+
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="error message">
     notice goes here
