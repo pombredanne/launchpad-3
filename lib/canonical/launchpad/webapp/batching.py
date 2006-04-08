@@ -5,6 +5,8 @@ __metaclass__ = type
 import cgi, urllib
 
 from zope.interface import implements
+
+from canonical.config import config
 from canonical.launchpad.webapp.z3batching.batch import _Batch
 from canonical.launchpad.webapp.interfaces import (
     IBatchNavigator, ITableBatchNavigator,
@@ -15,23 +17,42 @@ class BatchNavigator:
     implements(IBatchNavigator)
 
     def __init__(self, results, request, size=None):
-        start = request.get('batch_start', 0)
+        """Constructs a BatchNavigator instance.
+
+        results is an iterable of results. request is the web request
+        being processed. size is a default batch size which the callsite
+        can choose to provide.
+
+        The request will be inspected for a start variable; if set, it
+        indicates which point we are currently displaying at. It will
+        also be inspected for a batch variable; if set, it will be used
+        instead of the size supplied in the callsite.
+        """
+        # In this code we ignore invalid request variables since it
+        # probably means the user finger-fumbled it in the request.
+        start = request.get('start', 0)
         try:
             start = int(start)
         except ValueError:
-            # We ignore invalid request variables since it probably
-            # means the user finger-fumbled it
             start = 0
-        self.batch = _Batch(results, size=size, start=start)
+
+        user_size = request.get('batch', None)
+        if user_size:
+            try:
+                size = int(user_size)
+            except ValueError:
+                pass
+
+        self.batch = _Batch(results, start=start, size=size)
         self.request = request
 
     def cleanQueryString(self, query_string):
-        """Removes batch_start and batch_end params from a query string."""
+        """Removes start and batch params from a query string."""
         query_parts = cgi.parse_qsl(query_string, keep_blank_values=True,
                                     strict_parsing=False)
         return urllib.urlencode(
             [(key, value) for (key, value) in query_parts
-             if key not in ['batch_start', 'batch_end']])
+             if key not in ['start', 'batch']])
 
     def generateBatchURL(self, batch):
         url = ""
@@ -44,9 +65,9 @@ class BatchNavigator:
             qs += "&"
 
         start = batch.startNumber() - 1
-        end = batch.endNumber()
-        url = "%s?%sbatch_start=%d&batch_end=%d" % (str(self.request.URL),
-                                                    qs, start, end)
+        size = batch.size
+        base_url = str(self.request.URL)
+        url = "%s?%sstart=%d&batch=%d" % (base_url, qs, start, size)
         return url
 
     def getBatches(self):
