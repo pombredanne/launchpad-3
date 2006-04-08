@@ -20,41 +20,43 @@
       </tr>
     </thead>
     <tbody class="lesser">
-      <tr tal:repeat="spec view/workload">
-        <td width="80">
-          <span class="sortkey" tal:content="spec/priority/sortkey" />
-          <span tal:content="spec/priority/title"
-                tal:attributes="
-                class string:specpriority${spec/priority/name}">High
-          </span>
-        </td>
-        <td>
-          <a tal:content="spec/name"
-             tal:attributes="href spec/fmt:url">foo-bar</a>
-        </td>
-        <td width="80">
-          <span class="sortkey" tal:content="spec/status/sortkey" />
-          <span tal:content="spec/status/title"
-                tal:attributes="
-                class string:specstatus${spec/status/name}">Approved
-          </span>
-        </td>
-        <td width="80">
-          <span class="sortkey" tal:content="spec/delivery/sortkey" />
-          <span tal:content="spec/delivery/title"
-                tal:attributes="
-                class string:specdelivery${spec/delivery/name}">Slow
-          </span>
-        </td>
-        <td width="40">
-          <tal:assignee condition="spec/assignee">X</tal:assignee>
-        </td>
-        <td width="40">
-          <tal:drafter condition="spec/drafter">X</tal:drafter>
-        </td>
-        <td width="40">
-          <tal:approver condition="spec/approver">X</tal:approver>
-        </td>
+      <tr tal:repeat="personspec view/workload">
+        <tal:spec define="spec personspec/spec">
+          <td width="80">
+            <span class="sortkey" tal:content="spec/priority/sortkey" />
+            <span tal:content="spec/priority/title"
+                  tal:attributes="
+                  class string:specpriority${spec/priority/name}">High
+            </span>
+          </td>
+          <td>
+            <a tal:content="spec/name"
+               tal:attributes="href spec/fmt:url">foo-bar</a>
+          </td>
+          <td width="80">
+            <span class="sortkey" tal:content="spec/status/sortkey" />
+            <span tal:content="spec/status/title"
+                  tal:attributes="
+                  class string:specstatus${spec/status/name}">Approved
+            </span>
+          </td>
+          <td width="80">
+            <span class="sortkey" tal:content="spec/delivery/sortkey" />
+            <span tal:content="spec/delivery/title"
+                  tal:attributes="
+                  class string:specdelivery${spec/delivery/name}">Slow
+            </span>
+          </td>
+          <td width="40">
+            <tal:assignee condition="personspec/assignee">X</tal:assignee>
+          </td>
+          <td width="40">
+            <tal:drafter condition="personspec/drafter">X</tal:drafter>
+          </td>
+          <td width="40">
+            <tal:approver condition="personspec/approver">X</tal:approver>
+          </td>
+        </tal:spec>
       </tr>
     </tbody>
   </table>
