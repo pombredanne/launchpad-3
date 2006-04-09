@@ -10,7 +10,7 @@ Builder View Classes and Pages
   >>> builder = getUtility(IBuilderSet).get(1)
 
 Get a "mock" request:
-  >>> mock_form = {'batch_start': 1}
+  >>> mock_form = {'start': 1}
   >>> request = TestRequest(form=mock_form)
 
 Let's instantiate the view for +index:

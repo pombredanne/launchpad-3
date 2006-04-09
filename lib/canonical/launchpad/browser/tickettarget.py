@@ -103,11 +103,12 @@ class TicketTargetView(LaunchpadView):
         categories = categories.values()
         return sorted(categories, key=lambda a: a['status'].value)
 
+    @cachedproperty
     def getLatestTickets(self, quantity=5):
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return self.context.tickets(quantity=quantity)
+        return list(self.context.tickets(quantity=quantity))
 
 
 class SupportContactTeamsWidget(MultiCheckBoxWidget):
