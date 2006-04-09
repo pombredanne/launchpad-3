@@ -92,13 +92,13 @@
     label="Report a bug in a distribution source package"
     class="canonical.launchpad.browser.FileBugView"
     permission="launchpad.AnyPerson"
-    fields="title comment private"
-    keyword_arguments="title comment private"
+    fields="title comment private security_related"
+    keyword_arguments="title comment private security_related"
     template="../templates/sourcepackage-filebug.pt">
     <browser:widget
       field="title"
       class="zope.app.form.browser.TextWidget"
-      displayWidth="30" />
+      displayWidth="50" />
     <browser:widget
       field="comment"
       class="zope.app.form.browser.TextAreaWidget"

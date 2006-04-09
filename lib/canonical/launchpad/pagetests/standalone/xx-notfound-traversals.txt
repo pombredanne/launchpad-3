@@ -127,6 +127,10 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/warty/i386/pmount/0.1-1")
 >>> check("/distros/debian/woody/i386/pmount")
 
+Test the DARBPR page for a REMOVED package:
+
+>>> check("/distros/ubuntu/warty/i386/at/3.14156")
+
 >>> check("/distros/ubuntu/hoary/+source/mozilla-firefox")
 >>> check("/distros/ubuntu/hoary/+package/mozilla-firefox")
 >>> check("/distros/ubuntu/warty/+package/mozilla-firefox")

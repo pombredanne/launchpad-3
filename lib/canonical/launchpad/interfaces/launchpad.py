@@ -11,7 +11,7 @@ from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Bool, Int
+from zope.schema import Bool, Int, Choice
 from persistent import IPersistent
 
 _ = MessageIDFactory('launchpad')
@@ -37,17 +37,21 @@ __all__ = [
     'IBeforeTraverseEvent', 'BeforeTraverseEvent',
     'IBreadcrumb', 'IBasicLaunchpadRequest',
     'ILaunchpadBrowserApplicationRequest',
+    'IHasSecurityContact',
     ]
 
 
 class NotFoundError(zope.exceptions.NotFoundError):
     """Launchpad object not found."""
 
+
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose is not available."""
 
+
 class UnexpectedFormData(AssertionError):
     """Got form data that is not what is expected by a form handler."""
+
 
 class ILaunchpadCelebrities(Interface):
     """Well known things.
@@ -292,6 +296,16 @@ class IHasBug(Interface):
 class IHasProductAndAssignee(IHasProduct, IHasAssignee):
     """An object that has a product attribute and an assigned attribute.
     See IHasProduct and IHasAssignee."""
+
+
+class IHasSecurityContact(Interface):
+    """An object that has a security contact."""
+
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues"),
+        required=False, vocabulary='ValidPersonOrTeam')
 
 
 class IAging(Interface):

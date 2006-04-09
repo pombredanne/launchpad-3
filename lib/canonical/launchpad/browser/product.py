@@ -157,8 +157,8 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'reassign', 'distributions', 'packages',
-        'branch_add', 'series_add', 'milestone_add',
-        'launchpad_usage', 'administer', 'rdf']
+        'branch_add', 'series_add', 'milestone_add', 'launchpad_usage',
+        'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -213,7 +213,7 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'bugcontact']
+    links = ['filebug', 'bugcontact', 'securitycontact']
 
     def filebug(self):
         text = 'Report a Bug'
@@ -241,6 +241,10 @@ class ProductBranchesMenu(ApplicationMenu):
         summary = 'Show detailed branch listing'
         return Link('+branchlisting', text, summary, icon='branch')
 
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change Security Contact'
+        return Link('+securitycontact', text, icon='edit')
 
 class ProductSupportMenu(ApplicationMenu):
 
@@ -568,7 +572,7 @@ class ProductSetView:
             except NotFoundError:
                 product = None
             if product is not None:
-                self.request.response.redirect(product.name)
+                self.request.response.redirect(canonical_url(product))
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match
