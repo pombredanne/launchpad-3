@@ -205,7 +205,7 @@ build_reset = ContextTitle('Reset %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
-builders = 'Launchpad build farm'
+builders_index = 'Launchpad build farm'
 
 builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
 
@@ -339,7 +339,7 @@ distrorelease_queue = ContextTitle('Queue for %s')
 
 distroreleasebinarypackage_index = ContextTitle('%s')
 
-distroreleaselanguage = ContextTitle('%s')
+distroreleaselanguage_index = ContextTitle('%s')
 
 distroreleasesourcepackagerelease_index = ContextTitle('%s')
 
@@ -453,6 +453,8 @@ milestone_edit = ContextTitle('Edit %s')
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
+
+object_driver = ContextTitle('Appoint the driver for %s')
 
 oops = 'Oops!'
 
@@ -605,11 +607,13 @@ def productrelease_edit(context, view):
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
-productseries_translations = ContextTitle('Translation templates for %s')
-
 productseries_ubuntupkg = 'Ubuntu source package'
 
 products_index = 'Products registered in Launchpad'
+
+productseries_index = ContextTitle('Overview of %s')
+
+productseries_translations = ContextTitle('Translation templates for %s')
 
 productseries_source = 'Import product series'
 
@@ -617,7 +621,7 @@ productseries_sourceadmin = 'Add source import'
 
 productseries_translations_upload = 'Request new translations upload'
 
-project = ContextTitle('%s in Launchpad')
+project_index = ContextTitle('%s in Launchpad')
 
 project_branches = ContextTitle('Bzr branches for %s')
 
@@ -675,10 +679,6 @@ def productseries_edit(context, view):
 
 productseries_new = ContextDisplayName('Register a new %s release series')
 
-def productseries(context, view):
-    return '%s release series: %s' % (
-        context.product.displayname, context.displayname)
-
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
 shipit_index = 'ShipIt'
@@ -709,7 +709,7 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
-sourcepackage = ContextTitle('%s')
+sourcepackage_index = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
@@ -902,12 +902,12 @@ template_new = 'EXAMPLE NEW TITLE'
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
-translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
+translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
 
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
-translationgroups = 'Rosetta translation groups'
+translationgroups_index = 'Rosetta translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
 

@@ -81,9 +81,11 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
     driver = Choice(
         title=_("Driver"),
         description=_(
-            "The person or team responsible for decisions about features "
-            "and bugs that will be targeted for any series in this "
-            "product."),
+            "This person or team will be able to set feature goals for "
+            "and approve bug targeting or backporting for ANY major series "
+            "in this product. You might want to leave this blank and just "
+            "appoint a team for each specific series, rather than having "
+            "one product team that does it all."),
         required=False, vocabulary='ValidPersonOrTeam')
 
     name = ProductNameField(

@@ -97,7 +97,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'reassign', 'rdf', 'changetranslators']
+    links = ['edit', 'driver', 'reassign', 'rdf', 'changetranslators']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -106,6 +106,11 @@ class ProjectOverviewMenu(ApplicationMenu):
     def reassign(self):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
+
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals for all products'
+        return Link('+driver', text, summary, icon='edit')
 
     def rdf(self):
         text = structured(

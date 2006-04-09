@@ -8,6 +8,7 @@ __all__ = [
     'DistroReleaseNavigation',
     'DistroReleaseFacets',
     'DistroReleaseView',
+    'DistroReleaseEditView',
     'DistroReleaseAddView',
     ]
 
@@ -30,6 +31,8 @@ from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.queue import QueueItemsView
+
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -80,16 +83,22 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['support', 'packaging', 'edit', 'reassign',
+    links = ['edit', 'reassign', 'driver', 'support', 'packaging', 
              'addport', 'admin', 'builds', 'queue']
 
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals this release'
+        return Link('+driver', text, summary, icon='edit')
+
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
-        text = 'Change Drivers'
+        text = 'Change Registrant'
         return Link('+reassign', text, icon='edit')
 
     def packaging(self):
@@ -285,6 +294,16 @@ class DistroReleaseView(BuildRecordsView, QueueItemsView):
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
+
+
+class DistroReleaseEditView(SQLObjectEditView):
+    """View class that lets you edit a DistroRelease object.
+
+    It redirects to the main distrorelease page after a successful edit.
+    """
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class DistroReleaseAddView(AddView):

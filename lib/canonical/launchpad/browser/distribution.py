@@ -110,7 +110,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
+    links = ['edit', 'driver', 'search', 'allpkgs', 'milestone_add', 'members',
              'reassign', 'addrelease', 'builds', 'officialmirrors',
              'allmirrors', 'newmirror', 'launchpad_usage']
 
@@ -120,8 +120,14 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals for all releases'
+        return Link('+driver', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change Registrant'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):

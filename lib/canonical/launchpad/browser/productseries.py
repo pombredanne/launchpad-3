@@ -64,13 +64,18 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'overview'
-    links = ['edit', 'editsource', 'ubuntupkg',
+    links = ['edit', 'driver', 'editsource', 'ubuntupkg',
              'addpackage', 'addrelease', 'download', 'translationupload',
              'addpotemplate', 'review']
 
     def edit(self):
         text = 'Change Series Details'
         return Link('+edit', text, icon='edit')
+
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals this series'
+        return Link('+driver', text, summary, icon='edit')
 
     def editsource(self):
         text = 'Edit Source'

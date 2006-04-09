@@ -149,8 +149,8 @@ class ISpecification(IHasOwner):
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
         "which supersedes this one. Note that selecting a specification "
-        "here and pressing Continue will mark this specification as "
-        "superseded."))
+        "here and pressing Continue will change the specification "
+        "status to Superseded."))
     informational = Bool(title=_('Is Informational'),
         required=False, default=False, description=_('Check this box if '
         'this specification is purely documentation or overview and does '

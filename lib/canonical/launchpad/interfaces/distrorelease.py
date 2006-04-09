@@ -64,7 +64,8 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "
-            "and bugs that will be targeted to this series."),
+            "and bugs that will be targeted to this release of the "
+            "distribution."),
         required=False, vocabulary='ValidPersonOrTeam')
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")

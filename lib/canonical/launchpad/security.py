@@ -331,7 +331,8 @@ class AdminDistroRelease(AdminByAdminsTeam):
     so for the moment we are locking down admin and edit on distributions
     and distroreleases to the Launchpad admin team.
     
-    NB: Please consult with SABDFL before modifying this permission.
+    NB: Please consult with SABDFL before modifying this permission because
+        changing it could cause the archive to get hammered horribly.
     """
     permission = 'launchpad.Admin'
     usedfor = IDistroRelease
@@ -353,6 +354,35 @@ class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(self.obj.distribution.owner) or
                 user.inTeam(admins))
 
+
+class DistroReleaseDrivers(AuthorizationBase):
+    """The drivers of a distrorelease can approve or decline features and
+    bugs for targeting to the distrorelease.
+    """
+    permission = 'launchpad.Driver'
+    usedfor = IDistroRelease
+
+    def checkAuthenticated(self, user):
+        for driver in self.obj.drivers:
+            if user.inTeam(driver):
+                return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
+class ProductSeriesDrivers(AuthorizationBase):
+    """The drivers of a product series can approve or decline features and
+    bugs for targeting to the series.
+    """
+    permission = 'launchpad.Driver'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        for driver in self.obj.drivers:
+            if user.inTeam(driver):
+                return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
 
 
 class EditBugTask(AuthorizationBase):

@@ -101,7 +101,7 @@ class ProductSeries(SQLBase):
             drivers.add(self.product.owner)
         if self.product.project is not None:
             if self.product.project.driver is not None:
-                drivers.add(self.project.driver)
+                drivers.add(self.product.project.driver)
             else:
                 drivers.add(self.product.project.owner)
         return sorted(drivers, key=lambda x: x.browsername)

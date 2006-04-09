@@ -21,7 +21,7 @@
     name="+setgoals"
     facet="specifications"
     class="canonical.launchpad.browser.specificationgoal.GoalSetView"
-    permission="launchpad.Edit"
+    permission="launchpad.Driver"
     template="../templates/specificationgoal-setgoals.pt"
     />
 

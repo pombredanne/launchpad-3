@@ -260,9 +260,7 @@ class SpecificationGoalSetView(GeneralFormView):
         self.context.goalstatus = SpecificationGoalStatus.PROPOSED
         # Now we want to auto-approve the goal if the person making
         # the proposal has permission to do this anyway
-        # XXX sabdfl we really want this to be the "drivers" only, when we
-        # have Roles in place we should recode this for that
-        if check_permission('launchpad.Edit', goal):
+        if check_permission('launchpad.Driver', goal):
             self.context.goalstatus = SpecificationGoalStatus.ACCEPTED
         self._nextURL = canonical_url(self.context)
         return 'Done.'

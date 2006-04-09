@@ -86,9 +86,13 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
     driver = Choice(
         title=_("Driver"),
         description=_(
-            "The person or team who are responsible for decisions about "
-            "features and bugs that will be targeted for any series in "
-            "ANY product in this project."),
+            "This is a project-wide appointment, think carefully here! "
+            "This person or team will be able to set feature goals and "
+            "approve bug targeting and backporting for ANY series in "
+            "ANY product in this project. You can also appoint drivers "
+            "at the level of a specific product or series. So you may "
+            "just want to leave this space blank, and instead let the "
+            "individual products and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
 
     homepageurl = TextLine(

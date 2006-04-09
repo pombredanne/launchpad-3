@@ -89,8 +89,9 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team responsible for decisions about features "
             "and bugs that will be targeted for any release in this "
-            "distribution. Note that you can also specify some drivers "
-            "who are limited to each specific release."),
+            "distribution. Note that you can also specify a driver "
+            "on each release who's permissions will be limited to that "
+            "specific release."),
         required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),

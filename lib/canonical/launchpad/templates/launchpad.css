@@ -128,7 +128,11 @@ h2 {
   font-size: 1.25em;
   margin: 0.5em 0;
 }
-h3, h4, h5, h6 {
+h3 {
+  font-size: 1.1em;
+  margin-bottom: 0.5em;
+}
+h4, h5, h6 {
   font-size: 1em;
   margin-bottom: 0;
 }
@@ -691,7 +695,7 @@ tr.highlight {
 .priorityLow     { color: Black; }
 .priorityWontfix { color: Gray; }
 
-/* Spec status and priority */
+/* Spec definition, delivery and priority */
 
 .specstatusIMPLEMENTED     { color: Green; }
 .specstatusINFORMATIONAL   { color: Green; }
@@ -721,6 +725,13 @@ tr.highlight {
 .specdeliveryNEEDSREVIEW        {color: Purple; }
 .specdeliveryAWAITINGDEPLOYMENT {color: Red; }
 .specdeliveryIMPLEMENTED        {color: Green; }
+
+
+/* Ticket status */
+
+.ticketstatusOPEN            { color: Black; }
+.ticketstatusANSWERED        { color: Green; }
+.ticketstatusREJECTED        { color: Red; }
 
 /* Board-like comment CSS */
 

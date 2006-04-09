@@ -7,13 +7,12 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/product/@@+portlet-summary" />
     <div tal:replace="structure context/@@+portlet-packages" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-releases" />
+    <div tal:replace="structure context/product/@@+portlet-summary" />
     <div tal:replace="structure context/@@+portlet-potemplates" />
     <div tal:replace="structure context/@@+portlet-source" />
 </metal:rightportlets>
@@ -32,6 +31,7 @@
     </p>
 
     <p class="lesser discreet">
+      <img src="/@@/info" />
       A "release series" is major release that would typically have a number
       of "point releases" associated with it. For example, Mozilla Firefox
       series "1.5" has releases such as "1.5a1", "1.5b1", "1.5.0" and
@@ -39,7 +39,15 @@
       create a Bazaar branch for this specific series of releases.
     </p>
 
-    <h2>This branch in the Bazaar</h2>
+    <tal:has_releases condition="context/releases">
+
+      <h2>Releases</h2>
+
+      <div tal:replace="structure context/@@+table-releases" />
+
+    </tal:has_releases>
+
+    <h2>This branch in The Bazaar</h2>
 
     <div tal:replace="structure context/@@+hctstatus-core" />
 

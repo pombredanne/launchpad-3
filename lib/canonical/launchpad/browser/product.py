@@ -148,16 +148,19 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'reassign', 'distributions', 'packages', 'branches',
+        'edit', 'driver', 'reassign', 'distributions', 'packages', 'branches',
         'branch_add', 'series_add', 'milestone_add', 'launchpad_usage',
         'administer', 'rdf']
 
-    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals for all series'
+        return Link('+driver', text, summary, icon='edit')
+
     def reassign(self):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
@@ -170,7 +173,6 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Packages'
         return Link('+packages', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
@@ -183,12 +185,10 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Register Branch'
         return Link('+addbranch', text, icon='add')
 
-    @enabled_with_permission('launchpad.Edit')
     def milestone_add(self):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
 
-    @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
         return Link('+launchpad', text, icon='edit')

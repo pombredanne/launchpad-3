@@ -44,7 +44,9 @@ class IProductSeries(IHasOwner, ISpecificationGoal):
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "
-            "and bugs that will be targeted to this series."),
+            "and bugs that will be targeted to this series. If you don't "
+            "nominate someone here, then the owner of this series will "
+            "automatically have those permissions."),
         required=False, vocabulary='ValidPersonOrTeam')
     title = Attribute('Title')
     displayname = Attribute(

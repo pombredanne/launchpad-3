@@ -53,7 +53,7 @@
             Carlos Perello Marin
           </a>
         </td>
-        <td tal:content="spec/product/name">firefox</td>
+        <td tal:content="spec/product/displayname">Firefox</td>
       </tr>
     </tbody>
   </table>
