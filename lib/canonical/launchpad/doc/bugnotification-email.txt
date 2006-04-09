@@ -385,7 +385,7 @@ We can also add a bugwatch while adding a new bugtask.
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
     ** Also affects: firefox (upstream) via
-       https://bugzilla.mozilla.org//show_bug.cgi?id=42
+       https://bugzilla.mozilla.org/show_bug.cgi?id=42
          Severity: Major
          Priority: Medium
            Status: Unconfirmed
