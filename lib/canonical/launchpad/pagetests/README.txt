@@ -63,12 +63,32 @@ Footnotes
   for Sample Person (a normal user):
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
 
-  for Mark Shuttleworth:
+  for Mark Shuttleworth: (launchpad admin, registry admin, mirror admin,
+                          ubuntu team, testing spanish team)
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
 
-  for Carlos:
+  for Carlos: (launchpad admin, rosetta admin, ubuntu translators, testing
+               spanish team)
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
 
-  for Salgado:
+  for Salgado: (launchpad admin)
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+
+  for Daf: (launchpad admin, rosetta admin)
+  ... Authorization: Basic ZGFmQGNhbm9uaWNhbC5jb206ZGFm
+
+  for Danner: (no memberships)
+  ... Authorization: Basic ZGFubmVyQG1peG1haWwuY29tOmRhbm5lcg==
+
+  for Edgar: (no memberships)
+  ... Authorization: Basic ZWRnYXJAbW9udGVwYXJhZGlzby5ocjplZGdhcg==
+
+  for Jblack: (launchpad admins)
+  ... Authorization: Basic amFtZXMuYmxhY2t3ZWxsQHVidW50dWxpbnV4LmNvbTpqYmxhY2s=
+
+  for Jdub: (ubuntu team)
+  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
+
+  for Cprov (no memberships)
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
 

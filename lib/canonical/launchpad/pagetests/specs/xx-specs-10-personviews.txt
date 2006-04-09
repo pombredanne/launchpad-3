@@ -65,7 +65,7 @@ And all the specs this person drafted.
 Finally, we should be able to see the workload of a person:
 
   >>> print http(r"""
-  ... GET /people/name16/+specworkload
+  ... GET /people/name16/+specworkload HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

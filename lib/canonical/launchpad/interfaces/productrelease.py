@@ -83,7 +83,7 @@ class IProductRelease(Interface):
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
 
-    def new(version, owner, productseries, title=None, shortdesc=None,
+    def new(version, owner, productseries, codename=None, shortdesc=None,
             description=None, changelog=None):
         """Create a new ProductRelease"""
         

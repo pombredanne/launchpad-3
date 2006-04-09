@@ -31,7 +31,6 @@ Test that the page to add a product release works.
 Now we'll add a new product release with the same version of an existing
 product release from another product series
 
-
   >>> print http(r"""
   ... POST /products/firefox/milestones/+addrelease HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -42,7 +41,7 @@ product release from another product series
   ... 
   ... 1.0.0
   ... -----------------------------10625510271450016991355919626
-  ... Content-Disposition: form-data; name="field.title"
+  ... Content-Disposition: form-data; name="field.codename"
   ... 
   ... SameName
   ... -----------------------------10625510271450016991355919626

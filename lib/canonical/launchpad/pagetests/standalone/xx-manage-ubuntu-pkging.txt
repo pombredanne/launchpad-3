@@ -3,15 +3,15 @@ We want to be able to edit the ubuntu packaging for a product series, and we
 also want to be able to create it where there was none previously.
 
 first, make sure we can see a page for this on the main series of evolution.
-The form field shows that it is currnetly mapped to evolution.
+The form field shows that it is currently mapped to evolution.
 
   >>> print http(r"""
   ... GET /products/evolution/main/+ubuntupkg HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...Evolution...Series...MAIN...
-      <h1>Ubuntu packaging</h1>
+  ...
+        <h1>Ubuntu packaging</h1>
   ...
       <form method="POST"
             action="http://localhost:9000/products/evolution/main/+ubuntupkg">
