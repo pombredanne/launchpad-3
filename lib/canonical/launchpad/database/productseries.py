@@ -45,6 +45,8 @@ class ProductSeries(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         foreignKey="Person", dbName="owner", notNull=True)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=True)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -84,6 +86,24 @@ class ProductSeries(SQLBase):
     @property
     def displayname(self):
         return self.name
+
+    @property
+    def drivers(self):
+        """See IProductSeries."""
+        drivers = []
+        if self.driver is not None:
+            drivers.append(self.driver)
+        else:
+            drivers.append(self.owner)
+        if self.product.driver is not None:
+            drivers.append(self.product.driver)
+        else:
+            drivers.append(self.product.owner)
+        if self.project.driver is not None:
+            drivers.append(self.project.driver)
+        else:
+            drivers.append(self.project.owner)
+        return drivers
 
     @property
     def potemplates(self):

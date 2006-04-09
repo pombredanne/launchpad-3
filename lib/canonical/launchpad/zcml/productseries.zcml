@@ -43,7 +43,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
-        path_expression="string:+series/${name}"
+        path_expression="name"
         attribute_to_parent="product"
         />
 

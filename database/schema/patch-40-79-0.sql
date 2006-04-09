@@ -40,8 +40,8 @@ COMMENT ON COLUMN Project.driver IS 'This person or team has the ability to appr
   -- some time ago but actually, we want that on every table!
 
 ALTER TABLE ProductSeries ADD COLUMN owner integer;
-UPDATE ProductSeries SET owner = (
-  SELECT id FROM Person WHERE name='sabdfl');
+UPDATE ProductSeries SET owner = Product.owner
+    FROM Product WHERE ProductSeries.product=Product.id;
 ALTER TABLE ProductSeries ADD CONSTRAINT productseries_owner_fk
   FOREIGN KEY (owner) REFERENCES Person(id);
 ALTER TABLE ProductSeries ALTER COLUMN owner SET NOT NULL;

@@ -78,6 +78,14 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
             "for this product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted for any series in this "
+            "product."),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     name = ProductNameField(
         title=_('Name'),
         constraint=name_validator,

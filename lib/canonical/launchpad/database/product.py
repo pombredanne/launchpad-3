@@ -56,6 +56,8 @@ class Product(SQLBase, BugTargetBase):
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person', notNull=False,
         default=None)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=True)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)

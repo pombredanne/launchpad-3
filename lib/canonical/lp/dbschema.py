@@ -1263,7 +1263,7 @@ class SpecificationDelivery(DBSchema):
         """)
 
     AWAITINGDEPLOYMENT = Item(85, """
-        Awaiting Deployment
+        Deployment
 
         The work contemplated in this specification has been done, and can
         be deployed in the production environment, but the system
@@ -1501,7 +1501,7 @@ class SpecificationStatus(DBSchema):
         """)
 
     PENDINGREVIEW = Item(20, """
-        Pending Review
+        Review
 
         This spec has been put in a reviewers queue. The reviewer will
         assess the clarity and comprehensiveness of the spec, and decide

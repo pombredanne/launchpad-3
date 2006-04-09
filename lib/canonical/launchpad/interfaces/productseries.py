@@ -40,6 +40,12 @@ class IProductSeries(IHasOwner, ISpecificationGoal):
         readonly=True)
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_('Product owner, either a valid Person or Team'))
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted to this series."),
+        required=False, vocabulary='ValidPersonOrTeam')
     title = Attribute('Title')
     displayname = Attribute(
         'Display name, in this case we have removed the underlying '
@@ -63,6 +69,12 @@ class IProductSeries(IHasOwner, ISpecificationGoal):
         "product series.")
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
+
+    drivers = Attribute(
+        'A list of the people or teams who are drivers for this series. '
+        'This list is made up of any drivers or owners from this '
+        'ProductSeries, the Product and if it exists, the relevant '
+        'Project.')
 
     def getRelease(version):
         """Get the release in this series that has the specified version.

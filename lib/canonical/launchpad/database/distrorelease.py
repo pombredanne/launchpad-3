@@ -93,6 +93,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=True)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
@@ -116,6 +118,20 @@ class DistroRelease(SQLBase, BugTargetBase):
     sections = RelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    @property
+    def drivers(self):
+        """See IDistroRelease."""
+        drivers = []
+        if self.driver is not None:
+            drivers.append(self.driver)
+        else:
+            drivers.append(self.owner)
+        if self.distribution.driver is not None:
+            drivers.append(self.distribution.driver)
+        else:
+            drivers.append(self.distribution.owner)
+        return drivers
 
     @property
     def packagings(self):
