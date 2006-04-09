@@ -224,6 +224,11 @@ class ProductBugsMenu(ApplicationMenu):
         text = 'Change Bug Contact'
         return Link('+bugcontact', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change Security Contact'
+        return Link('+securitycontact', text, icon='edit')
+
 
 class ProductBranchesMenu(ApplicationMenu):
 
@@ -241,10 +246,6 @@ class ProductBranchesMenu(ApplicationMenu):
         summary = 'Show detailed branch listing'
         return Link('+branchlisting', text, summary, icon='branch')
 
-    @enabled_with_permission('launchpad.Edit')
-    def securitycontact(self):
-        text = 'Change Security Contact'
-        return Link('+securitycontact', text, icon='edit')
 
 class ProductSupportMenu(ApplicationMenu):
 
