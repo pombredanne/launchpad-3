@@ -42,7 +42,7 @@
         <browser:page
             name="+index"
             facet="overview"
-            template="../templates/project.pt"
+            template="../templates/project-index.pt"
             lp:url="/projects/$Project.name/" />
         <browser:page
             name="+branches"

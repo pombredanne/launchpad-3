@@ -80,7 +80,7 @@
         <browser:page
             name="+index"
             facet="overview"
-            template="../templates/productseries.pt"
+            template="../templates/productseries-index.pt"
             lp:url="/products/$Product.name/$ProductSeries.name/" />
         <browser:page
             name="+translations"

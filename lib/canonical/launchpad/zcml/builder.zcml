@@ -37,7 +37,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.BuilderSetView">
         <browser:page
-            template="../templates/builders.pt"
+            template="../templates/builders-index.pt"
             name="+index"
             facet="overview"        
             lp:url="+builds/+index" />

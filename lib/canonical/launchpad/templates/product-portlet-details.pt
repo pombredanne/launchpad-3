@@ -42,14 +42,12 @@
       <br />
 
       <b>Driver:</b><br />
-      <span tal:condition="context/driver">
-        <img src="/@@/user.gif">
-        <a tal:attributes="href string:${context/fmt:url}/+driver"
-           tal:content="context/driver/browsername">sample person</a>
-      </span>
-      <span tal:condition="not:context/driver">
-        <i>Not yet assigned</i>
-      </span>
+      <i tal:condition="not:context/driver">>Not yet assigned</i>
+      <tal:has_driver condition="context/driver">
+        <img src="/@@/user" />
+        <a tal:content="driver/browsername"
+           tal:attributes="href driver/fmt:url">Carlos Perello</a>
+      </tal:has_driver>
       <br />
 
       <b>Translation group:</b><br />

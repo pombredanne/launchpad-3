@@ -51,7 +51,7 @@
         permission="zope.Public">
         <browser:page
             name="+index"
-            template="../templates/productrelease.pt" />
+            template="../templates/productrelease-index.pt" />
         <!-- ProductReleases Portlets -->
         <browser:page
             name="+portlet-details"
