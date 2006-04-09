@@ -46,7 +46,7 @@ class ProductSeries(SQLBase):
     owner = ForeignKey(
         foreignKey="Person", dbName="owner", notNull=True)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=True)
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -90,26 +90,27 @@ class ProductSeries(SQLBase):
     @property
     def drivers(self):
         """See IProductSeries."""
-        drivers = []
+        drivers = set()
         if self.driver is not None:
-            drivers.append(self.driver)
+            drivers.add(self.driver)
         else:
-            drivers.append(self.owner)
+            drivers.add(self.owner)
         if self.product.driver is not None:
-            drivers.append(self.product.driver)
+            drivers.add(self.product.driver)
         else:
-            drivers.append(self.product.owner)
-        if self.project.driver is not None:
-            drivers.append(self.project.driver)
-        else:
-            drivers.append(self.project.owner)
-        return drivers
+            drivers.add(self.product.owner)
+        if self.product.project is not None:
+            if self.product.project.driver is not None:
+                drivers.add(self.project.driver)
+            else:
+                drivers.add(self.product.project.owner)
+        return sorted(drivers, key=lambda x: x.browsername)
 
     @property
     def potemplates(self):
         result = POTemplate.selectBy(productseriesID=self.id)
         result = list(result)
-        return sorted (result, key=lambda x: x.potemplatename.name)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):

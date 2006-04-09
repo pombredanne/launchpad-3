@@ -79,7 +79,7 @@ class Distribution(SQLBase, BugTargetBase):
         dbName='security_contact', foreignKey='Person', notNull=False,
         default=None)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=True)
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)

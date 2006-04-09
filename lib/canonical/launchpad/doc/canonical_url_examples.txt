@@ -351,11 +351,11 @@ with the distro subset.
     ...     productseries=evolution_main_series)
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> canonical_url(potemplate)
-    u'http://localhost:8086/products/evolution/+series/main/+pots/evolution-2.2'
+    u'http://localhost:8086/products/evolution/main/+pots/evolution-2.2'
 
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
-    u'http://localhost:8086/products/evolution/+series/main/+pots/evolution-2.2/es'
+    u'http://localhost:8086/products/evolution/main/+pots/evolution-2.2/es'
 
 Rosetta also has translation groups.
 

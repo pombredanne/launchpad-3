@@ -2,16 +2,16 @@ Check to be sure that listing available resources to translate for a product
 series is working.
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+translations HTTP/1.1
+  ... GET /products/evolution/main/+translations HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
       <title>Translation templates for Evolution Series: MAIN</title>
   ...
-      <tr onclick="window.location='http://.../products/evolution/+series/main/+pots/evolution-2.2/af/+translate'">
+      <tr onclick="window.location='http://.../products/evolution/main/+pots/evolution-2.2/af/+translate'">
   <BLANKLINE>
           <td>
-            <a href="http://.../products/evolution/+series/main/+pots/evolution-2.2/af/+translate">Afrikaans</a>
+            <a href="http://.../products/evolution/main/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
           <td class="amount">23</td>
   ...

@@ -94,7 +94,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=True)
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
@@ -122,16 +122,16 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def drivers(self):
         """See IDistroRelease."""
-        drivers = []
+        drivers = set()
         if self.driver is not None:
-            drivers.append(self.driver)
+            drivers.add(self.driver)
         else:
-            drivers.append(self.owner)
+            drivers.add(self.owner)
         if self.distribution.driver is not None:
-            drivers.append(self.distribution.driver)
+            drivers.add(self.distribution.driver)
         else:
-            drivers.append(self.distribution.owner)
-        return drivers
+            drivers.add(self.distribution.owner)
+        return sorted(drivers, key=lambda x: x.browsername)
 
     @property
     def packagings(self):

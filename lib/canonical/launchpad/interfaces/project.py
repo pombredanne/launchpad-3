@@ -83,6 +83,14 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         title=_('Date Created'),
         description=_("""The date this project was created in Launchpad."""))
 
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team who are responsible for decisions about "
+            "features and bugs that will be targeted for any series in "
+            "ANY product in this project."),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     homepageurl = TextLine(
         title=_('Homepage URL'),
         required=False,

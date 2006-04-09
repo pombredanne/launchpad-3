@@ -52,20 +52,9 @@
           A summary of the series details and status.
         </span>
       </p>
-            
-      <table class="listing "
-        tal:condition="series/releases"
-        tal:attributes="id string:series_${series/name}">
-        <tbody>
-          <tr tal:repeat="release series/releases">
-            <td><a tal:content="release/version"
-                   tal:attributes="href release/fmt:url">version</a></td> 
-            <td tal:content="release/codename">code name</td>
-            <td tal:content="release/datereleased/fmt:date">date</td>
-          </tr>
-        </tbody>
-      </table>
 
+      <div tal:replace="structure series/@@+table-releases" />
+            
     </tal:per_series>
 
   </tal:hasseries>

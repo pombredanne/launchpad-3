@@ -113,7 +113,6 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 100%;
   font-weight: normal;
   margin: 0;
-  padding-top: 0.5em;
   text-align: left;
 }
 h1 :link, h2 :link, h3 :link, h4 :link, h5 :link, h6 :link,
@@ -929,7 +928,7 @@ ul.search>li, li.search {
   font-size: smaller;
 }
 
-/* sabdfl 22/10/2005 indented and moreindented useful for listings */
+/* indented and moreindented useful for listings */
 .indented {
   margin-left: 1em;
 }

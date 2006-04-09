@@ -59,7 +59,7 @@ header.
   ... GET /products/firefox/+spec/svg-support HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...products/firefox/+series/1.0...
+  ...products/firefox/1.0...
 
 
 OK, we will also pitch the e4x spec to the same series:
@@ -96,7 +96,7 @@ OK, we will also pitch the e4x spec to the same series:
 And now both should show up on the "+setgoals" page for that product series.
 
   >>> print http(r"""
-  ... GET /products/firefox/+series/1.0/+setgoals HTTP/1.1
+  ... GET /products/firefox/1.0/+setgoals HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -108,7 +108,7 @@ Now, we will accept one of them, the svg-support one. We expect to be told
 that 1 was accepted.
 
   >>> print http(r"""
-  ... POST /products/firefox/+series/1.0/+setgoals HTTP/1.1
+  ... POST /products/firefox/1.0/+setgoals HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 44
   ... Content-Type: application/x-www-form-urlencoded
@@ -122,7 +122,7 @@ We will now decline the remaining one. We expect to be redirected, since
 there are none left in the queue.
 
   >>> print http(r"""
-  ... POST /products/firefox/+series/1.0/+setgoals HTTP/1.1
+  ... POST /products/firefox/1.0/+setgoals HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 37
   ... Content-Type: application/x-www-form-urlencoded
@@ -130,14 +130,14 @@ there are none left in the queue.
   ... specification=e4x&SUBMIT_DECLINE=Decline""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/firefox/+series/1.0/+specs
+  Location: http://.../products/firefox/1.0/+specs
   ...
 
 
 The accepted item should show up in the list of specs for this series:
 
   >>> print http(r"""
-  ... GET /products/firefox/+series/1.0/+specs HTTP/1.1
+  ... GET /products/firefox/1.0/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Support Native SVG Objects...
@@ -147,7 +147,7 @@ As a final check, we will show that there is that spec in the "Deferred"
 listing.
 
   >>> print http(r"""
-  ... GET /products/firefox/+series/1.0/+specs?show=declined HTTP/1.1
+  ... GET /products/firefox/1.0/+specs?show=declined HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Support E4X in EcmaScript...

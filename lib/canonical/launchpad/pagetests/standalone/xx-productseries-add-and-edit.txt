@@ -38,14 +38,14 @@ After checking that the page +addseries is there, we try to add a new serie.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: +series/stable
+  Location: stable
   ...
 
 
 Now we are redirected to the Overview page of the product series we just added
 
   >>> print http(r"""
-  ... GET /products/firefox/+series/stable HTTP/1.1
+  ... GET /products/firefox/stable HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -59,7 +59,7 @@ Now we test if we can edit the new added release serie. First we check if we
 can reach the +edit page.
 
   >>> print http(r"""
-  ... GET /products/firefox/+series/stable/+edit HTTP/1.1
+  ... GET /products/firefox/stable/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -71,7 +71,7 @@ can reach the +edit page.
 Then we edit the information about the release series.
 
   >>> print http(r"""
-  ... POST /products/firefox/+series/stable/+edit HTTP/1.1
+  ... POST /products/firefox/stable/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------49080485113837823851913640861
   ... 
@@ -96,14 +96,14 @@ Then we edit the information about the release series.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/firefox/+series/unstable
+  Location: http://.../products/firefox/unstable
 
 
 Finally we test if the edited product release is there
 
   
   >>> print http(r"""
-  ... GET /products/firefox/+series/unstable HTTP/1.1
+  ... GET /products/firefox/unstable HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

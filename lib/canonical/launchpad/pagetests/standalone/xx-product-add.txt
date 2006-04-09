@@ -96,7 +96,7 @@ Project.
 We should have an automatic trunk series for this new product too.
 
   >>> print http(r"""
-  ... GET /products/testing/+series/trunk HTTP/1.1
+  ... GET /products/testing/trunk HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

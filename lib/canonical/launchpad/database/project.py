@@ -51,6 +51,8 @@ class Project(SQLBase, BugTargetBase):
     description = StringCol(dbName='description', notNull=True)
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
         default=UTC_NOW)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,

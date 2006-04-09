@@ -8,7 +8,7 @@ We'll start by showing the translation page for Spanish (Mexican), which
 should have the Spanish language selected as its alternate, by default.
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es_MX/+translate HTTP/1.1
+  ... GET /products/evolution/main/+pots/evolution-2.2/es_MX/+translate HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -20,7 +20,7 @@ There are some exceptions. pt_BR is quite independent of pt, so we should
 not show pt by default for pt_BR translators:
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+pots/evolution-2.2/pt_BR/+translate HTTP/1.1
+  ... GET /products/evolution/main/+pots/evolution-2.2/pt_BR/+translate HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -33,7 +33,7 @@ Of course, we als would not show an alternate language for something like
 French!
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+pots/evolution-2.2/fr/+translate HTTP/1.1
+  ... GET /products/evolution/main/+pots/evolution-2.2/fr/+translate HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok

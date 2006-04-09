@@ -10,11 +10,11 @@ Let's add 100 files to the queue so we have enough entries to play with.
   ...     'pagetests/standalone/xx-translation-import-queue-filtering.tar.gz')
   >>> tarball = open(test_file_name)
   >>> print http(r"""
-  ... POST /products/evolution/+series/main/+translations-upload HTTP/1.1
+  ... POST /products/evolution/main/+translations-upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 1689
   ... Content-Type: multipart/form-data; boundary=---------------------------1154239704143730702744913602
-  ... Referer: http://localhost:9000/products/evolution/+series/main/+translations-upload
+  ... Referer: http://localhost:9000/products/evolution/main/+translations-upload
   ... 
   ... -----------------------------1154239704143730702744913602
   ... Content-Disposition: form-data; name="file"; filename="foo.tar.gz"
@@ -37,7 +37,7 @@ we have all the entries we just imported.
   >>> print http(r"""
   ... GET /rosetta/imports HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/products/evolution/+series/main/+translations-upload
+  ... Referer: http://localhost:9000/products/evolution/main/+translations-upload
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

@@ -58,15 +58,19 @@
         <browser:page
             name="+portlet-source"
             template="../templates/productseries-portlet-source.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-source" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+portlet-source" />
         <browser:page
             name="+portlet-packages"
             template="../templates/productseries-portlet-packages.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-packages" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+portlet-packages" />
         <browser:page
             name="+portlet-releases"
             template="../templates/productseries-portlet-releases.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-releases" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+portlet-releases" />
+        <browser:page
+            name="+table-releases"
+            template="../templates/productseries-table-releases.pt"
+            lp:url="/$Product.name/$ProductSeries.name/+table-releases" />
     </browser:pages>
 
     <browser:pages
@@ -77,12 +81,12 @@
             name="+index"
             facet="overview"
             template="../templates/productseries.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/" />
+            lp:url="/products/$Product.name/$ProductSeries.name/" />
         <browser:page
             name="+translations"
             facet="translations"
             template="../templates/productseries-translations.pt"
-            lp:url="/products/evolution/+series/main/+translations" />
+            lp:url="/products/evolution/main/+translations" />
         <browser:page
             name="+potlist"
             facet="translations"
@@ -91,12 +95,12 @@
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+ubuntupkg" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+ubuntupkg" />
         <browser:page
             name="+hctstatus-core"
             facet="overview"
             template="../templates/productseries-hctstatus-core.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+hctstatus-core" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+hctstatus-core" />
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -119,7 +123,7 @@
         facet="overview"
         permission="zope.Public"
         name="+rdf"
-        lp:url="/products/$Product.name/+series/$ProductSeries.name/+rdf"
+        lp:url="/products/$Product.name/$ProductSeries.name/+rdf"
         attribute="__call__"
         />
 
@@ -132,7 +136,7 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"
-        lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit">
+        lp:url="/products/$Product.name/$ProductSeries.name/+edit">
     </browser:editform>
 
     <browser:addform
@@ -146,7 +150,7 @@
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/productrelease-add.pt"
-        lp:url="/product/$Product.name/+series/$ProductSeries.name/+addrelease">
+        lp:url="/product/$Product.name/$ProductSeries.name/+addrelease">
         <browser:widget
             field="productseries"
             class="canonical.widgets.ContextWidget" />
@@ -167,7 +171,7 @@
         <browser:page
             name="+source"
             template="../templates/productseries-source.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+source"
+            lp:url="/products/$Product.name/$ProductSeries.name/+source"
             />
     </browser:pages>
 
@@ -179,7 +183,7 @@
         <browser:page
             name="+sourceadmin"
             template="../templates/productseries-sourceadmin.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+sourceadmin"
+            lp:url="/products/$Product.name/$ProductSeries.name/+sourceadmin"
             />
     </browser:pages>
 
@@ -193,7 +197,7 @@
         fields="product name"
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
-        lp:url="/products/$Product.name/+series/$ProductSeries.name/+review">
+        lp:url="/products/$Product.name/$ProductSeries.name/+review">
         <browser:widget
             field="name"
             class="zope.app.form.browser.TextWidget"
@@ -211,7 +215,7 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/launchpad-addform.pt"
-        lp:url="/product/$Product.name/+series/$ProductSeries.name/+package">
+        lp:url="/product/$Product.name/$ProductSeries.name/+package">
         <browser:widget
             field="productseries"
             class="canonical.widgets.ContextWidget" />
@@ -229,7 +233,7 @@
             name="+translations-upload"
             facet="translations"
             template="../templates/productseries-translations-upload.pt"
-            lp:url="/products/evolution/+series/main/+translations-upload" />
+            lp:url="/products/evolution/main/+translations-upload" />
     </browser:pages>
 
     <!-- ProductSeriesSourceSet. Note this is only used by -->

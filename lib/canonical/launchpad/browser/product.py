@@ -59,10 +59,6 @@ class ProductNavigation(
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
 
-    @stepthrough('+series')
-    def traverse_series(self, name):
-        return self.context.getSeries(name)
-
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
@@ -76,8 +72,12 @@ class ProductNavigation(
             raise NotFoundError
         return self.context.getTicket(ticket_num)
 
-    def traverse(self, name):
+    @stepthrough('+release')
+    def traverse_release(self, name):
         return self.context.getRelease(name)
+
+    def traverse(self, name):
+        return self.context.getSeries(name)
 
 
 class ProductSetNavigation(GetitemNavigation):
@@ -367,7 +367,7 @@ class ProductView:
                 object_translatable = {
                     'title': productseries.title,
                     'potemplates': productseries.currentpotemplates,
-                    'base_url': '/products/%s/+series/%s' %(
+                    'base_url': '/products/%s/%s' %(
                         self.context.name,
                         productseries.name)
                     }
@@ -490,7 +490,7 @@ class ProductSeriesAddView(AddView):
 
     def nextURL(self):
         assert self.series
-        return '+series/%s' % self.series.name
+        return self.series.name
 
 
 class ProductRdfView(object):
