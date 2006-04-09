@@ -456,6 +456,8 @@ object_reassignment = ContextTitle('Reassign %s')
 
 object_driver = ContextTitle('Appoint the driver for %s')
 
+object_launchpadusage = ContextTitle('Launchpad usage by %s')
+
 oops = 'Oops!'
 
 def package_bugs(context, view):
@@ -577,6 +579,8 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Rosetta'))
 potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a product with Launchpad'
+
+product_admin = ContextTitle('Administer %s in Launchpad')
 
 product_bugcontact = ContextTitle('Edit bug contact for %s')
 

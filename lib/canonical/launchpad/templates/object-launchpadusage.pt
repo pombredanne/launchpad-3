@@ -11,8 +11,6 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:condition="context/project"
-       tal:replace="structure context/project/@@+portlet-details" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -24,8 +22,10 @@
   <div metal:use-macro="context/@@launchpad_editform/editform">
 
     <p metal:fill-slot="extra_info">
-      Your changes to the <span tal:replace="context/displayname">
-      product</span> details below will take effect immediately.  
+      You should indicate below whether the Launchpad services are the
+      official way this project tracks bugs, translations etc. If they are
+      not official, then users will be alerted to this when they try to use
+      Launchpad for <span tal:replace="context/displayname">Firefox</span>.
     </p>
         
   </div>
