@@ -5,7 +5,7 @@ page, together with the last failure message we got when mirroring.
   ... GET /people/jblack/+branch/+junk/devel-1.0 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Mirror failure...
+  ...Launchpad could not mirror this branch...
   ...I do not like Arch, so I am pretending it failed to mirror...
 
 If a branch failed to mirror but no failure message was stored, we properly
@@ -15,7 +15,7 @@ report the absence of an error message.
   ... GET /people/stevea/+branch/thunderbird/main HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Mirror failure...
+  ...Launchpad could not mirror this branch...
   ...No error message...
 
 
@@ -25,5 +25,5 @@ display any failure-related information.
   >>> gnome_terminal_page = str(http(r"""
   ... GET /people/name12/+branch/gnome-terminal/2.6 HTTP/1.1
   ... """))
-  >>> 'Mirror failure' in gnome_terminal_page
+  >>> "Launchpad could not mirror this branch" in gnome_terminal_page
   False

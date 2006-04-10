@@ -49,24 +49,22 @@
   </p>
 
   <tal:comment condition="nothing">
-    <!-- XXX I know, this style attribute is evil, but bold test makes the mirror
-    error difficult to read. There should probably be a specific class for this
-    sort of warning. David Allouche 2006-04-09 -->
+    <!-- XXX This style attribute is evil, but bold test makes the mirror error
+    difficult to read. Checked with mpt about that. - David Allouche 2006-04-09
+    -->
   </tal:comment>
   <div tal:condition="context/mirror_failures"
        class="warning message" style="font-weight: normal">
     <div>
-      <b>Mirror failure.</b> Failed to update the Launchpad mirror of this branch.
-    </div>
-    <div>
-      Latest attempt at <span tal:replace="context/last_mirror_attempt/fmt:datetime" />.
+      Launchpad could not mirror this branch at
+      <span tal:replace="context/last_mirror_attempt/fmt:datetime" />.
     </div>
     <div tal:condition="context/mirror_status_message">
-      Error:
+      The error was:
       <span tal:replace="context/mirror_status_message">Error 1</span>
     </div>
     <div tal:condition="not:context/mirror_status_message">
-      No error message.
+      No error message was recorded.
     </div>
   </div>
 
