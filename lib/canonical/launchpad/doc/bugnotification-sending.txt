@@ -358,11 +358,19 @@ Let's take a more complete example, where we edit different bugs as
 well:
 
     >>> bug_two = getUtility(IBugSet).get(2)
+    >>> long_comment = getUtility(IMessageSet).fromText(
+    ...     'subject',
+    ...     'This is a long comment, which is longer than 72 characters.'
+    ...     ' This should result in the lined being wrapped, so that it'
+    ...     " won't be displayed as a single long line. Let's add another"
+    ...     ' sentence just to make it longer.',
+    ...     foo_bar, datecreated=now - timedelta(minutes=6))
     >>> for minutes_ago in reversed(range(10)):
     ...     if minutes_ago == 6:
     ...         bug_one.addChangeNotification(
     ...             '** Visibility changed to: Public.', foo_bar,
     ...             when=now - timedelta(minutes=minutes_ago))
+    ...         bug_one.addCommentNotification(long_comment)
     ...         bug_two.addChangeNotification(
     ...             '** Visibility changed to: Public.', foo_bar,
     ...             when=now - timedelta(minutes=minutes_ago))
@@ -375,7 +383,7 @@ well:
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
-    8
+    9
 
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
@@ -422,6 +430,11 @@ well:
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
+    This is a long comment, which is longer than 72 characters.  This
+    should result in the lined being wrapped, so that it won't be
+    displayed as a single long line. Let's add another sentence just to
+    make it longer.
+    <BLANKLINE>
     ** Visibility changed to: Public.
     <BLANKLINE>
     --
@@ -440,7 +453,11 @@ There's a blank line before the signature, and the signature marker has
 a trailing space.
 
     >>> email.get_payload(decode=True).splitlines()
-    ['** Visibility changed to: Public.',
+    ['This is a long comment, which is longer than 72 characters. This should',
+     "result in the lined being wrapped, so that it won't be displayed as a",
+     "single long line. Let's add another sentence just to make it longer.",
+     '',
+     '** Visibility changed to: Public.',
      '',
      '-- ',
      'Firefox does not support SVG',
