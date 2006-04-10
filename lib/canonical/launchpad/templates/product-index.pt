@@ -33,7 +33,8 @@
     highlights.
   </div>
 
-  <div tal:content="structure context/description/fmt:text-to-html">
+  <div tal:content="structure context/description/fmt:text-to-html"
+       tal:condition="context/description">
     $Product.description goes here. This should be a longer piece of
     text, up to three paragraphs in length, which gives much more
     detailed information about the open source product in question.

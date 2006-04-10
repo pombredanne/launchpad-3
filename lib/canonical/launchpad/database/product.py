@@ -63,7 +63,7 @@ class Product(SQLBase, BugTargetBase):
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
+    description = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)

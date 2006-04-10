@@ -56,6 +56,10 @@ ALTER TABLE ProductSeries DROP COLUMN displayname;
 
 ALTER TABLE ProductRelease RENAME COLUMN title TO codename;
 
+  -- while we are here, lets make the product description optional
+
+ALTER TABLE Product ALTER COLUMN description DROP NOT NULL;
+
 /* Informational Specs
    Some specifications are never implemented, they are just "informational"
    and describe how part of the system is supposed to be used. We currently

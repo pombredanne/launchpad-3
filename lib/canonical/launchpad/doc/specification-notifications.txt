@@ -58,7 +58,7 @@ notifications were sent.
     ...     print subscription.person.preferredemail.email
     foo.bar@canonical.com
 
-Let's set an approver and add a subscriber.
+Let's set a different approver and add a subscriber.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sabdfl = getUtility(IPersonSet).getByEmail('mark@hbd.com')
