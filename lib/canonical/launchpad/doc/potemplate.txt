@@ -7,6 +7,20 @@ Test that the security setup for IPOTemplateSet is working
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
+getByName
+---------
+
+This method will return all IPOTemplate that have a given name.
+
+    >>> evolution_templates = potemplate_set.getByName('evolution-2.2')
+    >>> evolution_templates.count()
+    2
+    >>> for potemplate in evolution_templates:
+    ...     print potemplate.title
+    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+    Template "evolution-2.2" in Evolution MAIN
+
+
 POTemplateSubset
 ================
 

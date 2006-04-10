@@ -346,7 +346,10 @@ class IPOTemplateSet(Interface):
         """Return an iterator over all PO templates."""
 
     def __getitem__(name):
-        """Get a PO template by its name."""
+        """Get all PO templates with the given name."""
+
+    def getByName(name):
+        """Return all PO templates with the given name."""
 
     def getSubset(distrorelease=None, sourcepackagename=None,
                   productseries=None):

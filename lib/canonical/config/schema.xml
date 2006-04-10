@@ -341,6 +341,13 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="rosettaadmin">
+        <description>
+            Configuration for Rosetta admin tools
+        </description>
+        <key name="dbuser" datatype="string" default="rosettaadmin" />
+    </sectiontype>
+
     <sectiontype name="poimport">
         <description>
             Configuration for cronscripts/rosetta-poimport
@@ -359,6 +366,7 @@
         <description>
             Rosetta-specific configuration options
         </description>
+        <section name="*" type="rosettaadmin" attribute="rosettaadmin" required="no" />
         <section name="*" type="poimport" attribute="poimport" required="no" />
         <section name="*" type="poattach" attribute="poattach" required="no" />
     </sectiontype>
