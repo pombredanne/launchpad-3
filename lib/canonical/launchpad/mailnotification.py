@@ -93,6 +93,28 @@ class MailWrapper:
         return '\n'.join(wrapped_lines)
 
 
+def update_security_contact_subscriptions(modified_bugtask, event):
+    """Subscribe the new security contact when a bugtask's product changes.
+
+    No change is made for private bugs.
+    """
+    if event.object.bug.private:
+        return
+
+    if not IUpstreamBugTask.providedBy(event.object):
+        return
+
+    bugtask_before_modification = event.object_before_modification
+    bugtask_after_modification = event.object
+
+    if (bugtask_before_modification.product !=
+        bugtask_after_modification.product):
+        new_product = bugtask_after_modification.product
+        if new_product.security_contact:
+            bugtask_after_modification.bug.subscribe(
+                new_product.security_contact)
+
+
 def update_bug_contact_subscriptions(modified_bugtask, event):
     """Modify the bug Cc list when a bugtask is retargeted."""
     bugtask_before_modification = event.object_before_modification
@@ -328,6 +350,13 @@ def generate_bug_edit_email(bug_delta):
         else:
             visibility = "Public"
         change_info += u"** Visibility changed to: %s\n" % visibility
+
+    if bug_delta.security_related is not None:
+        if bug_delta.security_related['new']:
+            change_info += u"** This bug has been flagged as a security issue\n"
+        else:
+            change_info += (
+                u"** This bug is no longer flagged as a security issue\n")
 
     if bug_delta.external_reference is not None:
         old_ext_ref = bug_delta.external_reference.get('old')
@@ -616,7 +645,7 @@ def get_bug_delta(old_bug, new_bug, user):
     changes = {}
 
     for field_name in ("title", "description",  "name", "private",
-                       "duplicateof"):
+                       "security_related", "duplicateof"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)
@@ -755,6 +784,7 @@ def notify_bugtask_edited(modified_bugtask, event):
     send_bug_edit_notification(bug_delta)
 
     update_bug_contact_subscriptions(modified_bugtask, event)
+    update_security_contact_subscriptions(modified_bugtask, event)
 
 
 def notify_bug_comment_added(bugmessage, event):

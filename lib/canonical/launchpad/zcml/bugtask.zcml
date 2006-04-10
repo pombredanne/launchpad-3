@@ -173,10 +173,10 @@
         for="canonical.launchpad.interfaces.IBugTask"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        label="Set bug visibility"
+        label="Bug visibility and security"
         permission="launchpad.Edit"
         template="../templates/bug-secrecy.pt"
-        fields="private"
+        fields="private security_related"
         lp:url="malone/bugs/$Bug.id/+secrecy">
     </browser:editform>
 

@@ -609,7 +609,8 @@ entitled _Privacy and Team Awareness_):
 
     >>> old_state = capture_state(
     ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
-    ...     "description", "private", "name", "duplicateof")
+    ...     "description", "private", "name", "duplicateof",
+    ...     "security_related")
     >>> bug_upstream_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
