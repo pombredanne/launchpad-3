@@ -47,7 +47,7 @@
                   Status</span>
         </td>
       </tr>
-      <tr tal:condition="not: branchviewset">
+      <tr tal:condition="not:branchviewset">
         <td rowspan="4">
           <i>There are branches registered for
             <span tal:replace="context/name">firefox</span> but none of them
@@ -58,13 +58,14 @@
     </tbody>
   </table>
 
-  <div tal:condition="not: context/branches" class="portalMessage">
-    There are no branches currently registered for this product in Launchpad
+  <p tal:condition="not:branchset">
+    There are no branches registered for
+    <span tal:replace="context/displayname">Firefox</span> in Launchpad
     today. We recommend you visit
     <a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> for more
     information about how you can use the Bazaar revision control system to
-    improve community participation in this product!
-  </div>
+    improve community participation in this product.
+  </p>
 
 </div>
 </body>
