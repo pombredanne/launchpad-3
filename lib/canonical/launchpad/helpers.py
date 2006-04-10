@@ -897,6 +897,10 @@ def is_ascii_only(string):
 
 
 def capture_state(obj, *fields):
+    """Return a snapshot of obj.
+
+    Useful when publishing SQLObjectModifiedEvents in doctests.
+    """
     class State: pass
     state = State()
     for field in fields:
