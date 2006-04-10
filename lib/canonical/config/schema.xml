@@ -347,6 +347,8 @@
               single notification.
           </description>
         </key>
+        <key name="debbugs_db_location" datatype="string"
+            required="no" default="/srv/bugs-mirror.debian.org/" />
     </sectiontype>
 
     <sectiontype name="poimport">
