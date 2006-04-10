@@ -52,6 +52,9 @@ class Product(SQLBase, BugTargetBase):
         foreignKey="Person", dbName="owner", notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+    security_contact = ForeignKey(
+        dbName='security_contact', foreignKey='Person', notNull=False,
+        default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -156,11 +159,12 @@ class Product(SQLBase, BugTargetBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See IBugTarget."""
         return BugSet().createBug(
             product=self, comment=comment, title=title, owner=owner,
-            private=private)
+            security_related=security_related, private=private)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""

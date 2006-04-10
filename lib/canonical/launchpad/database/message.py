@@ -305,7 +305,7 @@ class MessageSet:
 
             # Skip the multipart section that walk gives us. This part
             # is the entire message.
-            if mime_type.startswith('multipart/'):
+            if part.is_multipart():
                 continue
 
             # Decode the content of this part.

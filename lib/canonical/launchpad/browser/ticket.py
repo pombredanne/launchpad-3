@@ -21,7 +21,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation)
+    GetitemNavigation, LaunchpadView)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import Snapshot
 
@@ -31,20 +31,15 @@ class TicketSetNavigation(GetitemNavigation):
     usedfor = ITicketSet
 
 
-class TicketView:
+class TicketView(LaunchpadView):
 
     __used_for__ = ITicket
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.is_owner = False
+    def initialize(self):
         self.notices = []
+        self.is_owner = self.user == self.context.owner
 
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
-
-        if not self.user or request.method != "POST":
+        if not self.user or self.request.method != "POST":
             # No post, nothing to do
             return
 
@@ -57,8 +52,9 @@ class TicketView:
         ticket_unmodified = Snapshot(self.context, providing=ITicket)
         modified_fields = set()
 
+        form = self.request.form
         # establish if a subscription form was posted
-        newsub = request.form.get('subscribe', None)
+        newsub = form.get('subscribe', None)
         if newsub is not None:
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
@@ -70,25 +66,21 @@ class TicketView:
                 modified_fields.add('subscribers')
 
         # establish if the user is trying to reject the ticket
-        reject = request.form.get('reject', None)
+        reject = form.get('reject', None)
         if reject is not None:
             if self.context.reject(self.user):
                 self.notices.append("You have rejected this request.")
                 modified_fields.add('status')
 
         # establish if the user is trying to reopen the ticket
-        reopen = request.form.get('reopen', None)
+        reopen = form.get('reopen', None)
         if reopen is not None:
             if self.context.reopen(self.user):
                 self.notices.append("You have reopened this request.")
                 modified_fields.add('status')
 
-        # see if this is the creator, or not
-        if self.user == self.context.owner:
-            self.is_owner = True
-
         # see if there has been an attempt to create a bug
-        makebug = request.form.get('makebug', None)
+        makebug = form.get('makebug', None)
         if makebug is not None:
             if self.context.bugs:
                 # we can't make a bug when we have linked bugs
