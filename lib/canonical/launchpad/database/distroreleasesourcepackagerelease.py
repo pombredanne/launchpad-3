@@ -231,7 +231,7 @@ class DistroReleaseSourcePackageRelease:
 
         if (new_component == current.component and
             new_section == current.section and
-            new.pocket == current.pocket):
+            new_pocket == current.pocket):
             return
 
         SecureSourcePackagePublishingHistory(

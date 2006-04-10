@@ -21,7 +21,8 @@ from canonical.launchpad.database import (DistroArchReleaseBinaryPackage,
 from canonical.launchpad.interfaces import (IBinaryPackageNameSet,
                                             IDistributionSet, NotFoundError)
 
-from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.lp.dbschema import (
+    PackagePublishingPocket, PackagePublishingPriority)
 
 from contrib.glock import GlobalLock
 
@@ -119,10 +120,6 @@ def init():
     if len(args) < 1:
         Log.error("Need to be given the name of a package to move.")
         sys.exit(1)
-    
-    if not Options.component:
-        Log.error("Need to be given a component to move package to.")
-        sys.exit(1)
 
     Log.debug("Acquiring lock")
     Lock = GlobalLock('/var/lock/launchpad-change-component.lock')
@@ -138,8 +135,8 @@ def init():
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
     if not Options.suite:
-        Options.distrorelease = Options.distro.currentrelease.name
-        Options.pocket = PackagePublishingPocket.RELEASED
+        Options.distrorelease = Options.distro.currentrelease
+        Options.pocket = PackagePublishingPocket.RELEASE
     else:
         Options.distrorelease, Options.pocket = (
             Options.distro.getDistroReleaseAndPocket(Options.suite))
@@ -176,7 +173,7 @@ def validate_options():
 
     if Options.priority:
         valid_priorities = dict(
-            [(p.name,p) for p in Options.distrorelease.priorites])
+            [(p.name.lower(),p) for p in PackagePublishingPriority.items])
         if Options.priority not in valid_priorities:
             Log.error("%s is not a valid priority for %s/%s."
                       % (Options.priority, Options.distro.name,
