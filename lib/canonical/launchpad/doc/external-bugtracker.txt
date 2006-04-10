@@ -62,4 +62,4 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
 
     >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=3)
     >>> [(tracker.name, tracker.watches.count()) for tracker in top_trackers]
-    [(u'mozilla.org', 5), (u'gnome-bugzilla', 1), (u'debbugs', 0)]
+    [(u'mozilla.org', 5), (u'debbugs', 4), (u'gnome-bugzilla', 1)]
