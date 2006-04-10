@@ -1169,6 +1169,7 @@ class BugTargetView:
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this target."""
         params = BugTaskSearchParams(orderby="-datecreated",
+                                     omit_dupes=True,
                                      user=getUtility(ILaunchBag).user)
 
         tasklist = self.context.searchTasks(params)

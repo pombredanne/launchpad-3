@@ -675,10 +675,10 @@ class DatabaseBranchDetailsStorage:
         return ri(self._startMirroringInteraction, branchID)
 
     def _startMirroringInteraction(self, transaction, branchID):
-        transaction.execute("""
+        transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-              WHERE id = %d""" % (branchID,))
+              WHERE id = %d""" % (branchID,)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
@@ -689,11 +689,11 @@ class DatabaseBranchDetailsStorage:
         return ri(self._mirrorCompleteInteraction, branchID)
     
     def _mirrorCompleteInteraction(self, transaction, branchID):
-        transaction.execute("""
+        transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
                   mirror_status_message = NULL
-              WHERE id = %d""" % (branchID,))
+              WHERE id = %d""" % (branchID,)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
@@ -704,11 +704,11 @@ class DatabaseBranchDetailsStorage:
         return ri(self._mirrorFailedInteraction, branchID, reason)
     
     def _mirrorFailedInteraction(self, transaction, branchID, reason):
-        transaction.execute("""
+        transaction.execute(utf8("""
             UPDATE Branch
               SET mirror_failures = mirror_failures + 1,
                   mirror_status_message = %s
-              WHERE id = %s""" % sqlvalues(reason, branchID))
+              WHERE id = %s""" % sqlvalues(reason, branchID)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
