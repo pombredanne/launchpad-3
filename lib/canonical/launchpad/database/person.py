@@ -6,6 +6,7 @@ __all__ = [
     'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
     'JabberIDSet', 'IrcID', 'IrcIDSet']
 
+import itertools
 import sets
 from datetime import datetime, timedelta
 import pytz
@@ -26,7 +27,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import shortlist, contactEmailAddresses
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -517,6 +518,14 @@ class Person(SQLBase):
                  'Person.teamowner IS NOT NULL' % self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
+    def getTeamAdminsEmailAddresses(self):
+        """See IPerson."""
+        assert self.teamowner is not None
+        to_addrs = set()
+        for person in itertools.chain(self.administrators, [self.teamowner]):
+            to_addrs.update(contactEmailAddresses(person))
+        return to_addrs
+
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
         """See IPerson."""
@@ -555,10 +564,8 @@ class Person(SQLBase):
             # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
             expires = now
 
-        tm.setStatus(status)
+        tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires
-        tm.reviewer = reviewer
-        tm.reviewercomment = comment
 
         tm.syncUpdate()
 

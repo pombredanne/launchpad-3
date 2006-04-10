@@ -1,6 +1,10 @@
   'salgado' have an email address that was probably added by gina, let's
   validate it now.
 
+  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  fixed.
+  >>> from canonical.launchpad.mail import stub
+  >>> stub.test_emails[:] = []
 
   >>> print http(r"""
   ... GET /people/salgado/+editemails HTTP/1.1
@@ -32,7 +36,6 @@
   Get the token we'll have to use to finish the registration process.
 
   >>> import email, re
-  >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)

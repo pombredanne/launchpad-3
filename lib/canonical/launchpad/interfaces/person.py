@@ -464,6 +464,11 @@ class IPerson(IHasSpecifications):
         date, reviewer and reviewercomment.
         """
 
+    def getTeamAdminsEmailAddresses():
+        """Return a set containing the email addresses of all administrators
+        of this team.
+        """
+
     def getSubTeams():
         """Return all subteams of this team.
 

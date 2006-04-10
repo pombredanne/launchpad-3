@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
+
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
@@ -281,9 +282,10 @@ def contactEmailAddresses(person):
     Finally, if <person> doesn't have a preferred email neither implement
     ITeam, the Set will be empty.
     """
+    from canonical.launchpad.mail import format_address
     emails = set()
     if person.preferredemail is not None:
-        emails.add(str(person.preferredemail.email))
+        emails.add(format_address(None, person.preferredemail.email))
         return emails
 
     if ITeam.providedBy(person):
