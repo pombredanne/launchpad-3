@@ -48,7 +48,7 @@
                 tal:replace="branch/author/browsername">Author</span>
         </td>
         <td>
-          <a tal:content="branch/title/fmt:shorten/50"
+          <a tal:content="branch/displayname/fmt:shorten/50"
              tal:attributes="href branch/fmt:url">Title Goes Here!</a>
         </td>
         <td tal:content="branch/name/fmt:shorten/30">Name</td>

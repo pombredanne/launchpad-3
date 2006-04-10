@@ -35,7 +35,7 @@
         </td>
         <td>
           <a tal:attributes="href branch/fmt:url" 
-             tal:content="branch/title/fmt:shorten/50">Title Goes Here!</a>
+             tal:content="branch/displayname/fmt:shorten/50">Title Goes Here!</a>
         </td>
         <td tal:content="branch/name/fmt:shorten/30">Name</td>
         <td>
