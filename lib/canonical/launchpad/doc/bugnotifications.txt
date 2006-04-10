@@ -218,15 +218,14 @@ pretending we've just added a watch to a bug.
     >>> bugwatch_added = SQLObjectCreatedEvent(bugwatch)
     >>> notify(bugwatch_added)
 
-    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> add_notification = BugNotification.select(orderBy='id')[-1]
+    >>> print add_notification.message.owner.displayname
     Sample Person
-
-    >>> latest_notification.is_comment
+    >>> add_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print add_notification.message.text_contents
     ** Bug watch added: The Mozilla.org Bug Tracker #2000
-    ...
+    https://bugzilla.mozilla.org//show_bug.cgi?id=2000
 
 If the bug watch is modified, a notification is sent out describing
 the changes made:
@@ -239,19 +238,28 @@ the changes made:
     >>> bugwatch_modified = SQLObjectModifiedEvent(
     ...     object = bugwatch,
     ...     object_before_modification = bugwatch_before_modification,
-    ...     edited_fields = ("remotebug"))
+    ...     edited_fields = ["remotebug"])
 
     >>> notify(bugwatch_modified)
 
-    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> latest_notifications = BugNotification.select(orderBy='id')
+    >>> add_notification = latest_notifications[-1]
+    >>> remove_notification = latest_notifications[-2]
+    >>> print add_notification.message.owner.displayname
+    Sample Person
+    >>> print remove_notification.message.owner.displayname
     Sample Person
 
-    >>> latest_notification.is_comment
+    >>> add_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> remove_notification.is_comment
+    False
+    >>> print add_notification.message.text_contents
     ** Bug watch added: The Mozilla.org Bug Tracker #2001
-    ...
+    https://bugzilla.mozilla.org//show_bug.cgi?id=2001
+    >>> print remove_notification.message.text_contents
+    ** Bug watch removed: The Mozilla.org Bug Tracker #2000
+    https://bugzilla.mozilla.org//show_bug.cgi?id=2000
 
 7. Adding and editing a CVE ref.
 
@@ -310,7 +318,7 @@ When a link is edited, the notification will look as follows:
     >>> extref_changed = SQLObjectModifiedEvent(
     ...     object_before_modification=extref_before_modification,
     ...     object=extref,
-    ...     edited_fields=("url",))
+    ...     edited_fields=["url"])
     >>> notify(extref_changed)
 
     >>> remove_notification, add_notification = BugNotification.select(
@@ -376,8 +384,10 @@ check if the correct notification message is sent.
     ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
-    >>> no_dupe_notification, dupe_notification = BugNotification.select(
-    ...     orderBy='id')[-3:-1]
+    >>> latest_notifications = BugNotification.select(orderBy='id')
+    >>> duplicate_target_notification = latest_notifications[-1]
+    >>> dupe_notification = latest_notifications[-2]
+    >>> no_dupe_notification = latest_notifications[-3]
     >>> print no_dupe_notification.message.owner.displayname
     Sample Person
     >>> print dupe_notification.message.owner.displayname
@@ -399,15 +409,14 @@ check if the correct notification message is sent.
     ** This bug has been marked a duplicate of bug 3
        Bug Title Test
 
-    >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print duplicate_target_notification.message.owner.displayname
     Sample Person
 
-    >>> latest_notification.is_comment
+    >>> duplicate_target_notification.is_comment
     False
-    >>> latest_notification.bug.id
+    >>> duplicate_target_notification.bug.id
     3
-    >>> print latest_notification.message.text_contents
+    >>> print duplicate_target_notification.message.text_contents
     ** Bug 6 has been marked a duplicate of this bug
 
 Now we unduplicate the above bug and check if the correct notification message is sent.
