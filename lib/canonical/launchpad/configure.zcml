@@ -86,7 +86,7 @@
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="faq"
-    template="templates/launchpad-faq.pt"
+    template="templates/faq.pt"
     permission="zope.Public"
     />
 
@@ -108,5 +108,11 @@
       module="canonical.launchpad.browser"
       classes="LaunchpadRootNavigation"
       />
+
+  <browser:resourceDirectory
+      name="dynarch"
+      directory="../../contrib/dynarch-resources"
+      />
+
 
 </configure>

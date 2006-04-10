@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.3
+#!/usr/bin/env python
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 """Tests that get run automatically on a merge."""
@@ -8,7 +8,7 @@ import os, os.path, errno
 import tabnanny
 from StringIO import StringIO
 import psycopg
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM
 from select import select
 
@@ -42,10 +42,11 @@ def main():
     # Ensure ++resource++ URL's are all absolute - this ensures they
     # are cache friendly
     results = os.popen(
-        "find lib/canonical -type f | xargs grep '[^/]++resource++'"
+        r"find lib/canonical -type f | grep -v '~$' | "
+        r"xargs grep '[^/]\(++resource++\|@@/\)'"
         ).readlines()
     if results:
-        print '---- non-absolute ++resource++ URLs found ----'
+        print '---- non-absolute ++resource++ or @@/ URLs found ----'
         print ''.join(results)
         print '---- end non-absolute ++resource++ URLs found ----'
         return 1
@@ -63,8 +64,8 @@ def main():
         # we expected.
         pass
     else:
-        if numeric_server_version < (7, 4):
-            print 'Your PostgreSQL version is too old.  You need 7.4.x'
+        if numeric_server_version < (8, 0):
+            print 'Your PostgreSQL version is too old.  You need 8.x.x'
             print 'You have %s' % server_version
             return 1
 
@@ -118,7 +119,7 @@ def main():
         where datname='launchpad_ftest_template'
         """)
     enc = cur.fetchone()[0]
-    if enc != 'UNICODE':
+    if enc not in ('UNICODE', 'UTF8'):
         print 'Database encoding incorrectly set'
         return 1
     cur.execute(r"""
@@ -143,55 +144,40 @@ def main():
     os.chdir(here)
     cmd = [sys.executable, 'test.py'] + sys.argv[1:]
     print ' '.join(cmd)
-    # This would be simpler if we set stderr=STDOUT to combine the streams
-    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     proc.stdin.close()
 
-    out =  [] # stdout from tests
-    err = [] # stderr from tests
-    open_readers = set([proc.stderr, proc.stdout])
+    # Do proc.communicate(), but timeout if there's no activity on stdout or
+    # stderr for too long.
+    open_readers = set([proc.stdout])
     while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
 
         if len(rlist) == 0:
-            if proc.poll() is None:
+            if proc.poll() is not None:
                 break
             print 'Tests hung - no output for %d seconds. Killing.' % TIMEOUT
             killem(proc.pid, SIGTERM)
             time.sleep(3)
-            if proc.poll() is None:
+            if proc.poll() is not None:
                 print 'Not dead yet! - slaughtering mercilessly'
                 killem(proc.pid, SIGKILL)
             break
 
         if proc.stdout in rlist:
-            out.append(os.read(proc.stdout.fileno(), 1024))
-            if out[-1] == "":
+            chunk = os.read(proc.stdout.fileno(), 1024)
+            sys.stdout.write(chunk)
+            if chunk == "":
                 open_readers.remove(proc.stdout)
-        if proc.stderr in rlist:
-            err.append(os.read(proc.stderr.fileno(), 1024))
-            if err[-1] == "":
-                open_readers.remove(proc.stderr)
 
-    test_ok = (proc.wait() == 0)
-
-    out = ''.join(out)
-    err = ''.join(err)
-
-    if test_ok:
-        for line in err.split('\n'):
-            if re.match('^Ran\s\d+\stest(s)?\sin\s[\d\.]+s$', line):
-                print line
-        return 0
+    rv = proc.wait()
+    if rv == 0:
+        print '\nSuccessfully run tests.'
     else:
-        print '---- test stdout ----'
-        print out
-        print '---- end test stdout ----'
+        print '\nTests failed (exit code %d)' % rv
 
-        print '---- test stderr ----'
-        print err
-        print '---- end test stderr ----'
-        return 1
+    return rv
+
 
 def killem(pid, signal):
     """Kill the process group leader identified by pid and other group members

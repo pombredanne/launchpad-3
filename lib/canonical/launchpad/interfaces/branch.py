@@ -12,14 +12,40 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
+from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine
 
+from canonical.config import config
 from canonical.lp.dbschema import BranchLifecycleStatus
 
 from canonical.launchpad import _
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
+
+class BranchUrlField(TextLine):
+
+    def _validate(self, url):
+        # import here to avoid circular import
+        from canonical.launchpad.webapp import canonical_url
+        url = url.rstrip('/')
+        TextLine._validate(self, url)
+        if IBranch.providedBy(self.context) and self.context.url == url:
+            return # url was not changed
+        if (url + '/').startswith(config.launchpad.supermirror_root):
+            message = _(
+                "Don't manually register a bzr branch on "
+                "<code>bazaar.launchpad.net</code>. Create it by SFTP, and it "
+                "is registered automatically.")
+            raise LaunchpadValidationError(message)
+        branch = getUtility(IBranchSet).getByUrl(url)
+        if branch is not None:
+            message = _(
+                "The bzr branch <a href=\"%s\">%s</a> is already registered "
+                "with this URL.")
+            raise LaunchpadValidationError(
+                message, canonical_url(branch), branch.displayname)
 
 
 class IBranch(IHasOwner):
@@ -27,26 +53,29 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     name = TextLine(
-        title=_('Name'), required=True, description=_("Keep this name very "
+        title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
         constraint=name_validator)
     title = TextLine(
-        title=_('Title'), required=True, description=_("Describe the "
+        title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
         "title is displayed in every branch list or report."))
     summary = Text(
-        title=_('Summary'), required=True, description=_("A "
+        title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will also be "
         "displayed in most branch listings."))
-    url = TextLine(
+    url = BranchUrlField(
         title=_('Branch URL'), required=True,
-        description=_("The URL of the branch. This is usually the URL used to"
-                      " checkout the branch."), constraint=valid_webref)
+        description=_("The URL where the branch is hosted. This is usually"
+            " the URL used to checkout the branch."),
+        constraint=valid_webref)
+
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
-        description=_('Any notes on the status of this branch you would '
-        'like to make. This field is a general whiteboard, your changes '
-        'will override the previous version.'))
+        description=_('Notes on the current status of the branch.'))
+    mirror_status_message = Text(
+        title=_('The last message we got when mirroring this branch '
+                'into supermirror.'), required=False, readonly=False)
     started_at = Int(title=_('Started At'), required=False,
         description=_("The number of the first revision"
                       " to display on that branch."))
@@ -55,18 +84,16 @@ class IBranch(IHasOwner):
     """Product owner, it can either a valid Person or Team
             inside Launchpad context."""
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("Branch owner, it can be either a valid Person or Team"
-                      " inside Launchpad context."))
+        description=_("Branch owner, either a valid Person or Team."))
     author = Choice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
-        description=_("The Launchpad user which is the author of the branch. "
-                      "It may be none since the branch author might not have "
-                      "a Launchpad account."))
+        description=_("The author of the branch. Leave blank if the author "
+                      "does not have a Launchpad account."))
 
     # Product attributes
     product = Choice(
         title=_('Product'), required=False, vocabulary='Product',
-        description=_("The product to which this branch belongs."))
+        description=_("The product this branch belongs to."))
     product_name = Attribute("The name of the product, or '+junk'.")
     branch_product_name = Attribute(
         "The product name specified within the branch.")
@@ -75,11 +102,23 @@ class IBranch(IHasOwner):
         description=_("Whether the product name specified within the branch "
                       " is overriden by the product name set in Launchpad."))
 
+    # Display names
+    unique_name = Attribute(
+        "Unique name of the branch, including the owner and product names.")
+    displayname = Attribute(
+        "The branch title if provided, or the unique_name.")
+
+    # Display names
+    unique_name = Attribute(
+        "Unique name of the branch, including the owner and product names.")
+    displayname = Attribute(
+        "The branch title if provided, or the unique_name.")
+
     # Home page attributes
     home_page = TextLine(
-        title=_('Home Page URL'), required=False,
-        description=_("The URL of the branch home page, describing the "
-                      "purpose of the branch."), constraint=valid_webref)
+        title=_('Web Page'), required=False,
+        description=_("The URL of the Web page describing the branch, "
+                      "if there is such a page."), constraint=valid_webref)
     branch_home_page = Attribute(
         "The home page URL specified within the branch.")
     home_page_locked = Bool(
@@ -104,7 +143,7 @@ class IBranch(IHasOwner):
     current_diff_deletes = Attribute(
         "Count of lines deleted in the merge delta.")
     current_conflicts_url = Attribute(
-        "URL of a pag showing the conflicts produced "
+        "URL of a page showing the conflicts produced "
         "by merging this branch into the landing branch.")
     current_activity = Attribute("Current branch activity.")
     stats_updated = Attribute("Last time the branch stats were updated.")
@@ -124,6 +163,14 @@ class IBranch(IHasOwner):
                       "URL. Use this if the branch is no longer available."))
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
+    pull_url = Attribute("URL to pull from.  Same as url, unless this is a "
+                         "push branch (url is None).  This url may be a "
+                         "Canonical-internal path, so we don't display this "
+                         "on the main website.")
+
+    related_bugs = Attribute(
+        "The bugs related to this branch, likely branches on which "
+        "some work has been done to fix this bug.")
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")
@@ -172,6 +219,15 @@ class IBranchSet(Interface):
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
         """Create a new branch."""
+
+    def getByUrl(url, default=None):
+        """Find a branch by URL.
+
+        Either from the external specified in Branch.url, or from the
+        supermirror URL on http://bazaar.launchpad.net/.
+
+        Return the default value if no match was found.
+        """
 
     def get_supermirror_pull_queue():
         """Get a list of branches the supermirror should pull now."""

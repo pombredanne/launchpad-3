@@ -1,5 +1,13 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
+
+__all__ = [
+    'DatabaseUserDetailsStorage',
+    'DatabaseUserDetailsStorageV2',
+    'DatabaseBranchDetailsStorage',
+    ]
+
 import psycopg
 
 from zope.interface import implements
@@ -13,11 +21,11 @@ from twisted.enterprise import adbapi
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import sqlvalues, quote
 from canonical.lp import dbschema
 
-from canonical.authserver.interfaces import IUserDetailsStorage
-from canonical.authserver.interfaces import IUserDetailsStorageV2
+from canonical.authserver.interfaces import (
+    IUserDetailsStorage, IUserDetailsStorageV2, IBranchDetailsStorage)
 
 from canonical.foaf import nickname
 
@@ -28,7 +36,7 @@ def utf8(x):
     return x
 
 
-class UserDetailsStorageMixin(object):
+class UserDetailsStorageMixin:
     """Functions that are shared between DatabaseUserDetailsStorage and
     DatabaseUserDetailsStorageV2"""
 
@@ -587,7 +595,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         transaction.execute(utf8('''
             SELECT Product.id, Product.name, Branch.id, Branch.name
             FROM Product RIGHT OUTER JOIN Branch ON Branch.product = Product.id
-            WHERE Branch.owner = %s
+            WHERE Branch.owner = %s AND Branch.url IS NULL
             ORDER BY Product.id
             '''
             % sqlvalues(personID))
@@ -642,10 +650,66 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         branchID = transaction.fetchone()[0]
 
         transaction.execute(utf8('''
-            INSERT INTO Branch (id, owner, product, name, title, summary)
-            VALUES (%s, %s, %s, %s, %s, %s)'''
-            % sqlvalues(branchID, personID, productID, branchName, branchName,
-                        branchName))
+            INSERT INTO Branch (id, owner, product, name, author)
+            VALUES (%s, %s, %s, %s, %s)'''
+            % sqlvalues(branchID, personID, productID, branchName, personID))
         )
         return branchID
+
+
+class DatabaseBranchDetailsStorage:
+    """Launchpad-database backed implementation of IUserDetailsStorage"""
+
+    implements(IBranchDetailsStorage)
+    
+    def __init__(self, connectionPool):
+        """Constructor.
+        
+        :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
+        """
+        self.connectionPool = connectionPool
+
+    def startMirroring(self, branchID):
+        """See IBranchDetailsStorage"""
+        ri = self.connectionPool.runInteraction
+        return ri(self._startMirroringInteraction, branchID)
+
+    def _startMirroringInteraction(self, transaction, branchID):
+        transaction.execute(utf8("""
+            UPDATE Branch
+              SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+              WHERE id = %d""" % (branchID,)))
+        # how many rows were updated?
+        assert transaction.rowcount in [0, 1]
+        return transaction.rowcount == 1
+
+    def mirrorComplete(self, branchID):
+        """See IBranchDetailsStorage"""
+        ri = self.connectionPool.runInteraction
+        return ri(self._mirrorCompleteInteraction, branchID)
+    
+    def _mirrorCompleteInteraction(self, transaction, branchID):
+        transaction.execute(utf8("""
+            UPDATE Branch
+              SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
+                  mirror_status_message = NULL
+              WHERE id = %d""" % (branchID,)))
+        # how many rows were updated?
+        assert transaction.rowcount in [0, 1]
+        return transaction.rowcount == 1
+
+    def mirrorFailed(self, branchID, reason):
+        """See IBranchDetailsStorage"""
+        ri = self.connectionPool.runInteraction
+        return ri(self._mirrorFailedInteraction, branchID, reason)
+    
+    def _mirrorFailedInteraction(self, transaction, branchID, reason):
+        transaction.execute(utf8("""
+            UPDATE Branch
+              SET mirror_failures = mirror_failures + 1,
+                  mirror_status_message = %s
+              WHERE id = %s""" % sqlvalues(reason, branchID)))
+        # how many rows were updated?
+        assert transaction.rowcount in [0, 1]
+        return transaction.rowcount == 1
 

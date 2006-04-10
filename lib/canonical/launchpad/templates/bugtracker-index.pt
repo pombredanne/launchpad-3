@@ -1,8 +1,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-<body>
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>
+        <tal:tracker replace="context/title">Gnome Bugzilla</tal:tracker>
+        overview
+      </h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -18,15 +25,16 @@
       <thead>
         <tr>
           <th>Malone bug</th>
-          <th>Remote #</th>
+          <th>Remote bug</th>
           <th>Status</th>
+          <th>Date created</th>
         </tr>
       </thead>
 
       <tbody>
         <tr tal:repeat="watch watches">
           <td>
-            <img alt="" src="/++resource++bug" />
+            <img alt="" src="/@@/bug" />
             <a href="#" tal:attributes="href watch/bug/fmt:url">
               #<span tal:replace="watch/bug/id">34</span>:
                <span tal:replace="watch/bug/title">Malone Bug Title</span>
@@ -37,6 +45,7 @@
               </a>
           </td>
           <td tal:content="watch/remotestatus" />
+          <td tal:content="watch/datecreated/fmt:datetime" />
         </tr>
       </tbody>
     </table>
@@ -44,8 +53,6 @@
 </metal:macros>
 
 <div metal:fill-slot="main">
-
-  <h1>Bug tracker overview</h1>
 
   <p tal:content="context/summary">
     $BugTracker.summary goes here. This should be quite short,

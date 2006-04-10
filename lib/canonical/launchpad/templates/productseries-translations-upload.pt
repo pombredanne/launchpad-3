@@ -2,9 +2,15 @@
     xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>
+        Upload new translation resources for
+        <tal:thing replace="context/title">Firefox MAIN</tal:thing>
+      </h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -15,11 +21,8 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Upload new translation resources for <span tal:replace="context/title" />
-  </h1>
-
   <p>
-    Here you can upload either a single file (<code>.pot</code> /
+    Upload either a single file (<code>.pot</code> /
     <code>.po</code>) or a tar file containing a PO template and a set of PO
     files (<code>.tar</code>, <code>.tar.gz</code>, <code>.tgz</code> or
     <code>.tar.bz2</code>).

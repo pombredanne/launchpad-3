@@ -1,16 +1,12 @@
 <tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
   lang="en"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="rosetta">
+  metal:use-macro="context/@@main_template_2col/master"
+  i18n:domain="launchpad">
 
 <body>
 
     <div metal:fill-slot="main">
-      <table>
-        <tbody>
-          <tr>
-            <td style="width: 75%; padding-right: 1em;">
 
               <h1>Register an upstream branch for importing</h1>
 
@@ -84,38 +80,6 @@
                   </table>
                 </fieldset>
 
-<tal:x condition="nothing">
-  <fieldset>
-  <legend>Arch source</legend>
-  <p class="discreet">
-  If you fill out this, the CVS/SVN/Arch stuff above isn't required.
-  This will be governed by JS in the later versions.
-  </p>
-  
-  <div class="field">
-    <label>OpenPGP key ID</label>
-    <span class="fieldRequired">(Required)</span>
-    <input type="text" name="archsourcegpgkeyid" size="30"
-       value="" />
-  </div>
-
-  <div class="field">
-    <label>Arch archive name</label>
-    <span class="fieldRequired">(Required)</span>
-    <input type="text" name="archsourcename" size="30"
-       value="" />
-  </div>
-
-  <div class="field">
-    <label>URL</label>
-    <span class="fieldRequired">(Required)</span>
-    <input type="text" name="archsourceurl" size="30"
-       value="" />
-  </div>
-
-  </fieldset>
-</tal:x>
-  
                 <fieldset>
                   <legend>Import and Sync Details</legend>
                   <table>
@@ -137,7 +101,6 @@
                         <td>
                           <input type="text" name="targetarcharchive" size="30"
                           tal:attributes="value view/targetarcharchive" />
-                          <span class="fieldRequired">(Required)</span>
                         </td>
                       </tr>
                       <tr class="formHelp">
@@ -151,7 +114,6 @@
                         <td>
                           <input type="text" name="targetarchcategory" size="30"
                           tal:attributes="value view/targetarchcategory" />
-                          <span class="fieldRequired">(Required)</span>
                         </td>
                       </tr>
                       <tr class="formHelp">
@@ -165,7 +127,6 @@
                         <td>
                           <input type="text" name="targetarchbranch" size="30"
                           tal:attributes="value view/targetarchbranch" />
-                          <span class="fieldRequired">(Required)</span>
                         </td>
                       </tr>
                       <tr class="formHelp">
@@ -179,7 +140,6 @@
                         <td>
                           <input type="text" name="targetarchversion" size="30"
                           tal:attributes="value view/targetarchversion" />
-                          <span class="fieldRequired">(Required)</span>
                         </td>
                       </tr>
                       <tr class="formHelp">
@@ -190,15 +150,27 @@
                   </table>
                 </fieldset>
 
-  <fieldset tal:condition="context/autoTestFailed">
-    <legend>Failed import control</legend>
-    <div>
-      <label>
-        <input type="checkbox" name="resetToAutotest" />
-        Retest this series in roomba
-      </label>
-    </div>
-  </fieldset>
+                <fieldset>
+                  <legend>Import status</legend>
+
+                  <p>The current import status is:
+                    <b tal:content="context/importstatus/title"/>.
+                  </p>
+
+                  <div tal:condition="context/autoTestFailed">
+                    <label>
+                      <input type="checkbox" name="resetToAutotest" />
+                      Rerun this import in the Autotester.
+                    </label>
+                  </div>
+
+                  <div class="field" tal:condition="not:context/syncCertified">
+                    <label>
+                      <input type="checkbox" name="syncCertified"/>
+                      Approve this import for production and publication.
+                    </label>
+                  </div>
+                </fieldset>
 
                 <fieldset>
                   <legend>FTP Details</legend>
@@ -249,55 +221,6 @@
                   </table>
                 </fieldset>
 
-                <fieldset>
-
-    <legend>Product and Project Status</legend>
-
-    <div tal:condition="context/product/project" tal:omit-tag>
-      <p><b>Project: <span tal:replace="context/product/project/title">Project
-      Title</span></b></p>
-      <p tal:condition="python: not (context.product.project.reviewed and
-         context.product.project.active)"
-         class="portalMessage">This project is not yet 
-         <a tal:attributes="href
-             string:/projects/${context/product/project/name}/+review">
-         approved</a>.</p>
-
-      <p tal:content="context/product/project/summary">product
-      summary</p>
-    </div>
-
-    <p><b>Product: <span tal:replace="context/product/title">Product
-    Title</span></b></p>
-    <div tal:condition="python: not (context.product.reviewed and
-      context.product.active)" class="portalMessage">This product is
-      not yet 
-      <a tal:attributes="href
-        string:/products/${context/product/name}/+review">
-        approved</a>.</div>
-      <p><span tal:replace="context/product/summary">product
-      summary</span></p>
-
-      <div tal:condition="view/namesReviewed">
-      
-        <div class="field">
-          <label>
-            <input type="checkbox" name="syncCertified"
-            tal:attributes="checked context/syncCertified" />
-            This source is certified for synchronization
-          </label>
-        </div>
-
-        <div class="field">
-          <label>
-            <input type="checkbox" name="autoSyncEnabled"
-            tal:attributes="checked context/autoSyncEnabled" />
-            The upstream source is being synchronised to Arch automatically
-          </label>
-        </div>
-
-    </div>
-
   <div class="actions">
 
   <tal:x condition="nothing">
@@ -312,16 +235,8 @@
 
   </form>
 
-            </td>
-            <td
-              style="width: 25%;"
-              tal:content="structure CONTEXTS/@@+menubox"
-            />
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <metal:nomenu fill-slot="column_two"></metal:nomenu>
+  </div>
+
   </body>
 </html>
 </tal:layout>

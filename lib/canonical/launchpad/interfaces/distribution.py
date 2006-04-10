@@ -7,22 +7,22 @@ __metaclass__ = type
 __all__ = [
     'IDistribution',
     'IDistributionSet',
-    'IDistroPackageFinder',
     ]
 
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
+    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
+    ITicketTarget)
 
 _ = MessageIDFactory('launchpad')
 
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-    ITicketTarget):
+                    IHasSecurityContact, ITicketTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -51,7 +51,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_("The distro's domain name."), required=True)
     translationgroup = Choice(
         title = _("Translation group"),
-        description = _("The translation group for this product. This group "
+        description = _("The translation group for this distribution. This group "
             "is made up of a set of translators for all the languages "
             "approved by the group manager. These translators then have "
             "permission to edit the groups translation files, based on the "
@@ -77,6 +77,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team who will receive all bugmail for this "
             "distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this distribution"),
         required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),
@@ -105,7 +111,15 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
 
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    
+
+    official_malone = Bool(title=_('Uses Malone Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this distribution officially uses Malone for bug tracking.'))
+
+    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this distribution officially uses Rosetta for translation.'))
+
     # properties
     currentrelease = Attribute(
         "The current development release of this distribution. Note that "
@@ -136,7 +150,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         """Return the DistroReleases which are marked as in development."""
 
     def getRelease(name_or_version):
-        """Return the source package release with the name or version
+        """Return the distribution release with the name or version
         given.
         """
 
@@ -211,13 +225,15 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
 
         Raises NotFoundError if it fails to find the named file.
         """
-        
+
     def getPackageNames(pkgname):
         """Find the actual source and binary package names to use when all
         we have is a name, that could be either a source or a binary package
         name. Returns a tuple of (sourcepackagename, binarypackagename)
         based on the current publishing status of these binary / source
-        packages.
+        packages. Raises NotFoundError if it fails to find a package
+        published in the distribution, which can happen for different
+        reasons.
         """
 
 
@@ -244,8 +260,4 @@ class IDistributionSet(Interface):
     def new(name, displayname, title, description, summary, domainname,
             members, owner):
         """Creaste a new distribution."""
-
-
-class IDistroPackageFinder(Interface):
-    """A tool to find packages in a distribution."""
 

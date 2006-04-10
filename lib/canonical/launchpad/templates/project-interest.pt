@@ -1,23 +1,20 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
-
-<body>
+      i18n:domain="rosetta"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1>Notify me when this program becomes translatable</h1>
+    </metal:heading>
 
 <div metal:fill-slot="main">
 
-    <h1>Notify me when application is translatable</h1>
-
-    <div class="documentDescription">
-    This application is unfortunately not translatable at this time, but you
-    can register your interest, and we will contact you when/if the application
+    <p>
+    This application is unfortunately not translatable right now.
+    But if you register your interest, we will contact you when/if the application
     becomes capable of being translated here.
-    </div>
-
-    <fieldset>
-
-        <legend>Personal details</legend>
+    </p>
 
         <div class="field">
 
@@ -80,9 +77,6 @@
             </div>
 
         </div>
-
-
-    </fieldset>
 
 </div>
 

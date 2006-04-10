@@ -36,7 +36,7 @@ kbd {
   border: 1px solid;
   border-color: white gray gray white;
   color: black;
-  background-color: #ccc;
+  background-color: #ddd;
   min-width: 1em;
 }
 label {
@@ -77,6 +77,11 @@ thead th, tr.thead th {
 
 /* === Global Launchpad design: === */
 
+.debug {
+  background: none;
+  color: #f09;
+}
+
 body {
   background-color: #fcfcfc;
   color: black;
@@ -90,7 +95,7 @@ body {
 
 :visited {
   background: none;
-  color: #8888bb;
+  color: #66a;
 }
 :link, .hierarchy :visited, .footer :visited,
 .facets :visited, #pillars :visited, #subpillars :visited, .portlet :visited {
@@ -118,34 +123,36 @@ h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
 h1 {
   font-size: 1.6em;
   margin-bottom: 0.5em;
+  padding-top: 0;
 }
 h2 {
   font-size: 1.25em;
   margin: 0.5em 0;
-}
-h2.lpcontext {
-  font-size: 1.5em;
-  margin-top: 0;
-  padding-top: 0;
 }
 h3, h4, h5, h6 {
   font-size: 1em;
   margin-bottom: 0;
 }
 h5.languages {
-  background-image: url(/++resource++languages.gif);
+  background-image: url(/@@/languages.gif);
   background-repeat: no-repeat;
 }
 label {
   font-weight: bold;
 }
 pre {
-    border: 1px dashed #8cacbb;
-    color: Black;
-    background-color: #dee7ec;
-    overflow: auto;
+  color: black;
+  background-color: #dee7ec;
+  padding: 0.5em;
 }
-table {
+.userLog { 
+  font-family: "Lucida Grande","trebuchet ms",verdana,sans-serif;
+  font: 11px tahoma,verdana,sans-serif;
+  position: absolute;
+  right: 10px;
+  top: 5px;
+}
+div.body table {
   margin-left: auto;
   margin-right: auto;
   border-collapse: collapse;
@@ -167,12 +174,18 @@ table.listing {
   font-size: 85%;
   margin: 1em 0;
 }
-table.listing, table.listing tbody {
+table.listing, table.listing>tbody {
   border-bottom: 1px solid #8cacbb;
 }
-table.listing>thead, table.listing>thead>tr>th {
+table.listing>tbody {
+  font-size: smaller;
+}
+table.listing>thead, table.listing>thead>tr>th,table.listing tfoot tr {
   border: 1px solid #8cacbb;
   background-color: #dee7ec;
+}
+table.listing tfoot td {
+  border: 1px solid #8cacbb;
 }
 table.listing>thead>tr>td {
   border: none;
@@ -218,12 +231,12 @@ table.sortable img.sortarrow {
   padding-left: 2px;
 }
 th.ascending {
-  background-image: url(/++resource++arrowDown.gif);
+  background-image: url(/@@/arrowDown.gif);
   background-position: center right;
   background-repeat: no-repeat;
 }
 th.descending {
-  background-image: url(/++resource++arrowUp.gif);
+  background-image: url(/@@/arrowUp.gif);
   background-position: center right;
   background-repeat: no-repeat;
 }
@@ -235,8 +248,16 @@ ul {
   list-style-image: url(/@@/bullet.gif);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
+ul.menu {
+  font-size: smaller;
+}
 ol {
   margin: 0.5em 0 0 1.5em;
+}
+
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {
+    display: none;
 }
 
 .portlet {
@@ -246,7 +267,7 @@ ol {
   padding: 0;
   background-color: #f4f5f8; /* changed by sabdfl, 2005-10-22 */
 }
-.portlet h4, .portlet h5, .portlet h6 {
+.portlet h4 {
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   font-weight: normal;
@@ -256,18 +277,14 @@ ol {
   display: block;
   font-size: 1em;
 }
-.portlet h5 { 
-  padding: 0em 1em 0em 1em;
-  display: inline;
-  font-size: 1em;
-  white-space: nowrap;
-  position: relative;
-  top: -1px;
+.portlet h5, .portlet h6 {
+  color: black;
 }
-.portlet h6 { 
-  padding: 0em 0.3em 0em 1em;
-  display: block;
-  font-size: 1em;
+.portlet h5 {
+  font-weight: bold;
+}
+.portlet h6 {
+  font-variant: italic;
 }
 .portletBody {
   position: relative;
@@ -295,9 +312,6 @@ textarea {
   font-size: smaller;
   margin-bottom: 1em;
 }
-.portalError .fieldRequired {
-  color: #666;
-} 
 /* Temporarily make *all* buttons look plone-y. Ugh. */
 button {
   border: 1px solid #8cacbb;  
@@ -307,34 +321,6 @@ button {
 /* Don't give radiobuttons a square border in Opera: */
 input[type="radio"] {
   border: none;
-}
-
-/* -- Form errors: -- */
-.portalMessage {
-  background-color: #ffce7b;
-  border: 1px solid #ffa500;
-  color: black;
-  margin: 1em 0em 0em 0em;
-  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
-  vertical-align: middle;
-  background-position: 5px 0.75em;
-  background-image: url(/@@/info_icon.gif);
-  background-repeat: no-repeat;
-}
-.portalMessage a {
-  color: Black;
-}
-.portalError {
-  background-color: #ff9070;
-  border: 1px solid #998080;
-  color: Black;
-  padding: 0.25em;
-}
-.portalError .error {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 85%;
 }
 
 /* sabdfl says portlet links must not be underlined */
@@ -351,6 +337,9 @@ input[type="radio"] {
 .header td, .footer {
   font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   padding: 0.25em 1em;
+}
+.header td {
+  padding-bottom: 0;
 }
 .header {
   font-size: 0.875em;
@@ -395,7 +384,7 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
-/* Column definitions: */
+/* Column definitions for old layout: */
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
@@ -413,6 +402,20 @@ ul.app>li.current {
   width: 24%; /* = 25% - 1% whitespace */
 }
 #portal-column-one {
+  display: inline;
+  float: left;
+  margin-left: -100%; /* flush with the left edge of the page */
+  width: 24%; /* = 25% - 1% whitespace */
+}
+
+/* Column definitions for 2col layout: */
+#layout2col-main {
+  display: inline;
+  float: left;
+  margin-left: 25%;
+  width: 75%;
+}
+#layout2col-portlets {
   display: inline;
   float: left;
   margin-left: -100%; /* flush with the left edge of the page */
@@ -537,7 +540,7 @@ ins {
 .field {
     top: 0;
     left: 0;
-    margin: 0 1em 1em 0;
+    margin: 0 0 1em 0;
 }
 
 .field .field {
@@ -547,16 +550,6 @@ ins {
 .formControls {
    margin: 1em 0 0 0; 
 }
-
-.error {
-    /* Class for error indication in forms */
-    background-color: #ffce7b;
-    border: 1px solid #ffa500;
-    padding: 1em;
-    margin: 0 0 1em 0;
-    width: 95% !important;
-}
-
 
 .discreet {
     color: #76797c;
@@ -589,7 +582,7 @@ ins {
     margin-left: 1em;
 }
 .listingBar img {
-	vertical-align: middle;
+  vertical-align: middle;
 }
 
 /*
@@ -717,6 +710,18 @@ tr.highlight {
 .specpriorityHIGH          { color: Red; }
 .specpriorityESSENTIAL     { color: Red; }
 
+.specdeliveryUNKNOWN            {color: Gray; }
+.specdeliveryDEFERRED           {color: Red; }
+.specdeliveryNEEDSINFRASTUCTURE {color: Red; }
+.specdeliveryBLOCKED            {color: Red; }
+.specdeliverySTARTED            {color: Blue; }
+.specdeliverySLOW               {color: Red; }
+.specdeliveryGOOD               {color: Blue; }
+.specdeliveryBETA               {color: Orange; }
+.specdeliveryNEEDSREVIEW        {color: Purple; }
+.specdeliveryAWAITINGDEPLOYMENT {color: Red; }
+.specdeliveryIMPLEMENTED        {color: Green; }
+
 /* Board-like comment CSS */
 
 .boardComment {
@@ -747,7 +752,7 @@ tr.highlight {
   font-size: 80%;
   border: 1px solid #364970;
   border-style: none none solid none;
-  background-color: #d7d9da;
+  background-color: #eee;
   padding: 0.25em 12px;
 }
 
@@ -772,115 +777,118 @@ tr.highlight {
 }
 /* Various custom list formats: */
 ul.add>li, li.add {
-  list-style-image: url(/++resource++add.gif);
+  list-style-image: url(/@@/add.gif);
 }
 ul.alert>li, li.alert {
-  list-style-image: url(/++resource++alert_icon.gif);
+  list-style-image: url(/@@/alert_icon.gif);
 }
 ul.architecture>li, li.architecture {
   list-style-image: url(/@@/architecture);
 }
 ul.bounty>li, li.bounty {
-  list-style-image: url(/++resource++bounty);
+  list-style-image: url(/@@/bounty);
+}
+ul.branch>li, li.branch {
+  list-style-image: url(/@@/branch);
 }
 ul.bug>li, li.bug {
-  list-style-image: url(/++resource++bug);
+  list-style-image: url(/@@/bug);
 }
 ul.bug.high>li, li.bug.high {
-  list-style-image: url(/++resource++bug-high);
+  list-style-image: url(/@@/bug-high);
 }
 ul.bug.medium>li, li.bug.medium {
-  list-style-image: url(/++resource++bug-medium);
+  list-style-image: url(/@@/bug-medium);
 }
 ul.bug.low>li, li.bug.low {
-  list-style-image: url(/++resource++bug-low);
+  list-style-image: url(/@@/bug-low);
 }
 ul.bug.remote>li, li.bug.remote {
-  list-style-image: url(/++resource++bug-remote);
+  list-style-image: url(/@@/bug-remote);
 }
 ul.bugs>li, li.bugs {
-  list-style-image: url(/++resource++bugs);
+  list-style-image: url(/@@/bugs);
 }
 ul.build-success>li, li.build-success {
   list-style-image: url(/@@/build-success);
 }
 ul.cve>li, li.cve {
-  list-style-image: url(/++resource++cve);
+  list-style-image: url(/@@/cve);
 }
 ul.document>li, li.document {
-  list-style-image: url(/++resource++document_icon.gif);
+  list-style-image: url(/@@/document_icon.gif);
 }
 ul.download>li, li.download {
-  list-style-image: url(/++resource++download.png);
+  list-style-image: url(/@@/download.png);
 }
 ul.edit>li, li.edit {
-  list-style-image: url(/++resource++edit.gif);
+  list-style-image: url(/@@/edit.gif);
 }
 ul.file>li, li.file {
-  list-style-image: url(/++resource++file);
+  list-style-image: url(/@@/file);
 }
 ul.info>li, li.info {
-  list-style-image: url(/++resource++info_icon.gif);
+  list-style-image: url(/@@/info_icon.gif);
 }
 ul.languages>li, li.languages {
-  list-style-image: url(/++resource++languages.gif);
+  list-style-image: url(/@@/languages.gif);
 }
 ul.list>li, li.list {
-  list-style-image: url(/++resource++list);
+  list-style-image: url(/@@/list);
 }
 ul.locked>li, li.locked {
-  list-style-image: url(/++resource++lock_icon.gif);
+  list-style-image: url(/@@/lock_icon.gif);
 }
 ul.mail>li, li.mail {
-  list-style-image: url(/++resource++mail_icon.gif);
-}
-ul.menu>li, li.menu {
-  list-style-image: url(/++resource++favorite_icon.gif);
+  list-style-image: url(/@@/mail_icon.gif);
 }
 ul.milestone>li, li.milestone {
-  list-style-image: url(/++resource++target);
+  list-style-image: url(/@@/target);
 }
 ul.news>li, li.news {
-  list-style-image: url(/++resource++news);
+  list-style-image: url(/@@/news);
 }
 ul.packages>li, li.packages {
-  list-style-image: url(/++resource++package-binary);
+  list-style-image: url(/@@/package-binary);
 }
 ul.sources>li, li.sources {
-  list-style-image: url(/++resource++package-source);
+  list-style-image: url(/@@/package-source);
 }
 ul.products>li, li.products {
-  list-style-image: url(/++resource++product_icon.gif);
+  list-style-image: url(/@@/product_icon.gif);
 }
 ul.person>li, li.person, ul.people>li, li.people {
-  list-style-image: url(/++resource++user.gif);
+  list-style-image: url(/@@/user.gif);
+}
+ul.remove>li, li.remove {
+  list-style-image: url(/@@/remove);
 }
 ul.spec>li, li.spec {
-    list-style-image: url(/++resource++spec);
+    list-style-image: url(/@@/spec);
 }
 ul.sprint>li, li.sprint {
-    list-style-image: url(/++resource++sprint);
+    list-style-image: url(/@@/sprint);
 }
 ul.statistic>li, ul.statistics, li.statistic {
-    list-style-image: url(/++resource++statistic);
+    list-style-image: url(/@@/statistic);
 }
 ul.ticket>li, li.ticket {
-    list-style-image: url(/++resource++ticket);
+    list-style-image: url(/@@/ticket);
 }
 ul.up>li, li.up {
-    list-style-image: url(/++resource++up);
+    list-style-image: url(/@@/up);
 }
 ul.webref>li, li.webref {
-    list-style-image: url(/++resource++link_icon.gif);
+    list-style-image: url(/@@/link_icon.gif);
 }
 ul.translations>li, li.translations {
-  list-style-image: url(/++resource++translations);
+  list-style-image: url(/@@/translations);
 }
 dl.products>dt:before {
-  content: url(/++resource++product_icon.gif);
+  content: url(/@@/product_icon.gif);
 }
 ul.search>li, li.search {
-  list-style-image: url(/++resource++search_icon.gif);
+  list-style-image: url(/@@/search_icon.gif);
 }
 
 /* Used for source and translator comments on the translation page. */
@@ -919,6 +927,10 @@ ul.search>li, li.search {
 .lesser {
   font-size: smaller;
 }
+.greater {
+  /* For use in the ~20% of listing tables that should have normal-sized text */
+  font-size: larger;
+}
 
 /* sabdfl 22/10/2005 indented and moreindented useful for listings */
 .indented {
@@ -944,7 +956,7 @@ input[type="image"] {
   text-align: left;
 }
 .required:after {
-  background: url(/++resource++required.gif) center left no-repeat;
+  background: url(/@@/required.gif) center left no-repeat;
   color: #999999;
   content: '(Required)';
   font-weight: normal;  
@@ -954,16 +966,16 @@ input[type="image"] {
 
 
 td p:first-child, td ol:first-child, td blockquote:first-child {
-	margin-top: 0;
+  margin-top: 0;
 }
 th {
-	text-align: right;
+  text-align: right;
 }
 thead th {
-	text-align: center;
+  text-align: center;
 }
 tr {
-	vertical-align: top;
+  vertical-align: top;
 }
 
 .results {
@@ -979,25 +991,25 @@ tr {
 }
 
 .apps {
-	clear: right;
-	float: right;
-	margin-top: 0.5em;
+  clear: right;
+  float: right;
+  margin-top: 0.5em;
 }
 .navigation li {
-	display: inline;
-	padding: 0.25em 0.5em;
+  display: inline;
+  padding: 0.25em 0.5em;
 }
 .navigation li:before {
-	content: '\2022';
-	margin-right: 0.25em;
+  content: '\2022';
+  margin-right: 0.25em;
 }
 
 #main {
-	border-top: 2pt solid black;
-	clear: both;
-	margin: 0;
-	padding-top: 1em;
-	width: 100%;
+  border-top: 2pt solid black;
+  clear: both;
+  margin: 0;
+  padding-top: 1em;
+  width: 100%;
 }
 
 /* from richard braine for the series source forms */
@@ -1120,26 +1132,10 @@ Calendar stuff.
   background-color: #ff9070;
   border: 1px solid #ddb0b0;
   color: Black;
-  background-image: url(/++resource++alert_icon.gif);
+  background-image: url(/@@/alert_icon.gif);
   font-size: 85%;
   font-weight: bold;
   margin: 1em 0em 0em 0em;
-  padding: 0.5em 1em 0.5em 3em;
-  background-repeat: no-repeat;
-}
-
-.notice-notification,
-.info-notification,
-.debug-notification {
-  background-position: 5px 0.5em;
-  padding-left: 30px;
-  background-color: #ffffcc;
-  border: 1px solid #eeee00;
-  color: Black;
-  background-image: url(/++resource++info_icon.gif);
-  font-size: 85%;
-  font-weight: bold;
-  margin: 1em 0em;
   padding: 0.5em 1em 0.5em 3em;
   background-repeat: no-repeat;
 }
@@ -1157,3 +1153,38 @@ dl.faq dd {
     margin: 0.5em 1em;
 }
 
+dl.faq ol {
+    margin: 0.5em 3em;
+}
+
+.error, .warning, .informational {
+  padding: 0.5em;
+}
+.message {
+  background: 5px 0.5em no-repeat;
+  font-size: smaller;
+  font-weight: bold;
+  margin: 1em 0 0.5em;
+  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
+}
+.error .message, .warning .message, .informational .message {
+  margin: 0.25em 0 0;
+  padding: 0 0 0 25px;
+  background: 0 0 no-repeat;
+}
+.error {background-color: #f0cccc; color: black;}
+.error.message, .error .message {
+  background-image: url(/@@/error);
+}
+.warning {background-color: #fcdd99; color: black;}
+.warning.message, .warning .message {
+  background-image: url(/@@/alert_icon.gif);
+}
+.informational {background-color: #fcfc99; color: black;}
+.informational.message, .informational .message {
+  background-image: url(/@@/info_icon.gif);
+}
+.debugging {background-color: #666; color: white;}
+.debugging.message, .debugging .message {
+  background-image: url(/@@/info_icon.gif);
+}

@@ -152,3 +152,33 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
             print 'createBranch(%r, %r, %r)' % (personID, productID, branchName)
         return self.storage.createBranch(personID, productID, branchName)
 
+
+class BranchDetailsResource(xmlrpc.XMLRPC):
+
+    def __init__(self, storage, debug=False):
+        xmlrpc.XMLRPC.__init__(self)
+        self.storage = storage
+        self.debug = debug
+
+    def xmlrpc_startMirroring(self, branchID):
+        if self.debug:
+            print 'startMirroring(%r)' % branchID
+        d = self.storage.startMirroring(branchID)
+        if self.debug:
+            def printresult(result):
+                print result
+                return result
+            d.addBoth(printresult)
+        return d
+
+    def xmlrpc_mirrorComplete(self, branchID):
+        if self.debug:
+            print 'mirrorComplete(%r)' % branchID
+        return self.storage.mirrorComplete(branchID)
+
+    def xmlrpc_mirrorFailed(self, branchID, reason):
+        if self.debug:
+            print 'mirrorFailed(%r, %r)' % (branchID, reason)
+        return self.storage.mirrorFailed(branchID, reason)
+
+        

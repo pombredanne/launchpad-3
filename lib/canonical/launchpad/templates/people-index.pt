@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+    i18n:domain="launchpad"
+>
   <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>People and teams in Launchpad</h1>
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-about" />
@@ -15,7 +18,6 @@
 
     <div metal:fill-slot="main">
       <tal:block define="bn view/searchPeopleBatchNavigator">
-        <h1>People and teams in Launchpad</h1>
         <form name="search" action="." method="GET">
           <table style="margin-bottom: 1em;">
             <tr>
@@ -93,9 +95,9 @@
         </form>
         <tal:block condition="not: bn">
           <p> 
-            Some accounts have been created automatically by Launchpad
-            and may be duplicates.  If you find you have more than one
-            account, perhaps for different email addresses, please
+            <b>Duplicate accounts</b> may have been created
+            automatically by Launchpad. If you find you have more than
+            one account, perhaps for different email addresses, you can
             <a href="+requestmerge">merge the duplicate accounts</a>.
           </p>
         </tal:block>
@@ -132,7 +134,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr tal:repeat="person python:list(bn.currentBatch())">
+                <tr tal:repeat="person bn/currentBatch">
                   <td><a tal:content="person/browsername"
                          tal:attributes="href person/name"/>
                   </td>

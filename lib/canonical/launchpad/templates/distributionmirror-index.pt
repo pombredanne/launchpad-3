@@ -1,9 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div><a href="../../+allmirrors">Distribution mirrors</a>:</div>
+      <h1 tal:content="context/title">name</h1>
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -12,8 +16,16 @@
 
   <div metal:fill-slot="main">
 
-    <h1><span tal:replace="context/title">TITLE</span>:
-      Distribution Mirror Overview</h1>
+    <tal:comment condition="nothing">
+      XXX: This use of "python:" here is to workaround
+      https://launchpad.net/products/launchpad/+bug/5768
+    </tal:comment>
+    <tal:non-archive-mirror condition="python: context.content.name != 'ARCHIVE'">
+      <div tal:condition="not: context/file_list" class="portalMessage">
+        We cannot check if this mirror is up to date or not because a file
+        list wasn't uploaded yet.
+      </div>
+    </tal:non-archive-mirror>
 
     <div class="highlighted" style="font-size: 80%;"
          tal:condition="context/description">
@@ -31,10 +43,30 @@
     <p tal:condition="context/rsync_base_url"
        tal:content="context/rsync_base_url" />
 
-    <h2>Arch Releases Mirrored</h2>
+    <tal:last-probe define="probe context/last_probe_record">
+      <h2>Last probe</h2>
+
+      <tal:no-last-probe condition="not: probe">
+        <p>This mirror was never probed.</p>
+      </tal:no-last-probe>
+
+      <tal:has-last-probe condition="probe">
+        <p>This mirror was last probed in 
+          <span tal:replace="probe/date_created/fmt:date" />.
+
+        <tal:is-owner condition="context/required:launchpad.Edit">
+          You can see the 
+          <a tal:attributes="href probe/log_file/url">log file</a> of that
+          probe, in case the statuses are not what you expect.
+        </tal:is-owner>
+
+        </p>
+      </tal:has-last-probe>
+    </tal:last-probe>
+
+    <h2>Architecture releases mirrored</h2>
     <div tal:condition="not: context/arch_releases">
-      This mirror has no registered Arch Releases. You can 
-      <a href="+addarchrelease">register</a> the first one.
+      This mirror has no registered architecture releases.
     </div>
 
     <table tal:condition="context/arch_releases" class="listing">
@@ -42,6 +74,7 @@
       <tr>
         <th>Release</th>
         <th>Architecture</th>
+        <th>Component</th>
         <th>Pocket</th>
         <th>Status</th>
       </tr>
@@ -50,28 +83,32 @@
       <tr tal:repeat="arch_release context/arch_releases">
         <td tal:content="arch_release/distro_arch_release/distrorelease/title" />
         <td tal:content="arch_release/distro_arch_release/architecturetag" />
+        <td tal:content="arch_release/component/name" />
         <td tal:content="arch_release/pocket/title" />
         <td tal:content="arch_release/status/title" />
       </tr>
     </tbody>
     </table>
 
-    <h2>Source Releases Mirrored</h2>
+    <h2>Source releases mirrored</h2>
     <div tal:condition="not: context/source_releases">
-      This mirror has no registered Source Releases. You can 
-      <a href="+addsourcerelease">register</a> the first one.
+      This mirror has no registered source releases.
     </div>
 
     <table tal:condition="context/source_releases" class="listing">
     <thead>
       <tr>
         <th>Release</th>
+        <th>Component</th>
+        <th>Pocket</th>
         <th>Status</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="source_release context/source_releases">
         <td tal:content="source_release/distro_release/title" />
+        <td tal:content="source_release/component/name" />
+        <td tal:content="source_release/pocket/title" />
         <td tal:content="source_release/status/title" />
       </tr>
     </tbody>

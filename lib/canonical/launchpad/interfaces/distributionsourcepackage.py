@@ -5,15 +5,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'IDistributionSourcePackage',
     'DuplicateBugContactError',
-    'DeleteBugContactError'
+    'DeleteBugContactError',
+    'IDistributionSourcePackage',
     ]
 
-from zope.interface import Attribute
+from zope.interface import Attribute, Interface
 
-from canonical.launchpad.interfaces.bug import IBugTarget
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.tickettarget import ITicketTarget
+
 
 class DuplicateBugContactError(Exception):
     """Raised when trying to add a package bug contact that already exists."""
@@ -23,7 +24,7 @@ class DeleteBugContactError(Exception):
     """Raised when an error occurred trying to delete a bug contact."""
 
 
-class IDistributionSourcePackage(ITicketTarget, IBugTarget):
+class IDistributionSourcePackage(IBugTarget, ITicketTarget):
 
     distribution = Attribute("The distribution.")
     sourcepackagename = Attribute("The source package name.")
@@ -54,6 +55,10 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         "Return a list of publishing records for this source package in this "
         "distribution.")
 
+    current_publishing_records = Attribute(
+        "Return a list of CURRENT publishing records for this source "
+        "package in this distribution.")
+
     binary_package_names = Attribute(
         "A string of al the binary package names associated with this source "
         "package in this distribution.")
@@ -62,28 +67,10 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         "The list of people or teams that is explicitly Cc'd to all public "
         "bugs filed on this package.")
 
-    def addBugContact(person):
-        """Add a bug contact for this package.
-
-        :person: An IPerson or ITeam.
-        """
-
-    def removeBugContact(person):
-        """Remove a bug contact from this package.
-
-        :person: An IPerson or ITeam.
-        """
-
     def isBugContact(person):
         """Is person a bug contact for this package?
 
         If yes, the PackageBugContact is returned. Otherwise False is returned.
-        """
-
-    def subscribe(person):
-        """Subscribe a person to this package.
-
-        :person: The person to subscribe. An IPerson.
         """
 
     def __getitem__(version):
@@ -92,7 +79,7 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
     def getVersion(version):
         """Return the a DistributionSourcePackageRelease with the given
         version, or None if there has never been a release with that
-        version. in this Distribution.
+        version in this distribution.
         """
 
     def bugtasks(quantity=None):
@@ -115,3 +102,22 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         Distro sourcepackages compare not equal if either of their distribution
         or sourcepackagename compare not equal.
         """
+
+    def addBugContact(person):
+        """Add a bug contact for this package.
+
+        :person: An IPerson or ITeam.
+        """
+
+    def removeBugContact(person):
+        """Remove a bug contact from this package.
+
+        :person: An IPerson or ITeam.
+        """
+
+    def subscribe(person):
+        """Subscribe a person to this package.
+
+        :person: The person to subscribe. An IPerson.
+        """
+

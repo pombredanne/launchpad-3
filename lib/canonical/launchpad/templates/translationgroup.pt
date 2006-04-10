@@ -2,9 +2,13 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
-<body>
+    i18n:domain="rosetta"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div><a href="/rosetta/groups">Translation groups</a></div>
+      <h1 tal:content="context/title">Savants Translation Group</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
 </metal:leftportlets>
@@ -15,28 +19,19 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Translation group overview</h1>
-
   <p class="documentDescription" tal:content="context/summary">
       $TranslationGroup.summary goes here. This should be quite short,
       just a single paragraph of text really, giving a summary of
       this TranslationGroup.
   </p>
 
-
-  <p tal:repeat="notice view/notices"
-       class="portalMessage"
-       tal:content="notice">
-       Notification Message
-  </p>
+      <p
+        tal:repeat="notice view/notices"
+        class="informational message"
+        tal:content="notice"
+      >Notification message.</p>
 
   <tal:translators condition="context/translators">
-
-  <p>
-    These are the translators in this group.
-    You can <a href="+appoint">appoint additional translators</a>,
-    as well as changing or removing translators in the list.
-  </p>
 
   <table class="sortable listing" id="group-members">
     <thead>
@@ -60,7 +55,7 @@
         </tal:comment>
       </td>
       <td><a tal:attributes="href translator/code"><img
-             src="/++resource++edit.gif" alt="Change"
+             src="/@@/edit.gif" alt="Change"
              title="Change Translator"></a>
       </td>
       <td tal:content="translator/datecreated/fmt:date" />
@@ -69,25 +64,26 @@
             <input type="hidden" name="remove"
                    tal:attributes="value translator/code">
              <input type="image" style="border: 0;"
-                    src="/++resource++close_icon.png" alt="Remove"
+                    src="/@@/close_icon.png" alt="Remove"
                     title="Remove Translator" name="rmform" />
         </form>
       </td>
     </tr>
   </table>
 
-  <p style="float: right;"><img src="/++resource++add.gif">
-    <a href="+appoint">Appoint New Translator</a>
-  </p>
+        </tal:translators>
 
-  </tal:translators>
-
-  <p tal:condition="not: context/translators">There are no translators yet
-  appointed in this group. You can <a href="+appoint">appoint a
-  translator</a> for any language to this group now.
-  </p>
-
-</div>
-
-</body>
+        <p tal:condition="not: context/translators">
+          There are no translators appointed in this group yet.
+        </p>
+        <ul class="menu">
+          <li tal:condition="context/required:launchpad.Edit" class="add">
+            <a href="+appoint">Appoint additional translators</a>
+          </li>
+          <li tal:condition="not:request/lp:person" class="locked">
+            <a href="+appoint">Appoint additional translators</a>
+          </li>
+        </ul>
+    </div>
+  </body>
 </html>

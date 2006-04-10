@@ -6,17 +6,39 @@
   <div class="portletBody portletContent">
 
     <b>Registrant:</b><br />
-    <img src="/++resource++user.gif">
+    <img src="/@@/user.gif">
     <a tal:attributes="href context/owner/fmt:url"
        tal:content="context/owner/browsername">owner name</a> <br />
 
     <b>Members:</b><br />
-    <img src="/++resource++user.gif">
+    <img src="/@@/user.gif">
     <a tal:attributes="href string:${context/fmt:url}/+members"
        tal:content="context/members/browsername">members name</a><br /> 
 
+    <b>Bug contact:</b><br />
+    <span tal:condition="context/bugcontact">
+      <img src="/@@/user.gif">
+      <a tal:attributes="href string:${context/fmt:url}/+editbugcontact"
+         tal:content="context/bugcontact/browsername">foo bar</a>
+    </span>
+    <span tal:condition="not:context/bugcontact">
+      <i>None</i>
+    </span>
+    <br />
+
+    <b>Security contact:</b><br />
+    <span tal:condition="context/security_contact">
+      <img src="/@@/user.gif">
+      <a tal:attributes="href string:${context/fmt:url}/+securitycontact"
+         tal:content="context/security_contact/browsername">sample person</a>
+    </span>
+    <span tal:condition="not:context/security_contact">
+      <i>None</i>
+    </span>
+    <br />
+
     <b>Translation group:</b><br />
-    <img src="/++resource++languages.gif">
+    <img src="/@@/languages.gif">
     <tal:block condition="context/translationgroup">
     <a tal:attributes="href context/translationgroup/fmt:url"
        tal:content="context/translationgroup/title"
@@ -29,10 +51,18 @@
     <span tal:replace="context/translationpermission/title">Open</span>
     <br />
 
+    <div tal:condition="not: context/official_rosetta">
+      <i>Doesn&rsquo;t use Rosetta</i>
+    </div>
+
+    <div tal:condition="not: context/official_malone">
+      <i>Doesn&rsquo;t use Malone</i>
+    </div>
+
     <b>Uploads:</b><br />
     <tal:per_component repeat="dcu context/uploaders">
       <span tal:replace="dcu/component/name">main</span>:
-      <img src="/++resource++user" />
+      <img src="/@@/user" />
       <a tal:content="dcu/uploader/browsername"
          tal:attributes="href dcu/uploader/fmt:url" /><br />
     </tal:per_component>

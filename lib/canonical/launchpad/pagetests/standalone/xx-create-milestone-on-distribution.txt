@@ -1,7 +1,7 @@
 
 First, let's make sure the sample user (name12) can't view the page to
 add a milestone to the Ubuntu distribution, which is owned by the Ubuntu
-Team (name17).
+Team (ubuntu-team).
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+addmilestone HTTP/1.1
@@ -151,10 +151,9 @@ database ID for the milestone, so we find the ID:
   ... -----------------------------3354718323763093901439946724--
   ... """ % milestone.id)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/1
+  Content-Length: 0
   ...
+  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/1
 
 
 Verify that the bug now has the milestone set on the view page:
@@ -165,30 +164,8 @@ Verify that the bug now has the milestone set on the view page:
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  <span class="statusUnconfirmed">Unconfirmed</span>
-  ...
-  <span class="severityNormal">Normal</span>
-  ...
-  <span class="priorityMedium">Medium</span>
-  ...
-  <td>sounder01</td>
-  ...
-
-
-XXX: why is this necessary? -- kiko, 2006-01-18 Revert owner of
-distribution back to ubuntu team, avoids PQM failure in
-xx-reassign-distribution.
-
-  >>> print http(r"""
-  ... POST /distros/ubuntu/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ...
-  ... field.owner=name17&existing=existing&CHANGE_OWNER=Change+Owner""")
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: .
-  ...
+  ...<span class="statusUnconfirmed">Unconfirmed</span>...
+  ...<span class="severityNormal">Normal</span>...
+  ...<span class="priorityMedium">Medium</span>...
+  ...<td>sounder01</td>...
 

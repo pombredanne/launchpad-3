@@ -6,15 +6,27 @@ __metaclass__ = type
 
 __all__ = [
     'TicketTargetView',
+    'ManageSupportContactView',
     ]
 
-from canonical.launchpad.interfaces import IPerson
+from zope.component import getUtility
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
 
-class TicketTargetView:
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IManageSupportContacts, IPerson)
+from canonical.launchpad.webapp import GeneralFormView, canonical_url
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.cachedproperty import cachedproperty
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+
+class TicketTargetView(LaunchpadView):
+
+    @cachedproperty
+    def tickets(self):
+        # Cache this and avoid having to regenerate it for each template
+        # and view test of the query results.
+        return list(self.context.tickets())
 
     def categories(self):
         """This organises the tickets related to this target by
@@ -33,9 +45,8 @@ class TicketTargetView:
          - subscribed by this person (self.context.subscriber_tickets)
 
         """
-        categories = {}
         if not IPerson.providedBy(self.context):
-            tickets = self.context.tickets()
+            tickets = self.tickets
         else:
             # for a person, we need to figure out which set of tickets to be
             # showing.
@@ -64,7 +75,7 @@ class TicketTargetView:
             #     self.assigned_tickets
             #     self.answered_tickets
             #     self.subscribed_tickets
-            #     self.tickets()  # everything else.
+            #     self.tickets  # everything else.
             #   Hook these up in zcml
             #   using the class and attribute style of registing pages.
             url = self.request.getURL()
@@ -77,7 +88,9 @@ class TicketTargetView:
             elif '+subscribedtickets' in url:
                 tickets = self.context.subscribed_tickets
             else:
-                tickets = self.context.tickets()
+                tickets = self.tickets
+
+        categories = {}
         for ticket in tickets:
             if categories.has_key(ticket.status):
                 category = categories[ticket.status]
@@ -90,9 +103,85 @@ class TicketTargetView:
         categories = categories.values()
         return sorted(categories, key=lambda a: a['status'].value)
 
+    @cachedproperty
     def getLatestTickets(self, quantity=5):
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return self.context.tickets(quantity=quantity)
+        return list(self.context.tickets(quantity=quantity))
+
+
+class SupportContactTeamsWidget(MultiCheckBoxWidget):
+    """A checkbox widget that doesn't require a vocabulary when constructed.
+
+    We need this in order to use CustomWidgetFactory, since
+    MultiCheckBoxWidget expects the vocabulary as the second argument.
+    """
+    # Make the labels clickable.
+    _joinButtonToMessageTemplate = (
+        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+
+    def __init__(self, field, request):
+        MultiCheckBoxWidget.__init__(
+            self, field, field.value_type.vocabulary, request)
+
+
+class ManageSupportContactView(GeneralFormView):
+    """View class for managing support contacts."""
+
+    schema = IManageSupportContacts
+    label = "Manage support contacts"
+
+    @property
+    def _keyword_arguments(self):
+        return self.fieldNames
+
+    @property
+    def initial_values(self):
+        user = getUtility(ILaunchBag).user
+        support_contacts = self.context.support_contacts
+        user_teams = [
+            membership.team for membership in user.myactivememberships]
+        support_contact_teams = set(support_contacts).intersection(user_teams)
+        return {
+            'want_to_be_support_contact': user in support_contacts,
+            'support_contact_teams': list(support_contact_teams)
+            }
+    def _setUpWidgets(self):
+        if not self.user:
+            return
+        self.support_contact_teams_widget = CustomWidgetFactory(
+            SupportContactTeamsWidget)
+        GeneralFormView._setUpWidgets(self, context=getUtility(ILaunchBag).user)
+
+    def process(self, want_to_be_support_contact, support_contact_teams=None):
+        if support_contact_teams is None:
+            support_contact_teams = []
+        response = self.request.response
+        if want_to_be_support_contact:
+            if self.context.addSupportContact(self.user):
+                response.addNotification(
+                    'You have been added as a support contact for %s' % (
+                        self.context.displayname))
+        else:
+            if self.context.removeSupportContact(self.user):
+                response.addNotification(
+                    'You have been removed as a support contact for %s' % (
+                        self.context.displayname))
+
+        user_teams = [
+            membership.team for membership in self.user.myactivememberships]
+        for team in user_teams:
+            if team in support_contact_teams:
+                if self.context.addSupportContact(team):
+                    response.addNotification(
+                        '%s has been added as a support contact for %s' % (
+                            team.displayname, self.context.displayname))
+            else:
+                if self.context.removeSupportContact(team):
+                    response.addNotification(
+                        '%s has been removed as a support contact for %s' % (
+                            team.displayname, self.context.displayname))
+
+        self._nextURL = canonical_url(self.context) + '/+tickets'
 

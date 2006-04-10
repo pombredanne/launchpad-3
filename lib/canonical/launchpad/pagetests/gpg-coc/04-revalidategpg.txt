@@ -2,7 +2,7 @@
 Certify we have a deactivated key   
 
   >>> print http(r"""
-  ... GET /people/name12/+editgpgkeys HTTP/1.1
+  ... GET /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -34,7 +34,7 @@ Finish the current Interaction
 Request Revalidation 
 
   >>> print http(r"""
-  ... POST /people/name12/+editgpgkeys HTTP/1.1
+  ... POST /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... action=revalidate_gpg&REVALIDATE_GPGKEY=2""")
   HTTP/1.1 200 Ok
@@ -86,7 +86,8 @@ same issue as 01-claimgpg, copied stuff
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...
-  ...Confirm OpenPGP key: A419AE861E88BC9E04B9C26FBA2B9389DFD20543 by 
+  ...confirm the OpenPGP key...A419AE861E88BC9E04B9C26FBA2B9389DFD20543...
+  ...
   ...Sample Person...
   ...
 
@@ -102,13 +103,13 @@ Revalidate inactive key.
   ...
   Location: http://localhost:9000/people/name12
   ...
-  ...info-notification">The key...1024D/DFD20543...was successfully...
+  ...informational message">The key...1024D/DFD20543...was successfully...
   ...
 
 Certify the key is revalidated
 
   >>> print http(r"""
-  ... GET /people/name12/+editgpgkeys HTTP/1.1
+  ... GET /people/name12/+editpgpkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

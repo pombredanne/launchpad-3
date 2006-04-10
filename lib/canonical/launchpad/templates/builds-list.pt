@@ -1,11 +1,10 @@
 <div class="builds_list" tal:condition="not: view/setupBuildList">
-
+  <tal:batch define="batch view/batchnav/currentBatch">
+     <form name="build_records_state" action="" method="GET">
      <table>
        <tr>
-         <th><label>Build State:</label></th>
+         <th><label for="build_state">Show:</label></th>
          <td>
-          <form name="build_records_state" action="" method="GET">
-
           <select name="build_state" size="1">
 
             <option tal:attributes="selected python: view.state == ''"
@@ -27,86 +26,114 @@
             <option tal:attributes="selected python: view.state == 'chrootwait'"
                     value="chrootwait">Waiting Chroot</option>
 
-          </select>
+            <option tal:attributes="selected python: view.state == 'superseded'"
+                    value="superseded">Superseded</option>
 
-          <input type="submit" value="Update" />
-
-          </form>
+          </select> builds
          </td>
        </tr>
+       <tr>
+          <th><label for="build_text">with names containing:</label></th>
+          <td>
+	  <tal:searchname condition="view/searchName">
+	      <input title="Package Name" size="20" type="text"
+                     name="build_text" tal:attributes="value view/text"/>
+          </tal:searchname>
+          <input type="submit" value="Update" />
+          </td>
+       </tr>
      </table>
+     </form>
 
      <tal:navigation
-          replace="structure view/batchnav/@@+navigation-links"
-          tal:condition="view/batch"/>
+          tal:condition="batch"
+          replace="structure view/batchnav/@@+navigation-links" />
 
-     <table class="listing" tal:condition="view/batch">
-        <tr class="thead">
-            <th>Build</th>
-            <th>Requested</th>
-            <th>Built</th>
-            <th tal:condition="view/showBuilderInfo">Builder</th>
-            <th>State</th>
-            <th>Build log</th>
-            <th>Duration</th>
+  <table class="listing" tal:condition="batch">
+    <tbody>
+      <tal:batch repeat="build batch">
+        <tr>
+          <td class="left icon">
+            <img tal:attributes="
+              alt build/buildstate/name;
+              src build/build_icon
+            " />
+          </td>
+          <td>
+            <a tal:attributes="href build/fmt:url">
+              <span tal:replace="build/title">NAME</span>
+            </a>
+          </td>
         </tr>
-        <tr tal:repeat="build view/batch">
-            <td>
-              <a tal:attributes="href build/fmt:url">
-                 <img alt="[package]" src="/++resource++package-binary" />
-                 <span tal:replace="build/title">NAME</span>
-              </a>
-            </td>
-            <td tal:content="build/datecreated/fmt:datetime">REQUESTED</td>
-
-	    <tal:pending condition="not: build/was_built">
-            <td colspan="5" align="center">PENDING
-            (<span tal:condition="build/buildqueue_record"
-                   tal:replace="build/buildqueue_record/lastscore"/>)</td>
-            </tal:pending>
-
-            <tal:was_built condition="build/was_built">
-            <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>
-            <td tal:condition="view/showBuilderInfo">
-              <tal:block condition="build/builder">
-                <a tal:content="build/builder/title"
-                   tal:attributes="href build/builder/fmt:url"
-                   title="To show the Builder, click here."/>
-              </tal:block>
-              <tal:block condition="not:build/builder">
-                <img alt="[Unavailable Info]" src="/++resource++stop" />
-              </tal:block>
-            </td>
-            <td>
-              <img tal:attributes="alt build/buildstate/name;
-                                   src build/build_icon" />
-            </td>
-            <td>
-              <tal:block condition="build/buildlog">
-                <a tal:attributes="href build/buildlog/url">
-                  <img alt="[Build log]" src="/++resource++info" />
-                </a>
-              </tal:block>
-              <tal:block condition="not:build/buildlog">
-                 <img alt="[Unavailable Info]" src="/++resource++stop" />
-              </tal:block>
-            </td>
-            <td>
-              <span tal:replace="build/buildduration/fmt:approximateduration"
-              >4 minutes</span>
-            </td>
-            </tal:was_built>
+        <tr class="secondary">
+          <td></td>
+          <td>
+            Requested
+            <tal:requested
+              content="build/datecreated/fmt:datetime"
+            />
+            in pocket <tal:buildpocket
+              content="build/pocket/name"
+            />
+          </td>
         </tr>
-      </table>
+        <tr class="secondary" tal:condition="build/dependencies">
+          <td></td>
+          <td>
+	    Missing Dependencies
+            <tal:dependencies
+              content="build/dependencies"
+            />
+          </td>
+        </tr>
+        <tr class="secondary" tal:condition="build/was_built">
+          <td></td>
+          <td>
+            Built
+            <tal:built content="build/datebuilt/fmt:datetime" />
+            <tal:builder condition="view/showBuilderInfo">
+              by
+              <a
+                tal:condition="build/builder"
+                tal:content="build/builder/title"
+                tal:attributes="href build/builder/fmt:url"
+                title="Information about this build machine"
+              />
+              <tal:unknownbuilder condition="not: build/builder">
+                unknown build machine
+              </tal:unknownbuilder>
+            </tal:builder>
+            in
+            <tal:time content="build/buildduration/fmt:approximateduration" />
+            <tal:log condition="build/buildlog">
+              &mdash;
+              <a tal:attributes="href build/buildlog/url">log</a>
+            </tal:log>
+          </td>
+        </tr>
+        <tr class="secondary" tal:condition="not: build/was_built">
+          <td></td>
+          <td>
+            Pending
+            (<span
+              tal:condition="build/buildqueue_record"
+              tal:replace="build/buildqueue_record/lastscore"
+            />)
+          </td>
+        </tr>
+      </tal:batch>
+    </tbody>
+  </table>
 
-      <div tal:condition="not: view/batch">
-        <img src="/++resource++alert" />
-        No <span tal:replace="view/state"/> builds for
-        <span tal:replace="context/title"/>.
+      <div tal:condition="not: batch">
+        <img src="/@@/alert" />
+        No <span tal:replace="view/state" /> builds for
+        <span tal:replace="context/title" />.
       </div>
 
       <tal:navigation
-           replace="structure view/batchnav/@@+navigation-links"
-           tal:condition="view/batch"/>
+           tal:condition="batch"
+           replace="structure view/batchnav/@@+navigation-links" />
 
+  </tal:batch>
 </div>

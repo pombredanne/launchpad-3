@@ -46,7 +46,7 @@ redirected to the bug page.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/9
+  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/11
   ...
   
 
@@ -84,3 +84,41 @@ Filing of a bug in a package leaving the distro field blank
   ...
   ...Required input is missing...
   ...
+
+Filing of a bug against a distribution that has no current releases is
+handled, but specially -- the package name is ignored and the bug's
+description has a special comment appended to it.
+
+  >>> print http(r"""
+  ... POST /malone/bugs/+package HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 729
+  ... Content-Type: multipart/form-data; boundary=---------------------------124775592710556272331137042681
+  ... 
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.distribution"
+  ... 
+  ... gentoo
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.packagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... A brief bug title
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.comment"
+  ... 
+  ... A really brief bug description.
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------124775592710556272331137042681--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/distros/gentoo/+bug/12
+  ...
+

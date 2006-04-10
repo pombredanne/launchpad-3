@@ -1,14 +1,14 @@
 # arch-tag: 26f84e2a-1a75-48d5-bf0d-28672ebc61aa
 
-languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh,bo,ka
+languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh,bo,ka,id
 nplurals:  1
 plural:    0
 
-languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,sq,pt,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl,ku,lb,la,et,fur,ast,urd,si,bn,pap
+languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,sq,pt,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl,ku,lb,la,et,fur,ast,urd,si,bn,pap,mr
 nplurals:  2
 plural:    n != 1
 
-languages: fr,pt_BR,am,oc,tl,sg
+languages: fr,pt_BR,am,oc,tl,sg,ak,br
 nplurals:  2
 plural:    n > 1
 

@@ -3,18 +3,22 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Merge accounts</h1>
+    </metal:heading>
 
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-      <h1>Merge accounts</h1>
 
-      <div tal:condition="view/errormessage">
-        <p class="portalMessage" tal:content="view/errormessage"></p>
-      </div>
+        <p
+          tal:condition="view/errormessage"
+          tal:content="view/errormessage"
+          class="error message"
+        />
 
       <p>You&#8217;re trying to merge the Launchpad account named
       <code tal:content="view/dupe/name">foo</code> into the

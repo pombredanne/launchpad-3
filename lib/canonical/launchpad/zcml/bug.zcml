@@ -15,25 +15,29 @@
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
-        <allow attributes="id private bugtasks" />
+        <allow attributes="id private bugtasks subscriptions" />
         <require
             permission="launchpad.View"
-            attributes="datecreated name title summary description ownerID
+            attributes="datecreated name title description ownerID
                         owner duplicateof communityscore communitytimestamp
                         hits hitstimestamp activityscore activitytimestamp
-                        displayname activity initial_message 
+                        displayname activity initial_message bug_branches
                         productinfestations packageinfestations watches
-                        externalrefs cves cve_links subscriptions duplicates
+                        externalrefs cves cve_links duplicates
                         attachments tickets specifications followup_subject
                         subscribe unsubscribe isSubscribed messages
-                        notificationRecipientAddresses addWatch linkCVE
-                        unlinkCVE findCvesInText newMessage linkMessage" />
+                        notificationRecipientAddresses hasBranch
+                        security_related" />
         <require
             permission="launchpad.Edit"
-            set_attributes="datecreated name title summary description ownerID
+            attributes="addChangeNotification addCommentNotification addWatch
+                        linkCVE unlinkCVE findCvesInText newMessage
+                        linkMessage addBranch"
+            set_attributes="datecreated name title description ownerID
                             owner duplicateof communityscore communitytimestamp
                             hits hitstimestamp activityscore activitytimestamp
-                            activity initial_message private" />
+                            activity initial_message private security_related"
+            />
     </content>
 
     <browser:defaultView
@@ -164,12 +168,12 @@
         arguments=""
         keyword_arguments="distribution packagename title comment private"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-add.pt"
+        template="../templates/malone-filebug.pt"
         lp:url="malone/bugs/+product">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="30" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"

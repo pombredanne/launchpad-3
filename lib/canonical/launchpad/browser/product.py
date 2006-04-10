@@ -14,7 +14,6 @@ __all__ = [
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
     'ProductTranslationsMenu',
-    'ProductCodeMenu',
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
@@ -28,15 +27,15 @@ __all__ = [
 from warnings import warn
 
 import zope.security.interfaces
-from zope.component import getUtility
+from zope.component import getUtility, getView
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    IPerson, IPersonSet, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, ICalendarOwner, NotFoundError)
+    ILaunchpadCelebrities, IPerson, IProduct, IProductSet, IProductSeries, 
+    ISourcePackage, ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
@@ -95,9 +94,9 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar', 'code']
+                   'translations', 'calendar']
 
-    links = StandardLaunchpadFacets.links + ['code']
+    links = StandardLaunchpadFacets.links
 
     def overview(self):
         target = ''
@@ -136,12 +135,6 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
 
-    def code(self):
-        target = '+branches'
-        text = 'Code'
-        summary = 'Bazaar Branches for %s' % self.context.displayname
-        return Link(target, text, summary)
-
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
@@ -155,18 +148,16 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'editbugcontact', 'reassign', 'distributions', 'packages',
-        'series_add', 'branch_add', 'milestone_add', 'launchpad_usage', 'rdf',
-        'administer']
+        'edit', 'reassign', 'distributions', 'packages', 'branches',
+        'branch_add', 'series_add', 'milestone_add', 'launchpad_usage',
+        'administer', 'rdf']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
 
-    def editbugcontact(self):
-        text = 'Edit Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
-
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
@@ -179,18 +170,25 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Packages'
         return Link('+packages', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
 
+    def branches(self):
+        summary = 'Bazaar Branches for %s' % self.context.displayname
+        return Link('+branches', 'Branches', icon='info', summary=summary)
+
     def branch_add(self):
-        text = 'Add Branch'
+        text = 'Register Branch'
         return Link('+addbranch', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def milestone_add(self):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
         return Link('+launchpad', text, icon='edit')
@@ -211,44 +209,57 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug']
+    links = ['filebug', 'bugcontact', 'securitycontact']
 
     def filebug(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
+    def bugcontact(self):
+        text = 'Change Bug Contact'
+        return Link('+bugcontact', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change Security Contact'
+        return Link('+securitycontact', text, icon='edit')
 
 class ProductSupportMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'support'
-    links = ['new']
+    links = ['new', 'support_contact']
 
     def new(self):
         text = 'Request Support'
         return Link('+addticket', text, icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'new']
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
-        return Link('+specplan', text, icon='info')
+        return Link('+roadmap', text, icon='info')
 
     def table(self):
         text = 'Assignments'
-        return Link('+specstable', text, icon='info')
-
-    def workload(self):
-        text = 'Workload'
-        return Link('+workload', text, icon='info')
+        return Link('+assignments', text, icon='info')
 
     def new(self):
-        text = 'Register a Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -259,7 +270,7 @@ class ProductBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a Bounty'
+        text = 'New Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -281,17 +292,6 @@ class ProductTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Edit Template Names'
         return Link('+potemplatenames', text, icon='edit')
-
-
-class ProductCodeMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'code'
-    links = ['new']
-
-    def new(self):
-        text = 'Add Bazaar Branch'
-        return Link('+addbranch', text, icon='add')
 
 
 def _sort_distros(a, b):
@@ -324,9 +324,6 @@ class ProductView:
         self.product = context
         self.request = request
         self.form = request.form
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = helpers.request_languages(request)
         self.status_message = None
 
     def primary_translatable(self):
@@ -518,7 +515,6 @@ class ProductSetView:
     __used_for__ = IProductSet
 
     def __init__(self, context, request):
-
         self.context = context
         self.request = request
         form = self.request.form
@@ -547,7 +543,7 @@ class ProductSetView:
             except NotFoundError:
                 product = None
             if product is not None:
-                self.request.response.redirect(product.name)
+                self.request.response.redirect(canonical_url(product))
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match
@@ -584,8 +580,8 @@ class ProductAddView(AddView):
                   "downloadurl",
                   "programminglang"]
         owner = IPerson(request.principal, None)
-        if self.isButtSource(owner):
-            # Buttsource members get it easy and are able to change this
+        if self.isVCSImport(owner):
+            # vcs-imports members get it easy and are able to change this
             # stuff during the edit process; this saves time wasted on
             # getting to product/+admin.
             fields.insert(1, "owner")
@@ -596,12 +592,11 @@ class ProductAddView(AddView):
         self._nextURL = '.'
         AddView.__init__(self, context, request)
 
-    def isButtSource(self, owner):
+    def isVCSImport(self, owner):
         if owner is None:
             return False
-        personset = getUtility(IPersonSet)
-        buttsource = personset.getByName('buttsource')
-        return owner.inTeam(buttsource)
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return owner.inTeam(vcs_imports)
 
     def createAndAdd(self, data):
         # add the owner information for the product
@@ -609,7 +604,7 @@ class ProductAddView(AddView):
         if owner is None:
             raise zope.security.interfaces.Unauthorized(
                 "Need an authenticated Launchpad owner")
-        if self.isButtSource(owner):
+        if self.isVCSImport(owner):
             owner = data["owner"]
             reviewed = data["reviewed"]
         else:

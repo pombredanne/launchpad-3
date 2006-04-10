@@ -22,6 +22,9 @@ default: inplace
 schema: build
 	$(MAKE) -C database/schema
 
+newsampledata:
+	$(MAKE) -C database/schema newsampledata
+
 check_merge: build check importdcheck
 
 
@@ -48,7 +51,7 @@ check: build
 	# Store time information - we store this in /tmp instead of the cwd
 	# so we can see the results after PQM runs.
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py --times=/tmp/test.times
+	${PYTHON} -t ./test_on_merge.py -vv --times=/tmp/test.times
 
 lint:
 	@sh ./utilities/lint.sh
@@ -113,6 +116,13 @@ stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian trebuchet \
                                      buildsequencer launchpad
+
+harness:
+	PYTHONPATH=lib python -i lib/canonical/database/harness.py
+
+rebuildfti:
+	@echo Rebuilding FTI indexes on launchpad_dev database
+	database/schema/fti.py -d launchpad_dev --force
 
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \

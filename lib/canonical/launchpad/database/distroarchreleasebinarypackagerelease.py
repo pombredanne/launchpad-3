@@ -21,7 +21,7 @@ from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory, BinaryPackagePublishing)
+    BinaryPackagePublishingHistory)
 
 class DistroArchReleaseBinaryPackageRelease:
 
@@ -88,7 +88,7 @@ class DistroArchReleaseBinaryPackageRelease:
         if status is not None:
             query += " AND status = %s" % sqlvalues(status)
 
-        return BinaryPackagePublishing.selectFirst(
+        return BinaryPackagePublishingHistory.selectFirst(
             query, orderBy='-datecreated')
 
     @property

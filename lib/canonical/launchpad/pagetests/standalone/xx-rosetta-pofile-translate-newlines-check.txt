@@ -65,6 +65,15 @@ adds it automatically
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
   ... count=1&show=all&msgset_165=&msgset_165_es_translation_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua&submit_translations=Save+%26+Continue""")
+  HTTP/1.1 303 See Other
+  Content-Length: 0
+  ...
+  Location: http://localhost:9000/products/evolution/+series/main/+pots/evolution-2.2/es/+translate?count=1&offset=1
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?count=1&offset=1 HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
   HTTP/1.1 200 Ok
   ...
             <input type="hidden" name="offset" value="1" />
@@ -95,6 +104,15 @@ Now, we do the right submit, with one trailing new line...
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
   ... count=1&show=all&msgset_165=&msgset_165_es_translation_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua%0D%0A&submit_translations=Save+%26+Continue""")
+  HTTP/1.1 303 See Other
+  Content-Length: 0
+  ...
+  Location: http://localhost:9000/products/evolution/+series/main/+pots/evolution-2.2/es/+translate?count=1&offset=1
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?count=1&offset=1 HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
   HTTP/1.1 200 Ok
   ...
             <input type="hidden" name="offset" value="1" />
@@ -125,6 +143,15 @@ Last check, the user sends two new line chars instead of just one...
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
   ... count=1&show=all&msgset_165=&msgset_165_es_translation_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua%0D%0A%0D%0A&submit_translations=Save+%26+Continue""")
+  HTTP/1.1 303 See Other
+  Content-Length: 0
+  ...
+  Location: http://localhost:9000/products/evolution/+series/main/+pots/evolution-2.2/es/+translate?count=1&offset=1
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?count=1&offset=1 HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
   HTTP/1.1 200 Ok
   ...
             <input type="hidden" name="offset" value="1" />

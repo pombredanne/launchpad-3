@@ -9,6 +9,13 @@ Some terminology:
         interface docstrings for their contents.
 """
 
+__all__ = [
+    'IUserDetailsStorage',
+    'IUserDetailsStorageV2',
+    'IBranchDetailsStorage',
+    ]
+    
+
 from zope.interface import Interface
 
 
@@ -116,11 +123,11 @@ class IUserDetailsStorageV2(Interface):
     def createUser(preferredEmail, password, displayname, emailAddresses):
         """Create a user
         
-        :param loginID: A login ID, same as for getUser.
+        :param preferredEmail: The preferred email address for this user.
         :param password: A password, in clear text.
         :param displayname: full name, for display.
-        :param emailAddresses: list of email addresses.  The loginID may appear
-            in this list as well; it doesn't matter either way.
+        :param emailAddresses: list of email addresses.  The preferred email may
+            appear in this list as well; it doesn't matter either way.
             
         :returns: user dict, or TBD if there is an error such as a database
             constraint being violated.
@@ -142,4 +149,37 @@ class IUserDetailsStorageV2(Interface):
             empty if the user has no keys or does not exist.
         """
 
+class IBranchDetailsStorage(Interface):
+    """An interface for updating the status of branches in Launchpad."""
 
+    def startMirroring(branchID):
+        """Notify Launchpad that the given branch has started mirroring.
+
+        The last_mirror_attempt field of the given branch record will be
+        updated appropriately.
+
+        :param branchID: The database ID of the given branch.
+        :returns: True if the branch status was successfully updated.
+        """
+
+    def mirrorComplete(branchID):
+        """Notify Launchpad that the branch has been successfully mirrored.
+
+        In the Launchpad database, the last_mirrored field will be updated
+        to match the last_mirror_attempt value, and mirror_failures counter
+        will be reset to zero.
+
+        :param branchID: The database ID of the given branch.
+        :returns: True if the branch status was successfully updated.
+        """
+
+    def mirrorFailed(branchID, reason):
+        """Notify Launchpad that the branch could not be mirrored.
+
+        The mirror_failures counter for the given branch record will be
+        incremented
+
+        :param branchID: The database ID of the given branch.
+        :param reason: A string giving the reason for the failure.
+        :returns: True if the branch status was successfully updated.
+        """

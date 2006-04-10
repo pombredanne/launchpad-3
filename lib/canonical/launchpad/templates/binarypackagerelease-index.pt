@@ -1,21 +1,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="context/summary">Package summary</h1>
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
+  <!-- XXX: matsubara 20060213 
+       see bug https://launchpad.net/productslaunchpad/+bug/31342 
+       the main template is broken when there is no actions portlet -->
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-latestversions" />
+    <div>&nbsp;</div>
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
-
-    <h2 tal:content="context/summary">Package Summary Here</h2>
 
     <p class="highlighted" tal:content="context/description" />
 

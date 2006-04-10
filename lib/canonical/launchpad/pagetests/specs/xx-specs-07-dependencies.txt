@@ -52,9 +52,9 @@ dependency.
   ... -----------------------------14076136604849835101350748509--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/canvas
-  ...
 
 But we don't want to keep that, so we will remove it as a dependency. First
 we make sure we can see the link to remove a dependency.
@@ -101,9 +101,9 @@ expect to be redirected to the spec home page.
   ... -----------------------------910619684974131307920910--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/firefox/+spec/canvas
-  ...
 
 Now, let's look at the "e4x" spec. We know that it blocks the "canvas" spec
 from the previous test. Also, we should see that it has a dependency of its
@@ -140,7 +140,7 @@ Also, since we have these specs with their priorities and dependencies
 mapped out, we should be able to see a project plan for Mozilla Firefox.
 
   >>> print http(r"""
-  ... GET /products/firefox/+specplan HTTP/1.1
+  ... GET /products/firefox/+roadmap HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

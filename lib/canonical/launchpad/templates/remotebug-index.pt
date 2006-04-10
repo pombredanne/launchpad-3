@@ -1,8 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 content="context/title">Bug #123 in bugzilla.gnome.org</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/bugtracker/@@+portlet-details" />
@@ -10,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <p>The following bugs in Launchpad are watching
+  <p>These bugs in Launchpad are watching
   bug #<span tal:replace="context/remotebug">1234</span>
   in <span tal:replace="context/bugtracker/title">some bugtracker</span>.
   You can make other Launchpad bugs watch this remote bug using the
@@ -25,7 +29,7 @@
     <tbody>
       <tr tal:repeat="bug context/bugs">
         <td>
-          <img alt="" src="/++resource++bug" />
+          <img alt="" src="/@@/bug" />
           <a href="#" tal:attributes="href bug/fmt:url"
           ><span tal:replace="string:#${bug/id}: ${bug/title}"
                  tal:condition="bug/required:launchpad.View">

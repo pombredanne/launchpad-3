@@ -5,12 +5,12 @@ Builder View Classes and Pages
   >>> from zope.component import queryView
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.interfaces import IBuilderSet
-  >>> from canonical.lp.interfaces import IBatchNavigator
+  >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
 
   >>> builder = getUtility(IBuilderSet).get(1)
 
 Get a "mock" request:
-  >>> mock_form = {'batch_start': 1}
+  >>> mock_form = {'start': 1}
   >>> request = TestRequest(form=mock_form)
 
 Let's instantiate the view for +index:
@@ -29,8 +29,8 @@ Let's instantiate the view for +index:
 As expected we have a 'batched' list with the size requested in
 mock_form:
 
-  >>> len(builder_view.batch)
-  2
+  >>> len(builder_view.batchnav.currentBatch())
+  6
 
 Let's instantiate the view for +cancel:
 
@@ -79,7 +79,7 @@ Let's instantiate the view for +edit:
 
 Build an special request containing the fields we want to change:
 
-  >>> request = TestRequest(form={'field.processor': builder.processor.id,
+  >>> request = TestRequest(form={'field.processor': builder.processor.name,
   ...                             'field.url': builder.url,
   ...                             'field.name': u'biscoito',
   ...                             'field.title': builder.title,

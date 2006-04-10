@@ -16,6 +16,7 @@ from canonical.launchpad.ftests.harness import _disconnect_sqlos
 from canonical.launchpad.ftests.harness import _reconnect_sqlos
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.ftests import logout
+from canonical.launchpad.mail import stub
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -56,6 +57,7 @@ class EndStory(unittest.TestCase):
         LaunchpadFunctionalTestSetup().tearDown()
         global _db_is_setup
         _db_is_setup = False
+        stub.test_emails = []
 
     def test_tearDownDatabase(self):
         # Fake test to ensure tearDown is called.
@@ -169,14 +171,21 @@ class PageTest(unittest.TestCase):
         return "pagetest: %s" % self._description
 
     def id(self):
-        return self.shortDescription()
+        # XXX Andrew Bennetts 2006-02-15:
+        # Because Zope's test runner assumes tests are named
+        # "package.module.class.method", it ignores everything before the last
+        # "." when matching.  Hence we strip the trailing ".txt" from test names
+        # so that developers have a reasonably unique testname to filter on.
+        id = self.shortDescription()
+        if id.endswith('.txt'):
+            id = id[:-len('.txt')]
+        return id
 
     def __str__(self):
         return self.shortDescription()
 
     def __repr__(self):
-        return "<%s storydir=%s>" % \
-               (_strclass(self.__class__), self._description)
+        return "<%s storydir=%s>" % (self.__class__.__name__, self._description)
 
     def run(self, result=None):
         if result is None: result = self.defaultTestResult()
@@ -203,7 +212,7 @@ def test_suite():
     stories.sort()
 
     for storydir in stories:
-        if storydir != 'standalone':
+        if not storydir.endswith('standalone'):
             suite.addTest(PageTest(os.path.join('pagetests', storydir)))
         else:
             filenames = [filename
@@ -211,8 +220,7 @@ def test_suite():
                         if filename.lower().endswith('.txt')
                         ]
             for filename in filenames:
-                suite.addTest(PageTest(os.path.join('pagetests',
-                                                    'standalone', filename)))
+                suite.addTest(PageTest(os.path.join(storydir, filename)))
 
     return suite
 

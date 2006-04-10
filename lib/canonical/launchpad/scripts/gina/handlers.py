@@ -124,9 +124,10 @@ class ImporterHandler:
         self.imported_sources = []
         self.imported_bins = {}
 
-        self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings, 
+        self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings,
                                               pocket)
-        self.bphandler = BinaryPackageHandler(self.sphandler, archive_root)
+        self.bphandler = BinaryPackageHandler(self.sphandler, archive_root,
+                                              pocket)
 
         self.sppublisher = SourcePackagePublisher(self.distrorelease, pocket)
         # This is initialized in ensure_archinfo
@@ -649,12 +650,13 @@ class SourcePackagePublisher:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
-    def __init__(self, sphandler, archive_root):
+    def __init__(self, sphandler, archive_root, pocket):
         # Create other needed object handlers.
         self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.source_handler = sphandler
         self.archive_root = archive_root
+        self.pocket = pocket
 
     def checkBin(self, binarypackagedata, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
@@ -841,13 +843,12 @@ class BinaryPackageHandler:
             build = Build(processor=processor.id,
                           distroarchrelease=distroarchrelease.id,
                           buildstate=BuildStatus.FULLYBUILT,
-                          gpgsigningkey=key,
                           sourcepackagerelease=srcpkg.id,
                           buildduration=None,
                           buildlog=None,
                           builder=None,
-                          changes=None,
-                          datebuilt=None)
+                          datebuilt=None,
+                          pocket=self.pocket)
         return build
 
 
@@ -941,8 +942,7 @@ class PersonHandler:
 
     def createPerson(self, emailaddress, displayname):
         """Create a new Person"""
-        givenname = displayname.split()[0]
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-            email=emailaddress, displayname=displayname, givenname=givenname)
+            email=emailaddress, displayname=displayname)
         return person
 

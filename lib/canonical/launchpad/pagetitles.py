@@ -41,20 +41,15 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
 
-class BugPageTitle:
-    def __call__(self, context, view):
-        return smartquote('Bug #%d: "%s"') % (context.id, context.title)
-
-
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return smartquote('Bug #%d in %s: "%s"') % (
             context.bug.id, context.targetname, context.bug.title)
 
 
-class BugTaskTargetingTitle:
+class BugTaskBackportingTitle:
     def __call__(self, context, view):
-        return "Bug #%d in %s - Target fix to releases" % (
+        return "Bug #%d in %s - Backport fix to releases" % (
             context.bug.id, context.targetname)
 
 
@@ -95,7 +90,7 @@ class LaunchbagBugID(SubstitutionHelper):
 
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bzr syncing'
 
 def binarypackagerelease_index(context, view):
     return "%s binary package in Launchpad" % context.title
@@ -104,42 +99,25 @@ binarypackagenames_index = 'Binary package name set'
 
 bounties_index = 'Bounties registered in Launchpad'
 
-bounty_add = 'Register a new bounty'
-
-bounty_add = 'Register a bounty in Launchpad'
+bounty_add = 'Register a bounty'
 
 bounty_edit = ContextTitle(smartquote('Edit bounty "%s"'))
 
 bounty_link = ContextTitle('Link a bounty to %s')
 
-bounty_index = ContextTitle(smartquote('Bounty "%s"'))
+bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_edit = ContextTitle(smartquote('Edit branch "%s"'))
+branch_edit = ContextTitle(smartquote('Change "%s" branch details'))
 
-branch_index = ContextTitle(smartquote('Bazaar branch "%s"'))
+branch_index = ContextDisplayName(smartquote('Bzr branch "%s"'))
 
 branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
 branchtarget_branches = ContextTitle('Branches for %s')
 
 bug_activity = ContextId('Bug #%s - Activity log')
-
-def bug_add(context, view):
-    # XXX, Brad Bollenbach, 2005-07-15: This is a hack until our fancy
-    # new page title machinery allows for two different pages that use
-    # the same template to have different titles (the way ZCML does.)
-    # See https://launchpad.ubuntu.com/malone/bugs/1376
-    product_context = IProduct(context, None)
-    distro_context = IDistribution(context, None)
-    distrorelease_context = IDistroRelease(context, None)
-
-    if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Report a bug about %s')
-        return context_title(context, view)
-    else:
-        return "Report a bug"
 
 bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
@@ -149,17 +127,17 @@ def bug_attachment_edit(context, view):
     return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
+bug_branch_add = LaunchbagBugID('Bug #%d - Add branch')
+
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
-bug_edit = BugPageTitle()
+bug_edit = ContextTitle('%s')
 
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):
     return smartquote('Bug #%d - Edit Web link "%s"') % (
         context.bug.id, context.title)
-
-bug_index = BugPageTitle()
 
 bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
@@ -170,6 +148,8 @@ bug_secrecy = ContextId('Bug #%d - Set visibility')
 bug_subscription = ContextId('Subscription to bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
+
+bugbranch_status = "Edit branch fix status"
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 
@@ -189,22 +169,29 @@ def bugs_assigned(context, view):
     else:
         return 'No-one to display bugs for'
 
-bugtask_index = BugTaskPageTitle()
+bugtarget_advanced_search = ContextTitle("Search bugs in %s")
 
-bugtask_release_targeting = BugTaskTargetingTitle()
+bugtarget_filebug = ContextTitle('Report a bug about %s')
 
-bugtask_view = BugTaskPageTitle()
+bugtask_backport_fixing = BugTaskBackportingTitle()
 
 bugtask_edit = BugTaskPageTitle()
+
+bugtask_index = BugTaskPageTitle()
+
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request fix in a product')
+
+bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-bugtracker_edit = ContextTitle(smartquote('Edit bug tracker "%s"'))
+bugtracker_edit = ContextTitle(
+    smartquote('Change details for "%s" bug tracker'))
 
 bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
 
-bugtrackers_add = 'Register a bug tracker in Malone'
+bugtrackers_add = 'Register an external bug tracker'
 
 bugtrackers_index = 'Bug trackers registered in Malone'
 
@@ -215,6 +202,8 @@ build_changes = ContextTitle('Changes in %s')
 build_index = ContextTitle('Build details for %s')
 
 build_reset = ContextTitle('Reset %s')
+
+build_rescore = ContextTitle('Rescore %s')
 
 builders = 'Launchpad build farm'
 
@@ -234,7 +223,7 @@ calendar_event_addform = ContextTitle('Add event to %s')
 
 calendar_event_display = ContextTitle(smartquote('Event "%s"'))
 
-calendar_event_editform = ContextTitle(smartquote('Edit event "%s"'))
+calendar_event_editform = ContextTitle(smartquote('Change "%s" event details'))
 
 calendar_subscribe = ContextTitle(smartquote('Subscribe to "%s"'))
 
@@ -269,21 +258,19 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
-distributionmirror_addarchrelease = ContextTitle(
-    'Add new Arch Release for mirror %s')
-
-distributionmirror_addsourcerelease = ContextTitle(
-    'Add new Source Release for mirror %s')
-
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
+
+distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
+
+distribution_edit = ContextTitle('Edit %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
@@ -334,6 +321,8 @@ distrorelease_bugs = ContextTitle('Bugs in %s')
 
 distrorelease_cvereport = ContextDisplayName('CVE report for %s')
 
+distrorelease_edit = ContextTitle('Edit details of %s')
+
 def distrorelease_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
@@ -345,6 +334,8 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
 
 distrorelease_builds = ContextTitle('Builds for %s')
+
+distrorelease_queue = ContextTitle('Queue for %s')
 
 distroreleasebinarypackage_index = ContextTitle('%s')
 
@@ -361,6 +352,8 @@ errorservice_entry = 'Error log entry'
 errorservice_index = 'Error log report'
 
 errorservice_tbentry = 'Traceback entry'
+
+faq = 'Launchpad Frequently Asked Questions'
 
 foaf_adminrequestmerge = 'Merge Launchpad accounts'
 
@@ -409,11 +402,7 @@ launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Error: Page not found'
 
-launchpad_oops = 'Error: Oops'
-
 launchpad_requestexpired = 'Error: Timeout'
-
-launchpad_faq = 'Launchpad Frequently Asked Questions'
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -441,6 +430,8 @@ malone_distros_index = 'Report a bug about a distribution'
 
 malone_index = 'Malone: the Launchpad bug tracker'
 
+malone_filebug = "Report a bug"
+
 # malone_people_index is a redirect
 
 # malone_template is a means to include the mainmaster template
@@ -463,12 +454,15 @@ object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
 
+oops = 'Oops!'
+
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
-people_index = 'People registered with Launchpad'
+people_index = 'People and teams in Launchpad'
 
-people_list = 'People registered with Launchpad'
+def people_list(context, view):
+    return view.header
 
 person_assignedbugs = ContextDisplayName('Bugs assigned to %s')
 
@@ -478,13 +472,13 @@ person_branch_add = ContextDisplayName('Register a new branch for %s')
 
 person_changepassword = 'Change your password'
 
-person_codesofconduct = ContextDisplayName('%s Signed codes of conduct')
+person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
 person_edit = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editgpgkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
+person_editpgpkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
 person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
 
@@ -515,6 +509,8 @@ person_packagebugs_search = person_packagebugs
 person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
 person_review = ContextDisplayName("Review %s")
+
+person_specworkload = ContextDisplayName('Specification workload for %s')
 
 person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
@@ -557,8 +553,6 @@ poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
-
-potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment
 
@@ -621,7 +615,7 @@ productseries_translations_upload = 'Request new translations upload'
 
 project = ContextTitle('%s in Launchpad')
 
-project_branches = ContextTitle('Bazaar branches for %s')
+project_branches = ContextTitle('Bzr branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
@@ -650,7 +644,9 @@ registry_about = 'About the Launchpad Registry'
 
 registry_index = 'Product and group registration in Launchpad'
 
-registry_listall = 'Launchpad: Complete list' # bug 3508
+products_all = 'Upstream products registered in Launchpad'
+
+projects_all = 'Projects registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
@@ -669,13 +665,15 @@ rosetta_preferences = 'Rosetta: Preferences'
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
-    return '%s %s details' % (context.product.displayname, context.name)
+    return 'Change %s %s details' % (context.product.displayname, context.name)
 
 productseries_new = ContextDisplayName('Register a new %s release series')
 
 def productseries(context, view):
     return '%s release series: %s' % (
         context.product.displayname, context.displayname)
+
+securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
 shipit_index = 'ShipIt'
 
@@ -740,7 +738,7 @@ def sourcepackages(context, view):
 
 sourcepackages_comingsoon = 'Coming soon'
 
-sources_index = 'Bazaar: Upstream revision control imports'
+sources_index = 'Bazaar: Upstream revision control imports to bzr'
 
 sourcesource_index = 'Upstream source import'
 
@@ -792,9 +790,17 @@ specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
+specificationgoal_specs = ContextTitle('List goals for %s')
+
+specificationgoal_setgoals = ContextTitle('Set goals for %s')
+
+specificationtarget_index = ContextTitle('Specification Listing for %s')
+
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
-specificationtarget_specplan = ContextTitle('Project plan for %s')
+specificationtarget_roadmap = ContextTitle('Project plan for %s')
+
+specificationtarget_assignments = ContextTitle('Specification assignments for %s')
 
 specificationtarget_workload = ContextTitle('Feature workload in %s')
 
@@ -808,7 +814,7 @@ sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
 
-sprint_table = ContextTitle('Table of specifications for %s')
+sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 
@@ -886,11 +892,19 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
+tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
+
 translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
+
+translationgroup_appoint = ContextTitle(
+    smartquote('Appoint a new translator to "%s"'))
+
 translationgroups = 'Rosetta translation groups'
 
-translationimportqueueentry_index = 'Translation Import Queue Entry'
-translationimportqueue_index = 'Translation Import Queue'
-translationimportqueue_blocked = 'Translation Import Queue - Blocked'
+translationimportqueueentry_index = 'Translation import queue entry'
+
+translationimportqueue_index = 'Translation import queue'
+
+translationimportqueue_blocked = 'Translation import queue - Blocked'
 
 unauthorized = 'Error: Not authorized'

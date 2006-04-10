@@ -14,9 +14,11 @@
   <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
-
+<metal:heading fill-slot="pageheading">
   <h1 i18n:translate="">Welcome to Launchpad</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
 
   <p i18n:translate="">
     Launchpad is a collection of services for
@@ -46,7 +48,7 @@
     <tbody>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/distros/ubuntu">The Ubuntu Distribution</a></b>
@@ -59,7 +61,7 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/products/gnomebaker">GnomeBaker</a></b>
@@ -72,7 +74,7 @@
       </tr>
       <tr>
         <td class="icon left">
-          <img alt="" src="/++resource++product_icon.gif" />
+          <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
           <b><a href="/products/bzr">Bazaar-NG</a></b>

@@ -5,8 +5,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionSourcePackageFacets',
     'DistributionSourcePackageNavigation',
-    'DistributionSourcePackageView',
-    'DistributionSourcePackageBugsView',
+    'DistributionSourcePackageView'
     ]
 
 from zope.component import getUtility
@@ -14,8 +13,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
-from canonical.launchpad.browser.bugtask import (
-    BugTargetTraversalMixin, AdvancedBugTaskSearchView)
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
@@ -68,7 +66,7 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'support'
-    links = ['addticket', 'gethelp']
+    links = ['addticket', 'gethelp', 'support_contact']
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')
@@ -76,31 +74,9 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
     def addticket(self):
         return Link('+addticket', 'Request Support', icon='add')
 
-
-class DistributionSourcePackageBugsView(AdvancedBugTaskSearchView):
-    """View class for the buglist for an IDistributionSourcePackage."""
-
-    def _distributionContext(self):
-        """Return the source package's distribution."""
-        return self.context.distribution
-
-    def showBatchedListing(self):
-        """Is the listing batched?"""
-        return False
-
-    @property
-    def task_columns(self):
-        """Return the columns that should be displayed in the bug listing."""
-        return ["assignedto", "id", "priority", "severity", "status", "title"]
-
-    def hasSimpleMode(self):
-        return True
-
-    def shouldShowAdvancedSearchWidgets(self):
-        """Return True if this view's advanced form should be shown."""
-        if self.request.get('advanced') and not self.request.get('simple'):
-            return True
-        return False
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class DistributionSourcePackageView:
@@ -108,9 +84,6 @@ class DistributionSourcePackageView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def latest_bugtasks(self):
-        return self.context.bugtasks(quantity=5)
 
     def latest_tickets(self):
         return self.context.tickets(quantity=5)

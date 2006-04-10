@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import re
+from urlparse import urlparse, urlunparse
 
 import transaction
 from zope.component import getUtility
@@ -18,8 +19,11 @@ from canonical.launchpad.interfaces import (
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal, ITicket, ITicketSet)
+    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal, ITicket, ITicketSet,
+    ISpecificationSet)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
+from canonical.launchpad.mail.sendmail import sendmail
+from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import canonical_url
@@ -139,6 +143,8 @@ class MaloneHandler:
     """
     implements(IMailHandler)
 
+    allow_unknown_users = False
+
     def getCommands(self, signed_msg):
         """Returns a list of all the commands found in the email."""
         commands = []
@@ -159,7 +165,7 @@ class MaloneHandler:
         return commands
 
 
-    def process(self, signed_msg, to_addr, filealias=None):
+    def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
         commands = self.getCommands(signed_msg)
         user, host = to_addr.split('@')
@@ -177,7 +183,7 @@ class MaloneHandler:
                         error_message = get_error_message('not-signed.txt')
                     else:
                         import_url = canonical_url(
-                            getUtility(ILaunchBag).user) + '/+editgpgkeys'
+                            getUtility(ILaunchBag).user) + '/+editpgpkeys'
                         error_message = get_error_message(
                             'key-not-registered.txt', import_url=import_url)
                     raise IncomingEmailError(error_message)
@@ -275,9 +281,11 @@ class SupportTrackerHandler:
 
     implements(IMailHandler)
 
+    allow_unknown_users = False
+
     _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
 
-    def process(self, signed_msg, to_addr, filealias=None):
+    def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
         match = self._ticket_address.match(to_addr)
         if match:
@@ -302,12 +310,96 @@ class SupportTrackerHandler:
             return False
 
 
+class SpecificationHandler:
+    """Handles emails sent to specs.launchpad.net."""
+
+    implements(IMailHandler)
+
+    allow_unknown_users = True
+
+    _spec_changes_address = re.compile(r'^notifications@.*')
+
+    # The list of hosts where the Ubuntu wiki is located. We could do a
+    # more general solution, but this kind of setup is unusual, and it
+    # will be mainly the Ubuntu and Launchpad wikis that will use this
+    # notification forwarder.
+    UBUNTU_WIKI_HOSTS = [
+        'wiki.ubuntu.com', 'wiki.edubuntu.org', 'wiki.kubuntu.org']
+
+    def _getSpecByURL(self, url):
+        """Returns a spec that is associated with the URL.
+
+        It takes into account that the same Ubuntu wiki is on three
+        different hosts.
+        """
+        scheme, host, path, params, query, fragment = urlparse(url)
+        if host in self.UBUNTU_WIKI_HOSTS:
+            for ubuntu_wiki_host in self.UBUNTU_WIKI_HOSTS:
+                possible_url = urlunparse(
+                    (scheme, ubuntu_wiki_host, path, params, query,
+                     fragment))
+                spec = getUtility(ISpecificationSet).getByURL(possible_url)
+                if spec is not None:
+                    return spec
+        else:
+            return getUtility(ISpecificationSet).getByURL(url)
+
+    def process(self, signed_msg, to_addr, filealias=None, log=None):
+        """See IMailHandler."""
+        match = self._spec_changes_address.match(to_addr)
+        if not match:
+            # We handle only spec-changes at the moment.
+            return False
+        our_address = "notifications@%s" % config.launchpad.specs_domain
+        # Check for emails that we sent.
+        if signed_msg['X-Loop'] and our_address in signed_msg.get_all('X-Loop'):
+            if log and filealias:
+                log.warning(
+                    'Got back a notification we sent: %s' % filealias.url)
+            return True
+        # Check for emails that Launchpad sent us.
+        if signed_msg['Sender'] == config.bounce_address:
+            if log and filealias:
+                log.warning(
+                    'We received an email from Launchpad: %s' % filealias.url)
+            return True
+        # When sending the email, the sender will be set so that it's
+        # clear that we're the one sending the email, not the original
+        # sender.
+        del signed_msg['Sender']
+
+        mail_body = signed_msg.get_payload(decode=True)
+        spec_url = get_spec_url_from_moin_mail(mail_body)
+        if spec_url is not None:
+            if log is not None:
+                log.debug('Found a spec URL: %s' % spec_url)
+            spec = self._getSpecByURL(spec_url)
+            if spec is not None:
+                if log is not None:
+                    log.debug('Found a corresponding spec: %s' % spec.name)
+                # Add an X-Loop header, in order to prevent mail loop.
+                signed_msg.add_header('X-Loop', our_address)
+                notification_addresses = spec.notificationRecipientAddresses()
+                if log is not None:
+                    log.debug(
+                        'Sending notification to: %s' % 
+                            ', '.join(notification_addresses))
+                sendmail(signed_msg, to_addrs=notification_addresses)
+
+            elif log is not None:
+                log.debug("Didn't find a corresponding spec for %s" % spec_url)
+        elif log is not None:
+            log.debug("Didn't find a specification URL")
+        return True
+
+
 class MailHandlers:
     """All the registered mail handlers."""
 
     def __init__(self):
         self._handlers = {
             config.launchpad.bugs_domain: MaloneHandler(),
+            config.launchpad.specs_domain: SpecificationHandler(),
             config.tickettracker.email_domain: SupportTrackerHandler()
             }
 

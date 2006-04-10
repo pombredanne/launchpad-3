@@ -288,6 +288,52 @@ And samething with the unprivileged account.
     >>> pofile_es.canEditTranslations(no_priv)
     True
 
+uncachedExport
+--------------
+
+This method serializes an IPOFile as a .po file.
+
+Get a concrete POFile we know doesn't have a UTF-8 encoding.
+
+    >>> pofile = POFile.get(24)
+    >>> print pofile.header
+    Project-Id-Version: PACKAGE VERSION
+    ...
+    Content-Type: text/plain; charset=EUC-JP
+    ...
+
+Now, let's export it with its default encoding.
+
+    >>> stream = pofile.uncachedExport()
+    >>> stream_list = stream.splitlines()
+
+The header is not changed.
+
+    >>> stream_list[23]
+    '"Content-Type: text/plain; charset=EUC-JP\\n"'
+
+And checking one of the translations, we can see that it's using the EUC-JP
+encoding.
+
+    >>> stream_list[29]
+    'msgstr "\xc0\xdf\xc4\xea\xa4\xce\xa5\xab\xa5\xb9\xa5\xbf\xa5\xde\xa5\xa4\xa5\xba\xa4\xcb /etc/mozilla/prefs.js \xa4\xac\xcd\xf8\xcd\xd1\xa4\xc7\xa4\xad\xa4\xde\xa4\xb9\xa1\xa3"'
+
+
+Now, let's force the UTF-8 encoding.
+
+    >>> stream = pofile.uncachedExport(force_utf8=True)
+    >>> stream_list = stream.splitlines()
+
+We can see that the header has been updated to have UTF-8
+
+    >>> stream_list[23]
+    '"Content-Type: text/plain; charset=UTF-8\\n"'
+
+And the encoding used is also using UTF-8 chars.
+
+    >>> stream_list[29]
+    'msgstr "\xe8\xa8\xad\xe5\xae\x9a\xe3\x81\xae\xe3\x82\xab\xe3\x82\xb9\xe3\x82\xbf\xe3\x83\x9e\xe3\x82\xa4\xe3\x82\xba\xe3\x81\xab /etc/mozilla/prefs.js \xe3\x81\x8c\xe5\x88\xa9\xe7\x94\xa8\xe3\x81\xa7\xe3\x81\x8d\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"'
+
 
 Security tests
 ==============
@@ -321,7 +367,7 @@ First, we need some imports.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     ILanguageSet, IPersonSet, ILaunchBag)
-    >>> from canonical.launchpad.browser import POFileView
+    >>> from canonical.launchpad.browser import POFileTranslateView
 
 Also, we need some fake classes to simulate the submit.
 
@@ -359,7 +405,7 @@ Now it's time to test the initialisation of the view class.
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
     >>> request = DummyRequest()
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 Check to know the plural forms that this IPOFile has.
@@ -388,7 +434,7 @@ the plural form information.
 
     >>> pofile_tlh = potemplate.getPOFileOrDummy('tlh')
     >>> request = DummyRequest()
-    >>> pofile_view = POFileView(pofile_tlh, request)
+    >>> pofile_view = POFileTranslateView(pofile_tlh, request)
     >>> pofile_view.initialize()
 
 Here we can see that it's lacking that information.
@@ -405,7 +451,7 @@ Now, let's check that the view class handles correctly the offset and count
 arguments when the request sets them.
 
     >>> request = DummyRequest(offset=7, count=8)
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 As we can see, the view updates those attributes correctly.
@@ -418,7 +464,7 @@ As we can see, the view updates those attributes correctly.
 And, what happens if we get broken values for the offset and count arguments?
 
     >>> request = DummyRequest(offset='foo', count='bar')
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 As we wanted, the given values are ignored and the view class uses the default
@@ -432,7 +478,7 @@ ones.
 What about the argument to filter messagesets?
 
     >>> request = DummyRequest(show='translated')
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 Yeah, it detects it correctly and stores the attribute as it should be.
@@ -443,7 +489,7 @@ Yeah, it detects it correctly and stores the attribute as it should be.
 It's time to test the navigation.
 
     >>> request = DummyRequest()
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 By default, we are at the beginning.
@@ -464,7 +510,7 @@ And thus, we cannot be at the end.
 We move to the next 10 mesages.
 
     >>> request = DummyRequest(offset=10)
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 Now, we are not at the beginning.
@@ -485,7 +531,7 @@ We are neither at the end.
 And finally, moving to the next 10 entries.
 
     >>> request = DummyRequest(offset=30)
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 We continue far from the beginning.
@@ -503,7 +549,7 @@ Let's move to the navigation URLS testing.
 We get a request without any argument.
 
     >>> request = DummyRequest()
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 We get a clean URL without default values.
@@ -535,7 +581,7 @@ The end URL has an offset of 20
 Now, let's see what happens when we request a concrete offset.
 
     >>> request = DummyRequest(offset=10)
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 The beginning URL does not change.
@@ -563,7 +609,7 @@ Let's complicate it a bit more changing the count of messages per page and
 requesting an offset out of range.
 
     >>> request = DummyRequest(offset=42, count=43)
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 If the offset is too high, it should drop to accomodate the count.
@@ -582,7 +628,7 @@ Now, we are going to check the show parameter.
 If we request the default value ('all'), the URL should not show that
 parameter.
     >>> request = DummyRequest(show='all')
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 And we don't show it.
@@ -593,7 +639,7 @@ And we don't show it.
 Let's try with another option that is not the default one...
 
     >>> request = DummyRequest(show='translated')
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 This time, we get it.
@@ -604,7 +650,7 @@ This time, we get it.
 It's time to test that we get the right message sets from the submitted form.
 
     >>> request = DummyRequest()
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 We get the first entry.
@@ -653,11 +699,11 @@ Which is the one we wanted.
     >>> pomsgset_view.getTranslation(0)
     u'libreta de direcciones de Evolution'
 
-Finally, we are going to test the tab index generator to be sure the TAB key
+Now, we are going to test the tab index generator to be sure the TAB key
 will work as expected when navigating over the translation form.
 
     >>> request = DummyRequest()
-    >>> pofile_view = POFileView(pofile_es, request)
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
     >>> pofile_view.initialize()
 
 First time we call it, first position.
@@ -669,5 +715,40 @@ Next time we call it, it's increased.
 
     >>> pofile_view.tab_index
     2
+
+It's time to check the submission of translations and the IPOFile statistics
+update.
+
+But first, let's see current values.
+
+    >>> pofile_es.updateStatistics()
+    (7, 1, 0)
+    >>> pofile_es.currentCount()
+    7
+    >>> pofile_es.updatesCount()
+    1
+    >>> pofile_es.rosettaCount()
+    0
+
+Now we do the submit
+
+    >>> request = DummyRequest(
+    ...     msgset_130=None,
+    ...     msgset_130_es_translation_0='Foo',
+    ...     msgset_138=None,
+    ...     msgset_138_es_translation_0='Bar',
+    ...     submit_translations='Save &amp; Continue')
+    >>> request.method = 'POST'
+    >>> pofile_view = POFileTranslateView(pofile_es, request)
+    >>> pofile_view.initialize()
+
+And check again.
+
+    >>> pofile_es.currentCount()
+    7
+    >>> pofile_es.updatesCount()
+    2
+    >>> pofile_es.rosettaCount()
+    1
 
 And that's all, folks!

@@ -15,7 +15,7 @@ __all__ = ['IWeaklyAuthenticatedPrincipal',
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-from zope.schema import ASCII
+from zope.schema import ASCII, Bool
 
 
 class IWeaklyAuthenticatedPrincipal(Interface):
@@ -59,11 +59,18 @@ class IMailHandler(Interface):
     it handles as the name.
     """
 
-    def process(signed_msg, to_address, filealias):
+    allow_unknown_users = Bool(
+        title=u"Allow unknown users",
+        description=u"The handler can handle emails from persons not"
+                    " registered in Launchpad (which will result in an"
+                    " anonymous interaction being set up.")
+
+    def process(signed_msg, to_address, filealias, log=None):
         """Processes a ISignedMessage
 
         The 'to_address' is the address the mail was sent to.
         The 'filealias' is an ILibraryFileAlias.
+        The 'log' is the logger to be used.
 
         Return True if the mesage was processed, otherwise False.
         """

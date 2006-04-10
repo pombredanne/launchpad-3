@@ -16,6 +16,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
@@ -31,7 +32,7 @@ from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
-    IGPGKeySet, IGPGHandler, GPGVerificationError)
+    IGPGKeySet, IGPGHandler, EmailAddressAlreadyTaken, GPGVerificationError)
 
 UTC = pytz.timezone('UTC')
 
@@ -341,7 +342,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 '(using <kbd>gpg --send-keys KEY</kbd>) and that you '
                 'entered the fingerprint correctly (as produced by <kbd>'
                 'gpg --fingerprint YOU</kdb>). Try later or '
-                '<a href="%s/+editgpgkeys">cancel your request</a>.'
+                '<a href="%s/+editpgpkeys">cancel your request</a>.'
                 % (key, person_url))
             return None
 
@@ -351,7 +352,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 'The key %s cannot be validated because it has been '
                 'publicly revoked. You will need to generate a new key '
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                'process to <a href="%s/+editgpgkeys">find and import</a> '
+                'process to <a href="%s/+editpgpkeys">find and import</a> '
                 'the new key.' % (key.keyid, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
@@ -362,7 +363,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 'The key %s cannot be validated because it has expired. '
                 'You will need to generate a new key '
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                'process to <a href="%s/+editgpgkeys">find and import</a> '
+                'process to <a href="%s/+editpgpkeys">find and import</a> '
                 'the new key.' % (key.keyid, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
@@ -385,7 +386,7 @@ class ValidateEmailView(BaseLoginTokenView):
             lpkey.active = True
             lpkey.can_encrypt = can_encrypt
             self.success('The key %s was successfully revalidated. '
-                         '<a href="%s/+editgpgkeys">See more Information</a>'
+                         '<a href="%s/+editpgpkeys">See more Information</a>'
                          % (lpkey.displayname, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
@@ -509,19 +510,23 @@ class NewAccountView(AddView, BaseLoginTokenView):
         self.request = request
         AddView.__init__(self, context, request)
         self._nextURL = '.'
+        self.top_of_page_errors = []
 
     def nextURL(self):
         return self._nextURL
 
     def createAndAdd(self, data):
         """Check if both passwords match and then create a new Person.
-        When everything went ok, we delete the LoginToken (self.context) from
+        If everything went ok, we delete the LoginToken (self.context) from
         the database, so nobody can use it again.
         """
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-                self.context.email, displayname=data['displayname'], 
-                givenname=data['givenname'], familyname=data['familyname'],
-                password=data['password'], passwordEncrypted=True)
+        try:
+            person, email = getUtility(IPersonSet).createPersonAndEmail(
+                    self.context.email, displayname=data['displayname'],
+                    password=data['password'], passwordEncrypted=True)
+        except EmailAddressAlreadyTaken, e:
+            self.top_of_page_errors.append(str(e))
+            raise WidgetsError(self.top_of_page_errors)
 
         notify(ObjectCreatedEvent(person))
         notify(ObjectCreatedEvent(email))
@@ -556,16 +561,16 @@ class MergePeopleView(BaseLoginTokenView):
             self._doMerge()
             if self.mergeCompleted: 
                 self.success(
-                        _('The merge you requested was concluded with success. '
-                          'Now, everything that was owned by the duplicated ' 
-                          'account should be owned by your user account.'))
+                        _('The accounts have been merged successfully. '
+                          'Everything that belonged to the duplicated ' 
+                          'account should now belong to your own account.'))
             else:
                 self.success(
-                        _('The email address %s have been assigned to you, but '
-                          'the dupe account you selected still have more ' 
-                          'registered email addresses. In order to actually ' 
+                        _('The e-mail address %s has been assigned to you, but '
+                          'the duplicate account you selected has other ' 
+                          'registered e-mail addresses too. To ' 
                           'complete the merge, you have to prove that you have '
-                          'access to all email addresses of that account.' %
+                          'access to all those e-mail addresses.' %
                           self.context.email))
             self.context.destroySelf()
 

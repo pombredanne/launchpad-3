@@ -11,7 +11,7 @@
         
           <div class="field">
               
-            <div tal:attributes="class python:error and 'portalError' or None"
+            <div tal:attributes="class python:error and 'error' or None"
                  tal:define="error widget/error">
 
               <label tal:attributes="for widget/name"
@@ -25,11 +25,11 @@
                   <input type="text" style="width:100%"/>
               </div>
                
-              <div tal:condition="error">
-                <img src="/++resource++info_icon.gif" />
-                <span tal:replace="structure error">
-                      An error message</span>
-              </div>
+              <div
+                tal:condition="error"
+                class="message"
+                tal:content="structure error"
+              >An error message.</div>
 
             </div>
 

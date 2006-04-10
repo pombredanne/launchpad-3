@@ -1,20 +1,7 @@
-Foo Bar views the bugs listing for Ubuntu Linux.
-
-  >>> print http(r"""
-  ... GET /malone/distros/ubuntu HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-    <h1>Bugs in Ubuntu Linux</h1>
-  ...
-
 Foo Bar files a *private* bug on Ubuntu Linux. He gets redirected to it.
 
   >>> print http(r"""
   ... POST /distros/ubuntu/+filebug HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 814
   ... Content-Type: multipart/form-data; boundary=---------------------------1512617038523064916835258629
@@ -48,18 +35,18 @@ Foo Bar files a *private* bug on Ubuntu Linux. He gets redirected to it.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/ubuntu/+source/evolution/+bug/9
+  Location: http://localhost:9000/distros/ubuntu/+source/evolution/+bug/11
   ...
 
 Foo Bar see the private bug he filed.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+bugs HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: http://localhost:9000/malone/distros/ubuntu/+filebug
   ... """)
   HTTP/1.1 200 Ok
   ...
-    <h1>Bugs in Ubuntu Linux</h1>
-  ...<a...>...9...</a>...
+  ...Ubuntu Linux...
+  ...<a...>...11...</a>...
+

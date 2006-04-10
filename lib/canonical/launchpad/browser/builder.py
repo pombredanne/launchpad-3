@@ -25,9 +25,6 @@ from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-
 from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.interfaces import (
@@ -100,7 +97,7 @@ class BuilderOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change Details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')

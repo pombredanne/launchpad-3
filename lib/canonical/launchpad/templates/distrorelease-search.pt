@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Binary package search results</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -11,15 +14,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Binary package search</h1>
-
-  <p class="documentDescription">
-    Use this form to search through the
-    packages in <span tal:replace="context/title" />.
-  </p>
-
   <form name="search" method="GET">
   
+    <div>Find packages with names containing:</div>
     <input type="text"
       name="text"
       size="35"
@@ -30,12 +27,6 @@
     <input type="submit" value="Search Again"
         tal:condition="view/searchrequested" />
 
-    <p class="discreet">
-       Search for a software package in this release using the form
-       above. You will be shown a list of matching packages, and can
-       explore the archive from there.
-    </p>
-
   </form>
 
   <tal:searching condition="view/searchrequested">
@@ -43,7 +34,7 @@
     <tal:has_matches condition="view/searchresults">
 
       <tal:per_match repeat="drbp view/searchresults">
-        <img src="/++resource++package-binary" />
+        <img src="/@@/package-binary" />
         <a tal:content="drbp/name"
            tal:attributes="href drbp/fmt:url">foobar</a>:
         <div style="margin-left: 30px; font-size: 80%;"
@@ -61,7 +52,7 @@
 
     <tal:no_matches condition="not: view/matches">
 
-      <img src="/++resource++alert" />
+      <img src="/@@/alert" />
       <i>No packages matching "<span tal:replace="view/text">amarok</span>"
       are published in
       <span tal:replace="context/displayname">hoary</span>.</i>

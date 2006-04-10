@@ -3,7 +3,7 @@
 
     <div class="portletBody portletContent" i18n:translate="rosetta-blurb">
       <p>
-      <img alt="" src="/++resource++languages.gif" />
+      <img alt="" src="/@@/languages.gif" />
       <a i18n:attributes="title" title="Rosetta"
          href="rosetta" i18n:translate="">Rosetta</a> is a
       <strong>Web-based translation system</strong>.
@@ -15,7 +15,8 @@
       <tal:block repeat="drl view/ubuntu_languages">
         <span tal:replace="drl/language/englishname">Latin</span>:<br />
         <a tal:attributes="href drl/fmt:url"
-          ><div tal:replace="structure drl/@@+barchart" /></a><br />
+          ><span style="white-space: nowrap"
+                 tal:content="structure drl/@@+barchart" /></a><br />
       </tal:block>
     </div>
   </div>

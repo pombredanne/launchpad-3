@@ -101,6 +101,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     # It's the caller's responsibility to encode the address fields to
     # ASCII strings.
+    # XXX CarlosPerelloMarin 20060320: Spiv is working on fixing this so we
+    # can provide a Unicode string and get the right encoding.
     for address in [from_addr] + list(to_addrs):
         if not isinstance(address, str) or not is_ascii_only(address):
             raise AssertionError(
@@ -135,7 +137,7 @@ def simple_sendmail_from_person(person, to_addrs, subject, body, headers={}):
     return simple_sendmail(from_addr, to_addrs, subject, body, headers=headers)
 
 
-def sendmail(message):
+def sendmail(message, to_addrs=None):
     """Send an email.Message.Message
 
     If you just need to send dumb ASCII or Unicode, simple_sendmail
@@ -146,6 +148,9 @@ def sendmail(message):
     Message-Id:, Date:, and Reply-To: headers will be set if they are
     not already. Errors-To: and Return-Path: headers will always be set.
     The more we look valid, the less we look like spam.
+
+    If to_addrs is None, the message will be sent to all the addresses
+    specified in the To: and CC: headers.
 
     Uses zope.app.mail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
@@ -159,9 +164,10 @@ def sendmail(message):
             'No Subject: header'
 
     from_addr = message['from']
-    to_addrs = message['to'].split(',')
-    if message['cc']:
-        to_addrs = to_addrs + message['cc'].split(',')
+    if to_addrs is None:
+        to_addrs = message['to'].split(',')
+        if message['cc']:
+            to_addrs = to_addrs + message['cc'].split(',')
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:
@@ -174,6 +180,11 @@ def sendmail(message):
     # Add a Reply-To: header if it isn't already there
     if 'reply-to' not in message:
         message['Reply-To'] = message['from']
+
+    # Add a Sender: header to show that we were the one sending the
+    # email.
+    if "Sender" not in message:
+        message["Sender"] = config.bounce_address
 
     # Add an Errors-To: header for bounce handling
     del message['Errors-To']

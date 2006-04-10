@@ -8,8 +8,6 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import email
-from email.Utils import make_msgid
 import subprocess
 import gettextpo
 import os
@@ -17,7 +15,7 @@ import random
 import re
 import sha
 import tarfile
-import time
+import urlparse
 import warnings
 from StringIO import StringIO
 from math import ceil
@@ -35,30 +33,22 @@ from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
 import canonical
-from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
-    RosettaImportStatus, SourcePackageFileType,
-    BinaryPackageFormat, BinaryPackageFileType)
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed, DownloadFailed)
+    SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IHasOwner, IRequestPreferredLanguages,
-    IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed,
-    TranslationConstants)
-from canonical.launchpad.components.poparser import (
-    POSyntaxError, POInvalidInputError, POParser)
+    ILaunchBag, IOpenLaunchBag, IRequestPreferredLanguages,
+    IRequestLocalLanguages, ITeam, TranslationConstants)
+from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
-
-# XXX, Brad Bollenbach, 2006-01-12: These cause circular imports. Moved to
-# create_bug_message for now.
-#from canonical.launchpad.database.message import Message, MessageChunk
-#from canonical.launchpad.database.bugmessage import BugMessage
 
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
     The keys of the dict are substrings to find, the values are what to replace
     found substrings with.
+
+    :arg text: An unicode or str to do the replacement.
+    :arg replacements: A dictionary with the replacements that should be done
 
     >>> text_replaced('', {'a':'b'})
     ''
@@ -68,6 +58,11 @@ def text_replaced(text, replacements, _cache={}):
     'fX bAr bAz'
     >>> text_replaced('1 2 3 4', {'1': '2', '2': '1'})
     '2 1 3 4'
+
+    Unicode strings work too.
+
+    >>> text_replaced(u'1 2 3 4', {u'1': u'2', u'2': u'1'})
+    u'2 1 3 4'
 
     The argument _cache is used as a cache of replacements that were requested
     before, so we only compute regular expressions once.
@@ -79,16 +74,22 @@ def text_replaced(text, replacements, _cache={}):
     cachekey = tuple(replacements.items())
     if cachekey not in _cache:
         L = []
+        if isinstance(text, unicode):
+            list_item = u'(%s)'
+            join_char = u'|'
+        else:
+            list_item = '(%s)'
+            join_char = '|'
         for find, replace in sorted(replacements.items(),
                                     key=lambda (key, value): len(key),
                                     reverse=True):
-            L.append('(%s)' % re.escape(find))
+            L.append(list_item % re.escape(find))
         # Make a copy of the replacements dict, as it is mutable, but we're
         # keeping a cached reference to it.
         replacements_copy = dict(replacements)
         def matchobj_replacer(matchobj):
             return replacements_copy[matchobj.group()]
-        regexsub = re.compile('|'.join(L)).sub
+        regexsub = re.compile(join_char.join(L)).sub
         def replacer(s):
             return regexsub(matchobj_replacer, s)
         _cache[cachekey] = replacer
@@ -160,91 +161,6 @@ def get_attribute_names(ob):
     for iface in ifaces:
         names.update(iface.names(all=True))
     return list(names)
-
-class RosettaWriteTarFile:
-    """Convenience wrapper around the tarfile module.
-
-    This class makes it convenient to generate tar files in various ways.
-    """
-
-    def __init__(self, stream):
-        self.tarfile = tarfile.open('', 'w:gz', stream)
-        self.closed = False
-
-    @classmethod
-    def files_to_stream(cls, files):
-        """Turn a dictionary of files into a data stream."""
-        buffer = StringIO()
-        archive = cls(buffer)
-        archive.add_files(files)
-        archive.close()
-        buffer.seek(0)
-        return buffer
-
-    @classmethod
-    def files_to_string(cls, files):
-        """Turn a dictionary of files into a data string."""
-        return cls.files_to_stream(files).read()
-
-    @classmethod
-    def files_to_tarfile(cls, files):
-        """Turn a dictionary of files into a tarfile object."""
-        return tarfile.open('', 'r', cls.files_to_stream(files))
-
-    def close(self):
-        """Close the archive.
-
-        After the archive is closed, the data written to the filehandle will
-        be complete. The archive may not be appended to after it has been
-        closed.
-        """
-
-        self.tarfile.close()
-        self.closed = True
-
-    def add_file(self, path, contents):
-        """Add a file to the archive."""
-
-        if self.closed:
-            raise RuntimeError("Can't add a file to a closed archive")
-
-        now = int(time.time())
-        path_bits = path.split(os.path.sep)
-
-        # Ensure that all the directories in the path are present in the
-        # archive.
-
-        for i in range(1, len(path_bits)):
-            joined_path = os.path.join(*path_bits[:i])
-
-            try:
-                self.tarfile.getmember(joined_path + os.path.sep)
-            except KeyError:
-                tarinfo = tarfile.TarInfo(joined_path)
-                tarinfo.type = tarfile.DIRTYPE
-                tarinfo.mtime = now
-                tarinfo.mode = 0755
-                tarinfo.uname = 'rosetta'
-                tarinfo.gname = 'rosetta'
-                self.tarfile.addfile(tarinfo)
-
-        tarinfo = tarfile.TarInfo(path)
-        tarinfo.time = now
-        tarinfo.mtime = now
-        tarinfo.mode = 0644
-        tarinfo.size = len(contents)
-        tarinfo.uname = 'rosetta'
-        tarinfo.gname = 'rosetta'
-        self.tarfile.addfile(tarinfo, StringIO(contents))
-
-    def add_files(self, files):
-        """Add a number of files to the archive.
-
-        :files: A dictionary mapping file names to file contents.
-        """
-
-        for filename in sorted(files.keys()):
-            self.add_file(filename, files[filename])
 
 
 def join_lines(*lines):
@@ -452,55 +368,12 @@ def shortlist(sequence, longest_expected=15):
     """
     L = list(sequence)
     if len(L) > longest_expected:
-        warnings.warn("shortlist() should not be used here. It's meant to "
-              "listify sequences with no more than %d items." %
-              longest_expected)
+        warnings.warn(
+            "shortlist() should not be used here. It's meant to listify"
+            " sequences with no more than %d items.  There were %s items." %
+              (longest_expected, len(L)),
+              stacklevel=2)
     return L
-
-
-def uploadRosettaFile(filename, contents):
-    client = getUtility(ILibrarianClient)
-
-    try:
-        size = len(contents)
-        file = StringIO(contents)
-
-        alias = client.addFile(
-            name=filename,
-            size=size,
-            file=file,
-            contentType='application/x-po')
-    except UploadFailed, e:
-        raise RawFileAttachFailed(str(e))
-
-    return alias
-
-
-def attachRawFileDataByFileAlias(raw_file_data, alias, importer,
-    date_imported):
-    """Attach the contents of a file to a raw file data object."""
-    raw_file_data.rawfile = alias
-    raw_file_data.daterawimport = date_imported
-    raw_file_data.rawimporter = importer
-    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
-
-
-def attachRawFileData(raw_file_data, filename, contents, importer,
-    date_imported):
-    """Attach the contents of a file to a raw file data object."""
-    alias = uploadRosettaFile(filename, contents)
-    attachRawFileDataByFileAlias(raw_file_data, alias, importer, date_imported)
-
-
-def getRawFileData(raw_file_data):
-    client = getUtility(ILibrarianClient)
-
-    try:
-        file = client.getFileByAlias(raw_file_data.rawfile.id)
-    except DownloadFailed, e:
-        raise RawFileFetchFailed(str(e))
-
-    return file.read()
 
 
 def count_lines(text):
@@ -521,14 +394,9 @@ def count_lines(text):
 
 def request_languages(request):
     '''Turn a request into a list of languages to show.'''
-
     user = getUtility(ILaunchBag).user
-
-    # If the user is authenticated, try seeing if they have any languages set.
-    if user is not None:
-        languages = user.languages
-        if languages:
-            return languages
+    if user is not None and user.languages:
+        return user.languages
 
     # If the user is not authenticated, or they are authenticated but have no
     # languages set, try looking at the HTTP headers for clues.
@@ -537,6 +405,7 @@ def request_languages(request):
         if lang not in languages:
             languages.append(lang)
     return languages
+
 
 class UnrecognisedCFormatString(ValueError):
     """Exception raised when a string containing C format sequences can't be
@@ -587,45 +456,33 @@ def parse_cformat_string(string):
     return segments
 
 
-def normalize_newlines(text):
-    r"""Convert newlines to Unix form.
+def convert_newlines_to_web_form(unicode_text):
+    r"""Convert an Unicode text from any newline style to the one used on web
+    forms, that's the Windows style ('\r\n').
 
-    >>> normalize_newlines('foo')
-    'foo'
-    >>> normalize_newlines('foo\n')
-    'foo\n'
-    >>> normalize_newlines('foo\r')
-    'foo\n'
-    >>> normalize_newlines('foo\r\n')
-    'foo\n'
-    >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
-    'foo\nbar\n\nbaz'
+    >>> convert_newlines_to_web_form(u'foo')
+    u'foo'
+    >>> convert_newlines_to_web_form(u'foo\n')
+    u'foo\r\n'
+    >>> convert_newlines_to_web_form(u'foo\nbar\n\nbaz')
+    u'foo\r\nbar\r\n\r\nbaz'
+    >>> convert_newlines_to_web_form(u'foo\r\nbar')
+    u'foo\r\nbar'
+    >>> convert_newlines_to_web_form(u'foo\rbar')
+    u'foo\r\nbar'
     """
-    return text_replaced(text, {'\r\n': '\n', '\r': '\n'})
+    assert isinstance(unicode_text, unicode), (
+        "The given text must be unicode instead of %s" % type(unicode_text))
 
-
-def unix2windows_newlines(text):
-    r"""Convert Unix form new lines to Windows ones.
-
-    Raise ValueError if 'text' is already using Windows newlines format.
-
-    >>> unix2windows_newlines('foo')
-    'foo'
-    >>> unix2windows_newlines('foo\n')
-    'foo\r\n'
-    >>> unix2windows_newlines('foo\nbar\n\nbaz')
-    'foo\r\nbar\r\n\r\nbaz'
-    >>> unix2windows_newlines('foo\r\nbar')
-    Traceback (most recent call last):
-    ...
-    ValueError: ''foo\r\nbar'' is already converted
-    """
-    if text is None:
+    if unicode_text is None:
         return None
-    elif '\r\n' in text:
-        raise ValueError('\'%r\' is already converted' % text)
-
-    return text_replaced(text, {'\n': '\r\n'})
+    elif u'\r\n' in unicode_text:
+        # The text is already using the windows newline chars
+        return unicode_text
+    elif u'\n' in unicode_text:
+        return text_replaced(unicode_text, {u'\n': u'\r\n'})
+    else:
+        return text_replaced(unicode_text, {u'\r': u'\r\n'})
 
 
 def contract_rosetta_tabs(text):
@@ -661,37 +518,37 @@ def contract_rosetta_tabs(text):
     return text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
 
 
-def expand_rosetta_tabs(text):
+def expand_rosetta_tabs(unicode_text):
     r"""Replace tabs with their Rosetta representation.
 
     Normal strings get passed through unmolested.
 
-    >>> expand_rosetta_tabs('foo')
-    'foo'
-    >>> expand_rosetta_tabs('foo\\nbar')
-    'foo\\nbar'
+    >>> expand_rosetta_tabs(u'foo')
+    u'foo'
+    >>> expand_rosetta_tabs(u'foo\\nbar')
+    u'foo\\nbar'
 
-    Tabs get converted to '[tab]'.
+    Tabs get converted to u'[tab]'.
 
-    >>> expand_rosetta_tabs('foo\tbar')
-    'foo[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\tbar')
+    u'foo[tab]bar'
 
-    Literal occurrences of '[tab]' get escaped.
+    Literal occurrences of u'[tab]' get escaped.
 
-    >>> expand_rosetta_tabs('foo[tab]bar')
-    'foo\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo[tab]bar')
+    u'foo\\[tab]bar'
 
     Escaped ocurrences themselves get escaped.
 
-    >>> expand_rosetta_tabs('foo\\[tab]bar')
-    'foo\\\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\\[tab]bar')
+    u'foo\\\\[tab]bar'
 
     And so on...
 
-    >>> expand_rosetta_tabs('foo\\\\[tab]bar')
-    'foo\\\\\\[tab]bar'
+    >>> expand_rosetta_tabs(u'foo\\\\[tab]bar')
+    u'foo\\\\\\[tab]bar'
     """
-    return text_replaced(text, {'\t': '[tab]', '[tab]': r'\[tab]'})
+    return text_replaced(unicode_text, {u'\t': u'[tab]', u'[tab]': ur'\[tab]'})
 
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
@@ -885,6 +742,7 @@ def filenameToContentType(fname):
              ".deb":      "application/x-debian-package",
              ".udeb":     "application/x-debian-package",
              ".txt":      "text/plain",
+             ".txt.gz":   "text/plain", # For the build master logs
              }
     for ending in ftmap:
         if fname.endswith(ending):
@@ -916,18 +774,55 @@ def getFileType(fname):
         return SourcePackageFileType.TARBALL
 
 
+BINARYPACKAGE_EXTENSIONS = {
+    BinaryPackageFormat.DEB: '.deb',
+    BinaryPackageFormat.UDEB: '.udeb',
+    BinaryPackageFormat.RPM: '.rpm'}
+
+
+class UnrecognizedBinaryFormat(Exception):
+
+    def __init__(self, fname, *args):
+        Exception.__init__(self, *args)
+        self.fname = fname
+
+    def __str__(self):
+        return '%s is not recognized as a binary file.' % self.fname
+
+
 def getBinaryPackageFormat(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFormat.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFormat.UDEB
-    if fname.endswith(".rpm"):
-        return BinaryPackageFormat.RPM
+    """Return the BinaryPackageFormat for the given filename.
+
+    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
+    'DEB'
+    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
+    'UDEB'
+    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
+    'RPM'
+    """
+    for key, value in BINARYPACKAGE_EXTENSIONS.items():
+        if fname.endswith(value):
+            return key
+
+    raise UnrecognizedBinaryFormat(fname)
+
+
+def getBinaryPackageExtension(format):
+    """Return the file extension for the given BinaryPackageFormat.
+
+    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
+    '.deb'
+    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
+    '.udeb'
+    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
+    '.rpm'
+    """
+    return BINARYPACKAGE_EXTENSIONS[format]
 
 
 def intOrZero(value):
     """Return int(value) or 0 if the conversion fails.
-    
+
     >>> intOrZero('1.23')
     0
     >>> intOrZero('1.ab')
@@ -999,3 +894,30 @@ def is_ascii_only(string):
         return False
     else:
         return True
+
+
+def capture_state(obj, *fields):
+    class State: pass
+    state = State()
+    for field in fields:
+        setattr(state, field, getattr(obj, field))
+
+    return state
+
+
+def urlappend(baseurl, path):
+    """Append the given path to baseurl.
+
+    The path must not start with a slash, but a slash is added to baseurl
+    (before appending the path), in case it doesn't end with a slash.
+
+    >>> urlappend('http://foo.bar', 'spam/eggs')
+    'http://foo.bar/spam/eggs'
+    >>> urlappend('http://localhost:11375/foo', 'bar/baz')
+    'http://localhost:11375/foo/bar/baz'
+    """
+    assert not path.startswith('/')
+    if not baseurl.endswith('/'):
+        baseurl += '/'
+    return urlparse.urljoin(baseurl, path)
+

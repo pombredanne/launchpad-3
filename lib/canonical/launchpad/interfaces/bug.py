@@ -10,18 +10,33 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
-    'IBugTarget',
-    'BugDistroReleaseTargetDetails']
+    ]
 
+from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
-    non_duplicate_bug, IMessageTarget)
+from canonical.launchpad.interfaces.validation import non_duplicate_bug
+from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import Title, Summary, BugField
+from canonical.launchpad.fields import (
+    ContentNameField, Title, BugField)
+
+
+class BugNameField(ContentNameField):
+    errormessage = _("%s is already in use by another bug.")
+
+    @property
+    def _content_iface(self):
+        return IBug
+
+    def _getByName(self, name):
+        try:
+            return getUtility(IBugSet).getByNameOrID(name)
+        except NotFoundError:
+            return None
 
 
 class CreatedBugWithNoBugTasksError(Exception):
@@ -35,7 +50,7 @@ class IBug(IMessageTarget):
         title=_('Bug ID'), required=True, readonly=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    name = TextLine(
+    name = BugNameField(
         title=_('Nickname'), required=False,
         description=_("""A short and unique name for this bug.
         Add a nickname only if you often need to retype the URL
@@ -44,11 +59,6 @@ class IBug(IMessageTarget):
     title = Title(
         title=_('Summary'), required=True,
         description=_("""A one-line summary of the problem."""))
-    summary = Summary(
-        title=_('Short Description'), required=False,
-        description=_("""A single paragraph
-        description that should capture the essence of the bug, where it
-        has been observed, and what triggers it."""))
     description = Text(
         title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
@@ -72,12 +82,13 @@ class IBug(IMessageTarget):
         title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
-        description=_(
-        "Select this option if, for instance, this bug exposes a "
-        "security vulnerability. Before you set this, make sure you "
-        "have subscribed anyone who needs to see this bug."),
+        description=_("Make this bug visible only to its subscribers"),
         default=False)
-
+    security_related = Bool(
+        title=_("Security related"), required=False,
+        description=_(
+        "Select this option if the bug is a security issue"),
+        default=False)
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -97,6 +108,9 @@ class IBug(IMessageTarget):
     attachments = Attribute("List of bug attachments.")
     tickets = Attribute("List of support tickets related to this bug.")
     specifications = Attribute("List of related specifications.")
+    bug_branches = Attribute(
+        "Branches associated with this bug, usually "
+        "branches on which this bug is being fixed.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
@@ -123,9 +137,24 @@ class IBug(IMessageTarget):
         addresses.
         """
 
+    def addChangeNotification(text, person):
+        """Add a bug change notification."""
+
+    def addCommentNotification(message):
+        """Add a bug comment notification."""
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
+        """
+
+    def hasBranch(branch):
+        """Is this branch linked to this bug?"""
+
+    def addBranch(branch, status):
+        """Associate a branch with this bug.
+
+        Returns an IBugBranch.
         """
 
     # CVE related methods
@@ -143,71 +172,19 @@ class IBug(IMessageTarget):
         """
 
 
-class IBugTarget(Interface):
-    """An entity on which a bug can be reported.
-
-    Examples include an IDistribution, an IDistroRelease and an
-    IProduct.
-    """
-    def searchTasks(search_params):
-        """Search the IBugTasks reported on this entity.
-
-        :search_params: a BugTaskSearchParams object
-
-        Return an iterable of matching results.
-
-        Note: milestone is currently ignored for all IBugTargets
-        except IProduct.
-        """
-
-    def createBug(owner, title, comment, private=False):
-        """Create a new bug on this target.
-
-        :title: The title of the bug, as a string.
-        :comment: The initial comment/default description.
-        :private: Is this a private bug? A boolean value.
-        """
-
-    bugtasks = Attribute("A list of BugTasks for this target.")
-    open_bugtasks = Attribute("A list of Open BugTasks for this target.")
-    inprogress_bugtasks = Attribute("A list of In Progress BugTasks for this target.")
-    critical_bugtasks = Attribute("A list of Critical BugTasks for this target.")
-    unassigned_bugtasks = Attribute("A list of Unassigned BugTasks for this target.")
-
-
-class BugDistroReleaseTargetDetails:
-    """The details of a bug targeted to a specific IDistroRelease.
-
-    The following attributes are provided:
-
-    :release: The IDistroRelease.
-    :istargeted: Is there a fix targeted to this release?
-    :sourcepackage: The sourcepackage to which the fix would be targeted.
-    :assignee: An IPerson, or None if no assignee.
-    :status: A BugTaskStatus dbschema item, or None, if release is not targeted.
-    """
-    def __init__(self, release, istargeted=False, sourcepackage=None,
-                 assignee=None, status=None):
-        self.release = release
-        self.istargeted = istargeted
-        self.sourcepackage = sourcepackage
-        self.assignee = assignee
-        self.status = status
-
-
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
 
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
-    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
-    title = Attribute("The new bug title or None.")
-    summary = Attribute("The new bug summary or None.")
-    description = Attribute("The new bug description or None.")
+    title = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    security_related = Attribute(
+        "A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
@@ -248,8 +225,11 @@ class IBugAddForm(IBug):
             vocabulary="BinaryAndSourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
-            description=_("""Ubuntu, Debian, Gentoo, etc."""),
-            vocabulary="Distribution")
+            description=_(
+                "Ubuntu, Debian, Gentoo, etc. You can file bugs only on "
+                "distrubutions using Malone as their primary bug "
+                "tracker."),
+            vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
@@ -291,17 +271,14 @@ class IBugSet(Interface):
 
     def createBug(self, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None, datecreated=None,
-        title=None, private=False, owner=None):
+        description=None, msg=None, datecreated=None,
+        title=None, security_related=False, private=False, owner=None):
         """Create a bug and return it.
 
         Things to note when using this factory:
 
           * if no description is passed, the comment will be used as the
             description
-
-          * if summary is not passed then the summary will be the
-            first sentence of the description
 
           * the reporter will be subscribed to the bug
 

@@ -13,7 +13,7 @@ project page and that it has no translation group assigned.
   <BLANKLINE>
   ...
               <b>Translation Group:</b><br />
-              <img src="/++resource++languages.gif">
+              <img src="/@@/languages.gif">
   <BLANKLINE>
   <BLANKLINE>
               <i>Not assigned</i><br />
@@ -34,7 +34,7 @@ permissions on a project.
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
-  ...The GNOME Project...
+  ...GNOME...
   ...Select a new translation group...
   ...
 
@@ -76,7 +76,7 @@ permissions.
   ...
   ...Select a new translation group...
   <BLANKLINE>
-            <p class="portalMessage">Updated on ...</p>
+  ...<p class="informational message">Updated on ...</p>
   ...
 
 And make sure these changes are now reflected in the Gnome project page in
@@ -92,7 +92,7 @@ the relevant portlet.
   <BLANKLINE>
   ...
               <b>Translation Group:</b><br />
-              <img src="/++resource++languages.gif">
+              <img src="/@@/languages.gif">
   <BLANKLINE>
               <a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a><br />
   <BLANKLINE>

@@ -58,9 +58,9 @@ Now let's post to the form. We should be redirected to the product page.
   ... -----------------------------6923855761766169312285474874--
   ... """)
   HTTP/1.1 303 See Other
+  Content-Length: 0
   ...
   Location: http://.../products/netapplet
-  ...
 
 Now these changes should show up in the product page.
 

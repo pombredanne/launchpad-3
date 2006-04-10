@@ -15,14 +15,15 @@
             <tal:block condition="context/lasttranslator">
                 <b>Latest contributor:</b>
                 <br />
-                <img src="/++resource++user.gif" />
+                <img src="/@@/user.gif" />
                 <a tal:content="context/lasttranslator/browsername"
                    tal:attributes="href context/lasttranslator/fmt:url">
                     Foo Bar
                 </a><br />
                 <br />
             </tal:block>
-            <span tal:replace="structure context/@@+barchart">--</span>
+            <span style="white-space: nowrap"
+                  tal:content="structure context/@@+barchart">--</span>
             <br />
 
         </div>

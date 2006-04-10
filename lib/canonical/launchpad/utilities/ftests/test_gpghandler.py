@@ -7,7 +7,7 @@ from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests import keys_for_tests 
 from canonical.launchpad.interfaces import IGPGHandler
 from zope.component import getUtility
-from pyme.constants import validity
+import gpgme
 
 class TestImportKeyRing(FunctionalTestCase):
     """Tests for keyring imports"""
@@ -49,8 +49,6 @@ class TestImportKeyRing(FunctionalTestCase):
 
     def testImportKeyRing(self):
         """Import a sample keyring and check its contents are available."""
-        print "testImportKeyRing disabled due to swig binding bug crashing out of python."
-        return
         self.testEmptyGetKeys()
         importedkeys = set()
         for ring in keys_for_tests.test_keyrings():
@@ -71,8 +69,6 @@ class TestImportKeyRing(FunctionalTestCase):
 
     def testSetOwnerTrust(self):
         """Import a key and set the ownertrust."""
-        print "testSetOwnerTrust disabled due to swig binding bug crashing out of python."
-        return
         self.testEmptyGetKeys()
         for email in keys_for_tests.iter_test_key_emails():
             pubkey = keys_for_tests.test_pubkey_from_email(email)
@@ -80,9 +76,9 @@ class TestImportKeyRing(FunctionalTestCase):
 
         iterator = self.gpg_handler.localKeys()
         key = iterator.next()
-        self.assertEqual(key.owner_trust, validity.UNKNOWN)
-        key.setOwnerTrust(validity.FULL)
-        self.assertEqual(key.owner_trust, validity.FULL)
+        self.assertEqual(key.owner_trust, gpgme.VALIDITY_UNKNOWN)
+        key.setOwnerTrust(gpgme.VALIDITY_FULL)
+        self.assertEqual(key.owner_trust, gpgme.VALIDITY_FULL)
         other_iterator = self.gpg_handler.localKeys()
         other_key_instance = other_iterator.next()
         self.assertEqual(key.owner_trust, other_key_instance.owner_trust)
