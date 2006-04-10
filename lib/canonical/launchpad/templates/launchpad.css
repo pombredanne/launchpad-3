@@ -177,6 +177,9 @@ table.listing {
 table.listing, table.listing>tbody {
   border-bottom: 1px solid #8cacbb;
 }
+table.listing>tbody {
+  font-size: smaller;
+}
 table.listing>thead, table.listing>thead>tr>th,table.listing tfoot tr {
   border: 1px solid #8cacbb;
   background-color: #dee7ec;
@@ -923,6 +926,10 @@ ul.search>li, li.search {
 
 .lesser {
   font-size: smaller;
+}
+.greater {
+  /* For use in the ~20% of listing tables that should have normal-sized text */
+  font-size: larger;
 }
 
 /* sabdfl 22/10/2005 indented and moreindented useful for listings */
