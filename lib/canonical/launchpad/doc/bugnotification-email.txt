@@ -18,10 +18,10 @@ You need to be logged in to edit bugs in Malone, so let's get started:
 
 To avoid having one gargantuan super function that formats any kind of
 object it gets passed, the formatting logic has been cut into two
-pieces: generate_bug_edit_email and generate_bug_add_email.
+pieces: get_bug_edit_notification_texts and generate_bug_add_email.
 
     >>> from canonical.launchpad.mailnotification import (
-    ...     generate_bug_add_email, generate_bug_edit_email)
+    ...     generate_bug_add_email, get_bug_edit_notification_texts)
 
 Let's demonstrate what the bugmails will look like, by going through
 the various events that can happen that would cause a notification to
@@ -66,8 +66,9 @@ Let's take a look at what the notification email looks like:
 Editing a bug
 -------------
 
-generate_bug_edit_email accepts an object that provides IBugDelta, and
-returns the subject and body of the email, as a tuple.
+get_bug_edit_notification_texts accepts an object that provides
+IBugDelta, and returns a list of text representations of the changes
+made to the bug.
 
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> edited_bug = getUtility(IBugSet).get(2)
@@ -92,14 +93,14 @@ returns the subject and body of the email, as a tuple.
     >>> IBugDelta.providedBy(bug_delta)
     True
 
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Summary changed:
     <BLANKLINE>
     - Blackhole Trash folder
     + the new title
+    -----------------------------
     ** Description changed:
     <BLANKLINE>
       The Trash folder seems to have significant problems! At the moment,
@@ -107,6 +108,7 @@ returns the subject and body of the email, as a tuple.
     + dragging an item to the Trash results in immediate deletion. The item
       does not appear in the Trash, it is just deleted from my hard disk.
       There is no undo or ability to recover the deleted file. Help!
+    -----------------------------
 
 
 Another edit, this time a long description, showing that the description
@@ -122,10 +124,9 @@ is wrapped properly:
     ...     user=sample_person,
     ...     description={'new': edited_bug.description,
     ...                  'old': old_description})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Description changed:
     <BLANKLINE>
     - The Trash folder seems to have significant problems! At the moment,
@@ -138,45 +139,55 @@ is wrapped properly:
     + gets sent.
     + 
     + it's also smart enough to preserve whitespace, finally!
+    -----------------------------
 
 
-Let's set the bug private (for demo purposes, we need to switch logins
-to a user that is explicitly subscribed to this bug):
+Let's make the bug security-related, and private (we need to switch
+logins to a user that is explicitly subscribed to this bug):
 
     >>> login("steve.alexander@ubuntulinux.com")
 
     >>> edited_bug.private = True
+    >>> edited_bug.security_related = True
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     private = {'old' : False, 'new' : edited_bug.private})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     private={'old': False, 'new': edited_bug.private},
+    ...     security_related={'old': False, 'new': edited_bug.security_related})
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Visibility changed to: Private
+    -----------------------------
+    ** This bug has been flagged as a security issue
+    -----------------------------
 
-Now we set the bug public and check if the e-mail sent changed as well.
+Now we set the bug public, and not security-related and check if the
+e-mail sent changed as well.
 
-    >>> edited_bug.private = False 
+    >>> edited_bug.private = False
+    >>> edited_bug.security_related = False
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     private = {'old' : True, 'new' : edited_bug.private})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     private={'old': True, 'new': edited_bug.private},
+    ...     security_related={'old': True, 'new': edited_bug.security_related})
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Visibility changed to: Public
+    -----------------------------
+    ** This bug is no longer flagged as a security issue
+    -----------------------------
 
 Adding a new bug task
 ---------------------
 
 Because adding a new task is sort of like "editing" a bug,
-generate_bug_edit_email handles generating the email when a new task
-is added to a bug. To demonstrate what this email looks like, let's
+get_bug_edit_notification_texts generates text representations when a
+new task is added to a bug. To demonstrate what they look like, let's
 pretend we had just added task five:
 
     >>> ubuntu_mozilla_task = getUtility(IBugTaskSet).get(17)
@@ -187,20 +198,20 @@ pretend we had just added task five:
     ...     bugurl = "http://www.example.com/bugs/1",
     ...     user = sample_person,
     ...     added_bugtasks = ubuntu_mozilla_task)
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 1] Firefox does not support SVG'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Also affects: mozilla-firefox (Ubuntu)
          Severity: Normal
          Priority: Medium
            Status: Unconfirmed
+    -----------------------------
 
 Editing a bug task
 ------------------
 
-As you might expect, generate_bug_edit_email handles generating the
-bugmail when a bug task is edited.
+As you might expect, get_bug_edit_notification_texts handles generating the
+text representations of the changes when a bug task is edited.
 
     >>> from canonical.launchpad.interfaces import IBugTaskDelta, IBugTaskSet
     >>> from canonical.launchpad.components.bugtask import BugTaskDelta
@@ -218,13 +229,13 @@ bugmail when a bug task is edited.
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     bugtask_deltas=bugtask_delta)
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Changed in: ubuntu (upstream)
          Assignee: (unassigned) => Sample Person
            Status: Unconfirmed => Confirmed
+    -----------------------------
 
 Let's take a look at how it looks like when a distribution task is
 edited:
@@ -241,12 +252,12 @@ edited:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     bugtask_deltas=bugtask_delta)
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Changed in: mozilla-firefox (Debian)
          Assignee: Sample Person => (unassigned)
+    -----------------------------
 
 Adding and editing web links
 ----------------------------
@@ -273,11 +284,11 @@ Adding a web link can be seen as "editing" a bug.
     ...     bugurl = "http://www.example.com/bugs/2",
     ...     user = sample_person,
     ...     external_reference = {'new': mock_ext_ref})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Web link added: http://www.example.com/foo/bar
+    -----------------------------
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -295,13 +306,13 @@ modified link as having been "Added" (though no actual "adding" or
     ...     user = sample_person,
     ...     external_reference = {
     ...         'old' : mock_ext_ref, 'new': mock_ext_ref_edited})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Web link removed: http://www.example.com/foo/bar
-    <BLANKLINE>
+    -----------------------------
     ** Web link added: http://www.example.com/foo/bar
+    -----------------------------
 
 Adding and editing bug watches
 ------------------------------
@@ -330,12 +341,12 @@ generated when a bug watch is added:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     bugwatch={'new' : mock_bug_watch})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Bug watch added: The Mozilla.org Bug Tracker #123
        https://bugzilla.mozilla.org/show_bug.cgi?id=123
+    -----------------------------
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -351,18 +362,18 @@ Let's demonstrate with an example:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     bugwatch={'old' : mock_bug_watch, 'new' : mock_bug_watch_edited})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Bug watch removed: The Mozilla.org Bug Tracker #123
        https://bugzilla.mozilla.org/show_bug.cgi?id=123
-    <BLANKLINE>
+    -----------------------------
     ** Bug watch added: The Mozilla.org Bug Tracker #12
        https://bugzilla.mozilla.org/show_bug.cgi?id=12
+    -----------------------------
 
 We can also add a bugwatch while adding a new bugtask.
-    
+
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> mozilla_bug_watch = getUtility(IBugWatchSet).get(1)
     >>> mozilla_bugtask = getUtility(IBugTaskSet).get(15)
@@ -373,15 +384,15 @@ We can also add a bugwatch while adding a new bugtask.
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     added_bugtasks=mozilla_bugtask)
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Also affects: firefox (upstream) via
-       https://bugzilla.mozilla.org//show_bug.cgi?id=42
+       https://bugzilla.mozilla.org/show_bug.cgi?id=42
          Severity: Major
          Priority: Medium
            Status: Unconfirmed
+    -----------------------------
 
 
 Adding and editing CVE relationships
@@ -414,11 +425,11 @@ Adding a CVE will generate a notification that looks as follows:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     cve={'new' : mock_cve})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** CVE added: http://cve.mitre.org/whatsit?id=CVE-2004-0718
+    -----------------------------
 
 Similarly, removing a CVE ref will result in an email:
 
@@ -433,11 +444,11 @@ Similarly, removing a CVE ref will result in an email:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     cve={'old' : mock_cve_ref_removed})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** CVE removed: http://cve.mitre.org/whatsit?id=CVE-2004-0719
+    -----------------------------
 
 Adding attachments
 ------------------
@@ -460,9 +471,9 @@ Adding an attachment will generate a notification that looks as follows:
     ...     bugurl="http://www.example.com/bugs/2",
     ...     user=sample_person,
     ...     attachment={'new' : attachment})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
+    ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-----------------------------"
     ** Attachment added: "A screenshot of the problem"
        http://foo.com/screenshot.png
+    -----------------------------

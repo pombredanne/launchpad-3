@@ -498,16 +498,14 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             [{'displayname': u'Mark Shuttleworth', 'id': 1, 'name': u'sabdfl'},
              {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'ubuntu-team'},
              {'displayname': u'Launchpad Administrators',
-              'id': 25,
-              'name': u'admins'},
+              'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
-              'id': 53,
-              'name': u'testing-spanish-team'},
+              'id': 53, 'name': u'testing-spanish-team'},
              {'displayname': u'Mirror Administrators', 
-              'id': 59, 'name':
-              u'mirror-admins'}],
-            teams
-        )
+              'id': 59, 'name': u'mirror-admins'},
+             {'displayname': u'Registry Administrators', 'id': 60,
+              'name': u'registry'},
+            ], teams)
 
         # The dict returned by authUser should be identical.
         userDict2 = storage._authUserInteraction(self.cursor, 

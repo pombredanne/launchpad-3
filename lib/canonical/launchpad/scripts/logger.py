@@ -83,16 +83,32 @@ def logger_options(parser, default=logging.INFO):
     """Add the --verbose and --quiet options to an optparse.OptionParser.
 
     The requested loglevel will end up in the option's loglevel attribute.
+    Note that loglevel is not clamped to any particular range.
 
     >>> from optparse import OptionParser
     >>> parser = OptionParser()
     >>> logger_options(parser)
-    >>> options, args = parser.parse_args(['-v', '-v', '-q', '-q', '-q'])
-    >>> options.loglevel == logging.WARNING
+    >>> options, args = parser.parse_args(['-v', '-v', '-q', '-qqqqqqq'])
+    >>> options.loglevel > logging.CRITICAL
     True
+    >>> options.verbose
+    False
 
+    >>> parser = OptionParser()
+    >>> logger_options(parser)
     >>> options, args = parser.parse_args([])
     >>> options.loglevel == logging.INFO
+    True
+    >>> options.verbose
+    False
+
+    >>> from optparse import OptionParser
+    >>> parser = OptionParser()
+    >>> logger_options(parser, logging.WARNING)
+    >>> options, args = parser.parse_args(['-v'])
+    >>> options.loglevel == logging.INFO
+    True
+    >>> options.verbose
     True
 
     Cleanup:
@@ -110,10 +126,14 @@ def logger_options(parser, default=logging.INFO):
     assert logging.ERROR == 40
     assert logging.CRITICAL == 50
 
+    # Undocumented use of the optparse module
+    parser.defaults['verbose'] = False
+
     def counter(option, opt_str, value, parser, inc):
         parser.values.loglevel = (
                 getattr(parser.values, 'loglevel', default) + inc
                 )
+        parser.values.verbose = (parser.values.loglevel < default)
         # Reset the global log
         global log
         log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)

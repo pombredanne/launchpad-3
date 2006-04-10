@@ -56,7 +56,7 @@ If the status can't be converted, Unkown is returned, and a warning
 is logged.
 
     >>> external_bugzilla.convertRemoteStatus('FOO').title
-    WARNING:...:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org
+    WARNING:...:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org/bugs
     'Unknown'
 
 UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning.
@@ -386,7 +386,7 @@ any external servers.
     >>> print err
     INFO    creating lockfile
     INFO    No watches to update on http://bugs.debian.org
-    INFO    No watches to update on http://bugzilla.gnome.org/
+    INFO    No watches to update on http://bugzilla.gnome.org/bugs
     INFO    No watches to update on https://bugzilla.mozilla.org/
     INFO    Skipping updating Ubuntu Bugzilla watches.
 

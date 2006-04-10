@@ -121,13 +121,16 @@ class DistroArchRelease(SQLBase):
             BinaryPackagePublishing.distroarchrelease = %s AND
             BinaryPackagePublishing.binarypackagerelease =
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.fti @@ ftq(%s)
-            """ % sqlvalues(self.id, text),
+             BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id AND
+            (BinaryPackageRelease.fti @@ ftq(%s) OR
+             BinaryPackageName.name = %s)
+            """ % sqlvalues(self.id, text, text),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
-            clauseTables=['BinaryPackagePublishing'],
-            prejoins=["binarypackagename"],
+            clauseTables=['BinaryPackagePublishing',  'BinaryPackageName'],
+            prejoinClauseTables=["BinaryPackageName"],
             orderBy=['-rank'],
             distinct=True)
         # import here to avoid circular import problems
