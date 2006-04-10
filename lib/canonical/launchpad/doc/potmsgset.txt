@@ -9,7 +9,7 @@ We need to get a POTMsgSet object to performe this test.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
-    >>> potemplate = potemplate_set['pmount']
+    >>> potemplate = potemplate_set['pmount'][0]
 
 
 POTMsgSet.getPOMsgSet
