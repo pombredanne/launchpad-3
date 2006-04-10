@@ -180,9 +180,32 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.server.createBranch(12, 4, 'new-branch')
 
 
+class BranchAPITestCase(LaunchpadTestCase):
+    """Like XMLRPCv1TestCase, but for the new, simpler, salt-less API."""
+    
+    def setUp(self):
+        LaunchpadTestCase.setUp(self)
+        self.tac = AuthserverTacTestSetup()
+        self.tac.setUp()
+        self.server = xmlrpclib.Server('http://localhost:%s/branch/' 
+                                       % _getPort())
+        
+    def tearDown(self):
+        self.tac.tearDown()
+        LaunchpadTestCase.tearDown(self)
+
+    def testStartMirroring(self):
+        self.server.startMirroring(18)
+        
+    def testMirrorComplete(self):
+        self.server.mirrorComplete(18)
+        
+    def testMirrorFailedUnicode(self):
+        # Ensure that a unicode doesn't cause mirrorFailed to raise an
+        # exception.
+        self.server.mirrorFailed(18, u'it broke\N{INTERROBANG}')
+
+
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(XMLRPCv1TestCase))
-    suite.addTest(unittest.makeSuite(XMLRPCv2TestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
 

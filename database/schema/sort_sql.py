@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # Copyright 2005 Canonical Ltd. All rights reserved.
 
 """Script to sort SQL dumps.

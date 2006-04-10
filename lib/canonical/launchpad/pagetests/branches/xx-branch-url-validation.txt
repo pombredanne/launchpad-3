@@ -51,7 +51,7 @@ First, let's define a helper template to post to the Person +addbranch form.
 
 Try to create a branch with an invalid URL.
 
->>> print http( post_person_addbranch % (
+>>> print http(post_person_addbranch % (
 ...     'example.com/~lifeless/pyresources/',))
 HTTP/1.1 200 Ok
 ...Not a valid URL. Please enter the full URL...
@@ -59,13 +59,12 @@ HTTP/1.1 200 Ok
 
 Try to create branches with URLs in bazaar.launchpad.net.
 
-
->>> print http( post_person_addbranch % (
+>>> print http(post_person_addbranch % (
 ...     'http://bazaar.launchpad.net',))
 HTTP/1.1 200 Ok
 ...Don't manually register a bzr branch on <code>bazaar.launchpad.net</code>...
 
->>> print http(post_person_addbranch% (
+>>> print http(post_person_addbranch % (
 ...     'http://bazaar.launchpad.net/~me/that/this',))
 HTTP/1.1 200 Ok
 ...Don't manually register a bzr branch on <code>bazaar.launchpad.net</code>...
@@ -73,11 +72,17 @@ HTTP/1.1 200 Ok
 
 Try to create a branch with a URL that is already registered.
 
-
->>> print http(post_person_addbranch% (
+>>> print http(post_person_addbranch % (
 ...     'http://example.com/gnome-terminal/main/',))
 HTTP/1.1 200 Ok
 ...GNOME Terminal Mainline</a> is already registered with this URL...
+
+
+Try to create a branch without URL
+
+>>> print http(post_person_addbranch % '')
+HTTP/1.1 200 Ok
+...Required input is missing...
 
 
 == The other forms ==

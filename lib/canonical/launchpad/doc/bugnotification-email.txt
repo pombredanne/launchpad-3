@@ -142,35 +142,44 @@ is wrapped properly:
     -----------------------------
 
 
-Let's set the bug private (for demo purposes, we need to switch logins
-to a user that is explicitly subscribed to this bug):
+Let's make the bug security-related, and private (we need to switch
+logins to a user that is explicitly subscribed to this bug):
 
     >>> login("steve.alexander@ubuntulinux.com")
 
     >>> edited_bug.private = True
+    >>> edited_bug.security_related = True
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     private = {'old' : False, 'new' : edited_bug.private})
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     private={'old': False, 'new': edited_bug.private},
+    ...     security_related={'old': False, 'new': edited_bug.security_related})
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Visibility changed to: Private
     -----------------------------
+    ** This bug has been flagged as a security issue
+    -----------------------------
 
-Now we set the bug public and check if the e-mail sent changed as well.
+Now we set the bug public, and not security-related and check if the
+e-mail sent changed as well.
 
-    >>> edited_bug.private = False 
+    >>> edited_bug.private = False
+    >>> edited_bug.security_related = False
     >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     private = {'old' : True, 'new' : edited_bug.private})
+    ...     bug=edited_bug,
+    ...     bugurl="http://www.example.com/bugs/2",
+    ...     user=sample_person,
+    ...     private={'old': True, 'new': edited_bug.private},
+    ...     security_related={'old': True, 'new': edited_bug.security_related})
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Visibility changed to: Public
+    -----------------------------
+    ** This bug is no longer flagged as a security issue
     -----------------------------
 
 Adding a new bug task
@@ -379,7 +388,7 @@ We can also add a bugwatch while adding a new bugtask.
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Also affects: firefox (upstream) via
-       https://bugzilla.mozilla.org//show_bug.cgi?id=42
+       https://bugzilla.mozilla.org/show_bug.cgi?id=42
          Severity: Major
          Priority: Medium
            Status: Unconfirmed

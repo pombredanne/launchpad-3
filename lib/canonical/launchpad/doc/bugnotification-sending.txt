@@ -450,6 +450,41 @@ a trailing space.
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
 
+If a team without a contact address is subscribed to the bug, the
+notification will be sent to all members individually.
+
+    >>> shipit_admins = getUtility(IPersonSet).getByName('shipit-admins')
+    >>> shipit_admins.preferredemail is None
+    True
+    >>> for member in shipit_admins.activemembers:
+    ...     print member.preferredemail.email
+    marilize@hbd.com
+
+    >>> bug_one.subscribe(shipit_admins)
+    <...>
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    1
+
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
+    ...     pending_notifications):
+    ...     for address in sorted(to_addresses):
+    ...         print address
+    dilys@muse.19inch.net
+    marilize@hbd.com
+    mark@hbd.com
+    test@canonical.com
+
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
 Bug Filed Notification
 ----------------------
 
@@ -517,7 +552,8 @@ top of the email:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, marilize@hbd.com, mark@hbd.com,
+        test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 11] subject
     <BLANKLINE>
@@ -590,8 +626,8 @@ makes it write out the emails it sends.
     0
     >>> print err
     INFO creating lockfile
-    INFO    Notifying test@canonical.com about bug 2.
     INFO    Notifying dilys@muse.19inch.net about bug 2.
+    INFO    Notifying test@canonical.com about bug 2.
     ...
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 2 <2@bugs.launchpad.net>
@@ -600,9 +636,10 @@ makes it write out the emails it sends.
     <BLANKLINE>
     ** Summary changed to: New summary.
     ...
+    INFO    Notifying dilys@muse.19inch.net about bug 1.
+    INFO    Notifying marilize@hbd.com about bug 1.
     INFO    Notifying mark@hbd.com about bug 1.
     INFO    Notifying test@canonical.com about bug 1.
-    INFO    Notifying dilys@muse.19inch.net about bug 1.
     ...
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
@@ -611,9 +648,10 @@ makes it write out the emails it sends.
     <BLANKLINE>
     ** Summary changed to: New summary.
     ...
+    INFO    Notifying dilys@muse.19inch.net about bug 1.
+    INFO    Notifying marilize@hbd.com about bug 1.
     INFO    Notifying mark@hbd.com about bug 1.
     INFO    Notifying test@canonical.com about bug 1.
-    INFO    Notifying dilys@muse.19inch.net about bug 1.
     ...
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
