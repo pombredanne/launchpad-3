@@ -8,12 +8,11 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-releases" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/product/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-packages" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -24,10 +23,11 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <p metal:fill-slot="extra_info">
-      Including a <abbr>URL</abbr> to the release tarball below
-      will let Launchpad import the release to its archive.
-    </p>
+    <div metal:fill-slot="extra_info">
+      Use this form to tell Launchpad about a package of
+      <span tal:replace="context/displayname">Firefox 1.0</span> in a
+      release of any supported distribution.
+    </div>
 
   </div>
 
@@ -35,4 +35,3 @@
     
 </body>
 </html>
-

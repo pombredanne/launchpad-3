@@ -1,7 +1,14 @@
 
-<table class="listing "
+<table class="listing"
   tal:condition="context/releases"
   tal:attributes="id string:series_${context/name}">
+  <thead class="lesser">
+    <tr>
+      <th>Version</th>
+      <th>Codename</th>
+      <th>Date Released</th>
+    </tr>
+  </thead>
   <tbody class="lesser">
     <tr tal:repeat="release context/releases">
       <td><a tal:content="release/version"

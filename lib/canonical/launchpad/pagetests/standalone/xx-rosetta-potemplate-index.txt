@@ -24,6 +24,6 @@ same product.
   ... """)
   HTTP/1.1 200 Ok
   ...These templates came from the same source as this one:...
-  ...<a href="http://localhost:9000/products/evolution/main/+pots/evolution-2.2">evolution-2.2 in Evolution MAIN</a>
+  ...<a href="http://.../products/evolution/main/+pots/evolution-2.2">evolution-2.2 in Evolution main</a>
   ...
 

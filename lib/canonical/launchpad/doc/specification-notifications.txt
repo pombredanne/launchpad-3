@@ -25,19 +25,20 @@ Changing the status:
     >>> from canonical.launchpad.mail import stub
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    3
+    4
 
 The notification was sent to the registrant, Foo Bar, the assignee, Carlos,
-and the drafter, Robert.
+the approver, Cprov, and the drafter, Robert.
 
     >>> related_people = [
-    ...     svg_support.owner, svg_support.assignee, svg_support.drafter]
+    ...     svg_support.owner, svg_support.assignee, svg_support.drafter, svg_support.approver]
     >>> related_people += [
     ...     subscription.person for subscription in svg_support.subscriptions]
     >>> related_people_addresses = [
     ...     [person.preferredemail.email] for person in set(related_people)]
     >>> sorted(related_people_addresses)
     [[u'carlos@canonical.com'],
+     [u'celso.providelo@canonical.com'],
      [u'foo.bar@canonical.com'],
      [u'robertc@robertcollins.net']]
 
@@ -46,12 +47,12 @@ and the drafter, Robert.
     >>> sent_addresses == sorted(related_people_addresses)
     True
 
-The approver and all subscribers also get notified, but since there
-was no approver, and the only subscriber was Foo Bar, no additional
+The approver and all subscribers also get notified, but since the
+approver was cprov, and the only subscriber was Foo Bar, no additional
 notifications were sent.
 
     >>> svg_support.approver is None
-    True
+    False
 
     >>> for subscription in svg_support.subscriptions:
     ...     print subscription.person.preferredemail.email

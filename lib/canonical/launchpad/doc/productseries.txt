@@ -9,7 +9,7 @@ version control, etc. We call these entities ProductSeries.
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import (
-...     IProductSeries, IProductSet, NotFoundError)
+...     IPersonSet, IProductSeries, IProductSet, NotFoundError)
 >>> from canonical.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.
@@ -42,9 +42,9 @@ True
 
 New ProductSeries are created using Product.newSeries.
 
->>> displayname = "Firefox Emacs Port"
+>>> owner = getUtility(IPersonSet).getByName('carlos')
 >>> summary = "Experimental port of Firefox to the Emacs operating system."
->>> emacs = firefox.newSeries('emacs', displayname, summary)
+>>> emacs = firefox.newSeries(owner, 'emacs', summary)
 
 Let's check that the new series is properly associated to its product.
 

@@ -6,11 +6,8 @@ Page to edit a product - does the page load?
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
-  ...
-      <title>Mozilla Firefox in Launchpad</title>
-  ...
-            <h1>Edit upstream product details</h1>
-  ...
+  ...<title>Mozilla Firefox in Launchpad</title>...
+  ...<h1>Edit details</h1>...
 
 We try to edit the project related to that product. First with a invalid
 project.
@@ -371,7 +368,8 @@ Then a product named newproductname2.
   ...
   Location: newproductname2...
   
-Now we try to change newproductcname2's name to newproductname.
+
+Now we try to change newproductname2's name to newproductname.
 
   >>> print http(r"""
   ... POST /products/newproductname2/+edit HTTP/1.1
@@ -435,6 +433,7 @@ Now we try to change newproductcname2's name to newproductname.
   HTTP/1.1 200 Ok
   ...newproductname is already in use by another product...
   
+
 Now we try to change it to newproductname3.  
   
   >>> print http(r"""

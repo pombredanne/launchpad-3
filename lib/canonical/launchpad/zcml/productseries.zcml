@@ -137,6 +137,11 @@
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"
         lp:url="/products/$Product.name/$ProductSeries.name/+edit">
+        <browser:widget
+           field="summary"
+           class="zope.app.form.browser.TextAreaWidget"
+           height="7"
+           width="62" />
     </browser:editform>
 
     <browser:editform
@@ -226,7 +231,7 @@
         class="canonical.launchpad.browser.PackagingAddView"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/productseries-packaging.pt"
         lp:url="/product/$Product.name/$ProductSeries.name/+package">
         <browser:widget
             field="productseries"

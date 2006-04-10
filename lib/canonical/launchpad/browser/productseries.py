@@ -65,8 +65,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = ['edit', 'driver', 'editsource', 'ubuntupkg',
-             'addpackage', 'addrelease', 'download', 'translationupload',
-             'addpotemplate', 'review']
+             'addpackage', 'addrelease', 'translationupload',
+             'addpotemplate', 'rdf', 'review']
 
     def edit(self):
         text = 'Change Series Details'
@@ -93,12 +93,12 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Register a Release'
         return Link('+addrelease', text, icon='add')
 
-    def download(self):
+    def rdf(self):
         text = 'Download RDF Metadata'
         return Link('+rdf', text, icon='download')
 
     def translationupload(self):
-        text = 'Request Translations Upload'
+        text = 'Upload Translations'
         return Link('+translations-upload', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')

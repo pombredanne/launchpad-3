@@ -601,29 +601,27 @@ product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_translations = ContextTitle('Translations of %s in Rosetta')
 
-def productrelease(context, view):
-    return '%s %s in Launchpad' % (
-        context.product.displayname, context.version)
-
-def productrelease_edit(context, view):
-    return '%s %s in Launchpad' % (
-        context.product.displayname, context.version)
-
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
-productseries_ubuntupkg = 'Ubuntu source package'
+productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
+
+productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Products registered in Launchpad'
 
 productseries_index = ContextTitle('Overview of %s')
 
-productseries_translations = ContextTitle('Translation templates for %s')
+productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import product series'
 
 productseries_sourceadmin = 'Add source import'
 
+productseries_translations = ContextTitle('Translation templates for %s')
+
 productseries_translations_upload = 'Request new translations upload'
+
+productseries_ubuntupkg = 'Ubuntu source package'
 
 project_index = ContextTitle('%s in Launchpad')
 
