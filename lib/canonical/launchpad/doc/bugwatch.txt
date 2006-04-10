@@ -24,7 +24,7 @@ Bug watches are accessed via a utility that provides IBugWatchSet.
     >>> bugwatch.remotebug
     u'2000'
     >>> bugwatch.url
-    u'https://bugzilla.mozilla.org//show_bug.cgi?id=2000'
+    u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000'
     >>> getUtility(IBugWatchSet).get(98765)
     Traceback (most recent call last):
     ...
@@ -74,7 +74,7 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     ...     bug=bug_one, owner=sample_person, bugtracker=mozilla_bugtracker,
     ...     remotebug='1234')
     >>> bugwatch.url
-    u'https://bugzilla.mozilla.org//show_bug.cgi?id=1234'
+    u'https://bugzilla.mozilla.org/show_bug.cgi?id=1234'
     >>> bugwatch.lastchecked is None
     True
 

@@ -29,18 +29,18 @@
         tal:condition="context/hackergotchi"
         tal:attributes="src context/hackergotchi/url"
         style="float: right; margin: 0 0 0.5em 0.5em"
+        alt=""
       />
-      <div tal:condition="context/homepage_content">
-        <tal:homepage content="structure context/homepage_content/fmt:text-to-html">
-           The person's description goes here.
-        </tal:homepage>
-        <tal:block condition="context/teamdescription">
-          <b>Team Description:</b>
-          <span tal:replace="context/teamdescription">DESCRIPTION</span>
-        </tal:block>
-      </div>
+      <tal:homepage tal:condition="context/homepage_content"
+                    content="structure context/homepage_content/fmt:text-to-html">
+         The person's homepage goes here.
+      </tal:homepage>
+      <tal:description condition="context/teamdescription">
+        <b>About this team:</b>
+        <span tal:replace="context/teamdescription">DESCRIPTION</span>
+      </tal:description>
 
-  <h2>Registered details</h2>
+  <h2>Details</h2>
 
   <table>
     <tr tal:condition="context/allwikis">

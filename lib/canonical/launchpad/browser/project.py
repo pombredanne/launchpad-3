@@ -81,11 +81,16 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bounties', 'calendar']
+    enable_only = ['overview', 'bugs', 'bounties', 'calendar']
 
     def overview(self):
         target = ''
         text = 'Overview'
+        return Link(target, text)
+
+    def bugs(self):
+        target = '+bugs'
+        text = 'Bugs'
         return Link(target, text)
 
     def calendar(self):

@@ -156,6 +156,20 @@ For upstream:
     >>> print bugtask_ids
     [2, 13, 14, 15]
 
+By project:
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    ...                                         BugTaskStatus.CONFIRMED),
+    ...                              orderby="id", user=None)
+    >>> bugtasks = mozilla_project.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+    >>> bugtask_ids = [bt.id for bt in bugtasks]
+    >>> print bugtask_ids
+    [2, 13, 14, 15]
+
 For a distribution:
 
     >>> debian = distroset.get(3)
@@ -278,12 +292,6 @@ Let's get all bugs on either main or universe:
     >>> main_or_universe_tasks = ubuntu.searchTasks(params)
     >>> sorted([bugtask.bug.id for bugtask in main_or_universe_tasks])
     [1, 10, 11L]
-
-It's also possible to iterate over all the bug tasks:
-
-    >>> bugtasks = [bugtask for bugtasks in bugtaskset]
-    >>> len(bugtasks)
-    24
 
 Bug Task Targets
 ----------------
@@ -600,7 +608,8 @@ entitled _Privacy and Team Awareness_):
 
     >>> old_state = capture_state(
     ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
-    ...     "description", "private", "name", "duplicateof")
+    ...     "description", "private", "name", "duplicateof",
+    ...     "security_related")
     >>> bug_upstream_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
