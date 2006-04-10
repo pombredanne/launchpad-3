@@ -80,7 +80,7 @@
     found on the last scan. Branches are scanned at least once a day.
   </p>
 
-  <tal:history_available condition="context/revision_count">
+  <tal:history-available condition="context/revision_count">
   <table class="listing">
     <thead>
       <tr>
@@ -100,9 +100,9 @@
       </tr>
     </tbody>
   </table>
-  </tal:history_available>
+  </tal:history-available>
 
-  <tal:related_bugs condition="context/related_bugs">
+  <tal:related-bugs condition="context/related_bugs">
     <h2>Related Bugs</h2>
     <ul style="list-style: none">
       <span tal:repeat="bug context/related_bugs"
@@ -114,7 +114,7 @@
         </li>
       </span>
     </ul>
-  </tal:related_bugs>
+  </tal:related-bugs>
 
       <h2>Nearby</h2>
       <ul style="list-style: none">

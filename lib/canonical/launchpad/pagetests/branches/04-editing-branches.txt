@@ -177,12 +177,15 @@ Post the +lifecycle that sets the branch status and whiteboard message.
 
 Load the redirection target and presence of the new status and whiteboard.
 
-  >>> print http(r"""
+  >>> page = http(r"""
   ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
   ... """)
+  >>> print page
   HTTP/1.1 200 Ok
   ...Status:...
   ...Merged...
+  >>> print page
+  HTTP/1.1 200 Ok
   ...Whiteboard:...
   ...The brave shall prevail. Ka'plah!...
 

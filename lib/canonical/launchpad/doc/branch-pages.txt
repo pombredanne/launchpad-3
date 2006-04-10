@@ -61,7 +61,8 @@ to the branch.
 The view used to render list items is chosen using the in_person_context and
 in_product_context methods on BranchTargetView.
 
->>> gterm_branches_view = getView(gterm_product, '+branches', TestRequest())
+>>> gterm_branches_view = getView(
+...     gterm_product, '+branchlisting', TestRequest())
 >>> gterm_branches_view.in_person_context()
 False
 >>> gterm_branches_view.in_product_context()
@@ -69,7 +70,8 @@ True
 
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> sampleperson = getUtility(IPersonSet).get(12)
->>> sampleperson_branches_view = getView(sampleperson, '+branches', TestRequest())
+>>> sampleperson_branches_view = getView(
+...     sampleperson, '+branchlisting', TestRequest())
 >>> sampleperson_branches_view.in_person_context()
 True
 >>> sampleperson_branches_view.in_product_context()
