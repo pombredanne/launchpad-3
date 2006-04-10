@@ -1,3 +1,21 @@
+On the page for a distribution, there is a link for changing the bug contact.
+
+  >>> distropage = http(r"""
+  ... GET /distros/ubuntu/+bugs HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """).getBody()
+  >>> "Change Bug Contact" in distropage
+  True
+
+This link is not available if you are not logged in with permission to change
+the bug contact.
+
+  >>> distropage = http(r"""
+  ... GET /distros/ubuntu/+bugs HTTP/1.1
+  ... """).getBody()
+  >>> "Change Bug Contact" in distropage
+  False
+
 Anyone with launchpad.Edit permission can edit the distribution bug
 contact. In this example, we'll use mark@hbd.com to set the distribution
 bug contact.

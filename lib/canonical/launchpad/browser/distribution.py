@@ -189,6 +189,7 @@ class DistributionBugsMenu(ApplicationMenu):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
         text = 'Change Bug Contact'
         return Link('+bugcontact', text, icon='edit')
