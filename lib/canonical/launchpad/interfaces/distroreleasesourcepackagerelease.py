@@ -51,9 +51,11 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     current_published = Attribute("is last SourcePackagePublishing record "
                                   "that is in PUBLISHED status.")
 
-    def changeOverride(new_component, new_section):
-        """Change the component and/or section of a
-        DistroReleaseSourcePackageRelease."""
+    def changeOverride(new_component=None, new_section=None, new_pocket=None):
+        """Change the component, section and pocket.
+
+        It doesn't change the ommited arguments.
+        """
 
     def supersede():
         """Supersede a DistroReleaseSourcePackageRelease.

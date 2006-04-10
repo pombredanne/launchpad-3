@@ -449,6 +449,7 @@ These packages must now be in the publishing history. Let's check it.
   >>> from canonical.launchpad.database import (
   ...    SecureSourcePackagePublishingHistory as SSPPH)
   >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> package_names.sort()
   >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
@@ -472,6 +473,11 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   >>> process.wait()
   0
 
+  >>> flush_database_updates()
+  >>> transaction.commit()
+  >>> from canonical.database.sqlbase import _clearCache
+  >>> _clearCache()
+
 Check if the 'etherwake' source package was correctly published and is
 in the filesystem archive, we are looking for the DSC, the gzipped
 original source and the gzipped package diff:
@@ -483,10 +489,8 @@ Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
 required entry for 'etherwake':
 
-  >>> sources_file = open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
-  ...                     "/main/source/Sources")
-  >>> print sources_file.read()
-  ...
+  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
+  ...            "/main/source/Sources").read() + '\nEND'
   Package: etherwake
   Binary: etherwake
   Version: 1.08-1
@@ -502,6 +506,72 @@ required entry for 'etherwake':
    95c1e89e3ad7bc8740793bdf7aeb7334 4145 etherwake_1.08-1.diff.gz
   <BLANKLINE>
   <BLANKLINE>
+  END
+
+Invoke change-override on just published etherwake moving it to
+component 'universe' and pocket 'UPDATES'.
+
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> breezy_autotest = ubuntutest['breezy-autotest']
+  >>> etherwake = breezy_autotest.getSourcePackage('etherwake')
+  >>> etherwake_spr = etherwake.currentrelease
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> etherwake_spr.changeOverride(
+  ...     new_component=getUtility(IComponentSet)['universe'],
+  ...     new_pocket=PackagePublishingPocket.UPDATES)
+
+Check if we have new pending publishing record as expected
+
+  >>> for pub in SSPPH.selectBy(
+  ...      sourcepackagereleaseID=etherwake_spr.sourcepackagerelease.id):
+  ...    print pub.id, pub.status.name, pub.component.name, pub.pocket.name
+  21 PENDING universe UPDATES
+  20 PUBLISHED main RELEASE
+
+  >>> flush_database_updates()
+  >>> transaction.commit()
+
+Invoke Publisher script again to land our changes in the archive
+
+  >>> script = os.path.join(config.root, "scripts", "publish-distro.py")
+  >>> process = subprocess.Popen([sys.executable, script, "-q",
+  ...                             "-d", "ubuntutest"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE)
+  >>> garbage = process.stderr.read()
+  >>> garbage = process.stdout.read()
+  >>> process.wait()
+  0
+
+  >>> _clearCache()
+
+Check the publishing history again
+
+  >>> for pub in SSPPH.selectBy(
+  ...      sourcepackagereleaseID=etherwake_spr.sourcepackagerelease.id):
+  ...    print pub.id, pub.status.name, pub.component.name, pub.pocket.name
+  21 PUBLISHED universe UPDATES
+  20 PUBLISHED main RELEASE
+
+XXX cprov 20060410: this is utterly unexpected, did the domination
+process fail ?
+
+  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
+  ...            "/main/source/Sources").read() + '\nEND'
+  Package: etherwake
+  ...
+  END
+
+
+Check if the package was moved properly (componente 'universe' and
+pocket 'updates'):
+
+  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest-updates"
+  ...            "/universe/source/Sources").read() + '\nEND'
+  Package: etherwake
+  ...
+  END
 
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
@@ -512,7 +582,6 @@ everything up.
 Remove the test archive from filesystem.
 
   >>> shutil.rmtree("/var/tmp/archive/")
-
   >>> ZecaTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()
 

@@ -51,10 +51,13 @@ class IDistroArchReleaseBinaryPackage(Interface):
         version, in this architecture release.
         """
 
-    def changeOverride(new_component, new_section, new_priority):
-        """Change the component, section and/or priority of a
-        DistroArchReleaseBinaryPackageRelease."""
-        
+    def changeOverride(new_component=None, new_section=None,
+                       new_priority=None, new_pocket=None):
+        """Change the component, section, priority and/or pocket
+
+        It doesn't change the ommited arguments.
+        """
+
     def supersede():
         """Supersede a DistroArchReleaseBinaryPackageRelease.
 

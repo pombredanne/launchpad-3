@@ -21,6 +21,8 @@ from canonical.launchpad.database import (DistroArchReleaseBinaryPackage,
 from canonical.launchpad.interfaces import (IBinaryPackageNameSet,
                                             IDistributionSet, NotFoundError)
 
+from canonical.lp.dbschema import PackagePublishingPocket
+
 from contrib.glock import GlobalLock
 
 ################################################################################
@@ -46,14 +48,16 @@ def binaries_of_source(distrorelease, sourcepackage_name):
 
 def process_source_change(distrorelease, package):
     Ztm.begin()
-    (new_component, new_section) = (None, None)
+    (new_component, new_section, new_pocket) = (None, None, None)
     if Options.component:
         new_component = Options.component
     if Options.section:
         new_section = Options.section
+
     spr = distrorelease.getSourcePackage(package).releasehistory[-1]
     drspr = DistroReleaseSourcePackageRelease(distrorelease, spr)
-    drspr.changeOverride(new_component=new_component, new_section=new_section)
+    drspr.changeOverride(new_component=new_component, new_section=new_section,
+                         new_pocket=Options.pocket)
     Ztm.commit()
 
 ########################################
@@ -69,10 +73,12 @@ def process_binary_change(distrorelease, package):
         new_priority = Options.priority
     for distroarchrelease in distrorelease.architectures:
         binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-        darbp = DistroArchReleaseBinaryPackage(distroarchrelease, binarypackagename)
+        darbp = DistroArchReleaseBinaryPackage(
+            distroarchrelease, binarypackagename)
         try:
-            darbp.changeOverride(new_component=new_component, new_priority=new_priority,
-                                 new_section=new_section)
+            darbp.changeOverride(
+                new_component=new_component, new_priority=new_priority,
+                new_section=new_section, new_pocket=Options.pocket)
         except NotFoundError:
             pass
     Ztm.commit()
@@ -96,7 +102,7 @@ def init():
                       action="store_false", help="don't actually do anything")
     parser.add_option("-p", "--priority", dest="priority",
                       help="move package to PRIORITY")
-    parser.add_option("-s", "--suite", dest="distrorelease",
+    parser.add_option("-s", "--suite", dest="suite",
                       help="move package in suite SUITE")
     parser.add_option("-S", "--source-and-binary", dest="sourceandchildren",
                       default=False, action="store_true",
@@ -123,8 +129,7 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    Ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
-                       dbhost="jubany")
+    Ztm = initZopeless(dbuser="lucille")
 
     execute_zcml_for_scripts()
 
@@ -132,9 +137,12 @@ def init():
         Options.distro = "ubuntu"
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
-    if not Options.distrorelease:
+    if not Options.suite:
         Options.distrorelease = Options.distro.currentrelease.name
-    Options.distrorelease = Options.distro.getRelease(Options.distrorelease)
+        Options.pocket = PackagePublishingPocket.RELEASED
+    else:
+        Options.distrorelease, Options.pocket = (
+            Options.distro.getDistroReleaseAndPocket(Options.suite))
 
     return args
 
@@ -146,11 +154,13 @@ def validate_options():
         sys.exit(1)
 
     if Options.component:
-        valid_components = dict([(c.name,c) for c in Options.distrorelease.components])
+        valid_components = dict([(c.name,c) for c in
+                                 Options.distrorelease.components])
+
         if Options.component not in valid_components:
-            Log.error("%s is not a valid component for %s/%s." % (Options.component,
-                                                                  Options.distro.name,
-                                                                  Options.distrorelease.name))
+            Log.error("%s is not a valid component for %s/%s."
+                      % (Options.component, Options.distro.name,
+                         Options.distrorelease.name))
             sys.exit(1)
         Options.component = valid_components[Options.component]
 
@@ -183,7 +193,8 @@ def main():
     validate_options()
     
     for package in arguments:
-        if Options.sourceonly or Options.binaryandsource or Options.sourceandchildren:
+        if (Options.sourceonly or Options.binaryandsource or
+            Options.sourceandchildren):
             process_source_change(Options.distrorelease, package)
 
         if Options.sourceandchildren:

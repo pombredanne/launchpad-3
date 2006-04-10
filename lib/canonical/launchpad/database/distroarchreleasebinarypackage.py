@@ -207,14 +207,14 @@ class DistroArchReleaseBinaryPackage:
         return current
 
     def changeOverride(self, new_component=None, new_section=None,
-                       new_priority=None):
+                       new_priority=None, new_pocket=None):
         """See IDistroArchReleaseBinaryPackage."""
 
         # Check we have been asked to do something
-        if (new_component is None and new_section is None 
-            and new_priority is None):
+        if (new_component is None and new_section is None
+            and new_priority is None and new_pocket is None):
             raise AssertionError("changeOverride must be passed a new"
-                                 "component, section or priority.")
+                                 "component, section, priority or pocket.")
 
         # Retrieve current publishing info
         current = self.current_published
@@ -226,23 +226,26 @@ class DistroArchReleaseBinaryPackage:
             new_section = current.section
         if new_priority is None:
             new_priority = current.priority
+        if new_pocket is None:
+            new_pocket = current.pocket
 
         if (new_component == current.component and
             new_section == current.section and
-            new_priority == current.priority):
+            new_priority == current.priority and
+            new_pocket == current.pocket):
             return
 
         # Append the modified package publishing entry
         SecureBinaryPackagePublishingHistory(
             binarypackagerelease=current.binarypackagerelease,
             distroarchrelease=current.distroarchrelease,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False,
             component=new_component,
             section=new_section,
             priority=new_priority,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=current.pocket,
-            embargo=False,
+            pocket=new_pocket,
             )
 
     def supersede(self):
