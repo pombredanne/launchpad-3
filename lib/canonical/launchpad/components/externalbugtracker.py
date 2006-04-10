@@ -116,7 +116,7 @@ class ExternalBugTracker:
             new_malone_status = self.convertRemoteStatus(new_remote_status)
             old_malone_status = self.convertRemoteStatus(bug_watch.remotestatus)
             if (new_remote_status != bug_watch.remotestatus or
-                new_remote_status != old_malone_status):
+                new_malone_status != old_malone_status):
                 bug_watch.updateStatus(new_remote_status, new_malone_status)
 
 

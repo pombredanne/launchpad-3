@@ -119,6 +119,19 @@ now no bug watches are in need of updating:
     >>> gnome_bugzilla.getBugWatchesNeedingUpdate(23).count()
     0
 
+If the status isn't different, the lastchanged attribute doesn't get
+updated:
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> bug_watch = gnome_bugzilla.watches[0]
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> old_last_changed = bug_watch.lastchanged
+    >>> external_bugzilla.updateBugWatches([bug_watch])
+    >>> bug_watch.lastchanged == old_last_changed
+    True
+
 Now let's take a look at what happens when a bug watch is linked to
 from a bug task.
 
