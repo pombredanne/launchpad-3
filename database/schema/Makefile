@@ -164,6 +164,7 @@ newsample-soyuz:
 	pg_dump -d ${DBNAME} -a -D -O --table=potemplate | grep -v "\(SET \| TOC \)" > ../sampledata/new-rosetta.sql
 
 newsampledata:
+	(cd ../..; make rebuildfti)
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
 	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|secret\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\)" \
 	| $(PYTHON) sort_sql.py \
