@@ -48,14 +48,27 @@
     in the branch.
   </p>
 
-  <p class="error message" tal:condition="context/mirror_failures">
-    <b>Mirror Failures:</b> This branch failed to mirror 
-    <span tal:replace="context/mirror_failures" /> times.
-    <tal:has_mirror_msg condition="context/mirror_status_message">
-      The last failure message was:
+  <tal:comment condition="nothing">
+    <!-- XXX I know, this style attribute is evil, but bold test makes the mirror
+    error difficult to read. There should probably be a specific class for this
+    sort of warning. David Allouche 2006-04-09 -->
+  </tal:comment>
+  <div tal:condition="context/mirror_failures"
+       class="warning message" style="font-weight: normal">
+    <div>
+      <b>Mirror failure.</b> Failed to update the Launchpad mirror of this branch.
+    </div>
+    <div>
+      Latest attempt at <span tal:replace="context/last_mirror_attempt/fmt:datetime" />.
+    </div>
+    <div tal:condition="context/mirror_status_message">
+      Error:
       <span tal:replace="context/mirror_status_message">Error 1</span>
-    </tal:has_mirror_msg>
-  </p>
+    </div>
+    <div tal:condition="not:context/mirror_status_message">
+      No error message.
+    </div>
+  </div>
 
   <p class="informational message" tal:condition="context/whiteboard">
     <b>Whiteboard:</b><br />
