@@ -21,7 +21,7 @@ class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
 
 class IBugField(IField):
-    """A Field that allows entry of a Bug number"""
+    """A Field that allows entry of a Bug number or nickname"""
 
 
 # Title

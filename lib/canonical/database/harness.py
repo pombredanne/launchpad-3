@@ -13,6 +13,11 @@ import sys
 sys.path.insert(0, '../..')
 #sys.path.insert(0, '..')
 
+if len(sys.argv) > 1:
+    dbuser = sys.argv[1]
+else:
+    dbuser = 'launchpad'
+
 from zope.component import getUtility
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 execute_zcml_for_scripts()
@@ -21,7 +26,7 @@ execute_zcml_for_scripts()
 # setup connection to the db
 #
 from canonical.lp import initZopeless
-transactionmgr = initZopeless(dbuser='launchpad')
+transactionmgr = initZopeless(dbuser=dbuser)
 
 #
 # We don't really depend on everything from canonical.launchpad.database and

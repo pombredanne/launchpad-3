@@ -108,7 +108,7 @@ class TestPgSession(LaunchpadFunctionalTestCase):
             SET last_accessed = last_accessed - '1 year'::interval
             """)
         self.sdc[client_id1] = 'whatever'
-        cursor.execute("SeLECT COUNT(*) FROM SessionData")
+        cursor.execute("SELECT COUNT(*) FROM SessionData")
         self.failUnlessEqual(cursor.fetchone()[0], 2)
 
     def test_storage(self):

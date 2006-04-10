@@ -15,7 +15,7 @@ from zope.app.form.interfaces import (
 from zope.schema.interfaces import ValidationError
 from zope.app.form import Widget
 
-from canonical.launchpad.interfaces import ILaunchBag, IRemoteBugTask
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.exception import WidgetInputError
@@ -41,7 +41,7 @@ class BugTaskAssigneeWidget(Widget):
 
         self.assignee_chooser_widget = SinglePopupWidget(
             context, context.vocabulary, request)
-        self.assignee_chooser_widget.onKeyPress = "selectAssignTo(this, event)"
+        self.assignee_chooser_widget.onKeyPress = "selectWidget('assign_to', event)"
 
         # Set some values that will be used as values for the input
         # widgets.
@@ -214,10 +214,10 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.browsername)))
         else:
-            if IRemoteBugTask.providedBy(bugtask):
-                return renderElement('i', contents='unknown')
-            else:
+            if bugtask.target_uses_malone:
                 return renderElement('i', contents='not assigned')
+            else:
+                return renderElement('i', contents='unknown')
 
 
 class DBItemDisplayWidget(BrowserWidget):

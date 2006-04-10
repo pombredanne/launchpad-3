@@ -118,24 +118,21 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...                                    datecreated=UTC_NOW)
 
 
-Verify how many Build entries we have from sampledata:
-
-  >>> Build.select().count()
-  8
-
-Create missing builds (packages w/o build entry) for those distroreleases.
+Store how many Build entries we have from sampledata, and
+create missing builds (packages w/o build entry) for those distroreleases.
 As we just insert a new sourcepackagerelease in run-time we expect to
 have a new build for the sane Warty and a warning about the
 absence of nominatedarchindep field for Woody:
 
+  >>> build_count = Build.select().count()
   >>> for dr in distroreleases:
   ...      bm.createMissingBuilds(dr)
   WARNING:root:No Nominated Architecture Independent, skipping distrorelease WOODY
 
-Check if we create a new Build entry for just added sourcepackagerelease:
+Check that we only created a new Build entry for the added sourcepackagerelease:
 
-  >>> Build.select().count()
-  9
+  >>> Build.select().count() - build_count
+  1
 
   >>> b = Build.selectOneBy(sourcepackagereleaseID=srcpkgrel.id)
   >>> (b.sourcepackagerelease.name, b.distroarchrelease.distrorelease.name)

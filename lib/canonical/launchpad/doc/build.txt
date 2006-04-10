@@ -223,7 +223,7 @@ Or for a given distroarchrelease.
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  7
+  9
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:

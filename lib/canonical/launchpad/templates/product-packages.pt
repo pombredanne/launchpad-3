@@ -61,7 +61,7 @@
       No packages are registered for this branch or release series of
       <span tal:replace="context/displayname">Foomatic</span>. If you know
       that this series is in fact in an Ubuntu release, please
-      <a tal:attributes="href string:${series/product/fmt:url}/+addpackage">
+      <a tal:attributes="href string:${series/fmt:url}/+addpackage">
       register it now.</a>
     </p>
 
