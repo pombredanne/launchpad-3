@@ -271,11 +271,11 @@ about, no notification is sent:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.productseries': '2',
-    ...     'field.delivery': 'Unknown'}
+    ...     'FORM_SUBMIT': 'Continue', 'field.productseries': '1',
+    ...     'field.whiteboard': 'Proposing for milestones...'}
     >>> edit_view = getView(svg_support, '+setseries', TestRequest(form=form))
     >>> edit_view.update()
-    u'Updated...'
+    'Done.'
     >>> transaction.commit()
     >>> len(stub.test_emails)
     0
