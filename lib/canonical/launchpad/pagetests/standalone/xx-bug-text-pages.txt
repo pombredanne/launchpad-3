@@ -19,7 +19,6 @@ Get text page for a single bug.
   task: firefox (upstream)
   status: Unconfirmed
   reporter: Sample Person (name12)
-  priority: Wontfix
   importance: Minor
   assignee: Mark Shuttleworth (sabdfl)
   milestone: 
@@ -27,7 +26,6 @@ Get text page for a single bug.
   task: mozilla-firefox (Ubuntu)
   status: Unconfirmed
   reporter: Foo Bar (name16)
-  priority: Medium
   importance: Medium
   assignee: 
   milestone: 
@@ -35,7 +33,6 @@ Get text page for a single bug.
   task: mozilla-firefox (Debian)
   status: Confirmed
   reporter: Sample Person (name12)
-  priority: High
   importance: Minor
   assignee: 
   milestone: 

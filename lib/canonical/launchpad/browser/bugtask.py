@@ -450,7 +450,6 @@ class BugTaskEditView(GeneralFormView):
             self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
             self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
-            self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.milestone_widget = None
         else:
             # Set up the milestone widget as an input widget only if the

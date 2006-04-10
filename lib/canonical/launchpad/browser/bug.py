@@ -475,11 +475,6 @@ class BugTextView(LaunchpadView):
         text.append('status: %s' % task.status.title)
         text.append('reporter: %s' % self.person_text(task.owner))
 
-        if task.priority:
-            text.append('priority: %s' % task.priority.title)
-        else:
-            text.append('priority: ')
-
         text.append('importance: %s' % task.importance.title)
 
         if task.assignee:
