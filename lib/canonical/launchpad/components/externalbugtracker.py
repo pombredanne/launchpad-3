@@ -81,7 +81,7 @@ class Bugzilla(ExternalSystem):
     implements(IExternalBugtracker)
 
     def __init__(self, baseurl, version=None):
-        if baseurl[-1] == "/":
+        if baseurl.endswith("/"):
             baseurl = baseurl[:-1]
         self.baseurl = baseurl
         if version != None:
