@@ -235,14 +235,14 @@ people.
 When processing an upload we may want to find a file (E.g. if an
 incomplete source is uploaded).
 
-    >>> ubuntu.getFileByName('firefox-0.9.2.tar.gz').url
-    'http://localhost:58000/3/firefox-0.9.2.tar.gz'
-    >>> ubuntu.getFileByName('firefox-0.9.2.tar.gz', source=False).url
-    'http://localhost:58000/3/firefox-0.9.2.tar.gz'
-    >>> ubuntu.getFileByName('firefox-0.9.2.tar.gz', binary=False).url
+    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb').url
+    'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
+    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', source=False).url
+    'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
+    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', binary=False)
     Traceback (most recent call last):
     ...
-    NotFoundError: 'firefox-0.9.2.tar.gz'
+    NotFoundError: 'mozilla-firefox_0.9_i386.deb'
     >>> ubuntu.getFileByName('', source=False, binary=False)
     Traceback (most recent call last):
     ...
