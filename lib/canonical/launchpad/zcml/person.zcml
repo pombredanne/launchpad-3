@@ -386,6 +386,17 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonBranchesView"
+    permission="zope.Public"
+    facet="branches"
+    >
+    <browser:page
+        name="+branches"
+        template="../templates/person-branches.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.BranchTargetView"
     permission="zope.Public"
     facet="branches"
@@ -393,9 +404,6 @@
     <!-- there is trickery here, in the view class, which detects the view
     name and then gives the template a different set of branches to work
     with.-->
-    <browser:page
-        name="+branches"
-        template="../templates/person-branches.pt" />
     <browser:page
         name="+branchlisting"
         template="../templates/branchtarget-branchlisting.pt" />

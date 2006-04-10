@@ -12,8 +12,8 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main"
-     tal:define="branchviewset context/branches;
-                 branchset context/branches">
+     tal:define="branchviewset view/branches;
+                 branchset view/branches">
 
   <h1>Bazaar Branches</h1>
 
@@ -21,7 +21,8 @@
          tal:condition="branchset">
     <thead>
       <tr>
-        <th>Product</th>
+        <th>Role</th>
+        <th class="initial-sort">Product</th>
         <th>Author</th>
         <th>Title</th>
         <th>Name</th>
@@ -30,9 +31,13 @@
     </thead>
     <tbody class="lesser">
       <tr tal:repeat="branch branchviewset">
+        <td tal:define="role python:view.branch_role(branch)">
+          <span class="sortkey" tal:content="role/sortkey">12</span>
+          <span tal:replace="role/title">Role of the person</span>
+        </td>
         <td>
           <span tal:condition="branch/product"
-                tal:content="branch/product/name">
+                tal:replace="branch/product/name">
             Product
           </span>
         </td>
@@ -49,7 +54,7 @@
         <td tal:content="branch/name/fmt:shorten/30">Name</td>
         <td>
           <span tal:content="branch/lifecycle_status/sortkey"
-                style="sortkey">23</span>
+                class="sortkey">23</span>
           <span tal:content="branch/lifecycle_status/title"
                 tal:attributes="
                   class string:branchstatus${branch/lifecycle_status/name}">

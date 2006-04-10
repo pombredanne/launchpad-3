@@ -668,6 +668,7 @@ ALTER TABLE branchrelationship ENABLE TRIGGER ALL;
 ALTER TABLE branchsubscription DISABLE TRIGGER ALL;
 
 INSERT INTO branchsubscription (id, person, branch) VALUES (1, 12, 20);
+INSERT INTO branchsubscription (id, person, branch) VALUES (2, 12, 24);
 
 
 ALTER TABLE branchsubscription ENABLE TRIGGER ALL;

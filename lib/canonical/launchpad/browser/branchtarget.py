@@ -6,21 +6,18 @@ __metaclass__ = type
 
 __all__ = [
     'BranchTargetView',
+    'PersonBranchesView',
     ]
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import IPerson, IProduct
-from canonical.lp.dbschema import BranchLifecycleStatus
+from canonical.launchpad.webapp import LaunchpadView
 
-# XXX This stuff was cargo-culted from ITicketTarget, that needs to be factored
-# out. See bug 4011. -- David Allouche 2005-09-09
+# XXX This stuff was initially cargo-culted from ITicketTarget, some of it
+# could be factored out. See bug 4011. -- David Allouche 2005-09-09
 
 
-class BranchTargetView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+class BranchTargetView(LaunchpadView):
 
     def context_relationship(self):
         """The relationship text used for display.
@@ -96,3 +93,64 @@ class BranchTargetView:
     def branches(self):
         return self.context.branches
 
+
+class PersonBranchesView(LaunchpadView):
+    """View used for the tabular listing of branches related to a person.
+
+    The context must provide IPerson.
+    """
+
+    @cachedproperty
+    def branches(self):
+        """All branches related to this person, sorted for display."""
+        branches = self.context.branches
+        return sorted(branches, key=self._branch_sort_key)
+
+    @staticmethod
+    def _branch_sort_key(branch):
+        """Key for the initial sorting of the branches table."""
+        if branch.product is None:
+            product = None
+        else:
+            product = branch.product.name
+        status = branch.lifecycle_status.sortkey
+        return (product, status, branch.name)
+
+    @cachedproperty
+    def _authored_branch_set(self):
+        """Set of branches authored by the person."""
+        # must be cached because it is used by branch_role
+        return set(self.context.authored_branches)
+
+    @cachedproperty
+    def _registered_branch_set(self):
+        """Set of branches registered but not authored by the person."""
+        # must be cached because it is used by branch_role
+        return set(self.context.registered_branches)
+
+    @cachedproperty
+    def _subscribed_branch_set(self):
+        """Set of branches this person is subscribed to."""
+        # must be cached because it is used by branch_role
+        return set(self.context.subscribed_branches)
+
+    def branch_role(self, branch):
+        """Primary role of this person for this branch.
+
+        This explains why a branch appears on the person's page. The person may
+        be 'Author', 'Registrant' or 'Subscriber'.
+
+        :precondition: the branch must be part of the list provided by
+            PersonBranchesView.branches.
+        :return: dictionnary of two items: 'title' and 'sortkey' describing the
+            role of this person for this branch.
+        """
+        if branch in self._authored_branch_set:
+            return {'title': 'Author', 'sortkey': 10}
+        if branch in self._registered_branch_set:
+            return {'title': 'Registrant', 'sortkey': 20}
+        assert branch in self._subscribed_branch_set, (
+            "Unable determine role of person %r for branch %r" % (
+            self.context.name, branch.unique_name))
+        return {'title': 'Subscriber', 'sortkey': 30}
+        
