@@ -18,12 +18,14 @@ from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Summary, Title 
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 
 from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationDelivery)
+    SpecificationStatus, SpecificationPriority, SpecificationDelivery,
+    SpecificationGoalStatus)
 
 
 class SpecNameField(ContentNameField):
@@ -37,7 +39,23 @@ class SpecNameField(ContentNameField):
     def _getByName(self, name):
         return getUtility(ISpecificationSet).getByName(name)
 
-        
+
+class SpecURLField(TextLine):
+
+    errormessage = _("%s is already registered by another specification.")
+
+    def _validate(self, specurl):
+        TextLine._validate(self, specurl)
+        if (ISpecification.providedBy(self.context) and
+            specurl == getattr(self.context, 'specurl')):
+            # The specurl wasn't changed
+            return
+
+        specification = getUtility(ISpecificationSet).getByURL(specurl)
+        if specification is not None:
+            raise LaunchpadValidationError(self.errormessage % specurl)
+
+
 class ISpecification(IHasOwner):
     """A Specification."""
 
@@ -50,7 +68,7 @@ class ISpecification(IHasOwner):
         title=_('Title'), required=True, description=_(
             "Describe the feature as clearly as possible in up to 70 characters. "
             "This title is displayed in every feature list or report."))
-    specurl = TextLine(
+    specurl = SpecURLField(
         title=_('Specification URL'), required=False,
         description=_(
             "The URL of the specification. This is usually a wiki page."),
@@ -60,8 +78,10 @@ class ISpecification(IHasOwner):
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
     status = Choice(
-        title=_('Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.BRAINDUMP)
+        title=_('Definition Status'), vocabulary='SpecificationStatus',
+        default=SpecificationStatus.BRAINDUMP, description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
         default=SpecificationPriority.PROPOSED, required=True)
@@ -83,15 +103,25 @@ class ISpecification(IHasOwner):
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone',
         description=_(
-            "The milestone in which we would like this feature to be delivered."))
-    productseries = Choice(title=_('Targeted Product Series'), required=False,
+            "The milestone in which we would like this feature to be "
+            "delivered."))
+    productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-            "The release series to which this feature is targeted."))
-    distrorelease = Choice(title=_('Targeted Release'), required=False,
+            "The release series for which this feature is a goal."))
+    distrorelease = Choice(title=_('Release Goal'), required=False,
         vocabulary='FilteredDistroRelease',
         description=_(
-            "The distribution release to which this feature is targeted."))
+            "The distribution release for which this feature is a goal."))
+    goal = Attribute(
+        "The product series or distro release for which this feature "
+        "is a goal.")
+    goalstatus = Choice(
+        title=_('Goal Acceptance'), vocabulary='SpecificationGoalStatus',
+        default=SpecificationGoalStatus.PROPOSED, description=_(
+            "Whether or not the drivers have accepted this feature as "
+            "a goal for the targeted release or series."))
+
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_(
             "Any notes on the status of this spec you would like to make. "
@@ -110,11 +140,11 @@ class ISpecification(IHasOwner):
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    delivery = Choice(title=_("Expectation of Delivery"),
+    delivery = Choice(title=_("Implementation Status"),
         required=True, default=SpecificationDelivery.UNKNOWN,
-        vocabulary='SpecificationDelivery', description=_("An estimate "
-        "of the likelyhood that this feature will be delivered in the "
-        "targeted release or series."))
+        vocabulary='SpecificationDelivery', description=_("The state of "
+        "progress being made on the actual implementation or delivery "
+        "of this feature."))
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
@@ -150,7 +180,8 @@ class ISpecification(IHasOwner):
         'which is still incomplete.')
 
     has_release_goal = Attribute('Is true if this specification has been '
-        'targetted to a specific distro release or product series.')
+        'proposed as a goal for a specific distro release or product '
+        'and the drivers of that release/series have accepted the goal.')
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of
@@ -165,10 +196,13 @@ class ISpecification(IHasOwner):
         specification.
         """
 
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that receive notifications."""
+
     # event-related methods
-    def getDelta(new_spec, user):
+    def getDelta(old_spec, user):
         """Return a dictionary of things that changed between this spec and
-        the new_spec.
+        the old_spec.
 
         This method is primarily used by event subscription code, to
         determine what has changed during an SQLObjectModifiedEvent.
@@ -237,11 +271,11 @@ class ISpecificationSet(Interface):
     def __iter__():
         """Iterate over all specifications."""
 
-    def getByName(name, default=None):
-        """Return the specification with the given name.
+    def getByName(name):
+        """Return the specification with the given name."""
 
-        Return the default value if there is no such specification.
-        """
+    def getByURL(url):
+        """Return the specification with the given url."""
 
     def new(name, title, specurl, summary, priority, status, owner,
         assignee=None, drafter=None, approver=None, product=None,
@@ -258,6 +292,7 @@ class ISpecificationDelta(Interface):
     # fields on the spec itself, we provide just the new changed value
     title = Attribute("The spec title or None.")
     summary = Attribute("The spec summary or None.")
+    whiteboard = Attribute("The spec whiteboard or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
     distrorelease = Attribute("The release to which this is targeted.")
@@ -270,3 +305,6 @@ class ISpecificationDelta(Interface):
     priority = Attribute("Old and new priorities, or None")
     status = Attribute("Old and new statuses, or None")
     target = Attribute("Old and new target, or None")
+    approver = Attribute("Old and new approver, or None")
+    assignee = Attribute("Old and new assignee, or None")
+    drafter = Attribute("Old and new drafter, or None")

@@ -31,7 +31,7 @@ Let's demonstrate
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: .../distros/ubuntu/+source/mozilla-firefox/+bug/11
+  Location: .../distros/ubuntu/+source/mozilla-firefox/+bug/13
   ...
 
 We should have three subscribers now. The bug reporter (also a package
@@ -45,7 +45,7 @@ contact, the Launchpad Admins team.
   >>> login(ANONYMOUS)
 
   >>> bugset = getUtility(IBugSet)
-  >>> sorted([s.person.name for s in bugset.get(11).subscriptions])
+  >>> sorted([s.person.name for s in bugset.get(13).subscriptions])
   [u'admins', u'carlos', u'name16', u'sabdfl']
 
   >>> logout()
@@ -82,7 +82,7 @@ Filing a private bug, only the bug reporter is explicitly Cc'd.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: .../distros/ubuntu/+source/mozilla-firefox/+bug/12
+  Location: .../distros/ubuntu/+source/mozilla-firefox/+bug/14
   ...
 
 Let's login as sabdfl to verify that sabdfl is in fact the only
@@ -91,5 +91,5 @@ bug information but sabdfl or an admin.)
 
   >>> login("mark@hbd.com")
 
-  >>> [s.person.name for s in bugset.get(12).subscriptions]
+  >>> [s.person.name for s in bugset.get(14).subscriptions]
   [u'sabdfl']

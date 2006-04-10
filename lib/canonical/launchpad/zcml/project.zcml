@@ -22,7 +22,8 @@
 
     <browser:menus
         module="canonical.launchpad.browser.project"
-        classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu" />
+        classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu
+                 ProjectSetContextMenu" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -58,6 +59,10 @@
             facet="translations"
             template="../templates/project-rosetta-index.pt"
             lp:url="Rosetta/projects/$Project.name/+index" />
+        <browser:page
+            name="+listing-detailed"
+            template="../templates/project-listing-detailed.pt"
+            />
 
        <!-- Projects portlets -->
        <browser:page
@@ -103,8 +108,6 @@
               lp:url="/project/$project.id/+reassign" />
     </browser:pages>
 
-
-
     <browser:addform
         name="+newbugtracker"
         permission="launchpad.AnyPerson"
@@ -147,7 +150,6 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Edit project details"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"
@@ -277,7 +279,7 @@
         lp:url="/projects/">
         <browser:page
             name="+all" 
-            template="../templates/registry-listall.pt"
+            template="../templates/projects-all.pt"
             lp:url="/projects/+all" />
         <browser:page
             name="+index" 
@@ -307,10 +309,6 @@
         <browser:page name="+request"
             template="../templates/projects-request.pt"
             lp:url="Rosetta/projects/+request" />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/projectset-portlet-details.pt"
-            lp:url="/projects/+portlet-details" />
     </browser:pages>
 
     <securedutility

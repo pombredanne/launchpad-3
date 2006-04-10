@@ -64,17 +64,38 @@ To search the set of IDistroReleases, use IDistroReleaseSet.search:
 
     >>> all_ubuntu_releases = distroreleaseset.search(distribution=ubuntu)
     >>> all_ubuntu_releases.count()
-    3
+    4
 
 DistroRelease.getPublishedReleases:
 
     >>> from canonical.launchpad.database import SourcePackageName, DistroRelease
     >>> warty2 = DistroRelease.get(1)
-    >>> prs = warty2.getPublishedReleases(SourcePackageName.byName('mozilla-firefox'))
+
+Passing a ISourcePackageName as argument:
+
+    >>> prs = warty2.getPublishedReleases(
+    ...       SourcePackageName.byName('mozilla-firefox'))
     >>> print len(prs)
     1
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
     mozilla-firefox
+
+Passing a string name:
+
+    >>> print len(warty2.getPublishedReleases('mozilla-firefox'))
+    1
+
+Including pending publication records in the result:
+
+    >>> print len(warty2.getPublishedReleases('mozilla-firefox',
+    ...           include_pending=True))
+    2
+
+Not found as empty list:
+
+    >>> print len(warty2.getPublishedReleases('nosuchpackage'))
+    0
+
 
 DistroRelease.getBinaryPackagePublishing will return
 BinaryPackagePublishing objects for the DistroRelease:
@@ -83,7 +104,7 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> warty = DistroRelease.get(1)
     >>> bpp = warty.getBinaryPackagePublishing()
     >>> print bpp.count()
-    1
+    3
     >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
     mozilla-firefox
     >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
@@ -98,6 +119,23 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> bpp = warty.getBinaryPackagePublishing(sourcename="nosuchsource")
     >>> print bpp.count()
     0
+
+Package searching
+-----------------
+
+You can search through binary packages publishing in a distribution
+release by using the searchPackages method, which uses magical fti:
+
+    >>> len(warty.searchPackages("pmount"))
+    1
+
+This also works for small or weirdly named packages that don't work
+through fti:
+
+    >>> len(warty.searchPackages("linux-2.6.12"))
+    1
+    >>> len(warty.searchPackages("at"))
+    1
 
 CVE BugTasks on a Distro Release
 --------------------------------
@@ -130,9 +168,30 @@ other things) the uploader for validating incoming uploads.
    >>> for c in hoary.components:
    ...     print c.name
    main
+   restricted
    >>> for s in hoary.sections:
    ...     print s.name
    editors
+
+   >>> from canonical.launchpad.interfaces import (
+   ...    IComponentSet, ISectionSet)
+   >>> univ = getUtility(IComponentSet).ensure('universe')
+   >>> web = getUtility(ISectionSet).ensure('web')
+
+   >>> hoary.addComponent(univ)
+   >>> hoary.addSection(web)
+
+   >>> for c in hoary.components:
+   ...     print c.name
+   main
+   restricted
+   universe
+
+   >>> for s in hoary.sections:
+   ...     print s.name
+   web
+   editors
+
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview
 
@@ -158,11 +217,15 @@ again" type set of assertions.
    >>> humpy = distroreleaseset.new(ubuntu, 'humpy', 'Humpy Hippo',
    ...                              'The Humpy Hippo', 'Fat', 'Yo Momma',
    ...                              '99.2',hoary, hoary.owner)
-   >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily, 
+   >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily,
    ...                            True, humpy.owner)
    >>> humpy.nominatedarchindep = humpy_i386
    >>> humpy.initialiseFromParent()
-   >>> len(humpy.getPublishedReleases(SourcePackageName.byName('pmount')))
+   >>> len(hoary.getPublishedReleases('pmount'))
+   1
+   >>> len(humpy.getPublishedReleases('pmount'))
+   1
+   >>> len(hoary['i386'].getReleasedPackages('pmount'))
    1
    >>> len(humpy_i386.getReleasedPackages('pmount'))
    1
@@ -170,10 +233,12 @@ again" type set of assertions.
 DistroRelease can build meta objects for packages
 -------------------------------------------------
 
+   >>> from zope.interface.verify import verifyObject
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
    ...     IDistroReleaseBinaryPackage,
-   ...     IDistroReleaseSourcePackageRelease)
+   ...     IDistroReleaseSourcePackageRelease,
+   ...     ISourcePackagePublishingHistory)
 
 
    >>> pmount_src_name =  SourcePackageName.byName('pmount')
@@ -199,9 +264,62 @@ DistroRelease can build meta objects for packages
    >>> IDistroReleaseSourcePackageRelease.providedBy(pmount_srcrel)
    True
 
+Check some properties of DRSPR meta class
 
-DistroRelease.updateCompletePackageCache will update the package cache for all
-binary packages names published in this distro release
+Entire publishing history:
 
-    >>> warty.updateCompletePackageCache()
+   >>> pmount_srcrel.publishing_history.count()
+   1
+
+Most recent published history row:
+
+   >>> spph = pmount_srcrel.current_published
+   Traceback (most recent call last):
+   ...
+   NotFoundError: u'Source package pmount not published in hoary'
+
+   >>> netapplet_srcrel =  hoary.getSourcePackage('netapplet').currentrelease
+   >>> spph = netapplet_srcrel.current_published
+   >>> verifyObject(ISourcePackagePublishingHistory, spph)
+   True
+
+   >>> spph.section.name
+   u'web'
+
+Perform `post publication` override:
+
+   >>> new_section = getUtility(ISectionSet)['base']
+
+   >>> netapplet_srcrel.changeOverride(new_section=new_section)
+   >>> pub_hist = netapplet_srcrel.publishing_history
+   >>> pub_hist.count()
+   2
+
+Override information about 'pmount' is pending publication:
+
+   >>> pub_hist[0].status.name, pub_hist[0].section.name
+   ('PENDING', u'base')
+
+Supersede current publication:
+
+   >>> superseded_netapplet = netapplet_srcrel.supersede()
+   >>> netapplet_srcrel.publishing_history.count()
+   2
+
+   XXX cprov 20060322: Misteriously we cannot direct access attributes
+   of a SSPPH objects within the tests, but we do this for SBPPH in
+   distroarchrelease.txt. wth ?
+
+   >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
+   Traceback (most recent call last):
+   ...
+   ForbiddenAttribute: ('status', <SecureSourcePackagePublishingHistory...)
+
+   >>> from zope.security.proxy import removeSecurityProxy
+   >>> naked_hist = removeSecurityProxy(superseded_netapplet)
+
+   >>> naked_hist.status.name, naked_hist.datesuperseded
+   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+
+
 

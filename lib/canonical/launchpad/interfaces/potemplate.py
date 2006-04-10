@@ -3,7 +3,6 @@
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Text, TextLine, Bytes
 
-from canonical.launchpad.interfaces.rawfiledata import ICanAttachRawFileData
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 
@@ -21,7 +20,7 @@ class LanguageNotFound(NotFoundError):
     """Raised when a a language does not exist in the database."""
 
 
-class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
+class IPOTemplate(IRosettaStats):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
     id = Attribute("A unique ID number")
@@ -220,11 +219,6 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         en_GB we will simply return the one with variant=NULL.
         """
 
-    def poFilesToImport():
-        """Return all PO files from this POTemplate that have a rawfile 
-        pending of import into Rosetta.
-        """
-
     def getPOFileByPath(path):
         """Get the PO file of the given path.
 
@@ -295,6 +289,16 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         Returns the newly created message set.
         """
 
+    def getNextToImport():
+        """Return the next entry on the import queue to be imported."""
+
+    def importFromQueue(logger=None):
+        """Execute the import of the next entry on the queue, if needed.
+
+        If a logger argument is given, any problem found with the
+        import will be logged there.
+        """
+
 
 class IPOTemplateSubset(Interface):
     """A subset of POTemplate."""
@@ -353,9 +357,6 @@ class IPOTemplateSet(Interface):
         distrorelease, sourcepackagename):
         """Return a POTemplateSubset based on the origin sourcepackagename.
         """
-
-    def getTemplatesPendingImport():
-        """Return a list of PO templates that have data to be imported."""
 
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distrorelease=None, sourcepackagename=None):

@@ -1,89 +1,74 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-<div metal:fill-slot="main">
-
-  <h1>Products in Launchpad</h1>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Products registered in Launchpad</h1>
+    </metal:heading>
+    <div metal:fill-slot="main">
+      <tal:notsearching condition="not:view/searchrequested">
+        <p>
+          In Launchpad, <dfn>products</dfn> are computer programs, libraries,
+          and documents that are developed as software.
+        </p>
+        <p>
+          There are <span tal:replace="context/count_all">5</span>
+          products registered in Launchpad, of which
+          <span tal:replace="context/count_buggy">5</span> have bugs reported,
+          <span tal:replace="context/count_translatable">5</span> 
+          have translations,
+          <span tal:replace="context/count_bounties">5</span> have bounties,
+          and <span tal:replace="context/count_reviewed">5</span>
+          have been reviewed.
+        </p>
+      </tal:notsearching>
 
   <form method="get">
   
-    <table>
-      <tr>
-        <td>
-          <input name="text" size="35" tal:attributes="value view/text" />
+          <input name="text" tal:attributes="value view/text" />
           <input tal:condition="view/searchrequested"
             type="submit"
             value="Search Again"
             />
           <input tal:condition="not: view/searchrequested"
             type="submit"
-            value="Search"
+            value="Search Products"
             />
-        </td>
-      </tr>
-    </table>
-      
-    <p class="formHelp">
-      Enter any part of the product name, title or
-      description.
-    </p>
 
   </form>
 
   <tal:searching condition="view/searchrequested">
 
-    <table class="data" tal:define="results view/searchresults">
+    <table
+      tal:condition="view/matches"
+      tal:define="results view/searchresults"
+    >
       <thead>
         <tr class="results">
-          <th colspan="0">
+          <td>
             <span tal:replace="view/matches">3</span>
             <span tal:condition="python: view.matches == 1">result</span>
             <span tal:condition="python: view.matches != 1">results</span>
-          </th>
+          </td>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>
-            <dl condition="view/matches" class="products">
-              <tal:block repeat="product results">
-                <dt>
-                  <a tal:attributes="href product/fmt:url"
-                    ><dfn
-                      tal:content="product/title"
-                      >$Product.title</dfn>
-                    (<span
-                      tal:replace="product/name"
-                    >$Product.name
-                  </span>)</a>
-                </dt>
-                <dd tal:content="product/summary">
-                  $Product.summary
-                </dd>
-              </tal:block>
-            </dl>
-            <p tal:condition="not: view/matches">
-              <img src="/@@/alert" /> No products matching
-              &#8220;<span tal:replace="view/text">moz</span>&#8221;
-              were found.
-              You can <a href="+new">register a new product</a>.
-            </p>
-          </td>
+        <tr tal:repeat="product results">
+          <td tal:content="structure product/@@+listing-detailed" />
         </tr>
       </tbody>
     </table>
+        <p tal:condition="not: view/matches">
+          No products matching
+          &#8220;<span tal:replace="view/text">moz</span>&#8221;
+          were found.
+        </p>
 
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
-    
+
     <h2>Most recently registered</h2>
 
     <div tal:repeat="product context/latest"

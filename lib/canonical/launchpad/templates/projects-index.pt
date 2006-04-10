@@ -1,93 +1,79 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <tal:statistics replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-<metal:rightportlets fill-slot="portlets_two">
-  <div class="portlet portletBody portletContent">
-    <ul>
-      <li class="add"><a href="/projects/+new">Register a new project</a></li>
-    </ul>
-  </div>
-</metal:rightportlets>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1>Projects registered in Launchpad</h1>
+    </metal:heading>
 
     <div metal:fill-slot="main">
-
-      <h1>Projects in Launchpad</h1>
-
-      <form method="get">
-        <table>
-          <tr>
-            <td>
-              <input name="text" size="35" tal:attributes="value view/text" />
-                <input
-                  tal:condition="view/searchrequested"
-                  type="submit"
-                  value="Search Again"
-                />
-                <input
-                  tal:condition="not: view/searchrequested"
-                  type="submit"
-                  value="Search"
-                />
-            </td>
-          </tr>
-        </table>
-        <p class="formHelp">
-        Enter any part of the project name, title or
-        description.
+      <tal:notsearching condition="not:view/searchrequested">
+        <p>
+          In Launchpad, <dfn>projects</dfn> are groups of software products
+          that share a development community.
+          Examples include <a href="gnome">Gnome</a>, <a href="kde"><abbr>KDE</abbr></a>,
+          and <a href="mozilla">Mozilla</a>.
+          There are currently
+          <a href="+all"><span tal:replace="context/count_all">5</span>
+          projects</a> registered.
         </p>
+        <p>
+          For individual computer programs, see
+          <a href="/products">products</a>.
+        </p>
+        <p>
+          For groups of people, see
+          <a href="/people">Launchpad teams</a>.
+        </p>
+      </tal:notsearching>
 
-      </form>
+    <form method="get">
+            <input name="text" tal:attributes="value view/text" />
+              <input
+                tal:condition="view/searchrequested"
+                type="submit"
+                value="Search Again"
+              />
+              <input
+                tal:condition="not: view/searchrequested"
+                type="submit"
+                value="Search Projects"
+              />
+    </form>
 
-    <div tal:condition="view/searchrequested">
 
-        <table class="listing" tal:define="results view/searchresults">
-          <thead>
-            <tr class="results">
-              <td colspan="0">
-                <span tal:replace="view/matches">3</span>
-                <span tal:condition="python: view.matches == 1">result</span>
-                <span tal:condition="python: view.matches != 1">results</span>
-              </td>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <dl condition="view/matches" class="projects">
-                  <tal:block repeat="project results">
-                    <dt>
-                      <a tal:attributes="href project/name"
-                        ><dfn
-                          tal:content="project/title"
-                        >$project.title</dfn>
-                      </a>
-                      (<code tal:content="project/name"
-                      >$project.name</code>)
-                    </dt>
-                    <dd tal:content="project/summary">
-                      $project.shortdesc
-                    </dd>
-                  </tal:block>
-                </dl>
-                <p tal:condition="not: view/matches">
-                  <strong>No projects matching
-                  &#8220;<span tal:replace="view/text">moz</span>&#8221;
-                  were found.</strong>
-                  You can <a href="+new">register a new project </a>.
-                </p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
 
-    </div>
+  <tal:searching condition="view/searchrequested">
+
+      <table class="data" tal:define="results view/searchresults">
+        <thead>
+          <tr class="results">
+            <th colspan="0">
+              <span tal:replace="view/matches">3</span>
+              <span tal:condition="python: view.matches == 1">result</span>
+              <span tal:condition="python: view.matches != 1">results</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:condition="view/matches"
+              tal:repeat="product results">
+            <td tal:content="structure product/@@+listing-detailed" />
+          </tr>
+          <tr tal:condition="not: view/matches">
+            <td tal:condition="not: view/matches">
+              <p>No projects matching
+              &#8220;<span tal:replace="view/text">moz</span>&#8221;
+              were found.
+              You can <a href="+new">register a new project</a>.</p>
+           </td>
+          </tr>
+        </tbody>
+      </table>
+
+  </tal:searching>
 
 </div>
 

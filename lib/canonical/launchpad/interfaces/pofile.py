@@ -1,7 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from canonical.launchpad.interfaces.rawfiledata import ICanAttachRawFileData
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
@@ -13,7 +12,7 @@ class ZeroLengthPOExportError(Exception):
     """An exception raised when a PO file export generated an empty file."""
 
 
-class IPOFile(IRosettaStats, ICanAttachRawFileData):
+class IPOFile(IRosettaStats):
     """A PO File."""
 
     id = Attribute("This PO file's id.")
@@ -180,11 +179,13 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         If the included_obsolete argument is set to False, the export does not
         include the obsolete messages."""
 
-    def uncachedExport(included_obsolete=True):
+    def uncachedExport(included_obsolete=True, export_utf8=False):
         """Export this PO file as string without using any cache.
 
-        If included_obsolete is False, the exported PO file does not have
-        obsolete entries.
+        :included_obsolete: Whether the exported PO file does not have
+            obsolete entries.
+        :export_utf8: Whether the exported PO file should be exported as
+            UTF-8.
         """
 
     def invalidateCache():
@@ -231,6 +232,16 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         'PORevisionDate' than IPOFile.header.
         """
 
+    def getNextToImport():
+        """Return the next entry on the import queue to be imported."""
+
+    def importFromQueue(logger=None):
+        """Execute the import of the next entry on the queue, if needed.
+
+        If a logger argument is given, any problem found with the
+        import will be logged there.
+        """
+
 
 class IPOFileSet(Interface):
     """A set of POFile."""
@@ -243,10 +254,10 @@ class IPOFileSet(Interface):
 
     def getPOFileByPathAndOrigin(self, path, productseries=None,
         distrorelease=None, sourcepackagename=None):
-        """Return an IPOFile that is stored at 'path' in source code and
-           came from the given arguments.
+        """Return an IPOFile that is stored at 'path' in source code.
+
+        We filter the IPOFiles to check only the ones related to the given
+        arguments 'productseries', 'distrorelease' and 'sourcepackagename'
 
         Return None if there is not such IPOFile.
         """
-
-

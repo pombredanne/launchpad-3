@@ -12,7 +12,8 @@ from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IPOTMsgSet, ILanguageSet, NotFoundError, NameNotAvailable)
+    IPOTMsgSet, ILanguageSet, NotFoundError, NameNotAvailable, BrokenTextError
+    )
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
@@ -81,18 +82,15 @@ class POTMsgSet(SQLBase):
                     for flag in self.flagscomment.replace(' ', '').split(',')
                     if flag != '']
 
-    def messageIDs(self):
+    def getPOMsgIDs(self):
         """See IPOTMsgSet."""
-        results = POMsgID.select('''
+        return POMsgID.select('''
             POMsgIDSighting.potmsgset = %d AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
             POMsgIDSighting.inlastrevision = TRUE
             ''' % self.id,
             clauseTables=['POMsgIDSighting'],
             orderBy='POMsgIDSighting.pluralform')
-
-        for pomsgid in results:
-            yield pomsgid
 
     def getPOMsgIDSighting(self, pluralForm):
         """See IPOTMsgSet."""
@@ -148,7 +146,7 @@ class POTMsgSet(SQLBase):
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
-        if len(list(self.messageIDs())) == 1:
+        if len(list(self.getPOMsgIDs())) == 1:
             pluralforms = 1
 
         if pluralforms == None:
@@ -200,24 +198,26 @@ class POTMsgSet(SQLBase):
             existing.set(datelastseen=UTC_NOW, inlastrevision=True)
             return existing
 
-    def apply_sanity_fixes(self, text):
+    def applySanityFixes(self, text):
         """See IPOTMsgSet."""
 
         # Fix the visual point that users copy & paste from the web interface.
-        new_text = self.convert_dot_to_space(text)
-        # And now set the same whitespaces at the start/end of the string.
-        new_text = self.normalize_whitespaces(new_text)
+        new_text = self.convertDotToSpace(text)
+        # Now, fix the newline chars.
+        new_text = self.normalizeNewLines(new_text)
+        # And finally, set the same whitespaces at the start/end of the string.
+        new_text = self.normalizeWhitespaces(new_text)
 
         return new_text
 
-    def convert_dot_to_space(self, text):
+    def convertDotToSpace(self, text):
         """See IPOTMsgSet."""
         if u'\u2022' in self.primemsgid_.msgid or u'\u2022' not in text:
             return text
 
         return text.replace(u'\u2022', ' ')
 
-    def normalize_whitespaces(self, text):
+    def normalizeWhitespaces(self, text):
         """See IPOTMsgSet."""
         if text is None:
             return text
@@ -245,3 +245,56 @@ class POTMsgSet(SQLBase):
             new_text = text
 
         return new_text
+
+    def normalizeNewLines(self, text):
+        """See IPOTMsgSet."""
+        msgid = self.primemsgid_.msgid
+        # There are three different kinds of newlines:
+        windows_style = '\r\n'
+        mac_style = '\r'
+        unix_style = '\n'
+        # We need the stripped variables because a 'windows' style will be at
+        # the same time a 'mac' and 'unix' style.
+        stripped_text = text.replace(windows_style, '')
+        stripped_msgid = msgid.replace(windows_style, '')
+
+        # Get the style that uses the msgid.
+        msgid_style = None
+        if windows_style in msgid:
+            msgid_style = windows_style
+
+        if mac_style in stripped_msgid:
+            if msgid_style is not None:
+                raise BrokenTextError(
+                    "msgid (%r) mixes different newline markers" % msgid)
+            msgid_style = mac_style
+
+        if unix_style in stripped_msgid:
+            if msgid_style is not None:
+                raise BrokenTextError(
+                    "msgid (%r) mixes different newline markers" % msgid)
+            msgid_style = unix_style
+
+        # Get the style that uses the given text.
+        text_style = None
+        if windows_style in text:
+            text_style = windows_style
+
+        if mac_style in stripped_text:
+            if text_style is not None:
+                raise BrokenTextError(
+                    "text (%r) mixes different newline markers" % text)
+            text_style = mac_style
+
+        if unix_style in stripped_text:
+            if text_style is not None:
+                raise BrokenTextError(
+                    "text (%r) mixes different newline markers" % text)
+            text_style = unix_style
+
+        if msgid_style is None or text_style is None:
+            # We don't need to do anything, the text is not changed.
+            return text
+
+        # Fix the newline chars.
+        return text.replace(text_style, msgid_style)

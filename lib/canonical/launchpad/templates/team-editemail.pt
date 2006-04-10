@@ -23,10 +23,10 @@
       will be used for notifications sent to this team.</p>
 
       <p tal:condition="view/errormessage" tal:content="view/errormessage"
-           class="portalMessage" />
+           class="error message" />
 
       <p tal:condition="view/feedback" tal:content="view/feedback"
-           class="portalMessage" />
+           class="informational message" />
 
       <table>
         <tr>
@@ -43,10 +43,10 @@
       address.</p>
 
       <p tal:condition="view/errormessage" tal:content="view/errormessage"
-           class="portalMessage" />
+           class="error message" />
 
       <p tal:condition="view/feedback" tal:content="view/feedback"
-           class="portalMessage" />
+           class="error message" />
 
       <table>
         <tr>

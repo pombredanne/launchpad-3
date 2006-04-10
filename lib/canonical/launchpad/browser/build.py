@@ -12,18 +12,14 @@ __all__ = [
     'BuildRecordsView',
     ]
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-
 from canonical.lp.dbschema import BuildStatus
 
-from canonical.launchpad.interfaces import IHasBuildRecords
-
-from canonical.launchpad.interfaces import IBuild
+from canonical.launchpad.interfaces import IHasBuildRecords, IBuild
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough,
-    ApplicationMenu, LaunchpadView, enabled_with_permission)
+    StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
+    LaunchpadView, enabled_with_permission)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class BuildNavigation(GetitemNavigation):
@@ -40,7 +36,7 @@ class BuildOverviewMenu(ApplicationMenu):
     """Overview menu for build records """
     usedfor = IBuild
     facet = 'overview'
-    links = ['reset']
+    links = ['reset', 'rescore']
 
     @enabled_with_permission('launchpad.Admin')
     def reset(self):
@@ -48,6 +44,14 @@ class BuildOverviewMenu(ApplicationMenu):
         text = 'Reset Build'
         return Link('+reset', text, icon='edit',
                     enabled=self.context.can_be_reset)
+
+    @enabled_with_permission('launchpad.Admin')
+    def rescore(self):
+        """Only enabled for build records that are not resetable."""
+        text = 'Rescore Build'
+        enabled = not self.context.can_be_reset
+        return Link('+rescore', text, icon='edit',
+                    enabled=enabled)
 
 
 class BuildView(LaunchpadView):
@@ -69,7 +73,27 @@ class BuildView(LaunchpadView):
         # invoke context method to reset the build record
         self.context.reset()
         return '<p>Build Record reset.</p>'
-        
+
+    def rescore_build(self):
+        """Check user confirmation and perform the build record rescore."""
+        # dismiss if builder can't be reset and return a user warn.
+        if self.context.can_be_reset:
+            return '<p>Build Record is already processed.</p>'
+
+        if not self.context.buildqueue_record:
+            self.context.createBuildQueueEntry()
+
+        # retrieve user score
+        self.score = self.request.form.get('SCORE', '')
+        action = self.request.form.get('RESCORE', '')
+
+        if not action:
+            return None
+
+        # invoke context method to rescore the build record
+        self.context.buildqueue_record.manualScore(int(self.score))
+        return '<p>Build Record rescored to %s.</p>' % self.score
+
 
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
@@ -89,6 +113,10 @@ class BuildRecordsView(LaunchpadView):
         """
         # recover selected build state
         self.state = self.request.get('build_state', '')
+        self.text = self.request.get('build_text', '')
+
+        if not self.text:
+            self.text = None
 
         # map state text tag back to dbschema
         state_map = {
@@ -98,23 +126,23 @@ class BuildRecordsView(LaunchpadView):
             'failed': BuildStatus.FAILEDTOBUILD,
             'depwait': BuildStatus.MANUALDEPWAIT,
             'chrootwait': BuildStatus.CHROOTWAIT,
+            'superseded': BuildStatus.SUPERSEDED,
             }
 
         # request context build records according the selected state
-        builds = self.context.getBuildRecords(state_map[self.state])
-
-        # recover batch page
-        start = int(self.request.get('batch_start', 0))
-
-        # setup the batched list to present
-        self.batch = Batch(builds, start)
-        self.batchnav = BatchNavigator(self.batch, self.request)
+        builds = self.context.getBuildRecords(state_map[self.state],
+                                              name=self.text)
+        self.batchnav = BatchNavigator(builds, self.request)
 
 
     def showBuilderInfo(self):
-        """Control the presentation o builder information.
+        """Control the presentation of builder information.
 
         It allows the callsite to control if they want a builder column
         in its result table or not. It's only ommited in builder-index page.
         """
+        return True
+
+    def searchName(self):
+        """Control the presentation of search box."""
         return True

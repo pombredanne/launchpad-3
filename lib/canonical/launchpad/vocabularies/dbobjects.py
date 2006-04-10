@@ -15,12 +15,15 @@ __all__ = [
     'NamedSQLObjectHugeVocabulary',
     'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
+    'ProductBranchVocabulary',
     'BountyVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
+    'ComponentVocabulary',
     'CountryNameVocabulary',
     'DistributionVocabulary',
+    'DistributionUsingMaloneVocabulary',
     'DistroReleaseVocabulary',
     'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
@@ -30,6 +33,7 @@ __all__ = [
     'MilestoneVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
+    'PersonActiveMembershipVocabulary',
     'POTemplateNameVocabulary',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
@@ -56,19 +60,21 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import AND, OR, CONTAINSSTRING
 
+from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
-    Distribution, DistroRelease, Person, SourcePackageRelease,
+    Distribution, DistroRelease, Person, SourcePackageRelease, Branch,
     SourcePackageName, BugWatch, Sprint, DistroArchRelease, KarmaCategory,
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
-    BinaryAndSourcePackageName)
+    BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ITeam, IPersonSet, IEmailAddressSet)
+    IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
+    IMilestoneSet, IPerson, IProduct, IProject)
 
-class IHugeVocabulary(IVocabulary):
+class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
 
     Items in an IHugeVocabulary should have human readable tokens or the
@@ -140,8 +146,8 @@ class SQLObjectVocabularyBase:
         return None
 
     def getTerm(self, value):
-        # Short circuit. There is probably a design problem here since we
-        # sometimes get the id and sometimes an SQLBase instance.
+        # Short circuit. There is probably a design problem here since
+        # we sometimes get the id and sometimes an SQLBase instance.
         if zisinstance(value, SQLBase):
             return self.toTerm(value)
 
@@ -256,6 +262,15 @@ class BasePersonVocabulary:
             return self.toTerm(person)
 
 
+class ComponentVocabulary(SQLObjectVocabularyBase):
+
+    _table = Component
+    _orderBy = 'name'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+
 # Country.name may have non-ASCII characters, so we can't use
 # NamedSQLObjectVocabulary here.
 class CountryNameVocabulary(SQLObjectVocabularyBase):
@@ -326,6 +341,40 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         return self._table.select(
             "BinaryPackageName.name LIKE '%%' || %s || '%%'"
             % quote_like(query))
+
+
+class ProductBranchVocabulary(SQLObjectVocabularyBase):
+    """The set of branches associated with a product.
+
+    Perhaps this should be renamed to BranchVocabulary.
+    """
+
+    implements(IHugeVocabulary)
+
+    _table = Branch
+    _orderBy = 'name'
+    displayname = 'Select a Branch'
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+    def search(self, query):
+        """Return terms where query is a subtring of the name or URL."""
+        if not query:
+            return self.emptySelectResults()
+
+        quoted_query = quote_like(query)
+
+        sql_query = "("
+        if IProduct.providedBy(self.context):
+            sql_query += "(Branch.product = %d) AND " % self.context.id
+        sql_query += ((
+            "((Branch.name ILIKE '%%' || %s || '%%') OR "
+            "  (Branch.url ILIKE '%%' || %s || '%%'))") % (
+                quoted_query, quoted_query))
+        sql_query += ")"
+
+        return self._table.select(sql_query, orderBy=self._orderBy)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
@@ -598,6 +647,47 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
             person.id != %d""" % (context.id, context.id)
 
 
+class PersonActiveMembershipVocabulary:
+    """All the teams the person is an active member of."""
+
+    implements(IVocabulary, IVocabularyTokenized)
+
+    def __init__(self, context):
+        assert IPerson.providedBy(context)
+        self.context = context
+
+    def __len__(self):
+        return self.context.myactivememberships.count()
+
+    def __iter__(self):
+        return iter(
+            [self.getTerm(membership.team) 
+             for membership in self.context.myactivememberships])
+
+    def getTerm(self, team):
+        if team not in self:
+            raise LookupError(team)
+        return SimpleTerm(team, team.name, team.displayname)
+
+    def __contains__(self, obj):
+        if not ITeam.providedBy(obj):
+            return False
+        member_teams = [
+            membership.team for membership in self.context.myactivememberships
+            ]
+        return obj in member_teams
+
+    def getQuery(self):
+        return None
+
+    def getTermByToken(self, token):
+        for membership in self.context.myactivememberships:
+            if membership.team.name == token:
+                return self.getTerm(membership.team)
+        else:
+            raise LookupError(token)
+
+
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -781,13 +871,18 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
 
 class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
-    _orderBy = 'name'
+    _orderBy = None
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
+        return SimpleTerm(obj, obj.id, obj.displayname)
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
+        target = None
+        project = launchbag.project
+        if project is not None:
+            target = project
+        
         product = launchbag.product
         if product is not None:
             target = product
@@ -796,9 +891,29 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         if distribution is not None:
             target = distribution
 
+        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is evil, but
+        # we need to sort the milestones by a non-database value, for the user
+        # to find the milestone they're looking for (particularly when showing
+        # *all* milestones on the person pages.)
+        #
+        # This fixes an urgent bug though, so I think this problem should be
+        # revisited after we've unblocked users.
         if target is not None:
-            for ms in target.milestones:
-                yield self.toTerm(ms)
+            if IProject.providedBy(target):
+                milestones = shortlist((milestone
+                                        for product in target.products
+                                        for milestone in product.milestones),
+                                       longest_expected=40)
+            else:
+                milestones = shortlist(target.milestones, longest_expected=40)
+        else:
+            # We can't use context to reasonably filter the milestones, so let's
+            # just grab all of them.
+            milestones = shortlist(
+                getUtility(IMilestoneSet), longest_expected=40)
+
+        for ms in sorted(milestones, key=lambda m: m.displayname):
+            yield self.toTerm(ms)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
@@ -936,6 +1051,52 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
         return self._table.select("name LIKE %s" % like_query, **kw)
 
 
+class DistributionUsingMaloneVocabulary:
+    """All the distributions that uses Malone officially."""
+
+    implements(IVocabulary, IVocabularyTokenized)
+
+    _orderBy = 'displayname'
+
+    def __init__(self, context=None):
+        self.context = context
+
+    def getTermByToken(self, token):
+        obj = Distribution.selectOne(
+            "official_malone is True AND name=%s" % sqlvalues(token))
+        if obj is None:
+            raise LookupError(token)
+        else:
+            return self.getTerm(obj)
+
+    def __iter__(self):
+        """Return an iterator which provides the terms from the vocabulary."""
+        distributions_using_malone = Distribution.selectBy(
+            official_malone=True, orderBy=self._orderBy)
+        for distribution in distributions_using_malone:
+            yield self.getTerm(distribution)
+
+    def __len__(self):
+        return Distribution.selectBy(official_malone=True).count()
+
+    def __contains__(self, obj):
+        return IDistribution.providedBy(obj) and obj.official_malone
+
+    def getQuery(self):
+        return None
+
+    def getTerm(self, obj):
+        if obj not in self:
+            raise LookupError(obj)
+        return SimpleTerm(obj, obj.name, obj.displayname)
+
+    def getTermByToken(self, token):
+        found_dist = Distribution.selectOneBy(name=token, official_malone=True)
+        if found_dist is None:
+            raise LookupError(token)
+        return self.getTerm(found_dist)
+
+
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
 
     _table = DistroRelease
@@ -953,7 +1114,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
         token = '%s/%s' % (obj.distribution.name, obj.name)
-        return SimpleTerm(obj.id, token, obj.title)
+        return SimpleTerm(obj, token, obj.title)
 
     def getTermByToken(self, token):
         try:

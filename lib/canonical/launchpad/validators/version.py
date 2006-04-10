@@ -2,20 +2,6 @@
 
 __metaclass__ = type
 
-import warnings
-
-def valid_version(name):
-    """Deprecated.
-    
-    This method will be replaced with one that accepts two parameters:
-    the version, and the type of version to validate against (because
-    Debian version numbers are different to Fedora version numbers)
-    """
-    warnings.warn(
-            'Use valid_debian_version instead of valid_version',
-            DeprecationWarning, stacklevel=2
-            )
-    return valid_debian_version(name)
 
 def valid_debian_version(version):
     """

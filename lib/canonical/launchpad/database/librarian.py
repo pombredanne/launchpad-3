@@ -23,6 +23,7 @@ class LibraryFileContent(SQLBase):
     datemirrored = UtcDateTimeCol(default=None)
     filesize = IntCol(notNull=True)
     sha1 = StringCol(notNull=True)
+    md5 = StringCol()
     deleted = BoolCol(notNull=True, default=False)
 
 
@@ -87,10 +88,10 @@ class LibraryFileAliasSet(object):
 
     implements(ILibraryFileAliasSet)
 
-    def create(self, name, size, file, contentType, expires=None):
+    def create(self, name, size, file, contentType, expires=None, debugID=None):
         """See ILibraryFileAliasSet.create"""
         client = getUtility(ILibrarianClient)
-        fid = client.addFile(name, size, file, contentType, expires)
+        fid = client.addFile(name, size, file, contentType, expires, debugID)
         return LibraryFileAlias.get(fid)
 
     def __getitem__(self, key):

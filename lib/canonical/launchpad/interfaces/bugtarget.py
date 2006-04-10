@@ -30,7 +30,7 @@ class IBugTarget(Interface):
         except IProduct.
         """
 
-    def createBug(owner, title, comment, private=False):
+    def createBug(owner, title, comment, security_related=False, private=False):
         """Create a new bug on this target.
 
         :title: The title of the bug, as a string.
@@ -40,7 +40,9 @@ class IBugTarget(Interface):
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
     critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
+    unconfirmed_bugtasks = Attribute("A list of Unconfirmed BugTasks for this target.")
     unassigned_bugtasks = Attribute("A list of unassigned BugTasks for this target.")
+    all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
 
 
 class BugDistroReleaseTargetDetails:

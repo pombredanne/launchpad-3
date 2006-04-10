@@ -1,106 +1,51 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1 tal:content="string:${context/displayname}'s bug reports by package">
+        Foo Bar's bug reports by package
+      </h1>
+    </metal:heading>
 
-<body>
-
-  <metal:block fill-slot="head_epilogue">
-    <!-- CSS rules local to this page -->
-    <style>
-      .results th {
-        color: #828282;
-        border: 1px solid #cfcfcf;
-        background-color: #E0E0E0;
-        text-align: left;
-      }
-
-      .results td {
-        border: 1px solid #cfcfcf;
-      }
-
-      .odd {
-        background-color: #ededed;
-      }
-
-      .even {
-        background-color: #ffffff;
-      }
-
-      #portal-column-content {
-        margin-left: 0;
-        width: 74%;
-      }
-    </style>
-  </metal:block>
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:content="structure context/@@+portlet-otherpackages" />
+  </metal:leftportlets>
 
   <div metal:fill-slot="main">
-    <div id="portal-column-content">
-      <h2 class="lpcontext"
-          tal:content="string:${context/displayname}'s package bug reports">
-        Sample Person package bug reports
-      </h2>
       <strong>
         <small tal:content="view/current_package/displayname">
           mozilla-firefox (Ubuntu)
         </small>
       </strong>
-      <div tal:define="batch_navigator view/search;
-                       prev_page_url batch_navigator/prevBatchURL;
-                       next_page_url batch_navigator/nextBatchURL;
-                       total batch_navigator/batch/total;
-                       start_number batch_navigator/batch/startNumber;
-                       end_number batch_navigator/batch/endNumber">
+      <div tal:define="batch_navigator view/search">
         <form method="GET" name="search" action="">
           <tal:widget content="structure view/distribution_widget/hidden" />
           <tal:widget content="structure view/sourcepackagename_widget/hidden" />
-          <input type="text" name="field.searchtext" size="40"
+          <input type="text" name="field.searchtext" size="20"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
-          <span style="color: #A8A8A8"><small>(Advanced search coming soon)</small></span>
+          <a href="#"
+             tal:attributes="href view/getBugContactPackageAdvancedSearchURL">
+            <small>Advanced</small>
+          </a>
+          <div style="margin-top: 5px">
+            <small>
+              Sort by:
+              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+            </small>
+          </div>
         </form>
         <script>
           <!--
               document.forms["search"].elements['field.searchtext'].focus();
             -->
         </script>
-        <br />
-        <div>
-          <small tal:content="structure batch_navigator/@@+navigation-links" />
-        </div>
-        <table class="results">
-          <tr>
-            <th width="8%">ID</th>
-            <th width="60%">Summary</th>
-            <th widtrh="16%">Importance</th>
-            <th width="16%">Status</th>
-          </tr>
-          <tr tal:repeat="bugtask batch_navigator/batch"
-              tal:attributes="class python:(repeat['bugtask'].odd() and 'odd') or 'even'">
-            <td tal:content="bugtask/bug/id">42</td>
-            <td>
-              <a href="#"
-                 tal:content="bugtask/bug/title"
-                 tal:attributes="href bugtask/fmt:url">
-                drop-down list in search bar disappears when using blah blah blah
-              </a>
-            </td>
-            <td tal:content="bugtask/severity/title">Critical</td>
-            <td tal:content="bugtask/status/title">Confirmed</td>
-          </tr>
-        </table>
-        <div style="margin-bottom: 5px">
-          <small tal:content="structure batch_navigator/@@+navigation-links" />
-        </div>
-      </div>
-    </div>
-    <div id="portal-column-two">
-      <metal:macro use-macro="context/@@main_template/action-menu" />
-      <div tal:content="structure context/@@+portlet-otherpackages" />
+        <tal:buglisting content="structure batch_navigator/@@+table-view" />
     </div>
     <div class="visualClear">&nbsp;</div>
   </div>
 </body>
 </html>
-</tal:layout>

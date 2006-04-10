@@ -11,11 +11,11 @@
 
     <tal:thing content="view/processForm" />
 
-    <tal:block condition="view/errorMessage">
-        <p class="portalMessage" tal:content="view/errorMessage">
-        Blah blah.
-        </p>
-    </tal:block>
+    <p
+      tal:condition="view/errorMessage"
+      tal:content="view/errorMessage"
+      class="error message"
+    >Blah blah.</p>
 
     <tal:block condition="view/formProcessed">
         <p>

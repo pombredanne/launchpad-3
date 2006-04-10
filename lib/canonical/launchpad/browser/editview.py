@@ -27,10 +27,10 @@ from zope.interface import providedBy
 
 from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.event.sqlobjectevent import (
-        SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent
-        )
+        SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent)
+from canonical.launchpad.webapp.generalform import NoRenderingOnRedirect
 
-class SQLObjectEditView(EditView):
+class SQLObjectEditView(EditView, NoRenderingOnRedirect):
     """An editview that publishes an SQLObjectModifiedEvent, that provides
     a copy of the SQLObject before and after the object was modified with
     an edit form, so that listeners can figure out *what* changed."""
@@ -47,11 +47,6 @@ class SQLObjectEditView(EditView):
         where errors is a list of LaunchpadValidationError objects.
         """
         pass
-
-    def _abortAndSetStatus(self):
-        """Abort the current transaction and set self.update_status."""
-        self.update_status = _("An error occurred.")
-        transaction.abort()
 
     def update(self):
         # This method's code is mostly copy-and-pasted from
@@ -77,14 +72,14 @@ class SQLObjectEditView(EditView):
                 new_values = getWidgetsData(self, self.schema, self.fieldNames)
             except WidgetsError, errors:
                 self.errors = errors
-                self._abortAndSetStatus()
+                transaction.abort()
                 return self.update_status
 
             try:
                 self.validate(new_values)
             except WidgetsError, errors:
                 self.top_of_page_errors = errors
-                self._abortAndSetStatus()
+                transaction.abort()
                 return self.update_status
 
             # This is a really important event for handling bug
@@ -111,7 +106,7 @@ class SQLObjectEditView(EditView):
                     self, self.schema, target=content, names=self.fieldNames)
             except WidgetsError, errors:
                 self.errors = errors
-                self._abortAndSetStatus()
+                transaction.abort()
                 return self.update_status
 
             # We should not generate events when an adapter is used.
@@ -134,3 +129,10 @@ class SQLObjectEditView(EditView):
 
             return self.update_status
 
+    def __call__(self):
+        #XXX: SQLObjectEditView doesn't define __call__(), but somehow
+        #     NoRenderingOnRedirect.__call__() won't be called unless we
+        #     define this method and call it explicitly. It's probably
+        #     due to some ZCML magic which should be removed.
+        #     -- Bjorn Tillenius, 2006-02-22
+        return NoRenderingOnRedirect.__call__(self)

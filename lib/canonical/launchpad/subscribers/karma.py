@@ -35,7 +35,6 @@ def bug_modified(bug, event):
     assert bug_delta is not None
 
     attrs_actionnames = {'title': 'bugtitlechanged',
-                         'summary': 'bugsummarychanged',
                          'description': 'bugdescriptionchanged',
                          'duplicateof': 'bugmarkedasduplicate'}
 
@@ -81,6 +80,30 @@ def bugtask_modified(bugtask, event):
     if task_delta.priority is not None:
         event.user.assignKarma('bugtaskprioritychanged')
 
+def translation_import_queue_entry_modified(entry, event):
+    """Check changes made to <entry> and assign karma to user if needed."""
+    user = event.user
+    old = event.object_before_modification
+    new = event.object
+
+    if (old.status != new.status and
+        new.status == RosettaImportStatus.IMPORTED and
+        new.is_published):
+        if new.path.endswith('.po'):
+            # A new .po file from upstream has been imported. The karma goes
+            # to the one that attached the file.
+            new.importer.assignKarma('translationimportupstream')
+        elif new.path.endswith('.pot'):
+            # A new .pot file has accepted to be imported. The karma goes to
+            # the one that attached the file.
+            new.importer.assignKarma('translationtemplateimport')
+        else:
+            # The imported file is for a new file format that we don't know
+            # about.
+            raise AssertionError(
+                'When adding a new file format you need to update the karma'
+                ' code too.')
+
 def potemplate_modified(template, event):
     """Check changes made to <template> and assign karma to user if needed."""
     user = event.user
@@ -89,25 +112,6 @@ def potemplate_modified(template, event):
 
     if old.description != new.description:
         user.assignKarma('translationtemplatedescriptionchanged')
-
-    if (old.rawimportstatus != new.rawimportstatus and
-        new.rawimportstatus == RosettaImportStatus.IMPORTED):
-        # A new .pot file has been imported. The karma goes to the one that
-        # attached the file.
-        new.rawimporter.assignKarma('translationtemplateimport')
-
-def pofile_modified(pofile, event):
-    """Check changes made to <pofile> and assign karma to user if needed."""
-    user = event.user
-    old = event.object_before_modification
-    new = event.object
-
-    if (old.rawimportstatus != new.rawimportstatus and
-        new.rawimportstatus == RosettaImportStatus.IMPORTED and
-        new.rawfilepublished):
-        # A new .po file from upstream has been imported. The karma goes to
-        # the one that attached the file.
-        new.rawimporter.assignKarma('translationimportupstream')
 
 def posubmission_created(submission, event):
     """Assign karma to the user which created <submission> if it comes from

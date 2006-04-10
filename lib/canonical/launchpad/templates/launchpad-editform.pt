@@ -1,9 +1,8 @@
-<tal:tag condition="view/update"/>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+      i18n:domain="launchpad"
+>
   <body>
 
   <div metal:fill-slot="main">
@@ -17,26 +16,43 @@
 
     <div metal:define-macro="editform">
 
+      <h1
+        tal:condition="view/label"
+        tal:content="view/label"
+      >Edit something</h1>
+
       <form action="." tal:attributes="action request/URL" method="post"
             enctype="multipart/form-data">
 
         <div metal:define-macro="formbody">
 
-          <h1 tal:condition="view/label"
-              tal:content="view/label"
-              metal:define-slot="heading"
-              >Edit something</h1>
-
-          <p class="portalMessage"
+          <p class="informational message"
              tal:define="status view/update"
              tal:condition="status"
              tal:content="status" />
 
-          <div class="portalError"
+          <tal:errors
+            define="errors view/errors|nothing;
+              num_errors view/errors/count:len"
+            condition="errors"
+          >
+            <p tal:condition="python: num_errors == 1" class="error message">
+              There is a problem with the information you entered.
+              Please fix it and try again.
+            </p>
+            <p tal:condition="python: num_errors > 1" class="error message">
+              There are
+              <tal:errors replace="num_errors">6</tal:errors>
+              problems with the information you entered.
+              Please fix them and try again.
+            </p>
+          </tal:errors>
+
+          <p class="error message"
             tal:repeat="top_of_page_error view/top_of_page_errors|nothing"
             tal:content="structure top_of_page_error">
             Schema validation errors.
-          </div>
+          </p>
 
           <div metal:define-slot="extra_info"
             class="documentDescription"

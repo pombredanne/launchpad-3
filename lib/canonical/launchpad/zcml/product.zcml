@@ -30,8 +30,7 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductSupportMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu ProductCodeMenu
-            ProductSetContextMenu
+            ProductTranslationsMenu ProductBugsMenu ProductSetContextMenu
             "
             />
 
@@ -130,7 +129,7 @@
         permission="zope.Public">
         <browser:page
             name="+branches"
-            facet="code"
+            facet="overview"
             template="../templates/branchtarget-branches.pt" />
     </browser:pages>
 
@@ -207,16 +206,15 @@
     </browser:editform>
 
     <browser:editform
-        name="+editbugcontact"
+        name="+bugcontact"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
-        facet="overview"
+        facet="bugs"
         class="canonical.launchpad.browser.ProductBugContactEditView"
-        label="Edit Product Bug Contact"
         fields="bugcontact"
         permission="launchpad.Edit"
         template="../templates/product-bugcontact.pt"
-        lp:url="/products/$Product.name/+editbugcontact" />
+        lp:url="/products/$Product.name/+bugcontact" />
 
     <browser:editform
         name="+review"
@@ -258,18 +256,18 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        fields="title comment private"
+        fields="title comment private security_related"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
         arguments=""
-        keyword_arguments="title comment private"
+        keyword_arguments="title comment private security_related"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-add.pt"
+        template="../templates/bugtarget-filebug.pt"
         lp:url="/products/$Product.name/+filebug">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="30"
+           displayWidth="50"
            extra="tabindex=1" />
         <browser:widget
            field="comment"
@@ -277,9 +275,13 @@
            extra="tabindex=2"
            width="62" />
         <browser:widget
-           field="private"
+           field="security_related"
            class="zope.app.form.browser.CheckBoxWidget"
            extra="tabindex=3" />
+        <browser:widget
+           field="private"
+           class="zope.app.form.browser.CheckBoxWidget"
+           extra="tabindex=4" />
     </browser:addform>
 
     <browser:addform
@@ -288,7 +290,6 @@
         schema="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.milestone.MilestoneAddView"
         facet="overview"
-        label="Add a milestone"
         fields="name dateexpected"
         keyword_arguments="name dateexpected"
         permission="launchpad.Edit"
@@ -357,15 +358,15 @@
         name="+addbranch"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBranch"
-        fields="name owner author product title url home_page lifecycle_status summary"
+        fields="product name owner lifecycle_status url title summary home_page author"
         class="canonical.launchpad.browser.BranchAddView"
-        facet="code"
-        keyword_arguments="name owner author product title url home_page lifecycle_status summary"
+        facet="overview"
+        keyword_arguments="product name owner lifecycle_status url title summary home_page author"
         permission="launchpad.AnyPerson"
         template="../templates/product-branch-add.pt">
         <browser:widget
             field="url"
-            class="zope.app.form.browser.TextWidget"
+            class="canonical.launchpad.browser.BranchUrlWidget"
             displayWidth="30" />
         <browser:widget
             field="home_page"
@@ -422,10 +423,7 @@
             template="../templates/products-index.pt" />
         <browser:page
             name="+all"
-            template="../templates/registry-listall.pt" />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/productset-portlet-details.pt" />
+            template="../templates/products-all.pt" />
     </browser:pages>
 
     <browser:pages

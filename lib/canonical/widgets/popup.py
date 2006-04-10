@@ -5,8 +5,7 @@ from zope.app.form.browser.itemswidgets import ItemsWidgetBase, SingleDataHelper
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.schema.vocabulary import IVocabularyFactory
 
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.vocabularies import IHugeVocabulary
 
 
@@ -43,23 +42,6 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     onKeyPress = ''
     style = None
     cssClass = None
-
-    def _old_getFormValue(self):
-        # Check to see if there is only one possible match. If so, use it.
-        matches = self.matches()
-        if len(matches) == 1:
-            return matches[0].token
-
-        # Otherwise, return the invalid value the user entered
-        return super(SinglePopupWidget, self)._getFormValue()
-
-    def _getFormInput(self):
-        """See zope.app.form.browser.widget.SimpleWidget"""
-        matches = self.matches()
-        if len(matches) == 1:
-            return matches[0].token
-        else:
-            return super(SinglePopupWidget, self)._getFormInput()
 
     _matches = None
     def matches(self):
@@ -155,12 +137,9 @@ class SinglePopupView(object):
 
     def search(self):
         """See ISinglePopupView"""
-        start = int(self.request.get('batch_start', 0))
         search_text = self.request.get('search', None)
-        batch = Batch(
-            list=self.vocabulary().search(search_text),
-            start=start, size=self._batchsize)
-        self.batch = BatchNavigator(batch=batch, request=self.request)
+        self.batch = BatchNavigator(self.vocabulary().search(search_text),
+                                    self.request, size=self._batchsize)
         return self.batch
 
     def hasMoreThanOnePage(self):

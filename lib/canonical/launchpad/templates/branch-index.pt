@@ -1,9 +1,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>
+        &ldquo;<tal:branch replace="context/displayname">Name</tal:branch>&rdquo;
+        branch
+      </h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -13,29 +19,52 @@
 <div metal:fill-slot="main">
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="portalMessage">
+     class="error message">
     notice goes here
   </p>
 
-  <p tal:content="context/summary">
+  <p tal:condition="context/summary"
+     tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
+  </p>
+  <p tal:condition="not:context/summary">
+    <tal:comment condition="nothing">
+      <!-- XXX: That duplicates the 'edit' link from the action portlet and
+           should be changed when bug #5313 is fixed to comply with DNRY.
+           -- DavidAllouche 2005-12-02 -->
+    </tal:comment>
+    <img src="/@@/edit.gif" />
+    <a tal:attributes="href view/edit_link_url">Edit branch details</a>.
+    This branch has no summary. 
   </p>
 
   <table>
     <tbody>
       <tr>
         <th>URL:</th>
-        <td><tt><a tal:attributes="href context/url"
-                   tal:content="context/url"
+        <td><tt><a tal:attributes="href view/url"
+                   tal:content="view/url"
           >http://example.com/software/hello.devel</a></tt></td>
       </tr>
       <tr>
         <th>Status:</th>
         <td tal:content="context/lifecycle_status/title">Stable</td>
       </tr>
+      <tr tal:condition="context/mirror_failures">
+        <th>Failures:</th>
+        <td>
+          This branch failed to mirror 
+          <span tal:replace="context/mirror_failures" /> times.
+        </td>
+      </tr>
+      <tr tal:condition="context/mirror_status_message">
+        <th>Last Failure:</th>
+        <td tal:content="context/mirror_status_message">
+        </td>
+      </tr>
       <tr tal:condition="context/whiteboard">
-        <td><b>Whiteboard:</b></td>
+        <th>Whiteboard:</th>
         <td tal:content="context/whiteboard">whiteboard</td>
       </tr>
     </tbody>
@@ -68,8 +97,22 @@
   </table>
   </tal:history_available>
 
-      <h1>Nearby</h1>
-      <ul>
+  <tal:related_bugs condition="context/related_bugs">
+    <h2>Related Bugs</h2>
+    <ul style="list-style: none">
+      <span tal:repeat="bug context/related_bugs"
+            tal:omit-tag="">
+        <li tal:condition="bug/required:launchpad.View">
+          <a href="#"
+             tal:content="string:${bug/id}. ${bug/title}"
+             tal:attributes="href bug/fmt:url">Foo is Broken</a>
+        </li>
+      </span>
+    </ul>
+  </tal:related_bugs>
+
+      <h2>Nearby</h2>
+      <ul style="list-style: none">
         <li tal:condition="context/product">
           <a tal:attributes="href string:${context/product/fmt:url}/+branches">
             Other <tal:product replace="context/product/displayname" />
@@ -77,10 +120,18 @@
           </a>
         </li>
         <li>
-          <a tal:attributes="href string:${context/owner/fmt:url}/+branches">
-            Other branches by
-            <tal:person replace="context/owner/displayname" />
-          </a>
+          <tal:author condition="context/author">
+            <a tal:attributes="href string:${context/owner/fmt:url}/+authoredbranches">
+              Other branches authored by
+              <tal:person replace="context/author/displayname">Author</tal:person>
+            </a>
+          </tal:author>
+          <tal:no-author condition="not:context/author">
+            <a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
+              Other branches registered (and not authored) by
+              <tal:person replace="context/owner/displayname">Owner</tal:person>
+            </a>
+          </tal:no-author>
         </li>
       </ul>
 </div>

@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Binary package names</h1>
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
   </metal:leftportlets>
@@ -12,8 +15,6 @@
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
-
-      <h1>Binary package names</h1>
 
       <form name="search" method="GET">
         <div><label for="name">Find binary package names:</label></div>
@@ -30,7 +31,7 @@
 
 
       <table width="100%"
-             tal:define="currentBatch python:list(bn.currentBatch())">
+             tal:define="currentBatch bn/currentBatch">
           <thead>
         <tr>
           <th tal:condition="currentBatch">
@@ -46,7 +47,7 @@
           <tbody>
        <tr tal:repeat="bpname currentBatch">
            <td tal:content="bpname/name">
-	     BINARYPACKAGENAME
+               BINARYPACKAGENAME
            </td>
        </tr>
           </tbody>
@@ -54,20 +55,20 @@
        <tr>
          <td align="center">
          <div tal:condition="python:prev_url or next_url">
-    	   <table>
-	   <tr>
+           <table>
+           <tr>
              <th tal:condition="prev_url">
-	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
-	     </th>
+               <a tal:attributes="href prev_url"><b>&lt;&lt; Prev</b></a>
+             </th>
              <th tal:repeat="page_link bn/batchPageURLs">
-	       <a tal:attributes="href python:page_link.values()[0]"
+               <a tal:attributes="href python:page_link.values()[0]"
                   tal:content="python:page_link.keys()[0]"></a>
-	     </th>
+             </th>
              <th tal:condition="next_url" >
-	       <a tal:attributes="href next_url"><b>Next >></b></a>
+               <a tal:attributes="href next_url"><b>Next &gt;&gt;</b></a>
              </th>
           </tr>
-	  </table>
+          </table>
         </div>
         </td>
       </tr>

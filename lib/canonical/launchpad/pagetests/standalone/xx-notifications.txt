@@ -10,18 +10,15 @@ This first page adds notifications itself before being rendered.
 HTTP/1.1 200 Ok
 Content-Length: ...
 Content-Type: text/html;charset=utf-8
-<BLANKLINE>
 ...
-<div class="error-notification">Error notification <b>1</b></div>
-<div class="error-notification">Error notification <b>2</b></div>
-<div class="warning-notification">Warning notification <b>1</b></div>
-<div class="warning-notification">Warning notification <b>2</b></div>
-<div class="notice-notification">Notice notification <b>1</b></div>
-<div class="notice-notification">Notice notification <b>2</b></div>
-<div class="info-notification">Info notification <b>1</b></div>
-<div class="info-notification">Info notification <b>2</b></div>
-<div class="debug-notification">Debug notification <b>1</b></div>
-<div class="debug-notification">Debug notification <b>2</b></div>
+...<div class="error message">Error notification <b>1</b></div>
+...<div class="error message">Error notification <b>2</b></div>
+...<div class="warning message">Warning notification <b>1</b></div>
+...<div class="warning message">Warning notification <b>2</b></div>
+...<div class="informational message">Notice notification <b>1</b></div>
+...<div class="informational message">Notice notification <b>2</b></div>
+...<div class="debug message">Debug notification <b>1</b></div>
+...<div class="debug message">Debug notification <b>2</b></div>
 ...
 
 This second page adds notifications, and then redirects to another page.
@@ -48,18 +45,16 @@ Location: /
 ... """ % vars())
 HTTP/1.1 200 Ok
 ...
-<BLANKLINE>
-...
-<div class="error-notification">Error notification <b>1</b></div>
-<div class="error-notification">Error notification <b>2</b></div>
-<div class="warning-notification">Warning notification <b>1</b></div>
-<div class="warning-notification">Warning notification <b>2</b></div>
-<div class="notice-notification">Notice notification <b>1</b></div>
-<div class="notice-notification">Notice notification <b>2</b></div>
-<div class="info-notification">Info notification <b>1</b></div>
-<div class="info-notification">Info notification <b>2</b></div>
-<div class="debug-notification">Debug notification <b>1</b></div>
-<div class="debug-notification">Debug notification <b>2</b></div>
+...<div class="error message">Error notification <b>1</b></div>
+...<div class="error message">Error notification <b>2</b></div>
+...<div class="warning message">Warning notification <b>1</b></div>
+...<div class="warning message">Warning notification <b>2</b></div>
+...<div class="informational message">Notice notification <b>1</b></div>
+...<div class="informational message">Notice notification <b>2</b></div>
+...<div class="informational message">Info notification <b>1</b></div>
+...<div class="informational message">Info notification <b>2</b></div>
+...<div class="debug message">Debug notification <b>1</b></div>
+...<div class="debug message">Debug notification <b>2</b></div>
 ...
 
 
@@ -76,9 +71,7 @@ HTTP/1.1 303 See Other
 ...
 Location: /+notificationtest1
 ...
-<BLANKLINE>
-...
-<div class="error-notification">+notificationtest3 error</div>
+...<div class="error message">+notificationtest3 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
@@ -92,19 +85,17 @@ Location: /+notificationtest1
 ... """ % vars())
 HTTP/1.1 200 Ok
 ...
-<BLANKLINE>
-...
-<div class="error-notification">+notificationtest3 error</div>
-<div class="error-notification">Error notification <b>1</b></div>
-<div class="error-notification">Error notification <b>2</b></div>
-<div class="warning-notification">Warning notification <b>1</b></div>
-<div class="warning-notification">Warning notification <b>2</b></div>
-<div class="notice-notification">Notice notification <b>1</b></div>
-<div class="notice-notification">Notice notification <b>2</b></div>
-<div class="info-notification">Info notification <b>1</b></div>
-<div class="info-notification">Info notification <b>2</b></div>
-<div class="debug-notification">Debug notification <b>1</b></div>
-<div class="debug-notification">Debug notification <b>2</b></div>
+...<div class="error message">+notificationtest3 error</div>
+...<div class="error message">Error notification <b>1</b></div>
+...<div class="error message">Error notification <b>2</b></div>
+...<div class="warning message">Warning notification <b>1</b></div>
+...<div class="warning message">Warning notification <b>2</b></div>
+...<div class="informational message">Notice notification <b>1</b></div>
+...<div class="informational message">Notice notification <b>2</b></div>
+...<div class="informational message">Info notification <b>1</b></div>
+...<div class="informational message">Info notification <b>2</b></div>
+...<div class="debug message">Debug notification <b>1</b></div>
+...<div class="debug message">Debug notification <b>2</b></div>
 ...
 
 
@@ -123,9 +114,7 @@ HTTP/1.1 303 See Other
 ...
 Location: /+notificationtest3
 ...
-<BLANKLINE>
-...
-<div class="error-notification">+notificationtest4 error</div>
+...<div class="error message">+notificationtest4 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
@@ -142,10 +131,8 @@ HTTP/1.1 303 See Other
 ...
 Location: /+notificationtest1
 ...
-<BLANKLINE>
-...
-<div class="error-notification">+notificationtest4 error</div>
-<div class="error-notification">+notificationtest3 error</div>
+...<div class="error message">+notificationtest4 error</div>
+...<div class="error message">+notificationtest3 error</div>
 ...
 
 >>> destination_url = re.search('(?m)^Location:\s(.*)$', str(result)).group(1)
@@ -159,20 +146,16 @@ Location: /+notificationtest1
 ... """ % vars())
 HTTP/1.1 200 Ok
 ...
-<BLANKLINE>
+...<div class="error message">+notificationtest4 error</div>
+...<div class="error message">+notificationtest3 error</div>
+...<div class="error message">Error notification <b>1</b></div>
+...<div class="error message">Error notification <b>2</b></div>
+...<div class="warning message">Warning notification <b>1</b></div>
+...<div class="warning message">Warning notification <b>2</b></div>
+...<div class="informational message">Notice notification <b>1</b></div>
+...<div class="informational message">Notice notification <b>2</b></div>
+...<div class="informational message">Info notification <b>1</b></div>
+...<div class="informational message">Info notification <b>2</b></div>
+...<div class="debug message">Debug notification <b>1</b></div>
+...<div class="debug message">Debug notification <b>2</b></div>
 ...
-<div class="error-notification">+notificationtest4 error</div>
-<div class="error-notification">+notificationtest3 error</div>
-<div class="error-notification">Error notification <b>1</b></div>
-<div class="error-notification">Error notification <b>2</b></div>
-<div class="warning-notification">Warning notification <b>1</b></div>
-<div class="warning-notification">Warning notification <b>2</b></div>
-<div class="notice-notification">Notice notification <b>1</b></div>
-<div class="notice-notification">Notice notification <b>2</b></div>
-<div class="info-notification">Info notification <b>1</b></div>
-<div class="info-notification">Info notification <b>2</b></div>
-<div class="debug-notification">Debug notification <b>1</b></div>
-<div class="debug-notification">Debug notification <b>2</b></div>
-...
-
-

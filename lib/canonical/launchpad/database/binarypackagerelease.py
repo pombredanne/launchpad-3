@@ -6,7 +6,7 @@ __all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
+from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
@@ -17,9 +17,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishing, SecureBinaryPackagePublishingHistory
-    )
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
+    BinaryPackagePublishing, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
@@ -30,19 +28,19 @@ from canonical.lp.dbschema import EnumCol
 class BinaryPackageRelease(SQLBase):
     implements(IBinaryPackageRelease)
     _table = 'BinaryPackageRelease'
-    binarypackagename = ForeignKey(dbName='binarypackagename', 
-        foreignKey='BinaryPackageName', notNull=True)
+    binarypackagename = ForeignKey(dbName='binarypackagename', notNull=True,
+                                   foreignKey='BinaryPackageName')
     version = StringCol(dbName='version', notNull=True)
     summary = StringCol(dbName='summary', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
-        schema=dbschema.BinaryPackageFormat)
+                               schema=dbschema.BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
-        notNull=True)
+                           notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
-    priority = EnumCol(dbName='priority',
-        schema=dbschema.PackagePublishingPriority)
+    priority = EnumCol(dbName='priority', notNull=True,
+                       schema=dbschema.PackagePublishingPriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
@@ -55,10 +53,10 @@ class BinaryPackageRelease(SQLBase):
     copyright = StringCol(dbName='copyright')
     licence = StringCol(dbName='licence')
     architecturespecific = BoolCol(dbName='architecturespecific',
-        notNull=True)
+                                   notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    files = MultipleJoin('BinaryPackageFile',
+    files = SQLMultipleJoin('BinaryPackageFile',
         joinColumn='binarypackagerelease')
 
     @property
@@ -81,14 +79,10 @@ class BinaryPackageRelease(SQLBase):
             distribution=self.build.distribution,
             sourcepackagerelease=self.build.sourcepackagerelease)
 
-    def current(self, distroRelease):
-        """Return currently published releases of this package for a given
-        distro.
-
-        :returns: iterable of SourcePackageReleases
-        """
-        return self.build.sourcepackagerelease.sourcepackage.current(
-            distroRelease)
+    @property
+    def sourcepackagename(self):
+        """See IBinaryPackageRelease."""
+        return self.build.sourcepackagerelease.sourcepackagename.name
 
     def lastversions(self):
         """Return the SUPERSEDED BinaryPackageReleases in a DistroRelease
@@ -152,6 +146,15 @@ class BinaryPackageRelease(SQLBase):
             embargo=embargo,
             )
 
+    def override(self, component=None, section=None, priority=None):
+        """See IBinaryPackageRelease."""
+        if component is not None:
+            self.component = component
+        if section is not None:
+            self.section = section
+        if priority is not None:
+            self.priority = priority
+
 
 class BinaryPackageReleaseSet:
     """A Set of BinaryPackageReleases."""
@@ -163,34 +166,21 @@ class BinaryPackageReleaseSet:
         distrorelease.
         """
         pattern = pattern.replace('%', '%%')
-
-        clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
-                        'BinaryPackageRelease', 'BinaryPackageName']
-
-        queries = ['''BinaryPackagePublishing.binarypackagerelease =
-                        BinaryPackageRelease.id AND
-                    BinaryPackagePublishing.distroarchrelease =
-                        DistroArchRelease.id AND
-                    DistroArchRelease.distrorelease = %d AND
-                    BinaryPackageRelease.binarypackagename = 
-                        BinaryPackageName.id'''
-                 % distroreleaseID]
-            
+        query, clauseTables = self._buildBaseQuery(distroreleaseID)
+        queries = [query]
 
         if fti:
             queries.append("""
-                (
-                BinaryPackageName.name
-                    LIKE lower('%%' || %s || '%%')
-                OR BinaryPackageRelease.fti @@ ftq(%s))
+                (BinaryPackageName.name LIKE lower('%%' || %s || '%%')
+                 OR BinaryPackageRelease.fti @@ ftq(%s))
                 """ % (quote_like(pattern), quote(pattern)))
         else:
-            queries.append('BinaryPackageName.name ILIKE %s'
-                         % sqlvalues('%%' + pattern + '%%'))
+            queries.append('BinaryPackageName.name ILIKE %s '
+                           % sqlvalues('%%' + pattern + '%%'))
 
         if archtag:
             queries.append('DistroArchRelease.architecturetag=%s'
-                         % sqlvalues(archtag))
+                           % sqlvalues(archtag))
 
         query = " AND ".join(queries)
 
@@ -200,25 +190,11 @@ class BinaryPackageReleaseSet:
     def getByNameInDistroRelease(self, distroreleaseID, name=None,
                                  version=None, archtag=None, orderBy=None):
         """Get a BinaryPackageRelease in a DistroRelease by its name."""
-
-        clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
-                        'BinaryPackageRelease', 'BinaryPackageName']
-
-        # XXX: identical query to findByNameInDistroRelease; merge or
-        # nuke one.
-        #   -- kiko, 2005-09-23
-        queries = ['''BinaryPackagePublishing.binarypackagerelease =
-                        BinaryPackageRelease.id AND
-                    BinaryPackagePublishing.distroarchrelease =
-                        DistroArchRelease.id AND
-                    DistroArchRelease.distrorelease = %d AND
-                    BinaryPackageRelease.binarypackagename = 
-                        BinaryPackageName.id'''
-                 % distroreleaseID]
-
+        query, clauseTables = self._buildBaseQuery(distroreleaseID)
+        queries = [query]
 
         if name:
-            queries.append('BinaryPackageName.name = %s' % sqlvalues(name))
+            queries.append('BinaryPackageName.name = %s'% sqlvalues(name))
 
         # Look for a specific binarypackage version or if version == None
         # return the current one
@@ -226,85 +202,30 @@ class BinaryPackageReleaseSet:
             queries.append('BinaryPackageRelease.version = %s'
                          % sqlvalues(version))
         else:
+            status_published = dbschema.PackagePublishingStatus.PUBLISHED
             queries.append('BinaryPackagePublishing.status = %s'
-                         % sqlvalues(dbschema.PackagePublishingStatus.PUBLISHED))
+                         % sqlvalues(status_published))
 
         if archtag:
             queries.append('DistroArchRelease.architecturetag = %s'
                          % sqlvalues(archtag))
 
         query = " AND ".join(queries)
-
         return BinaryPackageRelease.select(query, distinct=True,
                                            clauseTables=clauseTables,
                                            orderBy=orderBy)
 
-    # Used outside
+    def _buildBaseQuery(self, distroreleaseID):
+        query = '''BinaryPackagePublishing.binarypackagerelease =
+                        BinaryPackageRelease.id
+                   AND BinaryPackagePublishing.distroarchrelease =
+                        DistroArchRelease.id
+                   AND DistroArchRelease.distrorelease = %d
+                   AND BinaryPackageRelease.binarypackagename =
+                        BinaryPackageName.id''' % distroreleaseID
 
-    def getDistroReleasePackages(self, distroreleaseID):
-        """Get a set of BinaryPackageReleases in a distrorelease"""
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
-                        'BinaryPackageName']
+                        'BinaryPackageRelease', 'BinaryPackageName']
 
-        # XXX: identical query to findByNameInDistroRelease; merge or
-        # nuke one.
-        #   -- kiko, 2005-09-23
-        query = ('''BinaryPackagePublishing.binarypackagerelease = 
-                        BinaryPackageRelease.id AND
-                    BinaryPackagePublishing.distroarchrelease = 
-                        DistroArchRelease.id AND
-                    DistroArchRelease.distrorelease = %d AND
-                    BinaryPackageRelease.binarypackagename = 
-                        BinaryPackageName.id'''
-                 % distroreleaseID
-                 )
+        return query, clauseTables
 
-        return BinaryPackageRelease.select(query, clauseTables=clauseTables,
-                                           orderBy='BinaryPackageName.name')
-
-    def getByNameVersion(self, distroreleaseID, name, version):
-        """Get a set of  BinaryPackageReleases in a DistroRelease by its name and
-        version.
-        """
-        return self.getByName(distroreleaseID, name, version)
-
-    def getByArchtag(self, distroreleaseID, name, version, archtag):
-        """Get a BinaryPackageRelease in a DistroRelease by its name,
-        version and archtag.
-        """
-        return self.getByName(distroreleaseID, name, version, archtag)[0]
-
-    def getBySourceName(self, DistroRelease, sourcepackagename):
-        """Get a set of BinaryPackageReleases generated by the current
-        SourcePackageRelease with an SourcePackageName inside a
-        DistroRelease context.
-        """
-        # XXX: Needs fixing, will not work
-        raise AssertionError
-#         clauseTables = ['SourcePackageName', 'SourcePackageRelease',
-#                         'SourcePackagePublishing', 'Build']
-# 
-#         query = ('SourcePackageRelease.sourcepackagename = '
-#                  'SourcePackageName.id AND '
-#                  'SourcePackagePublishing.sourcepackagerelease = '
-#                  'SourcePackageRelease.id AND '
-#                  'Build.sourcepackagerelease = SourcePackageRelease.id AND '
-#                  'BinaryPackageRelease.build = Build.id AND '
-#                  'SourcePackageName.name = %s AND '
-#                  'SourcePackagePublishing.distrorelease = %s AND '
-#                  'SourcePackagePublishing.status = %s'
-#                  % sqlvalues(sourcepackagename,
-#                              DistroRelease.id,
-#                              dbschema.PackagePublishingStatus.PUBLISHED
-#                              )
-#                  )
-#         return BinaryPackageRelease.select(query, clauseTables=clauseTables)
-
-    def query(self, name=None, distribution=None, distrorelease=None,
-              distroarchrelease=None, text=None):
-        # XXX sabdfl this is not yet done 12/12/04
-        raise AssertionError
-#         if (name is None and distribution is None and
-#             distrorelease is None and text is None):
-#             raise ValueError('must give something to the query.')
-#         clauseTables = Set(['BinaryPackageRelease'])

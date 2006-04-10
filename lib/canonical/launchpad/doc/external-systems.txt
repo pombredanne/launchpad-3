@@ -2,12 +2,22 @@ External Systems
 ================
 
 An ExternalSystem is used to talk to remote bug trackers and update bug
-watches. This document describes how they work. Since we don't want to
-depend on a working network connection, we use a slightly modified
-implementation.
+watches. This document describes how they work. They work differently
+depending on which version of the bugtracker they talk to. If it's an
+unknown version, UnsupportedBugTrackerVersion is raised:
 
-    >>> from canonical.launchpad.ftests.externalsystem import TestBugzilla
-    >>> from canonical.malone.externalsystem import ExternalSystem
+    >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
+    >>> Bugzilla('http://foo.com/', version='2.15')
+    Traceback (most recent call last):
+      ...
+    UnsupportedBugTrackerVersion: Unsupported version '2.15' for http://foo.com
+
+Since we don't want to depend on a working network connection, we use a
+slightly modified implementation.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import TestBugzilla
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     ExternalSystem)
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
     >>> test_remote_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
@@ -22,37 +32,37 @@ status. Bugzilla statuses consist of two parts, the status, and the
 resolution, separated by a space character. The resolution only exists
 if the bug is closed:
 
-    >>> external_bugzilla.malonify_status('UNCONFIRMED')
+    >>> external_bugzilla.convertRemoteStatus('UNCONFIRMED').title
     'Unconfirmed'
-    >>> external_bugzilla.malonify_status('NEW')
-    'Unconfirmed'
-    >>> external_bugzilla.malonify_status('ASSIGNED')
+    >>> external_bugzilla.convertRemoteStatus('NEW').title
     'Confirmed'
-    >>> external_bugzilla.malonify_status('REOPENED')
-    'Unconfirmed'
-    >>> external_bugzilla.malonify_status('NEEDINFO')
+    >>> external_bugzilla.convertRemoteStatus('ASSIGNED').title
+    'In Progress'
+    >>> external_bugzilla.convertRemoteStatus('REOPENED').title
+    'Confirmed'
+    >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
     'Needs Info'
-    >>> external_bugzilla.malonify_status('UPSTREAM')
-    'Unconfirmed'
-    >>> external_bugzilla.malonify_status('PENDINGUPLOAD')
+    >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
+    'Confirmed'
+    >>> external_bugzilla.convertRemoteStatus('PENDINGUPLOAD').title
     'Fix Committed'
-    >>> external_bugzilla.malonify_status('RESOLVED FIXED')
+    >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
-    >>> external_bugzilla.malonify_status('VERIFIED WONTFIX')
+    >>> external_bugzilla.convertRemoteStatus('VERIFIED WONTFIX').title
     'Rejected'
-    >>> external_bugzilla.malonify_status('CLOSED INVALID')
+    >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Rejected'
 
-If the status can't be converted, 'Unknown' is returned, and a warning
+If the status can't be converted, Unkown is returned, and a warning
 is logged.
 
-    >>> external_bugzilla.malonify_status('FOO')
+    >>> external_bugzilla.convertRemoteStatus('FOO').title
     WARNING:...:Unknown Bugzilla status 'FOO' at http://bugzilla.gnome.org
     'Unknown'
 
-UNKNOWN maps to 'Unknown' without generating a warning.
+UNKNOWN maps to Unknown without generating a warning.
 
-    >>> external_bugzilla.malonify_status('UNKNOWN')
+    >>> external_bugzilla.convertRemoteStatus('UNKNOWN').title
     'Unknown'
 
 
@@ -108,3 +118,53 @@ now no bug watches are in need of updating:
     >>> flush_database_updates()
     >>> gnome_bugzilla.getBugWatchesNeedingUpdate(23).count()
     0
+
+Now let's take a look at what happens when a bug watch is linked to
+from a bug task.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> thunderbird_task = bug_nine.bugtasks[0]
+    >>> print thunderbird_task.status.title
+    Unknown
+    >>> thunderbird_task.bugwatch.remotestatus is None
+    True
+
+We don't yet support updating the priority and severity for Bugzilla
+bugs, so let's set them to some bogus value, to see that they get set
+to UNKNOWN.
+
+    >>> from canonical.lp.dbschema import BugTaskPriority, BugTaskSeverity
+    >>> thunderbird_task.priority = BugTaskPriority.HIGH
+    >>> thunderbird_task.severity = BugTaskSeverity.MAJOR
+
+We need to create a new ExternalSystem for the Mozilla tracker:
+
+    >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
+    ...     'mozilla.org')
+    >>> external_bugzilla = ExternalSystem(mozilla_bugzilla, version)
+    >>> test_remote_bugzilla = TestBugzilla(mozilla_bugzilla.baseurl)
+    >>> external_bugzilla.remotesystem = test_remote_bugzilla
+    >>> test_remote_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
+
+Let's update the bug watch, and see that the linked bug watch got
+synced:
+
+    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> print thunderbird_task.status.title
+    In Progress
+    >>> print thunderbird_task.priority.title
+    Unknown
+    >>> print thunderbird_task.severity.title
+    Unknown
+    >>> print thunderbird_task.bugwatch.remotestatus
+    ASSIGNED
+
+If updateBugWatches() can't parse the XML file returned from the remote
+bug tracker, an error is logged.
+
+    >>> external_bugzilla.remotesystem._postPage = (
+    ...     lambda self, data: '<invalid xml>')
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    ERROR:...:Failed to parse XML description...
+

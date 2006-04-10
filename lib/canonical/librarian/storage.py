@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import os
 import os.path
+import md5
 import sha
 import errno
 import tempfile
@@ -72,27 +73,32 @@ class LibraryFileUpload(object):
     aliasID = None
     expires = None
     databaseName = None
+    debugID = None
 
     def __init__(self, storage, filename, size):
         self.storage = storage
         self.filename = filename
         self.size = size
+        self.debugLog = []
 
         # Create temporary file
         tmpfile, tmpfilepath = tempfile.mkstemp(dir=self.storage.incoming)
         self.tmpfile = os.fdopen(tmpfile, 'w')
         self.tmpfilepath = tmpfilepath
-        self.digester = sha.new()
+        self.shaDigester = sha.new()
+        self.md5Digester = md5.new()
 
     def append(self, data):
         self.tmpfile.write(data)
-        self.digester.update(data)
+        self.shaDigester.update(data)
+        self.md5Digester.update(data)
 
     def store(self):
+        self.debugLog.append('storing %r, size %r' % (self.filename, self.size))
         self.tmpfile.close()
 
         # Verify the digest matches what the client sent us
-        dstDigest = self.digester.hexdigest()
+        dstDigest = self.shaDigester.hexdigest()
         if self.srcDigest is not None and dstDigest != self.srcDigest:
             # TODO: Write test that checks that the file really is removed or
             # renamed, and can't possibly be left in limbo
@@ -110,20 +116,24 @@ class LibraryFileUpload(object):
                 if self.databaseName != databaseName:
                     raise WrongDatabaseError(self.databaseName, databaseName)
             
+            self.debugLog.append('database name %r ok' % (self.databaseName,))
             # If we haven't got a contentID, we need to create one and return
             # it to the client.
             if self.contentID is None:
-                contentID = self.storage.library.add(dstDigest, self.size)
+                contentID = self.storage.library.add(
+                        dstDigest, self.size, self.md5Digester.hexdigest())
                 aliasID = self.storage.library.addAlias(
-                        contentID, self.filename, self.mimetype, self.expires
-                        )
+                        contentID, self.filename, self.mimetype, self.expires)
+                self.debugLog.append('created contentID: %r, aliasID: %r.' 
+                                     % (contentID, aliasID))
             else:
                 contentID = self.contentID
                 aliasID = None
-
+                self.debugLog.append('received contentID: %r' % (contentID,))
 
         except:
             # Abort transaction and re-raise
+            self.debugLog.append('failed to get contentID/aliasID, aborting')
             rollback()
             raise
 
@@ -132,6 +142,7 @@ class LibraryFileUpload(object):
             self._move(contentID)
         except:
             # Abort DB transaction
+            self.debugLog.append('failed to move file, aborting')
             rollback()
 
             # Remove file
@@ -142,6 +153,7 @@ class LibraryFileUpload(object):
 
         # Commit any DB changes
         commit()
+        self.debugLog.append('committed')
         
         # Return the IDs if we created them, or None otherwise
         return contentID, aliasID

@@ -8,9 +8,14 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
+import apt_pkg
+apt_pkg.InitSystem()
+
 from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
+
+from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
@@ -28,8 +33,8 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.ticket import Ticket
-from sourcerer.deb.version import Version, BadUpstreamError
+from canonical.launchpad.database.supportcontact import SupportContact
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.helpers import shortlist
 
 _arg_not_provided = object()
@@ -81,7 +86,8 @@ class DistributionSourcePackage(BugTargetBase):
             """ % sqlvalues(self.distribution.id, self.sourcepackagename.id,
                             version),
             orderBy='-datecreated',
-            clauseTables=['distrorelease', 'sourcepackagerelease'])
+            prejoinClauseTables=['SourcePackageRelease'],
+            clauseTables=['DistroRelease', 'SourcePackageRelease'])
         if spph.count() == 0:
             return None
         return DistributionSourcePackageRelease(
@@ -103,16 +109,9 @@ class DistributionSourcePackage(BugTargetBase):
             orderBy='datecreated',
             clauseTables=['SourcePackagePublishing', 'DistroRelease'])
 
-        # sort by version
-        try:
-            releases = sorted(shortlist(sprs),
-                              key=lambda item: Version(item.version))
-        # XXX cprov : Sourcerer Version model doesn't cope with
-        # version containing letters, so if it happens we rely
-        # on DB order (datecreated) -> bug # 6040
-        except BadUpstreamError:
-            releases = shortlist(sprs)
-
+        # safely sort by version
+        compare = lambda a,b: apt_pkg.VersionCompare(a.version, b.version)
+        releases = sorted(shortlist(sprs), cmp=compare)
         if len(releases) == 0:
             return None
 
@@ -198,7 +197,16 @@ class DistributionSourcePackage(BugTargetBase):
     @property
     def publishing_history(self):
         """See IDistributionSourcePackage."""
-        return SourcePackagePublishingHistory.select("""
+        return self._getPublishingHistoryQuery()
+
+    @property
+    def current_publishing_records(self):
+        """See IDistributionSourcePackage."""
+        status = PackagePublishingStatus.PUBLISHED
+        return self._getPublishingHistoryQuery(status)
+
+    def _getPublishingHistoryQuery(self, status=None):
+        query = """
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
@@ -206,8 +214,15 @@ class DistributionSourcePackage(BugTargetBase):
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id),
+                            self.sourcepackagename.id)
+
+        if status is not None:
+            query += ("AND SourcePackagePublishingHistory.status = %s"
+                      % sqlvalues(status))
+
+        return SourcePackagePublishingHistory.select(query,
             clauseTables=['DistroRelease', 'SourcePackageRelease'],
+            prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
     @property
@@ -246,7 +261,7 @@ class DistributionSourcePackage(BugTargetBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
@@ -265,6 +280,39 @@ class DistributionSourcePackage(BugTargetBase):
             return None
         return ticket
 
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return False
+        SupportContact(
+            product=None, person=person.id,
+            sourcepackagename=self.sourcepackagename.id,
+            distribution=self.distribution.id)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
+
     def __eq__(self, other):
         """See IDistributionSourcePackage."""
         return (
@@ -281,12 +329,12 @@ class DistributionSourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, private=False,
-                  binarypackagename=None):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False, binarypackagename=None):
         """See IBugTarget."""
         return BugSet().createBug(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             binarypackagename=binarypackagename,
             owner=owner, title=title, comment=comment,
-            private=private)
+            security_related=security_related, private=private)

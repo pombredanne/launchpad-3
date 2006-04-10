@@ -12,7 +12,8 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import valid_debian_version
 
-from canonical.lp.dbschema import BuildStatus
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingPocket)
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
@@ -47,19 +48,29 @@ class ISourcePackageRelease(Interface):
     uploaddistrorelease = Attribute("The distrorelease in which this package "
         "was first uploaded in Launchpad")
     manifest = Attribute("Manifest of branches imported for this release")
+    publishings = Attribute("MultipleJoin on SourcepackagePublishing")
+
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
     title = Attribute('The title of this sourcepackagerelease')
     latest_build = Attribute("The latest build of this source package "
         "release, or None")
+    failed_builds = Attribute("A (potentially empty) list of build "
+        "failures that happened for this source package " "release, or None")
+    needs_building = Attribute("A boolean that indicates whether this package "
+        "still needs to be built (on any architecture)")
 
-    open_tickets_count = Attribute(
+    open_ticket_count = Attribute(
         "The number of open support tickets on the distrorelease and "
         "sourcepackagename of this SourcePackageRelease")
+
     sourcepackage = Attribute(
         "The magic SourcePackage for the sourcepackagename and "
         "distrorelease of this object.")
+    distrosourcepackage = Attribute(
+        "The magic DistroSourcePackage for the sourcepackagename and "
+        "distribution of this object.")
     productrelease = Attribute("The best guess we have as to the Launchpad "
         "ProductRelease associated with this SourcePackageRelease.")
 
@@ -82,17 +93,36 @@ class ISourcePackageRelease(Interface):
         """
 
     def createBuild(distroarchrelease, processor=None,
-                    status=BuildStatus.NEEDSBUILD):
+                    status=BuildStatus.NEEDSBUILD,
+                    pocket=None):
         """Create a build for the given distroarchrelease and return it.
 
         If the processor isn't given, guess it from the distroarchrelease.
-        If the status isn't given, use NEEDSBUILD.
+        If the status isn't given, use NEEDSBUILD. 'pocket' is required
         """
 
     def getBuildByArch(distroarchrelease):
         """Return build for the given distroarchrelease.
 
+        This will look only for published architecture-specific binary
+        package releases in the given distroarchrelease. It uses the publishing
+        tables to return a build, even if the build is from another
+        distroarchrelease, so long as the binaries are published in the
+        distroarchrelease given.
+
         Return None if not found.
+        """
+
+    def override(component=None, section=None, urgency=None):
+        """Uniform method to override sourcepackagerelease attribute.
+
+        All arguments are optional and can be set individually. A non-passed
+        argument remains untouched.
+        """
+
+    def countOpenBugsInUploadedDistro(user):
+        """Return the number of open bugs targeted to the sourcepackagename
+        and distribution to which this release was uploaded.
         """
 
     def attachTranslationFiles(tarball_alias, is_published, importer=None):

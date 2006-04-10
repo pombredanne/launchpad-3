@@ -24,12 +24,12 @@
     shared easily between distribution and product maintainers.
   </p>
 
-  <p class="portalMessage" tal:condition="view/status_message"
+  <p class="error message" tal:condition="view/status_message"
      tal:content="view/status_message">
      Status Message Here
   </p>
 
-  <p class="portalMessage" tal:condition="not: context/productseries">
+  <p class="informational message" tal:condition="not: context/productseries">
     Launchpad does not know the upstream product series for this package.
     If you know the correct details, please enter them carefully.
   </p>
@@ -55,10 +55,10 @@
          tal:content="view/productseries_widget/hint">Some Help Text
       </p>
 
-      <div class="portalMessage"
+      <p class="error message"
            tal:define="error view/productseries_widget/error"
            tal:condition="error"
-           tal:content="structure error">An Error Message</div>
+           tal:content="structure error">An Error Message</p>
 
     </div>
 

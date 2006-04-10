@@ -13,16 +13,13 @@
     permission="zope.Public">
     <browser:page
       name="+specs"
-      template="../templates/specificationtarget-specs.pt" />
+      template="../templates/specificationtarget-index.pt" />
     <browser:page
-      name="+specstable"
-      template="../templates/sprint-table.pt" />
+      name="+assignments"
+      template="../templates/specificationtarget-assignments.pt" />
     <browser:page
-      name="+workload"
-      template="../templates/specificationtarget-workload.pt" />
-    <browser:page
-      name="+specplan"
-      template="../templates/specificationtarget-specplan.pt" />
+      name="+roadmap"
+      template="../templates/specificationtarget-roadmap.pt" />
     <browser:page
       name="+portlet-latestspecs"
       template="../templates/specificationtarget-portlet-latestspecs.pt" />

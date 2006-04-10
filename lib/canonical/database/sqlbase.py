@@ -3,16 +3,22 @@
 __metaclass__ = type
 
 import psycopg
+import thread
+import warnings
+import time
+from datetime import datetime
+
 from sqlos import SQLOS
 from sqlos.adapter import PostgresAdapter
+
+from sqlobject import connectionForURI, SQLObjectNotFound
 from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
-from datetime import datetime
-from sqlobject import connectionForURI, SQLObjectNotFound
-import thread, warnings
-import time
+
+from zope.interface import implements
 
 from canonical.config import config
+from canonical.database.interfaces import ISQLBase
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
@@ -52,8 +58,6 @@ class LaunchpadStyle(Style):
         return className
 
     def dbTableToPythonClass(self, table):
-        raise NotImplementedError, \
-                "Our naming convention prohibits converting table to class"
         return table
 
     def idForTable(self, table):
@@ -82,6 +86,7 @@ class SQLBase(SQLOS):
     ZopelessTransactionManager object to disable all the tricksy
     per-thread connection stuff that SQLOS does.
     """
+    implements(ISQLBase)
     _style = LaunchpadStyle()
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
@@ -393,11 +398,13 @@ def quote(x):
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
     "'2003-12-04T13:45:50'"
-
-    """ #'
+    """
     if isinstance(x, datetime):
         return "'%s'" % x
-    return sqlrepr(x, 'postgres')
+    elif ISQLBase(x, None) is not None:
+        return str(x.id)
+    else:
+        return sqlrepr(x, 'postgres')
 
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
@@ -478,6 +485,7 @@ def sqlvalues(*values, **kwvalues):
         return tuple([quote(item) for item in values])
     elif kwvalues:
         return dict([(key, quote(value)) for key, value in kwvalues.items()])
+
 
 def quoteIdentifier(identifier):
     r'''Quote an identifier, such as a table name.

@@ -18,6 +18,11 @@ IMilestoneSet can be accessed as a utility.
     >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> milestoneset = getUtility(IMilestoneSet)
 
+To retrieve all milestones, iterate over an IMilestoneSet object:
+
+    >>> [ms.id for ms in milestoneset]
+    [1, 2]
+
 To create a new Milestone, use IMilestoneSet.new:
 
     >>> from canonical.launchpad.interfaces import IProductSet
@@ -32,6 +37,8 @@ To retrieve a specific Milestone, use IMilestoneSet.get:
     >>> firefox_ms_1_0 = milestoneset.get(1)
     >>> print firefox_ms_1_0.name
     1.0
+    >>> print firefox_ms_1_0.displayname
+    Mozilla Firefox: 1.0
 
 Trying to retrieve a milestone that doesn't exist will raise a
 zope.exceptions.NotFoundError:
@@ -40,3 +47,4 @@ zope.exceptions.NotFoundError:
     Traceback (most recent call last):
       ...
     NotFoundError: 'Milestone with ID -1 does not exist'
+

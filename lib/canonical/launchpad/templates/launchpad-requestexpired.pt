@@ -1,15 +1,15 @@
 <tal:layout define="columns1 default">
 <html metal:use-macro="context/@@main_template/master">
   <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 class="exception">Timeout error</h1>
+    </metal:heading>
     <div metal:fill-slot="main">
-      <h1 class="exception">
-        Timeout error
-      </h1>
       <p>
-        Sorry, Launchpad took too long to process your request.
+        Sorry, something just went wrong in Launchpad.
         We&#8217;ve recorded what happened,
         and we&#8217;ll fix it as soon as possible.
-        Sorry for the inconvenience.
+        Apologies for the inconvenience.
       </p>
       <p>
         Trying again in a couple of minutes might work.
@@ -21,10 +21,11 @@
         in your request.
       </p>
       <p>
-        If you can&rsquo;t make a support request, e-mail
+        If you can&#8217;t make a support request, e-mail
         <a href="mailto:system-error@launchpad.net"
         ><code>system-error@launchpad.net</code></a>
-        with the error ID and details of your problem.
+        with the error <abbr>ID</abbr>,
+        including &#8220;bug&#8221; in the Subject line.
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

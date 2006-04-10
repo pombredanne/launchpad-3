@@ -25,6 +25,12 @@
       consider.
     </p>
 
+    <tal:errors
+      metal:fill-slot="extra_top" 
+      repeat="top_of_page_error view/top_of_page_errors" 
+      replace="structure top_of_page_error"
+    />
+
   </div>
 
 </div>

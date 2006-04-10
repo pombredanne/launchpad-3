@@ -452,6 +452,7 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...         self.url = url
     ...         self.query = query
     ...         self.url1 = url1  # returned from getURL(1)
+    ...         self.method = 'GET'
     ...
     ...     def getURL(self, level=0):
     ...         assert 0 <= level <=1, 'level must be 0 or 1'
@@ -765,7 +766,11 @@ put it too in the canonical.launchpad.ftests module.
     ...     def baz(self):
     ...         target = ''
     ...         text = 'baz'
-    ...         return Link(target, text)
+    ...         if self.request is None:
+    ...             summary = "No request available"
+    ...         else:
+    ...             summary = self.request.method
+    ...         return Link(target, text, summary=summary)
 
     >>> getattr(canonical.launchpad.ftests, 'FacetsForThing', None) is None
     True
@@ -851,6 +856,8 @@ nearest_menu(thing, IFacetMenu), getting an IFacetMenu adapter from it.
 Then, it gets the request from either the TALES CONTEXTS or the current
 interaction, and calculates a request Url object to pass into IMenu.iterlinks,
 so that it can properly decide whether a particular link should appear linked.
+The request is also set as the menu's 'request' attribute.
+
 
     >>> from canonical.launchpad.ftests import test_tales
 
@@ -867,12 +874,13 @@ so that it can properly decide whether a particular link should appear linked.
     >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar')
 
     >>> links = test_tales(
-    ...     'CONTEXTS/menu:facet', context=house, view=view, request=request)
+    ...     'CONTEXTS/menu:facet', context=house, view=view, request=request, debug=True)
+
     >>> for link in links:
-    ...     print link.url, link.selected, link.linked
-    http://localhost:8086/sesamestreet/+foo False True
-    http://localhost:8086/sesamestreet/+bar True False
-    http://localhost:8086/sesamestreet/ False True
+    ...     print link.url, link.selected, link.linked, link.summary
+    http://localhost:8086/sesamestreet/+foo False True None
+    http://localhost:8086/sesamestreet/+bar True False More explanation about Bar of sesamestreet
+    http://localhost:8086/sesamestreet/ False True GET
 
 So, the first link '+foo' is linked, but the second '+bar' is not.  This
 is because the URL of '+bar' is the same as the request in the CONTEXTS.
@@ -883,6 +891,7 @@ Let's try again, this time with a request from the participation.
     ...     'http://localhost:8086/sesamestreet/+bar')
     >>> participation.interaction = None
     >>> login(ANONYMOUS, participation)
+
     >>> links = test_tales(
     ...     'context/menu:facet', context=house)
     >>> for link in links:
@@ -932,7 +941,7 @@ we registered only one application menu for a house, against 'foo'.  The
 'bar' facet is the one selected, so we don't get any application menu.
 
     >>> menu = test_tales('CONTEXTS/menu:application',
-    ...     context=house, view=view, request=None)
+    ...     context=house, view=view, request=request)
     >>> list(menu)
     []
 
@@ -941,7 +950,7 @@ is selected, we get a couple of menus.
 
     >>> view.__launchpad_facetname__ = 'foo'
     >>> links = test_tales('CONTEXTS/menu:application',
-    ...     context=house, view=view, request=None)
+    ...     context=house, view=view, request=request)
     >>> for link in links:
     ...     print link.url
     http://localhost:8086/sesamestreet/number73/+first
@@ -958,7 +967,7 @@ because the menus system doesn't need to know anything about the view object.
 When there is no menu for a thing, we get an empty iterator.
 
     >>> menu = test_tales(
-    ...     'CONTEXTS/menu:facet', context=root, view=view, request=None)
+    ...     'CONTEXTS/menu:facet', context=root, view=view, request=request)
     >>> list(menu)
     []
     >>> menu = test_tales('CONTEXTS/menu:application',
