@@ -343,8 +343,9 @@ class TranslationImportQueueEntry(SQLBase):
 
     def getTemplatesOnSameDirectory(self):
         """See ITranslationImportQueueEntry."""
+        path = os.path.dirname(self.path)
         query = ("path LIKE %s || '%%.pot' AND id <> %s" % 
-                 quote_like(os.path.dirname(self.path)), self.id)
+                 (quote_like(path), self.id))
         if self.distrorelease is not None:
             query += ' AND distrorelease = %s' % sqlvalues(
                 self.distrorelease)
