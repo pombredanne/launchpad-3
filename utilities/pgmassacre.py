@@ -10,10 +10,14 @@ import sys
 import time
 import psycopg
 from signal import SIGTERM, SIGQUIT, SIGKILL, SIGINT
+from optparse import OptionParser
 
 
 def connect():
-    return psycopg.connect("dbname=template1 user=postgres")
+    if options.user is not None:
+        return psycopg.connect("dbname=template1 user=%s" % options.user)
+    else:
+        return psycopg.connect("dbname=template1")
 
 
 def send_signal(database, signal):
@@ -74,14 +78,22 @@ def still_open(database):
     con.close()
     return True
 
+options = None
 
 def main():
-    if len(sys.argv) != 2:
+    parser = OptionParser()
+    parser.add_option("-U", "--user", dest="user", default=None,
+            help="Connect as USER", metavar="USER",
+            )
+    global options
+    (options, args) = parser.parse_args()
+
+    if len(args) != 1:
         print >> sys.stderr, \
                 'Must specify one, and only one, database to destroy'
         sys.exit(1)
 
-    database = sys.argv[1]
+    database = args[0]
 
     if database in ('template1', 'template0'):
         print >> sys.stderr, "Put the gun down and back away from the vehicle!"
