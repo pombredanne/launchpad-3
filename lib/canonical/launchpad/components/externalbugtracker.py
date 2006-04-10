@@ -321,7 +321,7 @@ class DebBugs(ExternalBugTracker):
         severity = parts[1]
         tags = parts[2:]
 
-        # For the moment we only care about the status.
+        # For the moment we convert only the status, not the severity.
         try:
             malone_status = debbugsstatusmap[status]
         except KeyError:
