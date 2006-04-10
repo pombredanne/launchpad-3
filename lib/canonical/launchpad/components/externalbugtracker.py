@@ -336,9 +336,11 @@ class DebBugs(ExternalBugTracker):
             for confirmed_tag in confirmed_tags:
                 if confirmed_tag in tags:
                     malone_status = BugTaskStatus.CONFIRMED
+                    break
             for fix_committed_tag in fix_committed_tags:
                 if fix_committed_tag in tags:
                     malone_status = BugTaskStatus.FIXCOMMITTED
+                    break
 
         return malone_status
 
