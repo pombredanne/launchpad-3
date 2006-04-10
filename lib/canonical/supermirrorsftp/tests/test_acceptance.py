@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import unittest
 import tempfile
-from cStringIO import StringIO
 import os
 import shutil
 import gc
@@ -28,30 +27,7 @@ from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
-
-
-class AuthserverTacTestSetup(TacTestSetup):
-    root = '/tmp/authserver-test'
-    
-    def setUpRoot(self):
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
-
-    @property
-    def tacfile(self):
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/authserver.tac'
-            ))
-
-    @property
-    def pidfile(self):
-        return os.path.join(self.root, 'authserver.pid')
-
-    @property
-    def logfile(self):
-        return os.path.join(self.root, 'authserver.log')
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 
 
 class SFTPSetup(TacTestSetup):
@@ -73,16 +49,10 @@ class SFTPSetup(TacTestSetup):
             ))
 
 
-
-class AcceptanceTests(BzrTestCase):
-    """ 
-    These are the agreed acceptance tests for the Supermirror SFTP system's
-    initial implementation of bzr support, converted from the English at
-    https://wiki.launchpad.canonical.com/SupermirrorTaskList
-    """
+class SFTPTestCase(BzrTestCase):
 
     def setUp(self):
-        super(AcceptanceTests, self).setUp()
+        super(SFTPTestCase, self).setUp()
 
         # insert SSH keys for testuser -- and insert testuser!
         LaunchpadZopelessTestSetup().setUp()
@@ -99,12 +69,6 @@ class AcceptanceTests(BzrTestCase):
             'testuser');
             """)
         connection.commit()
-
-        # Create a local branch with one revision
-        self.local_branch = ScratchDir(files=['foo']).open_branch()
-        wt = self.local_branch.bzrdir.open_workingtree()
-        wt.add('foo')
-        wt.commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
         self.userHome = os.path.abspath(tempfile.mkdtemp())
@@ -153,9 +117,26 @@ class AcceptanceTests(BzrTestCase):
         os.environ['HOME'] = self.realHome
         self.authserver.tearDown()
         LaunchpadZopelessTestSetup().tearDown()
-        super(AcceptanceTests, self).tearDown()
+        super(SFTPTestCase, self).tearDown()
         sftp._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
+
+
+class AcceptanceTests(SFTPTestCase):
+    """ 
+    These are the agreed acceptance tests for the Supermirror SFTP system's
+    initial implementation of bzr support, converted from the English at
+    https://wiki.launchpad.canonical.com/SupermirrorTaskList
+    """
+
+    def setUp(self):
+        super(AcceptanceTests, self).setUp()
+
+        # Create a local branch with one revision
+        self.local_branch = ScratchDir(files=['foo']).open_branch()
+        wt = self.local_branch.bzrdir.open_workingtree()
+        wt.add('foo')
+        wt.commit('Added foo')
 
     def test_1_bzr_sftp(self):
         """
@@ -258,6 +239,7 @@ class AcceptanceTests(BzrTestCase):
         branch = database.Branch.get(branch_id)
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
+        getattr(sftp, '_connected_hosts', {}).clear()
         self.assertRaises(
             NotBranchError,
             bzrlib.branch.Branch.open,

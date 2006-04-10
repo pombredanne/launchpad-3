@@ -130,6 +130,8 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
+    # XXX Matthew Paul Thomas 2006-03-22: NOTICE and INFO should be merged.
+    # https://launchpad.net/bugs/36287
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
     NOTICE = logging.INFO + 5 # action had effects you might not have intended
@@ -236,6 +238,7 @@ class IErrorReportRequest(Interface):
 #
 
 class IBatchNavigator(Interface):
+    """A batch navigator for a specified set of results."""
 
     batch = Attribute("The IBatch for which navigation links are provided.")
 
@@ -259,3 +262,4 @@ class ITableBatchNavigator(IBatchNavigator):
     show_column = Attribute(
         "A dict keyed by column name. If the value is True, that column will "
         "be shown in the list, otherwise it won't.")
+

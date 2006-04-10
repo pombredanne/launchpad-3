@@ -121,13 +121,16 @@ class DistroArchRelease(SQLBase):
             BinaryPackagePublishing.distroarchrelease = %s AND
             BinaryPackagePublishing.binarypackagerelease =
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.fti @@ ftq(%s)
-            """ % sqlvalues(self.id, text),
+             BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id AND
+            (BinaryPackageRelease.fti @@ ftq(%s) OR
+             BinaryPackageName.name = %s)
+            """ % sqlvalues(self.id, text, text),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),
-            clauseTables=['BinaryPackagePublishing'],
-            prejoins=["binarypackagename"],
+            clauseTables=['BinaryPackagePublishing',  'BinaryPackageName'],
+            prejoinClauseTables=["BinaryPackageName"],
             orderBy=['-rank'],
             distinct=True)
         # import here to avoid circular import problems
@@ -147,10 +150,11 @@ class DistroArchRelease(SQLBase):
         return DistroArchReleaseBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).getBuildsByArchIds([self.id], status)
+        return getUtility(IBuildSet).getBuildsByArchIds([self.id], status,
+                                                        name)
 
     def getReleasedPackages(self, binary_name, pocket=None,
                             include_pending=False, exclude_pocket=None):

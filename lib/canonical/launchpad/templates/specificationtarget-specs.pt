@@ -1,9 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en" lang="en"
+  metal:use-macro="context/@@main_template_2col/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Specifications for <tal:thing replace="context/title" /></h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -14,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-  <p tal:replace="nothing">
+  <tal:comment replace="nothing">
     This page uses a view class that organises the tasks into a set of
     categories. it determines the sequence of the categories, and the
     sequence of the specs in each category.
@@ -23,7 +27,7 @@
       category/title => the category title
       category/contents => the list of specs
       spec => an ISpecification
-  </p>
+  </tal:comment>
 
   <h1 tal:condition="view/view_title"
       tal:content="view/view_title">Specs for approval</h1>

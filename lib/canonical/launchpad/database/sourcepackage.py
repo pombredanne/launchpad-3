@@ -33,8 +33,9 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.distributionsourcepackagerelease import \
     DistributionSourcePackageRelease
 from canonical.launchpad.database.distroreleasesourcepackagerelease import \
@@ -326,7 +327,8 @@ class SourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
@@ -370,7 +372,7 @@ class SourcePackage(BugTargetBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
@@ -389,6 +391,39 @@ class SourcePackage(BugTargetBase):
             return None
         return ticket
 
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return False
+        SupportContact(
+            product=None, person=person.id,
+            sourcepackagename=self.sourcepackagename.id,
+            distribution=self.distribution.id)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
+
     def __eq__(self, other):
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return (
@@ -400,7 +435,7 @@ class SourcePackage(BugTargetBase):
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None):
+    def getBuildRecords(self, status=None, name=None):
         """See IHasBuildRecords"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
@@ -434,7 +469,6 @@ class SourcePackage(BugTargetBase):
             orderBy = "-BuildQueue.lastscore"
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
-
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

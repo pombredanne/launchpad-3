@@ -75,9 +75,8 @@ class IBuilder(IHasOwner):
                    )
 
     manual = Bool(title=_('Manual Mode'), required=False,
-                   description=_('Whether not the builder is MANUAL MODE. '
-                                 'Auto Build System does not dispach jobs '
-                                 'automatically for slaves in that state')
+                   description=_('The auto-build system does not dispatch jobs '
+                                 'automatically for slaves in manual mode.')
                    )
 
     builderok = Bool(title=_('Builder State OK'), required=False,
@@ -149,6 +148,10 @@ class IBuildQueue(Interface):
     files = Attribute("SourcePackageRelease files")
     builddependsindep = Attribute("SourcePackageRelease builddependsindep")
     buildduration = Attribute("The duration of the build in progress")
+    manual = Attribute("whether or not the record was rescored manually")
+
+    def manualScore(value):
+        """Manually set a score value to a queue item and lock it."""
 
     def destroySelf():
         """Delete this entry from the database."""

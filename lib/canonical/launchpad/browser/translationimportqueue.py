@@ -13,6 +13,8 @@ __all__ = [
     'TranslationImportQueueView',
     ]
 
+import datetime
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.widget import renderElement
@@ -328,6 +330,10 @@ class TranslationImportQueueView(LaunchpadView):
                 raise UnexpectedFormData(
                     'Ignored the request to change the status from %s to %s.'
                         % (entry.status.name, new_status_name))
+
+            # Update the date_status_change field.
+            UTC = pytz.timezone('UTC')
+            entry.date_status_changed = datetime.datetime.now(UTC)
 
         if number_of_changes == 0:
             self.request.response.addWarningNotification(

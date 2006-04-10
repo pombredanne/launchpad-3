@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>SSH keys</h1> 
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -14,24 +17,22 @@
 
   <div metal:fill-slot="main">
 
-    <h1>SSH key management</h1> 
-
     <p>You need to register an SSH key with Launchpad to be able to publish
     your Bazaar code branches in the Bazaar supermirror. For more
     information, read about <a href="/bazaar/">The Bazaar</a>.
     </p>
 
-    <div tal:define="msg view/form_action" tal:condition="msg">
-      <p class="portalMessage" tal:content="msg">Something happened.</p>
-    </div>
-  
+    <p
+      tal:define="msg view/form_action"
+      tal:condition="msg"
+      tal:content="msg"
+      class="error message"
+    >Something happened.</p>
     
     <div tal:repeat="sshkey context/sshkeys"> 
     <form name="remove" action="" method="POST">
     <input type="hidden" name="action" value="remove_ssh" />
     <input type="hidden" name="key" tal:attributes="value sshkey/id" />
-    <fieldset> 
-    <legend>SSH Key Information </legend>
     <dl>
     <dt>Key type</dt>
         <dd tal:content="sshkey/keytypename">DSA</dd>
@@ -41,24 +42,21 @@
         <dd tal:content="sshkey/comment">foo@bar</dd>
     </dl>
     <input type="submit" value="Remove" />
-    </fieldset>
     </form>
     </div>
 
     <div>
     <form name="add" action="" method="POST">
     <input type="hidden" name="action" value="add_ssh" />
-    <fieldset>
-    <legend>Add SSH Key</legend>
+    <h2>Add an SSH key</h2>
     <div>
         <label>Public key line</label>
         <div class="formHelp">
-            Insert the contents of <tt>~/.ssh/id_dsa.pub</tt> or
-            <tt>~/.ssh/id_rsa.pub</tt>.  Only SSH v2 keys are supported.
+            Insert the contents of <code>~/.ssh/id_dsa.pub</code> or
+            <code>~/.ssh/id_rsa.pub</code>.  Only SSH v2 keys are supported.
         </div>
         <textarea name="sshkey" width="30" height="6"></textarea>
-        <input type="submit" value="Import public key">
-    </fieldset>
+        <input type="submit" value="Import Public Key">
     </form>
     </div>
     

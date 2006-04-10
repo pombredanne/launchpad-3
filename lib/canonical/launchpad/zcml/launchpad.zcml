@@ -137,15 +137,6 @@
       permission="zope.Public"
       />
 
-  <!-- site map -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+sitemap"
-      class="canonical.launchpad.browser.launchpad.SiteMap"
-      template="../templates/launchpad-sitemap.pt"
-      permission="zope.Public"
-      />
-
   <!-- Menus debug page. -->
   <browser:page
       for="zope.interface.Interface"
@@ -160,6 +151,12 @@
   for="canonical.launchpad.interfaces.ILaunchpadRoot"
   interface="canonical.launchpad.xmlrpc.ISelfTest"
   class="canonical.launchpad.xmlrpc.SelfTest"
+  permission="zope.Public"
+  />
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.IRosettaApplication"
+  interface="canonical.launchpad.xmlrpc.IRosettaSelfTest"
+  class="canonical.launchpad.xmlrpc.RosettaSelfTest"
   permission="zope.Public"
   />
 

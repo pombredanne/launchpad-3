@@ -223,7 +223,7 @@ Or for a given distroarchrelease.
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  6
+  9
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
@@ -282,5 +282,13 @@ Note that they are ordered by DESC lastscore, as expected:
   (9, 0, 100)
   (11, 0, 10)
   (8, 0, 1)
+
+Using the optional name argument to filter build results:
+
+  >>> builds = ubuntu.getBuildRecords(name='pm')
+  >>> builds.count()
+  2
+  >>> [(b.sourcepackagerelease.name, b.distrorelease.name) for b in builds]
+  [(u'pmount', u'warty'), (u'pmount', u'hoary')]
 
 

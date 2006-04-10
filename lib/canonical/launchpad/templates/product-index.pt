@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">    
+      <h1 tal:content="context/title">Name of product</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -23,8 +26,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-  <h1>Product overview</h1>
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -90,11 +91,11 @@
     <div>
 
       <ul>
-        <tal:for_each_branch repeat="branch view/branches">
+        <tal:for_each_branch repeat="branch context/branches">
           <li>
-            <a tal:attributes="href branch/context/fmt:url"
-               tal:content="branch/display_name"
-            >branch title</a>
+            <a tal:attributes="href branch/fmt:url"
+               tal:content="branch/displayname"
+            >branch displayname</a>
           </li>
         </tal:for_each_branch>
       </ul>

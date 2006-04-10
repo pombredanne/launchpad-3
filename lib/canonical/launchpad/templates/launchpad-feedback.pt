@@ -6,8 +6,10 @@
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main">
+    <metal:heading fill-slot="pageheading">
       <h1>Help us improve</h1>
+    </metal:heading>
+    <div metal:fill-slot="main">
       <p>
         Launchpad is a work in progress, and we welcome your feedback on how
         to make it better.

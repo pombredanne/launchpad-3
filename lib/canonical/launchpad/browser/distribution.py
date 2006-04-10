@@ -111,18 +111,13 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'editbugcontact', 'reassign', 'addrelease', 'builds',
-             'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
+             'reassign', 'addrelease', 'builds', 'officialmirrors',
+             'allmirrors', 'newmirror', 'launchpad_usage']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editbugcontact(self):
-        text = 'Change Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
@@ -165,7 +160,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+addrelease', text, icon='add')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Builds'
         return Link('+builds', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -178,7 +173,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['new', 'cve_list']
+    links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
         text = 'CVE List'
@@ -187,6 +182,16 @@ class DistributionBugsMenu(ApplicationMenu):
     def new(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def bugcontact(self):
+        text = 'Change Bug Contact'
+        return Link('+bugcontact', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change Security Contact'
+        return Link('+securitycontact', text, icon='edit')
 
 
 class DistributionBountiesMenu(ApplicationMenu):
@@ -208,7 +213,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'workload', 'new']
+    links = ['listall', 'roadmap', 'table', 'new']
 
     def listall(self):
         text = 'List All'
@@ -222,10 +227,6 @@ class DistributionSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
 
-    def workload(self):
-        text = 'Workload'
-        return Link('+workload', text, icon='info')
-
     def new(self):
         text = 'New Specification'
         return Link('+addspec', text, icon='add')
@@ -235,7 +236,7 @@ class DistributionSupportMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'support'
-    links = ['new']
+    links = ['new', 'support_contact']
     # XXX: MatthewPaulThomas, 2005-09-20
     # Add 'help' once +gethelp is implemented for a distribution
 
@@ -246,6 +247,10 @@ class DistributionSupportMenu(ApplicationMenu):
     def new(self):
         text = 'Request Support'
         return Link('+addticket', text, icon='add')
+
+    def support_contact(self):
+        text = 'Support Contact'
+        return Link('+support-contact', text, icon='edit')
 
 
 class DistributionTranslationsMenu(ApplicationMenu):

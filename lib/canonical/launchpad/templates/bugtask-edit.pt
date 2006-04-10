@@ -1,8 +1,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+    i18n:domain="malone"
+>
   <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+      </div>
+      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
+    </metal:heading>
+
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-status-details" />
@@ -15,14 +25,8 @@
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
-       <p class="documentDescription"
-          tal:condition="context/bug/summary"
-          tal:content="context/bug/summary">
-         Bug summary goes here if it exists.
-       </p>
 
-      <div tal:content="structure context/@@+edit-form">
-      </div>
+      <div tal:content="structure context/@@+edit-form" />
 
       <h2>Bug description</h2>
 

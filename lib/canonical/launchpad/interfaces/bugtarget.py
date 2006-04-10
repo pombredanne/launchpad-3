@@ -30,7 +30,7 @@ class IBugTarget(Interface):
         except IProduct.
         """
 
-    def createBug(owner, title, comment, private=False):
+    def createBug(owner, title, comment, security_related=False, private=False):
         """Create a new bug on this target.
 
         :title: The title of the bug, as a string.

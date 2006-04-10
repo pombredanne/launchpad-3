@@ -15,13 +15,14 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
+    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
+    ITicketTarget)
 
 _ = MessageIDFactory('launchpad')
 
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-    ITicketTarget):
+                    IHasSecurityContact, ITicketTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -50,7 +51,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_("The distro's domain name."), required=True)
     translationgroup = Choice(
         title = _("Translation group"),
-        description = _("The translation group for this product. This group "
+        description = _("The translation group for this distribution. This group "
             "is made up of a set of translators for all the languages "
             "approved by the group manager. These translators then have "
             "permission to edit the groups translation files, based on the "
@@ -76,6 +77,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team who will receive all bugmail for this "
             "distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this distribution"),
         required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),
@@ -143,7 +150,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         """Return the DistroReleases which are marked as in development."""
 
     def getRelease(name_or_version):
-        """Return the source package release with the name or version
+        """Return the distribution release with the name or version
         given.
         """
 

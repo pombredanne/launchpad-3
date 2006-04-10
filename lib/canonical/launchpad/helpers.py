@@ -394,7 +394,6 @@ def count_lines(text):
 
 def request_languages(request):
     '''Turn a request into a list of languages to show.'''
-
     user = getUtility(ILaunchBag).user
     if user is not None and user.languages:
         return user.languages
@@ -406,6 +405,7 @@ def request_languages(request):
         if lang not in languages:
             languages.append(lang)
     return languages
+
 
 class UnrecognisedCFormatString(ValueError):
     """Exception raised when a string containing C format sequences can't be

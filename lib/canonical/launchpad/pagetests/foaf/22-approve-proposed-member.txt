@@ -43,7 +43,7 @@
 
   Now we make sure that 'salgado' is really an active member of this team.
 
-  >>> from canonical.launchpad.database import Person, TeamMembership
+  >>> from canonical.launchpad.database import Person
   >>> salgado = Person.byName('salgado')
   >>> team = Person.byName('myemail')
   >>> salgado.inTeam(team)

@@ -10,8 +10,8 @@ import urllib
 import cgi
 import datetime
 
-from sqlobject import ForeignKey, StringCol
-from sqlobject import SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 
 import pytz
 
@@ -137,16 +137,36 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-
-        if self.product is not None:
-            # This is an upstream task.
+        # We use the forbidden underscore attributes below because, with
+        # SQLObject, hitting self.product means querying and
+        # instantiating an object; prejoining doesn't help because this
+        # happens when the bug task is being instantiated -- too early
+        # in cases where we prejoin other things in.
+        # XXX: we should use a specific SQLObject API here to avoid the
+        # privacy violation.
+        #   -- kiko, 2006-03-21
+        if self._SO_val_productID is not None:
             mark_task(self, IUpstreamBugTask)
-        elif self.distrorelease is not None:
-            # This is a distro release task.
+        elif self._SO_val_distroreleaseID is not None:
             mark_task(self, IDistroReleaseBugTask)
-        else:
-            # This is a distro task.
+        elif self._SO_val_distributionID is not None:
+            # If nothing else, this is a distro task.
             mark_task(self, IDistroBugTask)
+        else:
+            raise AssertionError, "Task %d is floating" % self.id
+
+    @property
+    def target_uses_malone(self):
+        """See IBugTask"""
+        if IUpstreamBugTask.providedBy(self):
+            root_target = self.product
+        elif IDistroReleaseBugTask.providedBy(self):
+            root_target = self.distrorelease.distribution
+        elif IDistroBugTask.providedBy(self):
+            root_target = self.distribution
+        else:
+            raise AssertionError, "Task %d is floating" % self.id
+        return bool(root_target.official_malone)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
         # We need to overwrite this method to make sure whenever we change a
@@ -275,7 +295,7 @@ class BugTask(SQLBase, BugTaskMixin):
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (dbschema.BugTaskStatus.REJECTED, 
+            if status in (dbschema.BugTaskStatus.REJECTED,
                           dbschema.BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
             else:
@@ -300,17 +320,7 @@ class BugTaskSet:
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated"}
 
-    def __init__(self):
-        self.title = 'A set of bug tasks'
-
-    def __getitem__(self, task_id):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        return self.get(task_id)
-
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        for task in BugTask.select():
-            yield task
+    title = "A set of bug tasks"
 
     def get(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -378,6 +388,18 @@ class BugTaskSet:
                 clause += "IS NULL"
             extra_clauses.append(clause)
 
+        if params.project:
+            clauseTables.append("Product")
+            extra_clauses.append("BugTask.product = Product.id")
+            if isinstance(params.project, any):
+                extra_clauses.append("Product.project IN (%s)" % ",".join(
+                    [str(proj.id) for proj in params.project.query_values]))
+            elif params.project is NULL:
+                extra_clauses.append("Product.project IS NULL")
+            else:
+                extra_clauses.append("Product.project = %d" %
+                                     params.project.id)
+
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
 
@@ -406,6 +428,30 @@ class BugTaskSet:
                     BugSubscription.person = %(personid)s""" %
                     sqlvalues(personid=params.subscriber.id))
 
+        if params.component:
+            clauseTables += ["SourcePackagePublishing", "SourcePackageRelease"]
+            distrorelease = None
+            if params.distribution:
+                distrorelease = params.distribution.currentrelease
+            elif params.distrorelease:
+                distrorelease = params.distrorelease
+            assert distrorelease, (
+                "Search by component requires a context with a distribution "
+                "or distrorelease")
+
+            if zope_isinstance(params.component, any):
+                component_ids = sqlvalues(*params.component.query_values)
+            else:
+                component_ids = sqlvalues(params.component)
+
+            extra_clauses.extend([
+                "BugTask.sourcepackagename = SourcePackageRelease.sourcepackagename",
+                "SourcePackageRelease.id = SourcePackagePublishing.sourcepackagerelease",
+                "SourcePackagePublishing.distrorelease = %d" % distrorelease.id,
+                "SourcePackagePublishing.component IN (%s)" % ', '.join(component_ids),
+                "SourcePackagePublishing.status = %s" %
+                    dbschema.PackagePublishingStatus.PUBLISHED.value])
+
         clause = self._getPrivacyFilter(params.user)
         if clause:
             extra_clauses.append(clause)
@@ -432,6 +478,7 @@ class BugTaskSet:
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
             query, prejoinClauseTables=["Bug"], clauseTables=clauseTables,
+            prejoins=['sourcepackagename', 'product'],
             orderBy=orderby_arg)
 
         return bugtasks
@@ -447,19 +494,26 @@ class BugTaskSet:
         if product:
             assert distribution is None, (
                 "Can't pass both distribution and product.")
-            # If a product bug contact has been provided, subscribe that
-            # contact to all public bugs. Otherwise subscribe the
-            # product owner to all public bugs.
+            # Subscribe product bug and security contacts to all
+            # public bugs.
             if not bug.private:
                 if product.bugcontact:
                     bug.subscribe(product.bugcontact)
                 else:
+                    # Make sure that at least someone upstream knows
+                    # about this bug. :)
                     bug.subscribe(product.owner)
+
+                if product.security_contact:
+                    bug.subscribe(product.security_contact)
         elif distribution:
-            # If a distribution bug contact has been provided, subscribe
-            # that contact to all public bugs.
-            if distribution.bugcontact and not bug.private:
-                bug.subscribe(distribution.bugcontact)
+            # Subscribe bug and security contacts, if provided, to all
+            # public bugs.
+            if not bug.private:
+                if distribution.bugcontact:
+                    bug.subscribe(distribution.bugcontact)
+                if distribution.security_contact:
+                    bug.subscribe(distribution.security_contact)
 
             # Subscribe package bug contacts to public bugs, if package
             # information was provided.
@@ -473,7 +527,7 @@ class BugTaskSet:
             assert distrorelease != distrorelease.distribution.currentrelease, (
                 'Bugtasks cannot be opened on the current release.')
 
-        return BugTask(
+        bugtask = BugTask(
             bug=bug,
             product=product,
             distribution=distribution,
@@ -486,6 +540,12 @@ class BugTaskSet:
             assignee=assignee,
             owner=owner,
             milestone=milestone)
+        if not bugtask.target_uses_malone:
+            bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
+            bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
+            bugtask.status = dbschema.BugTaskStatus.UNKNOWN
+
+        return bugtask
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
                            showclosed=False, orderBy=None, user=None):
@@ -533,4 +593,8 @@ class BugTaskSet:
                        TeamParticipation.person = %(personid)s AND
                        BugSubscription.person = TeamParticipation.team))
                          """ % sqlvalues(personid=user.id)
+
+    def dangerousGetAllTasks(self):
+        """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
+        return BugTask.select()
 

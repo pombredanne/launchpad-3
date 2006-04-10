@@ -3,13 +3,26 @@
   table.
 */
 
+/* Branch */
+
+COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+
 /* Bug */
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
-COMMENT ON COLUMN Bug.summary IS 'A brief summary of the bug. This will be displayed at the very top of the page in bold. It will also receive a higher ranking in FTI queries than the description and comments of the bug. The bug summary is not created necessarily when the bug is filed, instead we just use the first comment as a description and allow people to fill in the summary later as they converge on a clear description of the bug itself.';
+COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
+
+/* BugBranch */
+COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
+COMMENT ON COLUMN BugBranch.bug IS 'The bug associated with this branch.';
+COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
+COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
+COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
+COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
 /* BugTask */
 
@@ -40,6 +53,16 @@ the remote bug watch.';
 COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related content for bugs.';
 COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
 COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
+
+
+-- BugNotification
+
+COMMENT ON TABLE BugNotification IS 'The text representation of changes to a bug, which are used to send email notifications to bug changes.';
+COMMENT ON COLUMN BugNotification.bug IS 'The bug that was changed.';
+COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textual representation of the change.';
+COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
+COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
+
 
 /* BugPackageInfestation */
 
@@ -98,14 +121,6 @@ COMMENT ON TABLE CveReference IS 'A reference in the CVE system that shows what 
 COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This is a text string, like XF or BUGTRAQ or MSKB. Each string indicates a different kind of reference. The list of known types is documented on the CVE web site. At some future date we might turn this into an enum rather than a text, but for the moment we prefer to keep it fluid and just suck in what CVE gives us. This means that CVE can add new source types without us having to update our code.';
 COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on the web, if it was present in the CVE database.';
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
-
-
-/* CVERef OBSOLETE */
-
-COMMENT ON TABLE CVERefObsolete IS 'OBSOLETE: THIS TABLE IS PARKED AND WILL BE DELETED IN FAVOUR OF THE NEW CVE TABLE. This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
-COMMENT ON COLUMN CVERefObsolete.cveref IS 'This is the actual CVE number assigned to this specific problem.';
-COMMENT ON COLUMN CVERefObsolete.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
-COMMENT ON COLUMN CVERefObsolete.owner IS 'This refers to the person who created the entry.';
 
 
 -- DevelopmentManifest
@@ -175,7 +190,7 @@ COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
-
+COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 
 /* ProductLabel */
 
@@ -503,6 +518,7 @@ COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically subscribed to every bug targeted to this distribution.';
+COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
 
@@ -655,8 +671,6 @@ COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of t
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
-COMMENT ON COLUMN Person.givenname IS 'Component of a person''s full name used for secondary sorting. Generally the person''s given or christian name.';
-COMMENT ON COLUMN Person.familyname IS 'Component of a person''s full name used for sorting. Generally the person''s family name.';
 COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
@@ -897,6 +911,7 @@ COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this libr
 COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file\'s contents';
+COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file\'s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 
 -- LibraryFileAlias
@@ -988,6 +1003,7 @@ COMMENT ON COLUMN BuildQueue.created IS 'The timestamp of the creation of this r
 COMMENT ON COLUMN BuildQueue.buildstart IS 'The timestamp of the start of the build run on the given builder. If this is NULL then the build is not running yet.';
 COMMENT ON COLUMN BuildQueue.logtail IS 'The tail end of the log of the current build. This is updated regularly as the buildd master polls the buildd slaves. Once the build is complete; the full log will be lodged with the librarian and linked into the build table.';
 COMMENT ON COLUMN BuildQueue.lastscore IS 'The last score ascribed to this build record. This can be used in the UI among other places.';
+COMMENT ON COLUMN BuildQueue.manual IS 'Indicates if the current record was or not rescored manually, if so it get skipped from the auto-score procedure.';
 
 -- Mirrors
 
@@ -1268,6 +1284,8 @@ COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTempl
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
 
+-- SupportContact
+COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
 
 -- PersonalPackageArchive
 COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';

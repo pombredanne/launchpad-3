@@ -11,7 +11,7 @@
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IPOFile"
-            set_attributes="header pluralforms path"
+            set_attributes="header pluralforms path from_sourcepackagename"
             />
     </content>
 
@@ -66,7 +66,7 @@
     <browser:page
         name="+upload"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.POFileView"
+        class="canonical.launchpad.browser.POFileUploadView"
         for="canonical.launchpad.interfaces.IPOFile"
         template="../templates/pofile-upload.pt"
         />
@@ -76,7 +76,7 @@
         for="canonical.launchpad.interfaces.IPOFile"
         permission="launchpad.AnyPerson"
         template="../templates/pofile-translate.pt"
-        class="canonical.launchpad.browser.POFileView"
+        class="canonical.launchpad.browser.POFileTranslateView"
         />
 
     <browser:page

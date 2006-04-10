@@ -21,6 +21,8 @@ from zope.event import notify
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -225,17 +227,17 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return self.potemplate.translationpermission
 
-    @property
+    @cachedproperty
     def contributors(self):
         """See IPOFile."""
         from canonical.launchpad.database.person import Person
 
-        return Person.select("""
+        return list(Person.select("""
             POSubmission.person = Person.id AND
             POSubmission.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d""" % self.id,
             clauseTables=('POSubmission', 'POMsgSet'),
-            distinct=True)
+            distinct=True))
 
     def canEditTranslations(self, person):
         """See IPOFile."""
@@ -809,11 +811,12 @@ class POFile(SQLBase, RosettaStats):
             alias_set = getUtility(ILibraryFileAliasSet)
             return alias_set[self.exportfile.id].read()
 
-    def uncachedExport(self, included_obsolete=True):
+    def uncachedExport(self, included_obsolete=True, force_utf8=False):
         """See IPOFile."""
         exporter = IPOTemplateExporter(self.potemplate)
-        return exporter.export_pofile(self.language, self.variant,
-            included_obsolete)
+        exporter.force_utf8 = force_utf8
+        return exporter.export_pofile(
+            self.language, self.variant, included_obsolete)
 
     def export(self, included_obsolete=True):
         """See IPOFile."""
@@ -986,6 +989,17 @@ class POFileSet:
     def getPOFileByPathAndOrigin(self, path, productseries=None,
         distrorelease=None, sourcepackagename=None):
         """See IPOFileSet."""
+        assert productseries is not None or distrorelease is not None, (
+            'Either productseries or sourcepackagename arguments must be'
+            ' not None.')
+        assert productseries is None or distrorelease is None, (
+            'productseries and sourcepackagename/distrorelease cannot be used'
+            ' at the same time.')
+        assert ((sourcepackagename is None and distrorelease is None) or
+                (sourcepackagename is not None and distrorelease is not None)
+                ), ('sourcepackagename and distrorelease must be None or not'
+                   ' None at the same time.')
+
         if productseries is not None:
             return POFile.selectOne('''
                 POFile.path = %s AND
@@ -993,15 +1007,15 @@ class POFileSet:
                 POTemplate.productseries = %s''' % sqlvalues(
                     path, productseries.id),
                 clauseTables=['POTemplate'])
-        elif sourcepackagename is not None:
-            # The POTemplate belongs to a distribution and it could come from
-            # another package that the one it's linked to, so we first check
-            # to find it at IPOTemplate.from_sourcepackagename
+        else:
+            # The POFile belongs to a distribution and it could come from
+            # another package that its POTemplate is linked to, so we first
+            # check to find it at IPOFile.from_sourcepackagename
             pofile = POFile.selectOne('''
                 POFile.path = %s AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s AND
-                POTemplate.from_sourcepackagename = %s''' % sqlvalues(
+                POFile.from_sourcepackagename = %s''' % sqlvalues(
                     path, distrorelease.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
 
@@ -1009,8 +1023,8 @@ class POFileSet:
                 return pofile
 
             # There is no pofile in that 'path' and
-            # 'from_sourcepackagename' so we do a search using the usual
-            # sourcepackagename.
+            # 'IPOFile.from_sourcepackagename' so we do a search using the
+            # usual sourcepackagename.
             return POFile.selectOne('''
                 POFile.path = %s AND
                 POFile.potemplate = POTemplate.id AND
@@ -1018,7 +1032,3 @@ class POFileSet:
                 POTemplate.sourcepackagename = %s''' % sqlvalues(
                     path, distrorelease.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
-        else:
-            raise AssertionError(
-                'Either productseries or sourcepackagename arguments must be'
-                ' not None.')
