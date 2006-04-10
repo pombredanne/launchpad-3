@@ -36,9 +36,12 @@ from canonical.lp.dbschema import EnumCol, BuildStatus
 class BuilderSlave(xmlrpclib.Server):
     """Add in a few useful methods for the XMLRPC slave."""
 
+    # XXX: check the use of urljoin() here; I am not sure we know if
+    # urlbase always ends in a slash, nor if we want the path joined at
+    # the root or at the end of the urlbase. -- kiko, 2006-04-10
     def __init__(self, urlbase, *args, **kwargs):
         """Initialise..."""
-        xmlrpclib.Server.__init__(self, urlparse.urljoin(urlbase,"/rpc/"),
+        xmlrpclib.Server.__init__(self, urlparse.urljoin(urlbase, "/rpc/"),
                                   *args, **kwargs)
         self.urlbase = urlbase
 
