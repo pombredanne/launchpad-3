@@ -11,23 +11,25 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
-from canonical.launchpad.interfaces import (IDistroArchReleaseBinaryPackage,
-                                            NotFoundError)
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
-from canonical.launchpad.database.distroarchreleasebinarypackagerelease import \
-    DistroArchReleaseBinaryPackageRelease
-from distroreleasepackagecache import DistroReleasePackageCache
-from canonical.launchpad.database.publishing import (BinaryPackagePublishingHistory,
-                                                     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.database.binarypackagerelease import \
-    BinaryPackageRelease
-
 from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease
+    )
+from canonical.launchpad.database.distroarchreleasebinarypackagerelease import (
+    DistroArchReleaseBinaryPackageRelease
+    )
+from canonical.launchpad.database.distroreleasepackagecache import (
+    DistroReleasePackageCache
+    )
+from canonical.launchpad.database.publishing import (
+    BinaryPackagePublishingHistory,SecureBinaryPackagePublishingHistory
+    )
+from canonical.launchpad.interfaces import (
+    IDistroArchReleaseBinaryPackage,NotFoundError
+    )
+
 
 class DistroArchReleaseBinaryPackage:
     """A Binary Package in the context of a Distro Arch Release. 
@@ -207,14 +209,14 @@ class DistroArchReleaseBinaryPackage:
         return current
 
     def changeOverride(self, new_component=None, new_section=None,
-                       new_priority=None, new_pocket=None):
+                       new_priority=None):
         """See IDistroArchReleaseBinaryPackage."""
 
         # Check we have been asked to do something
         if (new_component is None and new_section is None
-            and new_priority is None and new_pocket is None):
+            and new_priority is None):
             raise AssertionError("changeOverride must be passed a new"
-                                 "component, section, priority or pocket.")
+                                 "component, section and/or priority.")
 
         # Retrieve current publishing info
         current = self.current_published
@@ -226,13 +228,10 @@ class DistroArchReleaseBinaryPackage:
             new_section = current.section
         if new_priority is None:
             new_priority = current.priority
-        if new_pocket is None:
-            new_pocket = current.pocket
 
         if (new_component == current.component and
             new_section == current.section and
-            new_priority == current.priority and
-            new_pocket == current.pocket):
+            new_priority == current.priority):
             return
 
         # Append the modified package publishing entry
@@ -242,10 +241,10 @@ class DistroArchReleaseBinaryPackage:
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             embargo=False,
+            pocket=current.pocket,
             component=new_component,
             section=new_section,
             priority=new_priority,
-            pocket=new_pocket,
             )
 
     def supersede(self):

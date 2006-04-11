@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 
 class IDistroArchReleaseBinaryPackage(Interface):
@@ -52,8 +51,8 @@ class IDistroArchReleaseBinaryPackage(Interface):
         """
 
     def changeOverride(new_component=None, new_section=None,
-                       new_priority=None, new_pocket=None):
-        """Change the component, section, priority and/or pocket
+                       new_priority=None):
+        """Change the component, section and/or priority.
 
         It doesn't change the ommited arguments.
         """

@@ -49,7 +49,7 @@ def binaries_of_source(distrorelease, sourcepackage_name):
 
 def process_source_change(distrorelease, package):
     Ztm.begin()
-    (new_component, new_section, new_pocket) = (None, None, None)
+    (new_component, new_section) = (None, None)
     if Options.component:
         new_component = Options.component
     if Options.section:
@@ -57,8 +57,7 @@ def process_source_change(distrorelease, package):
 
     spr = distrorelease.getSourcePackage(package).releasehistory[-1]
     drspr = DistroReleaseSourcePackageRelease(distrorelease, spr)
-    drspr.changeOverride(new_component=new_component, new_section=new_section,
-                         new_pocket=Options.pocket)
+    drspr.changeOverride(new_component=new_component, new_section=new_section)
     Ztm.commit()
 
 ########################################
@@ -79,7 +78,7 @@ def process_binary_change(distrorelease, package):
         try:
             darbp.changeOverride(
                 new_component=new_component, new_priority=new_priority,
-                new_section=new_section, new_pocket=Options.pocket)
+                new_section=new_section)
         except NotFoundError:
             pass
     Ztm.commit()

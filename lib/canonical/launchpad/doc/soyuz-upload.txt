@@ -508,26 +508,26 @@ required entry for 'etherwake':
   <BLANKLINE>
   END
 
-Invoke change-override on just published etherwake moving it to
-component 'universe' and pocket 'UPDATES'.
+Invoke changeOverride on just published etherwake moving it to
+component 'universe'.
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
   >>> etherwake = breezy_autotest.getSourcePackage('etherwake')
   >>> etherwake_spr = etherwake.currentrelease
-
-  >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> etherwake_spr.changeOverride(
-  ...     new_component=getUtility(IComponentSet)['universe'],
-  ...     new_pocket=PackagePublishingPocket.UPDATES)
+  ...     new_component=getUtility(IComponentSet)['universe'])
 
 Check if we have new pending publishing record as expected
 
   >>> for pub in SSPPH.selectBy(
-  ...      sourcepackagereleaseID=etherwake_spr.sourcepackagerelease.id):
+  ...    sourcepackagereleaseID=etherwake_spr.sourcepackagerelease.id,
+  ...    orderBy=['id']):
   ...    print pub.id, pub.status.name, pub.component.name, pub.pocket.name
-  21 PENDING universe UPDATES
   20 PUBLISHED main RELEASE
+  21 PENDING universe RELEASE
+
+Force database changes, so they can be used by the external script properly.
 
   >>> flush_database_updates()
   >>> transaction.commit()
@@ -544,30 +544,27 @@ Invoke Publisher script again to land our changes in the archive
   >>> process.wait()
   0
 
+Invalidates SQLObject cache to cope with publisher.
+
   >>> _clearCache()
 
 Check the publishing history again
 
   >>> for pub in SSPPH.selectBy(
-  ...      sourcepackagereleaseID=etherwake_spr.sourcepackagerelease.id):
+  ...    sourcepackagereleaseID=etherwake_spr.sourcepackagerelease.id,
+  ...    orderBy=['id']):
   ...    print pub.id, pub.status.name, pub.component.name, pub.pocket.name
-  21 PUBLISHED universe UPDATES
-  20 PUBLISHED main RELEASE
+  20 PENDINGREMOVAL main RELEASE
+  21 PUBLISHED universe RELEASE
 
-XXX cprov 20060410: this is utterly unexpected, did the domination
-process fail ?
+Check if the package was moved properly to the component 'universe':
 
   >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
   ...            "/main/source/Sources").read() + '\nEND'
-  Package: etherwake
-  ...
+  <BLANKLINE>
   END
 
-
-Check if the package was moved properly (componente 'universe' and
-pocket 'updates'):
-
-  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest-updates"
+  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
   ...            "/universe/source/Sources").read() + '\nEND'
   Package: etherwake
   ...
