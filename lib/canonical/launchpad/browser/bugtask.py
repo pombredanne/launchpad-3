@@ -233,6 +233,10 @@ class BugTaskView(LaunchpadView):
         form = self.request.form
         fake_task = self.context
         if form.get("reportbug"):
+            if self.isReportedInContext():
+                self.notices.append(
+                    "The bug is already reported in this context.")
+                return
             # The user has requested that the bug be reported in this
             # context.
             if IUpstreamBugTask.providedBy(fake_task):
