@@ -893,6 +893,10 @@ class BugTaskSearchListingView(LaunchpadView):
             vocabulary_name="BugTaskStatus",
             default_values=UNRESOLVED_BUGTASK_STATUSES)
 
+    def getPriorityWidgetValues(self):
+        """Return data used to render the priority checkboxes."""
+        return self.getWidgetValues(vocabulary_name="BugTaskPriority")
+
     def getImportanceWidgetValues(self):
         """Return data used to render the Importance checkboxes."""
         return self.getWidgetValues("BugTaskImportance")

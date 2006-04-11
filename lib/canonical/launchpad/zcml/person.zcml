@@ -210,8 +210,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status importance priority assignee owner omit_dupes
-              searchtext"
+      fields="status importance assignee owner omit_dupes searchtext"
       permission="zope.Public"
       template="../templates/bugtarget-advanced-search.pt"
       lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
@@ -254,8 +253,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status importance priority assignee owner omit_dupes
-              searchtext"
+      fields="status importance assignee owner omit_dupes searchtext"
       permission="zope.Public"
       template="../templates/bugtarget-advanced-search.pt"
       lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
@@ -274,8 +272,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status importance priority assignee owner omit_dupes
-              searchtext"
+      fields="status importance assignee owner omit_dupes searchtext"
       permission="zope.Public"
       template="../templates/bugtarget-advanced-search.pt"
       lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
