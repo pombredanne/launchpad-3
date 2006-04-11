@@ -11,13 +11,10 @@ __all__ = [
     'IBugPackageInfestation',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Choice, Datetime, Int
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 class IBugProductInfestation(Interface):
     """Represents a report that a bug does or does not affect the source
