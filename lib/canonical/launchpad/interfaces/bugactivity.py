@@ -9,11 +9,10 @@ __all__ = [
     'IBugActivitySet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface
 from zope.schema import Datetime, Int, Text, TextLine
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBugActivity(Interface):
     """A log of all things that have happened to a bug."""

@@ -10,7 +10,7 @@ from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator 
+from canonical.launchpad.validators.name import name_validator
 from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
 from canonical.launchpad.interfaces import ITeam
 from canonical.launchpad.fields import (
