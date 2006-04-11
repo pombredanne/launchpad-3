@@ -47,6 +47,8 @@
   >>> assert not stub.test_emails
   >>> to_addrs
   ['foo@baz.com']
+  >>> 'Reply-To: guilherme.salgado@canonical.com' in raw_msg
+  True
 
 
   Proposed Members are not shown as "real" team members by our API.

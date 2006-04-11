@@ -939,7 +939,8 @@ def notify_join_request(event):
     msg = get_email_template('pending-membership-approval.txt') % replacements
     subject = "Launchpad: New %s member awaiting approval." % team.name
     from_addr = config.membership_status_change_address
-    simple_sendmail(from_addr, to_addrs, subject, msg)
+    headers = {"Reply-To": user.preferredemail.email}
+    simple_sendmail(from_addr, to_addrs, subject, msg, headers=headers)
 
 
 def send_ticket_notification(ticket_event, subject, body):
