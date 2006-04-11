@@ -2257,7 +2257,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (45, 'be', 'Belarusian', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (46, 'bem', 'Bemba', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (47, 'bn', 'Bengali', NULL, 2, 'n != 1', true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (48, 'ber', 'Berber (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (48, 'ber', 'Berber (Other)', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (49, 'bho', 'Bhojpuri', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (50, 'bh', 'Bihari', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (51, 'bik', 'Bikol', NULL, NULL, NULL, true, 0);
@@ -8937,6 +8937,8 @@ INSERT INTO spokenin ("language", country, id) VALUES (41, 75, 76);
 INSERT INTO spokenin ("language", country, id) VALUES (45, 21, 125);
 INSERT INTO spokenin ("language", country, id) VALUES (47, 101, 131);
 INSERT INTO spokenin ("language", country, id) VALUES (47, 19, 129);
+INSERT INTO spokenin ("language", country, id) VALUES (48, 146, 346);
+INSERT INTO spokenin ("language", country, id) VALUES (48, 4, 347);
 INSERT INTO spokenin ("language", country, id) VALUES (51, 171, 337);
 INSERT INTO spokenin ("language", country, id) VALUES (56, 28, 134);
 INSERT INTO spokenin ("language", country, id) VALUES (58, 75, 133);
