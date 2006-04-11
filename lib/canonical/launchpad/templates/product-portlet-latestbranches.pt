@@ -6,8 +6,13 @@
     <li tal:repeat="branch context/getLatestBranches" class="branch">
       <a tal:attributes="href branch/fmt:url"
          tal:content="branch/name"
-      >branch displayname</a>:
-      <span tal:replace="branch/owner/name">carlos</span> 
+      >branch name</a>:
+      <span tal:condition="branch/author"
+            tal:replace="branch/author/name"
+      >author</span> 
+      <span tal:condition="not:branch/author"
+            tal:replace="branch/owner/name"
+      >registrant</span> 
     </li>
   </ul>
 
