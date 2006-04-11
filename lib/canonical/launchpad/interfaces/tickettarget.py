@@ -11,10 +11,10 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.i18nmessageid import MessageIDFactory
 from zope.schema import Bool, Choice, List
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
+
 
 class IHasTickets(Interface):
     """An object that has tickets attached to it.
