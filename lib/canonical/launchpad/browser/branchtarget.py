@@ -26,6 +26,8 @@ class BranchTargetView(LaunchpadView):
 
         Explains how the this branch listing relates to the context object. 
         """
+        if self.in_product_context():
+            return "registered for"
         url = self.request.getURL()
         if '+authoredbranches' in url:
             return "authored by"
