@@ -21,6 +21,14 @@ from canonical.launchpad.webapp import LaunchpadView
 
 class BranchTargetView(LaunchpadView):
 
+    @cachedproperty
+    def branches(self):
+        """All branches related to this target, sorted for display."""
+        # A cache to avoid repulling data from the database, which can be
+        # particularly expensive
+        branches = self.context.branches
+        return sorted(branches, key=operator.attrgetter('sort_key'))
+
     def context_relationship(self):
         """The relationship text used for display.
 
@@ -93,24 +101,12 @@ class BranchTargetView(LaunchpadView):
     def category_sortkey(category):
         return category['status'].sortkey
 
-    @cachedproperty
-    # A cache to avoid repulling data from the database, which can be
-    # particularly expensive
-    def branches(self):
-        return self.context.branches
 
-
-class PersonBranchesView(LaunchpadView):
+class PersonBranchesView(BranchTargetView):
     """View used for the tabular listing of branches related to a person.
 
     The context must provide IPerson.
     """
-
-    @cachedproperty
-    def branches(self):
-        """All branches related to this person, sorted for display."""
-        branches = self.context.branches
-        return sorted(branches, key=operator.attrgetter('sort_key'))
 
     @cachedproperty
     def _authored_branch_set(self):

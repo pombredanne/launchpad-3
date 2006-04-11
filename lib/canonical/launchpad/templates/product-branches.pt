@@ -12,8 +12,8 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main"
-     tal:define="branchviewset context/branches;
-                 branchset context/branches">
+     tal:define="branchviewset view/branches;
+                 branchset view/branches">
 
   <h1>Bazaar Branches</h1>
 
@@ -24,7 +24,7 @@
         <th>Author</th>
         <th>Title</th>
         <th>Name</th>
-        <th>Status</th>
+        <th class="initial-sort">Status</th>
       </tr>
     </thead>
     <tbody class="lesser">
@@ -40,7 +40,7 @@
         <td tal:content="branch/name/fmt:shorten/30">Name</td>
         <td>
           <span tal:content="branch/lifecycle_status/sortkey"
-                style="sortkey">23</span>
+                class="sortkey">23</span>
           <span tal:content="branch/lifecycle_status/title"
                 tal:attributes="
                   class string:branchstatus${branch/lifecycle_status/name}">

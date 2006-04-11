@@ -125,8 +125,7 @@
 
     <browser:pages
       for="canonical.launchpad.interfaces.IProduct"
-      permission="zope.Public"
-      >
+      permission="zope.Public">
       <browser:page
          name="+portlet-latestbranches"
          template="../templates/product-portlet-latestbranches.pt" />
@@ -138,18 +137,11 @@
         facet="branches"
         permission="zope.Public">
         <browser:page
-            name="+branchlisting"
-            template="../templates/branchtarget-branchlisting.pt" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductBranchView"
-        facet="branches"
-        permission="zope.Public">
-        <browser:page
             name="+branches"
             template="../templates/product-branches.pt" />
+        <browser:page
+            name="+branchlisting"
+            template="../templates/branchtarget-branchlisting.pt" />
     </browser:pages>
 
     <browser:page

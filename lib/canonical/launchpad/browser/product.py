@@ -17,7 +17,6 @@ __all__ = [
     'ProductTranslationsMenu',
     'ProductSetContextMenu',
     'ProductView',
-    'ProductBranchView',
     'ProductEditView',
     'ProductSeriesAddView',
     'ProductRdfView',
@@ -530,14 +529,6 @@ class ProductRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
-
-
-class ProductBranchView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
 
 
 class ProductSetView:
