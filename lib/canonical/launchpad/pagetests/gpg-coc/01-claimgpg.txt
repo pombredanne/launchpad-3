@@ -83,10 +83,9 @@ Go to the link sent by email, to validate the email address.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...<h1>You're being redirected</h1>
+  Location: http://localhost:9000/token/.../+validategpg
+  <BLANKLINE>
   ...
 
 Get Redirected

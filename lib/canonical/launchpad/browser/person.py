@@ -1335,8 +1335,10 @@ class PersonView(LaunchpadView):
 
             for tokenfpr in tokenfprs:
                 # retrieve token info
-                logintokenset.deleteByFingerprintAndRequester(tokenfpr,
-                                                              self.user)
+                logintokenset.deleteByFingerprintRequesterAndType(
+                    tokenfpr, self.user, LoginTokenType.VALIDATEGPG)
+                logintokenset.deleteByFingerprintRequesterAndType(
+                    tokenfpr, self.user, LoginTokenType.VALIDATESIGNONLYGPG)
                 comment += ' %s' % tokenfpr
 
             comment += '</code> key fingerprint(s) deleted.'
@@ -1619,7 +1621,8 @@ class PersonEditEmailsView:
             emailaddress.destroySelf()
 
         if email in self.context.unvalidatedemails:
-            logintokenset.deleteByEmailAndRequester(email, self.context)
+            logintokenset.deleteByEmailRequesterAndType(
+                email, self.context, LoginTokenType.VALIDATEEMAIL)
 
         self.message = "The email address '%s' has been removed." % email
 

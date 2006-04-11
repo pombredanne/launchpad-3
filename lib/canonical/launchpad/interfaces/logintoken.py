@@ -112,18 +112,20 @@ class ILoginTokenSet(Interface):
         Return the default value if there's no such LoginToken.
         """
 
-    def searchByEmailAndRequester(email, requester):
-        """Return all LoginTokens for the given email and requester."""
+    def searchByEmailRequesterAndType(email, requester, type):
+        """Return all LoginTokens for the given email, requester and type."""
 
-    def deleteByEmailAndRequester(email, requester):
-        """Delete all LoginToken entries with the given email and requester."""
+    def deleteByEmailRequesterAndType(email, requester, type):
+        """Delete all LoginToken entries with the given email, requester and
+        type."""
 
-    def searchByFingerprintAndRequester(fingerprint, requester):
-        """Return all LoginTokens for the given fingerprint and requester."""
+    def searchByFingerprintRequesterAndType(fingerprint, requester, type):
+        """Return all LoginTokens for the given fingerprint, requester and
+        type."""
 
-    def deleteByFingerprintAndRequester(fingerprint, requester):
-        """Delete all LoginToken entries with the given fingerprint
-        and requester.
+    def deleteByFingerprintRequesterAndType(fingerprint, requester, type):
+        """Delete all LoginToken entries with the given fingerprint,
+        requester and type.
         """
 
     def getPendingGPGKeys(self, requesterid=None):

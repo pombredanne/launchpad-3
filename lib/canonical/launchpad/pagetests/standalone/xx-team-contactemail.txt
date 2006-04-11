@@ -280,7 +280,8 @@ Person validates the email address using the token.
   ... """ % base_path)
   HTTP/1.1 303 See Other
   ...
-  ...<h1>You're being redirected</h1>
+  Location: http://localhost:9000/token/.../+validateemail
+  <BLANKLINE>
   ...
 
   >>> path = '%s/+validateemail' % base_path
@@ -315,7 +316,8 @@ messages because it's already validate to foobar person.
   ... """ % team_path)
   HTTP/1.1 303 See Other
   ...
-  ...<h1>You're being redirected</h1>
+  Location: http://localhost:9000/token/.../+validateemail
+  <BLANKLINE>
   ...
 
 

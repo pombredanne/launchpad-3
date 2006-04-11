@@ -28,7 +28,8 @@ from canonical.lp.dbschema import GPGKeyAlgorithm
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
-from canonical.launchpad.webapp import canonical_url, GetitemNavigation
+from canonical.launchpad.webapp import (
+    canonical_url, GetitemNavigation, LaunchpadView)
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
@@ -42,7 +43,7 @@ class LoginTokenSetNavigation(GetitemNavigation):
     usedfor = ILoginTokenSet
 
 
-class LoginTokenView:
+class LoginTokenView(LaunchpadView):
     """The default view for LoginToken.
 
     This view will check the token type and then redirect to the specific view
@@ -64,23 +65,30 @@ class LoginTokenView:
              LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
              }
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def render(self):
         if self.context.date_consumed is None:
             url = urllib.basejoin(
-                str(request.URL), self.PAGES[context.tokentype])
-            request.response.redirect(url)
+                str(self.request.URL), self.PAGES[self.context.tokentype])
+            self.request.response.redirect(url)
+        else:
+            return LaunchpadView.render(self)
 
 
-class BaseLoginTokenView:
+class BaseLoginTokenView(LaunchpadView):
     """A base view class to be used by other LoginToken views."""
 
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        self.errormessage = ""
+    def initialize(self):
+        self.expected_token_types = []
         self.successfullyProcessed = False
+        self.errormessage = ""
+
+    def render(self):
+        assert self.expected_token_types
+        if (self.context.date_consumed is not None
+            or self.context.tokentype not in self.expected_token_types):
+            self.request.response.redirect(canonical_url(self.context))
+        else:
+            return LaunchpadView.render(self)
 
     def success(self, message):
         """Indicate to the user that the token has been successfully processed.
@@ -117,9 +125,10 @@ class BaseLoginTokenView:
 
 class ResetPasswordView(BaseLoginTokenView):
 
-    def __init__(self, context, request):
-        BaseLoginTokenView.__init__(self, context, request)
+    def initialize(self):
+        BaseLoginTokenView.initialize(self)
         self.email = None
+        self.expected_token_types = [LoginTokenType.PASSWORDRECOVERY]
 
     def processForm(self):
         """Check the email address, check if both passwords match and then
@@ -182,8 +191,12 @@ class ResetPasswordView(BaseLoginTokenView):
 
 class ValidateEmailView(BaseLoginTokenView):
 
-    def __init__(self, context, request):
-        BaseLoginTokenView.__init__(self, context, request)
+    def initialize(self):
+        BaseLoginTokenView.initialize(self)
+        self.expected_token_types = [LoginTokenType.VALIDATEEMAIL,
+                                     LoginTokenType.VALIDATETEAMEMAIL,
+                                     LoginTokenType.VALIDATEGPG,
+                                     LoginTokenType.VALIDATESIGNONLYGPG]
 
     def processForm(self):
         """Process the action specified by the LoginToken.
@@ -497,11 +510,17 @@ class ValidateEmailView(BaseLoginTokenView):
 class NewAccountView(AddView, BaseLoginTokenView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
         AddView.__init__(self, context, request)
+        self.expected_token_types = [LoginTokenType.NEWACCOUNT]
         self._nextURL = '.'
         self.top_of_page_errors = []
+        # XXX: We need to duplicate this code here because we inherit
+        # from AddView and LaunchpadView. This shouldn't be needed once we 
+        # make AddView inherit from LaunchpadView. 
+        # Guilherme Salgado, 2006-04-11
+        if (context.date_consumed is not None 
+            or context.tokentype not in self.expected_token_types):
+            self.request.response.redirect(canonical_url(self.context))
 
     def nextURL(self):
         return self._nextURL
@@ -533,10 +552,11 @@ class NewAccountView(AddView, BaseLoginTokenView):
 
 class MergePeopleView(BaseLoginTokenView):
 
-    def __init__(self, context, request):
-        BaseLoginTokenView.__init__(self, context, request)
+    def initialize(self):
+        BaseLoginTokenView.initialize(self)
+        self.expected_token_types = [LoginTokenType.ACCOUNTMERGE]
         self.mergeCompleted = False
-        self.dupe = getUtility(IPersonSet).getByEmail(context.email)
+        self.dupe = getUtility(IPersonSet).getByEmail(self.context.email)
 
     def processForm(self):
         """Check if the password is correct and perform the merge."""

@@ -73,9 +73,9 @@ same issue as 01-claimgpg, copied stuff
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
   ...
-  ...<h1>You're being redirected</h1>
+  Location: http://localhost:9000/token/.../+validategpg
+  <BLANKLINE>
   ...
 
   >>> path = '%s/+validategpg' % base_path
