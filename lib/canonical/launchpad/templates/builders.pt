@@ -40,12 +40,6 @@
             </td>
             <td tal:content="builder/status">STATUS</td>
           </tr>
-          <tr class="secondary">
-            <td
-              colspan="6"
-              tal:content="builder/description"
-            >Description.</td>
-          </tr>
         </tal:builder>
       </tbody>
       </table>

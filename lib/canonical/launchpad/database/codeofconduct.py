@@ -9,7 +9,6 @@ __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet']
 
 import os
-from sha import sha
 from datetime import datetime
 
 from zope.interface import implements

@@ -35,7 +35,8 @@ from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import urlappend, get_email_template
+from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.mail import simple_sendmail, format_address
 
 
