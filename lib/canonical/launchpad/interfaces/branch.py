@@ -128,7 +128,15 @@ class IBranch(IHasOwner):
     # Stats and status attributes
     lifecycle_status = Choice(
         title=_('Status'), vocabulary='BranchLifecycleStatus',
-        default=BranchLifecycleStatus.NEW)
+        default=BranchLifecycleStatus.NEW,
+        description=_(
+        "The author's assessment of the branch's maturity. "
+        " Mature: recommend for production use."
+        " Development: useful work that is expected to be merged eventually."
+        " Experimental: not recommended for merging yet, and maybe ever."
+        " Merged: integrated into mainline, of historical interest only."
+        " Abandoned: no longer considered relevant by the author."
+        " New: unspecified maturity."))
 
     # TODO: landing_target, needs a BranchVocabulaty. See bug #4119.
     # -- DavidAllouche 2005-09-05
