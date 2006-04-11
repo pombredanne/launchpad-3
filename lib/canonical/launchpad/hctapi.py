@@ -61,9 +61,8 @@ import urlparse
 from psycopg import IntegrityError
 from sqlobject.main import SQLObjectNotFound
 
-from zope.exceptions import NotFoundError
-
 import canonical.lp
+from canonical.launchpad.interfaces import NotFoundError
 
 from pybaz import NameParser
 from canonical.lp.dbschema import (

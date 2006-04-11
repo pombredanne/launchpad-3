@@ -58,7 +58,8 @@ The Malone front page shows a list of the top Malone bug trackers, as
 ordered by the number of bugs being monitored by Malone in each of
 them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
 
-    >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=3)
+    >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=4)
     >>> sorted([(tracker.watches.count(), tracker.name)
     ...         for tracker in top_trackers])
-    [(1, u'gnome-bugzilla'), (1, u'ubuntu-bugzilla'), (4, u'mozilla.org')]
+    [(1, u'gnome-bugzilla'), (1, u'ubuntu-bugzilla'),
+     (4, u'debbugs'), (4, u'mozilla.org')]

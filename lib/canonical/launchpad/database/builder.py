@@ -180,6 +180,11 @@ class BuildQueue(SQLBase):
     @property
     def component_name(self):
         """See IBuildQueue"""
+        # check currently published version
+        publishings = self.build.sourcepackagerelease.publishings
+        if publishings.count() > 0:
+            return publishings[0].component.name
+        # if not found return the original component
         return self.build.sourcepackagerelease.component.name
 
     @property

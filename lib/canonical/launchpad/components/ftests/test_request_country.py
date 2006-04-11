@@ -3,24 +3,18 @@
 __metaclass__ = type
 
 import unittest
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
-
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.components.request_country import request_country
 
-class RequestCountryTestCase(unittest.TestCase):
+class RequestCountryTestCase(LaunchpadFunctionalTestCase):
     """request_country needs functional tests because it accesses GeoIP
     using a Utility
     """
     lp = '82.211.81.179'
 
     def setUp(self):
-        LaunchpadFunctionalTestSetup().setUp()
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        LaunchpadFunctionalTestSetup().tearDown()
-        logout()
+        LaunchpadFunctionalTestCase.setUp(self)
+        self.login()
 
     def testRemoteAddr(self):
         country = request_country({'REMOTE_ADDR': self.lp})

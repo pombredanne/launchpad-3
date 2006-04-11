@@ -3,23 +3,24 @@
 __metaclass__ = type
 
 import unittest
-from zope.testing.doctest import DocTestSuite
-from canonical.functional import FunctionalTestSetup
-
-import transaction
-
 import email
 from email.MIMEText import MIMEText
+import transaction
+from zope.testing.doctest import DocTestSuite
+
+from canonical.functional import FunctionalLayer
 from canonical.launchpad.mail import stub, simple_sendmail
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+
 
 def setUp(junk):
     # Reset the in-memory mail spool
+    LaunchpadFunctionalTestSetup().setUp()
     stub.test_emails[:] = []
-    FunctionalTestSetup().setUp()
 
 def tearDown(junk):
     stub.test_emails[:] = []
-    FunctionalTestSetup().tearDown()
+    LaunchpadFunctionalTestSetup().tearDown()
 
 def test_simple_sendmail():
     r"""
@@ -96,6 +97,7 @@ def test_simple_sendmail():
 
 def test_suite():
     suite = DocTestSuite(setUp=setUp, tearDown=tearDown)
+    suite.layer = FunctionalLayer
     return suite
 
 if __name__ == '__main__':

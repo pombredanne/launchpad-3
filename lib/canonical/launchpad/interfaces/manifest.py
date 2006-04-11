@@ -10,10 +10,7 @@ __all__ = [
 
 from zope.schema import Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 class IManifest(Interface):
     """A Manifest. Manifests are like Arch Configs, they tell us about the

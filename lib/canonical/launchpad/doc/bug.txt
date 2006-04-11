@@ -95,7 +95,7 @@ private. A bug cannot be made private by an anonymous user.
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
       ...
-    Unauthorized: ('private', 'launchpad.Edit')
+    Unauthorized: (..., 'private', 'launchpad.Edit')
 
 We have to be logged in, so let's do that:
 
@@ -244,7 +244,7 @@ Unauthorized:
     >>> blackhole_trash_folder.title
     Traceback (most recent call last):
       ...
-    Unauthorized: ('title', 'launchpad.View')
+    Unauthorized: (..., 'title', 'launchpad.View')
 
 And, as you might have guessed, is once again invisible in searches
 (notice that bug #6 is also invisible to No Privileges Person):

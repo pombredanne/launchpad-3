@@ -13,7 +13,7 @@ Sample Person has access to the page.
   >>> print http(r"""
   ... GET /products/firefox/+support-contact HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """, handle_errors=False)
   HTTP/1.1 200 Ok
   ...
 

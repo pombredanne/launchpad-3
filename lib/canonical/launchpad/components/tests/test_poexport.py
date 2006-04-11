@@ -91,6 +91,10 @@ class ExportTest(unittest.TestCase):
         """Tear down the logger."""
         logger = logging.getLogger('poexport-user-warnings')
         logger.removeHandler(self.warnings_handler)
+        # Not necessary, but it silences some false positives # with test
+        #isolation enforcement I'm experimenting with
+        from canonical.testing import reset_logging
+        reset_logging()
 
     def test_export(self, rows, expected_pofiles):
         """Export a set of rows and compare the generated PO files to expected

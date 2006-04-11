@@ -14,10 +14,10 @@ __all__ = [
 
 from datetime import datetime
 
-from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url, Navigation
 from canonical.launchpad.interfaces import IPOTemplateNameSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -97,10 +97,10 @@ class POTemplateNameEditView(POTemplateNameView, SQLObjectEditView):
     def changed(self):
         formatter = self.request.locale.dates.getFormatter(
             'dateTime', 'medium')
-        status = _("Updated on ${date_time}")
-        status.mapping = {'date_time': formatter.format(
-            datetime.utcnow())}
-        self.update_status = status
+        self.update_status = _(
+                "Updated on ${date_time}",
+                mapping={'date_time': formatter.format(datetime.utcnow())}
+                )
 
 class POTemplateNameAddView(AddView):
 
