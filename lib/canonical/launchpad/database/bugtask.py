@@ -31,10 +31,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open':      dbschema.BugTaskStatus.UNCONFIRMED,
-                    'forwarded': dbschema.BugTaskStatus.CONFIRMED,
-                    'done':      dbschema.BugTaskStatus.FIXRELEASED}
-
 debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
                       'minor':     dbschema.BugTaskSeverity.MINOR,
                       'normal':    dbschema.BugTaskSeverity.NORMAL,
@@ -187,14 +183,6 @@ class BugTask(SQLBase, BugTaskMixin):
         # SQLBase.set() is called.
         SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
 
-    def setStatusFromDebbugs(self, status):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        try:
-            self.status = debbugsstatusmap[status]
-        except KeyError:
-            raise ValueError('Unknown debbugs status "%s"' % status)
-        return self.status
-
     def setSeverityFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
         try:
@@ -320,17 +308,7 @@ class BugTaskSet:
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated"}
 
-    def __init__(self):
-        self.title = 'A set of bug tasks'
-
-    def __getitem__(self, task_id):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        return self.get(task_id)
-
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        for task in BugTask.select():
-            yield task
+    title = "A set of bug tasks"
 
     def get(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -397,6 +375,18 @@ class BugTaskSet:
                 # arg_name.
                 clause += "IS NULL"
             extra_clauses.append(clause)
+
+        if params.project:
+            clauseTables.append("Product")
+            extra_clauses.append("BugTask.product = Product.id")
+            if isinstance(params.project, any):
+                extra_clauses.append("Product.project IN (%s)" % ",".join(
+                    [str(proj.id) for proj in params.project.query_values]))
+            elif params.project is NULL:
+                extra_clauses.append("Product.project IS NULL")
+            else:
+                extra_clauses.append("Product.project = %d" %
+                                     params.project.id)
 
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
@@ -492,19 +482,26 @@ class BugTaskSet:
         if product:
             assert distribution is None, (
                 "Can't pass both distribution and product.")
-            # If a product bug contact has been provided, subscribe that
-            # contact to all public bugs. Otherwise subscribe the
-            # product owner to all public bugs.
+            # Subscribe product bug and security contacts to all
+            # public bugs.
             if not bug.private:
                 if product.bugcontact:
                     bug.subscribe(product.bugcontact)
                 else:
+                    # Make sure that at least someone upstream knows
+                    # about this bug. :)
                     bug.subscribe(product.owner)
+
+                if product.security_contact:
+                    bug.subscribe(product.security_contact)
         elif distribution:
-            # If a distribution bug contact has been provided, subscribe
-            # that contact to all public bugs.
-            if distribution.bugcontact and not bug.private:
-                bug.subscribe(distribution.bugcontact)
+            # Subscribe bug and security contacts, if provided, to all
+            # public bugs.
+            if not bug.private:
+                if distribution.bugcontact:
+                    bug.subscribe(distribution.bugcontact)
+                if distribution.security_contact:
+                    bug.subscribe(distribution.security_contact)
 
             # Subscribe package bug contacts to public bugs, if package
             # information was provided.
@@ -584,4 +581,8 @@ class BugTaskSet:
                        TeamParticipation.person = %(personid)s AND
                        BugSubscription.person = TeamParticipation.team))
                          """ % sqlvalues(personid=user.id)
+
+    def dangerousGetAllTasks(self):
+        """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
+        return BugTask.select()
 

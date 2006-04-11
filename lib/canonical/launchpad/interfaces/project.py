@@ -15,6 +15,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Summary, Title 
 from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.validation import valid_webref
 from zope.component import getUtility
 from zope.schema import Bool, Choice, Int, Text, TextLine
@@ -33,7 +34,7 @@ class ProjectNameField(ContentNameField):
         return getUtility(IProjectSet).getByName(name)
 
 
-class IProject(IHasOwner):
+class IProject(IHasOwner, IBugTarget):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)

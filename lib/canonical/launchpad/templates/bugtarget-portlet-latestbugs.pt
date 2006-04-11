@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="view/latestBugTasks">
   <h4>Latest bugs in <span tal:replace="context/displayname" />:</h4>
   <div class="portletBody">
     <div class="portletContent">

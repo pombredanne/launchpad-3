@@ -25,18 +25,7 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
-
-        <p metal:fill-slot="extra_info">
-          &ldquo;Private&rdquo; bugs are visible only to
-          the bug&rsquo;s subscribers.
-          This lets security teams track security bugs without disclosing them
-          until they have a complete solution,
-          complying with the policies of security groups like
-          <a href="http://www.fedora.us/wiki/VendorSec">VendorSec</a>.
-        </p>
-
-    </div>
+    <div metal:use-macro="context/@@launchpad_editform/editform" />
 
   </div>
 

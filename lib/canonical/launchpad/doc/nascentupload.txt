@@ -264,14 +264,15 @@ Finally we can ask the upload to process itself.
   DEBUG: Building recipients list.
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
-  DEBUG: Build 14 created
+  DEBUG: Build ... created
   DEBUG: Creating a New queue entry
   >>> print success
   True
   >>> for msg in msgs:
   ...     print msg, "END"
   From: Root <root@localhost>
-  To: Root <root@localhost>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  To: Daniel Silverstone <daniel.silverstone@canonical.com>
+  Bcc: Root <root@localhost>
   Precedence: bulk
   Subject: ed_0.2-20_i386.changes is NEW
   <BLANKLINE>

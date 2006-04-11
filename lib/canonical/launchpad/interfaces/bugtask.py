@@ -122,13 +122,6 @@ class IBugTask(IHasDateCreated, IHasBug):
         "A human-readable representation of the status of this IBugTask's bug "
         "in the other contexts in which it's reported.")
 
-    def setStatusFromDebbugs(status):
-        """Set the Malone BugTask status on the basis of a debbugs status.
-        This maps from the debbugs status values ('done', 'open',
-        'forwarded') to the Malone status values, and returns the relevant
-        Malone status.
-        """
-
     def setSeverityFromDebbugs(severity):
         """Set the Malone BugTask severity on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
@@ -375,6 +368,7 @@ class BugTaskSearchParams:
     """
 
     product = None
+    project = None
     distribution = None
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
@@ -410,6 +404,12 @@ class BugTaskSearchParams:
         self.product = product
         self._has_context = True
 
+    def setProject(self, project):
+        """Set the upstream context on which to filter the search."""
+        assert not self._has_context
+        self.project = project
+        self._has_context = True
+
     def setDistribution(self, distribution):
         """Set the distribution context on which to filter the search."""
         assert not self._has_context
@@ -439,12 +439,6 @@ class IBugTaskSet(Interface):
 
     title = Attribute('Title')
 
-    def __getitem__(task_id):
-        """Get an IBugTask."""
-
-    def __iter__():
-        """Iterate through IBugTasks for a given bug."""
-
     def get(task_id):
         """Retrieve a BugTask with the given id.
 
@@ -459,7 +453,7 @@ class IBugTaskSet(Interface):
         Note: only use this method of BugTaskSet if you want to query
         tasks across multiple IBugTargets; otherwise, use the
         IBugTarget's searchTasks() method.
-        
+
         search() returns the tasks that satisfy the query specified in
         the BugTaskSearchParams argument supplied.
         """
@@ -498,6 +492,18 @@ class IBugTaskSet(Interface):
         <user> is None, no private bugtasks will be returned.
         """
 
+    # XXX: get rid of this kludge when we have proper security for
+    # scripts   -- kiko, 2006-03-23
+    def dangerousGetAllTasks(self):
+        """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
+
+        Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not
+        use this method. DO NOT USE IT. I REPEAT: DO NOT USE IT.
+
+        This method exists solely for the purpose of scripts that need
+        to do gardening over all bug tasks; the current example is
+        update-bugtask-targetnamecaches.
+        """
 
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
@@ -512,5 +518,4 @@ class IAddBugTaskForm(Interface):
     remotebug = TextLine(
         title=_('Remote Bug'), required=False, description=_(
             "The bug number of this bug in the remote bug tracker."))
-
 

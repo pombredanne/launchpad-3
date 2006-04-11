@@ -21,7 +21,8 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    PackagingType, PackagePublishingPocket, BuildStatus)
+    PackagingType, PackagePublishingPocket, BuildStatus,
+    PackagePublishingStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -327,7 +328,8 @@ class SourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
@@ -444,9 +446,11 @@ class SourcePackage(BugTargetBase):
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
-        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)]
+        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id,
+                        PackagePublishingStatus.PUBLISHED)]
 
         # exclude gina-generated builds
         # buildstate == FULLYBUILT && datebuilt == null
@@ -465,7 +469,7 @@ class SourcePackage(BugTargetBase):
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
         if status == BuildStatus.NEEDSBUILD:
-            orderBy = "-BuildQueue.lastscore"
+            orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
 

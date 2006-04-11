@@ -26,7 +26,8 @@
                         externalrefs cves cve_links duplicates
                         attachments tickets specifications followup_subject
                         subscribe unsubscribe isSubscribed messages
-                        notificationRecipientAddresses hasBranch" />
+                        notificationRecipientAddresses hasBranch
+                        security_related" />
         <require
             permission="launchpad.Edit"
             attributes="addChangeNotification addCommentNotification addWatch
@@ -35,7 +36,7 @@
             set_attributes="datecreated name title description ownerID
                             owner duplicateof communityscore communitytimestamp
                             hits hitstimestamp activityscore activitytimestamp
-                            activity initial_message private"
+                            activity initial_message private security_related"
             />
     </content>
 
