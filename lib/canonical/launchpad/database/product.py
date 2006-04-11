@@ -147,7 +147,8 @@ class Product(SQLBase, BugTargetBase):
 
     def getLatestBranches(self, quantity=5):
         """See IProduct."""
-        # XXX fix when we have Branch.date_created
+        # XXX Should use Branch.date_created. See bug 38598.
+        # -- David Allouche 2006-04-11
         return shortlist(Branch.selectBy(productID=self.id,
             orderBy='-id').limit(quantity))
 
