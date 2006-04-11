@@ -15,7 +15,6 @@ import random
 import re
 import sha
 import tarfile
-import urlparse
 import warnings
 from StringIO import StringIO
 from math import ceil
@@ -254,11 +253,8 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     if you popen2() a command, write its standard input, then read its
     standard output, this can deadlock due to the parent process blocking on
     writing to the child, while the child process is simultaneously blocking
-    on writing to its parent. This function avoids that problem by writing and
-    reading incrementally.
-
-    When we make Python 2.4 a requirement, this function can probably be
-    replaced with something using subprocess.Popen.communicate().
+    on writing to its parent. This function avoids that problem by using
+    subprocess.Popen.communicate().
     """
 
     p = subprocess.Popen(
@@ -908,20 +904,4 @@ def capture_state(obj, *fields):
 
     return state
 
-
-def urlappend(baseurl, path):
-    """Append the given path to baseurl.
-
-    The path must not start with a slash, but a slash is added to baseurl
-    (before appending the path), in case it doesn't end with a slash.
-
-    >>> urlappend('http://foo.bar', 'spam/eggs')
-    'http://foo.bar/spam/eggs'
-    >>> urlappend('http://localhost:11375/foo', 'bar/baz')
-    'http://localhost:11375/foo/bar/baz'
-    """
-    assert not path.startswith('/')
-    if not baseurl.endswith('/'):
-        baseurl += '/'
-    return urlparse.urljoin(baseurl, path)
 
