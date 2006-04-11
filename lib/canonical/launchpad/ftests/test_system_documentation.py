@@ -183,6 +183,7 @@ special = {
             ),
     'bugnotification-sending.txt': DocFileSuite(
             '../doc/bugnotification-sending.txt',
+            optionflags=default_optionflags,
             setUp=bugNotificationSendingSetup,
             tearDown=bugNotificationSendingTearDown),
     'branch-status-client.txt': FunctionalDocFileSuite(

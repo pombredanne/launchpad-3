@@ -39,6 +39,7 @@ class IDateWidget(IDisplayWidget, IInputWidget, IBrowserWidget):
     minyear = Int(title=_('Minimum Year'), required=True, default=1900)
     maxyear = Int(title=_('Maximum Year'), required=True, default=2038)
 
+
 class DateWidget(BrowserWidget):
     implements(IDateWidget)
 
