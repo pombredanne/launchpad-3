@@ -218,7 +218,7 @@ Or for a given distroarchrelease.
   u'The Hoary Hedgehog Release for i386 (x86)'
 
   >>> hoaryi386.getBuildRecords().count()
-  4
+  5
 
 And we can find builds for a given distribution by type.
 
