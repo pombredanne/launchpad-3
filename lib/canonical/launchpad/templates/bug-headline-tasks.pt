@@ -93,7 +93,7 @@
         </tr>
 
         <tr
-          tal:attributes="id python:'row'+str(repeat['bugtask'].number())"
+          tal:attributes="id string:row${repeat/bugtask/number}"
           tal:condition="shouldExpand"
           style="display: none"
         >
