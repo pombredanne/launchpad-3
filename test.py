@@ -40,6 +40,9 @@ importfascist.install_import_fascist()
 import warninghandler
 warninghandler.install_warning_handler()
 
+# Ensure overrides are generated
+from configs import generate_overrides
+generate_overrides()
 
 # Tell canonical.config to use the test config section in launchpad.conf
 from canonical.config import config
