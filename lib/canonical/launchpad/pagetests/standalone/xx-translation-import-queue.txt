@@ -375,6 +375,7 @@ Let's check tar.bz2 uploads. They work ;-)
   ... -----------------------------1779376820857032061648075468
   ... Content-Disposition: form-data; name="file"; filename="temp.tar.bz2"
   ... Content-Type: application/x-bzip
+  ... 
   ... %s
   ... -----------------------------1779376820857032061648075468
   ... Content-Disposition: form-data; name="translations_upload"
