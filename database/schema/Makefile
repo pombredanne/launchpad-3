@@ -22,6 +22,9 @@ EMPTY_DBNAME=launchpad_empty
 # The session database name.
 SESSION_DBNAME=session_dev
 
+# The command we use to drop a database
+DROPDB=${PYTHON} ../../utilities/pgmassacre.py
+
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
 # to ensure that the development database remains in sync with reality
@@ -73,7 +76,7 @@ test: create
 dev: test
 	@ echo "* Creating ${DBNAME}"
 	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; \
-	    then dropdb ${DBNAME} | grep : | cat ; \
+	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
 	fi
 	@ createdb -E UNICODE --template ${TEST_DBNAME} ${DBNAME} | grep : | cat
 
@@ -81,13 +84,11 @@ create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
-	@ echo "* Waiting for other processes to stop accessing the database"
-	@ echo
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '1' ]; \
-	    then dropdb ${TEST_DBNAME} | grep : | cat ; \
+	    then ${DROPDB} ${TEST_DBNAME} | grep : | cat ; \
 	fi
 	@if [ "$$((`psql -l | grep ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
-	    then dropdb ${EMPTY_DBNAME} | grep : | cat ; \
+	    then ${DROPDB} ${EMPTY_DBNAME} | grep : | cat ; \
 	fi
 	@ echo "* Creating database \"$(TEST_DBNAME)\" with sample data."
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '0' ]; \

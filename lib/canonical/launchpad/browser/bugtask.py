@@ -267,7 +267,10 @@ class BugTaskView(LaunchpadView):
         This is particularly useful for views that may render a
         NullBugTask.
         """
-        return self.context.datecreated is not None
+        params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
+        matching_bugtasks = self.context.target.searchTasks(params)
+
+        return matching_bugtasks.count() > 0
 
     def isReleaseTargetableContext(self):
         """Is the context something that supports release targeting?
