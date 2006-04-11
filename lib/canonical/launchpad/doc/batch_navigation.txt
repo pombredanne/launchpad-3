@@ -45,26 +45,34 @@ You can ask for the previous and next results' links:
   >>> reindeer_batch_navigator.prevBatchURL()
   ''
   >>> reindeer_batch_navigator.nextBatchURL()
-  'http://www.example.com/foo?batch_start=3&batch_end=6'
+  'http://www.example.com/foo?start=3&batch=3'
 
 The next link will be empty when there are no further results:
 
-  >>> request = build_request({"batch_start": "3", "batch_end": "6"})
+  >>> request = build_request({"start": "3", "batch": "20"})
   >>> last_reindeer_batch_navigator = BatchNavigator(reindeer, request=request)
   >>> last_reindeer_batch_navigator.nextBatchURL()
   ''
 
+The previous link should appear even when we start at a point between 0
+and the batch size:
+
+  >>> request = build_request({"start": "2", "batch": "3"})
+  >>> last_reindeer_batch_navigator = BatchNavigator(reindeer, request=request)
+  >>> last_reindeer_batch_navigator.prevBatchURL()
+  'http://www.example.com/foo?start=0&batch=3'
+
 This all works with query strings in the URLs, too:
 
   >>> request = build_request({'fnorb': 'bar',
-  ...                          'batch_start': '3',
-  ...                          'batch_end': '6'})
+  ...                          'start': '3',
+  ...                          'batch': '3'})
   >>> reindeer_batch_navigator_with_qs = BatchNavigator(
   ...     reindeer, request, size=3)
   >>> reindeer_batch_navigator_with_qs.prevBatchURL()
-  'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
+  'http://www.example.com/foo?fnorb=bar&start=0&batch=3'
   >>> reindeer_batch_navigator_with_qs.nextBatchURL()
-  'http://www.example.com/foo?fnorb=bar&batch_start=6&batch_end=9'
+  'http://www.example.com/foo?fnorb=bar&start=6&batch=3'
 
 Finally, you can ask for the links for each of the result pages:
 
@@ -72,10 +80,10 @@ Finally, you can ask for the links for each of the result pages:
   >>> for link in links:
   ...     label, url = link.items()[0]
   ...     print label, url
-  [1] http://www.example.com/foo?batch_start=0&batch_end=3
-  2 http://www.example.com/foo?batch_start=3&batch_end=6
-  3 http://www.example.com/foo?batch_start=6&batch_end=9
-  _last_ http://www.example.com/foo?batch_start=6&batch_end=9
+  [1] http://www.example.com/foo?start=0&batch=3
+  2 http://www.example.com/foo?start=3&batch=3
+  3 http://www.example.com/foo?start=6&batch=3
+  _last_ http://www.example.com/foo?start=6&batch=3
 
 Empty Batches
 -------------

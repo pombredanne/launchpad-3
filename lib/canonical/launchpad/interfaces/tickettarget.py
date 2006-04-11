@@ -10,10 +10,9 @@ __all__ = [
     'IManageSupportContacts',
     ]
 
+from canonical.launchpad import _
 from zope.interface import Interface
 from zope.schema import Bool, Choice, List
-
-from canonical.launchpad import _
 
 
 class IHasTickets(Interface):

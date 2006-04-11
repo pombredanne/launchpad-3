@@ -33,7 +33,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import (
-    getBinaryPackageExtension, urlappend, get_email_template)
+    getBinaryPackageExtension, get_email_template)
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.mail import simple_sendmail, format_address
 
 

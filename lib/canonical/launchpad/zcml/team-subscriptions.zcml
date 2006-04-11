@@ -9,6 +9,6 @@
 
     <subscriber
         for="canonical.launchpad.event.interfaces.IJoinTeamRequestEvent"
-        factory="canonical.launchpad.mailnotification.notify_join_request" />
+        handler="canonical.launchpad.mailnotification.notify_join_request" />
 
 </configure>

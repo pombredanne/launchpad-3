@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 """
 Add full text indexes to the launchpad database
 """
+__metaclass__ = type
 
 import _pythonpath
 

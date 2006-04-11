@@ -11,8 +11,8 @@ __all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
            'stepthrough', 'redirection', 'stepto']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
-from zope.component import getUtility, queryView, getDefaultViewName
+from zope.component import getUtility, queryView
+from zope.app import zapi
 from zope.interface.advice import addClassAdvisor
 import zope.security.management
 from zope.security.checker import ProxyFactory, NamesChecker
@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces import (
 
 # Import the launchpad.conf configuration object.
 from canonical.config import config
+from canonical.launchpad.interfaces import NotFoundError
 
 
 class DecoratorAdvisor:
@@ -220,6 +221,7 @@ def canonical_urldata_iterator(obj):
     Raises NoCanonicalUrl if canonical url data is not available.
     """
     current_object = obj
+    urldata = None
     # The while loop is to proceed the first time around because we're
     # on the initial object, and subsequent times, because there is an object
     # inside.
@@ -465,10 +467,9 @@ class Navigation:
                         nextobj = None
                     return self._handle_next_object(nextobj, request, nextstep)
 
-
         # Next, look up views on the context object.  If a view exists,
         # use it.
-        view = queryView(self.context, name, request)
+        view = zapi.queryMultiAdapter((self.context, request), name=name)
         if view is not None:
             return view
 
@@ -491,7 +492,7 @@ class Navigation:
         return self._handle_next_object(nextobj, request, name)
 
     def browserDefault(self, request):
-        view_name = getDefaultViewName(self.context, request)
+        view_name = zapi.getDefaultViewName(self.context, request)
         return self.context, (view_name, )
 
 

@@ -13,6 +13,7 @@ COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
+COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
 
 /* BugBranch */
@@ -122,14 +123,6 @@ COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on th
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
 
 
-/* CVERef OBSOLETE */
-
-COMMENT ON TABLE CVERefObsolete IS 'OBSOLETE: THIS TABLE IS PARKED AND WILL BE DELETED IN FAVOUR OF THE NEW CVE TABLE. This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
-COMMENT ON COLUMN CVERefObsolete.cveref IS 'This is the actual CVE number assigned to this specific problem.';
-COMMENT ON COLUMN CVERefObsolete.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
-COMMENT ON COLUMN CVERefObsolete.owner IS 'This refers to the person who created the entry.';
-
-
 -- DevelopmentManifest
 COMMENT ON TABLE DevelopmentManifest IS 'A table that keeps track of the "intermediate commits" during the development of a source package. A developer using HCT will make regular commits (stored locally, as Bazaar revisions). On occasion, the developer will "publish" the current state of the package. This results in the Bazaar branches being made available on a public server, and a DevelopmentManifest being created. Other people will then see the existence of the Development Manifest and know that the person is currently working on a variation of the package. When the developer believes that the page is actually ready to build, they can "release" the package. This results in a SourcePackageRelease being assembled, based on the existing development manifest.';
 COMMENT ON COLUMN DevelopmentManifest.distrorelease IS 'The distribution release for which this source package is being developed. Note that the source package may very well be built and published in other releases as well - this information is purely a starting point indicator.';
@@ -197,7 +190,7 @@ COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
-
+COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 
 /* ProductLabel */
 
@@ -525,6 +518,7 @@ COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically subscribed to every bug targeted to this distribution.';
+COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
 

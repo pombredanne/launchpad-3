@@ -10,9 +10,7 @@ __all__ = [
 
 from zope.schema import Int, Choice
 from zope.interface import Interface
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IManifestAncestry(Interface):
     """A Manifest Ancestry record.

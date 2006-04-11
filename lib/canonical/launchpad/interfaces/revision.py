@@ -6,14 +6,11 @@ __metaclass__ = type
 __all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent',
            'IRevisionNumber', 'IRevisionSet']
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
 
 from canonical.launchpad.interfaces import IHasOwner
-
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class IRevision(IHasOwner):

@@ -25,7 +25,6 @@ __all__ = [
 from zope.app.form.browser.add import AddView, EditView
 from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
-from zope.exceptions import NotFoundError
 import zope.security.interfaces
 
 from canonical.database.constants import UTC_NOW
@@ -33,7 +32,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, GetitemNavigation)
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, ICodeOfConduct, ISignedCodeOfConduct,
-    ISignedCodeOfConductSet, ICodeOfConductSet)
+    ISignedCodeOfConductSet, ICodeOfConductSet, NotFoundError)
 
 
 class SignedCodeOfConductSetNavigation(GetitemNavigation):

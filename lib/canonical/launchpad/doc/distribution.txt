@@ -126,6 +126,27 @@ It also raises NotFoundError on distributions with no releases:
     NotFoundError: "Distribution has no releases; 'pmount' was never published in it"
 
 
+Searching for DistributionSourcePackages
+----------------------------------------
+
+The distribution also allows you to look for source packages that match
+a certain string through the magic of fti. For instance:
+
+    >>> packages = ubuntu.searchSourcePackages("mozilla")
+    >>> print len(packages)
+    1
+
+The search also matches on exact package names which fti doesn't like,
+and even on substrings:
+
+    >>> packages = ubuntu.searchSourcePackages("linux-source-2.6.15")
+    >>> print len(packages)
+    1
+    >>> packages = ubuntu.searchSourcePackages("nux-sour")
+    >>> print len(packages)
+    1
+
+
 CVE BugTasks on a Distribution
 ------------------------------
 

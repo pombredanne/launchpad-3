@@ -14,13 +14,10 @@ __all__ = [
     'InvalidEmailMessage',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
-from zope.exceptions import NotFoundError
 from zope.schema import Datetime, Int, Text, TextLine, Bool
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
+from canonical.launchpad.interfaces import NotFoundError
 
 class IMessage(Interface):
     """A message. This is like an email (RFC822) message, though it could be

@@ -87,7 +87,8 @@ class Build(SQLBase):
     @property
     def was_built(self):
         """See IBuild"""
-        return self.buildstate is not BuildStatus.NEEDSBUILD
+        return self.buildstate not in [BuildStatus.NEEDSBUILD,
+                                       BuildStatus.BUILDING]
 
     @property
     def build_icon(self):
@@ -101,6 +102,7 @@ class Build(SQLBase):
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             # XXX cprov 20060321: proper icon
             BuildStatus.SUPERSEDED: "/@@/topic_icon.gif",
+            BuildStatus.BUILDING: "/@@/progress",
             }
         return icon_map[self.buildstate]
 

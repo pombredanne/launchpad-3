@@ -4,14 +4,20 @@ Distribution Search page
 In the 'Bugs' facet of a distribution we can find a list of
 bugs reported in that distribution and simple and advanced search forms.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOpenLaunchBag, IDistributionSet)
+    >>> launchbag = getUtility(IOpenLaunchBag)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
 
-A helper function to make it easier to construct a view
+A helper function to make it easier to construct a view.  The function
+also adds the context object to the launchbag, which approximates what
+happens during traversal.
 
     >>> from zope.component import getView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> def create_view(context, name, form=None):
+    ...     launchbag.clear()
+    ...     launchbag.add(context)
     ...     view = getView(context, name, LaunchpadTestRequest(form=form))
     ...     view.initialize()
     ...     return view
@@ -35,16 +41,33 @@ And the advanced form allows us to query for specific bug statuses.
     >>> form_values = {
     ...     'search': 'Search bugs in Debian',
     ...     'advanced': 1,
-    ...     'field.status': 'Fix Released', 
+    ...     'field.status': 'Fix Released',
     ...     'field.searchtext': '',
     ...     'field.orderby': '-priority,-severity'}
 
     >>> distro_advanced_search_listingview = create_view(debian, '+bugs', form_values)
     >>> fix_released_bugtasks = list(distro_advanced_search_listingview.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name) 
+    >>> [(bugtask.bug.id, bugtask.status.name)
     ...     for bugtask in fix_released_bugtasks]
     [(8, 'FIXRELEASED')]
 
+A triager may find it useful to query for bugs with no package:
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+    >>> form_values = {
+    ...     'search': 'Search bugs in Ubuntu',
+    ...     'advanced': 1,
+    ...     'field.has_no_package': 'on',
+    ...     'field.orderby': '-priority,-severity'}
+
+    >>> distro_advanced_search_listingview = create_view(
+    ...     ubuntu, '+bugs', form_values)
+
+    >>> bugtasks_needing_packages = list(
+    ...     distro_advanced_search_listingview.search().batch)
+    >>> [bugtask.bug.id for bugtask in bugtasks_needing_packages]
+    [2]
 
 Distribution Release search page
 ================================
@@ -73,8 +96,8 @@ be logged in.
 
     >>> login("test@canonical.com")
 
-    >>> from canonical.lp.dbschema import BugTaskStatus 
-    >>> open_bugtasks[0].status = BugTaskStatus.REJECTED 
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> open_bugtasks[0].status = BugTaskStatus.REJECTED
     >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.
@@ -82,12 +105,66 @@ And the advanced form allows us to query for specific bug statuses.
     >>> form_values = {
     ...     'search': 'Search bugs in Woody',
     ...     'advanced': 1,
-    ...     'field.status': 'Rejected', 
+    ...     'field.status': 'Rejected',
     ...     'field.searchtext': '',
     ...     'field.orderby': '-priority,-severity'}
 
     >>> distrorelease_advanced_search_view = create_view(woody, '+bugs', form_values)
     >>> rejected_bugtasks = list(distrorelease_advanced_search_view.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name) 
+    >>> [(bugtask.bug.id, bugtask.status.name)
     ...     for bugtask in rejected_bugtasks]
     [(3, 'REJECTED')]
+
+
+Project Search Page
+===================
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> mozilla = getUtility(IProjectSet).getByName('mozilla')
+
+The simple search form returns only open bugtasks.
+
+    >>> form_values = {
+    ...     'search': 'Search',
+    ...     'field.searchtext': '',
+    ...     'field.orderby': '-priority,-severity'}
+
+    >>> mozilla_search_listingview = create_view(
+    ...     mozilla, "+bugs", form_values)
+
+    >>> open_bugtasks = list(mozilla_search_listingview.search().batch)
+    >>> for bugtask in open_bugtasks:
+    ...     print bugtask.bug.id, bugtask.product.name, bugtask.status.name
+    5 firefox UNCONFIRMED
+    4 firefox UNCONFIRMED
+    1 firefox UNCONFIRMED
+
+And now we'll change the status of one of the bugtasks (we are still
+logged in from earlier):
+
+    >>> open_bugtasks[0].status = BugTaskStatus.REJECTED 
+    >>> flush_database_updates()
+
+And the advanced form allows us to query for specific bug statuses.
+
+    >>> form_values = {
+    ...     'search': 'Search bugs in the Mozilla Project',
+    ...     'advanced': 1,
+    ...     'field.status': 'Rejected', 
+    ...     'field.searchtext': '',
+    ...     'field.orderby': '-priority,-severity'}
+
+    >>> mozilla_search_listingview = create_view(mozilla, '+bugs', form_values)
+    >>> rejected_bugtasks = list(mozilla_search_listingview.search().batch)
+    >>> for bugtask in rejected_bugtasks:
+    ...     print bugtask.bug.id, bugtask.product.name, bugtask.status.name
+    5 firefox REJECTED
+
+Check what milestones are displayed on the advanced search form:
+
+    >>> advanced_search_view = create_view(
+    ...     mozilla, '+bugs-advanced-search', {})
+    >>> for value in advanced_search_view.getMilestoneWidgetValues():
+    ...     print value['title']
+    Mozilla Firefox: 1.0
+
