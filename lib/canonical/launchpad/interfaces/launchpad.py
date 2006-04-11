@@ -63,7 +63,7 @@ class ILaunchpadCelebrities(Interface):
     debian = Attribute("The Debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
-    bazaar_expert = Attribute("The 'vcs-imports' team.")
+    bazaar_expert = Attribute("The Bazaar Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
     mirror_admin = Attribute("The Mirror Administrators.")
