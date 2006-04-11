@@ -78,20 +78,18 @@
     difficult to read. Checked with mpt about that. - David Allouche 2006-04-09
     -->
   </tal:comment>
-  <div tal:condition="context/mirror_failures"
+  <p tal:condition="context/mirror_failures"
        class="warning message" style="font-weight: normal">
-    <div>
-      Launchpad could not mirror this branch at
-      <span tal:replace="context/last_mirror_attempt/fmt:datetime" />.
-    </div>
-    <div tal:condition="context/mirror_status_message">
+    Launchpad could not mirror this branch at
+    <span tal:replace="context/last_mirror_attempt/fmt:datetime" />.
+    <span tal:condition="context/mirror_status_message">
       The error was:
       <span tal:replace="context/mirror_status_message">Error 1</span>
-    </div>
-    <div tal:condition="not:context/mirror_status_message">
+    </span>
+    <span tal:condition="not:context/mirror_status_message">
       No error message was recorded.
-    </div>
-  </div>
+    </span>
+  </p>
 
   <p class="highlighted lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
