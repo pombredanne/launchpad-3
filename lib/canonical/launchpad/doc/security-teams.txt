@@ -189,7 +189,7 @@ contact for thunderbird to see how this works.
     >>> from canonical.launchpad.components.bugtask import mark_task
 
     >>> old_state = capture_state(
-    ...     bug_in_evolution, "status", "priority", "severity",
+    ...     bug_in_evolution, "status", "importance",
     ...     "assignee", "product", "bugwatch", "milestone", "targetname")
     >>> mark_task(old_state, IUpstreamBugTask)
     >>> bug_in_evolution.product = thunderbird
