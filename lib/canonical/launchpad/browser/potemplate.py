@@ -38,18 +38,27 @@ class POTemplateNavigation(Navigation):
     usedfor = IPOTemplate
 
     def traverse(self, name):
+        """Return the IPOFile associated with the given name."""
+
+        assert self.request.method in ['GET', 'HEAD', 'POST'], (
+            'We only know about GET, HEAD, and POST')
+
         user = getUtility(ILaunchBag).user
         if self.request.method in ['GET', 'HEAD']:
             # If it's just a query, get a real IPOFile or use a fake one so we
             # don't create new IPOFiles just because someone is browsing the
             # web.
-            return self.context.getPOFileOrDummy(name, owner=user)
-        elif self.request.method == 'POST':
-            # If it's a post, get a real IPOFile or create a new one so we can
-            # store the posted data.
-            return self.context.getOrCreatePOFile(name, owner=user)
+            pofile = self.context.getPOFileByLang(name)
+            if pofile is None:
+                # There isn't such IPOFile, we return a dummy one to prevent
+                # object creation with GET or HEAD methods.
+                pofile = self.context.getDummyPOFile(name, requester=user)
+            return pofile
         else:
-            raise AssertionError('We only know about GET, HEAD, and POST')
+            pofile = self.context.getPOFileByLang(name)
+            if pofile is None:
+                pofile = self.context.newPOFile(name, requester=user)
+            return pofile
 
 
 class POTemplateFacets(StandardLaunchpadFacets):

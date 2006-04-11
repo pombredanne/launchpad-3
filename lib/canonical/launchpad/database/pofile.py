@@ -865,11 +865,18 @@ class DummyPOFile(RosettaStats):
     def __init__(self, potemplate, language, owner=None):
         self.potemplate = potemplate
         self.language = language
-        self.owner = owner
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
         self.lasttranslator = None
         self.contributors = []
+
+        # The default POFile owner is the Rosetta Experts team unless the
+        # given owner has rights to write into that file.
+        if self.canEditTranslations(owner):
+            self.owner = owner
+        else:
+            self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
+
 
     def __getitem__(self, msgid_text):
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)

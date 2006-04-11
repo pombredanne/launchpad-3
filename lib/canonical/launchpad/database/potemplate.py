@@ -24,7 +24,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPersonSet,
-    IPOTemplateExporter, LanguageNotFound,
+    IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError, NameNotAvailable)
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -390,12 +390,12 @@ class POTemplate(SQLBase, RosettaStats):
         for potmsgset in self:
             potmsgset.sequence = 0
 
-    def getOrCreatePOFile(self, language_code, variant=None, owner=None):
+    def newPOFile(self, language_code, variant=None, requester=None):
         """See IPOTemplate."""
         # see if one exists already
         existingpo = self.getPOFileByLang(language_code, variant)
-        if existingpo is not None:
-            return existingpo
+        assert existingpo is None, (
+            'There is already a valid IPOFile (%s)' % existingpo.title)
 
         # since we don't have one, create one
         try:
@@ -421,16 +421,13 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             data['origin'] = self.sourcepackagename.name
 
-        if owner is None:
-            # All POFiles should have an owner, by default, the Ubuntu
-            # Translators team.
-            # XXX: Carlos Perello Marin 2005-04-15: We should get a better
-            # default depending on the POFile and the associated POTemplate.
-
-            # XXX Carlos Perello Marin 2005-03-28
-            # This should be done with a celebrity.
-            personset = getUtility(IPersonSet)
-            owner = personset.getByName('ubuntu-translators')
+        # The default POFile owner is the Rosetta Experts team unless the
+        # requester has rights to write into that file.
+        dummy_pofile = self.getDummyPOFile(language.code, variant)
+        if dummy_pofile.canEditTranslations(requester):
+            owner = requester
+        else:
+            owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
         if variant is None:
             path_variant = ''
@@ -458,38 +455,19 @@ class POTemplate(SQLBase, RosettaStats):
 
         return pofile
 
-    def getPOFileOrDummy(self, language_code, variant=None, owner=None):
+    def getDummyPOFile(self, language_code, variant=None, requester=None):
         """See IPOTemplate."""
         # see if one exists already
         existingpo = self.getPOFileByLang(language_code, variant)
-        if existingpo is not None:
-            return existingpo
+        assert existingpo is None, (
+            'There is already a valid IPOFile (%s)' % existingpo.title)
 
-        # since we don't have one, we will return a dummy
         try:
             language = Language.byCode(language_code)
         except SQLObjectNotFound:
             raise LanguageNotFound(language_code)
 
-        now = datetime.datetime.now()
-        data = {
-            'year': now.year,
-            'languagename': language.englishname,
-            'languagecode': language_code,
-            'date': now.isoformat(' '),
-            'templatedate': self.datecreated,
-            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors'
-                         % now.year,
-            'nplurals': language.pluralforms or 1,
-            'pluralexpr': language.pluralexpression or '0',
-            }
-
-        if self.productseries is not None:
-            data['origin'] = self.productseries.product.name
-        else:
-            data['origin'] = self.sourcepackagename.name
-
-        return DummyPOFile(self, language, owner=owner)
+        return DummyPOFile(self, language, owner=requester)
 
     def createMessageIDSighting(self, potmsgset, messageID):
         """Creates in the database a new message ID sighting.
