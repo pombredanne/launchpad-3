@@ -12,14 +12,14 @@ __all__ = ['TranslationGroupNavigation',
 import operator
 
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ILanguageSet,
-    IPersonSet, ILaunchBag)
+    IPersonSet, ILaunchBag, NotFoundError
+    )
 from canonical.launchpad.webapp import GetitemNavigation
 
 

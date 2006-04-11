@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 class IDistroReleasePackageCache(Interface):
 

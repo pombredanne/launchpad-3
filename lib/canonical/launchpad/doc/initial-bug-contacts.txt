@@ -184,7 +184,33 @@ priority, etc.
     Public bug reported:
     <BLANKLINE>
     Affects: firefox (upstream)
-    ...
+           Severity: Minor
+           Priority: Wontfix
+         Assignee: Mark Shuttleworth
+             Status: Unconfirmed
+    Affects: pmount (Ubuntu)
+           Severity: Normal
+           Priority: Medium
+             Status: Unconfirmed
+    Affects: mozilla-firefox (Debian)
+           Severity: Minor
+           Priority: High
+             Status: Confirmed
+    <BLANKLINE>
+    <BLANKLINE>
+    Description:
+    Firefox needs to support embedded SVG images, now that the standard has
+    been finalised.
+    <BLANKLINE>
+    The SVG standard 1.0 is complete, and draft implementations for Firefox
+    exist. One of these implementations needs to be integrated with the base
+    install of Firefox. Ideally, the implementation needs to include support
+    for the manipulation of SVG objects from JavaScript to enable
+    interactive and dynamic SVG drawings.
+    <BLANKLINE>
+    --
+    Firefox does not support SVG
+    http://localhost:8086/malone/bugs/1
 
     >>> stub.test_emails = []
 

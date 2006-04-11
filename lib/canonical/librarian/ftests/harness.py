@@ -74,8 +74,8 @@ class LibrarianTestSetup(TacTestSetup):
     def logfile(self):
         return os.path.join(self.root, 'librarian.log')
 
+
 # Kill any librarian left lying around from a previous interrupted run.
 # Be paranoid since we trash the librarian directory as part of this.
-assert config.default_section == 'testrunner', \
-        'Imported dangerous test harness outside of the test runner'
-LibrarianTestSetup().killTac()
+if config.default_section == 'testrunner':
+    LibrarianTestSetup().killTac()

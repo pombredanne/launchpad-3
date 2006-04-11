@@ -7,7 +7,7 @@ import sha
 import binascii
 from zope.component import getUtility
 from zope.app.tests import ztapi
-from zope.app.tests.placelesssetup import PlacelessSetup
+from zope.app.testing.placelesssetup import PlacelessSetup
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.interfaces import IPasswordEncryptor
 

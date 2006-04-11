@@ -12,7 +12,7 @@ from sqlobject import (
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
@@ -519,8 +519,8 @@ class Distribution(SQLBase, BugTargetBase):
         dspcaches = DistributionSourcePackageCache.select("""
             distribution = %s AND
             (fti @@ ftq(%s) OR
-             DistributionSourcePackageCache.name = %s)
-            """ % sqlvalues(self.id, text, text),
+             DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
+            """ % (quote(self.id), quote(text), quote_like(text)),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
             prejoins=["sourcepackagename"],

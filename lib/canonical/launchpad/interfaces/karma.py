@@ -18,9 +18,7 @@ __all__ = [
 from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.schema import Int, Datetime, Choice, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IKarma(Interface):
     """The Karma of a Person."""
