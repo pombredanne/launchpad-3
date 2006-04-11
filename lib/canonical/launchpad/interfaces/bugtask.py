@@ -68,7 +68,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
-    # XXX: the status, importance, and priority's vocabularies do not
+    # XXX: the status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
@@ -77,8 +77,6 @@ class IBugTask(IHasDateCreated, IHasBug):
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.UNCONFIRMED)
-    priority = Choice(
-        title=_('Priority'), vocabulary='BugTaskPriority', required=False)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
         default=dbschema.BugTaskImportance.UNTRIAGED)
@@ -153,7 +151,7 @@ class IBugTask(IHasDateCreated, IHasBug):
 
         For an upstream task, this value might look like:
 
-          product=firefox; status=New; priority=None; assignee=None;
+          product=firefox; status=New; assignee=None;
 
         See doc/bugmail-headers.txt for a complete explanation and more
         examples.
@@ -189,10 +187,6 @@ class IBugTaskSearch(Interface):
     importance = List(
         title=_('Importance'),
         value_type=IBugTask['importance'],
-        required=False)
-    priority = List(
-        title=_('Priority'),
-        value_type=IBugTask['priority'],
         required=False)
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
@@ -269,13 +263,6 @@ class IBugTaskDelta(Interface):
         The value is a dict like
         {'old' : BugTaskStatus.FOO, 'new' : BugTaskStatus.BAR}, or None,
         if no change was made to the status.
-        """)
-    priority = Attribute(
-        """The change made to the priority for this task.
-
-        The value is a dict like
-        {'old' : BugTaskPriority.FOO, 'new' : BugTaskPriority.BAR}, or None,
-        if no change was made to the priority.
         """)
     importance = Attribute(
         """The change made to the importance of this task.
@@ -378,7 +365,7 @@ class BugTaskSearchParams:
     distribution = None
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
-                 priority=None, importance=None, milestone=None,
+                 importance=None, milestone=None,
                  assignee=None, sourcepackagename=None,
                  binarypackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
@@ -387,7 +374,6 @@ class BugTaskSearchParams:
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
-        self.priority = priority
         self.importance = importance
         self.milestone = milestone
         self.assignee = assignee
@@ -466,7 +452,7 @@ class IBugTaskSet(Interface):
 
     def createTask(bug, product=None, distribution=None, distrorelease=None,
                    sourcepackagename=None, binarypackagename=None, status=None,
-                   priority=None, importance=None, assignee=None, owner=None,
+                   importance=None, assignee=None, owner=None,
                    milestone=None):
         """Create a bug task on a bug and return it.
 
@@ -476,7 +462,7 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distrorelease must be provided.
         """
 
-    def maintainedBugTasks(person, minimportance=None, minpriority=None,
+    def maintainedBugTasks(person, minimportance=None,
                            showclosed=None, orderby=None, user=None):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
@@ -486,7 +472,7 @@ class IBugTaskSet(Interface):
         showclosed=True.
 
         If minimportance is not None, return only the bug tasks with importance 
-        greater than minimportance. The same is valid for minpriority/priority.
+        greater than minimportance.
 
         If you want the results ordered, you have to explicitly specify an
         <orderBy>. Otherwise the order used is not predictable.
