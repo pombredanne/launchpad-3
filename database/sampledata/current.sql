@@ -510,12 +510,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -813,13 +807,6 @@ INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 16);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugnotification DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugnotification ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
@@ -2336,7 +2323,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (111, 'dum', 'Dutch, Middle (ca. 1050-1350)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (112, 'nl', 'Dutch', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (113, 'dyu', 'Dyula', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (114, 'dz', 'Dzongkha', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (114, 'dz', 'Dzongkha', NULL, 1, '0', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (115, 'efi', 'Efik', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (116, 'egy', 'Egyptian (Ancient)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (117, 'eka', 'Ekajuk', NULL, NULL, NULL, true, 0);
@@ -3101,8 +3088,6 @@ ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
 
 
 ALTER TABLE mirrordistroarchrelease DISABLE TRIGGER ALL;
-
-
 
 
 
