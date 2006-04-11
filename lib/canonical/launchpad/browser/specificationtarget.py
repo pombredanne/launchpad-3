@@ -138,11 +138,6 @@ class HasSpecificationsView(LaunchpadView):
         plan = []
         filter = [SpecificationFilter.INCOMPLETE]
         specs = set(self.context.specifications(filter=filter))
-        # sort the specs first by priority (most important first) then by
-        # status (most complete first)
-        specs = sorted(specs,
-            key=lambda a: (a.priority.sortkey, -a.status.sortkey),
-            reverse=True)
         found_spec = True
         while found_spec:
             found_spec = False

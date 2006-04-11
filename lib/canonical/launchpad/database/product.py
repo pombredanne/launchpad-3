@@ -289,8 +289,12 @@ class Product(SQLBase, BugTargetBase):
         # a better way.
         return max(perms)
 
-    def specifications(self, sort=None, quantity=None, filter=[]):
+    def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
+
+        # eliminate mutables
+        if filter is None:
+            filter = []
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
@@ -312,7 +316,7 @@ class Product(SQLBase, BugTargetBase):
         
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness
+        completeness =  Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness

@@ -48,6 +48,10 @@ class Sprint(SQLBase):
     time_ends = UtcDateTimeCol(notNull=True)
 
     # attributes
+
+    # we want to use this with templates that can assume a displayname,
+    # because in many ways a sprint behaves just like a project or a
+    # product - it has specs
     @property
     def displayname(self):
         return self.title
@@ -57,8 +61,12 @@ class Sprint(SQLBase):
         joinColumn='sprint', otherColumn='attendee',
         intermediateTable='SprintAttendance', orderBy='name')
 
-    def specifications(self, sort=None, quantity=None, filter=[]):
+    def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
+
+        # eliminate mutables
+        if filter is None:
+            filter = []
 
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
@@ -87,7 +95,7 @@ class Sprint(SQLBase):
         
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness
+        completeness =  Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -122,11 +130,13 @@ class Sprint(SQLBase):
                    SprintSpecification.sprint = %s""" % sqlvalues(self.id)
         if status is not None:
             query += ' AND SprintSpecification.status=%s' % sqlvalues(status)
-        return SprintSpecification.select(query,
+        results = SprintSpecification.select(query,
             clauseTables=['Specification'],
             orderBy=['-Specification.priority', 
                      'Specification.status',
                      'Specification.name'])
+        results.prejoin(['specification'])
+        return results
 
     def getSpecificationLink(self, speclink_id):
         """See ISprint.
@@ -163,6 +173,7 @@ class Sprint(SQLBase):
     @property
     def attendances(self):
         ret = SprintAttendance.selectBy(sprintID=self.id)
+        ret.prejoin(['attendee'])
         return sorted(ret, key=lambda a: a.attendee.name)
 
     # linking to specifications

@@ -23,11 +23,6 @@
 
   <div metal:use-macro="context/@@launchpad_editform/editform">
 
-    <p metal:fill-slot="extra_info">
-      Your changes to the <span tal:replace="context/displayname">
-      product</span> details below will take effect immediately.  
-    </p>
-        
   </div>
     
 </div>

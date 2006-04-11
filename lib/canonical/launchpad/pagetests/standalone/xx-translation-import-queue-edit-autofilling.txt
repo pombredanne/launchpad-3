@@ -10,7 +10,7 @@ First, we need to feed the import queue.
   ...     'pagetests/standalone/xx-translation-import-queue-edit-autofilling.tar.gz')
   >>> tarball = open(test_file_name)
   >>> print http(r"""
-  ... POST /products/alsa-utils/main/+translations-upload HTTP/1.1
+  ... POST /products/alsa-utils/trunk/+translations-upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 530
   ... Content-Type: multipart/form-data; boundary=---------------------------428463014358220843450431786

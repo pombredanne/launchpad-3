@@ -34,7 +34,7 @@ Check that the importstatus was indeed updated.
 
 
   >>> print http(r"""
-  ... GET /products/a52dec/main HTTP/1.1
+  ... GET /products/a52dec/trunk HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Bazaar Status...

@@ -309,7 +309,7 @@ to remove their own imports. For this test, the No Priviledges Person will do
 the import.
 
   >>> print http(r"""
-  ... POST /products/a52dec/main/+translations-upload HTTP/1.1
+  ... POST /products/a52dec/trunk/+translations-upload HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 362
   ... Content-Type: multipart/form-data; boundary=---------------------------13161753624926250560039312
@@ -366,7 +366,7 @@ Let's check tar.bz2 uploads. They work ;-)
   ...     'pagetests/standalone/xx-translation-import-queue.tar.bz2')
   >>> tarball = open(test_file_name)
   >>> print http(r"""
-  ... POST /products/evolution/main/+translations-upload HTTP/1.1
+  ... POST /products/evolution/trunk/+translations-upload HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 514
   ... Content-Type: multipart/form-data; boundary=---------------------------1779376820857032061648075468

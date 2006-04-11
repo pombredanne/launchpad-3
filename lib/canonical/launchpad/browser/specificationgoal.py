@@ -92,6 +92,9 @@ class GoalSetView(LaunchpadView):
         for specname in selected_specs:
             action_fn(self.context.getSpecification(specname))
 
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
         flush_database_updates()
 
         # For example: "Accepted 26 specification(s)."

@@ -332,7 +332,9 @@ class AdminDistroRelease(AdminByAdminsTeam):
     and distroreleases to the Launchpad admin team.
     
     NB: Please consult with SABDFL before modifying this permission because
-        changing it could cause the archive to get hammered horribly.
+        changing it could cause the archive to get rearranged, with tons of
+        files moved to the new namespace, and mirrors would get very very
+        upset. Then James T would be on your case.
     """
     permission = 'launchpad.Admin'
     usedfor = IDistroRelease

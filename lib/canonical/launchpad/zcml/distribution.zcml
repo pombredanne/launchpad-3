@@ -251,7 +251,7 @@
         fields="official_rosetta official_malone"
         permission="launchpad.Edit"
         label="Describe Launchpad usage"
-        template="../templates/distribution-edit.pt"
+        template="../templates/object-launchpadusage.pt"
         />
 
     <browser:editform

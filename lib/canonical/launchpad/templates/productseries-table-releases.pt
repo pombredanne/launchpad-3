@@ -13,7 +13,7 @@
     <tr tal:repeat="release context/releases">
       <td><a tal:content="release/version"
              tal:attributes="href release/fmt:url">version</a></td> 
-      <td tal:content="release/codename">code name</td>
+      <td><span tal:replace="release/codename">code name</span></td>
       <td tal:content="release/datereleased/fmt:date">date</td>
     </tr>
   </tbody>

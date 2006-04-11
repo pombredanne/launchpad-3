@@ -180,9 +180,7 @@ class Specification(SQLBase):
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be
     # cargo culted into Product, Distribution, ProductSeries etc
-
-    # XXX should this be some sort of Specification class attribute?
-    completeness =  """
+    completeness_clause =  """
                 Specification.delivery = %d 
                 """ % SpecificationDelivery.IMPLEMENTED.value + """
             OR 
@@ -358,15 +356,15 @@ class Specification(SQLBase):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def __all_deps(self, deps):
+    def _all_deps(self, deps):
         for dep in self.dependencies:
             if dep not in deps:
                 deps.add(dep)
-                dep.__all_deps(deps)
+                dep._all_deps(deps)
 
     def all_deps(self):
         deps = set()
-        self.__all_deps(deps)
+        self._all_deps(deps)
         return sorted(deps, key=lambda s: (s.status, s.priority, s.title))
 
     def all_blocked(self, higher=None):

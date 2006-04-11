@@ -137,7 +137,8 @@ class POTemplateView(LaunchpadView):
             if pofile is None:
                 pofileset = getUtility(IPOFileSet)
                 pofile = pofileset.getDummy(self.context, language)
-            yield pofile
+            pofiles.append(pofile)
+        return pofiles
 
     def num_messages(self):
         N = self.context.messageCount()

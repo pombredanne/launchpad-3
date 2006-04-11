@@ -246,6 +246,10 @@ class SpecificationGoalSetView(GeneralFormView):
 
     def process(self, productseries=None, distrorelease=None,
         whiteboard=None):
+        # XXX sabdfl it would be better to display only one or the other
+        # option in the form, with a radio button, as kiko pointed out in
+        # his review. XXX MPT feel free to help me here, I don't know how to
+        # make the form display either/or.
         if productseries and distrorelease:
             return 'Please choose a series OR a release, not both.'
         if not (productseries or distrorelease):
@@ -256,7 +260,7 @@ class SpecificationGoalSetView(GeneralFormView):
         if distrorelease is not None:
             self.context.distrorelease = distrorelease
             goal = distrorelease
-        # By default, this new goal must be approved
+        # By default, all new goals start out PROPOSED
         self.context.goalstatus = SpecificationGoalStatus.PROPOSED
         # Now we want to auto-approve the goal if the person making
         # the proposal has permission to do this anyway

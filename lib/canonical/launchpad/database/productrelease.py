@@ -20,6 +20,7 @@ class ProductRelease(SQLBase):
     """A release of a product."""
     implements(IProductRelease)
     _table = 'ProductRelease'
+    _defaultOrder = ['-datereleased']
 
     datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)

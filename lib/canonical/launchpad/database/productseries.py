@@ -79,7 +79,7 @@ class ProductSeries(SQLBase):
     datesyncapproved = UtcDateTimeCol(default=None)
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
-                             orderBy=['version'])
+                             orderBy=['-datereleased'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
 
@@ -147,8 +147,12 @@ class ProductSeries(SQLBase):
         ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
         return ret
 
-    def specifications(self, sort=None, quantity=None, filter=[]):
+    def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
+
+        # eliminate mutables
+        if filter is None:
+            filter = []
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
@@ -171,7 +175,7 @@ class ProductSeries(SQLBase):
         
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness
+        completeness =  Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
