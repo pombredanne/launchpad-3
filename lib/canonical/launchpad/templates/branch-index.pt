@@ -19,7 +19,7 @@
 <div metal:fill-slot="main">
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="error message">
+     class="informational message">
     notice goes here
   </p>
 
@@ -41,15 +41,40 @@
     <a tal:attributes="href view/edit_link_url">edit branch details</a>.</i>
   </p>
 
-  <p>
-    Click <a tal:attributes="href view/url">here</a> for the branch source
-    code. Note: this may not be a viewable web page, but you can
-    point the bzr revision control tool at this URL to retrieve the code
-    in the branch.
-  </p>
+  <tal:pull-branch condition="context/url">
+    <div>
+      <b>Location:</b>
+      <span class="lesser" tal:content="context/url">
+        http://example.com/bzr/foo/foo.dev
+      </span>
+    </div>
+    <div>
+      <b>Mirror:</b>
+      <span class="lesser" tal:content="view/supermirror_url">
+        http://bazaar.launchpad.net/~user/product/branch
+      </span>
+    </div>
+    <p class="discreet lesser">
+      These URLs are intended for use with the
+      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+    </p>
+  </tal:pull-branch>
+
+  <tal:hosted-branch condition="not:context/url">
+    <div>
+      <b>Hosted on Launchpad:</b>
+      <span class="lesser" tal:content="view/supermirror_url" class="lesser">
+        http://bazaar.launchpad.net/~user/product/branch
+      </span>
+    </div>
+    <p class="discreet lesser">
+      This URL is intended for use with the
+      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+    </p>    
+  </tal:hosted-branch>
 
   <tal:comment condition="nothing">
-    <!-- XXX This style attribute is evil, but bold test makes the mirror error
+    <!-- XXX This style attribute is evil, but bold text makes the mirror error
     difficult to read. Checked with mpt about that. - David Allouche 2006-04-09
     -->
   </tal:comment>
@@ -68,8 +93,8 @@
     </div>
   </div>
 
-  <p class="informational message" tal:condition="context/whiteboard">
-    <b>Whiteboard:</b><br />
+  <p class="highlighted lesser" tal:condition="context/whiteboard">
+    <b>Whiteboard:</b>
     <span tal:replace="context/whiteboard">whiteboard</span>
   </p>
 
