@@ -1,22 +1,20 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 
-"""Date and time widgets.
-
-XXX: There is apparently a nice datetime widget in the Z3 SVN repository
-that we should investigate -- StuartBishop 20060228
-"""
+"""This was experimentation and example code. I don't think it is being
+used anywhere. If we want a real date/time input widget we should investigate
+zc.datewidget available from the Z3 SVN repository"""
 
 __metaclass__ = type
+
 from datetime import date
 from zope.app import zapi
-from zope.interface import implements, Interface
+from zope.interface import implements
 from zope.schema.interfaces import ValidationError
 from zope.app.form.interfaces import IDisplayWidget, IInputWidget
 # Use custom error for custom view
 #from zope.app.form.interfaces import WidgetInputError
 from exception import WidgetInputError
 from zope.app.form.interfaces import InputErrors
-from zope.app.form import InputWidget
 from zope.app.form.browser import BrowserWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
@@ -24,6 +22,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import Int
 from zope.app.form.browser.widget import DisplayWidget
 from zope.app.form.browser.textwidgets import escape
+from zope.app.form.browser.widget import renderElement
 from zope.component import getUtility
 
 from canonical.launchpad import _
