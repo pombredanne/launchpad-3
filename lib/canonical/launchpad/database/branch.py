@@ -21,14 +21,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.revision import Revision, RevisionNumber
+from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
-
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 
 class Branch(SQLBase):
@@ -113,6 +110,22 @@ class Branch(SQLBase):
             return self.title
         else:
             return self.unique_name
+
+    @property
+    def sort_key(self):
+        """Key for sorting branches for display."""
+        if self.product is None:
+            product = None
+        else:
+            product = self.product.name
+        if self.author is None:
+            author = None
+        else:
+            author = self.author.browsername
+        status = self.lifecycle_status.sortkey
+        name = self.name
+        owner = self.owner.name
+        return (product, status, author, name, owner)
 
     def revision_count(self):
         return RevisionNumber.selectBy(branchID=self.id).count()
@@ -232,8 +245,6 @@ class BranchSet:
     def getByUniqueName(self, unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name."""
         # import locally to avoid circular imports
-        from canonical.launchpad.database.person import Person
-        from canonical.launchpad.database.product import Product
         match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
         if match is None:
             return default

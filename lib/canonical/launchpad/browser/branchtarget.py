@@ -9,6 +9,8 @@ __all__ = [
     'PersonBranchesView',
     ]
 
+import operator
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import IPerson, IProduct
 from canonical.launchpad.webapp import LaunchpadView
@@ -81,6 +83,8 @@ class BranchTargetView(LaunchpadView):
                 categories[branch.lifecycle_status] = category
             category['branches'].append(branch)
         categories = categories.values()
+        for category in categories:
+            category['branches'].sort(key=operator.attrgetter('sort_key'))
         return sorted(categories, key=self.category_sortkey)
 
     @staticmethod
@@ -104,17 +108,7 @@ class PersonBranchesView(LaunchpadView):
     def branches(self):
         """All branches related to this person, sorted for display."""
         branches = self.context.branches
-        return sorted(branches, key=self._branch_sort_key)
-
-    @staticmethod
-    def _branch_sort_key(branch):
-        """Key for the initial sorting of the branches table."""
-        if branch.product is None:
-            product = None
-        else:
-            product = branch.product.name
-        status = branch.lifecycle_status.sortkey
-        return (product, status, branch.name)
+        return sorted(branches, key=operator.attrgetter('sort_key'))
 
     @cachedproperty
     def _authored_branch_set(self):

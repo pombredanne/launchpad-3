@@ -6,6 +6,8 @@ __metaclass__ = type
 
 __all__ = ['BazaarApplicationView', 'BazaarApplicationNavigation']
 
+import operator
+
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IProductSeriesSourceSet, IBazaarApplication, IProductSet)
@@ -44,21 +46,7 @@ class BazaarApplicationView:
     def branches(self):
         """List of all branches in the system."""
         branches = self.context.all
-        return sorted(branches, key=self._branch_sort_key)
-
-    @staticmethod
-    def _branch_sort_key(branch):
-        """Key for sorting branches for display."""
-        if branch.product is None:
-            product = None
-        else:
-            product = branch.product.name
-        if branch.author is None:
-            author = None
-        else:
-            author = branch.author.browsername
-        status = branch.lifecycle_status.sortkey
-        return (product, author, status, branch.name)
+        return sorted(branches, key=operator.attrgetter('sort_key'))
 
     def import_count(self):
         return self.seriesset.importcount()

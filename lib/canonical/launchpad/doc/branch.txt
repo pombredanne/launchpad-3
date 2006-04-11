@@ -208,6 +208,34 @@ authored branch listings for a person.
 >>> list(ddaa.registered_branches) == [gterm_dev]
 True
 
+== Branch sort key ==
+
+Branches have a sort_key attribute which is used through Launchpad to order
+branch listings in a consistent and predictable way.
+
+The sort key is made of:
+
+  * product name (if applicable)
+  * lifecycle status sort key
+  * author's browser name (if applicable)
+  * branch name
+  * owner's nickname
+
+The owner's name is usually not displayed in branch listings, but it is used in
+the sort key to garantee a predictable sort order. This relies on the fact that
+(owner, product, name) is unique for all branches.
+
+If the product or author of a branch is NULL, the corresponding item in the
+sort key is None.
+
+>>> from canonical.lp.dbschema import BranchLifecycleStatus
+>>> gterm_slowness = branchset[19]
+>>> key = gterm_slowness.sort_key
+>>> key
+(u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
+>>> key[1] == BranchLifecycleStatus.MERGED.sortkey
+True
+
 == Branch subscriptions ==
 
 Branches can be subscribed to and unsubscribed from by a Person.

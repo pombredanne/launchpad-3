@@ -104,17 +104,14 @@ class IBranch(IHasOwner):
         description=_("Whether the product name specified within the branch "
                       " is overriden by the product name set in Launchpad."))
 
-    # Display names
+    # Display attributes
     unique_name = Attribute(
         "Unique name of the branch, including the owner and product names.")
     displayname = Attribute(
         "The branch title if provided, or the unique_name.")
+    sort_key = Attribute(
+        "Key for sorting branches for display.")
 
-    # Display names
-    unique_name = Attribute(
-        "Unique name of the branch, including the owner and product names.")
-    displayname = Attribute(
-        "The branch title if provided, or the unique_name.")
 
     # Home page attributes
     home_page = TextLine(
