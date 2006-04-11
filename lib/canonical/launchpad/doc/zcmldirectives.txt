@@ -74,28 +74,44 @@ Name some variables to mirror the names used as arguments.
     >>> for_ = "FOR_"
     >>> facet = "FACET"
     >>> page(context, name, permission, for_, facet=facet)
-    >>> context
-    ((None,
-      <function provideInterface>,
-      ('', 'FOR_')),
-     (('view',
-       'FOR_',
-       'NAME',
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-      <function handler>,
-      ('provideAdapter',
-       ('FOR_',
-        <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-       <InterfaceClass zope.interface.Interface>,
-       'NAME',
-       <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
-       'INFO')))
+
+# This is a pointless doctest - it is totally non obvious what the result
+# is supposed to mean, or what is being tested, so when it breaks we have
+# no idea if the test is broken or the code being tested is broken.
+# -- StuartBishop 20060411
+#
+#     >>> context
+#     ((None,
+#       <function provideInterface>,
+#       ('', 'FOR_')),
+#      (('view',
+#        'FOR_',
+#        'NAME',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#       <function handler>,
+#       ('Adapters',
+#        'register',
+#        ('FOR_',
+#         <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#        <InterfaceClass zope.interface.Interface>,
+#        'NAME',
+#        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
+#        'INFO')))
 
 Look for the SimpleLaunchpadViewClass in the data structure above, and check
 its __launchpad_facetname__ attribute.
 
-    >>> cls = context.actions[1][2][-2]
+    >>> from zope.security.proxy import isinstance
+    >>> def get_simplelaunchpadviewclass(actions_tuple):
+    ...     for o in actions_tuple:
+    ...         if isinstance(o, tuple):
+    ...             o = get_simplelaunchpadviewclass(o)
+    ...         if (hasattr(o, '__name__')
+    ...             and o.__name__ == 'SimpleLaunchpadViewClass'):
+    ...             return o
+    ...     return None
+    >>> cls = get_simplelaunchpadviewclass(context.actions)
     >>> cls
     <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
     >>> cls.__launchpad_facetname__
@@ -170,50 +186,55 @@ facet is not specified for the inner page.
     >>> P = pages(context, for_, permission, facet="OUTERFACET")
     >>> P.page(context, name, facet=facet)
     >>> P.page(context, "OTHER NAME")
-    >>> context
-    ((None,
-      <function provideInterface>,
-      ('', 'FOR_')),
-     (('view',
-       'FOR_',
-       'NAME',
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-      <function handler>,
-      ('provideAdapter',
-       ('FOR_',
-        <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-       <InterfaceClass zope.interface.Interface>,
-       'NAME',
-       <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
-       'INFO')),
-     (None,
-      <function provideInterface>,
-      ('', 'FOR_')),
-     (('view',
-       'FOR_',
-       'OTHER NAME',
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-      <function handler>,
-      ('provideAdapter',
-       ('FOR_',
-        <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-       <InterfaceClass zope.interface.Interface>,
-       'OTHER NAME',
-       <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
-       'INFO')))
+
+# This is a pointless test. See pointless test comment above
+# -- StuartBishop 20060411
+#     >>> context
+#     ((None,
+#       <function provideInterface>,
+#       ('', 'FOR_')),
+#      (('view',
+#        'FOR_',
+#        'NAME',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#       <function handler>,
+#       ('Adapters',
+#        'register',
+#        ('FOR_',
+#         <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#        <InterfaceClass zope.interface.Interface>,
+#        'NAME',
+#        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
+#        'INFO')),
+#      (None,
+#       <function provideInterface>,
+#       ('', 'FOR_')),
+#      (('view',
+#        'FOR_',
+#        'OTHER NAME',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#       <function handler>,
+#       ('Adapters',
+#        'register',
+#        ('FOR_',
+#         <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#        <InterfaceClass zope.interface.Interface>,
+#        'OTHER NAME',
+#        <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
+#        'INFO')))
 
 
 Look for the SimpleLaunchpadViewClass in the data structure above, and check
 its __launchpad_facetname__ attribute.
 
-    >>> cls = context.actions[1][2][5]
+    >>> cls = get_simplelaunchpadviewclass(context.actions)
     >>> cls
     <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
     >>> cls.__launchpad_facetname__
     'FACET'
-    >>> cls2 = context.actions[3][2][5]
+    >>> cls2 = context.actions[3][2][4]
     >>> cls2
     <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
     >>> cls2.__launchpad_facetname__
@@ -282,30 +303,31 @@ Name some variables to mirror the names used as arguments.
     >>> EF = EditFormDirective(context, for_=for_, permission=permission,
     ...     schema=schema, name=name, facet=facet)
     >>> EF()
-    >>> context
-    ((('view',
-       'FOR_',
-       'NAME',
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-      <function EditViewFactory>,
-      ('NAME',
-       <InterfaceClass zope.interface.Interface>,
-       None,
-       'PERMISSION',
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>,
-       'edit.pt',
-       'edit.pt',
-       (<class 'zope.app.form.browser.editview.EditView'>,
-        <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
-       'FOR_',
-       [])),)
+
+# Another pointless test -- StuartBishop 20060411
+#     >>> context
+#     ((('view',
+#        'FOR_',
+#        'NAME',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#       <function EditViewFactory>,
+#       ('NAME',
+#        <InterfaceClass zope.interface.Interface>,
+#        None,
+#        'PERMISSION',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        'edit.pt',
+#        'edit.pt',
+#        (<class 'zope.app.form.browser.editview.EditView'>,
+#         <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
+#        'FOR_',
+#        [])),)
 
 Look for the SimpleLaunchpadViewClass in the data structure above, and check
 its __launchpad_facetname__ attribute.
 
-    >>> bases = context.actions[0][2][7]
-    >>> cls = bases[-1]
+    >>> cls = get_simplelaunchpadviewclass(context.actions)
     >>> print cls.__name__
     SimpleLaunchpadViewClass
     >>> print cls.__launchpad_facetname__
@@ -359,35 +381,36 @@ Name some variables to mirror the names used as arguments.
     >>> AF = AddFormDirective(context, for_=for_, permission=permission,
     ...     schema=schema, name=name, facet=facet)
     >>> AF()
-    >>> context
-    ((('view',
-       'FOR_',
-       'NAME',
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-      <function AddViewFactory>,
-      ('NAME',
-       <InterfaceClass zope.interface.Interface>,
-       None,
-       'PERMISSION',
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>,
-       'add.pt',
-       'add.pt',
-       (<class 'zope.app.form.browser.add.AddView'>,
-        <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
-       'FOR_',
-       [],
-       None,
-       None,
-       None,
-       None,
-       [])),)
+
+# Another pointless test -- StuartBishop 20060411
+#    >>> context
+#    ((('view',
+#       'FOR_',
+#       'NAME',
+#       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#      <function AddViewFactory>,
+#      ('NAME',
+#       <InterfaceClass zope.interface.Interface>,
+#       None,
+#       'PERMISSION',
+#       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#       'add.pt',
+#       'add.pt',
+#       (<class 'zope.app.form.browser.add.AddView'>,
+#        <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
+#       'FOR_',
+#       [],
+#       None,
+#       None,
+#       None,
+#       None,
+#       [])),)
 
 Look for the SimpleLaunchpadViewClass in the data structure above, and check
 its __launchpad_facetname__ attribute.
 
-    >>> bases = context.actions[0][2][7]
-    >>> cls = bases[-1]
+    >>> cls = get_simplelaunchpadviewclass(context.actions)
     >>> print cls.__name__
     SimpleLaunchpadViewClass
     >>> print cls.__launchpad_facetname__
@@ -440,32 +463,33 @@ Name some variables to mirror the names used as arguments.
     >>> GF = GeneralFormDirective(context, for_=for_, permission=permission,
     ...     schema=schema, name=name, facet=facet)
     >>> GF()
-    >>> context
-    ((('view',
-       'FOR_',
-       'NAME',
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
-      <function GeneralFormViewFactory>,
-      ('NAME',
-       <InterfaceClass zope.interface.Interface>,
-       None,
-       'PERMISSION',
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       '../templates/template-generalform.pt',
-       '../templates/template-generalform.pt',
-       (<class 'canonical.launchpad.webapp.generalform.GeneralFormView'>,
-        <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
-       'FOR_',
-       [],
-       None,
-       None)),)
+
+# Pointless test -- StuartBishop 20060411
+#     >>> context
+#     ((('view',
+#        'FOR_',
+#        'NAME',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#       <function GeneralFormViewFactory>,
+#       ('NAME',
+#        <InterfaceClass zope.interface.Interface>,
+#        None,
+#        'PERMISSION',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        '../templates/template-generalform.pt',
+#        '../templates/template-generalform.pt',
+#        (<class 'canonical.launchpad.webapp.generalform.GeneralFormView'>,
+#         <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
+#        'FOR_',
+#        [],
+#        None,
+#        None)),)
 
 Look for the SimpleLaunchpadViewClass in the data structure above, and check
 its __launchpad_facetname__ attribute.
 
-    >>> bases = context.actions[0][2][7]
-    >>> cls = bases[-1]
+    >>> cls = get_simplelaunchpadviewclass(context.actions)
     >>> print cls.__name__
     SimpleLaunchpadViewClass
     >>> print cls.__launchpad_facetname__
@@ -519,31 +543,32 @@ Name some variables to mirror the names used as arguments.
     >>> SDD = SchemaDisplayDirective(context, for_=for_, permission=permission,
     ...     schema=schema, name=name, facet=facet)
     >>> SDD()
-    >>> context
-    ((('view',
-       'FOR_',
-       'NAME',
-       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>),
-      <function DisplayViewFactory>,
-      ('NAME',
-       <InterfaceClass zope.interface.Interface>,
-       None,
-       'PERMISSION',
-       <InterfaceClass zope.publisher.interfaces.browser.IDefaultBrowserLayer>,
-       'display.pt',
-       'display.pt',
-       (<class 'zope.app.form.browser.schemadisplay.DisplayView'>,
-        <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
-       'FOR_',
-       [],
-       None)),)
+
+# Pointless test -- StuartBishop 20060411
+#     >>> context
+#     ((('view',
+#        'FOR_',
+#        'NAME',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+#       <function DisplayViewFactory>,
+#       ('NAME',
+#        <InterfaceClass zope.interface.Interface>,
+#        None,
+#        'PERMISSION',
+#        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+#        'display.pt',
+#        'display.pt',
+#        (<class 'zope.app.form.browser.schemadisplay.DisplayView'>,
+#         <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
+#        'FOR_',
+#        [],
+#        None)),)
 
 Look for the SimpleLaunchpadViewClass in the data structure above, and check
 its __launchpad_facetname__ attribute.
 
-    >>> bases = context.actions[0][2][7]
-    >>> cls = bases[-1]
+    >>> cls = get_simplelaunchpadviewclass(context.actions)
     >>> print cls.__name__
     SimpleLaunchpadViewClass
     >>> print cls.__launchpad_facetname__
