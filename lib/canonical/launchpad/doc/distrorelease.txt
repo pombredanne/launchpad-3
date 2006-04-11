@@ -104,7 +104,7 @@ BinaryPackagePublishing objects for the DistroRelease:
     >>> warty = DistroRelease.get(1)
     >>> bpp = warty.getBinaryPackagePublishing()
     >>> print bpp.count()
-    4
+    3
     >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
     mozilla-firefox
     >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
@@ -130,11 +130,13 @@ release by using the searchPackages method, which uses magical fti:
     1
 
 This also works for small or weirdly named packages that don't work
-through fti:
+through fti, and even for substrings:
 
     >>> len(warty.searchPackages("linux-2.6.12"))
     1
     >>> len(warty.searchPackages("at"))
+    1
+    >>> len(warty.searchPackages("inux-2"))
     1
 
 CVE BugTasks on a Distro Release

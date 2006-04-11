@@ -7,15 +7,16 @@
          <td>
           <select name="build_state" size="1">
 
-            <option tal:attributes="selected python: view.state == ''"
-                    value="">All</option>
+
+            <option tal:attributes="selected python: view.state == 'built'"
+                    value="built">Successfully Built</option>
+
+            <option tal:attributes="selected python: view.state == 'building'"
+                    value="building">Building</option>
 
             <option tal:condition="view/showBuilderInfo"
                     tal:attributes="selected python: view.state == 'pending'"
                     value="pending">Pending Build</option>
-
-            <option tal:attributes="selected python: view.state == 'built'"
-                    value="built">Successfully Built</option>
 
             <option tal:attributes="selected python: view.state == 'failed'"
                     value="failed">Failed Build</option>
@@ -113,12 +114,15 @@
         </tr>
         <tr class="secondary" tal:condition="not: build/was_built">
           <td></td>
-          <td>
+          <td tal:condition="not: build/buildqueue_record/builder">
             Pending
-            (<span
-              tal:condition="build/buildqueue_record"
-              tal:replace="build/buildqueue_record/lastscore"
+            (<span tal:replace="build/buildqueue_record/lastscore"
             />)
+          </td>
+          <td tal:condition="build/buildqueue_record/builder">
+            Building on
+            <a tal:content="build/buildqueue_record/builder/name"
+               tal:attributes="href build/buildqueue_record/builder/fmt:url" />
           </td>
         </tr>
       </tal:batch>

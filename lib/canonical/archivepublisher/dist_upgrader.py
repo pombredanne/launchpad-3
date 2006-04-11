@@ -24,7 +24,7 @@ class DistUpgraderAlreadyExists(DistUpgraderError):
     def __init__(self, arch, version):
         message = ('dist-upgrader build %s for architecture %s already exists'%
                    (arch, version))
-        DistUpgradeError.__init__(self, message)
+        DistUpgraderError.__init__(self, message)
         self.arch = arch
         self.version = version
 
@@ -103,7 +103,7 @@ def process_dist_upgrader(archive_root, tarfile_path, distrorelease,
         raise DistUpgraderTarError(tarfile_path, e)
 
     if not extracted:
-        raise DistUpgraderInvalidTarfile(tarfile_path, expected_dir)
+        raise DistUpgraderInvalidTarfile(tarfile_path, target)
 
     # Get an appropriately-sorted list of the dist-upgrader directories now
     # present in the target.
