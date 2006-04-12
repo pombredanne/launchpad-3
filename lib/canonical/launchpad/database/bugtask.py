@@ -492,7 +492,7 @@ class BugTaskSet:
                     # about this bug. :)
                     bug.subscribe(product.owner)
 
-                if product.security_contact:
+                if bug.security_related and product.security_contact:
                     bug.subscribe(product.security_contact)
         elif distribution:
             # Subscribe bug and security contacts, if provided, to all
@@ -500,7 +500,7 @@ class BugTaskSet:
             if not bug.private:
                 if distribution.bugcontact:
                     bug.subscribe(distribution.bugcontact)
-                if distribution.security_contact:
+                if bug.security_related and distribution.security_contact:
                     bug.subscribe(distribution.security_contact)
 
             # Subscribe package bug contacts to public bugs, if package
