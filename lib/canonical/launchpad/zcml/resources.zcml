@@ -34,6 +34,7 @@
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
     <resource name="up" file="../images/arrowUp.gif" />
+    <resource name="arrowUp.gif" file="../images/arrowUp.gif" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="branch" file="../images/info.png" />
