@@ -86,7 +86,7 @@ explicit Cc subscribers to the bug:
     bug contacts.
 
 XXX: Brad Bollenbach, 2005-11-25: These bits need real sample data. See
-https://launchpad.net/malone/bugs/5484.
+https://launchpad.net/bugs/5484.
 
 Let's have a look at an example for a distribution bug:
 

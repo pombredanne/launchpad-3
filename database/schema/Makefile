@@ -54,6 +54,7 @@ test: create
 	@ echo "* Security setup"
 	@ ${PYTHON} security.py -d ${TEST_DBNAME}
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
+	@ sleep 2
 	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
 	    | grep : | cat
 	@ echo "* Loading sample data"
@@ -78,6 +79,7 @@ dev: test
 	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; \
 	    then ${DROPDB} ${DBNAME} | grep : | cat ; \
 	fi
+	@ sleep 2
 	@ createdb -E UNICODE --template ${TEST_DBNAME} ${DBNAME} | grep : | cat
 
 create: check

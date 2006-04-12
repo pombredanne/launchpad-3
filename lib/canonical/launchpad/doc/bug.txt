@@ -77,7 +77,7 @@ include a URL to the bug inside the email.
 
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(firefox_crashes)
-    http://.../malone/bugs/6
+    http://.../bugs/6
 
 Bug Privacy
 ===========
