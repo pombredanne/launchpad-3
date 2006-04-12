@@ -9,12 +9,10 @@ or browser/.
 
 __metaclass__ = type
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
 from zope.interface import implements
 from zope.component import getUtility
 
+from canonical.launchpad import _
 from schoolbell.interfaces import ICalendar
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCalendar, ILaunchpadMergedCalendar,

@@ -19,9 +19,7 @@ __all__ = [
 
 from zope.schema import Bool, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 #
 # Source package publishing

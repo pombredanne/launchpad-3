@@ -11,9 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ITicketReopening(Interface):
     """A record of the re-opening of a ticket."""

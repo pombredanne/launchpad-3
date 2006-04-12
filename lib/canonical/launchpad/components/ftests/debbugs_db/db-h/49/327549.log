@@ -1,0 +1,468 @@
+
+<strong>Report forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+<code>Bug#327549</code>; Package <code>mozilla-firefox</code>.
+
+
+debian-bugs-dist@lists.debian.orgEric Dorland <eric@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#327549: mozilla-firefox: [CAN-2005-2414] Race condition in the xpcom library
+Reply-To: Florian Weimer <fw@deneb.enyo.de>, 327549@bugs.debian.org
+Resent-From: Florian Weimer <fw@deneb.enyo.de>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Eric Dorland <eric@debian.org>
+Resent-Date: Sat, 10 Sep 2005 21:33:29 UTC
+Resent-Message-ID: <handler.327549.B.11263879358562@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 327549
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: security
+Received: via spool by submit@bugs.debian.org id=B.11263879358562
+          (code B ref -1); Sat, 10 Sep 2005 21:33:29 UTC
+Received: (at submit) by bugs.debian.org; 10 Sep 2005 21:32:15 +0000
+Received: from mail.enyo.de [212.9.189.167] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EECxL-0002DN-00; Sat, 10 Sep 2005 14:32:15 -0700
+Received: from deneb.vpn.enyo.de ([212.9.189.177] helo=deneb.enyo.de)
+	by albireo.enyo.de with esmtp id 1EECxI-0005oL-RM
+	for submit@bugs.debian.org; Sat, 10 Sep 2005 23:32:12 +0200
+Received: from fw by deneb.enyo.de with local (Exim 4.52)
+	id 1EECwV-0000Fi-MM; Sat, 10 Sep 2005 23:31:23 +0200
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Florian Weimer <fw@deneb.enyo.de>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+X-Mailer: reportbug 3.15
+Date: Sat, 10 Sep 2005 23:31:23 +0200
+Message-Id: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-7.0 required=4.0 tests=BAYES_01,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+Package: mozilla-firefox
+Version: 1.0.6-4
+Severity: grave
+Tags: security
+Justification: user security hole
+
+GulfTech has disclosed a security bug in Mozilla-based browsers:
+
+  <http://www.gulftech.org/?node=research&article_id=00091-07212005>
+
+Malicious web sites can crash the browser.  This appears to be a memory
+corruption problem, so perhaps arbitrary code execution is possible.
+
+Workaround (according to my tests): Disable JavaScript.
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Florian Weimer &lt;fw@deneb.enyo.de&gt;</code>:<br>
+New Bug report received and forwarded.  Copy sent to <code>Eric Dorland &lt;eric@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Florian Weimer <fw@deneb.enyo.de>
+Subject: Bug#327549: Acknowledgement (mozilla-firefox: [CAN-2005-2414] Race condition in the xpcom library)
+Message-ID: <handler.327549.B.11263879358562.ack@bugs.debian.org>
+In-Reply-To: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+References: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+Precedence: bulk
+X-Debian-PR-Message: ack 327549
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: security
+Reply-To: 327549@bugs.debian.org
+
+Thank you for the problem report you have sent regarding Debian.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the package maintainers and other
+interested parties for their attention; they will reply in due course.
+
+Your message has been sent to the package maintainer(s):
+ Eric Dorland <eric@debian.org>
+
+If you wish to submit further information on your problem, please send
+it to 327549@bugs.debian.org (and *not* to
+submit@bugs.debian.org).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at submit) by bugs.debian.org; 10 Sep 2005 21:32:15 +0000
+From fw@deneb.enyo.de Sat Sep 10 14:32:15 2005
+Return-path: <fw@deneb.enyo.de>
+Received: from mail.enyo.de [212.9.189.167] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EECxL-0002DN-00; Sat, 10 Sep 2005 14:32:15 -0700
+Received: from deneb.vpn.enyo.de ([212.9.189.177] helo=deneb.enyo.de)
+	by albireo.enyo.de with esmtp id 1EECxI-0005oL-RM
+	for submit@bugs.debian.org; Sat, 10 Sep 2005 23:32:12 +0200
+Received: from fw by deneb.enyo.de with local (Exim 4.52)
+	id 1EECwV-0000Fi-MM; Sat, 10 Sep 2005 23:31:23 +0200
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Florian Weimer <fw@deneb.enyo.de>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+Subject: mozilla-firefox: [CAN-2005-2414] Race condition in the xpcom library
+X-Mailer: reportbug 3.15
+Date: Sat, 10 Sep 2005 23:31:23 +0200
+Message-Id: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-7.0 required=4.0 tests=BAYES_01,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+Package: mozilla-firefox
+Version: 1.0.6-4
+Severity: grave
+Tags: security
+Justification: user security hole
+
+GulfTech has disclosed a security bug in Mozilla-based browsers:
+
+  <http://www.gulftech.org/?node=research&article_id=00091-07212005>
+
+Malicious web sites can crash the browser.  This appears to be a memory
+corruption problem, so perhaps arbitrary code execution is possible.
+
+Workaround (according to my tests): Disable JavaScript.
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org</code>:<br>
+<code>Bug#327549</code>; Package <code>mozilla-firefox</code>.
+
+
+debian-bugs-dist@lists.debian.org
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#327549: mozilla-firefox: [CAN-2005-2414] Race condition in the xpcom library
+Reply-To: Eric Dorland <eric@debian.org>, 327549@bugs.debian.org
+Resent-From: Eric Dorland <eric@debian.org>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-Date: Sun, 11 Sep 2005 03:33:08 UTC
+Resent-Message-ID: <handler.327549.B327549.112640865930601@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 327549
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: security
+Received: via spool by 327549-submit@bugs.debian.org id=B327549.112640865930601
+          (code B ref 327549); Sun, 11 Sep 2005 03:33:08 UTC
+Received: (at 327549) by bugs.debian.org; 11 Sep 2005 03:17:39 +0000
+Received: from smtp.istop.com [66.11.167.126] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EEILb-0007xH-00; Sat, 10 Sep 2005 20:17:39 -0700
+Received: from nightcrawler.kuroneko.ca (nightcrawler.kuroneko.ca [66.11.161.69])
+	by smtp.istop.com (Postfix) with ESMTP
+	id CDA542B3C8; Sat, 10 Sep 2005 23:18:50 -0400 (EDT)
+Received: by nightcrawler.kuroneko.ca (Postfix, from userid 1000)
+	id 8E2EC198D17; Sat, 10 Sep 2005 23:17:34 -0400 (EDT)
+Date: Sat, 10 Sep 2005 23:17:34 -0400
+From: Eric Dorland <eric@debian.org>
+To: Florian Weimer <fw@deneb.enyo.de>, 327549@bugs.debian.org
+Cc: control@bugs.debian.org
+Message-ID: <20050911031734.GT13536@nightcrawler.kuroneko.ca>
+References: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u+FGODhbLwgAeSOU"
+Content-Disposition: inline
+In-Reply-To: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+User-Agent: Mutt/1.5.10i
+Delivered-To: 327549@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+
+--u+FGODhbLwgAeSOU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+severity 327549 important
+thanks
+
+* Florian Weimer (fw@deneb.enyo.de) wrote:
+> Package: mozilla-firefox
+> Version: 1.0.6-4
+> Severity: grave
+> Tags: security
+> Justification: user security hole
+>=20
+> GulfTech has disclosed a security bug in Mozilla-based browsers:
+>=20
+>   <http://www.gulftech.org/?node=3Dresearch&article_id=3D00091-07212005>
+>=20
+> Malicious web sites can crash the browser.  This appears to be a memory
+> corruption problem, so perhaps arbitrary code execution is possible.
+>=20
+> Workaround (according to my tests): Disable JavaScript.
+
+Since it seems the Mozilla team does not believe it to be exploitable,
+I'm going to drop the severity to important. Thanks for the report.=20
+
+--=20
+Eric Dorland <eric.dorland@mail.mcgill.ca>
+ICQ: #61138586, Jabber: hooty@jabber.com
+1024D/16D970C6 097C 4861 9934 27A0 8E1C  2B0A 61E9 8ECF 16D9 70C6
+
+-----BEGIN GEEK CODE BLOCK-----
+Version: 3.12
+GCS d- s++: a-- C+++ UL+++ P++ L++ E++ W++ N+ o K- w+=20
+O? M++ V-- PS+ PE Y+ PGP++ t++ 5++ X+ R tv++ b+++ DI+ D+=20
+G e h! r- y+=20
+------END GEEK CODE BLOCK------
+
+--u+FGODhbLwgAeSOU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDI6HOYemOzxbZcMYRAv0uAKCCe+uYuhOHHSQUmsMfiJC3hrvXQwCgh4Q9
+ij9e73LSFnLi9qAGaSI9p3s=
+=jJHx
+-----END PGP SIGNATURE-----
+
+--u+FGODhbLwgAeSOU--
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+Extra info received and forwarded to list.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Eric Dorland <eric@debian.org>
+Subject: Bug#327549: Info received (was Bug#327549: mozilla-firefox: [CAN-2005-2414] Race condition in the xpcom library)
+Message-ID: <handler.327549.B327549.112640865930601.ackinfo@bugs.debian.org>
+In-Reply-To: <20050911031734.GT13536@nightcrawler.kuroneko.ca>
+References: <20050911031734.GT13536@nightcrawler.kuroneko.ca>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 327549
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: security
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+If you wish to continue to submit further information on your problem,
+please send it to 327549@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 327549) by bugs.debian.org; 11 Sep 2005 03:17:39 +0000
+From eric@nightcrawler.kuroneko.ca Sat Sep 10 20:17:39 2005
+Return-path: <eric@nightcrawler.kuroneko.ca>
+Received: from smtp.istop.com [66.11.167.126] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EEILb-0007xH-00; Sat, 10 Sep 2005 20:17:39 -0700
+Received: from nightcrawler.kuroneko.ca (nightcrawler.kuroneko.ca [66.11.161.69])
+	by smtp.istop.com (Postfix) with ESMTP
+	id CDA542B3C8; Sat, 10 Sep 2005 23:18:50 -0400 (EDT)
+Received: by nightcrawler.kuroneko.ca (Postfix, from userid 1000)
+	id 8E2EC198D17; Sat, 10 Sep 2005 23:17:34 -0400 (EDT)
+Date: Sat, 10 Sep 2005 23:17:34 -0400
+From: Eric Dorland <eric@debian.org>
+To: Florian Weimer <fw@deneb.enyo.de>, 327549@bugs.debian.org
+Cc: control@bugs.debian.org
+Subject: Re: Bug#327549: mozilla-firefox: [CAN-2005-2414] Race condition in the xpcom library
+Message-ID: <20050911031734.GT13536@nightcrawler.kuroneko.ca>
+References: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u+FGODhbLwgAeSOU"
+Content-Disposition: inline
+In-Reply-To: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+User-Agent: Mutt/1.5.10i
+Delivered-To: 327549@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+
+--u+FGODhbLwgAeSOU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+severity 327549 important
+thanks
+
+* Florian Weimer (fw@deneb.enyo.de) wrote:
+> Package: mozilla-firefox
+> Version: 1.0.6-4
+> Severity: grave
+> Tags: security
+> Justification: user security hole
+>=20
+> GulfTech has disclosed a security bug in Mozilla-based browsers:
+>=20
+>   <http://www.gulftech.org/?node=3Dresearch&article_id=3D00091-07212005>
+>=20
+> Malicious web sites can crash the browser.  This appears to be a memory
+> corruption problem, so perhaps arbitrary code execution is possible.
+>=20
+> Workaround (according to my tests): Disable JavaScript.
+
+Since it seems the Mozilla team does not believe it to be exploitable,
+I'm going to drop the severity to important. Thanks for the report.=20
+
+--=20
+Eric Dorland <eric.dorland@mail.mcgill.ca>
+ICQ: #61138586, Jabber: hooty@jabber.com
+1024D/16D970C6 097C 4861 9934 27A0 8E1C  2B0A 61E9 8ECF 16D9 70C6
+
+-----BEGIN GEEK CODE BLOCK-----
+Version: 3.12
+GCS d- s++: a-- C+++ UL+++ P++ L++ E++ W++ N+ o K- w+=20
+O? M++ V-- PS+ PE Y+ PGP++ t++ 5++ X+ R tv++ b+++ DI+ D+=20
+G e h! r- y+=20
+------END GEEK CODE BLOCK------
+
+--u+FGODhbLwgAeSOU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDI6HOYemOzxbZcMYRAv0uAKCCe+uYuhOHHSQUmsMfiJC3hrvXQwCgh4Q9
+ij9e73LSFnLi9qAGaSI9p3s=
+=jJHx
+-----END PGP SIGNATURE-----
+
+--u+FGODhbLwgAeSOU--
+
+
+
+
+<strong>Severity set to `important'.</strong>
+Request was from <code>Eric Dorland &lt;eric@debian.org&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 11 Sep 2005 03:17:39 +0000
+From eric@nightcrawler.kuroneko.ca Sat Sep 10 20:17:39 2005
+Return-path: <eric@nightcrawler.kuroneko.ca>
+Received: from smtp.istop.com [66.11.167.126] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EEILb-0007xH-00; Sat, 10 Sep 2005 20:17:39 -0700
+Received: from nightcrawler.kuroneko.ca (nightcrawler.kuroneko.ca [66.11.161.69])
+	by smtp.istop.com (Postfix) with ESMTP
+	id CDA542B3C8; Sat, 10 Sep 2005 23:18:50 -0400 (EDT)
+Received: by nightcrawler.kuroneko.ca (Postfix, from userid 1000)
+	id 8E2EC198D17; Sat, 10 Sep 2005 23:17:34 -0400 (EDT)
+Date: Sat, 10 Sep 2005 23:17:34 -0400
+From: Eric Dorland <eric@debian.org>
+To: Florian Weimer <fw@deneb.enyo.de>, 327549@bugs.debian.org
+Cc: control@bugs.debian.org
+Subject: Re: Bug#327549: mozilla-firefox: [CAN-2005-2414] Race condition in the xpcom library
+Message-ID: <20050911031734.GT13536@nightcrawler.kuroneko.ca>
+References: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u+FGODhbLwgAeSOU"
+Content-Disposition: inline
+In-Reply-To: <E1EECwV-0000Fi-MM@mid.deneb.enyo.de>
+User-Agent: Mutt/1.5.10i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 2
+
+
+--u+FGODhbLwgAeSOU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+severity 327549 important
+thanks
+
+* Florian Weimer (fw@deneb.enyo.de) wrote:
+> Package: mozilla-firefox
+> Version: 1.0.6-4
+> Severity: grave
+> Tags: security
+> Justification: user security hole
+>=20
+> GulfTech has disclosed a security bug in Mozilla-based browsers:
+>=20
+>   <http://www.gulftech.org/?node=3Dresearch&article_id=3D00091-07212005>
+>=20
+> Malicious web sites can crash the browser.  This appears to be a memory
+> corruption problem, so perhaps arbitrary code execution is possible.
+>=20
+> Workaround (according to my tests): Disable JavaScript.
+
+Since it seems the Mozilla team does not believe it to be exploitable,
+I'm going to drop the severity to important. Thanks for the report.=20
+
+--=20
+Eric Dorland <eric.dorland@mail.mcgill.ca>
+ICQ: #61138586, Jabber: hooty@jabber.com
+1024D/16D970C6 097C 4861 9934 27A0 8E1C  2B0A 61E9 8ECF 16D9 70C6
+
+-----BEGIN GEEK CODE BLOCK-----
+Version: 3.12
+GCS d- s++: a-- C+++ UL+++ P++ L++ E++ W++ N+ o K- w+=20
+O? M++ V-- PS+ PE Y+ PGP++ t++ 5++ X+ R tv++ b+++ DI+ D+=20
+G e h! r- y+=20
+------END GEEK CODE BLOCK------
+
+--u+FGODhbLwgAeSOU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDI6HOYemOzxbZcMYRAv0uAKCCe+uYuhOHHSQUmsMfiJC3hrvXQwCgh4Q9
+ij9e73LSFnLi9qAGaSI9p3s=
+=jJHx
+-----END PGP SIGNATURE-----
+
+--u+FGODhbLwgAeSOU--
+
+
+

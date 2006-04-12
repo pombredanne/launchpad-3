@@ -9,9 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ITicketMessage(Interface):
     """A link between a ticket and a message."""

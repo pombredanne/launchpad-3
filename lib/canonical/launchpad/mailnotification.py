@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 """Event handlers that send email notifications."""
 
@@ -303,98 +303,97 @@ def get_unified_diff(old_text, new_text, text_width):
     return text_diff
 
 
-def generate_bug_edit_email(bug_delta):
-    """Generate a bug edit notification based on the bug_delta.
+def get_bug_edit_notification_texts(bug_delta):
+    """Generate a list of edit notification texts based on the bug_delta.
 
     bug_delta is an object that provides IBugDelta. The return value
-    is (subject, body).
+    is a list of unicode strings.
     """
-    subject = u"[Bug %d] %s" % (bug_delta.bug.id, bug_delta.bug.title)
-
-    if bug_delta.bug.private:
-        visibility = u"Private"
-    else:
-        visibility = u"Public"
-
     # figure out what's been changed; add that information to the
-    # email as appropriate
-    change_info = ''
+    # list as appropriate
+    changes = []
     if bug_delta.duplicateof is not None:
         new_bug_dupe = bug_delta.duplicateof['new']
         old_bug_dupe = bug_delta.duplicateof['old']
         assert new_bug_dupe is not None or old_bug_dupe is not None
         assert new_bug_dupe != old_bug_dupe
         if old_bug_dupe is not None:
-            change_info += (
+            change_info = (
                 u"** This bug is no longer a duplicate of bug %d\n" %
                     old_bug_dupe.id)
-            change_info += u'   %s\n\n' % old_bug_dupe.title
+            change_info += u'   %s' % old_bug_dupe.title
+            changes.append(change_info)
         if new_bug_dupe is not None:
-            change_info += (
+            change_info = (
                 u"** This bug has been marked a duplicate of bug %d\n" %
                     new_bug_dupe.id)
-            change_info += '   %s\n\n' % new_bug_dupe.title
+            change_info += '   %s' % new_bug_dupe.title
+            changes.append(change_info)
 
     if bug_delta.title is not None:
-        change_info += u"** Summary changed:\n\n"
+        change_info = u"** Summary changed:\n\n"
         change_info += u"- %s\n" % bug_delta.title['old']
-        change_info += u"+ %s\n" % bug_delta.title['new']
+        change_info += u"+ %s" % bug_delta.title['new']
+        changes.append(change_info)
 
     if bug_delta.description is not None:
         description_diff = get_unified_diff(
             bug_delta.description['old'],
             bug_delta.description['new'], 72)
 
-        change_info += u"** Description changed:\n\n"
+        change_info = u"** Description changed:\n\n"
         change_info += description_diff
-        change_info += u"\n\n"
+        changes.append(change_info)
 
     if bug_delta.private is not None:
         if bug_delta.private['new']:
             visibility = "Private"
         else:
             visibility = "Public"
-        change_info += u"** Visibility changed to: %s\n" % visibility
+        changes.append(u"** Visibility changed to: %s" % visibility)
 
     if bug_delta.security_related is not None:
         if bug_delta.security_related['new']:
-            change_info += u"** This bug has been flagged as a security issue\n"
+            changes.append(u"** This bug has been flagged as a security issue")
         else:
-            change_info += (
-                u"** This bug is no longer flagged as a security issue\n")
+            changes.append(
+                u"** This bug is no longer flagged as a security issue")
 
     if bug_delta.external_reference is not None:
         old_ext_ref = bug_delta.external_reference.get('old')
         if old_ext_ref is not None:
-            change_info += u'** Web link removed: %s\n\n' % old_ext_ref.url
+            changes.append(u'** Web link removed: %s' % old_ext_ref.url)
         new_ext_ref = bug_delta.external_reference['new']
         if new_ext_ref is not None:
-            change_info += u'** Web link added: %s\n' % new_ext_ref.url
+            changes.append(u'** Web link added: %s' % new_ext_ref.url)
 
     if bug_delta.bugwatch is not None:
         old_bug_watch = bug_delta.bugwatch.get('old')
         if old_bug_watch:
-            change_info += u"** Bug watch removed: %s #%s\n" % (
+            change_info = u"** Bug watch removed: %s #%s\n" % (
                 old_bug_watch.bugtracker.title, old_bug_watch.remotebug)
-            change_info += u"   %s\n\n" % old_bug_watch.url
+            change_info += u"   %s" % old_bug_watch.url
+            changes.append(change_info)
         new_bug_watch = bug_delta.bugwatch['new']
         if new_bug_watch:
-            change_info += u"** Bug watch added: %s #%s\n" % (
+            change_info = u"** Bug watch added: %s #%s\n" % (
                 new_bug_watch.bugtracker.title, new_bug_watch.remotebug)
-            change_info += u"   %s\n\n" % new_bug_watch.url
+            change_info += u"   %s" % new_bug_watch.url
+            changes.append(change_info)
 
     if bug_delta.cve is not None:
         new_cve = bug_delta.cve.get('new', None)
         old_cve = bug_delta.cve.get('old', None)
         if old_cve:
-            change_info += u"** CVE removed: %s\n" % old_cve.url
+            changes.append(u"** CVE removed: %s" % old_cve.url)
         if new_cve:
-            change_info += u"** CVE added: %s\n" % new_cve.url
+            changes.append(u"** CVE added: %s" % new_cve.url)
 
     if bug_delta.attachment is not None and bug_delta.attachment['new']:
         added_attachment = bug_delta.attachment['new']
-        change_info += '** Attachment added: "%s"\n' % added_attachment.title
-        change_info += "   %s\n" % added_attachment.libraryfile.url
+        change_info = '** Attachment added: "%s"\n' % added_attachment.title
+        change_info += "   %s" % added_attachment.libraryfile.url
+        changes.append(change_info)
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
@@ -403,10 +402,7 @@ def generate_bug_edit_email(bug_delta):
         if not zope_isinstance(bugtask_deltas, (list, tuple)):
             bugtask_deltas = [bugtask_deltas]
         for bugtask_delta in bugtask_deltas:
-            if change_info and not change_info[-2:] == u"\n\n":
-                change_info += u"\n"
-
-            change_info += u"** Changed in: %s\n" % (
+            change_info = u"** Changed in: %s\n" % (
                 bugtask_delta.bugtask.targetname)
 
             for fieldname, displayattrname in (
@@ -442,11 +438,9 @@ def generate_bug_edit_email(bug_delta):
                         change, displayattrname)
                     change_info += _get_task_change_row(
                         fieldname, oldval_display, newval_display)
+            changes.append(change_info.rstrip())
 
     if bug_delta.added_bugtasks is not None:
-        if change_info and not change_info[-2:] == u"\n\n":
-            change_info += u"\n"
-
         # Use zope_isinstance, to ensure that this Just Works with
         # security-proxied objects.
         if zope_isinstance(bug_delta.added_bugtasks, (list, tuple)):
@@ -456,11 +450,11 @@ def generate_bug_edit_email(bug_delta):
 
         for added_bugtask in added_bugtasks:
             if added_bugtask.bugwatch:
-                change_info += u"** Also affects: %s via\n" % (
+                change_info = u"** Also affects: %s via\n" % (
                     added_bugtask.targetname)
                 change_info += u"   %s\n" % added_bugtask.bugwatch.url
             else:
-                change_info += u"** Also affects: %s\n" % added_bugtask.targetname
+                change_info = u"** Also affects: %s\n" % added_bugtask.targetname
             change_info += u"%13s: %s\n" % (u"Severity", added_bugtask.severity.title)
             if added_bugtask.priority:
                 priority_title = added_bugtask.priority.title
@@ -472,10 +466,9 @@ def generate_bug_edit_email(bug_delta):
                 change_info += u"%13s: %s <%s>\n" % (
                     u"Assignee", assignee.name, assignee.preferredemail.email)
             change_info += u"%13s: %s" % (u"Status", added_bugtask.status.title)
+            changes.append(change_info)
 
-    change_info = change_info.rstrip()
-
-    return (subject, change_info)
+    return changes
 
 
 def _get_task_change_row(label, oldval_display, newval_display):
@@ -560,37 +553,22 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
 
     headers["X-Launchpad-Bug"] = x_launchpad_bug_values
 
-    signature = get_email_template('bug-notification.txt') % {
+    body = get_email_template('bug-notification.txt') % {
         'content': contents,
         'bug_title': bug.title,
         'bug_url': canonical_url(bug)}
-
-    body = "%s\n%s" % (contents, signature)
 
     for to_addr in to_addrs:
         simple_sendmail_from_person(
             person=user, to_addrs=to_addr, subject=subject,
             body=body, headers=headers)
 
-def send_bug_edit_notification(bug_delta):
-    """Send a notification email about a bug that was modified.
 
-    :bug_delta: has to provide IBugDelta.
-    """
-    if not IBugDelta.providedBy(bug_delta):
-        raise TypeError(
-            "Expected an object providing IBugDelta, got %s instead" %
-            repr(bug_delta))
+def add_bug_duplicate_notification(duplicate_bug, user):
+    """Add a notification that a bug was marked a dup of a bug.
 
-    subject, body = generate_bug_edit_email(bug_delta)
-    bug_delta.bug.addChangeNotification(body, person=bug_delta.user)
-
-
-def send_bug_duplicate_notification(duplicate_bug, user):
-    """Send a notification that a bug was marked a dup of a bug.
-
-    The email is sent the duplicate_bug.duplicateOf's subscribers
-    telling them which bug ID has been marked as a dup of their bug.
+    An email will be sent the duplicate_bug.duplicateOf's subscribers
+    telling them which bug has been marked as a dup of their bug.
     duplicate_bug is an IBug whose .duplicateof is not
     None.
     """
@@ -603,6 +581,7 @@ def send_bug_duplicate_notification(duplicate_bug, user):
         duplicate_bug.id,)
 
     bug.addChangeNotification(body, person=user)
+
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
@@ -617,32 +596,6 @@ def get_cc_list(bug):
     subscriptions += bug.notificationRecipientAddresses()
 
     return subscriptions
-
-
-# XXX: Brad Bollenbach, 2005-04-11: This function will probably be
-# supplanted by get_bug_delta and get_task_delta (see slightly further
-# down.)
-def get_changes(before, after, fields):
-    """Return what changed from the object before to after for the
-    passed-in fields. fields is a tuple of (field_name, display_value_func)
-    tuples, where display_value_func is used to convert the differences
-    in attribute values into something you could display in, for example,
-    a change notification email."""
-    changes = {}
-
-    for field_name, display_value_func in fields:
-        old_val = getattr(before, field_name, None)
-        new_val = getattr(after, field_name, None)
-        if old_val != new_val:
-            changes[field_name] = {}
-            if display_value_func:
-                changes[field_name]['old'] = display_value_func(old_val)
-                changes[field_name]['new'] = display_value_func(new_val)
-            else:
-                changes[field_name]['old'] = old_val
-                changes[field_name]['new'] = new_val
-
-    return changes
 
 
 def get_bug_delta(old_bug, new_bug, user):
@@ -730,7 +683,6 @@ def notify_bug_added(bug, event):
     Event must be an ISQLObjectCreatedEvent.
     """
 
-    subject, body = generate_bug_add_email(bug)
     bug.addCommentNotification(bug.initial_message)
 
 
@@ -746,14 +698,21 @@ def notify_bug_modified(modified_bug, event):
 
     assert bug_delta is not None
 
-    send_bug_edit_notification(bug_delta)
+    add_bug_change_notifications(bug_delta)
 
     if bug_delta.duplicateof is not None:
         # This bug was marked as a duplicate, so notify the dup
         # target subscribers of this as well.
-        send_bug_duplicate_notification(
+        add_bug_duplicate_notification(
             duplicate_bug=bug_delta.bug,
             user=event.user)
+
+
+def add_bug_change_notifications(bug_delta):
+    """Generate bug notifications and add them to the bug."""
+    changes = get_bug_edit_notification_texts(bug_delta)
+    for text_change in changes:
+        bug_delta.bug.addChangeNotification(text_change, person=bug_delta.user)
 
 
 def notify_bugtask_added(bugtask, event):
@@ -771,8 +730,7 @@ def notify_bugtask_added(bugtask, event):
         user=event.user,
         added_bugtasks=bugtask)
 
-    subject, body = generate_bug_edit_email(bug_delta)
-    bugtask.bug.addChangeNotification(body, person=bug_delta.user)
+    add_bug_change_notifications(bug_delta)
 
 
 def notify_bugtask_edited(modified_bugtask, event):
@@ -790,7 +748,7 @@ def notify_bugtask_edited(modified_bugtask, event):
         bugtask_deltas=bugtask_delta,
         user=event.user)
 
-    send_bug_edit_notification(bug_delta)
+    add_bug_change_notifications(bug_delta)
 
     update_bug_contact_subscriptions(modified_bugtask, event)
     update_security_contact_subscriptions(modified_bugtask, event)
@@ -820,7 +778,7 @@ def notify_bug_external_ref_added(ext_ref, event):
         user=event.user,
         external_reference={'new' : ext_ref})
 
-    send_bug_edit_notification(bug_delta)
+    add_bug_change_notifications(bug_delta)
 
 
 def notify_bug_external_ref_edited(edited_ext_ref, event):
@@ -840,7 +798,7 @@ def notify_bug_external_ref_edited(edited_ext_ref, event):
             user=event.user,
             external_reference={'old' : old, 'new' : new})
 
-        send_bug_edit_notification(bug_delta)
+        add_bug_change_notifications(bug_delta)
 
 
 def notify_bug_watch_added(watch, event):
@@ -855,7 +813,7 @@ def notify_bug_watch_added(watch, event):
         user=event.user,
         bugwatch={'new' : watch})
 
-    send_bug_edit_notification(bug_delta)
+    add_bug_change_notifications(bug_delta)
 
 
 def notify_bug_watch_modified(modified_bug_watch, event):
@@ -876,7 +834,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
             user=event.user,
             bugwatch={'old' : old, 'new' : new})
 
-        send_bug_edit_notification(bug_delta)
+        add_bug_change_notifications(bug_delta)
 
 
 def notify_bug_cve_added(bugcve, event):
@@ -890,7 +848,7 @@ def notify_bug_cve_added(bugcve, event):
         user=event.user,
         cve={'new': bugcve.cve})
 
-    send_bug_edit_notification(bug_delta)
+    add_bug_change_notifications(bug_delta)
 
 def notify_bug_cve_deleted(bugcve, event):
     """Notify CC'd list that a cve ref has been removed from this bug.
@@ -903,7 +861,7 @@ def notify_bug_cve_deleted(bugcve, event):
         user=event.user,
         cve={'old': bugcve.cve})
 
-    send_bug_edit_notification(bug_delta)
+    add_bug_change_notifications(bug_delta)
 
 
 def notify_bug_attachment_added(bugattachment, event):
@@ -919,7 +877,7 @@ def notify_bug_attachment_added(bugattachment, event):
         user=event.user,
         attachment={'new' : bugattachment})
 
-    send_bug_edit_notification(bug_delta)
+    add_bug_change_notifications(bug_delta)
 
 
 def notify_join_request(event):

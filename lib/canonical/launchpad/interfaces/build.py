@@ -62,8 +62,6 @@ class IBuild(Interface):
         raise NotFoundError if no such package exists.
         """
 
-
-
     def createBinaryPackageRelease(binarypackagename, version,
                                    summary, description,
                                    binpackageformat, component,
@@ -114,6 +112,7 @@ class IBuildSet(Interface):
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
         """
+
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""

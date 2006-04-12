@@ -6,6 +6,7 @@ from zope.testing.doctestunit import DocTestSuite
 from zope.component import getUtility
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.functional import FunctionalLayer
 
 def setUp(test):
     test.globs['getUtility'] = getUtility
@@ -16,6 +17,7 @@ def tearDown(test):
     LaunchpadFunctionalTestSetup().tearDown()
 
 def test_suite():
-    return DocTestSuite('canonical.launchpad.database.project',
+    suite = DocTestSuite('canonical.launchpad.database.project',
             setUp=setUp, tearDown=tearDown)
-
+    suite.layer = FunctionalLayer
+    return suite

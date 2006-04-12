@@ -151,38 +151,38 @@ links:
     ...     'bug no. 123\n'
     ...     'bug#123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/malone/bugs/123" title="No such bug">bug 123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug    123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug #123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug number 123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug number. 123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug num 123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug num. 123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug no 123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug no. 123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug#123</a></p>
+    <p><a href="/bugs/123" title="No such bug">bug 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug    123</a><br />
+    <a href="/bugs/123" title="No such bug">bug #123</a><br />
+    <a href="/bugs/123" title="No such bug">bug number 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug number. 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug num 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug num. 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug no 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug no. 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug#123</a></p>
 
     >>> text = (
     ...     'bug 123\n'
     ...     'bug 123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/malone/bugs/123" title="No such bug">bug 123</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug 123</a></p>
+    <p><a href="/bugs/123" title="No such bug">bug 123</a><br />
+    <a href="/bugs/123" title="No such bug">bug 123</a></p>
 
     >>> text = (
     ...     'bug 1234\n'
     ...     'bug 123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/malone/bugs/1234" title="No such bug">bug 1234</a><br />
-    <a href="/malone/bugs/123" title="No such bug">bug 123</a></p>
+    <p><a href="/bugs/1234" title="No such bug">bug 1234</a><br />
+    <a href="/bugs/123" title="No such bug">bug 123</a></p>
 
     >>> text = 'bug 0123\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/malone/bugs/123" title="No such bug">bug 0123</a></p>
+    <p><a href="/bugs/123" title="No such bug">bug 0123</a></p>
 
     >>> text = 'bug 2\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/malone/bugs/2" title="Blackhole Trash folder">bug 2</a></p>
+    <p><a href="/bugs/2" title="Blackhole Trash folder">bug 2</a></p>
 
 To check a private bug, we need to log in and set a bug to be private.
 
@@ -197,7 +197,7 @@ A private bug has a title "private bug".
 
     >>> text = 'bug 6\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/malone/bugs/6" title="private bug">bug 6</a></p>
+    <p><a href="/bugs/6" title="private bug">bug 6</a></p>
 
 fmt:text-to-html is also smart enough to convert OOPS references into
 links. However, it only does this if the logged in person is a member of the
@@ -341,7 +341,7 @@ and the 'bugnum' is used to look up the bug.
     >>> sorted(matchobj.groupdict().items())
     [('bug', 'xxxx'), ('bugnum', '2'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    u'<a href="/malone/bugs/2" title="Blackhole Trash folder">xxxx</a>'
+    u'<a href="/bugs/2" title="Blackhole Trash folder">xxxx</a>'
 
 When the bugnum doesn't match any bug, we still get a link, but get a message
 in the link's title.
@@ -351,7 +351,7 @@ in the link's title.
     >>> sorted(matchobj.groupdict().items())
     [('bug', 'xxxx'), ('bugnum', '2000'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    '<a href="/malone/bugs/2000" title="No such bug">xxxx</a>'
+    '<a href="/bugs/2000" title="No such bug">xxxx</a>'
 
 When the bug is private, we still get a link, but get a message in the link's
 title.
@@ -361,4 +361,4 @@ title.
     >>> sorted(matchobj.groupdict().items())
     [('bug', 'xxxx'), ('bugnum', '6'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    '<a href="/malone/bugs/6" title="private bug">xxxx</a>'
+    '<a href="/bugs/6" title="private bug">xxxx</a>'

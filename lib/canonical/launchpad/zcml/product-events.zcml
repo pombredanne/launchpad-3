@@ -5,6 +5,6 @@
 <subscriber
    for="canonical.launchpad.interfaces.IProduct
         zope.app.event.interfaces.IObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.productsubscribers.product_modified" />
+   handler="canonical.launchpad.subscribers.productsubscribers.product_modified" />
 
 </configure>

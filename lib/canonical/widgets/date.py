@@ -1,20 +1,32 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""This was experimentation and example code. I don't think it is being
+used anywhere. If we want a real date/time input widget we should investigate
+zc.datewidget available from the Z3 SVN repository"""
+
+__metaclass__ = type
+
 from datetime import date
 from zope.app import zapi
-from zope.interface import implements, Interface
+from zope.interface import implements
 from zope.schema.interfaces import ValidationError
 from zope.app.form.interfaces import IDisplayWidget, IInputWidget
 # Use custom error for custom view
 #from zope.app.form.interfaces import WidgetInputError
 from exception import WidgetInputError
 from zope.app.form.interfaces import InputErrors
-from zope.app.form import InputWidget
 from zope.app.form.browser import BrowserWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import Int
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('malone')
+from zope.app.form.browser.widget import DisplayWidget
+from zope.app.form.browser.textwidgets import escape
+from zope.app.form.browser.widget import renderElement
+from zope.component import getUtility
+
+from canonical.launchpad import _
+from canonical.launchpad.interfaces import ILaunchBag
 
 # TODO: Abstract out common functionality to simplify widget definition
 
@@ -26,6 +38,7 @@ class IDateWidget(IDisplayWidget, IInputWidget, IBrowserWidget):
     """
     minyear = Int(title=_('Minimum Year'), required=True, default=1900)
     maxyear = Int(title=_('Maximum Year'), required=True, default=2038)
+
 
 class DateWidget(BrowserWidget):
     implements(IDateWidget)
@@ -156,4 +169,18 @@ class DateWidget(BrowserWidget):
 
         """
         return {'year':'','month':'','day':''}
+
+
+class DatetimeDisplayWidget(DisplayWidget):
+    """Display timestamps in the users preferred timezone"""
+    def __call__(self):
+        timezone = getUtility(ILaunchBag).timezone
+        if self._renderedValueSet():
+            value = self._data
+        else:
+            value = self.context.default
+        if value == self.context.missing_value:
+            return u""
+        value = value.astimezone(timezone)
+        return escape(value.strftime("%Y-%m-%d %H:%M:%S %Z"))
 

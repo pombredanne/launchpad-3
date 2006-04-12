@@ -131,13 +131,12 @@ class ProjectSet:
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...
-        NotFoundError: 'Project with ID -1 does not exist'
+        NotFoundError: -1
         """
         try:
             project = Project.get(projectid)
         except SQLObjectNotFound:
-            raise NotFoundError("Project with ID %s does not exist" %
-                                str(projectid))
+            raise NotFoundError(projectid)
         return project
 
     def getByName(self, name, default=None, ignore_inactive=False):

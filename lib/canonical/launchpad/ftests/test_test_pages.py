@@ -7,10 +7,12 @@ import unittest
 import shutil
 import tempfile
 
+from canonical.functional import PageTestLayer
 from canonical.launchpad.ftests.test_pages import PageTest
 
 
 class TestMakeStoryTest(unittest.TestCase):
+    layer = PageTestLayer
 
     def setUp(self):
         # we need an empty story to test with, and it has to be in the 
@@ -57,4 +59,6 @@ class TestMakeStoryTest(unittest.TestCase):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    suite = unittest.TestLoader().loadTestsFromName(__name__)
+    suite.layer = PageTestLayer
+    return suite

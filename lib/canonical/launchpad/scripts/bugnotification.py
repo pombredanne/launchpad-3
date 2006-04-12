@@ -15,7 +15,7 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import IEmailAddressSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import (
-    get_bugmail_replyto_address, generate_bug_add_email,
+    get_bugmail_replyto_address, generate_bug_add_email, MailWrapper,
     GLOBAL_NOTIFICATION_EMAIL_ADDRS)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import EmailAddressStatus
@@ -88,9 +88,10 @@ def construct_email_notification(bug_notifications):
             notified_addresses = list(
                 set(notified_addresses + duplicate_target_emails))
 
+    mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
     body = get_email_template('bug-notification.txt') % {
-        'content': content,
+        'content': mail_wrapper.format(content),
         'bug_title': bug.title,
         'bug_url': canonical_url(bug)}
 

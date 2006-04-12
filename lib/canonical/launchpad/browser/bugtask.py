@@ -233,6 +233,10 @@ class BugTaskView(LaunchpadView):
         form = self.request.form
         fake_task = self.context
         if form.get("reportbug"):
+            if self.isReportedInContext():
+                self.notices.append(
+                    "The bug is already reported in this context.")
+                return
             # The user has requested that the bug be reported in this
             # context.
             if IUpstreamBugTask.providedBy(fake_task):
@@ -267,7 +271,10 @@ class BugTaskView(LaunchpadView):
         This is particularly useful for views that may render a
         NullBugTask.
         """
-        return self.context.datecreated is not None
+        params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
+        matching_bugtasks = self.context.target.searchTasks(params)
+
+        return matching_bugtasks.count() > 0
 
     def isReleaseTargetableContext(self):
         """Is the context something that supports release targeting?
@@ -1169,6 +1176,7 @@ class BugTargetView:
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this target."""
         params = BugTaskSearchParams(orderby="-datecreated",
+                                     omit_dupes=True,
                                      user=getUtility(ILaunchBag).user)
 
         tasklist = self.context.searchTasks(params)
