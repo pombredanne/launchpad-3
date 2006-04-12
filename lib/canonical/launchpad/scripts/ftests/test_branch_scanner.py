@@ -14,6 +14,7 @@ from unittest import TestLoader
 
 import transaction
 from zope.component import getUtility
+
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.ftests import login, ANONYMOUS
@@ -22,12 +23,15 @@ from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
 class BranchScannerTest(LaunchpadFunctionalTestCase):
 
+    branch_id = 7
+    """Branch to install branch-scanner test data on."""
+
     def setUp(self):
         LaunchpadFunctionalTestCase.setUp(self)
         self.warehouse = None
 
     def setupWarehouse(self):
-        warehouse_url = config.branchscanner.root_url
+        warehouse_url = config.supermirror.warehouse_root_url
         assert warehouse_url.startswith('file://')
         warehouse = warehouse_url[len('file://'):]
         if isdir(warehouse):
@@ -52,27 +56,26 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
         """branch-scanner.py does something"""
         login(ANONYMOUS)
         self.setupWarehouse()
-        self.expandTestBranch('onerev')        
-        # setup a test branch for every branch record in the sampledata
-        for branch in getUtility(IBranchSet):
-            self.installTestBranch('onerev', branch)
+        self.expandTestBranch('onerev')
+        branch = getUtility(IBranchSet)[self.branch_id]
+        assert branch.revision_history.count() == 0
+        self.installTestBranch('onerev', branch)
         # run branch-scanner.py and check the process outputs
         script = join(config.root, 'cronscripts', 'branch-scanner.py')
         process = Popen([script, '-q'],
                         stdout=PIPE, stderr=PIPE, stdin=open('/dev/null'))
         output, error = process.communicate()
         status = process.returncode
-        self.assertEqual((status, output ,error), (0, '', ''),
+        self.assertEqual(status, 0,
                          'baz2bzr existed with status=%d\n'
                          '>>>stdout<<<\n%s\n>>>stderr<<<\n%s'
                          % (status, output, error))
         # check that all branches were set to the test data
         transaction.abort()
-        for db_branch in getUtility(IBranchSet):
-            history = branch.revision_history
-            self.assertEqual(history.count(), 1)
-            revision = history[0].revision
-            self.assertEqual(revision.log_body, 'Log message')
+        history = branch.revision_history
+        self.assertEqual(history.count(), 1)
+        revision = history[0].revision
+        self.assertEqual(revision.log_body, 'Log message')
 
 
 def test_suite():

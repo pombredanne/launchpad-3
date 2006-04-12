@@ -62,7 +62,7 @@ def main(argv):
         ztm = initZopeless(dbuser=config.branchscanner.dbuser)
 
         # The actual work happens here
-        BranchScanner(ztm, log, config.branchscanner).scanAllBranches()
+        BranchScanner(ztm, log).scanAllBranches()
 
     finally:
         lockfile.release()

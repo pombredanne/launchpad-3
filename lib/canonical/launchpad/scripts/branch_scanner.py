@@ -19,15 +19,14 @@ from importd.bzrsync import BzrSync
 
 
 class BranchScanner:
-    """Runner for BzrSync.
+    """Scan bzr branches for meta data and insert them into content objects.
 
-    Implement the application logic of cronscripts/branch-scanner.py.
+    This class is used by cronscripts/branch-scanner.py to perform its task.
     """
 
-    def __init__(self, ztm, log, config):
+    def __init__(self, ztm, log):
         self.ztm = ztm
         self.log = log
-        self.config = config
 
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
@@ -47,12 +46,11 @@ class BranchScanner:
                 self.log.exception('Unhandled exception')
         self.log.debug('Finished branches update')
 
-
     def scanOneBranch(self, branch):
         """Run BzrSync on a single branch and handle expected exceptions."""
         try:
             bzrsync = BzrSync(
-                self.ztm, branch.id, self.branchWarehouseUrl(branch), self.log)
+                self.ztm, branch.id, branch.warehouse_url, self.log)
         except NotBranchError:
             # The branch is not present in the Warehouse
             self.logScanFailure(branch, "Branch not found")
@@ -67,8 +65,4 @@ class BranchScanner:
     def logScanFailure(self, branch, message="Failed to scan"):
         """Log diagnostic for branches that could not be scanned."""
         self.log.warning("%s: %s\n    branch.url = %r",
-                         message, self.branchWarehouseUrl(branch), branch.url)
-
-    def branchWarehouseUrl(self, branch):
-        """Return the id-based URL of a branch in the Warehouse."""
-        return "%s%08x" % (self.config.root_url, branch.id)
+                         message, branch.warehouse_url, branch.url)

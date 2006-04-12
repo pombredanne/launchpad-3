@@ -95,6 +95,11 @@ class Branch(SQLBase):
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
+    def warehouse_url(self):
+        root = config.supermirror.warehouse_root_url
+        return "%s%08x" % (root, self.id)
+
+    @property
     def product_name(self):
         if self.product is None:
             return '+junk'

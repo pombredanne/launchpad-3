@@ -166,7 +166,10 @@ class IBranch(IHasOwner):
                          "push branch (url is None).  This url may be a "
                          "Canonical-internal path, so we don't display this "
                          "on the main website.")
+    warehouse_url = Attribute(
+        "URL to access the branch by id on the warehouse filesystem.")
 
+    # Bug attributes
     related_bugs = Attribute(
         "The bugs related to this branch, likely branches on which "
         "some work has been done to fix this bug.")
