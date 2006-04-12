@@ -9,16 +9,13 @@ __all__ = [
 from email.Utils import make_msgid
 
 from zope.interface import implements
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
-
 from canonical.launchpad.interfaces import ITicketMessage
-
 from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad import _
 
 
 class TicketMessage(SQLBase):

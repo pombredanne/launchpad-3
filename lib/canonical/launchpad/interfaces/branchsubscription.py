@@ -8,10 +8,7 @@ __all__ = ['IBranchSubscription']
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int
-from zope.i18nmessageid import MessageIDFactory
-
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBranchSubscription(Interface):
     """The relationship between a person and a branch."""

@@ -10,9 +10,7 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Choice, Int
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ISpecificationSubscription(Interface):
     """A subscription for a person to a specification."""

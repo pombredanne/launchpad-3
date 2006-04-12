@@ -19,9 +19,8 @@ __all__ = [
 
 from zope.schema import Int
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
+from canonical.launchpad import _
 
-_ = MessageIDFactory('launchpad')
 
 
 class QueueStateWriteProtectedError(Exception):

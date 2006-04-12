@@ -11,7 +11,6 @@ __all__ = [
     'IBugAttachmentEditForm',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Object, Choice, Int, TextLine, Text, Bytes, Bool
 
@@ -20,9 +19,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.fields import Title
 from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
-
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBugAttachment(Interface):
     """A file attachment to an IBug."""

@@ -185,7 +185,7 @@ The IBugSet.
 An IBug.
 
     >>> canonical_url(getUtility(IBugSet).get(1))
-    u'http://localhost:8086/malone/bugs/1'
+    u'http://localhost:8086/bugs/1'
 
 An IUpstreamBugTask.
 
@@ -236,7 +236,7 @@ private.)
     >>> login(ANONYMOUS)
 
     >>> canonical_url(distro_release_task.bug)
-    u'http://localhost:8086/malone/bugs/5'
+    u'http://localhost:8086/bugs/5'
 
 A private bugtask, as an anonymous user.
 
