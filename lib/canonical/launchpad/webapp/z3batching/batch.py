@@ -23,8 +23,8 @@ from interfaces import IBatch
 
 from sqlos.interfaces import ISelectResults
 
-# The base batch size, overridden by users of _Batch such as
-# BatchNavigator. In Launchpad, we override there using a config option.
+# The base batch size, which can be overridden by users of _Batch such
+# as BatchNavigator. In Launchpad, we override it via a config option.
 BATCH_SIZE = 50
 
 class _Batch(object):
@@ -37,10 +37,7 @@ class _Batch(object):
 
         # We only check the length of the list once, because if the
         # list is a SelectResults from SQLObject, list.count() hits
-        # the database each time.  Ideally SQLObject would be smart
-        # enough to cache it for us, but for now we take the easy
-        # route.
-        #   -- Andrew Bennetts, 2005-06-22
+        # the database each time.
         if _listlength is None:
             if ISelectResults.providedBy(results):
                 listlength = results.count()
@@ -112,7 +109,8 @@ class _Batch(object):
 
     def prevBatch(self):
         # The only case in which we should /not/ offer a previous batch
-        # is when we are already at position zero.
+        # is when we are already at position zero, which also happens
+        # when the list is empty.
         if self.start == 0:
             return None
         if self.start > self.listlength:
