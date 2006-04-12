@@ -103,11 +103,12 @@ class TicketTargetView(LaunchpadView):
         categories = categories.values()
         return sorted(categories, key=lambda a: a['status'].value)
 
+    @cachedproperty
     def getLatestTickets(self, quantity=5):
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return self.context.tickets(quantity=quantity)
+        return list(self.context.tickets(quantity=quantity))
 
 
 class SupportContactTeamsWidget(MultiCheckBoxWidget):
@@ -120,7 +121,9 @@ class SupportContactTeamsWidget(MultiCheckBoxWidget):
     _joinButtonToMessageTemplate = (
         u'<label style="font-weight: normal">%s&nbsp;%s</label>')
 
-    def __init__(self, field, request):
+    def __init__(self, field, dunno, request):
+        # XXX: Don't know what the middle parameter is! Zope 3.2 change.
+        # -- StuartBishop 20060330
         MultiCheckBoxWidget.__init__(
             self, field, field.value_type.vocabulary, request)
 

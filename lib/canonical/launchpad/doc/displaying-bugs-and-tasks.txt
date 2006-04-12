@@ -17,7 +17,7 @@ Let's use a few examples to demonstrate:
   XXX: Brad Bollenbach, 2005-08-30: removeSecurityProxy usage in this
   test is a workaround for the following bug:
 
-    https://launchpad.net/malone/bugs/1971
+    https://launchpad.net/bugs/1971
 
   >>> from zope.security.proxy import removeSecurityProxy
   >>> from zope.component import getUtility

@@ -43,7 +43,7 @@ that product is required:
     >>> add_task_view.process_status
     u'Please fix the problems below and try again.'
     >>> add_task_view.errors
-    MissingInputError: ('product', 'Product', 'the field is required')
+    MissingInputError: ('product', u'Product', 'the field is required')
 
 In order to show that all the events get fired off, let's create an
 event listener and register it:

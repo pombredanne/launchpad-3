@@ -108,6 +108,8 @@ This is handy for examining the tar files that are generated.
 First, export without a date limit: should get both PO files.
 
     >>> tarfile = string_to_tarfile(exporter.export_tarball())
+    WARNING:root:PO file header entry has no content-type field
+    WARNING:root:PO file header entry has no content-type field
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
     |     0 | rosetta-grumpy/es/

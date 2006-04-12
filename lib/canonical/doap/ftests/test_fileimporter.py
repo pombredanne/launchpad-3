@@ -24,8 +24,5 @@ class ProductReleaseImporterTestCase(LaunchpadFunctionalTestCase):
         
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(ProductReleaseImporterTestCase))
-    return suite
-
+    return unittest.makeSuite(ProductReleaseImporterTestCase)
 

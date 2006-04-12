@@ -51,10 +51,6 @@ the bug to be watched in that system.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  <BLANKLINE>
-  ..
-  <BLANKLINE>
-
 
   >>> print http(r"""
   ... GET /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1

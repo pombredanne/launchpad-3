@@ -1,0 +1,1006 @@
+
+<strong>Report forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+<code>Bug#304014</code>; Package <code>mozilla-firefox</code>.
+
+
+debian-bugs-dist@lists.debian.orgEric Dorland <eric@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+Reply-To: David Pottage <david@chrestomanci.org>, 304014@bugs.debian.org
+Resent-From: David Pottage <david@chrestomanci.org>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Eric Dorland <eric@debian.org>
+Resent-Date: Sun, 10 Apr 2005 11:33:03 UTC
+Resent-Message-ID: <handler.304014.B.11131323273430@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 304014
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: 
+Received: via spool by submit@bugs.debian.org id=B.11131323273430
+          (code B ref -1); Sun, 10 Apr 2005 11:33:03 UTC
+Received: (at submit) by bugs.debian.org; 10 Apr 2005 11:25:27 +0000
+Received: from rutherford.zen.co.uk [212.23.3.142] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DKaZC-0000t9-00; Sun, 10 Apr 2005 04:25:27 -0700
+Received: from [82.70.68.182] (helo=miranda.chrestomanci.org)
+	by rutherford.zen.co.uk with esmtp (Exim 4.34)
+	id 1DKaZB-0008Ka-7Z
+	for submit@bugs.debian.org; Sun, 10 Apr 2005 11:25:25 +0000
+Received: from david by miranda.chrestomanci.org with local (Exim 3.36 #1 (Debian))
+	id 1DKaZA-0003Sn-00
+	for <submit@bugs.debian.org>; Sun, 10 Apr 2005 12:25:24 +0100
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: David Pottage <david@chrestomanci.org>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+X-Mailer: reportbug 3.8
+Date: Sun, 10 Apr 2005 12:25:24 +0100
+Message-Id: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org>
+X-Originating-Rutherford-IP: [82.70.68.182]
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+Package: mozilla-firefox
+Version: 1.0.2-3
+Severity: important
+
+Firefox crashes immedately When vistiting:
+www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+(The page was recently mentioned on slashdot)
+
+The page renders fine with mozilla-1.7.6 and Opera 7.54 on the same linux system. It also renders OK with Firefox 1.02 under Windows 2K.
+
+Exampel output:
+
+$ mozilla-firefox http://www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+LoadPlugin: failed to initialize shared library /usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so 
+[/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so: undefined symbol: GetGlobalServiceManager__16nsServiceManagerPP17nsIServiceManager]
+Segmentation fault
+
+I have not experenced crashes on other websites.
+
+Could this be related to Bug #235825
+
+-- System Information:
+Debian Release: 3.1
+  APT prefers testing
+  APT policy: (900, 'testing')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.11
+Locale: LANG=C, LC_CTYPE=C (charmap=ANSI_X3.4-1968)
+
+Versions of packages mozilla-firefox depends on:
+ii  debianutils          2.8.4               Miscellaneous utilities specific t
+ii  fontconfig           2.3.1-2             generic font configuration library
+ii  libatk1.0-0          1.8.0-4             The ATK accessibility toolkit
+ii  libc6                2.3.2.ds1-20        GNU C Library: Shared libraries an
+ii  libfontconfig1       2.3.1-2             generic font configuration library
+ii  libfreetype6         2.1.7-2.3           FreeType 2 font engine, shared lib
+ii  libgcc1              1:3.4.3-12          GCC support library
+ii  libglib2.0-0         2.6.3-1             The GLib library of C routines
+ii  libgtk2.0-0          2.6.2-4             The GTK+ graphical user interface 
+ii  libidl0              0.8.5-1             library for parsing CORBA IDL file
+ii  libjpeg62            6b-9                The Independent JPEG Group's JPEG 
+ii  libkrb53             1.3.6-2             MIT Kerberos runtime libraries
+ii  libpango1.0-0        1.8.1-1             Layout and rendering of internatio
+ii  libpng12-0           1.2.8rel-1          PNG library - runtime
+ii  libstdc++5           1:3.3.5-8           The GNU Standard C++ Library v3
+ii  libx11-6             4.3.0.dfsg.1-12.0.1 X Window System protocol client li
+ii  libxext6             4.3.0.dfsg.1-12.0.1 X Window System miscellaneous exte
+ii  libxft2              2.1.2-6             FreeType-based font drawing librar
+ii  libxp6               4.3.0.dfsg.1-12.0.1 X Window System printing extension
+ii  libxt6               4.3.0.dfsg.1-12.0.1 X Toolkit Intrinsics
+ii  psmisc               21.5-1              Utilities that use the proc filesy
+ii  xlibs                4.3.0.dfsg.1-12     X Keyboard Extension (XKB) configu
+ii  zlib1g               1:1.2.2-3           compression library - runtime
+
+-- no debconf information
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>David Pottage &lt;david@chrestomanci.org&gt;</code>:<br>
+New Bug report received and forwarded.  Copy sent to <code>Eric Dorland &lt;eric@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: David Pottage <david@chrestomanci.org>
+Subject: Bug#304014: Acknowledgement (mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp)
+Message-ID: <handler.304014.B.11131323273430.ack@bugs.debian.org>
+In-Reply-To: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org>
+References: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org>
+Precedence: bulk
+X-Debian-PR-Message: ack 304014
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: 
+Reply-To: 304014@bugs.debian.org
+
+Thank you for the problem report you have sent regarding Debian.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the package maintainers and other
+interested parties for their attention; they will reply in due course.
+
+Your message has been sent to the package maintainer(s):
+ Eric Dorland <eric@debian.org>
+
+If you wish to submit further information on your problem, please send
+it to 304014@bugs.debian.org (and *not* to
+submit@bugs.debian.org).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at submit) by bugs.debian.org; 10 Apr 2005 11:25:27 +0000
+From david@chrestomanci.org Sun Apr 10 04:25:27 2005
+Return-path: <david@chrestomanci.org>
+Received: from rutherford.zen.co.uk [212.23.3.142] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DKaZC-0000t9-00; Sun, 10 Apr 2005 04:25:27 -0700
+Received: from [82.70.68.182] (helo=miranda.chrestomanci.org)
+	by rutherford.zen.co.uk with esmtp (Exim 4.34)
+	id 1DKaZB-0008Ka-7Z
+	for submit@bugs.debian.org; Sun, 10 Apr 2005 11:25:25 +0000
+Received: from david by miranda.chrestomanci.org with local (Exim 3.36 #1 (Debian))
+	id 1DKaZA-0003Sn-00
+	for <submit@bugs.debian.org>; Sun, 10 Apr 2005 12:25:24 +0100
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: David Pottage <david@chrestomanci.org>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+Subject: mozilla-firefox: Repeatable seg fault on
+ www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+X-Mailer: reportbug 3.8
+Date: Sun, 10 Apr 2005 12:25:24 +0100
+Message-Id: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org>
+X-Originating-Rutherford-IP: [82.70.68.182]
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+Package: mozilla-firefox
+Version: 1.0.2-3
+Severity: important
+
+Firefox crashes immedately When vistiting:
+www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+(The page was recently mentioned on slashdot)
+
+The page renders fine with mozilla-1.7.6 and Opera 7.54 on the same linux system. It also renders OK with Firefox 1.02 under Windows 2K.
+
+Exampel output:
+
+$ mozilla-firefox http://www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+LoadPlugin: failed to initialize shared library /usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so 
+[/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so: undefined symbol: GetGlobalServiceManager__16nsServiceManagerPP17nsIServiceManager]
+Segmentation fault
+
+I have not experenced crashes on other websites.
+
+Could this be related to Bug #235825
+
+-- System Information:
+Debian Release: 3.1
+  APT prefers testing
+  APT policy: (900, 'testing')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.11
+Locale: LANG=C, LC_CTYPE=C (charmap=ANSI_X3.4-1968)
+
+Versions of packages mozilla-firefox depends on:
+ii  debianutils          2.8.4               Miscellaneous utilities specific t
+ii  fontconfig           2.3.1-2             generic font configuration library
+ii  libatk1.0-0          1.8.0-4             The ATK accessibility toolkit
+ii  libc6                2.3.2.ds1-20        GNU C Library: Shared libraries an
+ii  libfontconfig1       2.3.1-2             generic font configuration library
+ii  libfreetype6         2.1.7-2.3           FreeType 2 font engine, shared lib
+ii  libgcc1              1:3.4.3-12          GCC support library
+ii  libglib2.0-0         2.6.3-1             The GLib library of C routines
+ii  libgtk2.0-0          2.6.2-4             The GTK+ graphical user interface 
+ii  libidl0              0.8.5-1             library for parsing CORBA IDL file
+ii  libjpeg62            6b-9                The Independent JPEG Group's JPEG 
+ii  libkrb53             1.3.6-2             MIT Kerberos runtime libraries
+ii  libpango1.0-0        1.8.1-1             Layout and rendering of internatio
+ii  libpng12-0           1.2.8rel-1          PNG library - runtime
+ii  libstdc++5           1:3.3.5-8           The GNU Standard C++ Library v3
+ii  libx11-6             4.3.0.dfsg.1-12.0.1 X Window System protocol client li
+ii  libxext6             4.3.0.dfsg.1-12.0.1 X Window System miscellaneous exte
+ii  libxft2              2.1.2-6             FreeType-based font drawing librar
+ii  libxp6               4.3.0.dfsg.1-12.0.1 X Window System printing extension
+ii  libxt6               4.3.0.dfsg.1-12.0.1 X Toolkit Intrinsics
+ii  psmisc               21.5-1              Utilities that use the proc filesy
+ii  xlibs                4.3.0.dfsg.1-12     X Keyboard Extension (XKB) configu
+ii  zlib1g               1:1.2.2-3           compression library - runtime
+
+-- no debconf information
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org</code>:<br>
+<code>Bug#304014</code>; Package <code>mozilla-firefox</code>.
+
+
+debian-bugs-dist@lists.debian.org
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+Reply-To: Eric Dorland <eric@debian.org>, 304014@bugs.debian.org
+Resent-From: Eric Dorland <eric@debian.org>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-Date: Sun, 10 Apr 2005 17:48:15 UTC
+Resent-Message-ID: <handler.304014.B304014.11131548154403@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 304014
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: 
+Received: via spool by 304014-submit@bugs.debian.org id=B304014.11131548154403
+          (code B ref 304014); Sun, 10 Apr 2005 17:48:15 UTC
+Received: (at 304014) by bugs.debian.org; 10 Apr 2005 17:40:15 +0000
+Received: from smtp.istop.com [66.11.167.126] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DKgPv-00018f-00; Sun, 10 Apr 2005 10:40:15 -0700
+Received: from apocalypse.kuroneko.ca (ip70-161.mtl.istop.com [66.11.161.70])
+	by smtp.istop.com (Postfix) with ESMTP
+	id 5FFA32B3C7; Sun, 10 Apr 2005 13:41:16 -0400 (EDT)
+Received: from nightcrawler (nightcrawler.kuroneko.ca [192.168.0.3])
+	by apocalypse.kuroneko.ca (Postfix) with ESMTP id 5EED27C08D;
+	Sun, 10 Apr 2005 13:40:09 -0400 (EDT)
+Received: by nightcrawler (Postfix, from userid 1000)
+	id E130A198D28; Sun, 10 Apr 2005 13:40:08 -0400 (EDT)
+Date: Sun, 10 Apr 2005 13:40:08 -0400
+From: Eric Dorland <eric@debian.org>
+To: David Pottage <david@chrestomanci.org>, 304014@bugs.debian.org
+Message-ID: <20050410174008.GF7264@nightcrawler.kuroneko.ca>
+References: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ULyIDA2m8JTe+TiX"
+Content-Disposition: inline
+In-Reply-To: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org>
+User-Agent: Mutt/1.5.8i
+Delivered-To: 304014@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+
+--ULyIDA2m8JTe+TiX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+* David Pottage (david@chrestomanci.org) wrote:
+> Package: mozilla-firefox
+> Version: 1.0.2-3
+> Severity: important
+>=20
+> Firefox crashes immedately When vistiting:
+> www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+> (The page was recently mentioned on slashdot)
+>=20
+> The page renders fine with mozilla-1.7.6 and Opera 7.54 on the same linux=
+ system. It also renders OK with Firefox 1.02 under Windows 2K.
+>=20
+> Exampel output:
+>=20
+> $ mozilla-firefox http://www.koreaherald.co.kr/SITE/data/html_dir/2005/04=
+/09/200504090026.asp
+> LoadPlugin: failed to initialize shared library /usr/local/j2sdk1.4.1_02/=
+jre/plugin/i386/ns610/libjavaplugin_oji.so=20
+> [/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so: und=
+efined symbol: GetGlobalServiceManager__16nsServiceManagerPP17nsIServiceMan=
+ager]
+> Segmentation fault
+
+Did you try disabling java?
+=20
+> I have not experenced crashes on other websites.
+>=20
+> Could this be related to Bug #235825
+
+It's possible, did you follow some of the workarounds outlined in that bug?=
+=20
+
+--=20
+Eric Dorland <eric.dorland@mail.mcgill.ca>
+ICQ: #61138586, Jabber: hooty@jabber.com
+1024D/16D970C6 097C 4861 9934 27A0 8E1C  2B0A 61E9 8ECF 16D9 70C6
+
+-----BEGIN GEEK CODE BLOCK-----
+Version: 3.12
+GCS d- s++: a-- C+++ UL+++ P++ L++ E++ W++ N+ o K- w+=20
+O? M++ V-- PS+ PE Y+ PGP++ t++ 5++ X+ R tv++ b+++ DI+ D+=20
+G e h! r- y+=20
+------END GEEK CODE BLOCK------
+
+--ULyIDA2m8JTe+TiX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.0 (GNU/Linux)
+
+iD8DBQFCWWT4YemOzxbZcMYRAkeNAKCsSjDKwF079O+WixeVr4fNYhrZtgCgqoF1
+KoHXifW6LkAfnc2KQDFv3t8=
+=lL9r
+-----END PGP SIGNATURE-----
+
+--ULyIDA2m8JTe+TiX--
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+Extra info received and forwarded to list.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Eric Dorland <eric@debian.org>
+Subject: Bug#304014: Info received (was Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp)
+Message-ID: <handler.304014.B304014.11131548154403.ackinfo@bugs.debian.org>
+In-Reply-To: <20050410174008.GF7264@nightcrawler.kuroneko.ca>
+References: <20050410174008.GF7264@nightcrawler.kuroneko.ca>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 304014
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+If you wish to continue to submit further information on your problem,
+please send it to 304014@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 304014) by bugs.debian.org; 10 Apr 2005 17:40:15 +0000
+From eric@apocalypse.kuroneko.ca Sun Apr 10 10:40:15 2005
+Return-path: <eric@apocalypse.kuroneko.ca>
+Received: from smtp.istop.com [66.11.167.126] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DKgPv-00018f-00; Sun, 10 Apr 2005 10:40:15 -0700
+Received: from apocalypse.kuroneko.ca (ip70-161.mtl.istop.com [66.11.161.70])
+	by smtp.istop.com (Postfix) with ESMTP
+	id 5FFA32B3C7; Sun, 10 Apr 2005 13:41:16 -0400 (EDT)
+Received: from nightcrawler (nightcrawler.kuroneko.ca [192.168.0.3])
+	by apocalypse.kuroneko.ca (Postfix) with ESMTP id 5EED27C08D;
+	Sun, 10 Apr 2005 13:40:09 -0400 (EDT)
+Received: by nightcrawler (Postfix, from userid 1000)
+	id E130A198D28; Sun, 10 Apr 2005 13:40:08 -0400 (EDT)
+Date: Sun, 10 Apr 2005 13:40:08 -0400
+From: Eric Dorland <eric@debian.org>
+To: David Pottage <david@chrestomanci.org>, 304014@bugs.debian.org
+Subject: Re: Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+Message-ID: <20050410174008.GF7264@nightcrawler.kuroneko.ca>
+References: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ULyIDA2m8JTe+TiX"
+Content-Disposition: inline
+In-Reply-To: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org>
+User-Agent: Mutt/1.5.8i
+Delivered-To: 304014@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+
+--ULyIDA2m8JTe+TiX
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+* David Pottage (david@chrestomanci.org) wrote:
+> Package: mozilla-firefox
+> Version: 1.0.2-3
+> Severity: important
+>=20
+> Firefox crashes immedately When vistiting:
+> www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+> (The page was recently mentioned on slashdot)
+>=20
+> The page renders fine with mozilla-1.7.6 and Opera 7.54 on the same linux=
+ system. It also renders OK with Firefox 1.02 under Windows 2K.
+>=20
+> Exampel output:
+>=20
+> $ mozilla-firefox http://www.koreaherald.co.kr/SITE/data/html_dir/2005/04=
+/09/200504090026.asp
+> LoadPlugin: failed to initialize shared library /usr/local/j2sdk1.4.1_02/=
+jre/plugin/i386/ns610/libjavaplugin_oji.so=20
+> [/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so: und=
+efined symbol: GetGlobalServiceManager__16nsServiceManagerPP17nsIServiceMan=
+ager]
+> Segmentation fault
+
+Did you try disabling java?
+=20
+> I have not experenced crashes on other websites.
+>=20
+> Could this be related to Bug #235825
+
+It's possible, did you follow some of the workarounds outlined in that bug?=
+=20
+
+--=20
+Eric Dorland <eric.dorland@mail.mcgill.ca>
+ICQ: #61138586, Jabber: hooty@jabber.com
+1024D/16D970C6 097C 4861 9934 27A0 8E1C  2B0A 61E9 8ECF 16D9 70C6
+
+-----BEGIN GEEK CODE BLOCK-----
+Version: 3.12
+GCS d- s++: a-- C+++ UL+++ P++ L++ E++ W++ N+ o K- w+=20
+O? M++ V-- PS+ PE Y+ PGP++ t++ 5++ X+ R tv++ b+++ DI+ D+=20
+G e h! r- y+=20
+------END GEEK CODE BLOCK------
+
+--ULyIDA2m8JTe+TiX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.0 (GNU/Linux)
+
+iD8DBQFCWWT4YemOzxbZcMYRAkeNAKCsSjDKwF079O+WixeVr4fNYhrZtgCgqoF1
+KoHXifW6LkAfnc2KQDFv3t8=
+=lL9r
+-----END PGP SIGNATURE-----
+
+--ULyIDA2m8JTe+TiX--
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+<code>Bug#304014</code>; Package <code>mozilla-firefox</code>.
+
+
+debian-bugs-dist@lists.debian.orgEric Dorland <eric@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+Reply-To: David Pottage <david@chrestomanci.org>, 304014@bugs.debian.org
+Resent-From: David Pottage <david@chrestomanci.org>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Eric Dorland <eric@debian.org>
+Resent-Date: Sun, 10 Apr 2005 18:03:08 UTC
+Resent-Message-ID: <handler.304014.B304014.111315600916753@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 304014
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: 
+Received: via spool by 304014-submit@bugs.debian.org id=B304014.111315600916753
+          (code B ref 304014); Sun, 10 Apr 2005 18:03:08 UTC
+Received: (at 304014) by bugs.debian.org; 10 Apr 2005 18:00:09 +0000
+Received: from pythagoras.zen.co.uk [212.23.3.140] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DKgjB-0004M2-00; Sun, 10 Apr 2005 11:00:09 -0700
+Received: from [82.70.68.182] (helo=miranda.chrestomanci.org)
+	by pythagoras.zen.co.uk with esmtp (Exim 4.30)
+	id 1DKgj4-0006FW-RX; Sun, 10 Apr 2005 18:00:08 +0000
+Received: from miranda.chrestomanci.org ([192.168.1.12] ident=david)
+	by miranda.chrestomanci.org with esmtp (Exim 3.36 #1 (Debian))
+	id 1DKgio-0005jU-00; Sun, 10 Apr 2005 18:59:46 +0100
+Message-ID: <4259698D.5040700@chrestomanci.org>
+Date: Sun, 10 Apr 2005 18:59:41 +0100
+From: David Pottage <david@chrestomanci.org>
+User-Agent: Debian Thunderbird 1.0 (X11/20050116)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: Eric Dorland <eric@debian.org>
+CC: 304014@bugs.debian.org
+References: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org> <20050410174008.GF7264@nightcrawler.kuroneko.ca>
+In-Reply-To: <20050410174008.GF7264@nightcrawler.kuroneko.ca>
+X-Enigmail-Version: 0.90.0.0
+X-Enigmail-Supports: pgp-inline, pgp-mime
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-Pythagoras-IP: [82.70.68.182]
+Delivered-To: 304014@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+Eric Dorland wrote:
+
+>* David Pottage (david@chrestomanci.org) wrote:
+>  
+>
+>>Package: mozilla-firefox
+>>Version: 1.0.2-3
+>>Severity: important
+>>
+>>Firefox crashes immedately When vistiting:
+>>www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+>>(The page was recently mentioned on slashdot)
+>>
+>>The page renders fine with mozilla-1.7.6 and Opera 7.54 on the same linux system. It also renders OK with Firefox 1.02 under Windows 2K.
+>>
+>>Exampel output:
+>>
+>>$ mozilla-firefox http://www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+>>LoadPlugin: failed to initialize shared library /usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so 
+>>[/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so: undefined symbol: GetGlobalServiceManager__16nsServiceManagerPP17nsIServiceManager]
+>>Segmentation fault
+>>    
+>>
+>
+>Did you try disabling java?
+>  
+>
+Yes, It still crashed in the same way.
+
+>>I have not experenced crashes on other websites.
+>>
+>>Could this be related to Bug #235825
+>>    
+>>
+>
+>It's possible, did you follow some of the workarounds outlined in that bug? 
+>  
+>
+Yes. However by showing that firefox still crashes when java is 
+disabled, it now looks to me as if this bug is not related to Bug #235825
+
+Thanks.
+
+
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>David Pottage &lt;david@chrestomanci.org&gt;</code>:<br>
+Extra info received and forwarded to list.  Copy sent to <code>Eric Dorland &lt;eric@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: David Pottage <david@chrestomanci.org>
+Subject: Bug#304014: Info received (was Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp)
+Message-ID: <handler.304014.B304014.111315600916753.ackinfo@bugs.debian.org>
+In-Reply-To: <4259698D.5040700@chrestomanci.org>
+References: <4259698D.5040700@chrestomanci.org>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 304014
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+Your message has been sent to the package maintainer(s):
+ Eric Dorland <eric@debian.org>
+
+If you wish to continue to submit further information on your problem,
+please send it to 304014@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 304014) by bugs.debian.org; 10 Apr 2005 18:00:09 +0000
+From david@chrestomanci.org Sun Apr 10 11:00:09 2005
+Return-path: <david@chrestomanci.org>
+Received: from pythagoras.zen.co.uk [212.23.3.140] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DKgjB-0004M2-00; Sun, 10 Apr 2005 11:00:09 -0700
+Received: from [82.70.68.182] (helo=miranda.chrestomanci.org)
+	by pythagoras.zen.co.uk with esmtp (Exim 4.30)
+	id 1DKgj4-0006FW-RX; Sun, 10 Apr 2005 18:00:08 +0000
+Received: from miranda.chrestomanci.org ([192.168.1.12] ident=david)
+	by miranda.chrestomanci.org with esmtp (Exim 3.36 #1 (Debian))
+	id 1DKgio-0005jU-00; Sun, 10 Apr 2005 18:59:46 +0100
+Message-ID: <4259698D.5040700@chrestomanci.org>
+Date: Sun, 10 Apr 2005 18:59:41 +0100
+From: David Pottage <david@chrestomanci.org>
+User-Agent: Debian Thunderbird 1.0 (X11/20050116)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: Eric Dorland <eric@debian.org>
+CC: 304014@bugs.debian.org
+Subject: Re: Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+References: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org> <20050410174008.GF7264@nightcrawler.kuroneko.ca>
+In-Reply-To: <20050410174008.GF7264@nightcrawler.kuroneko.ca>
+X-Enigmail-Version: 0.90.0.0
+X-Enigmail-Supports: pgp-inline, pgp-mime
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-Pythagoras-IP: [82.70.68.182]
+Delivered-To: 304014@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+Eric Dorland wrote:
+
+>* David Pottage (david@chrestomanci.org) wrote:
+>  
+>
+>>Package: mozilla-firefox
+>>Version: 1.0.2-3
+>>Severity: important
+>>
+>>Firefox crashes immedately When vistiting:
+>>www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+>>(The page was recently mentioned on slashdot)
+>>
+>>The page renders fine with mozilla-1.7.6 and Opera 7.54 on the same linux system. It also renders OK with Firefox 1.02 under Windows 2K.
+>>
+>>Exampel output:
+>>
+>>$ mozilla-firefox http://www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+>>LoadPlugin: failed to initialize shared library /usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so 
+>>[/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so: undefined symbol: GetGlobalServiceManager__16nsServiceManagerPP17nsIServiceManager]
+>>Segmentation fault
+>>    
+>>
+>
+>Did you try disabling java?
+>  
+>
+Yes, It still crashed in the same way.
+
+>>I have not experenced crashes on other websites.
+>>
+>>Could this be related to Bug #235825
+>>    
+>>
+>
+>It's possible, did you follow some of the workarounds outlined in that bug? 
+>  
+>
+Yes. However by showing that firefox still crashes when java is 
+disabled, it now looks to me as if this bug is not related to Bug #235825
+
+Thanks.
+
+
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org</code>:<br>
+<code>Bug#304014</code>; Package <code>mozilla-firefox</code>.
+
+
+debian-bugs-dist@lists.debian.org
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+Reply-To: Eric Dorland <eric@debian.org>, 304014@bugs.debian.org
+Resent-From: Eric Dorland <eric@debian.org>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-Date: Sun, 10 Apr 2005 19:48:07 UTC
+Resent-Message-ID: <handler.304014.B304014.111316149821730@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 304014
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: 
+Received: via spool by 304014-submit@bugs.debian.org id=B304014.111316149821730
+          (code B ref 304014); Sun, 10 Apr 2005 19:48:07 UTC
+Received: (at 304014) by bugs.debian.org; 10 Apr 2005 19:31:38 +0000
+Received: from smtp.istop.com [66.11.167.126] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DKi9h-0005eJ-00; Sun, 10 Apr 2005 12:31:38 -0700
+Received: from apocalypse.kuroneko.ca (ip70-161.mtl.istop.com [66.11.161.70])
+	by smtp.istop.com (Postfix) with ESMTP
+	id DB4D82B3E6; Sun, 10 Apr 2005 15:32:43 -0400 (EDT)
+Received: from nightcrawler (nightcrawler.kuroneko.ca [192.168.0.3])
+	by apocalypse.kuroneko.ca (Postfix) with ESMTP id 87BFC7C08D;
+	Sun, 10 Apr 2005 15:31:36 -0400 (EDT)
+Received: by nightcrawler (Postfix, from userid 1000)
+	id 6D258198D28; Sun, 10 Apr 2005 15:31:36 -0400 (EDT)
+Date: Sun, 10 Apr 2005 15:31:36 -0400
+From: Eric Dorland <eric@debian.org>
+To: David Pottage <david@chrestomanci.org>, 304014@bugs.debian.org
+Message-ID: <20050410193136.GH7264@nightcrawler.kuroneko.ca>
+References: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org> <20050410174008.GF7264@nightcrawler.kuroneko.ca> <4259698D.5040700@chrestomanci.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WRT3RXLOp/bBMgTI"
+Content-Disposition: inline
+In-Reply-To: <4259698D.5040700@chrestomanci.org>
+User-Agent: Mutt/1.5.8i
+Delivered-To: 304014@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+
+--WRT3RXLOp/bBMgTI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+* David Pottage (david@chrestomanci.org) wrote:
+> Eric Dorland wrote:
+>=20
+> >* David Pottage (david@chrestomanci.org) wrote:
+> >=20
+> >
+> >>Package: mozilla-firefox
+> >>Version: 1.0.2-3
+> >>Severity: important
+> >>
+> >>Firefox crashes immedately When vistiting:
+> >>www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+> >>(The page was recently mentioned on slashdot)
+> >>
+> >>The page renders fine with mozilla-1.7.6 and Opera 7.54 on the same lin=
+ux=20
+> >>system. It also renders OK with Firefox 1.02 under Windows 2K.
+> >>
+> >>Exampel output:
+> >>
+> >>$ mozilla-firefox=20
+> >>http://www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026=
+=2Easp
+> >>LoadPlugin: failed to initialize shared library=20
+> >>/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so=20
+> >>[/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so:=
+=20
+> >>undefined symbol:=20
+> >>GetGlobalServiceManager__16nsServiceManagerPP17nsIServiceManager]
+> >>Segmentation fault
+> >>  =20
+> >>
+> >
+> >Did you try disabling java?
+> >=20
+> >
+> Yes, It still crashed in the same way.
+>=20
+> >>I have not experenced crashes on other websites.
+> >>
+> >>Could this be related to Bug #235825
+> >>  =20
+> >>
+> >
+> >It's possible, did you follow some of the workarounds outlined in that=
+=20
+> >bug?=20
+> >
+> Yes. However by showing that firefox still crashes when java is=20
+> disabled, it now looks to me as if this bug is not related to Bug #235825
+
+Hmm, I'm still not convinced. Can you move the plugins out of the way
+(make sure you get them under /usr/lib/mozilla too) or remove them
+=66rom your system and try again?
+
+Do you have any other plugins or extensions installed?=20
+
+--=20
+Eric Dorland <eric.dorland@mail.mcgill.ca>
+ICQ: #61138586, Jabber: hooty@jabber.com
+1024D/16D970C6 097C 4861 9934 27A0 8E1C  2B0A 61E9 8ECF 16D9 70C6
+
+-----BEGIN GEEK CODE BLOCK-----
+Version: 3.12
+GCS d- s++: a-- C+++ UL+++ P++ L++ E++ W++ N+ o K- w+=20
+O? M++ V-- PS+ PE Y+ PGP++ t++ 5++ X+ R tv++ b+++ DI+ D+=20
+G e h! r- y+=20
+------END GEEK CODE BLOCK------
+
+--WRT3RXLOp/bBMgTI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.0 (GNU/Linux)
+
+iD8DBQFCWX8YYemOzxbZcMYRAs+4AJ9WjlDtGjfnMfM0Iib3i+29d0OP/gCbBspC
+tNjpKyLKIA0GqkFwFTKSohs=
+=wguW
+-----END PGP SIGNATURE-----
+
+--WRT3RXLOp/bBMgTI--
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+Extra info received and forwarded to list.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Eric Dorland <eric@debian.org>
+Subject: Bug#304014: Info received (was Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp)
+Message-ID: <handler.304014.B304014.111316149821730.ackinfo@bugs.debian.org>
+In-Reply-To: <20050410193136.GH7264@nightcrawler.kuroneko.ca>
+References: <20050410193136.GH7264@nightcrawler.kuroneko.ca>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 304014
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+If you wish to continue to submit further information on your problem,
+please send it to 304014@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 304014) by bugs.debian.org; 10 Apr 2005 19:31:38 +0000
+From eric@apocalypse.kuroneko.ca Sun Apr 10 12:31:38 2005
+Return-path: <eric@apocalypse.kuroneko.ca>
+Received: from smtp.istop.com [66.11.167.126] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DKi9h-0005eJ-00; Sun, 10 Apr 2005 12:31:38 -0700
+Received: from apocalypse.kuroneko.ca (ip70-161.mtl.istop.com [66.11.161.70])
+	by smtp.istop.com (Postfix) with ESMTP
+	id DB4D82B3E6; Sun, 10 Apr 2005 15:32:43 -0400 (EDT)
+Received: from nightcrawler (nightcrawler.kuroneko.ca [192.168.0.3])
+	by apocalypse.kuroneko.ca (Postfix) with ESMTP id 87BFC7C08D;
+	Sun, 10 Apr 2005 15:31:36 -0400 (EDT)
+Received: by nightcrawler (Postfix, from userid 1000)
+	id 6D258198D28; Sun, 10 Apr 2005 15:31:36 -0400 (EDT)
+Date: Sun, 10 Apr 2005 15:31:36 -0400
+From: Eric Dorland <eric@debian.org>
+To: David Pottage <david@chrestomanci.org>, 304014@bugs.debian.org
+Subject: Re: Bug#304014: mozilla-firefox: Repeatable seg fault on www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+Message-ID: <20050410193136.GH7264@nightcrawler.kuroneko.ca>
+References: <E1DKaZA-0003Sn-00@miranda.chrestomanci.org> <20050410174008.GF7264@nightcrawler.kuroneko.ca> <4259698D.5040700@chrestomanci.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WRT3RXLOp/bBMgTI"
+Content-Disposition: inline
+In-Reply-To: <4259698D.5040700@chrestomanci.org>
+User-Agent: Mutt/1.5.8i
+Delivered-To: 304014@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+
+--WRT3RXLOp/bBMgTI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+* David Pottage (david@chrestomanci.org) wrote:
+> Eric Dorland wrote:
+>=20
+> >* David Pottage (david@chrestomanci.org) wrote:
+> >=20
+> >
+> >>Package: mozilla-firefox
+> >>Version: 1.0.2-3
+> >>Severity: important
+> >>
+> >>Firefox crashes immedately When vistiting:
+> >>www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026.asp
+> >>(The page was recently mentioned on slashdot)
+> >>
+> >>The page renders fine with mozilla-1.7.6 and Opera 7.54 on the same lin=
+ux=20
+> >>system. It also renders OK with Firefox 1.02 under Windows 2K.
+> >>
+> >>Exampel output:
+> >>
+> >>$ mozilla-firefox=20
+> >>http://www.koreaherald.co.kr/SITE/data/html_dir/2005/04/09/200504090026=
+=2Easp
+> >>LoadPlugin: failed to initialize shared library=20
+> >>/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so=20
+> >>[/usr/local/j2sdk1.4.1_02/jre/plugin/i386/ns610/libjavaplugin_oji.so:=
+=20
+> >>undefined symbol:=20
+> >>GetGlobalServiceManager__16nsServiceManagerPP17nsIServiceManager]
+> >>Segmentation fault
+> >>  =20
+> >>
+> >
+> >Did you try disabling java?
+> >=20
+> >
+> Yes, It still crashed in the same way.
+>=20
+> >>I have not experenced crashes on other websites.
+> >>
+> >>Could this be related to Bug #235825
+> >>  =20
+> >>
+> >
+> >It's possible, did you follow some of the workarounds outlined in that=
+=20
+> >bug?=20
+> >
+> Yes. However by showing that firefox still crashes when java is=20
+> disabled, it now looks to me as if this bug is not related to Bug #235825
+
+Hmm, I'm still not convinced. Can you move the plugins out of the way
+(make sure you get them under /usr/lib/mozilla too) or remove them
+=66rom your system and try again?
+
+Do you have any other plugins or extensions installed?=20
+
+--=20
+Eric Dorland <eric.dorland@mail.mcgill.ca>
+ICQ: #61138586, Jabber: hooty@jabber.com
+1024D/16D970C6 097C 4861 9934 27A0 8E1C  2B0A 61E9 8ECF 16D9 70C6
+
+-----BEGIN GEEK CODE BLOCK-----
+Version: 3.12
+GCS d- s++: a-- C+++ UL+++ P++ L++ E++ W++ N+ o K- w+=20
+O? M++ V-- PS+ PE Y+ PGP++ t++ 5++ X+ R tv++ b+++ DI+ D+=20
+G e h! r- y+=20
+------END GEEK CODE BLOCK------
+
+--WRT3RXLOp/bBMgTI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.0 (GNU/Linux)
+
+iD8DBQFCWX8YYemOzxbZcMYRAs+4AJ9WjlDtGjfnMfM0Iib3i+29d0OP/gCbBspC
+tNjpKyLKIA0GqkFwFTKSohs=
+=wguW
+-----END PGP SIGNATURE-----
+
+--WRT3RXLOp/bBMgTI--
+
+
+

@@ -122,13 +122,6 @@ class IBugTask(IHasDateCreated, IHasBug):
         "A human-readable representation of the status of this IBugTask's bug "
         "in the other contexts in which it's reported.")
 
-    def setStatusFromDebbugs(status):
-        """Set the Malone BugTask status on the basis of a debbugs status.
-        This maps from the debbugs status values ('done', 'open',
-        'forwarded') to the Malone status values, and returns the relevant
-        Malone status.
-        """
-
     def setSeverityFromDebbugs(severity):
         """Set the Malone BugTask severity on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
@@ -449,7 +442,7 @@ class IBugTaskSet(Interface):
     def get(task_id):
         """Retrieve a BugTask with the given id.
 
-        Raise a zope.exceptions.NotFoundError if there is no IBugTask
+        Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
         """

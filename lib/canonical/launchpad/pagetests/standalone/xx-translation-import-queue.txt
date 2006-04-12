@@ -15,7 +15,7 @@ Time to do the upload...
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
   ...     'pagetests/standalone/xx-translation-import-queue.tar.gz')
-  >>> tarball = open(test_file_name)
+  >>> tarball = open(test_file_name, "rb")
   >>> print http(r"""
   ... POST /products/firefox/+series/1.0/+translations-upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
@@ -26,13 +26,14 @@ Time to do the upload...
   ... -----------------------------1318994232199907263719102121
   ... Content-Disposition: form-data; name="file"; filename="test.tar.gz"
   ... Content-Type: application/x-gzip
+  ... 
   ... %s
   ... -----------------------------1318994232199907263719102121
   ... Content-Disposition: form-data; name="translations_upload"
   ... 
   ... Request Upload
   ... -----------------------------1318994232199907263719102121--
-  ... """ % tarball.read())
+  ... """ % tarball.read(), handle_errors=False)
   HTTP/1.1 200 Ok
   ...Upload new translation resources for Mozilla Firefox Series...
   ...Thank you for your upload. 1 files from the tarball will be reviewed...
@@ -218,7 +219,7 @@ POST, if we get this POST is because it was created by hand or not using our for
   ... status-2=DELETED&handle_queue=Change%20Status""")
   HTTP/1.1 500 Internal Server Error
   ...
-  raise UnexpectedFormData...
+  ...UnexpectedFormData...
   ...
 
 But Jordi, a Rosetta expert, will be allowed to remove it.
@@ -374,6 +375,7 @@ Let's check tar.bz2 uploads. They work ;-)
   ... -----------------------------1779376820857032061648075468
   ... Content-Disposition: form-data; name="file"; filename="temp.tar.bz2"
   ... Content-Type: application/x-bzip
+  ... 
   ... %s
   ... -----------------------------1779376820857032061648075468
   ... Content-Disposition: form-data; name="translations_upload"

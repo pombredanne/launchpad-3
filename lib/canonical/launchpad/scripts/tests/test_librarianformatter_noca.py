@@ -16,6 +16,7 @@ from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.functional import FunctionalTestSetup
+from canonical.testing import reset_logging
 
 import os.path
 
@@ -24,9 +25,10 @@ this_directory = os.path.dirname(__file__)
 def setUp(test):
     # Suck this modules environment into the test environment
     test.globs.update(globals())
+    reset_logging()
 
 def tearDown(test):
-    pass
+    reset_logging()
 
 def test_suite():
     return doctest.DocFileSuite(

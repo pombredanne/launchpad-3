@@ -54,10 +54,13 @@ list of IDARBPR instances containing the matching packages.
    >>> pmount = results[0]
 
 The method works even when we are searching for packages whose names are
-not fti-matchable, such as "at":
+not fti-matchable, such as "linux-2.6.12", and substrings:
 
    >>> warty_i386 = DistroArchRelease.get(1)
-   >>> results = warty_i386.searchBinaryPackages(text='at')
+   >>> results = warty_i386.searchBinaryPackages(text='linux-2.6.12')
+   >>> len(results)
+   1
+   >>> results = hoary_i386.searchBinaryPackages(text='moun')
    >>> len(results)
    1
 

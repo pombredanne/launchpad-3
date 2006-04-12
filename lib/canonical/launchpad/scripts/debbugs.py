@@ -128,9 +128,10 @@ class Database:
         elif name == 'status':
             if bug.done is not None:
                 bug.status = 'done'
-            if bug.forwarded is not None:
+            elif bug.forwarded is not None:
                 bug.status = 'forwarded'
-            bug.status = 'open'
+            else:
+                bug.status = 'open'
         else:
             return False
 
@@ -223,8 +224,13 @@ class Database:
     def __iter__(self):
         return self.bug_iterator(self, None)
 
-    def __getitem__(self, bug):
-        return Bug(self, bug)
+    def __getitem__(self, bug_id):
+        bug = Bug(self, bug_id)
+        try:
+            self.load_summary(bug)
+        except SummaryMissing:
+            raise KeyError(bug_id)
+        return bug
 
 if __name__ == '__main__':
     import sys
