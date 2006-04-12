@@ -29,6 +29,8 @@
     <browser:skin
         name="shipit-edubuntu"
         interface="canonical.launchpad.layers.ShipItEdUbuntuLayer"/>
+
+    <!-- Set via overrides -->
     <browser:defaultSkin
         name="launchpad" />
 

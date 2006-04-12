@@ -64,7 +64,7 @@
       lp:url="/people/$person.id/+edit">
       <browser:widget
           field="timezone"
-          class="zope.app.form.browser.ChoiceInputWidget"
+          class="zope.app.form.browser.itemswidgets.SelectWidget"
           size="15" />
   </browser:editform>
 
@@ -223,6 +223,14 @@
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
       permission="zope.Public"
       template="../templates/person-packagebugs-search.pt" />
+
+  <browser:page
+      name="+packagebugs-advanced-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+      permission="zope.Public"
+      template="../templates/bugtarget-advanced-search.pt" />
 
   <browser:page
       name="+packagebugs"

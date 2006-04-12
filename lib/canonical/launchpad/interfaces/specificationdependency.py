@@ -15,10 +15,7 @@ __all__ = [
 
 from zope.interface import Interface, implements
 from zope.schema import Choice, Int
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 class ISpecificationDependency(Interface):
     """A link between a specification and another specification on which it

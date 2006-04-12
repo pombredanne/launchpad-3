@@ -1,5 +1,7 @@
 # Copyright 2004-2006 Canonical Ltd. All rights reserved.
 
+__metaclass__ = type
+
 __all__ = [
     'validate_url',
     'valid_http_url',
@@ -31,12 +33,12 @@ from textwrap import dedent
 from StringIO import StringIO
 
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
 from canonical.launchpad.searchbuilder import NULL
+from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError

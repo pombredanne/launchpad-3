@@ -33,8 +33,7 @@ after the helpers.
 __metaclass__ = type
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, IDistroRelease, ILaunchBag)
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -672,6 +671,8 @@ productseries_new = ContextDisplayName('Register a new %s release series')
 def productseries(context, view):
     return '%s release series: %s' % (
         context.product.displayname, context.displayname)
+
+securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
 shipit_adminrequest = 'XXX: Fixme'
 

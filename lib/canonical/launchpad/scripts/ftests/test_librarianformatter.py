@@ -19,7 +19,7 @@ from zope.testing import doctest
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.functional import FunctionalTestSetup
+from canonical.functional import FunctionalTestSetup, FunctionalLayer
 
 import os.path
 
@@ -36,10 +36,12 @@ def tearDown(test):
     LaunchpadFunctionalTestSetup().tearDown()
 
 def test_suite():
-    return doctest.DocFileSuite(
+    suite = doctest.DocFileSuite(
             'librarianformatter.txt', setUp=setUp, tearDown=tearDown,
             optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
             )
+    suite.layer = FunctionalLayer
+    return suite
 
 if __name__ == '__main__':
     unittest.main(defaultTest='test_suite')

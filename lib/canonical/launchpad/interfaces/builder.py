@@ -12,11 +12,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 from zope.schema import Choice, TextLine, Text, Bool
 
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import name_validator

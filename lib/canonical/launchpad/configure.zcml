@@ -103,4 +103,10 @@
       classes="LaunchpadRootNavigation"
       />
 
+  <browser:resourceDirectory
+      name="dynarch"
+      directory="../../contrib/dynarch-resources"
+      />
+
+
 </configure>

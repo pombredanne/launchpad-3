@@ -9,7 +9,6 @@ __all__ = [
     'IBranchSet',
     ]
 
-
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -20,7 +19,7 @@ from canonical.lp.dbschema import BranchLifecycleStatus
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator 
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 
@@ -68,8 +67,7 @@ class IBranch(IHasOwner):
     url = BranchUrlField(
         title=_('Branch URL'), required=True,
         description=_("The URL where the branch is hosted. This is usually"
-            " the URL used to checkout the branch. Leave that empty if the"
-            " branch is hosted on bazaar.launchpad.net."),
+            " the URL used to checkout the branch."),
         constraint=valid_webref)
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,

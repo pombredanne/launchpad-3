@@ -10,9 +10,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Text
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ISprintSpecification(Interface):
     """A link between a Sprint and a Specification."""

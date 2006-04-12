@@ -19,12 +19,12 @@ import re
 
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
-from zope.exceptions import NotFoundError
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    ITranslationImportQueue, UnexpectedFormData)
+    ITranslationImportQueue, UnexpectedFormData, NotFoundError,
+    )
 from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
