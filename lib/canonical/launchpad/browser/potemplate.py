@@ -18,7 +18,6 @@ from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
 from canonical.launchpad import _
-from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
@@ -55,8 +54,11 @@ class POTemplateNavigation(Navigation):
                 pofile = self.context.getDummyPOFile(name, requester=user)
             return pofile
         else:
+            # It's a POST.
             pofile = self.context.getPOFileByLang(name)
             if pofile is None:
+                # The user is going to write something that needs an IPOFile
+                # but we don't have such object, we need to create it.
                 pofile = self.context.newPOFile(name, requester=user)
             return pofile
 
