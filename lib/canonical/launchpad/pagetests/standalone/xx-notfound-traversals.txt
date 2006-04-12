@@ -136,6 +136,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/distros/ubuntu/warty/+package/mozilla-firefox")
 
 >>> check("/distros/ubuntu/hoary/+source/evolution/")
+>>> check("/distros/ubuntu/hoary/+source/evolution/1.0")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
 >>> check("/distros/ubuntu/+source/evolution/+portlet-bugfilters")
