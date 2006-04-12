@@ -54,7 +54,7 @@ class IDistroArchReleaseBinaryPackage(Interface):
                        new_priority=None):
         """Change the component, section and/or priority.
 
-        It doesn't change the ommited arguments.
+        It is changed only if the argument is not None.
         """
 
     def supersede():

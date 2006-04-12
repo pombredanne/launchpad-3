@@ -428,9 +428,9 @@ Using getQueueItem to inspect current NEW queue and accept them.
   drdsl Component "non-free" is not allowed in breezy-autotest
   etherwake ACCEPTED
 
-We must flush these changes so that it gets out of the cache and
-into the database. Without this process-accepted.py wouldn't see
-the changes.
+XXX cprov 20060412: We must flush these changes so that it gets out of
+the cache and  into the database. Without this process-accepted.py
+wouldn't see the changes. Reported in bug # 3989
 
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
@@ -474,6 +474,8 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   >>> process.wait()
   0
 
+XXX cprov 20060412: bug # 3989
+
   >>> flush_database_updates()
   >>> transaction.commit()
   >>> from canonical.database.sqlbase import _clearCache
@@ -515,14 +517,14 @@ component 'universe'.
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
   >>> etherwake = breezy_autotest.getSourcePackage('etherwake')
-  >>> etherwake_spr = etherwake.currentrelease
-  >>> etherwake_spr.changeOverride(
+  >>> etherwake_drspr = etherwake.currentrelease
+  >>> etherwake_drspr.changeOverride(
   ...     new_component=getUtility(IComponentSet)['universe'])
 
 Check if we have new pending publishing record as expected
 
   >>> for pub in SSPPH.selectBy(
-  ...    sourcepackagereleaseID=etherwake_spr.sourcepackagerelease.id,
+  ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
   ...    orderBy=['id']):
   ...    print pub.id, pub.status.name, pub.component.name, pub.pocket.name
   20 PUBLISHED main RELEASE
@@ -530,6 +532,7 @@ Check if we have new pending publishing record as expected
 
 Force database changes, so they can be used by the external script properly.
 
+XXX cprov 20060412: bug # 3989
   >>> flush_database_updates()
   >>> transaction.commit()
 
@@ -552,7 +555,7 @@ Invalidates SQLObject cache to cope with publisher.
 Check the publishing history again
 
   >>> for pub in SSPPH.selectBy(
-  ...    sourcepackagereleaseID=etherwake_spr.sourcepackagerelease.id,
+  ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
   ...    orderBy=['id']):
   ...    print pub.id, pub.status.name, pub.component.name, pub.pocket.name
   20 PENDINGREMOVAL main RELEASE
@@ -560,13 +563,16 @@ Check the publishing history again
 
 Check if the package was moved properly to the component 'universe':
 
-  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
-  ...            "/main/source/Sources").read() + '\nEND'
+  >>> main_sources = open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
+  ...                     "/main/source/Sources").read()
+  >>> print main_sources + '\nEND'
   <BLANKLINE>
   END
 
-  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
-  ...            "/universe/source/Sources").read() + '\nEND'
+  >>> universe_sources = open("/var/tmp/archive/ubuntutest/dists/"
+  ...                         "breezy-autotest/universe/source/"
+  ...                         "Sources").read()
+  >>> print universe_sources + '\nEND'
   Package: etherwake
   ...
   END

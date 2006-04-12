@@ -55,7 +55,7 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     def changeOverride(new_component=None, new_section=None):
         """Change the component and/or section.
 
-        It doesn't change the ommited arguments.
+        It is changed only if the argument is not None.
         """
 
     def supersede():

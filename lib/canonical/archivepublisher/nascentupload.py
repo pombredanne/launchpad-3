@@ -1316,7 +1316,7 @@ class NascentUpload:
                 self.reject("Unable to validate %s from %s: %s" % (
                     sub_dsc_file.filename, dsc_file.filename, e))
 
-            # try to check every mentioned file against its copy already
+            # try to check dsc-mentioned file against its copy already
             # in librarian, if it's new (aka not found in librarian)
             # dismiss. It prevent us to have scary duplicated filenames
             # in Librarian and missapplied files in archive, fixes
