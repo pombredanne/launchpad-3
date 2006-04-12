@@ -342,7 +342,6 @@ class BugAlsoReportInView(GeneralFormView):
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
             taskadded.status = BugTaskStatus.UNKNOWN
-            taskadded.priority = BugTaskPriority.UNKNOWN
             taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
