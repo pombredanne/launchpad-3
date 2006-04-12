@@ -11,6 +11,7 @@ __all__ = [
 
 rejection_template = """From: %(SENDER)s
 To: %(RECIPIENT)s
+Bcc: %(DEFAULT_RECIPIENT)s
 Precedence: bulk
 Subject: %(CHANGES)s Rejected
 
@@ -27,6 +28,7 @@ override file requires editing, reply to this email.
 
 new_template = """From: %(SENDER)s
 To: %(RECIPIENT)s
+Bcc: %(DEFAULT_RECIPIENT)s
 Precedence: bulk
 Subject: %(CHANGES)s is NEW
 
@@ -44,6 +46,7 @@ above if files already exist in other distroreleases.
 
 accepted_template="""From: %(SENDER)s
 To: %(RECIPIENT)s
+Bcc: %(DEFAULT_RECIPIENT)s
 Precedence: bulk
 Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
 
@@ -61,6 +64,7 @@ Thank you for your contribution to %(DISTRO)s.
 
 announce_template="""From: %(MAINTAINERFROM)s
 To: %(ANNOUNCE)s
+Bcc: %(DEFAULT_RECIPIENT)s
 Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
 
 Accepted:

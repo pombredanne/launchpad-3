@@ -8,9 +8,7 @@ __all__ = ['IBugCve']
 
 from zope.interface import Interface
 from zope.schema import Int
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBugCve(Interface):
     """A link between a bug and a CVE entry."""

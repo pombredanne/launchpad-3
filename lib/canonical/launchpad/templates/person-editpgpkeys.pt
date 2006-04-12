@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>OpenPGP keys</h1> 
+    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -21,14 +24,11 @@
         class="error message"
       />
 
-    <h1>OpenPGP keys and Launchpad</h1> 
-
     <p>
       Launchpad lets you register OpenPGP keys,
       created by software such as GnuPG.
-      OpenPGP keys are required to sign the
-      <a href="/codeofconduct">Ubuntu Code of Conduct</a>,
-      and to build and upload packages using HCT.
+      These are used to sign <a href="/codeofconduct">codes of conduct</a>,
+      and to build and upload packages using <abbr>HCT</abbr>.
     </p>
 
     <form tal:condition="view/gpgkeysCount" 
@@ -45,6 +45,7 @@
           <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
         </label>
       </div>
+      <div><input type="submit" value="Deactivate Key" /></div>
 
       <p><dfn>Deactivating</dfn> a key <em>applies only to Launchpad</em>
       and not anywhere else. If you deactivate a key, it
@@ -52,7 +53,6 @@
       as a signed code of conduct, or the ability to comment on a bug
       report by e-mail.</p>
 
-      <input type="submit" value="Deactivate Key" />
     </form>
 
     <form tal:condition="context/pendinggpgkeys" name="gpg_actions" 
@@ -95,35 +95,45 @@
       <input type="submit" value="Revalidate Key" />
     </form>
 
-    <div>
     <form name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="claim_gpg" />
       <h2>Importing an OpenPGP key</h2>
-      <div class="formHelp">
-        To import an OpenPGP key, you must first ensure that:
-        <ul>
-          <li>You already have a key (use <code>gpg --gen-key</code>)
-          <li>The key has already been uploaded to a keyserver (use
-          <code>gpg --send-key &lt;key-id&gt;</code>)
-        </ul>
-        <p>
-        You should paste your key fingerprint below. To find out what
-        your fingerprint is, use <code>gpg --fingerprint
-        &lt;key-id&gt;</code>; it is a sequence of hex digits like the
-        example below.
-        <p>
-        Launchpad will then send a message to <code
-        tal:content="context/preferredemail/email"/> containing the
-        instructions to conclude the process.
-      </div>
-      <label>Key Fingerprint</label>
-      <input type="text" name="fingerprint" size="50"/>
-      <div class="discreet" style="margin-bottom: 1em">
-      Example: 27E0 7815 B47C 0397 90D5  8589 27D9 A27B F3F9 6058</div>
-      <input type="submit" value="Find and Import"/>
-    </form>
+      <ol>
+        <li>
+          Ensure you already have a key. In a terminal window, enter:
+          <pre>gpg --list-keys <var>your@e-mail.address</var></pre>
+          If you have no key, create one:
+          <pre>gpg --gen-key</pre>
+        </li>
+        <li>
+          Ensure the key has been uploaded to a keyserver. To do this:
+          <pre>gpg --send-key <var>key-id</var></pre>
+        </li>
+        <li>
+          Enter your key fingerprint. Use:
+          <pre>gpg --fingerprint <var>key-id</var></pre>
+          <table>
+            <tbody>
+              <tr>
+                <th><label>Fingerprint:</label></th>
+                <td><input type="text" name="fingerprint" /></td>
+              </tr>
+              <tr class="discreet">
+                <th>Example:</th>
+                <td>
+                  <code>27E0 7815 B47C 0397 90D5&nbsp;&nbsp;8589 27D9 A27B F3F9 6058</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            Launchpad will e-mail
+            <code tal:content="context/preferredemail/email"/> with instructions
+            on finishing the process.
+          </p>
+          <div><input type="submit" value="Import Key"/></div>
+        </li>
+      </form>
     </div>
-
-  </div>
-</body>
+  </body>
 </html>

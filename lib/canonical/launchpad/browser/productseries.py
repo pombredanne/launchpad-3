@@ -15,7 +15,6 @@ __all__ = ['ProductSeriesNavigation',
 import re
 
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
@@ -29,7 +28,8 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue, IProductSeriesSourceSet)
+    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError
+    )
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
@@ -69,7 +69,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
              'addpotemplate', 'review']
 
     def edit(self):
-        text = 'Edit Series Details'
+        text = 'Change Series Details'
         return Link('+edit', text, icon='edit')
 
     def editsource(self):

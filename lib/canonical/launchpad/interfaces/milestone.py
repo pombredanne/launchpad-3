@@ -15,8 +15,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IHasProduct
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad import _ 
-from canonical.launchpad.fields import ContentNameField 
+from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -40,12 +40,13 @@ class MilestoneNameField(ContentNameField):
         elif IProduct.providedBy(context):
             milestone = milestoneset.getByNameAndProduct(name, context)
         else:
-            milestone = milestoneset.getByNameAndDistribution(name, context)    
+            milestone = milestoneset.getByNameAndDistribution(name, context)
         if milestone is not None:
               self.errormessage = _(
                   "The name %%s is already used by a milestone in %s."
-                  % context.displayname)  
+                  % context.displayname)
         return milestone
+
 
 class IMilestone(IHasProduct):
     """A milestone, or a targeting point for bugs and other release-related
@@ -87,7 +88,7 @@ class IMilestoneSet(Interface):
         """Get a milestone by its id.
 
         If the milestone with that ID is not found, a
-        zope.exceptions.NotFoundError will be raised.
+        NotFoundError will be raised.
         """
 
     def getByNameAndProduct(self, name, product, default=None):

@@ -61,9 +61,8 @@ import urlparse
 from psycopg import IntegrityError
 from sqlobject.main import SQLObjectNotFound
 
-from zope.exceptions import NotFoundError
-
 import canonical.lp
+from canonical.launchpad.interfaces import NotFoundError
 
 from pybaz import NameParser
 from canonical.lp.dbschema import (
@@ -75,7 +74,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (
      Product, ProductSeries, ProductRelease, Distribution,
      DistroRelease, DistroReleaseSet, DistributionSourcePackage,
-     DistributionSourcePackageRelease, ManifestAncestry, Branch
+     DistributionSourcePackageRelease, ManifestAncestry, Branch,
      DistroReleaseSourcePackageRelease, SourcePackageName,
      SourcePackage, SourcePackageRelease, Manifest, ManifestEntry,
      )

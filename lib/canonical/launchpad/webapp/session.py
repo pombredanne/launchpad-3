@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.app.session.session import PersistentSessionDataContainer
 from zope.app.session.http import CookieClientIdManager
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 

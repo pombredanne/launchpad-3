@@ -12,11 +12,9 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, TextLine
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.interfaces import IHasOwner
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IDistroArchRelease(IHasOwner):
     """DistroArchRelease Table Interface"""

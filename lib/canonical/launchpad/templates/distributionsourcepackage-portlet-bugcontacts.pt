@@ -36,7 +36,7 @@
     <div tal:condition="not: distribution/bugcontact">
       <i>There is no distribution-wide bug contact set.</i>
       <a tal:condition="distribution/required:launchpad.Edit"
-         tal:attributes="href string:${distribution/fmt:url}/+editbugcontact">
+         tal:attributes="href string:${distribution/fmt:url}/+bugcontact">
         (set one)
       </a>
       <i tal:condition="not:distribution/required:launchpad.Edit">

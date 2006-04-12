@@ -23,7 +23,7 @@ formatter. Each call generates a unique Logger.
 
 Now setup two identical Logger instances except for their formatter
 
->>> normal_log, normal_out= make_logger(logging.Formatter)
+>>> normal_log, normal_out = make_logger(logging.Formatter)
 >>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
 
 Output from the standard formatter should match the output from
@@ -45,5 +45,22 @@ Now send some identical log messages to the loggers.
 ...     log.error('Error %d occurred', 42)
 >>> normal_out.getvalue() == librarian_out.getvalue()
 True
-
+>>> print normal_out.getvalue()
+INFO Some crap
+ERROR Oops!
+Traceback (most recent call last):
+  File "<doctest librarianformatter_noca.txt[5]>", line 2, in ?
+    raise RuntimeError('An Exception')
+RuntimeError: An Exception
+ERROR Error 42 occurred
+<BLANKLINE>
+>>> print librarian_out.getvalue()
+INFO Some crap
+ERROR Oops!
+Traceback (most recent call last):
+  File "<doctest librarianformatter_noca.txt[5]>", line 2, in ?
+    raise RuntimeError('An Exception')
+RuntimeError: An Exception
+ERROR Error 42 occurred
+<BLANKLINE>
 

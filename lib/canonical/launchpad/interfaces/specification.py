@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Summary, Title 
+from canonical.launchpad.fields import ContentNameField, Summary, Title
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
@@ -195,6 +195,9 @@ class ISpecification(IHasOwner):
         """Return the requests for feedback for a given person on this
         specification.
         """
+
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that receive notifications."""
 
     # event-related methods
     def getDelta(old_spec, user):

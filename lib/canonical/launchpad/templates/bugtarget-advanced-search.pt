@@ -43,6 +43,13 @@
       <form name="search" method="GET" action="#"
             tal:attributes="action view/getAdvancedSearchActionURL">
         <input type="hidden" name="advanced" value="1" />
+        <span tal:condition="view/current_package|nothing">
+          <input type="hidden" name="field.distribution"
+                 tal:attributes="value view/current_package/distribution/name" />
+          <input type="hidden" name="field.sourcepackagename"
+                 tal:attributes="value view/current_package/sourcepackagename/name" />
+        </span>
+
         <table>
           <tr>
             <th class="section-header">
@@ -58,7 +65,7 @@
                        value="Search bugs in mozilla-firefox in ubuntu"
                        tal:attributes="value view/getAdvancedSearchButtonLabel" />
                 <a href="#"
-                   tal:attributes="href string:${context/fmt:url}/+bugs">
+                   tal:attributes="href view/getSimpleSearchURL">
                   Simple
                 </a>
                 <div style="margin-top: 5px">
@@ -185,8 +192,10 @@
                           <small>
                             <input type="radio" name="assignee_option" value="any" checked> Doesn't matter<br />
                             <input type="radio" name="assignee_option" value="none"> Nobody<br />
-                            <input type="radio" name="assignee_option" value="choose">
-                            <span tal:content="structure view/assignee_widget" />
+                            <span style="white-space: nowrap">
+                              <input type="radio" name="assignee_option" value="choose">
+                              <span tal:content="structure view/assignee_widget" />
+                            </span>
                           </small>
                         </td>
                       </tr>
@@ -204,7 +213,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <td>
+                        <td style="white-space: nowrap">
                           <small>
                             <span tal:content="structure view/owner_widget" />
                           </small>
@@ -246,6 +255,7 @@
                                      tal:attributes="for widget_id">
                                 dapper
                               </label>
+                              <br />
                             </span>
                           </span>
                           <span tal:condition="not:widget_values">
@@ -278,7 +288,7 @@
             <td class="section">
               <table>
                 <tr>
-                  <td>
+                  <td style="white-space: nowrap">
                     <small>
                       <span tal:content="structure view/omit_dupes_widget" />
                       <label for="field.omit_dupes">
@@ -286,11 +296,21 @@
                       </label>
                     </small>
                   </td>
-                  <td>
+                  <td style="white-space: nowrap">
                     <small>
                       <span tal:content="structure view/has_patch_widget" />
                       <label for="field.has_patch">
                         Show only bugs with patches available
+                      </label>
+                    </small>
+                  </td>
+                </tr>
+                <tr tal:condition="view/shouldShowNoPackageWidget">
+                  <td>
+                    <small>
+                      <span tal:content="structure view/has_no_package_widget" />
+                      <label for="field.has_no_package">
+                        Exclude bugs with packages specified
                       </label>
                     </small>
                   </td>

@@ -11,11 +11,11 @@ from canonical.launchpad.interfaces import IBugDelta
 class BugDelta:
     """See canonical.launchpad.interfaces.IBugDelta."""
     implements(IBugDelta)
-    def __init__(self, bug, bugurl, user, comment_on_change=None,
+    def __init__(self, bug, bugurl, user,
                  title=None, description=None, name=None,
-                 private=None, duplicateof=None, external_reference=None,
-                 bugwatch=None, cve=None, attachment=None, added_bugtasks=None,
-                 bugtask_deltas=None):
+                 private=None, security_related=None, duplicateof=None,
+                 external_reference=None, bugwatch=None, cve=None,
+                 attachment=None, added_bugtasks=None, bugtask_deltas=None):
         self.bug = bug
         self.bugurl = bugurl
         self.user = user
@@ -23,6 +23,7 @@ class BugDelta:
         self.description = description
         self.name = name
         self.private = private
+        self.security_related = security_related
         self.duplicateof = duplicateof
         self.external_reference = external_reference
         self.bugwatch = bugwatch
@@ -30,4 +31,3 @@ class BugDelta:
         self.attachment = attachment
         self.added_bugtasks = added_bugtasks
         self.bugtask_deltas = bugtask_deltas
-        self.comment_on_change = comment_on_change

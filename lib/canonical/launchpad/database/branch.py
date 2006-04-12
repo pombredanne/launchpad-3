@@ -4,7 +4,7 @@ __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 import os.path
-from urlparse import urljoin
+import re
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -18,16 +18,15 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.revision import Revision, RevisionNumber
+from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
@@ -40,6 +39,7 @@ class Branch(SQLBase):
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
+    mirror_status_message = StringCol(default=None)
     started_at = ForeignKey(
         dbName='started_at', foreignKey='RevisionNumber', default=None)
 
@@ -165,7 +165,7 @@ class Branch(SQLBase):
             # This is an import branch, imported into bzr from another RCS
             # system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
-            return urljoin(prefix, '%08x' % (self.id,))
+            return urlappend(prefix, '%08x' % (self.id,))
         else:
             # This is a push branch, hosted on the supermirror (pushed there by
             # users via SFTP).
@@ -206,6 +206,45 @@ class BranchSet:
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page)
+
+    def getByUrl(self, url, default=None):
+        """See IBranchSet."""
+        assert not url.endswith('/')
+        prefix = config.launchpad.supermirror_root
+        if url.startswith(prefix):
+            branch = self.getByUniqueName(url[len(prefix):])
+        else:
+            branch = Branch.selectOneBy(url=url)
+        if branch is None:
+            return default
+        else:
+            return branch
+
+    def getByUniqueName(self, unique_name, default=None):
+        """Find a branch by its ~owner/product/name unique name."""
+        # import locally to avoid circular imports
+        match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
+        if match is None:
+            return default
+        owner_name, product_name, branch_name = match.groups()
+        if product_name == '+junk':
+            query = ("Branch.owner = Person.id"
+                     + " AND Branch.product IS NULL"
+                     + " AND Person.name = " + quote(owner_name)
+                     + " AND Branch.name = " + quote(branch_name))
+            tables=['Person']
+        else:
+            query = ("Branch.owner = Person.id"
+                     + " AND Branch.product = Product.id"
+                     + " AND Person.name = " + quote(owner_name)
+                     + " AND Product.name = " + quote(product_name)
+                     + " AND Branch.name = " + quote(branch_name))
+            tables=['Person', 'Product']            
+        branch = Branch.selectOne(query, clauseTables=tables)
+        if branch is None:
+            return default
+        else:
+            return branch
 
     def get_supermirror_pull_queue(self):
         """See IBranchSet.get_supermirror_pull_queue."""

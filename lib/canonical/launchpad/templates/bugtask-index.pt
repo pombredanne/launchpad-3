@@ -1,21 +1,28 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
+      </div>
+      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-tickets" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-search" />
-    <div tal:condition="context/bug/specifications"
-         tal:replace="structure context/@@+portlet-specs" />
+    <div tal:replace="structure context/@@+portlet-specs" />
     <div tal:replace="structure context/@@+portlet-attachments" />
     <div tal:replace="structure context/@@+portlet-cve" />
     <div tal:replace="structure context/@@+portlet-reference" />
@@ -44,9 +51,12 @@
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
 
-  <p class="error message" tal:condition="not:view/isReportedInContext">
-
-        <form name="alsooccursin" method="POST">
+      <form
+        tal:condition="not:view/isReportedInContext"
+        class="error message"
+        name="alsooccursin"
+        method="POST"
+      >
 
     This bug is not recorded as needing to be fixed in the
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
@@ -72,8 +82,6 @@
 
         </form>
 
-  </p>
-
   <div tal:replace="structure context/@@+headline-tasks" />
 
   <tal:description
@@ -98,7 +106,7 @@
         <tr>
           <th>Bugfix Status</th>
           <th>Developer</th>
-          <th>Fix Revision</th>
+          <th>Revision Hint</th>
         </tr>
       </thead>
       <tbody>
@@ -111,7 +119,7 @@
             </a>
           </td>
           <td tal:content="bug_branch/branch/owner/displayname"></td>
-          <td tal:content="bug_branch/fixed_in_revision"></td>
+          <td tal:content="bug_branch/revision_hint"></td>
         </tr>
       </tbody>
     </table>
