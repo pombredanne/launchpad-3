@@ -7,10 +7,9 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from sqlobject import IntCol, StringCol
+from canonical.launchpad import _
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 

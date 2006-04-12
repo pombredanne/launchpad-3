@@ -12,9 +12,6 @@ __all__ = [
 import re
 from datetime import datetime, timedelta
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
 from zope.interface import implements
 
 from zope.component import getUtility
@@ -25,6 +22,7 @@ from zope.app.form.browser.widget import (
     DisplayWidget, SimpleInputWidget, renderElement)
 from zope.app.form.interfaces import ConversionError, InputErrors
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag
 
 _date_re = re.compile(

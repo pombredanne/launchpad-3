@@ -33,9 +33,6 @@ import pytz
 
 from sqlobject import SQLObjectNotFound
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
 from zope.interface import implements
 from zope.component import getUtility
 from zope.event import notify
@@ -48,6 +45,7 @@ from schoolbell.utils import (
     prev_month, next_month, weeknum_bounds, check_weeknum, Slots)
 from schoolbell.simple import SimpleCalendarEvent
 
+from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
@@ -58,7 +56,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, Link, canonical_url, Navigation,
     GetitemNavigation, stepto)
-
 
 
 daynames = [

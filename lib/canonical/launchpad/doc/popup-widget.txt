@@ -34,7 +34,7 @@ getInputValue() fails:
     >>> popup_widget.getInputValue()
     Traceback (most recent call last):
     ...
-    MissingInputError: ('field.owner', 'Owner', None)
+    MissingInputError: ('field.owner', u'Owner', None)
 
 Let's supply an non existant value to the form:
 

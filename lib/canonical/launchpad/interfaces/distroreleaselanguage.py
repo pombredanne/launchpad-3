@@ -3,9 +3,7 @@
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
-
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __metaclass__ = type
 

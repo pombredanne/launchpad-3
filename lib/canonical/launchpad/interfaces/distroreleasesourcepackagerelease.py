@@ -10,6 +10,7 @@ __all__ = [
 
 from zope.interface import Attribute
 
+
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease
     )

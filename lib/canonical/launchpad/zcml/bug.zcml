@@ -46,9 +46,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBug"
-        path_expression="string:${id}"
-        parent_utility="canonical.launchpad.interfaces.IBugSet"
-        />
+        urldata="canonical.launchpad.browser.bug.BugURL" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"

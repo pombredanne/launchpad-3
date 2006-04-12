@@ -23,6 +23,8 @@ class IContextWidget(Interface):
 class ContextWidget(RequestWidget):
 
     implements(IContextWidget)
+    def __init__(self, context, vocabulary, request):
+        RequestWidget.__init__(self, context, request)
 
     def getInputValue(self):
         return self.context.context.id

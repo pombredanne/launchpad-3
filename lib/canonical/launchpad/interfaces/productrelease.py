@@ -11,14 +11,13 @@ __all__ = [
 
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.fields import ContentNameField 
+from canonical.launchpad.fields import ContentNameField
 
 
 class ProductReleaseVersionField(ContentNameField):
@@ -36,7 +35,7 @@ class ProductReleaseVersionField(ContentNameField):
         else:
             productseries = self.context.productseries
         releaseset = getUtility(IProductReleaseSet)
-        return releaseset.getBySeriesAndVersion(productseries, version) 
+        return releaseset.getBySeriesAndVersion(productseries, version)
 
 
 class IProductRelease(Interface):

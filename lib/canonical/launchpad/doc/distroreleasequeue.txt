@@ -402,7 +402,8 @@ Construct a new upload for universe/misc and a lot of errors ;)
   >>> for msg in msgs:
   ...    print msg
   From: Root <root@localhost>
-  To: Root <root@localhost>, Sample Person <test@canonical.com>
+  To: Sample Person <test@canonical.com>
+  Bcc: Root <root@localhost>
   Precedence: bulk
   Subject: usplash_0.1-22_powerpc.changes Rejected
   <BLANKLINE>

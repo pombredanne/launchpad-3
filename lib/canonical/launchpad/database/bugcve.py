@@ -4,14 +4,12 @@ __metaclass__ = type
 __all__ = ['BugCve']
 
 from zope.interface import implements
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
-
 from canonical.launchpad.interfaces import IBugCve
+from canonical.launchpad import _
 
 
 class BugCve(SQLBase):

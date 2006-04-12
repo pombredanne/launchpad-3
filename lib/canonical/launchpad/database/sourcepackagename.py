@@ -8,7 +8,7 @@ from zope.interface import implements
 from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, SQLMultipleJoin
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote_like
 
 from canonical.launchpad.interfaces import (
     ISourcePackageName, ISourcePackageNameSet, NotFoundError)
@@ -58,8 +58,7 @@ class SourcePackageNameSet:
 
     def findByName(self, name):
         """Find sourcepackagenames by its name or part of it."""
-        name = name.replace('%', '%%')
-        query = ('name ILIKE %s' % quote('%%' +name+ '%%'))
+        query = "name ILIKE '%%' || %s || '%%'" % quote_like(name)
         return SourcePackageName.select(query)
 
     def queryByName(self, name):

@@ -3,9 +3,6 @@
 __metaclass__ = type
 
 import unittest
-from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
-from canonical.functional import FunctionalTestSetup, FunctionalDocFileSuite
-
 from zope.component import getUtility
 from zope.component.exceptions import ComponentLookupError
 from zope.component.servicenames import Utilities
@@ -13,11 +10,17 @@ from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
+from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
+from canonical.functional import (
+        FunctionalTestSetup, FunctionalDocFileSuite,
+        FunctionalLayer, ZopelessLayer
+        )
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 from canonical.lp import initZopeless
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
+from canonical.testing import reset_logging
 
 import sqlos
 from sqlos.connection import connCache
@@ -91,7 +94,18 @@ class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbname = 'launchpad_ftest' # Needs to match ftesting.zcml
     dbuser = 'launchpad'
-
+    def tearDown(self):
+        super(LaunchpadTestSetup, self).tearDown()
+        reset_logging()
+    def force_dirty_database(self):
+        """flag the database as being dirty
+        
+        This ensurs that the database will be recreated for the next test.
+        Tearing down the database is done automatically when we detect
+        changes. Currently, however, not all changes are detectale (such
+        as database changes made from a subprocess
+        """
+        PgTestSetup._reset_db = True
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None
@@ -150,7 +164,8 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
-
+    layer = FunctionalLayer
+    dbuser = None
     def login(self, user=None):
         """Login the current zope request as user.
         
@@ -165,7 +180,6 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         self.dbuser = dbuser
         unittest.TestCase.setUp(self)
         LaunchpadFunctionalTestSetup(dbuser=self.dbuser).setUp()
-        self.zodb_db = FunctionalTestSetup().db
         self.__logged_in = False
 
     def tearDown(self):
@@ -179,3 +193,9 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         return LaunchpadFunctionalTestSetup(dbuser=self.dbuser).connect()
 
 
+class LaunchpadZopelessTestCase(unittest.TestCase):
+    layer = ZopelessLayer
+    def setUp(self):
+        LaunchpadZopelessTestSetup().setUp()
+    def tearDown(self):
+        LaunchpadZopelessTestSetup().tearDown()

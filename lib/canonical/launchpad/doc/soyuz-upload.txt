@@ -461,6 +461,7 @@ These packages must now be in the publishing history. Let's check it.
   drdsl not Published
   etherwake Pending
 
+
 Invoke Publisher script against the 'ubuntutest' distribution:
 
   >>> script = os.path.join(config.root, "scripts", "publish-distro.py")
