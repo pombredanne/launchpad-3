@@ -204,12 +204,12 @@ collection of builds.
 We can find builds given a source package release and architecture tag.
 
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-  2
+  3
 
 We can find recent and pending builds for a given distrorelease.
 
   >>> hoary.getBuildRecords().count()
-  4
+  5
 
 Or for a given distroarchrelease.
 
@@ -218,17 +218,18 @@ Or for a given distroarchrelease.
   u'The Hoary Hedgehog Release for i386 (x86)'
 
   >>> hoaryi386.getBuildRecords().count()
-  4
+  5
 
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  9
+  10
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
   ...     l.datecreated, l.id, l.buildstate.value
   (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 7, 1)
+  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 16, 1)
   (datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>), 2, 1)
 
 Retrive the current PENDING builds
@@ -286,6 +287,7 @@ Using the optional name argument to filter build results:
 
   >>> builds = ubuntu.getBuildRecords(name='pm')
   >>> builds.count()
-  2
+  3
   >>> [(b.sourcepackagerelease.name, b.distrorelease.name) for b in builds]
-  [(u'pmount', u'warty'), (u'pmount', u'hoary')]
+  [(u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
+

@@ -510,12 +510,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -532,7 +526,9 @@ ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 ALTER TABLE binarypackagefile DISABLE TRIGGER ALL;
 
-INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (12, 3, 1, 1);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (12, 40, 1, 1);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (16, 42, 1, 4);
 
 
 ALTER TABLE binarypackagefile ENABLE TRIGGER ALL;
@@ -555,6 +551,7 @@ INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, descr
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''boom'':4B,15C ''like'':8C ''templ'':13C ''kernel'':2B,6C ''method'':11C ''crystal'':10C', '2005-10-19 17:50:10.878712');
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''mad'':5B ''long'':7C ''safe'':15C ''believ'':20C ''enunci'':9C ''mountain'':3B,12C ''lovecraft'':6C', '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (18, 13, '2:1.9-1', 'pmount shortdesc', 'pmount description', 16, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
 
 
 ALTER TABLE binarypackagerelease ENABLE TRIGGER ALL;
@@ -822,13 +819,6 @@ ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
 
 
-ALTER TABLE bugnotification DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugnotification ENABLE TRIGGER ALL;
-
-
 ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
 
 
@@ -933,6 +923,7 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (13, '2006-03-21 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 17, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (14, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 28, 0, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (15, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies) VALUES (16, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
@@ -2270,7 +2261,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (45, 'be', 'Belarusian', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (46, 'bem', 'Bemba', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (47, 'bn', 'Bengali', NULL, 2, 'n != 1', true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (48, 'ber', 'Berber (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (48, 'ber', 'Berber (Other)', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (49, 'bho', 'Bhojpuri', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (50, 'bh', 'Bihari', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (51, 'bik', 'Bikol', NULL, NULL, NULL, true, 0);
@@ -2336,7 +2327,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (111, 'dum', 'Dutch, Middle (ca. 1050-1350)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (112, 'nl', 'Dutch', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (113, 'dyu', 'Dyula', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (114, 'dz', 'Dzongkha', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (114, 'dz', 'Dzongkha', NULL, 1, '0', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (115, 'efi', 'Efik', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (116, 'egy', 'Egyptian (Ancient)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (117, 'eka', 'Ekajuk', NULL, NULL, NULL, true, 0);
@@ -2844,6 +2835,12 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (36, 36, 'foo.txt', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (37, 37, 'pmount_1.9-1_all.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (38, 38, 'alsa-utils_1.0.9a-4.dsc', 'application/dsc', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (39, 39, 'alsa-utils_1.0.8-1ubuntu1.dsc', 'application/dsc', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (40, 40, 'mozilla-firefox_0.9_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (42, 42, 'linux-2.6.12_2.6.12.20_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (43, 43, 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2887,6 +2884,12 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (36, '2005-10-30 18:00:27.899028', NULL, 3, '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', true, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (37, '2005-10-30 18:00:27.899028', NULL, 3, '1e04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (38, '2005-10-30 18:00:27.899028', NULL, 3, 'ae04c7b5ea3f0bdb095d0dd47f3c5bc275da8a33', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (39, '2005-10-30 18:00:27.899028', NULL, 3, 'a10856bfea3f0bdb09550dd41f3c5bc275da8a33', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (40, '2005-10-30 18:00:27.899028', NULL, 3, '5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (42, '2005-10-30 18:00:27.899028', NULL, 3, 'a45ed906e4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (43, '2005-10-30 18:00:27.899028', NULL, 3, '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3101,8 +3104,6 @@ ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
 
 
 ALTER TABLE mirrordistroarchrelease DISABLE TRIGGER ALL;
-
-
 
 
 
@@ -8708,9 +8709,10 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (13, 15, 1, 3, 3, 3, 40, '2006-01-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (14, 15, 7, 3, 3, 3, 40, '2006-01-26 00:00:00', NULL, '2006-01-28 00:00:00', NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (15, 12, 7, 2, 3, 3, 40, '2006-01-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (16, 15, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (16, 15, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-24 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (17, 16, 1, 2, 1, 1, 10, '2005-07-06 00:00:00', '2005-08-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (18, 17, 1, 7, 1, 1, 10, '2005-08-07 00:00:00', '2005-08-22 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (19, 18, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
@@ -8863,6 +8865,9 @@ ALTER TABLE sourcepackagereleasefile DISABLE TRIGGER ALL;
 
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (15, 4, 1, 2);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (16, 2, 1, 1);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (24, 38, 3, 3);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (23, 39, 3, 4);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (25, 43, 3, 5);
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;
@@ -8952,6 +8957,8 @@ INSERT INTO spokenin ("language", country, id) VALUES (41, 75, 76);
 INSERT INTO spokenin ("language", country, id) VALUES (45, 21, 125);
 INSERT INTO spokenin ("language", country, id) VALUES (47, 101, 131);
 INSERT INTO spokenin ("language", country, id) VALUES (47, 19, 129);
+INSERT INTO spokenin ("language", country, id) VALUES (48, 146, 346);
+INSERT INTO spokenin ("language", country, id) VALUES (48, 4, 347);
 INSERT INTO spokenin ("language", country, id) VALUES (51, 171, 337);
 INSERT INTO spokenin ("language", country, id) VALUES (56, 28, 134);
 INSERT INTO spokenin ("language", country, id) VALUES (58, 75, 133);

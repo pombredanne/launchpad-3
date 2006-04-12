@@ -21,16 +21,16 @@ class AvatarTestBase(TwistedTestCase):
         # A basic user dict, 'bob' is a member of no teams (aside from the user
         # themself).
         self.aliceUserDict = {
-            'id': 1, 
-            'name': 'alice', 
+            'id': 1,
+            'name': 'alice',
             'teams': [{'id': 1, 'name': 'alice', 'initialBranches': []}],
         }
 
         # An slightly more complex user dict for a user, 'alice', that is also a
         # member of a team.
         self.bobUserDict = {
-            'id': 2, 
-            'name': 'bob', 
+            'id': 2,
+            'name': 'bob',
             'teams': [{'id': 2, 'name': 'bob', 'initialBranches': []},
                       {'id': 3, 'name': 'test-team', 'initialBranches': []}],
         }
@@ -45,7 +45,7 @@ class TestTopLevelDir(AvatarTestBase):
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
-            [name for name, child in root.children()], 
+            [name for name, child in root.children()],
             ['.', '..', '~alice'])
 
     def testListDirTeams(self):
@@ -53,7 +53,7 @@ class TestTopLevelDir(AvatarTestBase):
         avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
-            [name for name, child in root.children()], 
+            [name for name, child in root.children()],
             ['.', '..', '~bob', '~test-team'])
 
     def testAllWriteOpsForbidden(self):
@@ -91,13 +91,13 @@ class UserDirsTestCase(AvatarTestBase):
         root = avatar.filesystem.root
         userDir = root.child('~alice')
         self.assertEqual(
-            [name for name, child in userDir.children()], 
+            [name for name, child in userDir.children()],
             ['.', '..', '+junk'])
         deferred = defer.maybeDeferred(
             userDir.createDirectory, 'mozilla-firefox')
         def cb(result):
             self.assertEqual(
-                [name for name, child in userDir.children()], 
+                [name for name, child in userDir.children()],
                 ['.', '..', '+junk', 'mozilla-firefox'])
         deferred.addCallback(cb)
         return deferred
@@ -116,7 +116,7 @@ class UserDirsTestCase(AvatarTestBase):
 
         # We expect PermissionError from a userDir.createDirectory:
         return self.assertFailure(
-            defer.maybeDeferred(userDir.createDirectory, 'mozilla-firefox'), 
+            defer.maybeDeferred(userDir.createDirectory, 'mozilla-firefox'),
             PermissionError)
 
     def testInitialBranches(self):
@@ -134,7 +134,7 @@ class UserDirsTestCase(AvatarTestBase):
 
         # The user's dir with have mozilla-firefox, product-x, and also +junk.
         self.assertEqual(
-            set([name for name, child in root.child('~bob').children()]), 
+            set([name for name, child in root.child('~bob').children()]),
             set(['.', '..', '+junk', 'mozilla-firefox', 'product-x']))
 
         # The team dir will have just 'thing'.

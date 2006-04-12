@@ -5,8 +5,10 @@ __metaclass__ = type
 import sys
 import traceback
 
+from zope.interface import implements
 from zope.exceptions.exceptionformatter import format_exception
 from zope.component import getUtility
+from zope.app.exception.interfaces import ISystemErrorView
 
 from canonical.config import config
 import canonical.launchpad.layers
@@ -17,6 +19,7 @@ class SystemErrorView:
 
     Also, sets a 500 response code.
     """
+    implements(ISystemErrorView)
 
     # Override this in subclasses.  A value of None means "don't set this"
     response_code = 500
@@ -39,6 +42,14 @@ class SystemErrorView:
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer
+
+    def isSystemError(self):
+        """See zope.app.exception.interfaces import ISystemErrorView
+        
+        It appears that returning True from this method means the
+        exception is logged as a SiteError.
+        """
+        return True
 
     def computeDebugOutput(self):
         """Inspect the exception, and set up instance attributes.

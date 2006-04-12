@@ -64,11 +64,27 @@ class RequestWidget(object):
         '''See zope.app.form.browser.interfaces.IBrowserWidget'''
         return ''
 
+
 class IUserWidget(Interface):
     pass
 
+
 class HiddenUserWidget(RequestWidget):
     implements(IUserWidget)
+    def __init__(self, context, vocabulary, request=None):
+        '''Construct the HiddenUserWidget.
+        
+        Zope 3.2 changed the signature of widget constructors used
+        with Choice fields. This broke a number of our widgets, and
+        causes problems for widgets like this one that were being used
+        both in Choice fields and in other fields. This constructor
+        has been modified to accept either the three or four arguments
+        to allow it to keep working with all field types.
+        '''
+        if request is None:
+            request = vocabulary
+        RequestWidget.__init__(self, context, request)
+
     def getInputValue(self):
         return getUtility(ILaunchBag).user
 
