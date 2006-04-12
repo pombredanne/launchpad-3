@@ -17,7 +17,6 @@ from zope.server.ftp.server import STORChannel as OriginalSTORChannel
 from zope.server.ftp import server as ftp
 from zope.server.taskthreads import ThreadedTaskDispatcher
 from zope.server.serverbase import ServerBase
-from zope.server.ftp.tests import demofs
 
 import ThreadedAsync
 

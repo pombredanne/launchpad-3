@@ -69,7 +69,19 @@
           <tr>
             <th>Build machine:</th>
             <td tal:condition="not:context/builder">
-              <i>unknown</i>
+                <tal:qb condition="context/buildqueue_record"
+                        define="builder context/buildqueue_record/builder">
+                   <tal:qbb condition="builder">
+	               <a tal:content="builder/title"
+                          tal:attributes="href builder/fmt:url">BUILDER</a>
+                   </tal:qbb>
+                   <tal:nqbb condition="not: builder">
+                      unknown
+                   </tal:nqbb>
+                </tal:qb>
+                <tal:nqb condition="not: context/buildqueue_record">
+                   unknown
+                </tal:nqb>
             </td>
             <td tal:condition="context/builder">
 	    <a tal:content="context/builder/title"

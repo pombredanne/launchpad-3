@@ -554,12 +554,10 @@ def send_bug_notification(bug, user, subject, contents, to_addrs=None,
 
     headers["X-Launchpad-Bug"] = x_launchpad_bug_values
 
-    signature = get_email_template('bug-notification.txt') % {
+    body = get_email_template('bug-notification.txt') % {
         'content': contents,
         'bug_title': bug.title,
         'bug_url': canonical_url(bug)}
-
-    body = "%s\n%s" % (contents, signature)
 
     for to_addr in to_addrs:
         simple_sendmail_from_person(

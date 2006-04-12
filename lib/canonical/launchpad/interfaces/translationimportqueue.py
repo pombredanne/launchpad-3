@@ -5,8 +5,7 @@ from zope.schema import Bool, Choice, TextLine, Datetime, Field
 
 from canonical.lp.dbschema import RosettaImportStatus
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __metaclass__ = type
 

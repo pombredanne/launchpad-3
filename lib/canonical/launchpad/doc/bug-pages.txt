@@ -1,0 +1,56 @@
+Bug Portlets
+============
+
+Duplicates Portlet
+------------------
+
+The duplicate bugs portlet lists duplicates of the current bug. If the
+duplicate bug affects the current context, the link to the dupe will
+remain in the current context. If the dupe has not been reported in
+the current context, the dupe link will be to the generic
+/bugs/$bug.id redirect link.
+
+    >>> from zope.component import getView, getUtility
+    >>> from canonical.launchpad.interfaces import IBugTaskSet, IBugSet
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> bugtaskset = getUtility(IBugTaskSet)
+    >>> bugset = getUtility(IBugSet)
+    >>> request = LaunchpadTestRequest()
+
+Bug 6 is a duplicate of bug 5, and since both bugs affect Firefox, the
+duplicate link remains in the current context.
+
+    >>> bug_five_in_firefox = bugtaskset.get(14)
+
+    >>> print bug_five_in_firefox.bug.id
+    5
+    >>> print bug_five_in_firefox.product.name
+    firefox
+
+
+    >>> bug_page_view = getView(
+    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+
+    >>> bug_six = bugset.get(6)
+
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+
+    >>> getUtility(IOpenLaunchBag).add(bug_five_in_firefox)
+
+    >>> print bug_page_view.getDupeBugLink(bug_six)
+    http://.../products/firefox/+bug/6
+
+Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
+and see how the returned link changes.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> bug_two = bugset.get(2)
+    >>> bug_two.duplicateof = 5
+
+    >>> bug_page_view = getView(
+    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+
+    >>> print bug_page_view.getDupeBugLink(bug_two)
+    http://.../bugs/2

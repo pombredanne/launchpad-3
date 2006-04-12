@@ -13,8 +13,7 @@ from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator 
-
+from canonical.launchpad.validators.name import name_validator
 
 
 class ISourcePackageName(Interface):
@@ -46,8 +45,7 @@ class ISourcePackageNameSet(Interface):
     def get(sourcepackagenameid):
         """Return a sourcepackagename by its id.
 
-        If the sourcepackagename can't be found a zope.exceptions.NotFoundError
-        will be raised.
+        If the sourcepackagename can't be found a NotFoundError will be raised.
         """
 
     def getAll():

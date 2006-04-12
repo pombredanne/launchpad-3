@@ -12,10 +12,9 @@ __all__ = ['IWeaklyAuthenticatedPrincipal',
            'IBugEditEmailCommand',
            'IBugTaskEditEmailCommand']
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 from zope.schema import ASCII, Bool
+from canonical.launchpad import _
 
 
 class IWeaklyAuthenticatedPrincipal(Interface):

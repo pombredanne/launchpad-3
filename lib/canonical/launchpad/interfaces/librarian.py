@@ -14,11 +14,10 @@ __all__ = [
 from datetime import datetime
 from pytz import utc
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, TextLine, Bool
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 # Set the expires attribute to this constant to flag a file that
 # should never be removed from the Librarian.

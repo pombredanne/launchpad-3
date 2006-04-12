@@ -376,6 +376,7 @@ class BuilderGroup:
         # store DB information
         queueItem.builder = builder
         queueItem.buildstart = UTC_NOW
+        queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
         # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
         slave = removeSecurityProxy(builder.slave)
         status, info = slave.build(buildid, buildtype, chroot, filemap, args)
@@ -540,6 +541,7 @@ class BuilderGroup:
 
         queueItem.builder = None
         queueItem.buildstart = None
+        queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
 
     def updateBuild_BUILDING(self, queueItem, slave, librarian, buildid,
                              logtail):
@@ -562,6 +564,7 @@ class BuilderGroup:
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         queueItem.builder = None
         queueItem.buildstart = None
+        queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
         slave.clean()
 
     def updateBuild_WAITING(self, queueItem, slave, librarian, buildstatus,

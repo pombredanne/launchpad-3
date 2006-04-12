@@ -70,7 +70,7 @@ class IStubMailerDirective(IMailerDirective):
                 Which registered mailer to use, such as configured with
                 the smtpMailer or sendmailMailer directives""",
                 required=False,
-                default='sendmail',
+                default='smtp',
                 )
     rewrite = Bool(
             title=u"Rewrite headers",
@@ -84,13 +84,13 @@ class IStubMailerDirective(IMailerDirective):
 
 
 def stubMailerHandler(
-        _context, name, from_addr, to_addr, mailer='sendmail', rewrite=False
+        _context, name, from_addr, to_addr, mailer='smtp', rewrite=False
         ):
     _context.action(
            discriminator = ('utility', IMailer, name),
            callable = handler,
            args = (
-               'Utilities', 'provideUtility',
+               'provideUtility',
                IMailer, StubMailer(from_addr, [to_addr], mailer, rewrite), name,
                )
            )
@@ -103,7 +103,5 @@ def testMailerHandler(_context, name):
     _context.action(
             discriminator = ('utility', IMailer, name),
             callable = handler,
-            args = (
-                'Utilities', 'provideUtility', IMailer, TestMailer(), name,
-                )
+            args = ('provideUtility', IMailer, TestMailer(), name,)
             )

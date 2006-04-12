@@ -13,7 +13,7 @@ import email
 class StubMailer:
     """
     Overrides the from_addr and to_addrs arguments and passes the
-    email on to the sendmail mailer
+    email on to the IMailer
     """
     implements(IMailer)
 
