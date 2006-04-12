@@ -8,25 +8,24 @@ __all__ = [
     'BugTrackerSetNavigation',
     'BugTrackerContextMenu',
     'BugTrackerSetContextMenu',
-    'BugTrackerAddView',
     'BugTrackerView',
+    'BugTrackerAddView',
+    'BugTrackerEditView',
     'BugTrackerNavigation',
     'RemoteBug',
     ]
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.app.form.browser.editview import EditView
 
-from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.interfaces import (
     IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, IRemoteBug,
     ILaunchBag)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, Navigation, GetitemNavigation,
     redirection, LaunchpadView)
-from zope.app.form.browser.editview import EditView
-
-from canonical.launchpad import _
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class BugTrackerSetNavigation(GetitemNavigation):
@@ -89,7 +88,17 @@ class BugTrackerAddView:
         return canonical_url(self._newtracker_)
 
 
-class BugTrackerView(EditView):
+class BugTrackerView(LaunchpadView):
+
+    usedfor = IBugTracker
+
+    def initialize(self):
+        self.batchnav = BatchNavigator(self.context.watches, self.request)
+
+
+class BugTrackerEditView(EditView):
+
+    usedfor = IBugTracker
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
