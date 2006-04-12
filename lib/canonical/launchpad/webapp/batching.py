@@ -27,6 +27,9 @@ class BatchNavigator:
         indicates which point we are currently displaying at. It will
         also be inspected for a batch variable; if set, it will be used
         instead of the size supplied in the callsite.
+
+        If no size can be divined from arguments or request, the
+        launchpad.default_batch_size config option is used.
         """
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request.
@@ -42,6 +45,9 @@ class BatchNavigator:
                 size = int(user_size)
             except ValueError:
                 pass
+
+        if size is None:
+            size = config.launchpad.default_batch_size
 
         self.batch = _Batch(results, start=start, size=size)
         self.request = request

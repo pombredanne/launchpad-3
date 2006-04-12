@@ -23,8 +23,8 @@ from interfaces import IBatch
 
 from sqlos.interfaces import ISelectResults
 
-# XXX: replace this with a configuration option
-#   -- kiko, 2006-03-13
+# The base batch size, overridden by users of _Batch such as
+# BatchNavigator. In Launchpad, we override there using a config option.
 BATCH_SIZE = 50
 
 class _Batch(object):
