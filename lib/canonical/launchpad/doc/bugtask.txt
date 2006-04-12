@@ -209,9 +209,9 @@ For a person:
 
 It's also possible to search bugs that a person is subscribed to:
 
-    >>> params = BugTaskSearchParams(user=None, subscriber=foobar)
+    >>> params = BugTaskSearchParams(user=None, subscriber=foobar, orderby="id")
     >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
-    [7, 9, 9, 10]
+    [7, 7, 9, 9, 10]
 
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
@@ -463,7 +463,7 @@ cannot edit upstream tasks.
     >>> upstream_task.status = STATUS_CONFIRMED
     Traceback (most recent call last):
       ...
-    Unauthorized: ('status', 'launchpad.Edit')
+    Unauthorized: (..., 'status', 'launchpad.Edit')
 
 Let's login and try again.
 
@@ -480,12 +480,12 @@ is not marked private. So, as an anonymous user, we can edit anything:
     >>> distro_task.status = STATUS_FIXRELEASED
     Traceback (most recent call last):
       ...
-    Unauthorized: ('status', 'launchpad.Edit')
+    Unauthorized: (..., 'status', 'launchpad.Edit')
 
     >>> distro_release_task.assignee = sample_person
     Traceback (most recent call last):
       ...
-    Unauthorized: ('assignee', 'launchpad.Edit')
+    Unauthorized: (..., 'assignee', 'launchpad.Edit')
 
 But once authenticated:
 
@@ -628,12 +628,12 @@ properties of the bugtask.
     >>> bug_upstream_firefox_no_svg_support.status
     Traceback (most recent call last):
       ...
-    Unauthorized: ('status', 'launchpad.View')
+    Unauthorized: (..., 'status', 'launchpad.View')
 
     >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXCOMMITTED
     Traceback (most recent call last):
       ...
-    Unauthorized: ('status', 'launchpad.Edit')
+    Unauthorized: (..., 'status', 'launchpad.Edit')
 
 The private bugs will be invisible to No Privileges Person in the search
 results:

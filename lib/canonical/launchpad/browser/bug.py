@@ -14,12 +14,14 @@ __all__ = [
     'BugContextMenu',
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
-    'BugTextView']
+    'BugTextView',
+    'BugURL']
 
 from zope.app.form.interfaces import WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
@@ -27,7 +29,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
-    NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask)
+    NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
+    ICanonicalUrlData)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -192,10 +195,11 @@ class BugView:
         return self.context.isSubscribed(user)
 
     def duplicates(self):
-        """Return a list of dicts with the id and title of this bug dupes.
+        """Return a list of dicts of duplicates.
 
-        If the bug isn't accessible to the user, the title stored in the dict
-        will be 'Private Bug'
+        Each dict contains the title that should be shown and the bug
+        object itself. This allows us to protect private bugs using a
+        title like 'Private Bug'.
         """
         dupes = []
         for bug in self.context.duplicates:
@@ -205,8 +209,25 @@ class BugView:
             except Unauthorized:
                 dupe['title'] = 'Private Bug'
             dupe['id'] = bug.id
+            dupe['url'] = self.getDupeBugLink(bug)
             dupes.append(dupe)
+
         return dupes
+
+    def getDupeBugLink(self, dupe):
+        """Return a URL for a duplicate of this bug.
+
+        The link will be in the current context if the dupe is also
+        reported in this context, otherwise a default /bugs/$bug.id
+        style URL will be returned.
+        """
+        current_task = self.currentBugTask()
+
+        for task in dupe.bugtasks:
+            if task.target == current_task.target:
+                return canonical_url(task)
+
+        return canonical_url(dupe)
 
 
 class BugWithoutContextView:
@@ -495,3 +516,15 @@ class BugTextView(LaunchpadView):
             [self.bugtask_text(task) for task in self.context.bugtasks])
         return u'\n'.join(texts)
 
+
+class BugURL:
+    implements(ICanonicalUrlData)
+
+    inside = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def path(self):
+        return u"bugs/%d" % self.context.id

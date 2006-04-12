@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int
+from zope.schema import Choice, Int
 
 from canonical.launchpad import _
 

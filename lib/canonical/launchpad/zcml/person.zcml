@@ -64,7 +64,7 @@
       lp:url="/people/$person.id/+edit">
       <browser:widget
           field="timezone"
-          class="zope.app.form.browser.ChoiceInputWidget"
+          class="zope.app.form.browser.itemswidgets.SelectWidget"
           size="15" />
   </browser:editform>
 

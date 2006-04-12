@@ -17,10 +17,11 @@ from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import (
     LaunchpadFunctionalTestSetup, LaunchpadFunctionalTestCase)
-
+from canonical.functional import FunctionalLayer
 
 
 class TestBranchToMirror(LaunchpadFunctionalTestCase):
+    layer = FunctionalLayer
 
     testdir = None
 
@@ -56,6 +57,7 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
 
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
+    layer = FunctionalLayer
 
     def setUp(self):
         LaunchpadFunctionalTestSetup().setUp()
@@ -69,7 +71,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         LaunchpadFunctionalTestSetup().tearDown()
         test_root = TestCaseInTempDir.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
-            shutil.rmtree(test_root) 
+            shutil.rmtree(test_root)
         # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
         # to create a new root when the next test is run.
         # The TestCaseInTempDir is part of bzr's test infrastructure and the
@@ -100,7 +102,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # we need to figure out the actual path for the weave.. or 
         # deliberately corrupt it. like this.
         tree.branch.repository.weave_store.put_weave(
-            "myid", Weave(weave_name="myid"), 
+            "myid", Weave(weave_name="myid"),
             tree.branch.repository.get_transaction())
         # now try mirroring this branch.
         client = BranchStatusClient()
@@ -112,17 +114,22 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         transaction.abort()
         branch = database.Branch.get(1)
         if branch.mirror_failures == 0:
-            print >> sys.stderr, (
-                "canonical.launchpad.scripts.supermirror.tests."
-                "test_branchtomirror.testMissingFileRevisionData "
-                "disabled until bzr is updated to correctly detect "
-                "this corruption.")
+            # XXX: Open a bug on this instead of generating noise
+            # -- StuartBishop 20060329
+            # print >> sys.stderr, (
+            #     "canonical.launchpad.scripts.supermirror.tests."
+            #     "test_branchtomirror.testMissingFileRevisionData "
+            #     "disabled until bzr is updated to correctly detect "
+            #     "this corruption.")
+            pass
         else:
-            print >> sys.stderr, (
-                "canonical.launchpad.scripts.supermirror.tests."
-                "test_branchtomirror.testMissingFileRevisionData appears "
-                "to work now bzr is updated, please remove the 'bzr needs "
-                "updating' warning messages.")
+            # XXX: Open a bug on this instead of generating noise
+            # -- StuartBishop 20060329
+            # print >> sys.stderr, (
+            #     "canonical.launchpad.scripts.supermirror.tests."
+            #     "test_branchtomirror.testMissingFileRevisionData appears "
+            #     "to work now bzr is updated, please remove the 'bzr needs "
+            #     "updating' warning messages.")
             self.assertEqual(1, branch.mirror_failures)
 
 

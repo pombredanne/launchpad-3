@@ -5,7 +5,7 @@ We need to login in order to add attachments.
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
-  Content-Type: text/plain;charset=utf-8
+  Content-Type: text/plain
   Location: http://localhost:9000/products/firefox/+bug/1/+addattachment/+login...
   <BLANKLINE>
 

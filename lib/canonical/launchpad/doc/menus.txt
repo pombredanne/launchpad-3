@@ -913,13 +913,13 @@ the common case where the overview link is the default view name.
     ...     """A street."""
     >>> directlyProvides(street, IStreet, IThingHavingFacets)
     >>> from zope.app.tests import ztapi
-    >>> ztapi.setDefaultViewName(IStreet, '+baz')
+    >>> ztapi.setDefaultViewName(IStreet, '+baz', None)
 
     >>> request = DummyRequest(
     ...     'http://localhost:8086/sesamestreet/+baz',
     ...     url1='http://localhost:8086/sesamestreet/')
 
-    >>> from zope.component import getDefaultViewName
+    >>> from zope.app.zapi import getDefaultViewName
     >>> getDefaultViewName(street, request)
     '+baz'
 

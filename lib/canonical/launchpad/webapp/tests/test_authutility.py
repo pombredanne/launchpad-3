@@ -11,7 +11,7 @@ from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
 
 from zope.app.tests import ztapi
-from zope.app.tests.placelesssetup import PlacelessSetup
+from zope.app.testing.placelesssetup import PlacelessSetup
 from zope.app.security.principalregistry import Principal
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.basicauthadapter import BasicAuthAdapter
