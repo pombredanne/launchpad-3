@@ -65,7 +65,7 @@ IProductSeries that have RCS details set. It returns an IProductSeries or None.
 >>> productseries = productseriesset.getByCVSDetails(cvsroot, cvsmodule,
 ...     cvsbranch)
 >>> productseries.name
-u'main'
+u'trunk'
 
 >>> productseries = productseriesset.getBySVNDetails(svnrepository)
 >>> print productseries

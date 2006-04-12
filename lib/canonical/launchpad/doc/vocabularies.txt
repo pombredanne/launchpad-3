@@ -1,9 +1,9 @@
 Introduction
 ============
 
-Vocabularies are lists of terms. In Launchpad's Component Architecture (CA), a
-vocabulary is a list of terms that a widget (normally a selection style widget)
-"speaks", i.e., its allowed values.
+Vocabularies are lists of terms. In Launchpad's Component Architecture
+(CA), a vocabulary is a list of terms that a widget (normally a selection
+style widget) "speaks", i.e., its allowed values.
 
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
@@ -11,26 +11,29 @@ vocabulary is a list of terms that a widget (normally a selection style widget)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
 
+
 Values, Tokens, and Titles
 ==========================
 
-In Launchpad, we generally use "tokenized vocabularies." Each term in a
-vocabulary has a value, token and title. A term is rendered in a select widget
-like this:
+In Launchpad, we generally use "tokenized vocabularies." Each term in
+a vocabulary has a value, token and title. A term is rendered in a
+select widget like this:
 
 <option value="$token">$title</option>
 
-The $token is probably the data you would store in your DB. The Token is used to
-uniquely identify a Term, and the Title is the thing you display to the user.
+The $token is probably the data you would store in your DB. The Token is
+used to uniquely identify a Term, and the Title is the thing you display
+to the user.
+
 
 Launchpad Vocabularies
 ======================
 
 There are two kinds of vocabularies in Launchpad: enumerable and
-non-enumerable. Enumerable vocabularies are short enough to render in a select
-widget. Non-enumerable vocabularies require a query interface to make it easy to
-choose just one or a couple of options from several hundred, several thousand,
-or more.
+non-enumerable. Enumerable vocabularies are short enough to render in a
+select widget. Non-enumerable vocabularies require a query interface to make
+it easy to choose just one or a couple of options from several hundred,
+several thousand, or more.
 
 Vocabularies should not be imported - they can be retrieved from the
 vocabulary registry.
@@ -41,6 +44,7 @@ vocabulary registry.
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
     >>> product_vocabulary.displayname
     'Select a Product'
+
 
 Enumerable Vocabularies
 =======================
@@ -376,9 +380,9 @@ o ProductReleaseVocabulary - the list of selectable products releases.
     >>> evolution_releases = productrelease_vocabulary.search("evolution")
     >>> l = [release_term.title for release_term in evolution_releases]
     >>> release = productrelease_vocabulary.getTermByToken(
-    ...     "evolution/main/2.1.6")
+    ...     "evolution/trunk/2.1.6")
     >>> release.title
-    u'evolution main 2.1.6'
+    u'evolution trunk 2.1.6'
 
 o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
   is meant to be used only in the people merge form.
