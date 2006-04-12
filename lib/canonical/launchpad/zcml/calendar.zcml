@@ -308,18 +308,5 @@
         lp:url="/calendar/+portlet-subscriptions" />
   </browser:pages>
 
-
-  <!-- XXX: register IDisplayViews so that the schemadisplay doesn't
-       give an error on the non-string fields.  Should not be
-       necessary once Zope gets updated.
-        James Henstridge (2005-06-28) -->
-
-  <view
-      type="zope.publisher.interfaces.browser.IBrowserRequest"
-      for="zope.schema.interfaces.IDatetime"
-      provides="zope.app.form.interfaces.IDisplayWidget"
-      factory="canonical.launchpad.browser.LocalDateTimeDisplayWidget"
-      permission="zope.Public"
-      />
  </facet>
 </configure>

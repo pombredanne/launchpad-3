@@ -48,10 +48,12 @@ class IBugTracker(Interface):
         'such as "mozilla-bugs".'))
     title = TextLine(
         title=_('Title'),
-        description=_('A descriptive label for this tracker to show in listings.'))
+        description=_(
+            'A descriptive label for this tracker to show in listings.'))
     summary = Text(
         title=_('Summary'),
-        description=_('A brief introduction or overview of this bug tracker instance.'))
+        description=_(
+            'A brief introduction or overview of this bug tracker instance.'))
     baseurl = TextLine(
         title=_('Base URL'),
         description=_('The top-level URL for the bug tracker. This '

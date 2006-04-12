@@ -30,6 +30,7 @@ class ConnectionWrapper(object):
     real_connection = None
     committed = False
     last_execute = None
+    dirty = False
 
     def __init__(self, real_connection):
         self.__dict__['real_connection'] = real_connection
@@ -92,6 +93,13 @@ class CursorWrapper:
         self.__dict__['real_cursor'] = real_cursor
 
     def execute(self, *args, **kwargs):
+        # Detect if DML has been executed. This method isn't perfect,
+        # but should be good enough.
+        mutating_commands = ['INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP']
+        for command in mutating_commands:
+            if command in args[0].upper():
+                ConnectionWrapper.dirty = True
+
         # Record the last query executed.
         if CursorWrapper.record_sql:
             CursorWrapper.last_executed_sql.append(args[0])
@@ -183,6 +191,7 @@ class PgTestSetup(object):
             con.commit()
             con.close()
             ConnectionWrapper.committed = False
+            ConnectionWrapper.dirty = False
             return
         self.dropDb()
         con = psycopg.connect(self._connectionString(self.template))
@@ -206,6 +215,7 @@ class PgTestSetup(object):
                         raise
                 time.sleep(0.1)
             ConnectionWrapper.committed = False
+            ConnectionWrapper.dirty = False
             PgTestSetup._last_db = (self.template, self.dbname)
             PgTestSetup._reset_db = False
         finally:
@@ -216,9 +226,10 @@ class PgTestSetup(object):
         while self.connections:
             con = self.connections[-1]
             con.close() # Removes itself from self.connections
-        if ConnectionWrapper.committed:
+        if ConnectionWrapper.committed and ConnectionWrapper.dirty:
             PgTestSetup._reset_db = True
-            ConnectionWrapper.committed = False
+        ConnectionWrapper.committed = False
+        ConnectionWrapper.dirty = False
         if PgTestSetup._reset_db:
             self.dropDb()
         #uninstallFakeConnect()

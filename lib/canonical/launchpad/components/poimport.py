@@ -4,10 +4,11 @@ __metaclass__ = type
 
 import gettextpo
 from email.Utils import parseaddr
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IPOTemplate, IPOFile, IPersonSet
+from canonical.launchpad.interfaces import (
+        IPOTemplate, IPOFile, IPersonSet, NotFoundError
+        )
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.helpers import TranslationConstants
 

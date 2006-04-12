@@ -1,8 +1,8 @@
 <div class="portlet">
   <h4>Related templates:</h4>
-
   <div class="portletBody">
     <div class="portletContent">
+
     <tal:block condition="context/relatives_by_name">
     These templates share the same name, and hence translation domain, as
     this one:
@@ -24,11 +24,10 @@
       </li>
     </ul>
     </tal:block>
-    <tal:block condition="python:not context.relatives_by_name or context.relatives_by_source">
-      <ul>
-        <li><i>No related templates registered.</i>
-      </ul>
-    </tal:block>
+
+      <p tal:condition=
+        "python:not (context.relatives_by_name or context.relatives_by_source)"
+      >No related templates registered.</p>
     </div>
   </div>
 </div>
