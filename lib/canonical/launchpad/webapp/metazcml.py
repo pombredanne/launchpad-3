@@ -24,7 +24,7 @@ from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
-from zope.app.publisher.browser.menu import menuItemDirective
+from zope.app.publisher.browser.menumeta import menuItemDirective
 import zope.app.form.browser.metaconfigure
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.app.publisher.browser.viewmeta import (
@@ -264,10 +264,15 @@ def navigation(_context, module, classes):
         layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
-        view(_context, factory, layer, name, for_,
-             permission=PublicPermission, provides=provides)
+        view(_context, factory, IBrowserRequest, name, for_, layer,
+                permission=PublicPermission, provides=provides,
+                allowed_interface=[IBrowserPublisher])
+        #view(_context, factory, layer, name, for_,
+        #     permission=PublicPermission, provides=provides)
 
         # Also register the navigation as a traversal component for XMLRPC.
+        # XXX: Layer?? Request??? wtf is the layer being set to an IRequest?
+        # -- StuartBishop 20060324
         xmlrpc_layer = IXMLRPCRequest
         view(_context, factory, xmlrpc_layer, name, for_,
              permission=PublicPermission, provides=provides)
@@ -376,28 +381,6 @@ def favicon(_context, for_, file):
     original_page(_context, name, permission, for_, class_=Favicon)
 
 
-# The original defaultView directive is defined in the browser publisher code.
-# In it, the `layer` is hard-coded rather than available as an argument.
-# See zope/app/publisher/browser/metaconfigure.py.
-# `layer` here is called `type` there, but is not available as an argument.
-
-def defaultView(_context, name, for_=None, layer=IDefaultBrowserLayer):
-    type = layer
-    _context.action(
-        discriminator = ('defaultViewName', for_, type, name),
-        callable = handler,
-        args = (zope.component.servicenames.Adapters, 'register',
-                (for_, type), IDefaultViewName, '', name, _context.info)
-        )
-
-    if for_ is not None:
-        _context.action(
-            discriminator = None,
-            callable = provideInterface,
-            args = ('', for_)
-            )
-
-
 class IAssociatedWithAFacet(Interface):
     """A zcml schema for something that can be associated with a facet."""
 
@@ -413,7 +396,7 @@ class IPageDirective(
 
 
 def page(_context, name, permission, for_,
-         layer=IBrowserRequest, template=None, class_=None,
+         layer=IDefaultBrowserLayer, template=None, class_=None,
          allowed_interface=None, allowed_attributes=None,
          attribute='__call__', menu=None, title=None,
          facet=None
@@ -458,7 +441,7 @@ class IPagesDirective(
 class pages(original_pages):
 
     def __init__(self, _context, for_, permission,
-        layer=IBrowserRequest, class_=None,
+        layer=IDefaultBrowserLayer, class_=None,
         allowed_interface=None, allowed_attributes=None,
         facet=None):
         original_pages.__init__(self, _context, for_, permission,

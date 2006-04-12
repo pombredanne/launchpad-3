@@ -5,7 +5,6 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 import os.path
 import re
-from urlparse import urljoin
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -19,6 +18,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.revision import RevisionNumber
@@ -181,7 +181,7 @@ class Branch(SQLBase):
             # This is an import branch, imported into bzr from another RCS
             # system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
-            return urljoin(prefix, '%08x' % (self.id,))
+            return urlappend(prefix, '%08x' % (self.id,))
         else:
             # This is a push branch, hosted on the supermirror (pushed there by
             # users via SFTP).

@@ -13,7 +13,7 @@ from sqlobject import (
     BoolCol, IntCol, StringCol, ForeignKey, RelatedJoin, SQLObjectNotFound)
 
 from canonical.lp import dbschema
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.interfaces import (
@@ -124,8 +124,8 @@ class DistroArchRelease(SQLBase):
              BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             (BinaryPackageRelease.fti @@ ftq(%s) OR
-             BinaryPackageName.name = %s)
-            """ % sqlvalues(self.id, text, text),
+             BinaryPackageName.name ILIKE '%%' || %s || '%%')
+            """ % (quote(self.id), quote(text), quote_like(text)),
             selectAlso="""
                 rank(BinaryPackageRelease.fti, ftq(%s))
                 AS rank""" % sqlvalues(text),

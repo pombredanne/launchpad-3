@@ -7,14 +7,13 @@ __metaclass__ = type
 
 from zope.interface import Interface, Attribute, implements
 import zope.exceptions
-from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
 from zope.schema import Bool, Int, Choice
 from persistent import IPersistent
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __all__ = [
     'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
@@ -41,7 +40,7 @@ __all__ = [
     ]
 
 
-class NotFoundError(zope.exceptions.NotFoundError):
+class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 

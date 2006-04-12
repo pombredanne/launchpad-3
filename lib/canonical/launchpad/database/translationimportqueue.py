@@ -14,7 +14,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.launchpad.interfaces import (
@@ -343,8 +343,9 @@ class TranslationImportQueueEntry(SQLBase):
 
     def getTemplatesOnSameDirectory(self):
         """See ITranslationImportQueueEntry."""
-        query = 'path LIKE %s AND id <> %s' % sqlvalues(
-            '%s/%%.pot' % os.path.dirname(self.path), self)
+        path = os.path.dirname(self.path)
+        query = ("path LIKE %s || '%%.pot' AND id <> %s" % 
+                 (quote_like(path), self.id))
         if self.distrorelease is not None:
             query += ' AND distrorelease = %s' % sqlvalues(
                 self.distrorelease)
@@ -512,13 +513,12 @@ class TranslationImportQueue:
 
     def getAllEntries(self, status=None, file_extension=None):
         """See ITranslationImportQueue."""
-        query = 'TRUE'
+        queries = ["TRUE"]
         if status:
-            query += ' AND status = %s' % sqlvalues(status.value)
+            queries.append('status = %s' % sqlvalues(status.value))
         if file_extension:
-            query += ' AND path LIKE %s' % sqlvalues('%%%s' % file_extension)
-
-        return TranslationImportQueueEntry.select(query,
+            queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
+        return TranslationImportQueueEntry.select(" AND ".join(queries),
             orderBy=['status', 'dateimported'])
 
     def getFirstEntryToImport(self):
@@ -530,16 +530,16 @@ class TranslationImportQueue:
     def getEntriesWithPOTExtension(self, distrorelease=None,
         sourcepackagename=None, productseries=None):
         """See ITranslationImportQueue."""
-        query = 'path LIKE \'%%.pot\''
+        queries = ["path LIKE '%%.pot'"]
         if distrorelease is not None:
-            query += ' AND distrorelease = %s' % sqlvalues(distrorelease.id)
+            queries.append('distrorelease = %s' % sqlvalues(distrorelease.id))
         if sourcepackagename is not None:
-            query += ' AND sourcepackagename = %s' % sqlvalues(
-                sourcepackagename.id)
+            queries.append('sourcepackagename = %s' %
+                sqlvalues(sourcepackagename.id))
         if productseries is not None:
-            query += ' AND productseries = %s' % sqlvalues(productseries.id)
+            queries.append('productseries = %s' % sqlvalues(productseries.id))
 
-        return TranslationImportQueueEntry.select(query)
+        return TranslationImportQueueEntry.select(" AND ".join(queries))
 
     def executeOptimisticApprovals(self, ztm):
         """See ITranslationImportQueue."""

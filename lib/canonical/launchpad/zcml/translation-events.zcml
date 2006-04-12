@@ -5,26 +5,26 @@
 <subscriber
    for="canonical.launchpad.interfaces.ITranslationImportQueueEntry
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.karma.translation_import_queue_entry_modified" />
+   handler="canonical.launchpad.subscribers.karma.translation_import_queue_entry_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IPOTemplate
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.karma.potemplate_modified" />
+   handler="canonical.launchpad.subscribers.karma.potemplate_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IPOSubmission
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karma.posubmission_created" />
+   handler="canonical.launchpad.subscribers.karma.posubmission_created" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IPOSelection
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karma.poselection_created" />
+   handler="canonical.launchpad.subscribers.karma.poselection_created" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IPOSelection
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.karma.poselection_modified" />
+   handler="canonical.launchpad.subscribers.karma.poselection_modified" />
 
 </configure>

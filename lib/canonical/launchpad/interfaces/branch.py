@@ -9,7 +9,6 @@ __all__ = [
     'IBranchSet',
     ]
 
-
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -20,7 +19,7 @@ from canonical.lp.dbschema import BranchLifecycleStatus
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator 
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 

@@ -31,10 +31,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open':      dbschema.BugTaskStatus.UNCONFIRMED,
-                    'forwarded': dbschema.BugTaskStatus.CONFIRMED,
-                    'done':      dbschema.BugTaskStatus.FIXRELEASED}
-
 debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
                       'minor':     dbschema.BugTaskSeverity.MINOR,
                       'normal':    dbschema.BugTaskSeverity.NORMAL,
@@ -186,14 +182,6 @@ class BugTask(SQLBase, BugTaskMixin):
         # access bugtask's attributes that may be available only after
         # SQLBase.set() is called.
         SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
-
-    def setStatusFromDebbugs(self, status):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        try:
-            self.status = debbugsstatusmap[status]
-        except KeyError:
-            raise ValueError('Unknown debbugs status "%s"' % status)
-        return self.status
 
     def setSeverityFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""

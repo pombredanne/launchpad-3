@@ -177,6 +177,9 @@ table.listing {
 table.listing, table.listing>tbody {
   border-bottom: 1px solid #8cacbb;
 }
+table.listing>tbody {
+  font-size: smaller;
+}
 table.listing>thead, table.listing>thead>tr>th,table.listing tfoot tr {
   border: 1px solid #8cacbb;
   background-color: #dee7ec;
@@ -264,7 +267,7 @@ ol {
   padding: 0;
   background-color: #f4f5f8; /* changed by sabdfl, 2005-10-22 */
 }
-.portlet h4, .portlet h5, .portlet h6 {
+.portlet h4 {
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   font-weight: normal;
@@ -274,18 +277,14 @@ ol {
   display: block;
   font-size: 1em;
 }
-.portlet h5 { 
-  padding: 0em 1em 0em 1em;
-  display: inline;
-  font-size: 1em;
-  white-space: nowrap;
-  position: relative;
-  top: -1px;
+.portlet h5, .portlet h6 {
+  color: black;
 }
-.portlet h6 { 
-  padding: 0em 0.3em 0em 1em;
-  display: block;
-  font-size: 1em;
+.portlet h5 {
+  font-weight: bold;
+}
+.portlet h6 {
+  font-variant: italic;
 }
 .portletBody {
   position: relative;
@@ -934,6 +933,10 @@ ul.search>li, li.search {
 
 .lesser {
   font-size: smaller;
+}
+.greater {
+  /* For use in the ~20% of listing tables that should have normal-sized text */
+  font-size: larger;
 }
 
 /* sabdfl 22/10/2005 indented and moreindented useful for listings */

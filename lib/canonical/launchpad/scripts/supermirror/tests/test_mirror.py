@@ -72,7 +72,7 @@ class TestMockJobManager(unittest.TestCase):
         manager.unlock()
         # we want a list of tuples, one tuple for each api called.
         self.assertEquals(
-            manager._call_log, 
+            manager._call_log,
             [("__init__",), ("lock",), ("branchStreamToBranchList", "1 2"),
              ("unlock",)])
 
