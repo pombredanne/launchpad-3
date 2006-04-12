@@ -47,9 +47,10 @@ list of emails to send:
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
 
 You can see that the message above contains the bug's initial comment's
 message id as its reference, in order to make it thread properly in the
@@ -101,9 +102,10 @@ Let's add a few changes and see how it looks like:
     ** Summary changed to: New summary.
     <BLANKLINE>
     ** Visibility changed to: Private.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
 
 If we insert a comment and some more changes, they will be included in
 the constructed email:
@@ -142,9 +144,10 @@ in the order they were added:
     ** Summary changed to: Another summary.
     <BLANKLINE>
     ** Visibility changed to: Public.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
 
 If we insert yet another comment, it will be sent as a separate email.
 
@@ -173,9 +176,10 @@ If we insert yet another comment, it will be sent as a separate email.
     ** Summary changed to: Another summary.
     <BLANKLINE>
     ** Visibility changed to: Public.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -184,7 +188,7 @@ If we insert yet another comment, it will be sent as a separate email.
     another comment.
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -217,27 +221,30 @@ If we add three comments, three notifications will be sent:
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
     another comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
     <BLANKLINE>
     yet another comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -272,27 +279,30 @@ change in between, three notifications will be sent:
     Subject: [Bug 1] subject
     <BLANKLINE>
     a comment.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Summary changed to: New summary.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
     ** Visibility changed to: Private.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
 
     >>> for notification in pending_notifications:
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -348,11 +358,19 @@ Let's take a more complete example, where we edit different bugs as
 well:
 
     >>> bug_two = getUtility(IBugSet).get(2)
+    >>> long_comment = getUtility(IMessageSet).fromText(
+    ...     'subject',
+    ...     'This is a long comment, which is longer than 72 characters.'
+    ...     ' This should result in the lined being wrapped, so that it'
+    ...     " won't be displayed as a single long line. Let's add another"
+    ...     ' sentence just to make it longer.',
+    ...     foo_bar, datecreated=now - timedelta(minutes=6))
     >>> for minutes_ago in reversed(range(10)):
     ...     if minutes_ago == 6:
     ...         bug_one.addChangeNotification(
     ...             '** Visibility changed to: Public.', foo_bar,
     ...             when=now - timedelta(minutes=minutes_ago))
+    ...         bug_one.addCommentNotification(long_comment)
     ...         bug_two.addChangeNotification(
     ...             '** Visibility changed to: Public.', foo_bar,
     ...             when=now - timedelta(minutes=minutes_ago))
@@ -365,7 +383,7 @@ well:
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
-    8
+    9
 
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     pending_notifications):
@@ -379,18 +397,20 @@ well:
     ** Visibility changed to: Private.
     <BLANKLINE>
     ** Visibility changed to: Private.
+    <BLANKLINE>
     --
     Blackhole Trash folder
-    http://localhost:8086/malone/bugs/2
+    http://localhost:8086/bugs/2
     <BLANKLINE>
     To: dilys@muse.19inch.net, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     <BLANKLINE>
     ** Visibility changed to: Public.
+    <BLANKLINE>
     --
     Blackhole Trash folder
-    http://localhost:8086/malone/bugs/2
+    http://localhost:8086/bugs/2
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Sample Person <test@canonical.com>
@@ -401,18 +421,25 @@ well:
     ** Visibility changed to: Private.
     <BLANKLINE>
     ** Visibility changed to: Private.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
     <BLANKLINE>
     To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
     <BLANKLINE>
+    This is a long comment, which is longer than 72 characters.  This
+    should result in the lined being wrapped, so that it won't be
+    displayed as a single long line. Let's add another sentence just to
+    make it longer.
+    <BLANKLINE>
     ** Visibility changed to: Public.
+    <BLANKLINE>
     --
     Firefox does not support SVG
-    http://localhost:8086/malone/bugs/1
+    http://localhost:8086/bugs/1
 
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
@@ -421,6 +448,55 @@ X-Launchpad-Bug headers were added:
     [u'distribution=debian; sourcepackage=mozilla-firefox; component=None;...',
      u'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
      u'product=firefox; status=Unconfirmed; priority=Wontfix;...']
+
+There's a blank line before the signature, and the signature marker has
+a trailing space.
+
+    >>> email.get_payload(decode=True).splitlines()
+    ['This is a long comment, which is longer than 72 characters. This should',
+     "result in the lined being wrapped, so that it won't be displayed as a",
+     "single long line. Let's add another sentence just to make it longer.",
+     '',
+     '** Visibility changed to: Public.',
+     '',
+     '-- ',
+     'Firefox does not support SVG',
+     'http://localhost:8086/bugs/1']
+
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+If a team without a contact address is subscribed to the bug, the
+notification will be sent to all members individually.
+
+    >>> shipit_admins = getUtility(IPersonSet).getByName('shipit-admins')
+    >>> shipit_admins.preferredemail is None
+    True
+    >>> for member in shipit_admins.activemembers:
+    ...     print member.preferredemail.email
+    marilize@hbd.com
+
+    >>> bug_one.subscribe(shipit_admins)
+    <...>
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_one.addCommentNotification(comment)
+    >>> pending_notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(pending_notifications)
+    1
+
+    >>> for bug_notifications, to_addresses, email in get_email_notifications(
+    ...     pending_notifications):
+    ...     for address in sorted(to_addresses):
+    ...         print address
+    dilys@muse.19inch.net
+    marilize@hbd.com
+    mark@hbd.com
+    test@canonical.com
 
     >>> for notification in BugNotification.select():
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
@@ -465,9 +541,10 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     Description:
     a description of the bug.
+    <BLANKLINE>
     --
     new bug
-    http://localhost:8086/malone/bugs/11
+    http://localhost:8086/bugs/11
     <BLANKLINE>
 
     >>> for notification in BugNotification.select():
@@ -492,16 +569,18 @@ top of the email:
     >>> for bug_notifications, to_addresses, email in get_email_notifications(
     ...     notifications):
     ...     print_notification(to_addresses, email)
-    To: dilys@muse.19inch.net, mark@hbd.com, test@canonical.com
+    To: dilys@muse.19inch.net, marilize@hbd.com, mark@hbd.com,
+        test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 11] subject
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
     <BLANKLINE>
     a comment.
+    <BLANKLINE>
     --
     new bug
-    http://localhost:8086/malone/bugs/11
+    http://localhost:8086/bugs/11
     <BLANKLINE>
 
 Also note that notification was sent to Mark as well, since he's a
@@ -564,8 +643,8 @@ makes it write out the emails it sends.
     0
     >>> print err
     INFO creating lockfile
-    INFO    Notifying test@canonical.com about bug 2.
     INFO    Notifying dilys@muse.19inch.net about bug 2.
+    INFO    Notifying test@canonical.com about bug 2.
     ...
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 2 <2@bugs.launchpad.net>
@@ -574,9 +653,10 @@ makes it write out the emails it sends.
     <BLANKLINE>
     ** Summary changed to: New summary.
     ...
+    INFO    Notifying dilys@muse.19inch.net about bug 1.
+    INFO    Notifying marilize@hbd.com about bug 1.
     INFO    Notifying mark@hbd.com about bug 1.
     INFO    Notifying test@canonical.com about bug 1.
-    INFO    Notifying dilys@muse.19inch.net about bug 1.
     ...
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>
@@ -585,9 +665,10 @@ makes it write out the emails it sends.
     <BLANKLINE>
     ** Summary changed to: New summary.
     ...
+    INFO    Notifying dilys@muse.19inch.net about bug 1.
+    INFO    Notifying marilize@hbd.com about bug 1.
     INFO    Notifying mark@hbd.com about bug 1.
     INFO    Notifying test@canonical.com about bug 1.
-    INFO    Notifying dilys@muse.19inch.net about bug 1.
     ...
     From: Sample Person <test@canonical.com>
     Reply-To: Bug 1 <1@bugs.launchpad.net>

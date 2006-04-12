@@ -12,10 +12,9 @@ __all__ = ['IWeaklyAuthenticatedPrincipal',
            'IBugEditEmailCommand',
            'IBugTaskEditEmailCommand']
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-from zope.schema import ASCII
+from zope.schema import ASCII, Bool
+from canonical.launchpad import _
 
 
 class IWeaklyAuthenticatedPrincipal(Interface):
@@ -58,6 +57,12 @@ class IMailHandler(Interface):
     The handler should be registered as a named utility, with the domain
     it handles as the name.
     """
+
+    allow_unknown_users = Bool(
+        title=u"Allow unknown users",
+        description=u"The handler can handle emails from persons not"
+                    " registered in Launchpad (which will result in an"
+                    " anonymous interaction being set up.")
 
     def process(signed_msg, to_address, filealias, log=None):
         """Processes a ISignedMessage

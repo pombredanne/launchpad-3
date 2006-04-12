@@ -121,7 +121,7 @@ class _Batch(object):
             start = self.start - self.size
         if start < 0:
             # This situation happens, for instance, when you have a
-            # 20-item batch and you manually set your batch_start to 15;
+            # 20-item batch and you manually set your start to 15;
             # in this case, hopping back one batch would be starting at
             # -5, which doesn't really make sense.
             start = 0

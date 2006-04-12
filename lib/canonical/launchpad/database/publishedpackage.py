@@ -7,7 +7,7 @@ from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, IntCol
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     IPublishedPackage, IPublishedPackageSet)
@@ -55,23 +55,23 @@ class PublishedPackageSet:
 
     def query(self, name=None, text=None, distribution=None,
               distrorelease=None, distroarchrelease=None, component=None):
-        querytxt = '1=1'
+        queries = ['1=1']
         if name:
             name = name.lower().strip().split()[0]
-            name.replace('%','%%')
-            querytxt += " AND binarypackagename ILIKE %s" % quote('%'+name+'%')
+            queries.append("binarypackagename ILIKE '%%' || %s || '%%'"
+                           % quote_like(name))
         if distribution:
-            querytxt += " AND distribution = %d" % distribution.id
+            queries.append("distribution = %d" % distribution.id)
         if distrorelease:
-            querytxt += " AND distrorelease = %d" % distrorelease.id
+            queries.append("distrorelease = %d" % distrorelease.id)
         if distroarchrelease:
-            querytxt += " AND distroarchrelease = %d" % distroarchrelease.id
+            queries.append("distroarchrelease = %d" % distroarchrelease.id)
         if component:
-            querytxt += " AND component = %s" % quote(component)
+            queries.append("component = %s" % quote(component))
         if text:
             text = text.lower().strip()
-            querytxt += " AND binarypackagefti @@ ftq(%s)" % quote(text)
-        return PublishedPackage.select(querytxt, orderBy=['-datebuilt',])
+            queries.append("binarypackagefti @@ ftq(%s)" % quote(text))
+        return PublishedPackage.select(" AND ".join(queries), orderBy=['-datebuilt',])
 
     def findDepCandidate(self, name, distroarchrelease):
         """See IPublishedSet."""

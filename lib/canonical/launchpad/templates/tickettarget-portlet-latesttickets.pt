@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="view/getLatestTickets">
 
   <h4>
     Latest <span tal:replace="context/displayname">Ubuntu</span>
@@ -7,14 +7,11 @@
 
   <div class="portletBody portletContent">
 
-    <ul tal:condition="view/getLatestTickets">
+    <ul>
       <li class="spec" tal:repeat="ticket view/getLatestTickets">
         <a tal:content="ticket/title"
            tal:attributes="href ticket/fmt:url">ticket title</a>
       </li>
     </ul>
-    <p tal:condition="not: view/getLatestTickets">
-      <i>No tickets created.</i>
-    </p>
   </div>
 </div>

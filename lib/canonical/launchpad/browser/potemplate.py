@@ -15,11 +15,10 @@ from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 
+from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
-
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
@@ -262,10 +261,10 @@ class POTemplateEditView(SQLObjectEditView):
     def changed(self):
         formatter = self.request.locale.dates.getFormatter(
             'dateTime', 'medium')
-        status = _("Updated on ${date_time}")
-        status.mapping = {'date_time': formatter.format(
-            datetime.utcnow())}
-        self.update_status = status
+        self.update_status = _(
+                "Updated on ${date_time}",
+                mapping={'date_time': formatter.format(datetime.utcnow())}
+                )
 
 
 class POTemplateAdminView(POTemplateEditView):

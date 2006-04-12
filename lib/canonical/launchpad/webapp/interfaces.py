@@ -238,6 +238,7 @@ class IErrorReportRequest(Interface):
 #
 
 class IBatchNavigator(Interface):
+    """A batch navigator for a specified set of results."""
 
     batch = Attribute("The IBatch for which navigation links are provided.")
 
@@ -261,3 +262,4 @@ class ITableBatchNavigator(IBatchNavigator):
     show_column = Attribute(
         "A dict keyed by column name. If the value is True, that column will "
         "be shown in the list, otherwise it won't.")
+

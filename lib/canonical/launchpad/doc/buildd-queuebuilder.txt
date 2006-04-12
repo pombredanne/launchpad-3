@@ -118,24 +118,21 @@ special pocket (UPDATES, SECURITY or BACKPORTS)
   ...                                    datecreated=UTC_NOW)
 
 
-Verify how many Build entries we have from sampledata:
-
-  >>> Build.select().count()
-  8
-
-Create missing builds (packages w/o build entry) for those distroreleases.
+Store how many Build entries we have from sampledata, and
+create missing builds (packages w/o build entry) for those distroreleases.
 As we just insert a new sourcepackagerelease in run-time we expect to
 have a new build for the sane Warty and a warning about the
 absence of nominatedarchindep field for Woody:
 
+  >>> build_count = Build.select().count()
   >>> for dr in distroreleases:
   ...      bm.createMissingBuilds(dr)
   WARNING:root:No Nominated Architecture Independent, skipping distrorelease WOODY
 
-Check if we create a new Build entry for just added sourcepackagerelease:
+Check that we only created a new Build entry for the added sourcepackagerelease:
 
-  >>> Build.select().count()
-  9
+  >>> Build.select().count() - build_count
+  1
 
   >>> b = Build.selectOneBy(sourcepackagereleaseID=srcpkgrel.id)
   >>> (b.sourcepackagerelease.name, b.distroarchrelease.distrorelease.name)
@@ -158,6 +155,14 @@ element of the result.
   >>> job = BuildQueue.select(orderBy='id')[2]
   >>> job.lastscore
   0
+
+Check the published component name retriever, they might be different,
+i.e., the published component can be different than the original component.
+
+  >>> job.component_name
+  u'main'
+  >>> job.build.sourcepackagerelease.component.name
+  u'main'
 
 After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:

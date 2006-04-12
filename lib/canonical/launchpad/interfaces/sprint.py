@@ -12,13 +12,11 @@ __all__ = [
     'ISprintSet',
     ]
 
-
 from zope.interface import Interface, Attribute
-
 from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator 
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
 
 
