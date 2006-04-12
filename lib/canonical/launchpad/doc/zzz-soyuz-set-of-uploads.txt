@@ -33,6 +33,7 @@ uploaded files in.
   >>> import os
   >>> import tempfile
   >>> temp_dir = tempfile.mkdtemp()
+  >>> uploader_log = tempfile.mktemp()
   >>> incoming_dir = os.path.join(temp_dir, "incoming")
   >>> accepted_dir = os.path.join(temp_dir, "accepted")
   >>> rejected_dir = os.path.join(temp_dir, "rejected")
@@ -108,9 +109,12 @@ And then we need a way to process the uploads from the queue
   >>> from canonical.config import config
   >>> import subprocess, sys
   >>> def process_uploads():
+  ...     if os.access(uploader_log, os.F_OK):
+  ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
   ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
-  ...                                 "-q", "-C", "anything", temp_dir])
+  ...                                 "-v", "-C", "anything", temp_dir,
+  ...                                 "--log-file", uploader_log])
   ...     return process.wait() == 0
 
 And we need a way to process the accepted queue
@@ -183,7 +187,7 @@ We can also define another helper function...
 
   >>> def expect_okays(leafname, is_new):
   ...     punt_upload_into_queue(leafname)
-  ...     assert process_uploads(), "Upload processes okay"
+  ...     assert process_uploads(), "Upload processes failed"
   ...     # There is always a lockfile in incoming...
   ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should be empty"
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty"
@@ -204,11 +208,33 @@ and arch-independant binaries.
   >>> expect_okays('bar_1.0-2', False)
   >>> expect_okays('bar_1.0-2_binary', False)
 
+Check the rejection of a malicious version of bar package which refers
+to a different 'bar_1.0.orig.tar.gz'.
+
+  >>> expect_okays('bar_1.0-3', False)
+  Traceback (most recent call last):
+  ...
+  AssertionError: Rejected should be empty
+
+Inspect the uploader log to find the rejection message.
+
+  >>> print open(uploader_log).read()
+  DEBUG   Initialising connection.
+  ...
+  INFO       Subject: bar_1.0-3_source.changes Rejected
+  INFO       Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  INFO       Body:
+  INFO    Rejected:
+  INFO    SHA1 sum of uploaded file does not match extant file in archive
+  ...
+  <BLANKLINE>
+
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
   >>> import shutil
   >>> shutil.rmtree(temp_dir)
+  >>> os.remove(uploader_log)
 
   >>> ZecaTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()
