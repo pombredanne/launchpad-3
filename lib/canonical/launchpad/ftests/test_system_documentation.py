@@ -171,7 +171,8 @@ special = {
             ),
     'revision.txt': DocFileSuite(
             '../doc/revision.txt',
-            setUp=importdSetUp, tearDown=importdTearDown),
+            setUp=importdSetUp, tearDown=importdTearDown,
+            optionflags=default_optionflags),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
             'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
@@ -205,6 +206,7 @@ special['support-tracker-emailinterface.txt'].layer = ZopelessLayer
 special['branch-status-client.txt'].layer = ZopelessLayer
 special['bugnotification-sending.txt'].layer = ZopelessLayer
 special['bugmail-headers.txt'].layer = ZopelessLayer
+special['revision.txt'].layer = ZopelessLayer
 
 def test_suite():
     suite = unittest.TestSuite()
