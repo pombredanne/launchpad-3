@@ -62,7 +62,7 @@ branch appears in the table.
 >>> sampleperson_branches_view = getView(
 ...     sampleperson, '+branches', TestRequest())
 
-Roles are dictionnary of two items: 'title', used for display, and 'sortkey',
+Roles are dictionaries of two items: 'title', used for display, and 'sortkey',
 used for sorting.
 
 The role can be "Author", if the person is pointed to by the 'author' attribute

@@ -222,18 +222,37 @@ The sort key is made of:
   * owner's nickname
 
 The owner's name is usually not displayed in branch listings, but it is used in
-the sort key to garantee a predictable sort order. This relies on the fact that
-(owner, product, name) is unique for all branches.
+the sort key to guarantee a predictable sort order. This relies on the fact
+that (owner, product, name) is unique for all branches.
+
+>>> from canonical.lp.dbschema import BranchLifecycleStatus
+>>> gterm_slowness = branchset[19]
+>>> gterm_slowness.sort_key
+(u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
+>>> gterm_slowness.sort_key[1] == BranchLifecycleStatus.MERGED.sortkey
+True
 
 If the product or author of a branch is NULL, the corresponding item in the
 sort key is None.
 
->>> from canonical.lp.dbschema import BranchLifecycleStatus
->>> gterm_slowness = branchset[19]
->>> key = gterm_slowness.sort_key
->>> key
-(u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
->>> key[1] == BranchLifecycleStatus.MERGED.sortkey
+Let's demonstrate that on a branch with a NULL product.
+
+>>> junk_dev = branchset[20]
+>>> print junk_dev.product
+None
+>>> junk_dev.sort_key
+(None, ..., u'Ubuntu Team', u'junk.dev', u'name12')
+>>> junk_dev.sort_key[1] == BranchLifecycleStatus.EXPERIMENTAL.sortkey
+True
+
+And on a branch with a NULL author.
+
+>>> gterm_24 = branchset[17]
+>>> print gterm_24.author
+None
+>>> gterm_24.sort_key
+(u'gnome-terminal', ..., None, u'2.4', u'name12')
+>>> gterm_24.sort_key[1] == BranchLifecycleStatus.ABANDONED.sortkey
 True
 
 == Branch subscriptions ==

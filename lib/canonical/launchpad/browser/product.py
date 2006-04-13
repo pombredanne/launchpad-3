@@ -183,7 +183,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
-        text = 'Add Bazaar Branch'
+        text = 'Add Bzr Branch'
         return Link('+addbranch', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
@@ -236,8 +236,8 @@ class ProductBranchesMenu(ApplicationMenu):
     links = ['listing', 'branch_add', ]
 
     def branch_add(self):
-        text = 'Add Bazaar Branch'
-        summary='Register a new Bazaar branch for this product'
+        text = 'Add Bzr Branch'
+        summary = 'Register a new bzr branch for this product'
         return Link('+addbranch', text, icon='add')
 
     def listing(self):

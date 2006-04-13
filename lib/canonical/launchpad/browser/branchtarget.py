@@ -134,7 +134,7 @@ class PersonBranchesView(BranchTargetView):
 
         :precondition: the branch must be part of the list provided by
             PersonBranchesView.branches.
-        :return: dictionnary of two items: 'title' and 'sortkey' describing the
+        :return: dictionary of two items: 'title' and 'sortkey' describing the
             role of this person for this branch.
         """
         if branch in self._authored_branch_set:
