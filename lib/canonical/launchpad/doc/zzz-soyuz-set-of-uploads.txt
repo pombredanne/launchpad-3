@@ -109,6 +109,7 @@ And then we need a way to process the uploads from the queue
   >>> from canonical.config import config
   >>> import subprocess, sys
   >>> def process_uploads():
+  ...     # reset previous log content if it exists
   ...     if os.access(uploader_log, os.F_OK):
   ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
@@ -125,6 +126,7 @@ And we need a way to process the accepted queue
   ...                                "ubuntutest"],
   ...                                stdout=subprocess.PIPE,
   ...                                stderr=subprocess.PIPE)
+  ...     # collects spurious output (as reported in bug # 39281)
   ...     garbage = process.stderr.read()
   ...     garbage = process.stdout.read()
   ...     return process.wait() == 0
@@ -140,6 +142,7 @@ it into the accepted queue
   ...                                 "--no-mail", "accept", "*"],
   ...                                stdout=subprocess.PIPE,
   ...                                stderr=subprocess.PIPE)
+  ...     # collects spurious output (as reported in bug # 39281)
   ...     garbage = process.stderr.read()
   ...     garbage = process.stdout.read()
   ...     return process.wait() == 0
