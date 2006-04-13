@@ -825,9 +825,10 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
         launchbag = getUtility(ILaunchBag)
         if launchbag.distribution:
             distribution = launchbag.distribution
-            for distrorelease in self._table.selectBy(
-                distributionID=distribution.id, **kw):
-                yield self.toTerm(distrorelease)
+            releases = self._table.selectBy(
+                distributionID=distribution.id, **kw)
+            for release in sorted(releases, key=lambda x: x.sortkey):
+                yield self.toTerm(release)
 
 
 class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1109,7 +1110,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         releases = self._table.select(
             DistroRelease.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for release in releases:
+        for release in sorted(releases, key=lambda x: x.sortkey):
             yield self.toTerm(release)
 
     def toTerm(self, obj):

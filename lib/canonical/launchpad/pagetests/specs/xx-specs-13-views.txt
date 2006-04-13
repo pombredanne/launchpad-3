@@ -102,7 +102,7 @@ Some of the listings are supposed to indicate if there is an informational
 spec there using a badge:
 
   >>> print http(r"""
-  ... GET /projects/mozilla/+documentation HTTP/1.1
+  ... GET /distros/kubuntu/+documentation HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...<img src="/@@/info" alt="Informational" />...

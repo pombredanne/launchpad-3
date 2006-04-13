@@ -74,7 +74,8 @@
   </table>
 
   <p tal:condition="not: specs" class="discreet">
-    No documentation (complete informational specifications) to list.
+    No documentation to list. We consider approved informational
+    specifications to be documentation.
   </p>
 
   <p tal:condition="specs" class="discreet">

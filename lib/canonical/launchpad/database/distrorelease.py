@@ -129,6 +129,19 @@ class DistroRelease(SQLBase, BugTargetBase):
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property
+    def sortkey(self):
+        """A string to be used for sorting distro releases.
+
+        This is designed to sort alphabetically by distro and release name,
+        except that Ubuntu will be at the top of the listing.
+        """
+        result = ''
+        if self.distribution.name == 'ubuntu':
+            result += '-'
+        result += self.distribution.name + self.name
+        return result
+
+    @property
     def packagings(self):
         # We join through sourcepackagename to be able to ORDER BY it,
         # and this code also uses prejoins to avoid fetching data later
