@@ -265,8 +265,7 @@
         class="canonical.launchpad.browser.ProductEditView"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        label="Select a new translation group"
-        template="../templates/launchpad-editform.pt"
+        template="../templates/product-translators.pt"
         lp:url="/products/$Product.name/+changetranslators" />
 
     <browser:editform

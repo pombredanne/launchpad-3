@@ -141,11 +141,16 @@ class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'assignments',]
+    links = ['listall', 'doc', 'roadmap', 'assignments',]
 
     def listall(self):
         text = 'List All'
         return Link('+specs?show=all', text, icon='info')
+
+    def doc(self):
+        text = 'Documentation'
+        summary = 'Show all completed informational specifications'
+        return Link('+documentation', text, summary, icon="info")
 
     def roadmap(self):
         text = 'Roadmap'

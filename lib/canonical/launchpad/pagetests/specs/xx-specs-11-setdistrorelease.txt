@@ -147,7 +147,7 @@ first be approved.
   >>> result = unicode(http(r"""
   ... GET /distros/ubuntu/hoary/+specs HTTP/1.1
   ... """))
-  >>> 'CD Media Integrity Check' not in result
+  >>> '<td>CD Media Integrity Check' not in result
   True
 
 However, we can expect to find it on the approvals page.

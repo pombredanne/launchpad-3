@@ -3,17 +3,20 @@
       metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Specifications for <tal:thing replace="context/displayname" /></h1>
-    </metal:heading>
+<body>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Specification listing</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 
@@ -69,7 +72,7 @@
     </tbody>
   </table>
 
-  <p tal:condition="not: view/specs">
+  <p class="informational message" tal:condition="not: view/specs">
     No specifications to list.
   </p>
 
