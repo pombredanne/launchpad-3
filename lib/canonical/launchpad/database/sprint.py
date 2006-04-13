@@ -37,7 +37,7 @@ class Sprint(SQLBase):
 
     # db field names
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    name = StringCol(notNull=True)
+    name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     home_page = StringCol(notNull=False, default=None)

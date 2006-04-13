@@ -306,18 +306,20 @@ There are 2 completed specs for Kubuntu:
 
  >>> filter = [SpecificationFilter.COMPLETE]
  >>> for spec in kubuntu.specifications(filter=filter):
- ...    print spec.name
- xxx
- xxx
+ ...    print spec.name, spec.is_complete
+ thinclient-local-devices True
+ usplash-on-hibernation True
 
 
-And there are three incomplete specs:
+And there are four incomplete specs:
 
  >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> for spec in kubuntu.specifications(filter=filter)
- abc
- def
- geh
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...    print spec.name, spec.is_complete
+ cluster-installation False
+ revu False
+ kde-desktopfile-langpacks False
+ krunch-desktop-plan False
 
 
 If we ask for all specs, we get them in the order of priority.
@@ -325,19 +327,22 @@ If we ask for all specs, we get them in the order of priority.
  >>> filter = [SpecificationFilter.ALL]
  >>> for spec in kubuntu.specifications(filter=filter):
  ...    print spec.priority.title, spec.name
- Essential xxx
- High xxx
- Medium xxx
- Low xxx
- Not xxx
+ Essential cluster-installation
+ High revu
+ Medium thinclient-local-devices
+ Low usplash-on-hibernation
+ Proposed kde-desktopfile-langpacks
+ Not krunch-desktop-plan
 
 
 And if we ask just for specs, we get the incomplete ones.
 
  >>> for spec in kubuntu.specifications():
- ...     print spec.name, spec is_complete
- xxx False
- xxx False
- xxx False
-
+ ...     print spec.name, spec.is_complete
+ cluster-installation False
+ revu False
+ thinclient-local-devices True
+ usplash-on-hibernation True
+ kde-desktopfile-langpacks False
+ krunch-desktop-plan False
 

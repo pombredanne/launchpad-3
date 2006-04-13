@@ -9,7 +9,7 @@ version control, etc. We call these entities ProductSeries.
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import (
-...     IPersonSet, IProductSeries, IProductSet, NotFoundError)
+...     IPersonSet, IProductSeries, IProductSet, NotFoundError, IProjectSet)
 >>> from canonical.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.
@@ -70,3 +70,192 @@ u'trunk'
 >>> productseries = productseriesset.getBySVNDetails(svnrepository)
 >>> print productseries
 None
+
+
+Specification Listings
+======================
+
+We should be able to get lists of specifications in different states
+related to a productseries.
+
+Basically, we can filter by completeness, and by whether or not the spec is
+informational.
+
+ >>> onezero = firefox.getSeries("1.0")
+ >>> from canonical.lp.dbschema import SpecificationFilter
+
+First, there should be no informational specs for onezero:
+
+ >>> filter = [SpecificationFilter.INFORMATIONAL]
+ >>> onezero.specifications(filter=filter).count()
+ 0
+
+
+There are 2 completed specs for 1.0:
+
+ >>> filter = [SpecificationFilter.COMPLETE]
+ >>> for spec in firefox.specifications(filter=filter):
+ ...    print spec.name, spec.is_complete
+ thinclient-local-devices True
+ usplash-on-hibernation True
+
+
+And there are 2 incomplete specs:
+
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> for spec in onezero.specifications(filter=filter):
+ ...     print spec.name, spec.is_complete
+ cluster-installation False
+ revu False
+
+
+If we ask for all specs, we get them in the order of priority.
+
+ >>> filter = [SpecificationFilter.ALL]
+ >>> for spec in firefox.specifications(filter=filter):
+ ...    print spec.priority.title, spec.name
+ High svg-support
+ Medium canvas
+ Medium extension-manager-upgrades
+ Medium mergewin
+ Not e4x
+
+
+And if we ask just for specs, we get BOTH the incomplete and the complete ones.
+
+ >>> for spec in firefox.specifications():
+ ...     print spec.name, spec.is_complete
+ cluster-installation False
+ revu False
+ thinclient-local-devices True
+ usplash-on-hibernation True
+
+
+Drivers
+=======
+
+Products, projects and product series have drivers, who are people that have
+permission to approve bugs and features for specific releases. The rules are
+that:
+
+ 1. a "driver" can be set on either Project, Product or ProductSeries
+ 2. drivers are only actually relevant on a ProductSeries, because thats the
+    granularity at which we track spec/bug targeting
+ 3. the important attribute is ".drivers" on a productseries, it is
+    calculated based on the combination of owners and drivers in the
+    series, product and project. It is a LIST of drivers, which might
+    be empty, or have one, two or three people/teams in it.
+ 4. the list includes the explicitly set drivers from series, product and
+    project
+ 5. if there are no explicitly set drivers, then:
+      - if there is a project, then the list is the project.owner
+      - if there is no project, then the list is the product.owner
+    in other words, we use the "highest" owner as the fallback, which is
+    either the product owner or the project owner if there is a project.
+
+
+We test these rules below.
+
+ >>> carlos = getUtility(IPersonSet).getByName('carlos')
+ >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+ >>> jblack = getUtility(IPersonSet).getByName('jblack')
+ >>> project = getUtility(IProjectSet).new('testproj', 'test project title',
+ ...                           'Test Project', 'summary', 'description',
+ ...                           carlos.id, 'http://foo.com/url')
+ >>> product = getUtility(IProductSet).createProduct(sabdfl.id, 'testprod',
+ ...                'Test Product', 'Test product title', 'summary',
+ ...                project=project.id)
+ >>> series = product.newSeries(jblack.id, '1.0' 'Series summary')
+
+
+First, lets see what we get for the series drivers before we have anything
+actually written.
+
+If there is a project on the product, we would expect the project owner:
+
+ >>> print series.product.project.name
+ testproj
+ >>> for d in series.drivers:
+ ...     print d.name
+ carlos
+
+
+If there is NO project on the product, then we expect the product owner:
+
+ >>> product.project = None
+ >>> for d in series.drivers:
+ ...     print d.name
+ sabdfl
+
+
+Now lets put the project back:
+
+ >>> product.project = project.id
+
+
+And lets see what happens if we have an explicit driver on any of project,
+product or series:
+
+ >>> cprov = getUtility(IPersonSet).getByName('cprov')
+ >>> edgar = getUtility(IPersonSet).getByName('edgar')
+ >>> danner = getUtility(IPersonSet).getByName('danner')
+ >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+ >>> project.driver = danner
+ >>> for d in series.drivers:
+ ...     print d.name
+ danner
+
+ >>> project.driver = None
+ >>> product.driver = edgar
+ >>> for d in series.drivers:
+ ...     print d.name
+ edgar
+
+ >>> project.driver = None
+ >>> product.driver = None
+ >>> series.driver = cprov
+ >>> for d in series.drivers:
+ ...     print d.name
+ cprov
+
+
+OK, now lets test pairs of drivers:
+
+ >>> project.driver = None
+ >>> product.driver = edgar
+ >>> series.driver = cprov
+ >>> for d in series.drivers:
+ ...     print d.name
+ cprov
+ edgar
+
+ >>> project.driver = sabdfl
+ >>> product.driver = danner
+ >>> series.driver = None
+ >>> for d in series.drivers:
+ ...     print d.name
+ danner
+ sabdfl
+
+ >>> project.driver = jdub
+ >>> product.driver = None
+ >>> series.driver = edgar
+ >>> for d in series.drivers:
+ ...     print d.name
+ edgar
+ jdub
+
+
+And finally the case where they are all set:
+
+ >>> project.driver = cprov
+ >>> product.driver = danner
+ >>> series.driver = edgar
+ >>> for d in series.drivers:
+ ...     print d.name
+ cprov
+ danner
+ edgar
+
+ 

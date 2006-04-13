@@ -121,12 +121,13 @@ We must approve the entry to be able to import it.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
 
+
 Second, we tell the PO template to import from the file data it has, but first
 check the number of activities the 'person' has done to be sure that Karma is
 working.
 
     >>> person.activities.count()
-    0
+    16
     >>> potemplate.importFromQueue(FakeLogger())
 
 The status is now IMPORTED:
@@ -137,7 +138,7 @@ The status is now IMPORTED:
 The number of activities should be higher.
 
     >>> person.activities.count()
-    1
+    17
 
 Once we've done this, the correct message IDs should show up in the template.
 
@@ -236,7 +237,7 @@ The status is now IMPORTED:
 The number of activities performed is...
 
     >>> person.activities.count()
-    2
+    18
 
 And the statistics reflect it.
 
@@ -483,7 +484,7 @@ The status is now FAILED
 The number of activities shouldn't change as the import was rejected.
 
     >>> person.activities.count()
-    2
+    18
 
 And the statistics reflect it.
 

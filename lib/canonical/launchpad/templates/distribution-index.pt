@@ -28,11 +28,7 @@
       Distribution Summary
   </p>
 
-      <tal:description replace="structure context/description/fmt:text-to-html">
-        Distribution description
-      </tal:description>
-
-  <h2>Source packages in <span tal:replace="context/title"/></h2>
+  <h3>Search packages in <span tal:replace="context/title"/></h3>
 
   <form name="search" action="+search" method="GET">
   
@@ -50,6 +46,10 @@
     <span tal:replace="context/displayname">Ubuntu</span> using the form.
     Enter any word in the package title or description.
   </p>
+
+  <tal:description replace="structure context/description/fmt:text-to-html">
+    Distribution description
+  </tal:description>
 
   <div tal:replace="structure context/@@+portlet-latesttickets" />
 

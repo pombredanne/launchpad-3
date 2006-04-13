@@ -6,6 +6,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesOverviewMenu',
            'ProductSeriesFacets',
            'ProductSeriesSpecificationsMenu',
+           'ProductSeriesTranslationMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesRdfView',
@@ -45,6 +46,9 @@ class ProductSeriesNavigation(Navigation):
 
     usedfor = IProductSeries
 
+    def breadcrumb(self):
+        return 'Series ' + self.context.name
+
     @stepto('+pots')
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
@@ -65,7 +69,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = ['edit', 'driver', 'editsource', 'ubuntupkg',
-             'addpackage', 'addrelease', 'translationupload',
+             'addpackage', 'addrelease',
              'addpotemplate', 'rdf', 'review']
 
     def edit(self):
@@ -96,10 +100,6 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def rdf(self):
         text = 'Download RDF Metadata'
         return Link('+rdf', text, icon='download')
-
-    def translationupload(self):
-        text = 'Upload Translations'
-        return Link('+translations-upload', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def addpotemplate(self):
@@ -157,6 +157,18 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         summary = 'Show the sequence in which specs should be implemented'
         return Link('+roadmap', text, summary, icon='info')
 
+
+class ProductSeriesTranslationMenu(ApplicationMenu):
+    """Translation menu for ProductSeries.
+    """
+
+    usedfor = IProductSeries
+    facet = 'translations'
+    links = ['translationupload', ]
+
+    def translationupload(self):
+        text = 'Upload Translations'
+        return Link('+translations-upload', text, icon='add')
 
 
 def validate_cvs_root(cvsroot, cvsmodule):

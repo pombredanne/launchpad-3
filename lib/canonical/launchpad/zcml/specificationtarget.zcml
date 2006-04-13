@@ -18,6 +18,9 @@
       name="+categorized"
       template="../templates/specificationtarget-categorized.pt" />
     <browser:page
+      name="+documentation"
+      template="../templates/specificationtarget-documentation.pt" />
+    <browser:page
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
     <browser:page

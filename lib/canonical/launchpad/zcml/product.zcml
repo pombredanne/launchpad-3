@@ -274,6 +274,7 @@
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductEditView"
+        facet="overview"
         fields="official_rosetta official_malone"
         permission="launchpad.Edit"
         label="Describe Launchpad usage"

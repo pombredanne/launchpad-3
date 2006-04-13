@@ -13,9 +13,12 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
-
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Feature specifications</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
 
   <table class="listing sortable" id="speclisting"
         tal:condition="view/specs">

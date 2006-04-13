@@ -66,6 +66,12 @@ class HasSpecificationsView(LaunchpadView):
 
         raise NotImplementedError
 
+    @cachedproperty
+    def documentation(self):
+        filter = [SpecificationFilter.COMPLETE,
+                  SpecificationFilter.INFORMATIONAL]
+        return shortlist(self.context.specifications(filter=filter))
+
     @property
     def categories(self):
         """This organises the specifications related to this target by

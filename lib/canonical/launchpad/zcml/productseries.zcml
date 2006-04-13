@@ -32,7 +32,8 @@
     <browser:menus
         module="canonical.launchpad.browser.productseries"
         classes="ProductSeriesFacets ProductSeriesOverviewMenu
-                 ProductSeriesSpecificationsMenu"
+                 ProductSeriesSpecificationsMenu
+                 ProductSeriesTranslationMenu"
         />
 
 
@@ -248,7 +249,6 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+translations-upload"
-            facet="translations"
             template="../templates/productseries-translations-upload.pt"
             lp:url="/products/evolution/main/+translations-upload" />
     </browser:pages>

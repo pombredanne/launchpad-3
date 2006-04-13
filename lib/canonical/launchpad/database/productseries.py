@@ -89,21 +89,18 @@ class ProductSeries(SQLBase):
 
     @property
     def drivers(self):
-        """See IProductSeries."""
+        """See IDistroRelease."""
         drivers = set()
-        if self.driver is not None:
-            drivers.add(self.driver)
-        else:
-            drivers.add(self.owner)
-        if self.product.driver is not None:
-            drivers.add(self.product.driver)
-        else:
-            drivers.add(self.product.owner)
+        drivers.add(self.driver)
+        drivers.add(self.product.driver)
         if self.product.project is not None:
-            if self.product.project.driver is not None:
-                drivers.add(self.product.project.driver)
-            else:
+            drivers.add(self.product.project.driver)
+        drivers.discard(None)
+        if len(drivers) == 0:
+            if self.product.project is not None:
                 drivers.add(self.product.project.owner)
+            else:
+                drivers.add(self.product.owner)
         return sorted(drivers, key=lambda x: x.browsername)
 
     @property

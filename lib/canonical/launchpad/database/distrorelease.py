@@ -121,13 +121,10 @@ class DistroRelease(SQLBase, BugTargetBase):
     def drivers(self):
         """See IDistroRelease."""
         drivers = set()
-        if self.driver is not None:
-            drivers.add(self.driver)
-        else:
-            drivers.add(self.owner)
-        if self.distribution.driver is not None:
-            drivers.add(self.distribution.driver)
-        else:
+        drivers.add(self.driver)
+        drivers.add(self.distribution.driver)
+        drivers.discard(None)
+        if len(drivers) == 0:
             drivers.add(self.distribution.owner)
         return sorted(drivers, key=lambda x: x.browsername)
 

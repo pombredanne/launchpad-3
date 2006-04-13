@@ -603,6 +603,8 @@ product_translations = ContextTitle('Translations of %s in Rosetta')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
+productrelease_admin = ContextTitle('Administer %s in Launchpad')
+
 productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 
 productrelease_index = ContextDisplayName('%s in Launchpad')
@@ -801,6 +803,8 @@ specifications_index = ContextTitle('%s')
 specificationgoal_specs = ContextTitle('List goals for %s')
 
 specificationgoal_setgoals = ContextTitle('Set goals for %s')
+
+specificationtarget_documentation = ContextTitle('Documentation for %s')
 
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 

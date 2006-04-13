@@ -236,7 +236,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
     def doc(self):
         text = 'Documentation'
         summary = 'List all complete informational specifications'
-        return Link('+specs?informational&show=complete', text, summary,
+        return Link('+documentation', text, summary,
             icon='info')
 
     def new(self):

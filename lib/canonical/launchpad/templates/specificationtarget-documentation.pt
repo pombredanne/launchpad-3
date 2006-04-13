@@ -10,31 +10,30 @@
   <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
 <metal:heading fill-slot="pageheading">
   <h3 tal:content="context/title">Context title goes here</h3>
-  <h1>Specification assignments</h1>
+  <h1>Current documentation</h1>
 </metal:heading>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main" tal:define="specs view/documentation">
 
-  <p class="informational message" tal:condition="not: view/specs">
-    No specifications to display.
-  </p>
-
-  <table class="listing sortable" tal:condition="view/specs" id="work">
+  <table class="listing sortable" id="speclisting"
+        tal:condition="specs">
     <thead>
       <tr>
         <th>Priority</th>
-        <th>Name</th>
+        <th>Specification</th>
         <th>Definition</th>
         <th>Delivery</th>
-        <th>Assignee</th>
         <th>Drafter</th>
-        <th>Approver</th>
+        <th tal:content="view/goaltitle">Hack!</th>
       </tr>
     </thead>
     <tbody class="lesser">
-      <tr tal:repeat="spec view/specs">
+      <tr tal:repeat="spec specs">
         <td>
           <span class="sortkey" tal:content="spec/priority/sortkey" />
           <span tal:content="spec/priority/title"
@@ -54,33 +53,36 @@
                 tal:attributes="
                 class string:specstatus${spec/status/name}">Approved</span>
         </td>
+        <td tal:attributes="class string:specdelivery${spec/delivery/name}"
+            tal:content="spec/delivery/title">Deployed</td>
         <td>
-          <span class="sortkey" tal:content="spec/delivery/sortkey" />
-          <span tal:content="spec/delivery/title"
-                tal:attributes="
-                class string:specdelivery${spec/delivery/name}">Slow
-          </span>
+          <a tal:condition="spec/drafter"
+             tal:attributes="href spec/drafter/fmt:url"
+             tal:content="spec/drafter/browsername">
+            Carlos Perello Marin
+          </a>
         </td>
-        <td><a tal:condition="spec/assignee"
-               tal:content="spec/assignee/name"
-               tal:attributes="href spec/assignee/fmt:url">Assignee Bar</a></td>
-        <td><a tal:condition="spec/drafter"
-               tal:content="spec/drafter/name"
-               tal:attributes="href spec/drafter/fmt:url">Drafter Baz</a></td>
-        <td><a tal:condition="spec/approver"
-               tal:content="spec/approver/name"
-               tal:attributes="href spec/approver/fmt:url">Approver Foo</a></td>
+        <td>
+          <a tal:condition="spec/has_release_goal"
+             tal:attributes="href spec/goal/fmt:url"
+             tal:content="spec/goal/name">
+            Ubuntu 6.04
+          </a>
+        </td>
       </tr>
     </tbody>
   </table>
 
-  <p tal:condition="view/specs" class="discreet">
-    This listing shows the assignment of work for
-    specifications currently associated with 
-    <span tal:replace="context/displayname">Mozilla</span>.
-    The drafter is responsible for getting the specification correctly
-    written up and approved, the approver is usually the person who would
-    sign off on the spec.
+  <p tal:condition="not: specs" class="discreet">
+    No documentation (complete informational specifications) to list.
+  </p>
+
+  <p tal:condition="specs" class="discreet">
+    <span tal:replace="specs/count:len">7</span> specification(s) listed.
+    This page shows specifications that are marked as "approved" and also
+    flagged as "informational". In this way, you can draw up documents for
+    the way the code is supposed to work, and have those documents show up
+    here automatically when they are approved.
   </p>
 
 </div>
