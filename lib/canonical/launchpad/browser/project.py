@@ -18,13 +18,13 @@ __all__ = [
 from urllib import quote as urlquote
 
 from zope.component import getUtility
-from zope.i18nmessageid import MessageIDFactory
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
@@ -35,7 +35,6 @@ from canonical.launchpad.webapp import (
     structured, GetitemNavigation, Navigation, ContextMenu)
 
 
-_ = MessageIDFactory('launchpad')
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):

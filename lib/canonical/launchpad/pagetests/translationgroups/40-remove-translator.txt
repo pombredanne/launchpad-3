@@ -11,11 +11,10 @@ passed.
   ... 
   ... remove=ab&rmform.x=3&rmform.y=8""")
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/plain;charset=utf-8
+  Content-Length: 0
+  Content-Type: text/plain
   Location: .?removed=ab-name21
   <BLANKLINE>
-  ...
 
 And on that page, we should see the removal message.
 

@@ -20,8 +20,8 @@ from sqlobject import (
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import (quote_like, SQLBase, sqlvalues,
-    flush_database_updates, cursor, flush_database_caches)
+from canonical.database.sqlbase import (quote_like, quote, SQLBase,
+    sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
-    ISourcePackage, ISourcePackageNameSet, IComponentSet, ISectionSet,
+    ISourcePackage, ISourcePackageNameSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
     IHasQueueItems)
 
@@ -61,10 +61,8 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
-from canonical.launchpad.database.component import (
-    Component, ComponentSelection)
-from canonical.launchpad.database.section import (
-    Section, SectionSelection)
+from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
@@ -722,8 +720,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         drpcaches = DistroReleasePackageCache.select("""
             distrorelease = %s AND (
             fti @@ ftq(%s) OR
-            DistroReleasePackageCache.name = %s)
-            """ % sqlvalues(self.id, text, text),
+            DistroReleasePackageCache.name ILIKE '%%' || %s || '%%')
+            """ % (quote(self.id), quote(text), quote_like(text)),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
             prejoins=['binarypackagename'],

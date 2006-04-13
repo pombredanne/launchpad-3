@@ -57,6 +57,8 @@
             default="specs.launchpad.net" />
         <key name="oops_root_url" datatype="string" required="no"
             default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
+        <key name="default_batch_size" datatype="integer" required="no"
+            default="50" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
             default="0">
             <description>
@@ -347,6 +349,8 @@
               single notification.
           </description>
         </key>
+        <key name="debbugs_db_location" datatype="string"
+            required="no" default="/srv/bugs-mirror.debian.org/" />
     </sectiontype>
 
     <sectiontype name="poimport">

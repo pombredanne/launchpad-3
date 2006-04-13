@@ -114,11 +114,6 @@
             facet="translations"
             template="../templates/sourcepackage-portlet-translations.pt"
         />
-        <browser:page
-            name="+portlet-upstream-details"
-            facet="overview"
-            template="../templates/sourcepackage-portlet-upstreamdetails.pt"
-        />
 
     </browser:pages>
 

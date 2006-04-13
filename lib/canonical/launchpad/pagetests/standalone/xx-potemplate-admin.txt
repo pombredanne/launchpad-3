@@ -109,6 +109,6 @@ And that we are able to POST it.
   ... 
   ... Change
   ... -----------------------------80986468519315900241075667433--
-  ... """)
+  ... """, handle_errors=False)
   HTTP/1.1 200 Ok
   ...

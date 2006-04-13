@@ -34,6 +34,19 @@ __all__ = [
     'soft_timeout_expired',
     ]
 
+def _get_dirty_commit_flags():
+    """Return the current dirty commit status"""
+    from canonical.ftests.pgsql import ConnectionWrapper
+    return (ConnectionWrapper.committed, ConnectionWrapper.dirty)
+
+def _reset_dirty_commit_flags(previous_committed, previous_dirty):
+    """Set the dirty commit status to False unless previous is True"""
+    from canonical.ftests.pgsql import ConnectionWrapper
+    if not previous_committed:
+        ConnectionWrapper.committed = False
+    if not previous_dirty:
+        ConnectionWrapper.dirty = False
+
 
 class SessionDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that stores its connection information
@@ -48,6 +61,12 @@ class SessionDatabaseAdapter(PsycopgAdapter):
         PsycopgAdapter.__init__(
                 self, 'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % vars()
                 )
+
+    def connect(self):
+        if not self.isConnected():
+            flags = _get_dirty_commit_flags()
+            super(SessionDatabaseAdapter, self).connect()
+            _reset_dirty_commit_flags(*flags)
 
 
 class LaunchpadDatabaseAdapter(PsycopgAdapter):
@@ -84,6 +103,7 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
             config.dbname
             ))
 
+        flags = _get_dirty_commit_flags()
         connection = PsycopgAdapter._connection_factory(self)
 
         if config.launchpad.db_statement_timeout is not None:
@@ -92,6 +112,7 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
                            config.launchpad.db_statement_timeout)
             connection.commit()
 
+        _reset_dirty_commit_flags(*flags)
         return ConnectionWrapper(connection)
 
     def readonly(self):

@@ -92,6 +92,8 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     def search(query=None):
         """Return an iterable of objects that match the search string.
 
+        The iterable must have a count() method.
+
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
         """

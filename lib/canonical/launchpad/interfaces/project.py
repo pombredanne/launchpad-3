@@ -194,8 +194,7 @@ class IProjectSet(Interface):
     def get(projectid):
         """Get a project by its id.
 
-        If the project can't be found a zope.exceptions.NotFoundError will be
-        raised.
+        If the project can't be found a NotFoundError will be raised.
         """
 
     def getByName(name, default=None, ignore_inactive=False):

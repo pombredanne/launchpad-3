@@ -11,14 +11,12 @@ __all__ = [
 
 from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
     ITicketTarget)
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,

@@ -17,7 +17,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishing, SecureBinaryPackagePublishingHistory)
+    SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
@@ -169,14 +169,12 @@ class BinaryPackageReleaseSet:
         query, clauseTables = self._buildBaseQuery(distroreleaseID)
         queries = [query]
 
+        match_query = ("BinaryPackageName.name LIKE lower('%%' || %s || '%%')"
+                       % (quote_like(pattern)))
         if fti:
-            queries.append("""
-                (BinaryPackageName.name LIKE lower('%%' || %s || '%%')
-                 OR BinaryPackageRelease.fti @@ ftq(%s))
-                """ % (quote_like(pattern), quote(pattern)))
-        else:
-            queries.append('BinaryPackageName.name ILIKE %s '
-                           % sqlvalues('%%' + pattern + '%%'))
+            match_query = ("(%s OR BinaryPackageRelease.fti @@ ftq(%s))"
+                           % (match_query, quote(pattern)))
+        queries.append(match_query)
 
         if archtag:
             queries.append('DistroArchRelease.architecturetag=%s'

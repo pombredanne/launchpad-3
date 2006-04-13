@@ -13,9 +13,9 @@ from zope.interface import Attribute
 from zope.schema import Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad import _ 
+from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
-from canonical.launchpad.validators.name import name_validator 
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 
 

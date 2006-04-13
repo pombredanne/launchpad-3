@@ -18,13 +18,14 @@ Let's add 100 files to the queue so we have enough entries to play with.
   ... -----------------------------1154239704143730702744913602
   ... Content-Disposition: form-data; name="file"; filename="foo.tar.gz"
   ... Content-Type: application/x-gzip
+  ... 
   ... %s
   ... -----------------------------1154239704143730702744913602
   ... Content-Disposition: form-data; name="translations_upload"
   ... 
   ... Request Upload
   ... -----------------------------1154239704143730702744913602--
-  ... """ % tarball.read())
+  ... """ % tarball.read(), handle_errors=False)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...Thank you for your upload. 100 files from the tarball will be reviewed...

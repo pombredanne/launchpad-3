@@ -2943,12 +2943,19 @@ class BuildStatus(DBSchema):
         """)
 
     SUPERSEDED = Item(5, """
-        Build for superseded Source.
+        Build for superseded Source
 
         Build record represents a build which never got to happen because the
         source package release for the build was superseded before the job
         was scheduled to be run on a builder. Builds which reach this state
         will rarely if ever be reset to any other state.
+        """)
+
+    BUILDING = Item(6, """
+        Currently building
+
+        Build record represents a build which is being build by one of the
+        available builders.
         """)
 
 

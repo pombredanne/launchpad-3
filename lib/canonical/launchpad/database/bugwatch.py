@@ -21,6 +21,7 @@ from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase
@@ -68,7 +69,8 @@ class BugWatch(SQLBase):
             return self._sf_url()
         elif not url_formats.has_key(bt):
             raise AssertionError('Unknown bug tracker type %s' % bt)
-        return urlparse.urljoin(self.bugtracker.baseurl, url_formats[bt] % self.remotebug)
+        return urlappend(self.bugtracker.baseurl,
+                         url_formats[bt] % self.remotebug)
 
     def _sf_url(self):
         # XXX: validate that the bugtracker URL has atid and group_id in

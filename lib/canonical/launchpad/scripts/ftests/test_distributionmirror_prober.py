@@ -29,6 +29,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     BadResponseCode)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
+from canonical.functional import ZopelessLayer
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -99,6 +100,7 @@ class TestDistributionMirrorProber(TwistedTestCase):
 
 
 class TestDistributionMirrorProberCallbacks(TestCase):
+    layer = ZopelessLayer
 
     def setUp(self):
         LaunchpadTestSetup().setUp()

@@ -74,6 +74,16 @@
               <td>Version: <span tal:replace="queue/sourceversion" />
                   Age: <span tal:replace="queue/age" /> </td>
            </tr>
+           <tr class="secondary discreet"
+               tal:condition="python: queue.containsSource or
+                                      queue.containsBuild">
+              <td tal:condition="view/availableActions" />
+              <td>Component: <span
+                  tal:replace="queue/sourcepackagerelease/component/name"
+                  /> Section: <span
+                  tal:replace="queue/sourcepackagerelease/section/name" />
+               </td>
+           </tr>
          </tal:batch>
        </tbody>
        <tal:admin condition="context/required:launchpad.Admin">

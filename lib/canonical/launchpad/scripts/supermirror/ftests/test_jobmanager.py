@@ -15,6 +15,7 @@ from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror import jobmanager
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.functional import FunctionalLayer
 
 
 class TestJobManager(unittest.TestCase):
@@ -40,7 +41,7 @@ class TestJobManager(unittest.TestCase):
         falsestdin = StringIO("0 managersingle\n")
         manager = jobmanager.JobManager()
         branches = manager.branchStreamToBranchList(falsestdin, None)
-        self.assertEqual([expected_branch], branches) 
+        self.assertEqual([expected_branch], branches)
 
     def testAddJobManager(self):
         manager = jobmanager.JobManager()
@@ -76,6 +77,7 @@ class TestJobManager(unittest.TestCase):
 
 
 class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
+    layer = FunctionalLayer
 
     testdir = None
 
@@ -144,7 +146,9 @@ class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
             targetdir = None
         else:
             targetdir = os.path.join(self.testdir, branchtarget(target))
-        return BranchToMirror(branchdir, targetdir, branch_status_client, target)
+        return BranchToMirror(
+                branchdir, targetdir, branch_status_client, target
+                )
 
 
 def test_suite():
