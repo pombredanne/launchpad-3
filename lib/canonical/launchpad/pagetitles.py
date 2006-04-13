@@ -33,8 +33,7 @@ after the helpers.
 __metaclass__ = type
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, IDistroRelease, ILaunchBag)
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -464,11 +463,12 @@ people_index = 'People and teams in Launchpad'
 def people_list(context, view):
     return view.header
 
-person_assignedbugs = ContextDisplayName('Bugs assigned to %s')
-
 person_bounties = ContextDisplayName('Bounties for %s')
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
+
+def person_bugs(context, view):
+    return view.getSearchPageHeading()
 
 person_changepassword = 'Change your password'
 
@@ -506,13 +506,9 @@ person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
 
-person_reportedbugs = ContextDisplayName('Bugs %s reported')
-
 person_review = ContextDisplayName("Review %s")
 
 person_specworkload = ContextDisplayName('Specification workload for %s')
-
-person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
