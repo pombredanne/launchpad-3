@@ -59,7 +59,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.lp.dbschema import (
     BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, DBItemDisplayWidget)
+    AssigneeDisplayWidget, DBItemDisplayWidget, NewLineToSpacesWidget)
 
 
 def get_sortorder_from_request(request):
@@ -797,6 +797,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 getVocabularyRegistry().get(None, "Component"),
                 self.request)
 
+        self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
         setUpWidgets(self, self.schema, IInputWidget)
 
     def showTableView(self):

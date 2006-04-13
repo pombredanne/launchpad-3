@@ -69,6 +69,22 @@ A triager may find it useful to query for bugs with no package:
     >>> [bugtask.bug.id for bugtask in bugtasks_needing_packages]
     [2]
 
+If the search query contains new line characters they'll be replaced by
+spaces.
+
+    >>> form_values = {
+    ...     'search': 'Search',
+    ...     'field.searchtext': 'blackhole\n\rtrash\n\rfolder',
+    ...     'field.orderby': '-priority,-severity'}
+
+    >>> distro_search_listingview = create_view(
+    ...     ubuntu, '+bugs', form_values)
+
+    >>> bugtasks_search_with_new_lines = list(
+    ...     distro_search_listingview.search().batch)
+    >>> [bugtask.bug.id for bugtask in bugtasks_search_with_new_lines]
+    [2]
+
 Distribution Release search page
 ================================
 
