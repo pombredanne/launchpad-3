@@ -110,7 +110,7 @@ And then we need a way to process the uploads from the queue
   >>> import subprocess, sys
   >>> def process_uploads():
   ...     # reset previous log content if it exists
-  ...     if os.access(uploader_log, os.F_OK):
+  ...     if os.path.exists(uploader_log):
   ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
   ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
