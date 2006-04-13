@@ -1,9 +1,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template_2col/master"
-      i18n:domain="malone"
->
-  <body>
+      i18n:domain="malone">
+
+<body>
 
   <div metal:fill-slot="head_epilogue">
     <style type="text/css">
@@ -28,29 +28,21 @@
     </style>
   </div>
 
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="view/getSearchPageHeading"></h1>
+    </metal:heading>
+
   <metal:leftportlets fill-slot="portlets_one">
-    <tal:do_not_show_portlets_advanced_form
-      condition="not: view/shouldShowAdvancedForm">
-      <tal:block content="structure context/@@+portlet-bugfilters" />
-      <tal:releasebugs
-         tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
-         tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
-     </tal:do_not_show_portlets_advanced_form>
-     <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
-       <div tal:replace="structure context/@@+portlet-details" />
-     </tal:show_portlets_advanced>
+  <div tal:condition="view/shouldShowAssignedToTeamPortlet|nothing"
+      tal:content="structure context/@@+portlet-team-assignedbugs" />
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
-      <h1>Bugs in <span tal:replace="context/displayname" /></h1>
-
-      <tal:do_not_show_advanced_form 
-        condition="not: view/shouldShowAdvancedForm">
+    <tal:do_not_show_advanced_form
+      condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">
         <form method="GET" name="search" action="">
-          <input type="text" name="field.searchtext" size="20"
-                 tal:attributes="value python:request.form.get('field.searchtext', '')" />
+          <span tal:content="structure view/searchtext_widget" />
           <input type="submit" name="search" value="Search" />
           <a href="?advanced=1"><small>Advanced</small></a>
           <div style="margin-top: 5px">
@@ -68,15 +60,15 @@
         <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>
-      </tal:do_not_show_advanced_form>
+    </tal:do_not_show_advanced_form>
 
-      <tal:show_advanced condition="view/shouldShowAdvancedForm">
-        <metal:advanced_form
-          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
-      </tal:show_advanced>
+    <tal:show_advanced condition="view/shouldShowAdvancedForm">
+      <metal:advanced_form
+        use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+    </tal:show_advanced>
     <div class="visualClear">&nbsp;</div>
+
   </div>
 
 </body>
-
 </html>
