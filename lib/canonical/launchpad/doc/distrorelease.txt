@@ -323,3 +323,64 @@ Supersede current publication:
 
 
 
+
+Specification Listings
+======================
+
+We should be able to get lists of specifications in different states
+related to a distrorelease.
+
+Basically, we can filter by completeness, and by whether or not the spec is
+informational.
+
+ >>> distroset = getUtility(IDistributionSet)
+ >>> kubuntu = distroset.getByName("kubuntu")
+ >>> krunch = kubuntu.getRelease("krunch")
+ >>> from canonical.lp.dbschema import SpecificationFilter
+
+First, there should be no informational specs for krunch:
+
+ >>> filter = [SpecificationFilter.INFORMATIONAL]
+ >>> krunch.specifications(filter=filter).count()
+ 0
+
+
+There are 2 completed specs for Krunch:
+
+ >>> filter = [SpecificationFilter.COMPLETE]
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...    print spec.name
+ xxx
+ xxx
+
+
+And there are three incomplete specs:
+
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> for spec in krunch.specifications(filter=filter)
+ abc
+ def
+ geh
+
+
+If we ask for all specs, we get them in the order of priority.
+
+ >>> filter = [SpecificationFilter.ALL]
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...    print spec.priority.title, spec.name
+ Essential xxx
+ High xxx
+ Medium xxx
+ Low xxx
+ Not xxx
+
+
+And if we ask just for specs, we get the incomplete ones.
+
+ >>> for spec in kubuntu.specifications():
+ ...     print spec.name, spec is_complete
+ xxx False
+ xxx False
+ xxx False
+
+
