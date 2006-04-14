@@ -26,7 +26,8 @@ from canonical.launchpad.database.specificationsubscription import (
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, check_permission)
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -49,7 +50,7 @@ class Specification(SQLBase):
     status = EnumCol(schema=SpecificationStatus, notNull=True,
         default=SpecificationStatus.BRAINDUMP)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
-        default=SpecificationPriority.PROPOSED)
+        default=SpecificationPriority.UNDEFINED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
         foreignKey='Person', default=None)
     drafter = ForeignKey(dbName='drafter', notNull=False,
@@ -420,7 +421,7 @@ class SpecificationSet:
     def new(self, name, title, specurl, summary, status,
         owner, approver=None, product=None, distribution=None, assignee=None,
         drafter=None, whiteboard=None,
-        priority=SpecificationPriority.PROPOSED):
+        priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority, status=status,

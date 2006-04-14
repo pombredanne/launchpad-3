@@ -84,7 +84,7 @@ class ISpecification(IHasOwner):
             "feature and get approval for the implementation plan."))
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
-        default=SpecificationPriority.PROPOSED, required=True)
+        default=SpecificationPriority.UNDEFINED, required=True)
     assignee = Choice(title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
@@ -186,7 +186,8 @@ class ISpecification(IHasOwner):
 
     has_release_goal = Attribute('Is true if this specification has been '
         'proposed as a goal for a specific distro release or product '
-        'and the drivers of that release/series have accepted the goal.')
+        'series and the drivers of that release/series have accepted '
+        'the goal.')
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of

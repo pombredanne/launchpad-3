@@ -1298,8 +1298,8 @@ class SpecificationPriority(DBSchema):
         to be accepted by the mainline developers.
         """)
 
-    PROPOSED = Item(5, """
-        Proposed
+    UNDEFINED = Item(5, """
+        Undefined
 
         This feature has recently been proposed and has not yet been
         evaluated and prioritised by the project leaders.

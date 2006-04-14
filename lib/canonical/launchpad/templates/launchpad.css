@@ -707,7 +707,7 @@ tr.highlight {
 .specstatusOBSOLETE        { color: Gray; }
 
 .specpriorityNOTFORUS      { color: Gray; }
-.specpriorityPROPOSED      { color: Gray; }
+.specpriorityUNDEFINED     { color: Gray; }
 .specpriorityLOW           { color: Black; }
 .specpriorityMEDIUM        { color: Orange; }
 .specpriorityHIGH          { color: Red; }
