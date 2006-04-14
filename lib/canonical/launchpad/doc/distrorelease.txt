@@ -374,14 +374,14 @@ If we ask for all specs, we get them in the order of priority.
  High revu
  Medium thinclient-local-devices
  Low usplash-on-hibernation
- Proposed kde-desktopfile-langpacks
+ Undefined kde-desktopfile-langpacks
  Not krunch-desktop-plan
 
 
 With a distrorelease, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 
  >>> filter=[SpecificationFilter.ACCEPTED]
- >>> for spec in kubuntu.specifications(filter=filter):
+ >>> for spec in krunch.specifications(filter=filter):
  ...     print spec.name, spec.goalstatus.title
  cluster-installation Accepted
  revu Accepted
@@ -389,12 +389,12 @@ With a distrorelease, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
  usplash-on-hibernation Accepted
 
  >>> filter=[SpecificationFilter.PROPOSED]
- >>> for spec in kubuntu.specifications(filter=filter):
+ >>> for spec in krunch.specifications(filter=filter):
  ...     print spec.name, spec.goalstatus.title
  kde-desktopfile-langpacks Proposed
  
  >>> filter=[SpecificationFilter.DECLINED]
- >>> for spec in kubuntu.specifications(filter=filter):
+ >>> for spec in krunch.specifications(filter=filter):
  ...     print spec.name, spec.goalstatus.title
  krunch-desktop-plan Declined
  

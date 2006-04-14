@@ -1683,22 +1683,22 @@ INSERT INTO karma (id, datecreated, person, "action") VALUES (24, '2030-02-23 16
 INSERT INTO karma (id, datecreated, person, "action") VALUES (25, '2030-02-23 16:43:25.744534', 12, 9);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (26, '2030-02-22 19:42:21.890299', 16, 1);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (27, '2030-03-06 10:11:02.729077', 16, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (28, '2006-04-12 07:34:37.765691', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (29, '2006-04-12 07:34:37.765691', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (30, '2006-04-12 07:38:20.162251', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (31, '2006-04-12 07:38:20.162251', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (32, '2006-04-12 07:40:52.80865', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (33, '2006-04-12 07:40:52.80865', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (34, '2006-04-12 07:44:42.314166', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (35, '2006-04-12 07:44:42.314166', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (36, '2006-04-12 07:51:24.674032', 1, 23);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (37, '2006-04-12 07:51:36.24014', 1, 23);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (38, '2006-04-12 07:51:46.61401', 1, 23);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (39, '2006-04-12 07:52:02.44468', 1, 23);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (40, '2006-04-12 07:55:03.711218', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (41, '2006-04-12 07:55:03.711218', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (42, '2006-04-12 07:57:24.675444', 1, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (43, '2006-04-12 07:57:24.675444', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (28, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (29, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (30, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (31, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (32, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (33, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (34, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (35, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (36, '2025-01-02 00:00:00', 1, 23);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (37, '2025-01-02 00:00:00', 1, 23);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (38, '2025-01-02 00:00:00', 1, 23);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (39, '2025-01-02 00:00:00', 1, 23);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (40, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (41, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (42, '2025-01-02 00:00:00', 1, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (43, '2025-01-02 00:00:00', 1, 22);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;

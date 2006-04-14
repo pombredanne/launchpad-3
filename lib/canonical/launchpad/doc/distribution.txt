@@ -295,9 +295,14 @@ informational.
 
  >>> from canonical.lp.dbschema import SpecificationFilter
 
-First, there should be one informational specs for kubuntu:
+First, there should be one informational spec for kubuntu, but it is
+complete so it will not show up unless we explicitly ask for complete specs:
 
  >>> filter = [SpecificationFilter.INFORMATIONAL]
+ >>> kubuntu.specifications(filter=filter).count()
+ 0
+ >>> filter = [SpecificationFilter.INFORMATIONAL,
+ ...           SpecificationFilter.COMPLETE]
  >>> kubuntu.specifications(filter=filter).count()
  1
 
@@ -331,7 +336,7 @@ If we ask for all specs, we get them in the order of priority.
  High revu
  Medium thinclient-local-devices
  Low usplash-on-hibernation
- Proposed kde-desktopfile-langpacks
+ Undefined kde-desktopfile-langpacks
  Not krunch-desktop-plan
 
 

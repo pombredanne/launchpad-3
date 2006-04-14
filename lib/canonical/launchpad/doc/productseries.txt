@@ -205,19 +205,24 @@ that:
     either the product owner or the project owner if there is a project.
 
 
-We test these rules below.
+We test these rules below. We will create the project, product and series
+directly so that we don't have to deal with security permissions checks when
+setting and resetting the driver attributes.
 
+ >>> from canonical.launchpad.database import (
+ ...    Project, Product, ProductSeries)
+ >>> from canonical.database.sqlbase import flush_database_updates
  >>> carlos = getUtility(IPersonSet).getByName('carlos')
  >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
  >>> jblack = getUtility(IPersonSet).getByName('jblack')
- >>> project = getUtility(IProjectSet).new('testproj', 'Test Project',
- ...                           'Test Project Title', 'http://foo.com/url',
- ...                           'summary', 'description',
- ...                            carlos.id)
- >>> product = getUtility(IProductSet).createProduct(sabdfl.id, 'testprod',
- ...                'Test Product', 'Test product title', 'summary',
- ...                project=project.id)
- >>> series = product.newSeries(jblack, '1.0', 'Series summary')
+ >>> project = Project(name='testproj', displayname='Test Project',
+ ...     title='Test Project Title', homepageurl='http://foo.com/url',
+ ...     summary='summary', description='description', owner=carlos.id)
+ >>> product = Product(owner=sabdfl, name='testprod',
+ ...     displayname='Test Product', title='Test product title',
+ ...     summary='summary', project=project)
+ >>> series = ProductSeries(owner=jblack, name='1.0', product=product,
+ ...     summary='Series summary')
 
 
 First, lets see what we get for the series drivers before we have anything
@@ -235,6 +240,7 @@ If there is a project on the product, we would expect the project owner:
 If there is NO project on the product, then we expect the product owner:
 
  >>> product.project = None
+ >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
  sabdfl
@@ -243,6 +249,7 @@ If there is NO project on the product, then we expect the product owner:
 Now lets put the project back:
 
  >>> product.project = project.id
+ >>> flush_database_updates()
 
 
 And lets see what happens if we have an explicit driver on any of project,
@@ -251,15 +258,18 @@ product or series:
  >>> cprov = getUtility(IPersonSet).getByName('cprov')
  >>> edgar = getUtility(IPersonSet).getByName('edgar')
  >>> danner = getUtility(IPersonSet).getByName('danner')
- >>> cprov = getUtility(IPersonSet).getByName('cprov')
+ >>> jblack = getUtility(IPersonSet).getByName('jblack')
+ >>> jdub = getUtility(IPersonSet).getByName('jdub')
 
  >>> project.driver = danner
+ >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
  danner
 
  >>> project.driver = None
  >>> product.driver = edgar
+ >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
  edgar
@@ -267,6 +277,7 @@ product or series:
  >>> project.driver = None
  >>> product.driver = None
  >>> series.driver = cprov
+ >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
  cprov
@@ -277,6 +288,7 @@ OK, now lets test pairs of drivers:
  >>> project.driver = None
  >>> product.driver = edgar
  >>> series.driver = cprov
+ >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
  cprov
@@ -285,6 +297,7 @@ OK, now lets test pairs of drivers:
  >>> project.driver = sabdfl
  >>> product.driver = danner
  >>> series.driver = None
+ >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
  danner
@@ -293,6 +306,7 @@ OK, now lets test pairs of drivers:
  >>> project.driver = jdub
  >>> product.driver = None
  >>> series.driver = edgar
+ >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
  edgar
@@ -304,6 +318,7 @@ And finally the case where they are all set:
  >>> project.driver = cprov
  >>> product.driver = danner
  >>> series.driver = edgar
+ >>> flush_database_updates()
  >>> for d in series.drivers:
  ...     print d.name
  cprov
