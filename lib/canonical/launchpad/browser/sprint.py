@@ -12,7 +12,6 @@ __all__ = [
     'SprintView',
     'SprintAddView',
     'SprintEditView',
-    'SprintSpecsView',
     'SprintTopicSetView',
     ]
 
@@ -119,13 +118,6 @@ class SprintView(LaunchpadView):
     __used_for__ = ISprint
 
     def initialize(self):
-        self._sprint_spec_links = None
-        self.show = self.request.form.get('show', None)
-
-        # XXX: These appear not to be used.  SteveAlexander 2006-03-06.
-        self.use_detailed_listing = True
-        self.use_compact_listing = False
-
         self.notices = []
 
     def attendance(self):
@@ -140,31 +132,17 @@ class SprintView(LaunchpadView):
     @cachedproperty
     def spec_links(self):
         """List all of the SprintSpecifications appropriate for this view."""
-        if self.show is None:
-            spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.ACCEPTED)
-        elif self.show == 'all':
-            spec_links = self.context.specificationLinks()
-        elif self.show == 'deferred':
-            spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.DECLINED)
-        elif self.show == 'submitted':
-            spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.PROPOSED)
-        return spec_links
+        filter = self.spec_filter
+        return shortlist(self.context.specificationLinks(filter=filter))
 
     @cachedproperty
     def count(self):
-        return self.spec_links.count()
+        return len(self.spec_links)
 
     @cachedproperty
     def proposed_count(self):
-        return self.context.specificationLinks(
-            status=SprintSpecificationStatus.PROPOSED).count()
-
-    @property
-    def specs(self):
-        return [speclink.specification for speclink in self.spec_links()]
+        filter = [SpecificationFilter.PROPOSED]
+        return self.context.specificationLinks(filter=filter).count()
 
 
 class SprintAddView(SQLObjectAddView):
@@ -194,57 +172,6 @@ class SprintEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
-
-
-class SprintSpecsView(HasSpecificationsView):
-
-    @cachedproperty
-    def specs(self):
-        """The list of specs that are going to be displayed in this view.
-
-        This method determines the appropriate filtering to be passed to
-        context.specifications(). See IHasSpecifications.specifications
-        for further details.
-
-        The method can review the URL and decide what will be included,
-        and what will not.
-
-        The typical URL is of the form:
-
-           ".../name1/+specs?show=complete"
-
-        This method will interpret the show= part based on the kind of
-        object that is the context of this request.
-        """
-        show = self.request.form.get('show', None)
-        acceptance = self.request.form.get('acceptance', None)
-        informational = self.request.form.get('informational', False)
-
-        filter = []
-
-        # filter on completeness, show incomplete if nothing is said
-        if show == 'all':
-            filter.append(SpecificationFilter.ALL)
-        elif show == 'complete':
-            filter.append(SpecificationFilter.COMPLETE)
-        elif show == 'incomplete':
-            filter.append(SpecificationFilter.INCOMPLETE)
-
-        # filter for informational status
-        if informational is not False:
-            filter.append(SpecificationFilter.INFORMATIONAL)
-
-        # filter for acceptance state, show accepted specs by default
-        if acceptance == 'declined':
-            filter.append(SpecificationFilter.DECLINED)
-        elif show == 'proposed':
-            filter.append(SpecificationFilter.PROPOSED)
-        else:
-            filter.append(SpecificationFilter.ACCEPTED)
-
-        specs = self.context.specifications(filter=filter)
-
-        return specs
 
 
 class SprintTopicSetView(LaunchpadView):

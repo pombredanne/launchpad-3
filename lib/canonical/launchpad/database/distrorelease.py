@@ -283,8 +283,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IHasSpecifications."""
 
         # eliminate mutables
-        if filter is None:
-            filter = []
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a distrorelease is to show everything approved
+            filter = [SpecificationFilter.ACCEPTED]
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
@@ -349,6 +351,32 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See ISpecificationGoal."""
         spec.distrorelease = self
         spec.goalstatus = SpecificationGoalStatus.DECLINED
+
+    def acceptSpecificationGoals(self, speclist):
+        """See ISpecificationGoal."""
+        for spec in speclist:
+            self.acceptSpecificationGoal(spec)
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
+
+    def declineSpecificationGoals(self, speclist):
+        """See ISpecificationGoal."""
+        for spec in speclist:
+            self.declineSpecificationGoal(spec)
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
 
     @property
     def open_cve_bugtasks(self):

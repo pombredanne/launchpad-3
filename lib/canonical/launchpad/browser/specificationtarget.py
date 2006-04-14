@@ -35,36 +35,54 @@ class HasSpecificationsView(LaunchpadView):
     of the spec.
     """
 
-    def initialize(self):
-        self._plan = None
-        self._dangling = None
-        self._categories = None
+    @cachedproperty
+    def spec_filter(self):
+        """The list of specs that are going to be displayed in this view.
 
-        url = self.request.getURL()
-        # XXX: SteveAlexander, 2006-03-06.  This url-sniffing view_title
-        #      setting code is not tested.  It doesn't appear to be used
-        #      either.
-        if 'created' in url:
-            self.view_title = 'Created by %s' % self.context.title
-        elif 'approver' in url:
-            self.view_title = 'For approval by %s' % self.context.title
-        elif 'assigned' in url:
-            self.view_title = 'Assigned to %s' % self.context.title
-        elif 'feedback' in url:
-            self.view_title = 'Need feedback from %s' % self.context.title
-        elif 'drafted' in url:
-            self.view_title = 'Drafted by %s' % self.context.title
-        elif 'subscribed' in url:
-            self.view_title = 'Subscribed by %s' % self.context.title
-        else:
-            self.view_title = ''
+        This method determines the appropriate filtering to be passed to
+        context.specifications(). See IHasSpecifications.specifications
+        for further details.
 
-    def specs(self):
-        """This should be implemented in a subclass that knows how its
-        context can filter its list of specs.
+        The method can review the URL and decide what will be included,
+        and what will not.
+
+        The typical URL is of the form:
+
+           ".../name1/+specs?show=complete&informational&acceptance=accepted"
+
+        This method will interpret the show= part based on the kind of
+        object that is the context of this request.
         """
+        show = self.request.form.get('show', None)
+        informational = self.request.form.get('informational', False)
+        acceptance = self.request.form.get('acceptance', None)
 
-        raise NotImplementedError
+        filter = []
+
+        # filter on completeness
+        if show == 'all':
+            filter.append(SpecificationFilter.ALL)
+        elif show == 'complete':
+            filter.append(SpecificationFilter.COMPLETE)
+        elif show == 'incomplete':
+            filter.append(SpecificationFilter.INCOMPLETE)
+
+        # filter for informational status
+        if informational is not False:
+            filter.append(SpecificationFilter.INFORMATIONAL)
+
+        # filter for acceptance state
+        if acceptance == 'declined':
+            filter.append(SpecificationFilter.DECLINED)
+        elif show == 'proposed':
+            filter.append(SpecificationFilter.PROPOSED)
+        elif show == 'accepted':
+            filter.append(SpecificationFilter.ACCEPTED)
+
+    @cachedproperty
+    def specs(self):
+        filter = self.spec_filter
+        return shortlist(self.context.specifications(filter=filter))
 
     @cachedproperty
     def documentation(self):
@@ -72,7 +90,7 @@ class HasSpecificationsView(LaunchpadView):
                   SpecificationFilter.INFORMATIONAL]
         return shortlist(self.context.specifications(filter=filter))
 
-    @property
+    @cachedproperty
     def categories(self):
         """This organises the specifications related to this target by
         "category", where a category corresponds to a particular spec
@@ -92,8 +110,6 @@ class HasSpecificationsView(LaunchpadView):
          - subscribed by this person (self.context.subscriber_specs)
 
         """
-        if self._categories is not None:
-            return self._categories
         categories = {}
         for spec in self.specs:
             if categories.has_key(spec.status):
@@ -105,8 +121,7 @@ class HasSpecificationsView(LaunchpadView):
                 categories[spec.status] = category
             category['specs'].append(spec)
         categories = categories.values()
-        self._categories = sorted(categories, key=lambda a: a['status'].value)
-        return self._categories
+        return sorted(categories, key=lambda a: a['status'].value)
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This
@@ -119,7 +134,7 @@ class HasSpecificationsView(LaunchpadView):
         """Return the current sequence of recommended spec implementations,
         based on their priority and dependencies.
         """
-        if self._plan is None:
+        if not hasattr(self, '_plan'):
             # we have not done this before so make the plan
             self.makeSpecPlan()
         return self._plan
@@ -129,7 +144,7 @@ class HasSpecificationsView(LaunchpadView):
         their dependencies do not allow them to be implemented (circular
         deps, for example.
         """
-        if self._dangling is None:
+        if not hasattr(self, '_dangling'):
             # we have not done this before so figure out if any are dangling
             self.makeSpecPlan()
         return self._dangling
@@ -142,7 +157,9 @@ class HasSpecificationsView(LaunchpadView):
         # XXX sabdfl 2006-04-07 this is incomplete and will not build a
         # proper comprehensive roadmap
         plan = []
-        filter = [SpecificationFilter.INCOMPLETE]
+        filter = [
+            SpecificationFilter.INCOMPLETE,
+            SpecificationFilter.ACCEPTED]
         specs = set(self.context.specifications(filter=filter))
         found_spec = True
         while found_spec:
@@ -173,48 +190,6 @@ class HasSpecificationsView(LaunchpadView):
 
 
 class SpecificationTargetView(HasSpecificationsView):
-
-    @cachedproperty
-    def specs(self):
-        """The list of specs that are going to be displayed in this view.
-
-        This method determines the appropriate filtering to be passed to
-        context.specifications(). See IHasSpecifications.specifications
-        for further details.
-
-        The method can review the URL and decide what will be included,
-        and what will not.
-
-        This particular implementation is used for IDistribution and
-        IProduct, the two objects which are an ISpecificationTarget.
-
-        The typical URL is of the form:
-
-           ".../name1/+specs?show=complete"
-
-        This method will interpret the show= part based on the kind of
-        object that is the context of this request.
-        """
-        show = self.request.form.get('show', None)
-        informational = self.request.form.get('informational', False)
-
-        filter = []
-
-        # filter on completeness, show incomplete if nothing is said
-        if show == 'all':
-            filter.append(SpecificationFilter.ALL)
-        elif show == 'complete':
-            filter.append(SpecificationFilter.COMPLETE)
-        elif show == None or show == 'incomplete':
-            filter.append(SpecificationFilter.INCOMPLETE)
-
-        # filter for informational status
-        if informational is not False:
-            filter.append(SpecificationFilter.INFORMATIONAL)
-
-        specs = self.context.specifications(filter=filter)
-
-        return specs
 
     @property
     def goaltitle(self):

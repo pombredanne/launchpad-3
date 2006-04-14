@@ -261,8 +261,27 @@ class Person(SQLBase):
         """See IHasSpecifications."""
 
         # eliminate mutables
-        if filter is None:
-            filter = []
+        if not filter:
+            # if no filter was passed (None or []) then we must decide the
+            # default filtering, and for a person we want related incomplete
+            # specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # if no roles are given then we want everything
+        linked = False
+        roles = [
+            SpecificationFilter.CREATOR,
+            SpecificationFilter.ASSIGNEE,
+            SpecificationFilter.DRAFTER,
+            SpecificationFilter.APPROVER,
+            SpecificationFilter.FEEDBACK,
+            SpecificationFilter.SUBSCRIBER]
+        for role in roles:
+            if role in filter:
+                linked = True
+        if not linked:
+            for role in roles:
+                filter.append(role)
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
@@ -280,25 +299,6 @@ class Person(SQLBase):
 
         # in this case the "base" is quite complicated because it is
         # determined by the roles so lets do that first
-
-        # if no roles are given then we want everything
-        linked = False
-        for role in [
-            SpecificationFilter.CREATOR,
-            SpecificationFilter.ASSIGNEE,
-            SpecificationFilter.DRAFTER,
-            SpecificationFilter.APPROVER,
-            SpecificationFilter.FEEDBACK,
-            SpecificationFilter.SUBSCRIBER]:
-            if role in filter:
-                linked = True
-        if not linked:
-            filter.append(SpecificationFilter.CREATOR)
-            filter.append(SpecificationFilter.ASSIGNEE)
-            filter.append(SpecificationFilter.DRAFTER)
-            filter.append(SpecificationFilter.APPROVER)
-            filter.append(SpecificationFilter.FEEDBACK)
-            filter.append(SpecificationFilter.SUBSCRIBER)
 
         base = '(1=0'  # we want to start with a FALSE and OR them
         if SpecificationFilter.CREATOR in filter:

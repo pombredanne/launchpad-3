@@ -9,7 +9,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecificationGoal"
-    class="canonical.launchpad.browser.SpecificationGoalView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     permission="zope.Public">
     <browser:page
       name="+specs"

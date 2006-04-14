@@ -61,9 +61,9 @@ class ISprint(IHasOwner, IHasSpecifications):
     attendances = Attribute('The set of SprintAttendance records.')
     
     def specificationLinks(status=None):
-        """Return the SprintSpecification records matching the status given,
-        or all of them if no status is passed. They should be in order of
-        priority, highest first.
+        """Return the SprintSpecification records matching the filter,
+        quantity and sort given. The rules for filtering and sorting etc are
+        the same as those for IHasSpecifications.specifications()
         """
 
     def getSpecificationLink(id):

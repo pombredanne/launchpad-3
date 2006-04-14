@@ -15,6 +15,9 @@ from warnings import warn
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
+
+from canonical.database.sqlbase import flush_database_updates
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -148,8 +151,10 @@ class ProductSeries(SQLBase):
         """See IHasSpecifications."""
 
         # eliminate mutables
-        if filter is None:
-            filter = []
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a productseries is to show everything accepted
+            filter = [SpecificationFilter.ACCEPTED]
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
@@ -283,6 +288,32 @@ class ProductSeries(SQLBase):
         """See ISpecificationGoal."""
         spec.productseries = self
         spec.goalstatus = SpecificationGoalStatus.DECLINED
+
+    def acceptSpecificationGoals(self, speclist):
+        """See ISpecificationGoal."""
+        for spec in speclist:
+            self.acceptSpecificationGoal(spec)
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
+
+    def declineSpecificationGoals(self, speclist):
+        """See ISpecificationGoal."""
+        for spec in speclist:
+            self.declineSpecificationGoal(spec)
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
 
 
 # XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet

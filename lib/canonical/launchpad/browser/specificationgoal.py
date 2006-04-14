@@ -14,8 +14,6 @@ from canonical.launchpad.interfaces import ISpecificationGoal
 from canonical.lp.dbschema import (
     SpecificationGoalStatus, SpecificationFilter)
 
-from canonical.database.sqlbase import flush_database_updates
-
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.helpers import shortlist
@@ -23,7 +21,6 @@ from canonical.launchpad.helpers import shortlist
 
 __all__ = [
     'GoalSetView',
-    'SpecificationGoalView'
     ]
 
 
@@ -35,11 +32,12 @@ class GoalSetView(LaunchpadView):
     add/edit metaphor.
     """
 
+    @cachedproperty
     def specs(self):
         """Return the specifications which have been proposed for this goal.
         """
         filter=[SpecificationFilter.PROPOSED]
-        return self.context.specifications(filter=filter)
+        return shortlist(self.context.specifications(filter=filter))
 
     def initialize(self):
         self.status_message = None
@@ -85,79 +83,20 @@ class GoalSetView(LaunchpadView):
             selected_specs = [selected_specs]
 
         if action == 'Accepted':
-            action_fn = self.context.acceptSpecificationGoal
+            action_fn = self.context.acceptSpecificationGoals
         else:
-            action_fn = self.context.declineSpecificationGoal
-
-        for specname in selected_specs:
-            action_fn(self.context.getSpecification(specname))
-
-        # we need to flush all the changes we have made to disk, then try
-        # the query again to see if we have any specs remaining in this
-        # queue
-        flush_database_updates()
+            action_fn = self.context.declineSpecificationGoals
+        specs = [self.context.getSpecification(name) for name in selected_specs]
+        leftover = action_fn(specs)
 
         # For example: "Accepted 26 specification(s)."
         self.status_message = '%s %d specification(s).' % (
             action, len(selected_specs))
 
-        if self.specs().count() == 0:
+        if leftover == 0:
             # they are all done, so redirect back to the spec listing page
             self.request.response.redirect(
                 canonical_url(self.context)+'/+specs')
 
         return self.status_message
-
-
-class SpecificationGoalView(HasSpecificationsView):
-
-    @cachedproperty
-    def specs(self):
-        """The list of specs that are going to be displayed in this view.
-
-        This method determines the appropriate filtering to be passed to
-        context.specifications(). See IHasSpecifications.specifications
-        for further details.
-
-        The method can review the URL and decide what will be included,
-        and what will not.
-
-        This particular implementation is used for IProductSeries and
-        IDistroRelease, the two objects which are an ISpecificationGoal.
-
-        The typical URL is of the form:
-
-           ".../name1/+specs?show=complete&acceptance=proposed"
-
-        """
-        show = self.request.form.get('show', None)
-        informational = self.request.form.get('informational', False)
-        acceptance = self.request.form.get('acceptance', None)
-
-        filter = []
-
-        # filter on completeness
-        if show == 'all':
-            filter.append(SpecificationFilter.ALL)
-        elif show == 'complete':
-            filter.append(SpecificationFilter.COMPLETE)
-        elif show == 'incomplete':
-            filter.append(SpecificationFilter.INCOMPLETE)
-
-        # filter for informational status
-        if informational is not False:
-            filter.append(SpecificationFilter.INFORMATIONAL)
-
-        # filter for acceptance state, show accepted specs by default
-        if acceptance == 'declined':
-            filter.append(SpecificationFilter.DECLINED)
-        elif show == 'proposed':
-            filter.append(SpecificationFilter.PROPOSED)
-        else:
-            filter.append(SpecificationFilter.ACCEPTED)
-
-        specs = self.context.specifications(filter=filter)
-
-        return specs
-
 

@@ -284,8 +284,9 @@ class Distribution(SQLBase, BugTargetBase):
         """See IHasSpecifications."""
 
         # eliminate mutables
-        if filter is None:
-            filter = []
+        if not filter:
+            # it could be None or it could be []
+            filter = [SpecificationFilter.INCOMPLETE]
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:

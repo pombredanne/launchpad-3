@@ -293,8 +293,10 @@ class Product(SQLBase, BugTargetBase):
         """See IHasSpecifications."""
 
         # eliminate mutables
-        if filter is None:
-            filter = []
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a product is to show incomplete specs
+            filter = [SpecificationFilter.INCOMPLETE]
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:

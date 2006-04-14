@@ -49,7 +49,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprint"
-    class="canonical.launchpad.browser.SprintSpecsView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     facet="specifications"
     permission="zope.Public">
     <browser:page

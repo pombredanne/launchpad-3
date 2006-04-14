@@ -295,7 +295,7 @@ class PersonSpecsMenu(ApplicationMenu):
     usedfor = IPerson
     facet = 'specifications'
     links = ['created', 'assigned', 'drafted', 'review', 'approver',
-             'workload', 'subscribed']
+             'workload', 'roadmap', 'subscribed']
 
     def created(self):
         text = 'Registrant'
@@ -329,6 +329,11 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Workload'
         summary = 'Show all specification work assigned'
         return Link('+specworkload', text, summary, icon='spec')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        summary = 'Show recommended sequence of feature implementation'
+        return Link('+roadmap', text, summary, icon='info')
 
     def subscribed(self):
         text = 'Subscribed'

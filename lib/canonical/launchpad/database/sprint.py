@@ -61,21 +61,19 @@ class Sprint(SQLBase):
         joinColumn='sprint', otherColumn='attendee',
         intermediateTable='SprintAttendance', orderBy='name')
 
-    def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications."""
+    def spec_filter_clause(self, filter=None):
+        """Figure out the appropriate query for specifications on a sprint.
+
+        We separate out the query generation from the normal
+        specifications() method because we want to reuse this query in the
+        specificationLinks() method.
+        """
 
         # eliminate mutables
-        if filter is None:
-            filter = []
-
-        # import here to avoid circular deps
-        from canonical.launchpad.database.specification import Specification
-
-        # sort by priority descending, by default
-        if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
-        elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a sprint is to show everything approved
+            filter = [SpecificationFilter.ACCEPTED]
 
         # figure out what set of specifications we are interested in. for
         # sprint, we need to be able to filter on the basis of:
@@ -118,23 +116,41 @@ class Sprint(SQLBase):
         if SpecificationFilter.ALL in filter:
             query = base
         
+        return query
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        query = self.spec_filter_clause(filter=filter)
+
+        # import here to avoid circular deps
+        from canonical.launchpad.database.specification import Specification
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=['SprintSpecification'])
         results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
-    def specificationLinks(self, status=None):
+    def specificationLinks(self, sort=None, quantity=None, filter=None):
         """See ISprint."""
-        query = """SprintSpecification.specification = Specification.id AND
-                   SprintSpecification.sprint = %s""" % sqlvalues(self.id)
-        if status is not None:
-            query += ' AND SprintSpecification.status=%s' % sqlvalues(status)
+        
+        query = self.spec_filter_clause(filter=filter)
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
         results = SprintSpecification.select(query,
-            clauseTables=['Specification'],
-            orderBy=['-Specification.priority', 
-                     'Specification.status',
-                     'Specification.name'])
+            clauseTables=['Specification'], orderBy=order, limit=quantity)
         results.prejoin(['specification'])
         return results
 
