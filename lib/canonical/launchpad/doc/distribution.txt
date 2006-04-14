@@ -295,11 +295,11 @@ informational.
 
  >>> from canonical.lp.dbschema import SpecificationFilter
 
-First, there should be no informational specs for kubuntu:
+First, there should be one informational specs for kubuntu:
 
  >>> filter = [SpecificationFilter.INFORMATIONAL]
  >>> kubuntu.specifications(filter=filter).count()
- 0
+ 1
 
 
 There are 2 completed specs for Kubuntu:
@@ -341,8 +341,6 @@ And if we ask just for specs, we get the incomplete ones.
  ...     print spec.name, spec.is_complete
  cluster-installation False
  revu False
- thinclient-local-devices True
- usplash-on-hibernation True
  kde-desktopfile-langpacks False
  krunch-desktop-plan False
 

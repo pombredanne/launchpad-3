@@ -24,7 +24,7 @@ __all__ = [
     ]
 
 
-class GoalSetView(LaunchpadView):
+class GoalSetView(HasSpecificationsView, LaunchpadView):
     """Custom view class to process the results of this unusual page.
 
     It is unusual because we want to display multiple objects with

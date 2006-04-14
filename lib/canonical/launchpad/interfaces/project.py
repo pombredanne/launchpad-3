@@ -204,7 +204,7 @@ class IProjectSet(Interface):
         Return the default value if there is no such project.
         """
 
-    def new(name, title, displayname, summary, description, owner, url):
+    def new(name, displayname, title, homepageurl, summary, description, owner):
         """Create and return a project with the given arguments."""
 
     def count_all():

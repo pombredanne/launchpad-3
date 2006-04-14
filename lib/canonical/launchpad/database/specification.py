@@ -51,11 +51,11 @@ class Specification(SQLBase):
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.PROPOSED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person')
+        foreignKey='Person', default=None)
     drafter = ForeignKey(dbName='drafter', notNull=False,
-        foreignKey='Person')
+        foreignKey='Person', default=None)
     approver = ForeignKey(dbName='approver', notNull=False,
-        foreignKey='Person')
+        foreignKey='Person', default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     product = ForeignKey(dbName='product', foreignKey='Product',

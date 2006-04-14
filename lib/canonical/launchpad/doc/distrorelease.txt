@@ -340,11 +340,11 @@ informational.
  >>> krunch = kubuntu.getRelease("krunch")
  >>> from canonical.lp.dbschema import SpecificationFilter
 
-First, there should be no informational specs for krunch:
+First, there should be one informational specs for krunch:
 
  >>> filter = [SpecificationFilter.INFORMATIONAL]
  >>> krunch.specifications(filter=filter).count()
- 0
+ 1
 
 
 There are 2 completed specs for Krunch:
@@ -368,7 +368,7 @@ And there are 2 incomplete specs:
 If we ask for all specs, we get them in the order of priority.
 
  >>> filter = [SpecificationFilter.ALL]
- >>> for spec in kubuntu.specifications(filter=filter):
+ >>> for spec in krunch.specifications(filter=filter):
  ...    print spec.priority.title, spec.name
  Essential cluster-installation
  High revu
@@ -378,16 +378,36 @@ If we ask for all specs, we get them in the order of priority.
  Not krunch-desktop-plan
 
 
-And if we ask just for specs, we get BOTH the incomplete and the complete ones.
+With a distrorelease, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 
- >>> for spec in kubuntu.specifications():
- ...     print spec.name, spec.is_complete
- cluster-installation False
- revu False
- thinclient-local-devices True
- usplash-on-hibernation True
- kde-desktopfile-langpacks False
- krunch-desktop-plan False
+ >>> filter=[SpecificationFilter.ACCEPTED]
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...     print spec.name, spec.goalstatus.title
+ cluster-installation Accepted
+ revu Accepted
+ thinclient-local-devices Accepted
+ usplash-on-hibernation Accepted
+
+ >>> filter=[SpecificationFilter.PROPOSED]
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...     print spec.name, spec.goalstatus.title
+ kde-desktopfile-langpacks Proposed
+ 
+ >>> filter=[SpecificationFilter.DECLINED]
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...     print spec.name, spec.goalstatus.title
+ krunch-desktop-plan Declined
+ 
+
+And if we ask just for specs, we get BOTH the incomplete and the complete
+ones that have been accepted.
+
+ >>> for spec in krunch.specifications():
+ ...     print spec.name, spec.is_complete, spec.goalstatus.title
+ cluster-installation False Accepted
+ revu False Accepted
+ thinclient-local-devices True Accepted
+ usplash-on-hibernation True Accepted
 
 
 Drivers

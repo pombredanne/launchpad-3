@@ -426,7 +426,7 @@ The status is now IMPORTED:
 And the number of activities performed is...
 
     >>> person.activities.count()
-    2
+    18
 
 The header should be the old one as this one does not have any:
 

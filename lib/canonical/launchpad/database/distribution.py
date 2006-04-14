@@ -281,12 +281,40 @@ class Distribution(SQLBase, BugTargetBase):
         return DistributionSourcePackageRelease(self, sourcepackagerelease)
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications."""
+        """See IHasSpecifications.
+        
+        In the case of distributions, there are two kinds of filtering,
+        based on:
+        
+          - completeness: we want to show INCOMPLETE if nothing is said
+          - informationalness: we will show ANY if nothing is said
+        
+        """
 
-        # eliminate mutables
+        # eliminate mutables in the case where nothing or an empty filter
+        # was sent
         if not filter:
             # it could be None or it could be []
             filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a distro
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:

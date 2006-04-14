@@ -156,16 +156,16 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     def listapproved(self):
         text = 'Show Approved'
-        return Link('+specs?show=accepted', text, icon='info')
+        return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
         text = 'Show Proposed'
-        return Link('+specs?show=proposed', text, icon='info')
+        return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
         text = 'Show Declined'
         summary = 'Show the goals which have been declined'
-        return Link('+specs?show=declined', text, icon='info')
+        return Link('+specs?acceptance=declined', text, icon='info')
 
     def setgoals(self):
         text = 'Set Goals'

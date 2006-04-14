@@ -17,7 +17,8 @@ First, get a product that has some ProductSeries in the sample data.
 >>> productset = getUtility(IProductSet)
 >>> firefox = productset['firefox']
 
-A ProductSeries can be retrieved using the associated product and the series name.
+A ProductSeries can be retrieved using the associated product and the series
+name.
 
 >>> milestones = firefox.getSeries('milestones')
 
@@ -84,51 +85,101 @@ informational.
  >>> onezero = firefox.getSeries("1.0")
  >>> from canonical.lp.dbschema import SpecificationFilter
 
-First, there should be no informational specs for onezero:
+We will create two specs for onezero and use them to demonstrate the
+filtering.
 
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> onezero.specifications(filter=filter).count()
- 0
-
-
-There are 2 completed specs for 1.0:
-
- >>> filter = [SpecificationFilter.COMPLETE]
- >>> for spec in firefox.specifications(filter=filter):
- ...    print spec.name, spec.is_complete
- thinclient-local-devices True
- usplash-on-hibernation True
+ >>> carlos = getUtility(IPersonSet).getByName('carlos')
+ >>> from canonical.launchpad.database import Specification
+ >>> a = Specification(name='a', title='A', summary='AA', owner=carlos,
+ ...                   product=firefox, productseries=onezero,
+ ...                   specurl='http://wbc.com/two')
+ >>> b = Specification(name='b', title='b', summary='bb', owner=carlos,
+ ...                   product=firefox, productseries=onezero,
+ ...                   specurl='http://fds.com/adsf')
 
 
-And there are 2 incomplete specs:
+Now, we will make one of them accepted, the other declined, and both of them
+informational.
 
- >>> filter = [SpecificationFilter.INCOMPLETE]
- >>> for spec in onezero.specifications(filter=filter):
- ...     print spec.name, spec.is_complete
- cluster-installation False
- revu False
+ >>> from canonical.lp.dbschema import SpecificationStatus
+ >>> from canonical.lp.dbschema import SpecificationGoalStatus
+ >>> from canonical.lp.dbschema import SpecificationDelivery
+ >>> a.informational = b.informational = True
+ >>> a.status = b.status = SpecificationStatus.APPROVED
+ >>> a.delivery = b.delivery = SpecificationDelivery.IMPLEMENTED
+ >>> a.goalstatus = SpecificationGoalStatus.ACCEPTED
+ >>> b.goalstatus = SpecificationGoalStatus.DECLINED
 
+ >>> from canonical.database.sqlbase import flush_database_updates
+ >>> flush_database_updates()
 
-If we ask for all specs, we get them in the order of priority.
+If we ask for ALL specs we should see them both.
 
  >>> filter = [SpecificationFilter.ALL]
- >>> for spec in firefox.specifications(filter=filter):
- ...    print spec.priority.title, spec.name
- High svg-support
- Medium canvas
- Medium extension-manager-upgrades
- Medium mergewin
- Not e4x
+ >>> for s in onezero.specifications(filter=filter):
+ ...     print s.name
+ a
+ b
 
+With a productseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 
-And if we ask just for specs, we get BOTH the incomplete and the complete ones.
+ >>> filter=[SpecificationFilter.ACCEPTED]
+ >>> for spec in onezero.specifications(filter=filter):
+ ...     print spec.name, spec.goalstatus.title
+ a Accepted
 
- >>> for spec in firefox.specifications():
- ...     print spec.name, spec.is_complete
- cluster-installation False
- revu False
- thinclient-local-devices True
- usplash-on-hibernation True
+ >>> filter=[SpecificationFilter.PROPOSED]
+ >>> onezero.specifications(filter=filter).count()
+ 0
+ 
+ >>> filter=[SpecificationFilter.DECLINED]
+ >>> onezero.specifications(filter=filter).count()
+ 1
+ 
+We should see one informational spec if we ask just for that,
+the accepted one.
+
+ >>> filter = [SpecificationFilter.INFORMATIONAL]
+ >>> for s in onezero.specifications(filter=filter):
+ ...     print s.name
+ a
+
+If we specifically ask for declined informational, we will get that:
+
+ >>> filter = [
+ ...    SpecificationFilter.INFORMATIONAL, SpecificationFilter.DECLINED]
+ >>> for s in onezero.specifications(filter=filter):
+ ...     print s.name
+ b
+
+There are is one completed, accepted spec for 1.0:
+
+ >>> filter = [SpecificationFilter.COMPLETE]
+ >>> for spec in onezero.specifications(filter=filter):
+ ...    print spec.name, spec.is_complete, spec.goalstatus.title
+ a True Accepted
+
+There is one completed, declined spec:
+
+ >>> filter = [SpecificationFilter.COMPLETE, SpecificationFilter.DECLINED]
+ >>> for spec in onezero.specifications(filter=filter):
+ ...    print spec.name, spec.is_complete, spec.goalstatus.title
+ b True Declined
+
+Now lets make b incomplete, but accepted.
+
+ >>> b.delivery = SpecificationDelivery.BETA
+ >>> b.status = SpecificationStatus.BRAINDUMP
+ >>> b.goalstatus = SpecificationGoalStatus.ACCEPTED
+ >>> flush_database_updates()
+
+And if we ask just for specs, we get BOTH the incomplete and the complete
+ones that have been accepted.
+
+ >>> for spec in onezero.specifications():
+ ...     print spec.name, spec.is_complete, spec.goalstatus.title
+ a True Accepted
+ b False Accepted
 
 
 Drivers
@@ -159,13 +210,14 @@ We test these rules below.
  >>> carlos = getUtility(IPersonSet).getByName('carlos')
  >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
  >>> jblack = getUtility(IPersonSet).getByName('jblack')
- >>> project = getUtility(IProjectSet).new('testproj', 'test project title',
- ...                           'Test Project', 'summary', 'description',
- ...                           carlos.id, 'http://foo.com/url')
+ >>> project = getUtility(IProjectSet).new('testproj', 'Test Project',
+ ...                           'Test Project Title', 'http://foo.com/url',
+ ...                           'summary', 'description',
+ ...                            carlos.id)
  >>> product = getUtility(IProductSet).createProduct(sabdfl.id, 'testprod',
  ...                'Test Product', 'Test product title', 'summary',
  ...                project=project.id)
- >>> series = product.newSeries(jblack.id, '1.0' 'Series summary')
+ >>> series = product.newSeries(jblack, '1.0', 'Series summary')
 
 
 First, lets see what we get for the series drivers before we have anything

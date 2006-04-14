@@ -280,13 +280,39 @@ class DistroRelease(SQLBase, BugTargetBase):
         return BugTaskSet().search(search_params)
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications."""
+        """See IHasSpecifications.
+        
+        In this case the rules for the default behaviour cover three things:
+        
+          - acceptance: if nothing is said, ACCEPTED only
+          - completeness: if nothing is said, ANY
+          - informationalness: if nothing is said, ANY
+
+        """
 
         # eliminate mutables
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a distrorelease is to show everything approved
             filter = [SpecificationFilter.ACCEPTED]
+
+        # defaults for completeness: in this case we don't actually need to
+        # do anything, because the default is ANY
+        
+        # defaults for acceptance: in this case, if nothing is said about
+        # acceptance, we want to show only accepted specs
+        acceptance = False
+        for option in [
+            SpecificationFilter.ACCEPTED,
+            SpecificationFilter.DECLINED,
+            SpecificationFilter.PROPOSED]:
+            if option in filter:
+                acceptance = True
+        if acceptance is False:
+            filter.append(SpecificationFilter.ACCEPTED)
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:

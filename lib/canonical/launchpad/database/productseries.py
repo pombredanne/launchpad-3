@@ -52,12 +52,11 @@ class ProductSeries(SQLBase):
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
-                           schema=ImportStatus, default=None)
+        schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
     syncinterval = DateTimeCol(default=None)
-    rcstype = EnumCol(dbName='rcstype',
-                      schema=RevisionControlSystems,
-                      notNull=False, default=None)
+    rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
+        notNull=False, default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)
     cvsbranch = StringCol(default=None)
@@ -148,13 +147,40 @@ class ProductSeries(SQLBase):
         return ret
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications."""
+        """See IHasSpecifications.
+        
+        The rules for filtering are that there are three areas where you can
+        apply a filter:
+        
+          - acceptance, which defaults to ACCEPTED if nothing is said,
+          - completeness, which defaults to showing BOTH if nothing is said
+          - informational, which defaults to showing BOTH if nothing is said
+        
+        """
 
-        # eliminate mutables
+        # eliminate mutables and establish the absolute defaults
         if not filter:
             # filter could be None or [] then we decide the default
             # which for a productseries is to show everything accepted
             filter = [SpecificationFilter.ACCEPTED]
+
+        # defaults for completeness: in this case we don't actually need to
+        # do anything, because the default is ANY
+        
+        # defaults for acceptance: in this case, if nothing is said about
+        # acceptance, we want to show only accepted specs
+        acceptance = False
+        for option in [
+            SpecificationFilter.ACCEPTED,
+            SpecificationFilter.DECLINED,
+            SpecificationFilter.PROPOSED]:
+            if option in filter:
+                acceptance = True
+        if acceptance is False:
+            filter.append(SpecificationFilter.ACCEPTED)
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:

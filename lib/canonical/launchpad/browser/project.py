@@ -367,12 +367,12 @@ class ProjectAddView(AddView):
         # Now create a new project in the db
         project = getUtility(IProjectSet).new(
             name=self.name,
-            title=data['title'],
             displayname=data['displayname'],
+            title=data['title'],
+            homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=owner,
-            homepageurl=data['homepageurl'])
+            owner=owner)
         notify(ObjectCreatedEvent(project))
         self._nextURL = canonical_url(project)
         return project
