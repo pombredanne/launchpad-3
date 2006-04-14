@@ -244,7 +244,7 @@ class BuildSet:
             return None
 
         clauseTables = []
-        orderBy=["-datebuilt"]
+        orderBy=["-datebuilt", "id"]
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
