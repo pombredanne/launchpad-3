@@ -191,30 +191,13 @@
       />
 
   <browser:page
-      for="canonical.launchpad.interfaces.IPerson"
-      name="+bugtask-macros-buglisting"
-      permission="zope.Public"
-      template="../templates/bugtask-macros-buglisting.pt" />
-
-  <browser:page
       name="+assignedbugs"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
       permission="zope.Public"
-      template="../templates/person-assignedbugs.pt"
+      template="../templates/person-bugs.pt"
       lp:url="/people/$Person.name/+assignedbugs" />
-
-  <browser:generalform
-      name="+assignedbugs-advanced-search"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IBugTaskSearch"
-      class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status severity priority assignee owner omit_dupes
-              searchtext"
-      permission="zope.Public"
-      template="../templates/bugtarget-advanced-search.pt"
-      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
 
   <browser:page
       name="+packagebugs-search"
@@ -223,14 +206,6 @@
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
       permission="zope.Public"
       template="../templates/person-packagebugs-search.pt" />
-
-  <browser:page
-      name="+packagebugs-advanced-search"
-      for="canonical.launchpad.interfaces.IPerson"
-      facet="bugs"
-      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-      permission="zope.Public"
-      template="../templates/bugtarget-advanced-search.pt" />
 
   <browser:page
       name="+packagebugs"
@@ -246,19 +221,8 @@
       facet="bugs"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
       permission="zope.Public"
-      template="../templates/person-reportedbugs.pt"
+      template="../templates/person-bugs.pt"
       lp:url="/people/$Person.name/+reportedbugs" />
-
-  <browser:generalform
-      name="+reportedbugs-advanced-search"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IBugTaskSearch"
-      class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status severity priority assignee owner omit_dupes
-              searchtext"
-      permission="zope.Public"
-      template="../templates/bugtarget-advanced-search.pt"
-      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
 
   <browser:page
       name="+subscribedbugs"
@@ -266,19 +230,8 @@
       facet="bugs"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
       permission="zope.Public"
-      template="../templates/person-subscribedbugs.pt"
+      template="../templates/person-bugs.pt"
       lp:url="/people/$Person.name/+subscribedbugs" />
-
-  <browser:generalform
-      name="+subscribedbugs-advanced-search"
-      for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IBugTaskSearch"
-      class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status severity priority assignee owner omit_dupes
-              searchtext"
-      permission="zope.Public"
-      template="../templates/bugtarget-advanced-search.pt"
-      lp:url="/people/$Person.name/+assignedbugs-advanced-search" />
 
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
