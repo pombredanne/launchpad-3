@@ -73,6 +73,16 @@ class ISprint(IHasOwner, IHasSpecifications):
         multiple products and distros.
         """
 
+    def acceptSpecificationLinks(idlist):
+        """Accept the given sprintspec items, and return the number of
+        sprintspec items that remain proposed.
+        """
+
+    def declineSpecificationLinks(idlist):
+        """Decline the given sprintspec items, and return the number of
+        sprintspec items that remain proposed.
+        """
+
     # subscription-related methods
     def attend(person, time_starts, time_ends):
         """Record that this person will be attending the Sprint."""

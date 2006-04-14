@@ -15,7 +15,8 @@ from sqlobject.sqlbuilder import AND, IN, NOT
 
 from canonical.launchpad.interfaces import ISprint, ISprintSet
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, sqlvalues, flush_database_updates)
 from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -91,6 +92,9 @@ class Sprint(SQLBase):
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
         
+        # import here to avoid circular deps
+        from canonical.launchpad.database.specification import Specification
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -165,6 +169,34 @@ class Sprint(SQLBase):
         speclink = SprintSpecification.get(speclink_id)
         assert (speclink.sprint.id == self.id)
         return speclink
+
+    def acceptSpecificationLinks(self, idlist):
+        """See ISprintSpecification."""
+        for sprintspec in idlist:
+            speclink = self.getSpecificationLink(sprintspec)
+            speclink.status = SprintSpecificationStatus.ACCEPTED
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
+
+    def declineSpecificationLinks(self, idlist):
+        """See ISprintSpecification."""
+        for sprintspec in idlist:
+            speclink = self.getSpecificationLink(sprintspec)
+            speclink.status = SprintSpecificationStatus.DECLINED
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
 
     # attendance
     def attend(self, person, time_starts, time_ends):

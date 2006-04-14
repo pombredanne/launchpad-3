@@ -54,8 +54,9 @@ class HasSpecificationsView(LaunchpadView):
         object that is the context of this request.
         """
         show = self.request.form.get('show', None)
-        informational = self.request.form.get('informational', False)
         acceptance = self.request.form.get('acceptance', None)
+        role = self.request.form.get('role', None)
+        informational = self.request.form.get('informational', False)
 
         filter = []
 
@@ -71,6 +72,22 @@ class HasSpecificationsView(LaunchpadView):
         if informational is not False:
             filter.append(SpecificationFilter.INFORMATIONAL)
 
+        # filter on relationship or role. the underlying class will give us
+        # the aggregate of everything if we don't explicitly select one or
+        # more
+        if role == 'registrant':
+            filter.append(SpecificationFilter.CREATOR)
+        elif role == 'assignee':
+            filter.append(SpecificationFilter.ASSIGNEE)
+        elif role == 'drafter':
+            filter.append(SpecificationFilter.DRAFTER)
+        elif role == 'approver':
+            filter.append(SpecificationFilter.APPROVER)
+        elif role == 'feedback':
+            filter.append(SpecificationFilter.FEEDBACK)
+        elif role == 'subscriber':
+            filter.append(SpecificationFilter.SUBSCRIBER)
+
         # filter for acceptance state
         if acceptance == 'declined':
             filter.append(SpecificationFilter.DECLINED)
@@ -78,6 +95,8 @@ class HasSpecificationsView(LaunchpadView):
             filter.append(SpecificationFilter.PROPOSED)
         elif show == 'accepted':
             filter.append(SpecificationFilter.ACCEPTED)
+
+        return filter
 
     @cachedproperty
     def specs(self):

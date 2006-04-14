@@ -33,11 +33,11 @@ class GoalSetView(LaunchpadView):
     """
 
     @cachedproperty
-    def specs(self):
-        """Return the specifications which have been proposed for this goal.
+    def spec_filter(self):
+        """This page always filters for specs which have been proposed
+        for this goal.
         """
-        filter=[SpecificationFilter.PROPOSED]
-        return shortlist(self.context.specifications(filter=filter))
+        return [SpecificationFilter.PROPOSED]
 
     def initialize(self):
         self.status_message = None

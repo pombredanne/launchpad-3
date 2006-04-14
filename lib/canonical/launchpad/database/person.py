@@ -269,13 +269,13 @@ class Person(SQLBase):
 
         # if no roles are given then we want everything
         linked = False
-        roles = [
+        roles = set([
             SpecificationFilter.CREATOR,
             SpecificationFilter.ASSIGNEE,
             SpecificationFilter.DRAFTER,
             SpecificationFilter.APPROVER,
             SpecificationFilter.FEEDBACK,
-            SpecificationFilter.SUBSCRIBER]
+            SpecificationFilter.SUBSCRIBER])
         for role in roles:
             if role in filter:
                 linked = True

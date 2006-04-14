@@ -15,7 +15,7 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main"
-     tal:define="speclinks view/speclinks">
+     tal:define="speclinks view/spec_links">
 
   <h1>Set topics for discussion</h1>
 

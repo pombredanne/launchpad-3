@@ -75,7 +75,7 @@
   </p>
 
   <p tal:condition="view/specs" class="discreet">
-    <span tal:replace="view/specs/count">7</span> specification(s) listed.
+    <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
   </p>
 
 </div>

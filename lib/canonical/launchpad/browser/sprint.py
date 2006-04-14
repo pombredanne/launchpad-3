@@ -33,6 +33,8 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
     ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
 
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 
@@ -113,7 +115,7 @@ class SprintSetContextMenu(ContextMenu):
         return Link('+new', text, icon='add')
 
 
-class SprintView(LaunchpadView):
+class SprintView(HasSpecificationsView, LaunchpadView):
 
     __used_for__ = ISprint
 
@@ -174,7 +176,7 @@ class SprintEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class SprintTopicSetView(LaunchpadView):
+class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     """Custom view class to process the results of this unusual page.
 
     It is unusual because we want to display multiple objects with
@@ -187,12 +189,17 @@ class SprintTopicSetView(LaunchpadView):
         self.status_message = None
         self.process_form()
 
-    def speclinks(self):
+    @cachedproperty
+    def spec_filter(self):
         """Return the specification links with PROPOSED status for this
         sprint.
         """
-        return self.context.specificationLinks(
-            status=SprintSpecificationStatus.PROPOSED)
+        return [SpecificationFilter.PROPOSED]
+
+    @cachedproperty
+    def spec_links(self):
+        filter = self.spec_filter
+        return self.context.specificationLinks(filter=filter)
 
     def process_form(self):
         """Largely copied from webapp/generalform.py, without the
@@ -232,21 +239,16 @@ class SprintTopicSetView(LaunchpadView):
             selected_specs = [selected_specs]
 
         if action == 'Accepted':
-            new_status = SprintSpecificationStatus.ACCEPTED
+            action_fn = self.context.acceptSpecificationLinks
         else:
-            new_status = SprintSpecificationStatus.DECLINED
-
-        for sprintspec_id in selected_specs:
-            sprintspec = self.context.getSpecificationLink(sprintspec_id)
-            sprintspec.status = new_status
-
-        flush_database_updates()
+            action_fn = self.context.declineSpecificationLinks
+        leftover = action_fn(selected_specs)
 
         # Status message like: "Accepted 27 specification(s)."
         self.status_message = '%s %d specification(s).' % (
             action, len(selected_specs))
 
-        if self.speclinks().count() == 0:
+        if leftover == 0:
             # they are all done, so redirect back to the spec listing page
             self.request.response.redirect(
                 canonical_url(self.context)+'/+specs')
