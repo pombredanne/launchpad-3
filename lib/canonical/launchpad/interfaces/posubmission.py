@@ -21,3 +21,9 @@ class IPOSubmission(Interface):
         "The IPOSelection that has this submission as active.")
     published_selections = Attribute(
         "The IPOSelection that has this submission as published.")
+
+    def deleteMe():
+        """Remove this object.
+
+        It should not be referenced by any other object.
+        """

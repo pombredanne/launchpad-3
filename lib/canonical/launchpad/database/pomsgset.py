@@ -10,6 +10,7 @@ from zope.event import notify
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import (SQLObjectCreatedEvent,
     SQLObjectModifiedEvent)
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
@@ -50,7 +51,7 @@ class DummyPOMsgSet:
         self.isfuzzy = False
         self.commenttext = None
 
-    @property
+    @cachedproperty
     def pluralforms(self):
         """See IPOMsgSet."""
         return _get_pluralforms(self) 
@@ -107,7 +108,7 @@ class POMsgSet(SQLBase):
         orderBy='pluralform')
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
-    @property
+    @cachedproperty
     def pluralforms(self):
         """See IPOMsgSet."""
         return _get_pluralforms(self) 

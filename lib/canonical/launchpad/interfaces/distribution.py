@@ -255,7 +255,7 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given distributionid."""
 
     def getByName(distroname):
-        """Return the IDistribution with the given name."""
+        """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
             members, owner):

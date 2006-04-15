@@ -13,16 +13,19 @@ class IPOMsgSet(Interface):
 
     pofile = Attribute("The PO file this set is associated with.")
 
-    publishedcomplete = Attribute("""Whether the translation was complete or
-        not. in the PO file which is published. It is considered complete
-        if all message IDs have a translation, or the full set of
-        translations in the case of plural forms.""")
+    publishedcomplete = Bool(
+        title=(u'Whether the translation was complete or not in the PO file'
+            u'which is published.'),
+        description=(u'It is considered complete if all message IDs have a'
+            u' translation, or the full set of translations in the case of'
+            u' plural forms.'),
+        required=True)
 
     iscomplete = Bool(
         title=u'Whether the translation is complete or not.',
-        description=u'It is considered complete if all message IDs have a'
+        description=(u'It is considered complete if all message IDs have a'
             u' translation, or the full set of translations in the case of'
-            u' plural forms.',
+            u' plural forms.'),
         required=True)
 
     publishedfuzzy = Attribute("""Whether this set was marked as fuzzy in

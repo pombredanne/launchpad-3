@@ -720,7 +720,7 @@ class POTemplateSet:
     def __getitem__(self, name):
         """See IPOTemplateSet."""
         results = self.getByName(name)
-        if results.count() == 0:
+        if results:
             raise NotFoundError(name)
 
         return results
