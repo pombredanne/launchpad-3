@@ -53,11 +53,13 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy)
+    TeamSubscriptionPolicy, SpecificationFilter)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -288,13 +290,13 @@ class PersonSpecsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'specifications'
-    links = ['created', 'assigned', 'drafted', 'review', 'approver',
-             'workload', 'subscribed']
+    links = ['registrant', 'assigned', 'drafted', 'review', 'approver',
+             'workload', 'roadmap', 'subscribed']
 
-    def created(self):
+    def registrant(self):
         text = 'Registrant'
         summary = 'List specs registered by %s' % self.context.browsername
-        return Link('+specs?role=created', text, summary, icon='spec')
+        return Link('+specs?role=registrant', text, summary, icon='spec')
 
     def approver(self):
         text = 'Approver'
@@ -306,12 +308,12 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Assignee'
         summary = 'List specs for which %s is the assignee' % (
             self.context.browsername)
-        return Link('+specs?role=assigned', text, summary, icon='spec')
+        return Link('+specs?role=assignee', text, summary, icon='spec')
 
     def drafted(self):
         text = 'Drafter'
         summary = 'List specs drafted by %s' % self.context.browsername
-        return Link('+specs?role=drafted', text, summary, icon='spec')
+        return Link('+specs?role=drafter', text, summary, icon='spec')
 
     def review(self):
         text = 'Feedback requested'
@@ -324,9 +326,14 @@ class PersonSpecsMenu(ApplicationMenu):
         summary = 'Show all specification work assigned'
         return Link('+specworkload', text, summary, icon='spec')
 
+    def roadmap(self):
+        text = 'Roadmap'
+        summary = 'Show recommended sequence of feature implementation'
+        return Link('+roadmap', text, summary, icon='info')
+
     def subscribed(self):
         text = 'Subscribed'
-        return Link('+specs?role=subscribed', text, icon='spec')
+        return Link('+specs?role=subscriber', text, icon='spec')
 
 
 class PersonSupportMenu(ApplicationMenu):

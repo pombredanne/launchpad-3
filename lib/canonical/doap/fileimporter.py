@@ -49,17 +49,17 @@ class ProductReleaseImporter:
         version = split_version(name(filename))[1]
         series = version.split('.')[0]
         existingSeries = ProductSeries.selectOneBy(productID=self.product.id,
-                                                   name=version)
+            name=series)
         if existingSeries is None:
             # Create a new series using the first part of the version number
             # as the series name:
-            ps = ProductSeries(productID=self.product.id, name=version,
-                               displayname=version, summary=version)
+            ps = ProductSeries(productID=self.product.id, name=series,
+                summary=version, ownerID=self.product.owner.id)
             # Yep, we do need to create a product release.
             # FIXME: We probably ought to use the last-modified-time reported
             # by the download, rather than just UTC_NOW.
             pr = ProductRelease(productseriesID=ps.id, datereleased=UTC_NOW,
-                                version=version, ownerID=self.product.owner.id)
+                version=version, ownerID=self.product.owner.id)
         else:
             # The db schema guarantees there cannot be more than one result
             ps = existingSeries
@@ -70,9 +70,8 @@ class ProductReleaseImporter:
                 # FIXME: We probably ought to use the last-modified-time
                 # reported by the download, rather than just UTC_NOW.
                 pr = ProductRelease(productID=self.product.id,
-                                    datereleased=UTC_NOW,
-                                    version=version,
-                                    ownerID=self.product.owner.id)
+                    datereleased=UTC_NOW, version=version,
+                    ownerID=self.product.owner.id)
             else:
                 # The db schema guarantees there cannot be more than one result
                 pr = existingRelease

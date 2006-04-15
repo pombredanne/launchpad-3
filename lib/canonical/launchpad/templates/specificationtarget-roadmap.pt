@@ -6,16 +6,32 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+  <div class="portlet">
+    <h4>About this page:</h4>
+    <div class="portletBody portletContent">
+      <img src="/@@/info" />
+      Specifications should be implemented in the order given.
+      This will ensure that the <b>most important</b> specifications
+      are implemented first, and that specification <b>dependencies</b>
+      are respected.
+    </div>
+  </div>
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
-</metal:leftportlets>
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Roadmap</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 
-  <h1>Roadmap</h1>
-
   <p class="documentDescription">
-    Launchpad recommends the following sequence of spec implementations.
+    Launchpad recommends the following sequence of feature implementations.
   </p>
 
   <p class="informational message" tal:condition="not: view/specPlan">
@@ -25,14 +41,8 @@
   </p>
 
   <tal:block condition="view/specPlan">
-    <p>
-      Specifications should be implemented in the order given.
-      This will ensure that the most important specifications are implemented
-      first, and that specification dependencies are respected.
-    </p>
-
-      <div tal:repeat="spec view/specPlan"
-           tal:replace="structure spec/@@+listing-detailed" />
+    <div tal:repeat="spec view/specPlan"
+         tal:replace="structure spec/@@+listing-simple" />
   </tal:block>
 
   <tal:block condition="view/danglingSpecs">

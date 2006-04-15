@@ -204,7 +204,7 @@ build_reset = ContextTitle('Reset %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
-builders = 'Launchpad build farm'
+builders_index = 'Launchpad build farm'
 
 builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
 
@@ -338,7 +338,7 @@ distrorelease_queue = ContextTitle('Queue for %s')
 
 distroreleasebinarypackage_index = ContextTitle('%s')
 
-distroreleaselanguage = ContextTitle('%s')
+distroreleaselanguage_index = ContextTitle('%s')
 
 distroreleasesourcepackagerelease_index = ContextTitle('%s')
 
@@ -453,6 +453,10 @@ object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
 
+object_driver = ContextTitle('Appoint the driver for %s')
+
+object_launchpadusage = ContextTitle('Launchpad usage by %s')
+
 oops = 'Oops!'
 
 def package_bugs(context, view):
@@ -507,6 +511,8 @@ person_packagebugs_overview = person_packagebugs
 person_packagebugs_search = person_packagebugs
 
 person_review = ContextDisplayName("Review %s")
+
+person_specs = ContextDisplayName('Specification listing for %s')
 
 person_specworkload = ContextDisplayName('Specification workload for %s')
 
@@ -570,6 +576,8 @@ potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a product with Launchpad'
 
+product_admin = ContextTitle('Administer %s in Launchpad')
+
 product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
@@ -583,33 +591,39 @@ product_edit = ContextTitle('%s in Launchpad')
 
 product_index = ContextTitle('%s in Launchpad')
 
+product_new = 'Register a product in the Launchpad'
+
+product_translators = ContextTitle('Set translation group for %s')
+
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_translations = ContextTitle('Translations of %s in Rosetta')
 
-def productrelease(context, view):
-    return '%s %s in Launchpad' % (
-        context.product.displayname, context.version)
-
-def productrelease_edit(context, view):
-    return '%s %s in Launchpad' % (
-        context.product.displayname, context.version)
-
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
-productseries_translations = ContextTitle('Translation templates for %s')
+productrelease_admin = ContextTitle('Administer %s in Launchpad')
 
-productseries_ubuntupkg = 'Ubuntu source package'
+productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
+
+productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Products registered in Launchpad'
+
+productseries_index = ContextTitle('Overview of %s')
+
+productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import product series'
 
 productseries_sourceadmin = 'Add source import'
 
+productseries_translations = ContextTitle('Translation templates for %s')
+
 productseries_translations_upload = 'Request new translations upload'
 
-project = ContextTitle('%s in Launchpad')
+productseries_ubuntupkg = 'Ubuntu source package'
+
+project_index = ContextTitle('%s in Launchpad')
 
 project_branches = ContextTitle('Bzr branches for %s')
 
@@ -620,6 +634,8 @@ project_edit = ContextTitle('%s project details')
 project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
+
+project_specs = ContextTitle('Specifications for %s')
 
 projects_index = 'Projects registered in Launchpad'
 
@@ -665,10 +681,6 @@ def productseries_edit(context, view):
 
 productseries_new = ContextDisplayName('Register a new %s release series')
 
-def productseries(context, view):
-    return '%s release series: %s' % (
-        context.product.displayname, context.displayname)
-
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
 shipit_index = 'ShipIt'
@@ -699,7 +711,7 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
-sourcepackage = ContextTitle('%s')
+sourcepackage_index = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
@@ -790,6 +802,8 @@ specificationgoal_specs = ContextTitle('List goals for %s')
 
 specificationgoal_setgoals = ContextTitle('Set goals for %s')
 
+specificationtarget_documentation = ContextTitle('Documentation for %s')
+
 specificationtarget_index = ContextTitle('Specification Listing for %s')
 
 specificationtarget_specs = ContextTitle('Specifications for %s')
@@ -809,6 +823,8 @@ sprint_index = ContextTitle('%s (sprint or meeting)')
 sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
+
+sprint_specs = ContextTitle('Specifications for %s')
 
 sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
@@ -890,12 +906,12 @@ template_new = 'EXAMPLE NEW TITLE'
 
 tickettarget_manage_supportcontacts = ContextTitle("Support contact for %s")
 
-translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
+translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
 
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
-translationgroups = 'Rosetta translation groups'
+translationgroups_index = 'Rosetta translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
 
