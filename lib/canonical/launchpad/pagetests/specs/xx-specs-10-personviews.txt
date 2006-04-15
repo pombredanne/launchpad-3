@@ -54,10 +54,18 @@ And all the specs this person has subscribed to.
   HTTP/1.1 200 Ok
   ...
 
-And finally, all the specs this person drafted.
+And all the specs this person drafted.
 
   >>> print http(r"""
   ... GET /people/name16/+specs?role=drafted HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Finally, we should be able to see the workload of a person:
+
+  >>> print http(r"""
+  ... GET /people/name16/+specworkload HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

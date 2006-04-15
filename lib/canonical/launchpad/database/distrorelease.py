@@ -20,20 +20,20 @@ from sqlobject import (
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import (quote_like, SQLBase, sqlvalues,
-    flush_database_updates, cursor, flush_database_caches)
+from canonical.database.sqlbase import (quote_like, quote, SQLBase,
+    sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
-    SpecificationGoalStatus)
+    SpecificationGoalStatus, SpecificationFilter)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
-    ISourcePackage, ISourcePackageNameSet, IComponentSet, ISectionSet,
+    ISourcePackage, ISourcePackageNameSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES,
     IHasQueueItems)
 
@@ -61,10 +61,8 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
-from canonical.launchpad.database.component import (
-    Component, ComponentSelection)
-from canonical.launchpad.database.section import (
-    Section, SectionSelection)
+from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import Specification
@@ -93,6 +91,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
@@ -116,6 +116,30 @@ class DistroRelease(SQLBase, BugTargetBase):
     sections = RelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    @property
+    def drivers(self):
+        """See IDistroRelease."""
+        drivers = set()
+        drivers.add(self.driver)
+        drivers.add(self.distribution.driver)
+        drivers.discard(None)
+        if len(drivers) == 0:
+            drivers.add(self.distribution.owner)
+        return sorted(drivers, key=lambda x: x.browsername)
+
+    @property
+    def sortkey(self):
+        """A string to be used for sorting distro releases.
+
+        This is designed to sort alphabetically by distro and release name,
+        except that Ubuntu will be at the top of the listing.
+        """
+        result = ''
+        if self.distribution.name == 'ubuntu':
+            result += '-'
+        result += self.distribution.name + self.name
+        return result
 
     @property
     def packagings(self):
@@ -255,14 +279,90 @@ class DistroRelease(SQLBase, BugTargetBase):
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
 
-    def specifications(self, sort=None, quantity=None):
-        """See IHasSpecifications."""
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications.
+        
+        In this case the rules for the default behaviour cover three things:
+        
+          - acceptance: if nothing is said, ACCEPTED only
+          - completeness: if nothing is said, ANY
+          - informationalness: if nothing is said, ANY
+
+        """
+
+        # eliminate mutables
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a distrorelease is to show everything approved
+            filter = [SpecificationFilter.ACCEPTED]
+
+        # defaults for completeness: in this case we don't actually need to
+        # do anything, because the default is ANY
+        
+        # defaults for acceptance: in this case, if nothing is said about
+        # acceptance, we want to show only accepted specs
+        acceptance = False
+        for option in [
+            SpecificationFilter.ACCEPTED,
+            SpecificationFilter.DECLINED,
+            SpecificationFilter.PROPOSED]:
+            if option in filter:
+                acceptance = True
+        if acceptance is False:
+            filter.append(SpecificationFilter.ACCEPTED)
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        return Specification.selectBy(distroreleaseID=self.id,
-            orderBy=order)[:quantity]
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
+        # figure out what set of specifications we are interested in. for
+        # distroreleases, we need to be able to filter on the basis of:
+        #
+        #  - completeness.
+        #  - goal status.
+        #  - informational.
+        #
+        base = 'Specification.distrorelease = %s' % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # look for specs that have a particular goalstatus (proposed,
+        # accepted or declined)
+        if SpecificationFilter.ACCEPTED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.ACCEPTED.value)
+        elif SpecificationFilter.PROPOSED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.PROPOSED.value)
+        elif SpecificationFilter.DECLINED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.DECLINED.value)
+        
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
+
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -277,6 +377,32 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See ISpecificationGoal."""
         spec.distrorelease = self
         spec.goalstatus = SpecificationGoalStatus.DECLINED
+
+    def acceptSpecificationGoals(self, speclist):
+        """See ISpecificationGoal."""
+        for spec in speclist:
+            self.acceptSpecificationGoal(spec)
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
+
+    def declineSpecificationGoals(self, speclist):
+        """See ISpecificationGoal."""
+        for spec in speclist:
+            self.declineSpecificationGoal(spec)
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
 
     @property
     def open_cve_bugtasks(self):
@@ -658,8 +784,8 @@ class DistroRelease(SQLBase, BugTargetBase):
         drpcaches = DistroReleasePackageCache.select("""
             distrorelease = %s AND (
             fti @@ ftq(%s) OR
-            DistroReleasePackageCache.name = %s)
-            """ % sqlvalues(self.id, text, text),
+            DistroReleasePackageCache.name ILIKE '%%' || %s || '%%')
+            """ % (quote(self.id), quote(text), quote_like(text)),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
             prejoins=['binarypackagename'],

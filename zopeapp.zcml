@@ -33,9 +33,14 @@
   <include package="zope.app.container" />
 
   <include package="zope.app.publisher" />
+
+  <include package="zope.app.publication" file="meta.zcml" />
+  <include package="zope.app.publication" />
+
   <include package="zope.app.traversing" />
   <include package="zope.app.pagetemplate" />
   <include package="zope.app.generations" />
+  <include package="zope.app.zapi" />
 
   <!-- Views -->
   <include package="zope.app.http" />
@@ -50,24 +55,19 @@
   <include package="zope.app.i18n" />
 
 
-  <!-- Local Component Registration -->
-  <include package="zope.app.registration" />
+  <!-- Local Component Registration - no longer in Z3.2 -->
+  <!-- <include package="zope.app.registration" /> -->
 
   <!-- Services -->
   <!-- <include package="zope.app.errorservice" /> -->
   <include package="zope.app.pluggableauth" />
-  <include package="zope.app.site" />
-  <include package="zope.app.adapter" />
-  <include package="zope.app.utility" />
+  <!-- No longer in Z3.2 <include package="zope.app.site" /> -->
+  <!-- No longer in Z3.2 <include package="zope.app.adapter" /> -->
+  <!-- No longer in Z3.2 <include package="zope.app.utility" /> -->
   <!-- not using principalannotation
   <include package="zope.app.principalannotation" />
     -->
   <!-- Utilities -->
-
-  <!-- XXX removed as these aren't present in the beta release.
-  <include package="zope.app.schema" />
-  <include package="zope.app.uniqueid" />
-    -->
 
   <!-- Misc. Service Manager objects -->
   <!-- We don't want service managers.
@@ -89,6 +89,9 @@
 
   <include package="zope.app.applicationcontrol" />
   <include package="zope.app.dublincore" />
+  <!-- Don't know what this is
+  <include package="zope.app.introspector" /> -->
+  <include package="zope.app.wsgi" />
 
   <!-- Content types -->
   <!--  Not using folders

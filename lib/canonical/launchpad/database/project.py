@@ -25,11 +25,13 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, NotFoundError)
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, ImportStatus)
+    EnumCol, TranslationPermission, ImportStatus, SpecificationSort,
+    SpecificationFilter)
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.components.bugtarget import BugTargetBase
 
 
@@ -49,6 +51,8 @@ class Project(SQLBase, BugTargetBase):
     description = StringCol(dbName='description', notNull=True)
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
         default=UTC_NOW)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
@@ -98,6 +102,55 @@ class Project(SQLBase, BugTargetBase):
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
 
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        # eliminate mutables
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a project is to show incomplete specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
+        # figure out what set of specifications we are interested in. for
+        # projects, we need to be able to filter on the basis of:
+        #
+        #  - completeness. by default, only incomplete specs shown
+        #  - informational.
+        #
+        base = """
+            Specification.product = Product.id AND
+            Product.project = %s
+            """ % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity,
+            clauseTables=['Product'])
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
+
     def searchTasks(self, search_params):
         """See IBugTarget."""
         search_params.setProject(self)
@@ -131,13 +184,12 @@ class ProjectSet:
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...
-        NotFoundError: 'Project with ID -1 does not exist'
+        NotFoundError: -1
         """
         try:
             project = Project.get(projectid)
         except SQLObjectNotFound:
-            raise NotFoundError("Project with ID %s does not exist" %
-                                str(projectid))
+            raise NotFoundError(projectid)
         return project
 
     def getByName(self, name, default=None, ignore_inactive=False):

@@ -127,7 +127,8 @@ ACCEPT
   Would be sending a mail:
      Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
      Sender: Root <root@localhost>
-     Recipients: Root <root@localhost>, foo@bar.com
+     Recipients: foo@bar.com
+     Bcc: Root <root@localhost>
      Body:
   Accepted:
   alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
@@ -158,7 +159,8 @@ REJECT
   Would be sending a mail:
      Subject: alsa-utils_1.0.9a-4ubuntu1_source.changes Rejected
      Sender: Root <root@localhost>
-     Recipients: Root <root@localhost>
+     Recipients:
+     Bcc: Root <root@localhost>
      Body:
   Rejected:
   alsa-utils 1.0.9a-4ubuntu1 was REJECTED.

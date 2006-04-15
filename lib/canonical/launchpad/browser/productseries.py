@@ -6,6 +6,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesOverviewMenu',
            'ProductSeriesFacets',
            'ProductSeriesSpecificationsMenu',
+           'ProductSeriesTranslationMenu',
            'ProductSeriesView',
            'ProductSeriesEditView',
            'ProductSeriesRdfView',
@@ -15,7 +16,6 @@ __all__ = ['ProductSeriesNavigation',
 import re
 
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
@@ -29,7 +29,8 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue, IProductSeriesSourceSet)
+    ITranslationImportQueue, IProductSeriesSourceSet, NotFoundError
+    )
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
@@ -44,6 +45,9 @@ from canonical.launchpad import _
 class ProductSeriesNavigation(Navigation):
 
     usedfor = IProductSeries
+
+    def breadcrumb(self):
+        return 'Series ' + self.context.name
 
     @stepto('+pots')
     def pots(self):
@@ -64,13 +68,18 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'overview'
-    links = ['edit', 'editsource', 'ubuntupkg',
-             'addpackage', 'addrelease', 'download', 'translationupload',
-             'addpotemplate', 'review']
+    links = ['edit', 'driver', 'editsource', 'ubuntupkg',
+             'addpackage', 'addrelease',
+             'addpotemplate', 'rdf', 'review']
 
     def edit(self):
         text = 'Change Series Details'
         return Link('+edit', text, icon='edit')
+
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals this series'
+        return Link('+driver', text, summary, icon='edit')
 
     def editsource(self):
         text = 'Edit Source'
@@ -88,13 +97,9 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Register a Release'
         return Link('+addrelease', text, icon='add')
 
-    def download(self):
+    def rdf(self):
         text = 'Download RDF Metadata'
         return Link('+rdf', text, icon='download')
-
-    def translationupload(self):
-        text = 'Request Translations Upload'
-        return Link('+translations-upload', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def addpotemplate(self):
@@ -124,18 +129,18 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Show All'
         return Link('+specs?show=all', text, icon='info')
 
-    def listapproved(self):
+    def listaccepted(self):
         text = 'Show Approved'
-        return Link('+specs?show=accepted', text, icon='info')
+        return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
         text = 'Show Proposed'
-        return Link('+specs?show=proposed', text, icon='info')
+        return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
         text = 'Show Declined'
         summary = 'Show the goals which have been declined'
-        return Link('+specs?show=declined', text, summary, icon='info')
+        return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     def setgoals(self):
         text = 'Set Goals'
@@ -152,6 +157,18 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         summary = 'Show the sequence in which specs should be implemented'
         return Link('+roadmap', text, summary, icon='info')
 
+
+class ProductSeriesTranslationMenu(ApplicationMenu):
+    """Translation menu for ProductSeries.
+    """
+
+    usedfor = IProductSeries
+    facet = 'translations'
+    links = ['translationupload', ]
+
+    def translationupload(self):
+        text = 'Upload Translations'
+        return Link('+translations-upload', text, icon='add')
 
 
 def validate_cvs_root(cvsroot, cvsmodule):

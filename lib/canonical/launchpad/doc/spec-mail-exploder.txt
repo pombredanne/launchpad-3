@@ -128,9 +128,6 @@ spec, and mails it to the related people.
 
     >>> handler.process(
     ...     moin_change, 'notifications@specs.launchpad.net', log=log)
-    DEBUG:...:Found a spec URL: https://wiki.ubuntu.com/MediaIntegrityCheck
-    DEBUG:...:Found a corresponding spec: media-integrity-check
-    DEBUG:...:Sending notification to: test@canonical.com
     True
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)
@@ -181,9 +178,6 @@ Launchpad, nothing happens.
     >>> moin_change = read_test_message('moin-change-nonexistant.txt')
     >>> handler.process(
     ...     moin_change, 'notifications@specs.launchpad.net', log=log)
-    DEBUG:...:Found a spec URL: https://wiki.ubuntu.com/NonExistant
-    DEBUG:...:Didn't find a corresponding spec for
-              https://wiki.ubuntu.com/NonExistant
     True
 
     >>> print getUtility(ISpecificationSet).getByURL(
@@ -245,9 +239,6 @@ subscribers:
     >>> log._log.setLevel(10)
     >>> handler.process(
     ...     kubuntu_change, 'notifications@specs.launchpad.net', log=log)
-    DEBUG:...:Found a spec URL: https://wiki.kubuntu.org/MediaIntegrityCheck
-    DEBUG:...:Found a corresponding spec: media-integrity-check
-    DEBUG:...:Sending notification to: test@canonical.com
     True
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)

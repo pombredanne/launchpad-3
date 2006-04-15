@@ -14,7 +14,7 @@ from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator 
+from canonical.launchpad.validators.name import name_validator
 
 
 class IBinaryPackageName(Interface):

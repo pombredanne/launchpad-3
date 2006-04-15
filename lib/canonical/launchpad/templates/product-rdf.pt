@@ -51,7 +51,7 @@
         <lp:series tal:repeat="series context/serieslist">
             <lp:ProductSeries>
                 <lp:specifiedAt tal:attributes="rdf:resource
-                    string:${context/fmt:url}/+series/${series/name}/+rdf" />
+                    string:${context/fmt:url}/${series/name}/+rdf" />
             </lp:ProductSeries>
         </lp:series>
         <lp:owner>

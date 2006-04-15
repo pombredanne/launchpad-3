@@ -243,14 +243,14 @@ The same goes for the warty i386 mirror, in which we had one upload on
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=datetime(2005, 6, 22))
     >>> [(status.name, url) for (status, url) in urls.items()]
     [('TWODAYSBEHIND',
-      u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_0.1-1_all.deb'),
+      u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_1.9-1_all.deb'),
      ('ONEWEEKBEHIND',
       u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
 
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=datetime(2005, 6, 20))
     >>> [(status.name, url) for (status, url) in urls.items()]
     [('UP', 
-      u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_0.1-1_all.deb'),
+      u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_1.9-1_all.deb'),
      ('TWODAYSBEHIND',
       u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
 

@@ -15,6 +15,9 @@ from warnings import warn
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, SQLMultipleJoin, DateTimeCol
+
+from canonical.database.sqlbase import flush_database_updates
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -31,7 +34,7 @@ from canonical.database.sqlbase import (
 
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
-    SpecificationSort, SpecificationGoalStatus)
+    SpecificationSort, SpecificationGoalStatus, SpecificationFilter)
 
 
 class ProductSeries(SQLBase):
@@ -41,17 +44,19 @@ class ProductSeries(SQLBase):
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     name = StringCol(notNull=True)
-    displayname = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    owner = ForeignKey(
+        foreignKey="Person", dbName="owner", notNull=True)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
-                           schema=ImportStatus, default=None)
+        schema=ImportStatus, default=None)
     datelastsynced = UtcDateTimeCol(default=None)
     syncinterval = DateTimeCol(default=None)
-    rcstype = EnumCol(dbName='rcstype',
-                      schema=RevisionControlSystems,
-                      notNull=False, default=None)
+    rcstype = EnumCol(dbName='rcstype', schema=RevisionControlSystems,
+        notNull=False, default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)
     cvsbranch = StringCol(default=None)
@@ -76,15 +81,35 @@ class ProductSeries(SQLBase):
     datesyncapproved = UtcDateTimeCol(default=None)
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
-                             orderBy=['version'])
+                             orderBy=['-datereleased'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
+
+    @property
+    def displayname(self):
+        return self.name
+
+    @property
+    def drivers(self):
+        """See IDistroRelease."""
+        drivers = set()
+        drivers.add(self.driver)
+        drivers.add(self.product.driver)
+        if self.product.project is not None:
+            drivers.add(self.product.project.driver)
+        drivers.discard(None)
+        if len(drivers) == 0:
+            if self.product.project is not None:
+                drivers.add(self.product.project.owner)
+            else:
+                drivers.add(self.product.owner)
+        return sorted(drivers, key=lambda x: x.browsername)
 
     @property
     def potemplates(self):
         result = POTemplate.selectBy(productseriesID=self.id)
         result = list(result)
-        return sorted (result, key=lambda x: x.potemplatename.name)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
@@ -121,14 +146,90 @@ class ProductSeries(SQLBase):
         ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
         return ret
 
-    def specifications(self, sort=None, quantity=None):
-        """See IHasSpecifications."""
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications.
+        
+        The rules for filtering are that there are three areas where you can
+        apply a filter:
+        
+          - acceptance, which defaults to ACCEPTED if nothing is said,
+          - completeness, which defaults to showing BOTH if nothing is said
+          - informational, which defaults to showing BOTH if nothing is said
+        
+        """
+
+        # eliminate mutables and establish the absolute defaults
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a productseries is to show everything accepted
+            filter = [SpecificationFilter.ACCEPTED]
+
+        # defaults for completeness: in this case we don't actually need to
+        # do anything, because the default is ANY
+        
+        # defaults for acceptance: in this case, if nothing is said about
+        # acceptance, we want to show only accepted specs
+        acceptance = False
+        for option in [
+            SpecificationFilter.ACCEPTED,
+            SpecificationFilter.DECLINED,
+            SpecificationFilter.PROPOSED]:
+            if option in filter:
+                acceptance = True
+        if acceptance is False:
+            filter.append(SpecificationFilter.ACCEPTED)
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        return Specification.selectBy(productseriesID=self.id,
-            orderBy=order)[:quantity]
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
+        # figure out what set of specifications we are interested in. for
+        # productseries, we need to be able to filter on the basis of:
+        #
+        #  - completeness. by default, only incomplete specs shown
+        #  - goal status. by default, only accepted specs shown
+        #  - informational.
+        #
+        base = 'Specification.productseries = %s' % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # look for specs that have a particular goalstatus (proposed,
+        # accepted or declined)
+        if SpecificationFilter.ACCEPTED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.ACCEPTED.value)
+        elif SpecificationFilter.PROPOSED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.PROPOSED.value)
+        elif SpecificationFilter.DECLINED in filter:
+            query += ' AND Specification.goalstatus = %d' % (
+                SpecificationGoalStatus.DECLINED.value)
+        
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -213,6 +314,32 @@ class ProductSeries(SQLBase):
         """See ISpecificationGoal."""
         spec.productseries = self
         spec.goalstatus = SpecificationGoalStatus.DECLINED
+
+    def acceptSpecificationGoals(self, speclist):
+        """See ISpecificationGoal."""
+        for spec in speclist:
+            self.acceptSpecificationGoal(spec)
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
+
+    def declineSpecificationGoals(self, speclist):
+        """See ISpecificationGoal."""
+        for spec in speclist:
+            self.declineSpecificationGoal(spec)
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
 
 
 # XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet

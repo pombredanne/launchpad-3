@@ -11,14 +11,13 @@ __all__ = [
 
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.fields import ContentNameField 
+from canonical.launchpad.fields import ContentNameField
 
 
 class ProductReleaseVersionField(ContentNameField):
@@ -36,7 +35,7 @@ class ProductReleaseVersionField(ContentNameField):
         else:
             productseries = self.context.productseries
         releaseset = getUtility(IProductReleaseSet)
-        return releaseset.getBySeriesAndVersion(productseries, version) 
+        return releaseset.getBySeriesAndVersion(productseries, version)
 
 
 class IProductRelease(Interface):
@@ -54,7 +53,7 @@ class IProductRelease(Interface):
     owner = Int(title=_('Owner'), required=True, readonly=True)
     productseries = Choice(title=_('ProductSeries'), required=True,
         vocabulary='FilteredProductSeries')
-    title = TextLine(title=_('Title'), required=False,
+    codename = TextLine(title=_('Code name'), required=False,
         description=_('The release code-name. Famously, one Gnome release '
         'was code-named "that, and a pair of testicles", but you don\'t '
         'have to be as brave with your own release codenames.'))
@@ -70,7 +69,8 @@ class IProductRelease(Interface):
     datecreated = Datetime(title=_('Date Created'),
         description=_("The date this productrelease was created in "
         "Launchpad."), required=True, readonly=True)
-    displayname = Attribute(_('Constructed displayname for a productrelease.'))
+    displayname = Attribute('Constructed displayname for a product release.')
+    title = Attribute('Constructed title for a product release.')
     manifest = Attribute(_('Manifest Information.'))
     product = Attribute(_('The upstream product of this release.'))
     files = Attribute(_('Iterable of product release files.'))
@@ -82,7 +82,7 @@ class IProductRelease(Interface):
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
 
-    def new(version, owner, productseries, title=None, shortdesc=None,
+    def new(version, owner, productseries, codename=None, shortdesc=None,
             description=None, changelog=None):
         """Create a new ProductRelease"""
         

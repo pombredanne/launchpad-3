@@ -60,9 +60,17 @@ class QueueItemsView(LaunchpadView):
 
         Returns a list of labeled actions or an empty list.
         """
-        if self.state in ['', 'new', 'unapproved']:
-            return ['Accept', 'Reject']
-        return []
+        # map of available actions keyed by status
+        available_actions = {
+            '': ['Accept', 'Reject'],
+            'new': ['Accept', 'Reject'],
+            'unapproved': ['Accept', 'Reject'],
+            'accepted': ['Reject'],
+            'rejected': ['Accept'],
+            'done': [],
+            }
+
+        return available_actions[self.state]
 
     def performQueueAction(self):
         """Execute the designed action over the selected queue items.
