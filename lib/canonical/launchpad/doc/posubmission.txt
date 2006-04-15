@@ -1,0 +1,4 @@
+POSubmission
+============
+
+This class links the translations submitted by a translator with the associated
