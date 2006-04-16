@@ -55,7 +55,7 @@
     </p>
 
       <div tal:repeat="spec view/danglingSpecs"
-           tal:replace="structure spec/@@+listing-detailed" />
+           tal:replace="structure spec/@@+listing-simple" />
   </tal:block>
 
 </div>

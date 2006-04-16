@@ -1,13 +1,14 @@
 <div class="portlet">
 
-  <h4>The specification tracker:</h4>
+  <h4>Meeting agendas:</h4>
 
   <div class="portletBody portletContent">
 
+    <img src="/@@/info_icon.gif" />
     Each specification describes a new feature. You can coordinate
     "sprints", which are meetings at which specs will be defined and
-    implemented. See the <a href="/sprints/">sprint tracker</a> for the full
-    list of sprints.
+    implemented. See the <a href="/sprints/">sprint list</a> for the full
+    list of meetings and sprints.
 
   </div>
 

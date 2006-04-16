@@ -19,6 +19,7 @@ __all__ = [
     'UbunteroListView',
     'FOAFSearchView',
     'PersonSpecWorkLoadView',
+    'PersonSpecFeedbackView',
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
@@ -72,6 +73,8 @@ from canonical.launchpad.interfaces import (
     IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
@@ -290,8 +293,9 @@ class PersonSpecsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'specifications'
-    links = ['registrant', 'assigned', 'drafted', 'review', 'approver',
-             'workload', 'roadmap', 'subscribed']
+    links = ['assignee', 'drafter', 'approver',
+             'subscriber', 'registrant', 'feedback',
+             'workload', 'roadmap',]
 
     def registrant(self):
         text = 'Registrant'
@@ -304,36 +308,36 @@ class PersonSpecsMenu(ApplicationMenu):
             self.context.browsername)
         return Link('+specs?role=approver', text, summary, icon='spec')
 
-    def assigned(self):
+    def assignee(self):
         text = 'Assignee'
         summary = 'List specs for which %s is the assignee' % (
             self.context.browsername)
         return Link('+specs?role=assignee', text, summary, icon='spec')
 
-    def drafted(self):
+    def drafter(self):
         text = 'Drafter'
         summary = 'List specs drafted by %s' % self.context.browsername
         return Link('+specs?role=drafter', text, summary, icon='spec')
 
-    def review(self):
-        text = 'Feedback requested'
+    def subscriber(self):
+        text = 'Subscriber'
+        return Link('+specs?role=subscriber', text, icon='spec')
+
+    def feedback(self):
+        text = 'Feedback requests'
         summary = 'List specs where feedback has been requested from %s' % (
             self.context.browsername)
-        return Link('+specs?role=feedback', text, summary, icon='spec')
+        return Link('+specfeedback', text, summary, icon='info')
 
     def workload(self):
         text = 'Workload'
         summary = 'Show all specification work assigned'
-        return Link('+specworkload', text, summary, icon='spec')
+        return Link('+specworkload', text, summary, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
         summary = 'Show recommended sequence of feature implementation'
         return Link('+roadmap', text, summary, icon='info')
-
-    def subscribed(self):
-        text = 'Subscribed'
-        return Link('+specs?role=subscriber', text, icon='spec')
 
 
 class PersonSupportMenu(ApplicationMenu):
@@ -690,6 +694,14 @@ class PersonSpecWorkLoadView(LaunchpadView):
         """
         return [PersonSpecWorkLoadView.PersonSpec(spec, self.context)
                 for spec in self.context.specifications()]
+
+
+class PersonSpecFeedbackView(HasSpecificationsView):
+
+    @cachedproperty
+    def feedback_specs(self):
+        filter = [SpecificationFilter.FEEDBACK]
+        return self.context.specifications(filter=filter)
 
 
 class ReportedBugTaskSearchListingView(BugTaskSearchListingView):

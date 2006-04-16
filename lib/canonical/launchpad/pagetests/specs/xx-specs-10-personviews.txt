@@ -36,16 +36,6 @@ And all the specs this person created.
   HTTP/1.1 200 Ok
   ...
 
-And all the specs this person has been asked to review.
-
-  >>> print http(r"""
-  ... GET /people/name16/+specs?role=feedback HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...1 specification(s) listed...
-  ...
-
 And all the specs this person has subscribed to.
 
   >>> print http(r"""
@@ -62,11 +52,19 @@ And all the specs this person drafted.
   HTTP/1.1 200 Ok
   ...
 
-Finally, we should be able to see the workload of a person:
+We should be able to see the workload of a person:
 
   >>> print http(r"""
   ... GET /people/name16/+specworkload HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+And all the specs this person has been asked to review.
+
+  >>> print http(r"""
+  ... GET /people/name16/+specfeedback HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...1 specification(s) listed...
 

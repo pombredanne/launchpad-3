@@ -279,6 +279,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
 
+    @property
+    def has_any_specifications(self):
+        """See IHasSpecifications."""
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
         
