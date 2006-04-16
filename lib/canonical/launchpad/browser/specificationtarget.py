@@ -36,6 +36,14 @@ class HasSpecificationsView(LaunchpadView):
     """
 
     @cachedproperty
+    def has_any_specifications(self):
+        return self.context.has_any_specifications
+
+    @cachedproperty
+    def all_specifications(self):
+        return list(self.context.all_specifications)
+
+    @cachedproperty
     def spec_filter(self):
         """The list of specs that are going to be displayed in this view.
 

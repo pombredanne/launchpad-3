@@ -102,6 +102,15 @@ class Project(SQLBase, BugTargetBase):
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
 
+    @property
+    def has_any_specifications(self):
+        """See IHasSpecifications."""
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 

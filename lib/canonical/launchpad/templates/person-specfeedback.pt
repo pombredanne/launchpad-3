@@ -14,25 +14,28 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-  <h1>Current documentation</h1>
+  <h3 tal:content="context/title">Mark Shuttleworth</h3>
+  <h1>Feature feedback requests</h1>
 </metal:heading>
 
-<div metal:fill-slot="main" tal:define="specs view/documentation">
+<div metal:fill-slot="main" tal:define="specs view/feedback_specs">
 
   <tal:per_spec repeat="spec specs">
-    <div tal:replace="structure spec/@@+listing-simple" />
+    <div tal:replace="structure spec/@@+listing-feedback" />
   </tal:per_spec>
 
-  <p class="discreet">
+  <p>
     <tal:no_specs condition="not: specs">
-      No documentation to list.
+      No feedback requests to list.
     </tal:no_specs>
     <tal:has_specs condition="specs">
-      <span tal:replace="specs/count:len">7</span> specification(s) listed.
+      <span tal:replace="specs/count">7</span> specification(s) listed.
+      Select the specification then choose "Give Feedback" to clear this
+      request from your queue.
     </tal:has_specs>
-    You can read more about
-    how to populate documentation in this list in the 
+    Anybody can request feedback from anyone else on a particular
+    specification. You can read more about feedback requests in Blueprint
+    in the
     <a href="https://wiki.launchpad.canonical.com/InformationalSpecifications"
       >Launchpad wiki</a>
   </p>

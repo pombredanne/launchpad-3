@@ -27,4 +27,16 @@
       <span tal:replace="context/summary/fmt:shorten/500">summary</span>.
     </td>
   </tr>
+  <tr class="lesser" tal:repeat="fbreq view/feedbackrequests">
+    <td>&nbsp;</td>
+    <td colspan="2">
+      <img src="/@@/user" />
+      <a tal:content="fbreq/requester/browsername"
+         tal:attributes="href fbreq/requester/fmt:url">Foo Bar</a>
+      wants your feedback:<br />
+      <span tal:replace="fbreq/queuemsg">
+        Feedback queue message
+      </span>
+    </td>
+  </tr>
 </table>

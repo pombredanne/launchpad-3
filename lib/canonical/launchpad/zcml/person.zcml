@@ -167,6 +167,15 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
+    name="+specfeedback"
+    facet="specifications"
+    class="canonical.launchpad.browser.PersonSpecFeedbackView"
+    permission="zope.Public"
+    template="../templates/person-specfeedback.pt"
+    lp:url="/people/$Person.name/+specfeedback" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+specworkload"
     facet="specifications"
     permission="zope.Public"
