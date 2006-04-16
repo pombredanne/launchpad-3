@@ -244,7 +244,7 @@ class BuildSet:
             return None
 
         clauseTables = []
-        orderBy=["-datebuilt", "id"]
+        orderBy=["-datebuilt", "-id"]
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
@@ -271,7 +271,7 @@ class BuildSet:
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
         if status == BuildStatus.NEEDSBUILD:
-            orderBy = ["-BuildQueue.lastscore"]
+            orderBy = ["-BuildQueue.lastscore", "-id"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
 

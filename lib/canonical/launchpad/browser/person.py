@@ -53,11 +53,13 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy)
+    TeamSubscriptionPolicy, SpecificationFilter)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -67,15 +69,13 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES,
-    )
+    IAdminRequestPeopleMerge, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint,
-        )
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -85,8 +85,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection, GeneralFormView,
-    )
+    redirection, GeneralFormView)
 
 from canonical.launchpad import _
 
@@ -285,19 +284,19 @@ class TeamBugsMenu(PersonBugsMenu):
     usedfor = ITeam
     facet = 'bugs'
     links = ['assignedbugs', 'softwarebugs', 'subscribedbugs']
- 
+
 
 class PersonSpecsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'specifications'
-    links = ['created', 'assigned', 'drafted', 'review', 'approver',
-             'workload', 'subscribed']
+    links = ['registrant', 'assigned', 'drafted', 'review', 'approver',
+             'workload', 'roadmap', 'subscribed']
 
-    def created(self):
+    def registrant(self):
         text = 'Registrant'
         summary = 'List specs registered by %s' % self.context.browsername
-        return Link('+specs?role=created', text, summary, icon='spec')
+        return Link('+specs?role=registrant', text, summary, icon='spec')
 
     def approver(self):
         text = 'Approver'
@@ -309,12 +308,12 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Assignee'
         summary = 'List specs for which %s is the assignee' % (
             self.context.browsername)
-        return Link('+specs?role=assigned', text, summary, icon='spec')
+        return Link('+specs?role=assignee', text, summary, icon='spec')
 
     def drafted(self):
         text = 'Drafter'
         summary = 'List specs drafted by %s' % self.context.browsername
-        return Link('+specs?role=drafted', text, summary, icon='spec')
+        return Link('+specs?role=drafter', text, summary, icon='spec')
 
     def review(self):
         text = 'Feedback requested'
@@ -327,9 +326,14 @@ class PersonSpecsMenu(ApplicationMenu):
         summary = 'Show all specification work assigned'
         return Link('+specworkload', text, summary, icon='spec')
 
+    def roadmap(self):
+        text = 'Roadmap'
+        summary = 'Show recommended sequence of feature implementation'
+        return Link('+roadmap', text, summary, icon='info')
+
     def subscribed(self):
         text = 'Subscribed'
-        return Link('+specs?role=subscribed', text, icon='spec')
+        return Link('+specs?role=subscriber', text, icon='spec')
 
 
 class PersonSupportMenu(ApplicationMenu):
@@ -697,6 +701,10 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, extra_params={'owner': self.context})
 
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs reported by %s" % self.context.displayname
+
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""
         return "Bugs Reported by %s: Advanced Search" % (
@@ -706,8 +714,8 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         """The Search button for the advanced search page."""
         return "Search bugs reported by %s" % self.context.displayname
 
-    def getAdvancedSearchActionURL(self):
-        """Return a URL to be used as the action for the advanced search."""
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+reportedbugs"
 
     def shouldShowReporterWidget(self):
@@ -811,7 +819,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
         if advanced:
-            return person_url + '/+packagebugs-advanced-search?%s' % query_string
+            return person_url + '/+packagebugs-search?advanced=1&%s' % query_string
         else:
             return person_url + '/+packagebugs-search?%s' % query_string
 
@@ -876,9 +884,6 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def getAdvancedSearchButtonLabel(self):
         return "Search bugs in %s" % self.current_package.displayname
 
-    def getAdvancedSearchActionURL(self):
-        return canonical_url(self.context) + "/+packagebugs-search"
-
     def getSimpleSearchURL(self):
         return self.getBugContactPackageSearchURL()
 
@@ -899,6 +904,14 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
         """Should the assignee widget be shown on the advanced search page?"""
         return False
 
+    def shouldShowAssignedToTeamPortlet(self):
+        """Should the team assigned bugs portlet be shown?"""
+        return True
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs assigned to %s" % self.context.displayname
+
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""
         return "Bugs Assigned to %s: Advanced Search" % (
@@ -908,8 +921,8 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
         """The Search button for the advanced search page."""
         return "Search bugs assigned to %s" % self.context.displayname
 
-    def getAdvancedSearchActionURL(self):
-        """Return a URL to be used as the action for the advanced search."""
+    def getSimpleSearchURL(self):
+        """Return a URL that can be usedas an href to the simple search."""
         return canonical_url(self.context) + "/+assignedbugs"
 
 
@@ -922,6 +935,10 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, extra_params={'subscriber': self.context})
 
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs %s is subscribed to" % self.context.displayname
+
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""
         return "Bugs %s is Cc'd to: Advanced Search" % (
@@ -931,8 +948,8 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
         """The Search button for the advanced search page."""
         return "Search bugs %s is Cc'd to" % self.context.displayname
 
-    def getAdvancedSearchActionURL(self):
-        """Return a URL to be used as the action for the advanced search."""
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+subscribedbugs"
 
 

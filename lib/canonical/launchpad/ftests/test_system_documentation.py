@@ -186,6 +186,11 @@ special = {
             optionflags=default_optionflags,
             setUp=bugNotificationSendingSetup,
             tearDown=bugNotificationSendingTearDown),
+    'bugmail-headers.txt': DocFileSuite(
+            '../doc/bugmail-headers.txt',
+            optionflags=default_optionflags,
+            setUp=bugNotificationSendingSetup,
+            tearDown=bugNotificationSendingTearDown),
     'branch-status-client.txt': FunctionalDocFileSuite(
             'launchpad/doc/branch-status-client.txt',
             setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
@@ -199,6 +204,7 @@ special['poexport.txt'].layer = ZopelessLayer
 special['support-tracker-emailinterface.txt'].layer = ZopelessLayer
 special['branch-status-client.txt'].layer = ZopelessLayer
 special['bugnotification-sending.txt'].layer = ZopelessLayer
+special['bugmail-headers.txt'].layer = ZopelessLayer
 
 def test_suite():
     suite = unittest.TestSuite()

@@ -60,6 +60,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted to this release of the "
+            "distribution."),
+        required=False, vocabulary='ValidPersonOrTeam')
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
@@ -75,6 +82,10 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     nominatedarchindep = Attribute(
         "Distroarchrelease designed to build architeture independent "
         "packages whithin this distrorelease context.")
+    drivers = Attribute(
+        'A list of the people or teams who are drivers for this release. '
+        'This list is made up of any drivers or owners from this '
+        'DistroRelease, and the Distribution to which it belong.')
     messagecount = Attribute("The total number of translatable items in "
         "this distribution release.")
     distroreleaselanguages = Attribute("The set of dr-languages in this "

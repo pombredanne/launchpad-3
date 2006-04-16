@@ -28,8 +28,6 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bugattachment import IBugAttachment
-from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage

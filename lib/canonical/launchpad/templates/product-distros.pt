@@ -6,13 +6,19 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-series" />
 </metal:leftportlets>
 
-<div metal:fill-slot="main">
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-series" />
+</metal:rightportlets>
 
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Product Title</h3>
   <h1>Packages by distribution</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
 
   <p class="documentDescription">
     This page shows the way
@@ -57,8 +63,10 @@
 
   </tal:distribution>
 
-  <p>To add a Packaging Record, visit the page for the specific release
-  series that has been packaged, and select "Link to Any Package".</p>
+  <p class="lesser discreet">
+    To add a Packaging Record, visit the page for the specific release
+    series that has been packaged, and select "Link to Any Package".
+  </p>
 
 </div> 
 </body>

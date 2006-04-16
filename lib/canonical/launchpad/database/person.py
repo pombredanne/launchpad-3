@@ -59,7 +59,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort)
+    SpecificationSort, SpecificationFilter)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -257,32 +257,92 @@ class Person(SQLBase):
         # Person.displayname is NOT NULL
         return self.displayname
 
-    def specifications(self, quantity=None, sort=None):
-        query = """
-            Specification.owner = %(my_id)d
-            OR Specification.approver = %(my_id)d
-            OR Specification.assignee = %(my_id)d
-            OR Specification.drafter = %(my_id)d
-            OR Specification.id IN (
-                SELECT SpecificationFeedback.specification
-                FROM SpecificationFeedback
-                WHERE SpecificationFeedback.reviewer = %(my_id)s
-                UNION
-                SELECT SpecificationSubscription.specification
-                FROM SpecificationSubscription
-                WHERE SpecificationSubscription.person = %(my_id)d
-                )
-            """ % {'my_id': self.id}
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
 
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+        # eliminate mutables
+        if not filter:
+            # if no filter was passed (None or []) then we must decide the
+            # default filtering, and for a person we want related incomplete
+            # specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # if no roles are given then we want everything
+        linked = False
+        roles = set([
+            SpecificationFilter.CREATOR,
+            SpecificationFilter.ASSIGNEE,
+            SpecificationFilter.DRAFTER,
+            SpecificationFilter.APPROVER,
+            SpecificationFilter.FEEDBACK,
+            SpecificationFilter.SUBSCRIBER])
+        for role in roles:
+            if role in filter:
+                linked = True
+        if not linked:
+            for role in roles:
+                filter.append(role)
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        else:
-            raise AssertionError('Unknown sort %s' % sort)
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
 
-        return shortlist(Specification.select(
-                    query, orderBy=order, limit=quantity))
+        # figure out what set of specifications we are interested in. for
+        # products, we need to be able to filter on the basis of:
+        #
+        #  - role (owner, drafter, approver, subscriber, assignee etc)
+        #  - completeness.
+        #  - informational.
+        #
+
+        # in this case the "base" is quite complicated because it is
+        # determined by the roles so lets do that first
+
+        base = '(1=0'  # we want to start with a FALSE and OR them
+        if SpecificationFilter.CREATOR in filter:
+            base += ' OR Specification.owner = %(my_id)d'
+        if SpecificationFilter.ASSIGNEE in filter:
+            base += ' OR Specification.assignee = %(my_id)d'
+        if SpecificationFilter.DRAFTER in filter:
+            base += ' OR Specification.drafter = %(my_id)d'
+        if SpecificationFilter.APPROVER in filter:
+            base += ' OR Specification.approver = %(my_id)d'
+        if SpecificationFilter.SUBSCRIBER in filter:
+            base += """ OR Specification.id in
+                (SELECT specification FROM SpecificationSubscription
+                 WHERE person = %(my_id)d)"""
+        if SpecificationFilter.FEEDBACK in filter:
+            base += """ OR Specification.id in
+                (SELECT specification FROM SpecificationFeedback
+                 WHERE reviewer = %(my_id)d)"""
+        base += ') '
+        
+        base = base % {'my_id': self.id}
+
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)

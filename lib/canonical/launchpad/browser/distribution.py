@@ -110,7 +110,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
+    links = ['edit', 'driver', 'search', 'allpkgs', 'milestone_add', 'members',
              'reassign', 'addrelease', 'builds', 'officialmirrors',
              'allmirrors', 'newmirror', 'launchpad_usage']
 
@@ -120,8 +120,14 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals for all releases'
+        return Link('+driver', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change Registrant'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):
@@ -213,7 +219,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'new']
+    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
         text = 'List All'
@@ -223,9 +229,15 @@ class DistributionSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         return Link('+roadmap', text, icon='info')
 
-    def table(self):
+    def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
+
+    def doc(self):
+        text = 'Documentation'
+        summary = 'List all complete informational specifications'
+        return Link('+documentation', text, summary,
+            icon='info')
 
     def new(self):
         text = 'New Specification'
