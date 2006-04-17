@@ -76,7 +76,6 @@ same issue as 01-claimgpg, copied stuff
   ...
   Location: http://localhost:9000/token/.../+validategpg
   <BLANKLINE>
-  ...
 
   >>> path = '%s/+validategpg' % base_path
   >>> print http(r"""

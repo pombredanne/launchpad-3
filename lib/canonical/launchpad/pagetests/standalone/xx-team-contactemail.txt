@@ -57,9 +57,9 @@
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
+  Location: http://localhost:9000/token/.../+validateteamemail
+  <BLANKLINE>
 
 
   >>> path = '%s/+validateteamemail' % base_path
@@ -145,9 +145,9 @@
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
+  Location: http://localhost:9000/token/.../+validateteamemail
+  <BLANKLINE>
 
 
   >>> path = '%s/+validateteamemail' % base_path
@@ -282,7 +282,6 @@ Person validates the email address using the token.
   ...
   Location: http://localhost:9000/token/.../+validateemail
   <BLANKLINE>
-  ...
 
   >>> path = '%s/+validateemail' % base_path
   >>> print http(r"""
@@ -318,7 +317,6 @@ messages because it's already validate to foobar person.
   ...
   Location: http://localhost:9000/token/.../+validateemail
   <BLANKLINE>
-  ...
 
 
   >>> path = '%s/+validateemail' % team_path
