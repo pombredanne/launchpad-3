@@ -98,6 +98,12 @@ def test_simple_sendmail():
     >>> message['Content-Type']
     'text/plain; charset="utf-8"'
 
+    And we want quoted printable, as it generally makes things readable
+    and for languages it doesn't help, the only downside to base64 is bloat.
+
+    >>> message['Content-Transfer-Encoding']
+    'quoted-printable'
+
     """
 
 def test_suite():
