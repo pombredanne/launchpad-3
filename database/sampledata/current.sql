@@ -8713,7 +8713,13 @@ INSERT INTO sectionselection (id, distrorelease, section) VALUES (70, 11, 32);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (71, 11, 33);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (72, 11, 34);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (73, 11, 35);
-
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (74, 3, 1);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (75, 3, 2);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (76, 3, 4);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (77, 1, 1);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (78, 1, 2);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (79, 1, 3);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (80, 1, 4);
 
 ALTER TABLE sectionselection ENABLE TRIGGER ALL;
 

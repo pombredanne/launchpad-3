@@ -5,6 +5,7 @@
 This tool allows you to change the component of a package.  Changes won't
 take affect till the next publishing run.
 """
+__metaclass__ = type
 
 import _pythonpath
 
@@ -12,198 +13,238 @@ import optparse
 import sys
 
 from zope.component import getUtility
+from contrib.glock import GlobalLock
 
+from canonical.launchpad.database import (
+    DistroArchReleaseBinaryPackage, DistroReleaseSourcePackageRelease)
+from canonical.launchpad.interfaces import (
+    IBinaryPackageNameSet, IDistributionSet, NotFoundError)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
-from canonical.launchpad.database import (DistroArchReleaseBinaryPackage,
-                                          DistroReleaseSourcePackageRelease)
-from canonical.launchpad.interfaces import (IBinaryPackageNameSet,
-                                            IDistributionSet, NotFoundError)
-
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
-from contrib.glock import GlobalLock
 
-################################################################################
+class ArchiveOverriderError(Exception):
+    """ArchiveOverrider specific exception.
 
-Options = None
-Log = None
-Ztm = None
-Lock = None
+    Mostly used to describe errors in the initialization of this object.
+    """
 
-################################################################################
 
-def binaries_of_source(distrorelease, sourcepackage_name):
-    # XXX only gets latest source package for this distrorelease, ok?
-    # XXX - there is method for this in SPR....
-    sp = distrorelease.getSourcePackage(sourcepackage_name)
-    binaries = set()
-    for release in sp.releases:
-        for binary in release.sourcepackagerelease.binaries:
-            binaries.add(binary.binarypackagename.name)
-    return binaries
+class ArchiveOverrider:
+    """Perform actions on published packages."""
+    distro = None
+    distrorelease = None
+    pocket = None
+    component = None
+    section = None
+    priority = None
 
-########################################
+    def __init__(self, log, distro_name=None, suite=None, component_name=None,
+                 section_name=None, priority_name=None):
+        """ """
+        self.distro_name = distro_name
+        self.suite = suite
+        self.component_name = component_name
+        self.section_name = section_name
+        self.priority_name = priority_name
+        self.log = log
 
-def process_source_change(distrorelease, package):
-    Ztm.begin()
-    (new_component, new_section) = (None, None)
-    if Options.component:
-        new_component = Options.component
-    if Options.section:
-        new_section = Options.section
+    def initialize(self):
+        """Initialize and validate current attributes.
 
-    spr = distrorelease.getSourcePackage(package).releasehistory[-1]
-    drspr = DistroReleaseSourcePackageRelease(distrorelease, spr)
-    drspr.changeOverride(new_component=new_component, new_section=new_section)
-    Ztm.commit()
+        Raises ArchiveOverriderError if failed.
+        """
+        if (not self.component_name and not self.section_name and
+            not self.priority_name):
+            raise ArchiveOverriderError(
+                "Need either a component, section or priority to change.")
 
-########################################
-
-def process_binary_change(distrorelease, package):
-    Ztm.begin()
-    (new_component, new_section, new_priority) = (None, None, None)
-    if Options.component:
-        new_component = Options.component
-    if Options.section:
-        new_section = Options.section
-    if Options.priority:
-        new_priority = Options.priority
-    for distroarchrelease in distrorelease.architectures:
-        binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-        darbp = DistroArchReleaseBinaryPackage(
-            distroarchrelease, binarypackagename)
         try:
-            darbp.changeOverride(
-                new_component=new_component, new_priority=new_priority,
-                new_section=new_section)
+            self.distro = getUtility(IDistributionSet)[self.distro_name]
         except NotFoundError:
-            pass
-    Ztm.commit()
+            raise ArchiveOverriderError(
+                "Invalid distribution: '%s'" % self.distro_name)
 
-################################################################################
+        if not self.suite:
+            self.distrorelease = self.distro.currentrelease
+            self.pocket = PackagePublishingPocket.RELEASE
+        else:
+            try:
+                self.distrorelease, self.pocket = (
+                    self.distro.getDistroReleaseAndPocket(self.suite))
+            except NotFoundError:
+                raise ArchiveOverriderError(
+                    "Invalid suite: '%s'" % self.suite)
 
-def init():
-    global Options, Log, Ztm, Lock
+        if self.component_name:
+            valid_components = dict(
+                [(component.name, component)
+                 for component in self.distrorelease.components])
+            if self.component_name not in valid_components:
+                raise ArchiveOverriderError(
+                    "%s is not a valid component for %s/%s."
+                    % (self.component_name, self.distro.name,
+                       self.distrorelease.name))
+            self.component = valid_components[self.component_name]
+            self.log.info("Override Component to: '%s'" % self.component.name)
 
-    # Parse command-line arguments
+        if self.section_name:
+            valid_sections = dict(
+                [(section.name, section)
+                 for section in self.distrorelease.sections])
+            if self.section_name not in valid_sections:
+                raise ArchiveOverriderError(
+                    "%s is not a valid section for %s/%s."
+                    % (self.section_name, self.distro.name,
+                       self.distrorelease.name))
+            self.section = valid_sections[self.section_name]
+            self.log.info("Override Section to: '%s'" % self.section.name)
+
+        if self.priority_name:
+            valid_priorities = dict(
+                [(priority.name.lower(), priority)
+                 for priority in PackagePublishingPriority.items])
+            if self.priority_name not in valid_priorities:
+                raise ArchiveOverriderError(
+                    "%s is not a valid priority for %s/%s."
+                    % (self.priority_name, self.distro.name,
+                       self.distrorelease.name))
+            self.priority = valid_priorities[self.priority_name]
+            self.log.info("Override Priority to: '%s'" % self.priority.name)
+
+    def processSourceChange(self, package_name):
+        """Perform changes in a given source package name.
+
+        It changes only the current published release.
+        """
+        spr = self.distrorelease.getSourcePackage(
+            package_name).releasehistory[-1]
+        drspr = DistroReleaseSourcePackageRelease(self.distrorelease, spr)
+        drspr.changeOverride(new_component=self.component,
+                             new_section=self.section)
+        current = drspr.current_published
+        self.log.info("'%s/%s/%s' source overriden"
+                      % (package_name, current.component.name,
+                         current.section.name))
+
+    def processBinaryChange(self, package_name):
+        """Perform changes in a given binary package name
+
+        It tries to change the binary in all architectures.
+        """
+        for distroarchrelease in self.distrorelease.architectures:
+            try:
+                binarypackagename = getUtility(IBinaryPackageNameSet)[
+                    package_name]
+                darbp = DistroArchReleaseBinaryPackage(
+                    distroarchrelease, binarypackagename)
+                darbp.changeOverride(new_component=self.component,
+                                     new_priority=self.priority,
+                                     new_section=self.section)
+            except NotFoundError:
+                self.log.info("'%s' binary isn't published in %s"
+                               % (package_name,
+                                  distroarchrelease.architecturetag))
+            else:
+                current = darbp.current_published
+                self.log.info(
+                    "'%s/%s/%s/%s' binary overriden in %s"
+                    % (package_name, current.component.name,
+                       current.section.name, current.priority.name,
+                       distroarchrelease.architecturetag))
+
+
+def main():
     parser = optparse.OptionParser()
+
     logger_options(parser)
-    parser.add_option("-B", "--binary-and-source", dest="binaryandsource",
-                      default=False, action="store_true",
-                      help="select source and binary (of the same name)")
-    parser.add_option("-c", "--component", dest="component",
-                      help="move package to COMPONENT")
-    parser.add_option("-d", "--distro", dest="distro",
+
+    # transaction options
+    parser.add_option("-N", "--dry-run", dest="dry_run", default=False,
+                      action="store_true", help="don't actually do anything")
+    # muttable fields
+    parser.add_option("-d", "--distro", dest="distro_name", default='ubuntu',
                       help="move package in DISTRO")
-    parser.add_option("-n", "--no-action", dest="action", default=True,
-                      action="store_false", help="don't actually do anything")
-    parser.add_option("-p", "--priority", dest="priority",
-                      help="move package to PRIORITY")
     parser.add_option("-s", "--suite", dest="suite",
                       help="move package in suite SUITE")
+    parser.add_option("-c", "--component", dest="component_name",
+                      help="move package to COMPONENT")
+    parser.add_option("-p", "--priority", dest="priority_name",
+                      help="move package to PRIORITY")
+    parser.add_option("-x", "--section", dest="section_name",
+                      help="move package to SECTION")
+    # control options
     parser.add_option("-S", "--source-and-binary", dest="sourceandchildren",
                       default=False, action="store_true",
                       help="select source and binaries with the same name")
+    parser.add_option("-B", "--binary-and-source", dest="binaryandsource",
+                      default=False, action="store_true",
+                      help="select source and binary (of the same name)")
     parser.add_option("-t", "--source-only", dest="sourceonly",
                       default=False, action="store_true",
                       help="select source packages only")
-    parser.add_option("-x", "--section", dest="section",
-                      help="move package to SECTION")
-    
-    (Options, args) = parser.parse_args()
-    Log = logger(Options, "change-component")
+
+    (options, args) = parser.parse_args()
+
+    log = logger(options, "change-override")
 
     if len(args) < 1:
-        Log.error("Need to be given the name of a package to move.")
-        sys.exit(1)
+        log.error("Need to be given the name of a package to move.")
+        return 1
 
-    Log.debug("Acquiring lock")
-    Lock = GlobalLock('/var/lock/launchpad-change-component.lock')
-    Lock.acquire(blocking=True)
+    log.debug("Acquiring lock")
+    lock = GlobalLock('/var/lock/launchpad-change-component.lock')
+    lock.acquire(blocking=True)
 
-    Log.debug("Initialising connection.")
-    Ztm = initZopeless(dbuser="lucille")
-
+    log.debug("Initialising connection.")
+    # XXX cprov 20060417: retrieve dbuser from config file
+    ztm = initZopeless(dbuser="lucille")
     execute_zcml_for_scripts()
 
-    if not Options.distro:
-        Options.distro = "ubuntu"
-    Options.distro = getUtility(IDistributionSet)[Options.distro]
+    # instatiate and initialize changer object
+    changer = ArchiveOverrider(log, distro_name=options.distro_name,
+                               suite=options.suite,
+                               component_name=options.component_name,
+                               section_name=options.section_name,
+                               priority_name=options.priority_name)
 
-    if not Options.suite:
-        Options.distrorelease = Options.distro.currentrelease
-        Options.pocket = PackagePublishingPocket.RELEASE
+    try:
+        changer.initialize()
+    except ArchiveOverriderError, info:
+        log.error(info)
+        return 1
+
+    for package_name in args:
+        # change matching source
+        if (options.sourceonly or options.binaryandsource or
+            options.sourceandchildren):
+            changer.processSourceChange(package_name)
+
+        # change all binaries for matching source
+        if options.sourceandchildren:
+            sp = changer.distrorelease.getSourcePackage(package_name)
+            binaries = sp.currentrelease.sourcepackagerelease.binaries
+            for binary_name in [binary.name for binary in binaries]:
+                changer.processBinaryChange(binary_name)
+
+        # change only binary matching name
+        elif not options.sourceonly:
+            changer.processBinaryChange(package_name)
+
+    if options.dry_run:
+        log.info("Dry run, aborting transaction")
+        ztm.abort()
     else:
-        Options.distrorelease, Options.pocket = (
-            Options.distro.getDistroReleaseAndPocket(Options.suite))
+        log.info("Commiting transaction, changes will be visible after "
+                 "next publisher run.")
+        ztm.commit()
 
-    return args
-
-################################################################################
-
-def validate_options():
-    if not Options.component and not Options.section and not Options.priority:
-        Log.error("need either a component, section or priority to change.")
-        sys.exit(1)
-
-    if Options.component:
-        valid_components = dict([(c.name,c) for c in
-                                 Options.distrorelease.components])
-
-        if Options.component not in valid_components:
-            Log.error("%s is not a valid component for %s/%s."
-                      % (Options.component, Options.distro.name,
-                         Options.distrorelease.name))
-            sys.exit(1)
-        Options.component = valid_components[Options.component]
-
-    if Options.section:
-        valid_sections = dict(
-            [(s.name,s) for s in Options.distrorelease.sections])
-        if Options.section not in valid_sections:
-            Log.error("%s is not a valid section for %s/%s." 
-                      % (Options.section, Options.distro.name,
-                         Options.distrorelease.name))
-            sys.exit(1)
-        Options.section = valid_sections[Options.section]
-
-    if Options.priority:
-        valid_priorities = dict(
-            [(priority.name.lower(), priority)
-             for priority in PackagePublishingPriority.items])
-        if Options.priority not in valid_priorities:
-            Log.error("%s is not a valid priority for %s/%s."
-                      % (Options.priority, Options.distro.name,
-                         Options.distrorelease.name))
-            sys.exit(1)
-        Options.priority = valid_priorities[Options.priority]
-
-
-################################################################################
-
-def main():
-    arguments = init()
-
-    validate_options()
-    
-    for package in arguments:
-        if (Options.sourceonly or Options.binaryandsource or
-            Options.sourceandchildren):
-            process_source_change(Options.distrorelease, package)
-
-        if Options.sourceandchildren:
-            for child in binaries_of_source(Options.distrorelease, package):
-                process_binary_change(Options.distrorelease, child)
-        elif not Options.sourceonly:
-            process_binary_change(Options.distrorelease, package)
-
-    Lock.release()
+    lock.release()
     return 0
 
-################################################################################
 
 if __name__ == '__main__':
     sys.exit(main())
