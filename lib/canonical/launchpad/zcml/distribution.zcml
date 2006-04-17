@@ -13,8 +13,9 @@
             permission="launchpad.Edit"
             set_attributes="displayname title summary description
                             translationgroup translationpermission
-                            members owner bugcontact official_malone
-                            official_rosetta security_contact"
+                            driver members owner bugcontact
+                            official_malone official_rosetta
+                            security_contact"
             />
     </content>
 
@@ -250,8 +251,20 @@
         fields="official_rosetta official_malone"
         permission="launchpad.Edit"
         label="Describe Launchpad usage"
-        template="../templates/distribution-edit.pt"
+        template="../templates/object-launchpadusage.pt"
         />
+
+    <browser:editform
+        name="+driver"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionEditView"
+        fields="driver"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-driver.pt"
+        lp:url="/$Project.name/+driver">
+    </browser:editform>
 
     <browser:editform
         name="+selectmemberteam"

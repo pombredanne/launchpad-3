@@ -82,6 +82,15 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
             "The person or team who handles security-related issues "
             "for this distribution"),
         required=False, vocabulary='ValidPersonOrTeam')
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted for any release in this "
+            "distribution. Note that you can also specify a driver "
+            "on each release who's permissions will be limited to that "
+            "specific release."),
+        required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,

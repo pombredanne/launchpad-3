@@ -48,7 +48,7 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus,
-    TranslationPermission, SpecificationSort)
+    TranslationPermission, SpecificationSort, SpecificationFilter)
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError,
@@ -78,6 +78,8 @@ class Distribution(SQLBase, BugTargetBase):
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person', notNull=False,
         default=None)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)
@@ -278,14 +280,84 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         return DistributionSourcePackageRelease(self, sourcepackagerelease)
 
-    def specifications(self, sort=None, quantity=None):
+    @property
+    def has_any_specifications(self):
         """See IHasSpecifications."""
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications.
+        
+        In the case of distributions, there are two kinds of filtering,
+        based on:
+        
+          - completeness: we want to show INCOMPLETE if nothing is said
+          - informationalness: we will show ANY if nothing is said
+        
+        """
+
+        # eliminate mutables in the case where nothing or an empty filter
+        # was sent
+        if not filter:
+            # it could be None or it could be []
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a distro
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        results = Specification.selectBy(distributionID=self.id,
-            orderBy=order)[:quantity]
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
+        # figure out what set of specifications we are interested in. for
+        # distributions, we need to be able to filter on the basis of:
+        #
+        #  - completeness. by default, only incomplete specs shown
+        #  - informational.
+        #
+        base = 'Specification.distribution = %s' % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
         results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
