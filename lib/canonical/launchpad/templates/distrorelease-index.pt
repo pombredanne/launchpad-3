@@ -13,6 +13,7 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-langstats" /> 
+  <div tal:replace="structure context/@@+portlet-milestones" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

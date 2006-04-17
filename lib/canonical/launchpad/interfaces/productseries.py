@@ -70,6 +70,9 @@ class IProductSeries(IHasOwner, ISpecificationGoal):
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
+    milestones = Attribute(
+        'The milestones associated with this series.')
+
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '
         'This list is made up of any drivers or owners from this '
@@ -101,6 +104,9 @@ class IProductSeries(IHasOwner, ISpecificationGoal):
 
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
+
+    def newMilestone(name, dateexpected=None):
+        """Create a new milestone for this DistroRelease."""
 
 
 class IProductSeriesSource(Interface):

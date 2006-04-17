@@ -13,8 +13,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice, TextLine, Int, Date, Bool
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IHasProduct
-from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.distrorelease import IDistroRelease
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.validators.name import name_validator
@@ -27,28 +27,22 @@ class MilestoneNameField(ContentNameField):
         return IMilestone
     
     def _getByName(self, name):
-        context = self.context
-        milestoneset = getUtility(IMilestoneSet)
-        if IMilestone.providedBy(context):
-            if self.context.product is not None:
-                context = context.product
-                milestone = milestoneset.getByNameAndProduct(name, context)
-            else:
-                context = context.distribution
-                milestone = milestoneset.getByNameAndDistribution(name,
-                        context)
-        elif IProduct.providedBy(context):
-            milestone = milestoneset.getByNameAndProduct(name, context)
+        if IMilestone.providedBy(self.context):
+            milestone = self.context.target.getMilestone(name)
+        elif IProductSeries.providedBy(self.context):
+            milestone = self.context.product.getMilestone(name)
+        elif IDistroRelease.providedBy(self.context):
+            milestone = self.context.distribution.getMilestone(name)
         else:
-            milestone = milestoneset.getByNameAndDistribution(name, context)
+            raise AssertionError, 'Editing a milestone from a weird place.'
         if milestone is not None:
               self.errormessage = _(
                   "The name %%s is already used by a milestone in %s."
-                  % context.displayname)
+                  % milestone.target.displayname)
         return milestone
 
 
-class IMilestone(IHasProduct):
+class IMilestone(Interface):
     """A milestone, or a targeting point for bugs and other release-related
     items that need coordination.
     """
@@ -66,11 +60,24 @@ class IMilestone(IHasProduct):
     distribution = Choice(title=_("Distribution"),
         description=_("The distribution to which this milestone belongs."),
         vocabulary="Distribution")
+    productseries = Choice(
+        title=_("Product Series"),
+        description=_("The product series for which this is a milestone."),
+        vocabulary="FilteredProductSeries",
+        required=False) # for now
+    distrorelease = Choice(
+        title=_("Distribution Release"),
+        description=_(
+            "The distribution release for which this is a milestone."),
+        vocabulary="FilteredDistroRelease",
+        required=False) # for now
     dateexpected = Date(title=_("Date Targeted"), required=False,
         description=_("Example: 2005-11-24"))
     visible = Bool(title=_("Active"), description=_("Whether or not this "
         "milestone should be shown in web forms for bug targeting."))
     target = Attribute("The product or distribution of this milestone.")
+    series_target = Attribute(
+        'The productseries or distrorelease of this milestone.')
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = Attribute("A milestone context title for pages.")
@@ -103,7 +110,3 @@ class IMilestoneSet(Interface):
         If no milestone is found, default will be returned.
         """
 
-    def new(product, name, title):
-        """Create a new milestone for a product.
-
-        name and title are (currently) required."""

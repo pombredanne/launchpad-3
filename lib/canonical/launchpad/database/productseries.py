@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
     IProductSeriesSourceSet, NotFoundError)
 
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import Specification
@@ -81,9 +82,11 @@ class ProductSeries(SQLBase):
     datesyncapproved = UtcDateTimeCol(default=None)
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
-                             orderBy=['-datereleased'])
+                            orderBy=['-datereleased'])
+    milestones = SQLMultipleJoin('Milestone', joinColumn = 'productseries',
+                            orderBy=['dateexpected', 'name'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
-                              orderBy=['-id'])
+                            orderBy=['-id'])
 
     @property
     def displayname(self):
@@ -313,6 +316,11 @@ class ProductSeries(SQLBase):
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
+
+    def newMilestone(self, name, dateexpected=None):
+        """See IProductSeries."""
+        return Milestone(name=name, dateexpected=dateexpected,
+            product=self.product.id, productseries=self.id)
 
     def acceptSpecificationGoal(self, spec):
         """See ISpecificationGoal."""

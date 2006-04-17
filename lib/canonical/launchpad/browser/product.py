@@ -149,7 +149,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'driver', 'reassign', 'distributions', 'packages', 'branches',
-        'branch_add', 'series_add', 'milestone_add', 'launchpad_usage',
+        'branch_add', 'series_add', 'launchpad_usage',
         'administer', 'rdf']
 
     def edit(self):
@@ -184,10 +184,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def branch_add(self):
         text = 'Register Branch'
         return Link('+addbranch', text, icon='add')
-
-    def milestone_add(self):
-        text = 'Add Milestone'
-        return Link('+addmilestone', text, icon='add')
 
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
