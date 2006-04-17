@@ -173,7 +173,7 @@ def validate_options():
     if Options.priority:
         valid_priorities = dict(
             [(priority.name.lower(), priority)
-             for p in PackagePublishingPriority.items])
+             for priority in PackagePublishingPriority.items])
         if Options.priority not in valid_priorities:
             Log.error("%s is not a valid priority for %s/%s."
                       % (Options.priority, Options.distro.name,
