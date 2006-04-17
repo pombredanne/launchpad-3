@@ -315,7 +315,7 @@ messages because it's already validate to foobar person.
   ... """ % team_path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/token/.../+validateemail
+  Location: http://localhost:9000/token/.../+validateteamemail
   <BLANKLINE>
 
 
