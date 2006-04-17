@@ -966,6 +966,7 @@ COMMENT ON COLUMN LoginToken.created IS 'The timestamp that this request was mad
 COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.TokenType.';
 COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
 COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
+COMMENT ON COLUMN LoginToken.date_consumed IS 'The date and time when this token was consumed. It\'s NULL if it hasn\'t been consumed yet.';
 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';

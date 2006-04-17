@@ -909,9 +909,12 @@ class Person(SQLBase):
     @property
     def unvalidatedemails(self):
         """See IPerson."""
-        query = ("requester=%s AND (tokentype=%s OR tokentype=%s)" 
-                 % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
-                             LoginTokenType.VALIDATETEAMEMAIL))
+        query = """
+            requester = %s
+            AND (tokentype=%s OR tokentype=%s)
+            AND date_consumed IS NULL
+            """ % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
+                            LoginTokenType.VALIDATETEAMEMAIL)
         return sets.Set([token.email for token in LoginToken.select(query)])
 
     @property
@@ -1742,9 +1745,15 @@ class GPGKeySet:
     def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
-            query = ('active=false AND fingerprint NOT IN '
-                     '(SELECT fingerprint from LoginToken WHERE fingerprint '
-                     'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
+            query = """
+                active = false 
+                AND fingerprint NOT IN 
+                    (SELECT fingerprint FROM LoginToken 
+                     WHERE fingerprint IS NOT NULL 
+                           AND requester = %s 
+                           AND date_consumed is NULL
+                    )
+                """ % sqlvalues(ownerid)
         else:
             query = 'active=true'
 
