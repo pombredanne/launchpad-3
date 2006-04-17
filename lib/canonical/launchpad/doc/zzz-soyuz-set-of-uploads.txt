@@ -33,6 +33,7 @@ uploaded files in.
   >>> import os
   >>> import tempfile
   >>> temp_dir = tempfile.mkdtemp()
+  >>> uploader_log = tempfile.mktemp()
   >>> incoming_dir = os.path.join(temp_dir, "incoming")
   >>> accepted_dir = os.path.join(temp_dir, "accepted")
   >>> rejected_dir = os.path.join(temp_dir, "rejected")
@@ -95,7 +96,7 @@ Firstly, we need a way to copy a test upload into the queue
   ...     f.write("ubuntutest")
   ...     f.close()
   ...     for file_leaf in os.listdir(datadir(os.path.join("suite", leaf))):
-  ...         os.system("cp %s %s" % 
+  ...         os.system("cp %s %s" %
   ...             (datadir(os.path.join("suite", leaf, file_leaf)), inc_dir))
 
 We need a way to count the items in a queue directory
@@ -108,27 +109,42 @@ And then we need a way to process the uploads from the queue
   >>> from canonical.config import config
   >>> import subprocess, sys
   >>> def process_uploads():
+  ...     # reset previous log content if it exists
+  ...     if os.path.exists(uploader_log):
+  ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
-  ...     process = subprocess.Popen([sys.executable, script, "--no-mails", 
-  ...                                 "-q", "-C", "anything", temp_dir])
+  ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
+  ...                                 "-v", "-C", "anything", temp_dir,
+  ...                                 "--log-file", uploader_log])
   ...     return process.wait() == 0
 
 And we need a way to process the accepted queue
 
   >>> def process_accepted():
   ...     script = os.path.join(config.root, "scripts", "process-accepted.py")
-  ...     process = subprocess.Popen([sys.executable, script, "ubuntutest"])
+  ...     process = subprocess.Popen([sys.executable, script,
+  ...                                "ubuntutest"],
+  ...                                stdout=subprocess.PIPE,
+  ...                                stderr=subprocess.PIPE)
+  ...     # collects spurious output (as reported in bug # 39281)
+  ...     garbage = process.stderr.read()
+  ...     garbage = process.stdout.read()
   ...     return process.wait() == 0
 
 If an upload of ours ends up in the NEW queue, we need a way to process
 it into the accepted queue
 
   >>> def process_new():
-  ...     script = os.path.join(config.root, "scripts", 
+  ...     script = os.path.join(config.root, "scripts",
   ...                           "ftpmaster-tools", "queue")
   ...     process = subprocess.Popen([sys.executable, script, "-Q", "new",
   ...                                 "-D", "ubuntutest", "-R", "breezy",
-  ...                                 "--no-mail", "accept", "*"])
+  ...                                 "--no-mail", "accept", "*"],
+  ...                                stdout=subprocess.PIPE,
+  ...                                stderr=subprocess.PIPE)
+  ...     # collects spurious output (as reported in bug # 39281)
+  ...     garbage = process.stderr.read()
+  ...     garbage = process.stdout.read()
   ...     return process.wait() == 0
 
 Finally, as a very simplistic publishing process, we may need to punt any
@@ -152,7 +168,7 @@ given upload into the published state, so here's a very simplistic publisher
   ...     AND DistroRelease.distribution = Distribution.id
   ...     AND Distribution.name = 'ubuntutest'
   ...     AND BinaryPackagePublishing.status = 1""",
-  ...         clauseTables=['DistroArchRelease', 'DistroRelease', 
+  ...         clauseTables=['DistroArchRelease', 'DistroRelease',
   ...                       'Distribution'])
   ...     published_one = False
   ...     for src in srcs_to_publish:
@@ -174,7 +190,7 @@ We can also define another helper function...
 
   >>> def expect_okays(leafname, is_new):
   ...     punt_upload_into_queue(leafname)
-  ...     assert process_uploads(), "Upload processes okay"
+  ...     assert process_uploads(), "Upload processes failed"
   ...     # There is always a lockfile in incoming...
   ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should be empty"
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty"
@@ -195,11 +211,33 @@ and arch-independant binaries.
   >>> expect_okays('bar_1.0-2', False)
   >>> expect_okays('bar_1.0-2_binary', False)
 
+Check the rejection of a malicious version of bar package which refers
+to a different 'bar_1.0.orig.tar.gz'.
+
+  >>> expect_okays('bar_1.0-3', False)
+  Traceback (most recent call last):
+  ...
+  AssertionError: Rejected should be empty
+
+Inspect the uploader log to find the rejection message.
+
+  >>> print open(uploader_log).read()
+  DEBUG   Initialising connection.
+  ...
+  INFO       Subject: bar_1.0-3_source.changes Rejected
+  INFO       Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
+  INFO       Body:
+  INFO    Rejected:
+  INFO    SHA1 sum of uploaded file does not match extant file in archive
+  ...
+  <BLANKLINE>
+
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
   >>> import shutil
   >>> shutil.rmtree(temp_dir)
+  >>> os.remove(uploader_log)
 
   >>> ZecaTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()

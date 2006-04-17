@@ -77,7 +77,7 @@ class LookUp(Resource):
     
     def processRequest(self, action, keyid):
         if (action not in self.permitted_actions) or not keyid:
-            return 'Forbidden Attributes: %s' % request.args
+            return 'Forbidden: "%s" on ID "%s"' % (action, keyid)
 
         page = ('<html>\n<head>\n'
                 '<title>Results for Key %s</title>\n'

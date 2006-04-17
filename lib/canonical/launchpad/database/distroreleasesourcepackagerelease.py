@@ -211,9 +211,10 @@ class DistroReleaseSourcePackageRelease:
         """See IDistroReleaseSourcePackageRelease."""
 
         # Check we have been asked to do something
-        if new_component is None and new_section is None:
+        if (new_component is None and
+            new_section is None):
             raise AssertionError("changeOverride must be passed either a"
-                                 " new component or new section.")
+                                 " new component or new section")
 
         # Retrieve current publishing info
         current = self.current_published
@@ -231,12 +232,12 @@ class DistroReleaseSourcePackageRelease:
         SecureSourcePackagePublishingHistory(
             distrorelease=current.distrorelease,
             sourcepackagerelease=current.sourcepackagerelease,
-            component=new_component,
-            section=new_section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            pocket=current.pocket,
             embargo=False,
+            pocket=current.pocket,
+            component=new_component,
+            section=new_section,
         )
 
     def supersede(self):
