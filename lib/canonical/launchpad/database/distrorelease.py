@@ -47,6 +47,7 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
     DistroReleaseSourcePackageRelease)
 from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishing, BinaryPackagePublishing,
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
@@ -104,12 +105,13 @@ class DistroRelease(SQLBase, BugTargetBase):
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
 
+    milestones = SQLMultipleJoin('Milestone', joinColumn = 'distrorelease',
+                            orderBy=['dateexpected', 'name'])
     architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
     binary_package_caches = SQLMultipleJoin('DistroReleasePackageCache',
         joinColumn='distrorelease', orderBy='name')
-
     components = RelatedJoin(
         'Component', joinColumn='distrorelease', otherColumn='component',
         intermediateTable='ComponentSelection')
@@ -800,6 +802,11 @@ class DistroRelease(SQLBase, BugTargetBase):
             processorfamily=processorfamily, official=official,
             distrorelease=self, owner=owner)
         return dar
+
+    def newMilestone(self, name, dateexpected=None):
+        """See IDistroRelease."""
+        return Milestone(name=name, dateexpected=dateexpected,
+            distributionID=self.distribution.id, distroreleaseID=self.id)
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""

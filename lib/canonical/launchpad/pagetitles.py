@@ -441,7 +441,7 @@ malone_filebug = "Report a bug"
 
 message_add = ContextId('Bug #%d - Add a comment')
 
-milestone_add = ContextDisplayName('Add milestone for %s')
+milestone_add = ContextTitle('Add new milestone for %s')
 
 milestone_index = ContextTitle('%s')
 

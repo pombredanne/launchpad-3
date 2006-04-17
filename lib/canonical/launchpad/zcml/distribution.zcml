@@ -197,20 +197,6 @@
     </browser:addform>
 
     <browser:addform
-        name="+addmilestone"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IMilestone"
-        class="canonical.launchpad.browser.milestone.MilestoneAddView"
-        facet="overview"
-        label="Add a milestone"
-        fields="name dateexpected"
-        keyword_arguments="name dateexpected"
-        permission="launchpad.Edit"
-        template="../templates/milestone-add.pt"
-        lp:url="/distros/$Distribution.name/+addmilestone">
-    </browser:addform>
-
-    <browser:addform
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"

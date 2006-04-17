@@ -69,6 +69,11 @@
             template="../templates/productseries-portlet-releases.pt"
             lp:url="/products/$Product.name/$ProductSeries.name/+portlet-releases" />
         <browser:page
+            name="+portlet-milestones"
+            facet="overview"
+            template="../templates/object-portlet-milestones.pt"
+            lp:url="/products/evolution/2.2/+portlet-milestones" />
+        <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt"
             lp:url="/$Product.name/$ProductSeries.name/+table-releases" />
@@ -179,6 +184,19 @@
         <browser:widget
             field="owner"
             class="canonical.widgets.HiddenUserWidget" />
+    </browser:addform>
+
+    <browser:addform
+      name="+addmilestone"
+      for="canonical.launchpad.interfaces.IProductSeries"
+      schema="canonical.launchpad.interfaces.IMilestone"
+      class="canonical.launchpad.browser.milestone.MilestoneAddView"
+      facet="overview"
+      fields="name dateexpected"
+      keyword_arguments="name dateexpected"
+      permission="launchpad.Edit"
+      template="../templates/milestone-add.pt"
+      lp:url="/products/$Product.name/$Series.name/+addmilestone">
     </browser:addform>
 
     <browser:pages

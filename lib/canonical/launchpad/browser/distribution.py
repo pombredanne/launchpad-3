@@ -110,7 +110,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'driver', 'search', 'allpkgs', 'milestone_add', 'members',
+    links = ['edit', 'driver', 'search', 'allpkgs', 'members',
              'reassign', 'addrelease', 'builds', 'officialmirrors',
              'allmirrors', 'newmirror', 'launchpad_usage']
 
@@ -150,11 +150,6 @@ class DistributionOverviewMenu(ApplicationMenu):
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def milestone_add(self):
-        text = 'Add Milestone'
-        return Link('+addmilestone', text, icon='add')
 
     def search(self):
         text = 'Search Packages'

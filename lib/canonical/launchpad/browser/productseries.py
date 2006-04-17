@@ -69,8 +69,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = ['edit', 'driver', 'editsource', 'ubuntupkg',
-             'addpackage', 'addrelease',
-             'addpotemplate', 'rdf', 'review']
+             'add_package', 'add_milestone', 'add_release',
+             'add_potemplate', 'rdf', 'review']
 
     def edit(self):
         text = 'Change Series Details'
@@ -89,11 +89,17 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Link to Ubuntu Package'
         return Link('+ubuntupkg', text, icon='edit')
 
-    def addpackage(self):
+    def add_package(self):
         text = 'Link to Any Package'
         return Link('+addpackage', text, icon='edit')
 
-    def addrelease(self):
+    @enabled_with_permission('launchpad.Edit')
+    def add_milestone(self):
+        text = 'Add Milestone'
+        summary = 'Register a new milestone for this series'
+        return Link('+addmilestone', text, summary, icon='add')
+
+    def add_release(self):
         text = 'Register a Release'
         return Link('+addrelease', text, icon='add')
 
@@ -102,7 +108,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+rdf', text, icon='download')
 
     @enabled_with_permission('launchpad.Admin')
-    def addpotemplate(self):
+    def add_potemplate(self):
         text = 'Add Translation Template'
         return Link('+addpotemplate', text, icon='add')
 

@@ -84,7 +84,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     usedfor = IDistroRelease
     facet = 'overview'
     links = ['edit', 'reassign', 'driver', 'support', 'packaging', 
-             'addport', 'admin', 'builds', 'queue']
+             'add_port', 'add_milestone', 'admin', 'builds', 'queue']
 
     def edit(self):
         text = 'Edit Details'
@@ -101,11 +101,18 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Change Registrant'
         return Link('+reassign', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def add_milestone(self):
+        text = 'Add Milestone'
+        summary = 'Register a new milestone for this release'
+        return Link('+addmilestone', text, summary, icon='add')
+
     def packaging(self):
         text = 'Upstream Links'
         return Link('+packaging', text, icon='info')
 
-    # A search link isn't needed because the distro release overview has a search form.
+    # A search link isn't needed because the distro release overview
+    # has a search form.
 
     def support(self):
         text = 'Request Support'
@@ -113,7 +120,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         return Link(url, text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
-    def addport(self):
+    def add_port(self):
         text = 'Add Port'
         return Link('+addport', text, icon='add')
 

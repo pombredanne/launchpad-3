@@ -206,6 +206,18 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.target.owner)
 
 
+class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        """Only the Launchpad admins need this, we are only going to use it
+        for connecting up series and distroreleases where we did not have
+        them."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
 class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = ITeam

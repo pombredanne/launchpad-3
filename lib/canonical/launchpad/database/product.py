@@ -126,7 +126,8 @@ class Product(SQLBase, BugTargetBase):
             orderBy=['version']
             )
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product')
+    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
+        orderBy=['dateexpected', 'name'])
 
     bounties = RelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
