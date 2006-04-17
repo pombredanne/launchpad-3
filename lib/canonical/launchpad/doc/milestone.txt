@@ -42,10 +42,10 @@ To retrieve a specific Milestone, use IMilestoneSet.get:
     >>> print firefox_ms_1_0.displayname
     Mozilla Firefox: 1.0
 
-Of course, you can also get them off a ProductSeries or DistroRelease using
+Of course, you can also get them off a Product or Distribution using
 the getMilestone() method:
 
-    >>> ms = ff_onedotzero.getMilestone('1.0rc1')
+    >>> ms = upstream_firefox.getMilestone('1.0rc1')
     >>> print ms.name
     1.0rc1
 
