@@ -257,6 +257,15 @@ class Person(SQLBase):
         # Person.displayname is NOT NULL
         return self.displayname
 
+    @property
+    def has_any_specifications(self):
+        """See IHasSpecifications."""
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
 
@@ -266,6 +275,25 @@ class Person(SQLBase):
             # default filtering, and for a person we want related incomplete
             # specs
             filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a person 
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
 
         # if no roles are given then we want everything
         linked = False

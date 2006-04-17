@@ -21,6 +21,14 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
+    all_specifications = Attribute(
+        'A list of all specifications, regardless of status or approval '
+        'or completion, for this object.')
+
+    has_any_specifications = Attribute(
+        'A true or false indicator of whether or not this object has any '
+        'specifications associated with it, regardless of their status.')
+
     def specifications(quantity=None, sort=None, filter=None):
         """Specifications for this target.
 

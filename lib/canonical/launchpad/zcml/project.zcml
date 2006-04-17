@@ -221,7 +221,7 @@
         for="canonical.launchpad.interfaces.IProject"
         facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Add a product to this project"
+        label="Register a product in this project"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang owner"
@@ -229,7 +229,9 @@
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
         lp:url="/projects/$Project.name/+newproduct">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
+        <browser:widget
+           field="owner"
+           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"

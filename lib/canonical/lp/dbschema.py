@@ -1327,9 +1327,9 @@ class SpecificationPriority(DBSchema):
     HIGH = Item(70, """
         High
 
-        This specification is strongly desired for the next major release,
-        and we have every reason to believe that it can be delivered in that
-        timeframe.
+        This specification is strongly desired by the project leaders.
+        The feature will definitely get review time and contributions would
+        be most effective if directed at a feature with this priority.
         """)
 
     ESSENTIAL = Item(90, """
