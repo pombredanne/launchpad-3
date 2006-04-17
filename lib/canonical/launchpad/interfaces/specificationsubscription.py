@@ -18,6 +18,10 @@ class ISpecificationSubscription(Interface):
     person = Choice(
             title=_('Subscriber'), required=True,
             vocabulary='ValidPersonOrTeam', readonly=True,
+            description=_(
+            'The person you would like to subscribe to this specification. '
+            'They will be notified of the subscription by email, if they '
+            'have an active launchpad account.')
             )
     specification = Int(title=_('Specification'), required=True,
         readonly=True)

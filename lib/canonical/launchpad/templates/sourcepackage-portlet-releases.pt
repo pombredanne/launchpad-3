@@ -1,5 +1,6 @@
 <div class="portlet">
-  <h4>Package releases:</h4>
+  <h4>Releases in <span
+  tal:replace="context/distribution/displayname" />:</h4>
   <div class="portletBody portletContent">
   <ul>
     <li tal:repeat="release context/releases">

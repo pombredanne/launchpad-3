@@ -353,3 +353,85 @@ alphabetically (A to Z) by package name.
 >>> [package.name for package in foobar.getBugContactPackages()]
 [u'mozilla-firefox', u'pmount']
 
+
+Specification Lists
+-------------------
+
+We should be able to generate lists of specifications for people based on
+certain criteria:
+
+First, Carlos does not have any completed specifications assigned to him:
+
+ >>> carlos = getUtility(IPersonSet).getByName('carlos')
+ >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> for spec in carlos.specifications(filter=[
+ ...     SpecificationFilter.ASSIGNEE, SpecificationFilter.COMPLETE]):
+ ...     print spec.name, spec.is_complete, spec.informational
+
+
+Next, Carlos has three incomplete specs *related* to him:
+
+ >>> filter = []
+ >>> for spec in carlos.specifications(filter=filter):
+ ...     print spec.name, spec.is_complete, spec.informational
+ svg-support False False
+ extension-manager-upgrades False True
+ media-integrity-check False False
+
+Carlos has 2 specifications assigned to him:
+
+ >>> filter = [SpecificationFilter.ASSIGNEE]
+ >>> for spec in carlos.specifications(filter=filter):
+ ...     print spec.name
+ svg-support
+ extension-manager-upgrades
+
+
+Just for fun, lets check the SAB. He should have one spec for which he
+is the approver.
+
+ >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+ >>> filter = [SpecificationFilter.APPROVER]
+ >>> for spec in sabdfl.specifications(filter=filter):
+ ...     print spec.name
+ extension-manager-upgrades
+
+
+The Foo Bar person has a single spec which has feedback requested:
+
+ >>> filter = [SpecificationFilter.FEEDBACK]
+ >>> for spec in foobar.specifications(filter=filter):
+ ...     print spec.name
+ e4x
+
+
+But has registered 5 of them:
+
+ >>> filter = [SpecificationFilter.CREATOR]
+ >>> print foobar.specifications(filter=filter).count()
+ 5
+
+
+Now Celso, on the other hand, has 2 specs related to him:
+
+ >>> cprov = personset.getByName('cprov')
+ >>> cprov.specifications().count()
+ 2
+
+
+On one of those, he is the approver:
+
+ >>> filter = [SpecificationFilter.APPROVER]
+ >>> for spec in cprov.specifications(filter=filter):
+ ...     print spec.name
+ svg-support
+
+
+And on another one, he is the drafter
+
+ >>> filter = [SpecificationFilter.DRAFTER]
+ >>> for spec in cprov.specifications(filter=filter):
+ ...     print spec.name
+ e4x
+
+

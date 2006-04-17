@@ -11,13 +11,12 @@
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/distrorelease/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-upstream-details" />
     <div tal:replace="structure context/@@+portlet-latesttickets" />
     <div tal:replace="structure context/@@+portlet-releases" />
+    <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -49,42 +48,75 @@
       </tal:block>
     </tal:block>
   </dl>
+
+  <h2>Upstream associations</h2>
+
+  <ul tal:define="series context/productseries">
+    <tal:has_series condition="series">
+      <li tal:condition="series/product/project">
+       <b>Project:</b>
+         <a tal:define="project series/product/project"
+          tal:content="project/displayname"
+          tal:attributes="href string:/projects/${project/name}">
+          Project</a>
+      </li>
+      <li><b>Product:</b>
+         <a tal:condition="series/product"
+            tal:content="series/product/displayname"
+            tal:attributes="href string:/products/${series/product/name}">
+         Product</a>
+      </li>
+      <li><b>Branch: </b>
+      <a tal:define="productseries context/productseries"
+         tal:content="productseries/name"
+         tal:attributes="href productseries/fmt:url">
+         ProductSeries</a><br />
+      </li>
+    </tal:has_series>
+    <tal:has_no_series condition="not: context/productseries">
+       <li><b>Related product:</b>
+       <i>
+         No product associated with this sourcepackage
+       </i>
+    </tal:has_no_series>
+    <small>(<a tal:attributes="href string:${context/fmt:url}/+packaging">update</a>)</small>
+  </ul>
+
   <tal:block tal:condition="context/currentrelease"
              tal:define="current context/currentrelease">
 
     <h2>Download files from current release (<span
     tal:replace="current/version">2.1.3-4</span>)</h2>
 
-      <div tal:define="files current/files">
-        <ul tal:condition="files">
-          <li class="file" tal:repeat="file files">
-            <a tal:content="file/url/filename"
-               tal:attributes="href file/url/fileurl" />
-          </li>
-          <li class="alert" tal:condition="not:files">
-            <i>No files available for download.</i>
-          </li>
-        </ul>
-      </div>
+    <tal:files define="files current/files">
+      <ul tal:condition="files">
+        <li class="file" tal:repeat="file files">
+          <a tal:content="file/url/filename"
+             tal:attributes="href file/url/fileurl" />
+        </li>
+      </ul>
+    </tal:files>
+    <ul tal:condition="not:current/files">
+      <li class="alert">
+        <i>No files available for download.</i>
+      </li>
+    </ul>
 
     <h2>Binary packages</h2>
-        <p tal:condition="not:view/binaries">
-          No binaries have been generated for this release.
-        </p>
-        <ul tal:define="binaries view/binaries" tal:condition="binaries">
-          <li tal:repeat="bin_name binaries">
- 
+    <p tal:condition="not:view/binaries">
+      No binaries have been generated for this release.
+    </p>
+    <ul tal:define="binaries view/binaries" tal:condition="binaries">
+      <li tal:repeat="bin_name binaries">
         <span tal:replace="bin_name" /> 
         <span tal:repeat="archtag python:binaries[bin_name]">
           (<a tal:content="archtag" tal:attributes="href 
-                           string:../../${archtag}/${bin_name}" />) 
-        </span>
- 
-          </li>
-        </ul>
+                           string:../../${archtag}/${bin_name}" />)</span>
+      </li>
+    </ul>
 
     <h2 tal:condition="view/has_build_depends">
-        Package relationship
+        Package relationships
     </h2>
 
     <table width="100%" valign="top">

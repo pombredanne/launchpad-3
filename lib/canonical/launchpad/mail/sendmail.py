@@ -34,11 +34,12 @@ from canonical.config import config
 from canonical.lp import isZopeless
 from canonical.launchpad.helpers import is_ascii_only
 
-# email package by default ends up encoding UTF8 messages using base64,
+# email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
 # our own custom charset definition to force quoted printable.
-Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
-
+del Charset.CHARSETS['utf-8']
+Charset.add_charset('utf-8', Charset.SHORTEST, Charset.QP, 'utf-8')
+Charset.add_alias('utf8', 'utf-8')
 
 def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     """Validate various bits of the email.
@@ -114,7 +115,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     do_paranoid_email_content_validation(
         from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
 
-    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+    msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
     # The header_body_values may be a list or tuple of values, so we will add a
     # header once for each value provided for that header. (X-Launchpad-Bug,
     # for example, may often be set more than once for a bugmail.)

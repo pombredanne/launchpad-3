@@ -26,7 +26,7 @@
            tal:content="context/bugcontact/browsername">foo bar</a>
       </span>
       <span tal:condition="not:context/bugcontact">
-        <i>None</i>
+        <i>Not yet assigned</i>
       </span>
       <br />
 
@@ -37,8 +37,17 @@
            tal:content="context/security_contact/browsername">sample person</a>
       </span>
       <span tal:condition="not:context/security_contact">
-        <i>None</i>
+        <i>Not yet assigned</i>
       </span>
+      <br />
+
+      <b>Driver:</b><br />
+      <i tal:condition="not:context/driver">Not yet assigned</i>
+      <tal:has_driver condition="context/driver">
+        <img src="/@@/user" />
+        <a tal:content="context/driver/browsername"
+           tal:attributes="href context/driver/fmt:url">Carlos Perello</a>
+      </tal:has_driver>
       <br />
 
       <b>Translation group:</b><br />

@@ -124,6 +124,21 @@ class POTemplateView(LaunchpadView):
         # changing this to a cachedproperty
         return helpers.request_languages(self.request)
 
+    def requestPoFiles(self):
+        """Yield a POFile or DummyPOFile for each of the languages in the
+        request, which includes country languages from the request IP,
+        browser preferences, and/or personal Launchpad language prefs.
+        """
+        pofiles = []
+        for language in sorted(self.request_languages,
+            key=lambda x: x.englishname):
+            pofile = self.context.getPOFileByLang(language.code)
+            if pofile is None:
+                pofileset = getUtility(IPOFileSet)
+                pofile = pofileset.getDummy(self.context, language)
+            pofiles.append(pofile)
+        return pofiles
+
     def num_messages(self):
         N = self.context.messageCount()
         if N == 0:

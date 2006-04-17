@@ -34,7 +34,7 @@
         class="canonical.launchpad.browser.TranslationGroupView"
         permission="zope.Public">
         <browser:page
-            template="../templates/translationgroup.pt"
+            template="../templates/translationgroup-index.pt"
             name="+index"
             lp:url="/rosetta/groups/$TranslationGroup.name/+index" />
         <!-- TranslationGroup portlets -->
@@ -116,7 +116,7 @@
         facet="translations"
         permission="zope.Public">
         <browser:page
-            template="../templates/translationgroups.pt"
+            template="../templates/translationgroups-index.pt"
             name="+index"
             lp:url="/rosetta/groups/+index" />
     </browser:pages>

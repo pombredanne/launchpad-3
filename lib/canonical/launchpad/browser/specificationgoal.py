@@ -6,19 +6,25 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
+
 from canonical.launchpad.interfaces import ISpecificationGoal
-from canonical.lp.dbschema import SpecificationGoalStatus
+
+from canonical.lp.dbschema import (
+    SpecificationGoalStatus, SpecificationFilter)
+
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 from canonical.launchpad.helpers import shortlist
 
 
 __all__ = [
-    'GoalSetView'
+    'GoalSetView',
     ]
 
 
-class GoalSetView(LaunchpadView):
+class GoalSetView(HasSpecificationsView, LaunchpadView):
     """Custom view class to process the results of this unusual page.
 
     It is unusual because we want to display multiple objects with
@@ -27,13 +33,11 @@ class GoalSetView(LaunchpadView):
     """
 
     @cachedproperty
-    def specs(self):
-        """Return the specifications which have been proposed for this goal.
-
-        For the moment, we just filter the list in Python.
+    def spec_filter(self):
+        """This page always filters for specs which have been proposed
+        for this goal.
         """
-        return [spec for spec in shortlist(self.context.specifications())
-                if spec.goalstatus == SpecificationGoalStatus.PROPOSED]
+        return [SpecificationFilter.PROPOSED]
 
     def initialize(self):
         self.status_message = None
@@ -79,18 +83,17 @@ class GoalSetView(LaunchpadView):
             selected_specs = [selected_specs]
 
         if action == 'Accepted':
-            action_fn = self.context.acceptSpecificationGoal
+            action_fn = self.context.acceptSpecificationGoals
         else:
-            action_fn = self.context.declineSpecificationGoal
-
-        for specname in selected_specs:
-            action_fn(self.context.getSpecification(specname))
+            action_fn = self.context.declineSpecificationGoals
+        specs = [self.context.getSpecification(name) for name in selected_specs]
+        leftover = action_fn(specs)
 
         # For example: "Accepted 26 specification(s)."
         self.status_message = '%s %d specification(s).' % (
             action, len(selected_specs))
 
-        if not self.specs:
+        if leftover == 0:
             # they are all done, so redirect back to the spec listing page
             self.request.response.redirect(
                 canonical_url(self.context)+'/+specs')
