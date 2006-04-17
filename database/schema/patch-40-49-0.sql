@@ -53,5 +53,5 @@ UPDATE Milestone
             FROM DistroRelease
             WHERE distribution=Milestone.distribution) = 1;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 88, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 49, 0);
 
