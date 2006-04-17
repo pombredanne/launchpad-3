@@ -93,6 +93,11 @@ def test_simple_sendmail():
     >>> message.get_payload() == body
     True
 
+    Character set should be utf-8 as per Bug #39758. utf8 isn't good enough.
+
+    >>> message['Content-Type']
+    'text/plain; charset="utf-8"'
+
     """
 
 def test_suite():
