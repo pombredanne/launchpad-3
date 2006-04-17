@@ -9,12 +9,6 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
-        name="+bugtask-macros-buglisting"
-        permission="zope.Public"
-        template="../templates/bugtask-macros-buglisting.pt"
-        />
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugTargetView"
         name="+portlet-latestbugs"
         permission="zope.Public"
@@ -41,13 +35,6 @@
         permission="zope.Public"
         name="+bugs"
         template="../templates/buglisting-default.pt"/>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTarget"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
-        name="+bugs-advanced-search"
-        template="../templates/bugtarget-advanced-search.pt" />
 
   </facet>
 

@@ -16,15 +16,14 @@ import urlparse
 from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
     
 from canonical.launchpad.pathlookup.exceptions import (
     PathLookupError, PathStepNotFoundError, PathStepRequiredError)
 from canonical.launchpad.interfaces import (
     IProduct, IDistribution, IProductSeries, IProductRelease, IDistroRelease,
-    ISourcePackageName, ISourcePackage, ISourcePackageRelease, IProductSet, 
+    ISourcePackageName, ISourcePackage, ISourcePackageRelease, IProductSet,
     IDistributionSet, ISourcePackageNameSet, IDistroReleaseSet,
-    ILaunchpadCelebrities
+    ILaunchpadCelebrities, NotFoundError,
     )
 
 # URL schemes we handle

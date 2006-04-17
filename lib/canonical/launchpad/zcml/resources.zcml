@@ -28,12 +28,13 @@
     <resource name="arrowDownAlternative.gif" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
     <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
+    <resource name="arrowUp.gif" file="../images/arrowUp.gif" />
+    <resource name="up" file="../images/arrowUp.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
-    <resource name="up" file="../images/arrowUp.gif" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="branch" file="../images/info.png" />
@@ -46,6 +47,9 @@
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="close_icon.png" file="../images/close_icon.png" />
     <resource name="cve" file="../images/cve.ico" />
+    <resource name="divider" file="../images/divider.png" />
+    <resource name="divider-highlighted"
+              file="../images/divider-highlighted.png" />
     <resource name="launchpad_favicon.png" file="../images/launchpad_favicon.png" />
     <resource name="ubuntuFavicon.ico" file="../images/ubuntuFavicon.ico" />
     <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />

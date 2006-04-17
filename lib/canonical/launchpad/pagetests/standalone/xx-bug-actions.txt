@@ -85,8 +85,7 @@ links to add things to the bug.
   ...
   ...
 
-  Tests the input of data that is not a valid integer value.
-
+  Tests the input of data that is not a valid value.
 
   >>> print http(r"""
   ... POST /products/firefox/+bug/6/+duplicate HTTP/1.1
@@ -105,12 +104,32 @@ links to add things to the bug.
   ... """)
   HTTP/1.1 200 Ok 
   ...
-  ...Not a valid bug number...
+  ...Not a valid bug number or nickname...
   ...
+
+  Tests using a bug nickname as the duplicate value
+
+  >>> print http(r"""
+  ... POST /products/evolution/+bug/7/+duplicate HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------24583171312468616741133437317
+  ... 
+  ... -----------------------------24583171312468616741133437317
+  ... Content-Disposition: form-data; name="field.duplicateof"
+  ... 
+  ... blackhole
+  ... -----------------------------24583171312468616741133437317
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------24583171312468616741133437317--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/evolution/+bug/7
 
 
   Marking a bugX as a duplicate of bugY is not allowed if bugX has dupes.
-
 
   >>> print http(r"""
   ... POST /products/firefox/+bug/5/+duplicate HTTP/1.1

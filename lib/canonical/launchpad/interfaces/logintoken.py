@@ -11,10 +11,7 @@ __all__ = [
 
 from zope.schema import Datetime, Int, Text
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 class ILoginToken(Interface):
     """The object that stores one time tokens used for validating email

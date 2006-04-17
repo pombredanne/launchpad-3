@@ -5,14 +5,14 @@ __all__ = ['POMsgSetView']
 
 import re
 import gettextpo
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    UnexpectedFormData, IPOMsgSet, TranslationConstants)
+    UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError
+    )
 from canonical.launchpad.webapp import LaunchpadView
 
 

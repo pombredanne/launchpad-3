@@ -139,7 +139,7 @@ def handleMail(trans=transaction):
                     # that it's not running, but not necessarily. Log
                     # the error and skip the message, but don't delete
                     # it.
-                    log.error('Upload to Librarian failed', exc_info=True)
+                    log.exception('Upload to Librarian failed')
                     continue
 
                 # Let's save the url of the file alias, otherwise we might not
@@ -181,11 +181,6 @@ def handleMail(trans=transaction):
                         file_alias_url)
                     continue
 
-                if principal is None:
-                    _handle_error(
-                        'Unknown user: %s ' % mail['From'], file_alias_url)
-                    continue
-
                 # Extract the domain the mail was sent to. Mails sent to
                 # Launchpad should have an X-Original-To header.
                 if mail.has_key('X-Original-To'):
@@ -213,6 +208,11 @@ def handleMail(trans=transaction):
                         "No handler registered for '%s' " % (
                             ', '.join(addresses)),
                         file_alias_url)
+                    continue
+
+                if principal is None and not handler.allow_unknown_users:
+                    _handle_error(
+                        'Unknown user: %s ' % mail['From'], file_alias_url)
                     continue
 
                 handled = handler.process(mail, email_addr, file_alias)

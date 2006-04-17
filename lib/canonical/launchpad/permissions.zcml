@@ -15,6 +15,14 @@
   users. GuilhermeSalgado 25/08/2005 -->
   <permission id="launchpad.Special" title="Special permissions" />
 
+  <!-- Experimental (sabdfl) Trying to use the permissions system to
+       establish roles. If this works we should consider a parallel "roles"
+       system that is similar to the permissions system, or just extending
+       our permissions vocabulary to include these roles. -->
+  <permission id="launchpad.Driver" title="The role of deciding what
+        bug fixes and features should be goals for a series or release." />
+
+
   <permission id="launchpad.WEGSND" title="What even god should not do" />
 
 </configure>

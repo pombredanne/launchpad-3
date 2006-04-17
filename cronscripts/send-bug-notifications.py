@@ -16,6 +16,7 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import IBugNotificationSet
 from canonical.launchpad.mail import sendmail
@@ -43,7 +44,7 @@ def main():
 
     notifications_sent = False
     try:
-        ztm = initZopeless()
+        ztm = initZopeless(dbuser=config.malone.bugnotification_dbuser)
         execute_zcml_for_scripts()
         pending_notifications = getUtility(
             IBugNotificationSet).getNotificationsToSend()

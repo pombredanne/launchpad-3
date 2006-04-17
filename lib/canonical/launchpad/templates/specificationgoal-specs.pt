@@ -3,17 +3,20 @@
       metal:use-macro="context/@@main_template_2col/master"
       i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Specifications for <tal:thing replace="context/displayname" /></h1>
-    </metal:heading>
+<body>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Specification listing</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 
@@ -23,7 +26,7 @@
       <tr>
         <th>Priority</th>
         <th>Specification</th>
-        <th>Status</th>
+        <th>Definition</th>
         <th>Delivery</th>
         <th>Assignee</th>
         <th>Milestone</th>
@@ -32,7 +35,7 @@
     <tbody class="lesser">
       <tr tal:repeat="spec view/specs">
         <td>
-          <span class="revsortkey" tal:content="spec/priority/value" />
+          <span class="sortkey" tal:content="spec/priority/sortkey" />
           <span tal:content="spec/priority/title"
                 tal:attributes="
                 class string:specpriority${spec/priority/name}">High</span>
@@ -40,9 +43,12 @@
         <td><a tal:content="spec/name/fmt:shorten/35"
                tal:attributes="
                  href spec/fmt:url;
-                 title spec/title">foo-bar-baz</a></td>
+                 title spec/title">foo-bar-baz</a>
+            <img src="/@@/info" alt="Informational"
+                 tal:condition="spec/informational" />
+        </td>
         <td>
-          <span class="sortkey" tal:content="spec/status/value" />
+          <span class="sortkey" tal:content="spec/status/sortkey" />
           <span tal:content="spec/status/title"
                 tal:attributes="
                 class string:specstatus${spec/status/name}">Approved
@@ -66,7 +72,7 @@
     </tbody>
   </table>
 
-  <p tal:condition="not: view/specs">
+  <p class="informational message" tal:condition="not: view/specs">
     No specifications to list.
   </p>
 
@@ -76,7 +82,7 @@
 
   <p class="discreet">
     You can
-    <a href="+specs?show=declined">Show Declined</a> feature goals,
+    <a href="+specs?acceptance=declined">Show Declined</a> feature goals,
     and if you are a driver of <span tal:replace="context/name">1.0</span>
     then you can accept goals that have been proposed using the 
     <a href="+setgoals">Set Goals</a> action.

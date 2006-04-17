@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProductReleaseNavigation',
     'ProductReleaseContextMenu',
     'ProductReleaseEditView',
     'ProductReleaseAddView',
@@ -25,7 +26,15 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission)
+    Navigation, canonical_url, ContextMenu, Link, enabled_with_permission)
+
+
+class ProductReleaseNavigation(Navigation):
+
+    usedfor = IProductRelease
+
+    def breadcrumb(self):
+        return 'Release ' + self.context.version
 
 
 class ProductReleaseContextMenu(ContextMenu):
@@ -33,6 +42,7 @@ class ProductReleaseContextMenu(ContextMenu):
     usedfor = IProductRelease
     links = ['edit', 'administer', 'download']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
@@ -61,7 +71,7 @@ class ProductReleaseAddView(AddView):
         user = getUtility(ILaunchBag).user
         newrelease = prset.new(
             data['version'], data['productseries'], user, 
-            title=data['title'], summary=data['summary'],
+            codename=data['codename'], summary=data['summary'],
             description=data['description'], changelog=data['changelog'])
         self._nextURL = canonical_url(newrelease)
         notify(ObjectCreatedEvent(newrelease))

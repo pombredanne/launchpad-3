@@ -20,6 +20,7 @@ __all__ = [
     'get_sortorder_from_request',
     'BugTargetTextView']
 
+import cgi
 import urllib
 
 from zope.event import notify
@@ -29,24 +30,27 @@ from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
 from zope.app.form.utility import (
-    setUpWidgets, setUpDisplayWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.lp import dbschema
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask,
-    IBugTaskSet, IDistroReleaseSet, ISourcePackageNameSet, IBugTaskSearch,
-    BugTaskSearchParams, IUpstreamBugTask, IDistroBugTask, IComponent,
-    IDistroReleaseBugTask, IPerson, INullBugTask, IBugAttachmentSet,
-    IBugExternalRefSet, IBugWatchSet, NotFoundError, IDistributionSourcePackage,
-    ISourcePackage, IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    valid_distrotask, valid_upstreamtask, BugDistroReleaseTargetDetails)
+    ILaunchBag, IBugSet, IProduct, IProject, IDistribution,
+    IDistroRelease, IBugTask, IBugTaskSet, IDistroReleaseSet,
+    ISourcePackageNameSet, IBugTaskSearch, BugTaskSearchParams,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
+    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
+    NotFoundError, IDistributionSourcePackage, ISourcePackage,
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
+    valid_distrotask, valid_upstreamtask,
+    BugDistroReleaseTargetDetails)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -231,6 +235,10 @@ class BugTaskView(LaunchpadView):
         form = self.request.form
         fake_task = self.context
         if form.get("reportbug"):
+            if self.isReportedInContext():
+                self.notices.append(
+                    "The bug is already reported in this context.")
+                return
             # The user has requested that the bug be reported in this
             # context.
             if IUpstreamBugTask.providedBy(fake_task):
@@ -265,7 +273,10 @@ class BugTaskView(LaunchpadView):
         This is particularly useful for views that may render a
         NullBugTask.
         """
-        return self.context.datecreated is not None
+        params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
+        matching_bugtasks = self.context.target.searchTasks(params)
+
+        return matching_bugtasks.count() > 0
 
     def isReleaseTargetableContext(self):
         """Is the context something that supports release targeting?
@@ -744,17 +755,23 @@ class BugTaskSearchListingView(LaunchpadView):
     Subclasses should define getExtraSearchParams() to filter the
     search.
     """
+
+    form_has_errors = False 
+    owner_error = ""
+    assignee_error = ""
+
     @property
     def columns_to_show(self):
         """Returns a sequence of column names to be shown in the listing."""
         upstream_context = self._upstreamContext()
+        project_context = self._projectContext()
         distribution_context = self._distributionContext()
         distrorelease_context = self._distroReleaseContext()
         distrosourcepackage_context = self._distroSourcePackageContext()
         sourcepackage_context = self._sourcePackageContext()
 
         assert (
-            upstream_context or distribution_context or
+            upstream_context or project_context or distribution_context or
             distrorelease_context or distrosourcepackage_context or
             sourcepackage_context), (
             "Unrecognized context; don't know which report "
@@ -765,6 +782,8 @@ class BugTaskSearchListingView(LaunchpadView):
             return ["id", "summary", "importance", "status"]
         elif distribution_context or distrorelease_context:
             return ["id", "summary", "packagename", "importance", "status"]
+        elif project_context:
+            return ["id", "summary", "productname", "importance", "status"]
 
     def initialize(self):
         if self._personContext():
@@ -786,6 +805,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 self.request)
 
         setUpWidgets(self, self.schema, IInputWidget)
+        self.validateVocabulariesAdvancedForm()
 
     def showTableView(self):
         """Should the search results be displayed as a table?"""
@@ -801,18 +821,16 @@ class BugTaskSearchListingView(LaunchpadView):
         If :searchtext: is None, the searchtext will be gotten from the
         request.
 
-        :extra_params: is a dict that provides search params added to the search
-        criteria taken from the request. Params in :extra_params: take
+        :extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
-        data = {}
-        data.update(
-            getWidgetsData(
-                self, self.schema,
-                names=[
-                    "searchtext", "status", "assignee", "severity",
-                    "priority", "owner", "omit_dupes", "has_patch",
-                    "milestone", "component", "has_no_package"]))
+        data = getWidgetsData(
+            self, self.schema,
+            names=[
+                "searchtext", "status", "assignee", "severity",
+                "priority", "owner", "omit_dupes", "has_patch",
+                "milestone", "component", "has_no_package"])
 
         if extra_params:
             data.update(extra_params)
@@ -910,8 +928,8 @@ class BugTaskSearchListingView(LaunchpadView):
         """The Search button for the advanced search page."""
         return "Search bugs in %s" % self.context.displayname
 
-    def getAdvancedSearchActionURL(self):
-        """Return a URL to be used as the action for the advanced search."""
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+bugs"
 
     def shouldShowAssigneeWidget(self):
@@ -1073,6 +1091,35 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             return True
 
+    def shouldShowAdvancedForm(self):
+        if (self.request.form.get('advanced')
+            or self.form_has_errors):
+            return True
+        else:
+            return False
+
+    def validateVocabulariesAdvancedForm(self):
+        """Validate person vocabularies in advanced form.
+
+        If a vocabulary lookup fail set a custom error message and set
+        self.form_has_errors to True.
+        """
+        error_message = _(
+            "There's no person with the name or email address '%s'")
+        try:
+            getWidgetsData(self, self.schema, names=["assignee"])
+        except WidgetsError:
+            self.assignee_error = error_message % (
+                cgi.escape(self.request.get('field.assignee')))
+        try:
+            getWidgetsData(self, self.schema, names=["owner"])
+        except WidgetsError:
+            self.owner_error = error_message % (
+                cgi.escape(self.request.get('field.owner')))
+
+        if self.assignee_error or self.owner_error:
+            self.form_has_errors = True
+
     def getSortClass(self, colname):
         """Return a class appropriate for sorted columns"""
         sorted, ascending = self._getSortStatus(colname)
@@ -1110,6 +1157,13 @@ class BugTaskSearchListingView(LaunchpadView):
         Return the IProduct if yes, otherwise return None.
         """
         return IProduct(self.context, None)
+
+    def _projectContext(self):
+        """Is this page being viewed in a project context?
+
+        Return the IProject if yes, otherwise return None.
+        """
+        return IProject(self.context, None)
 
     def _personContext(self):
         """Is this page being viewed in a person context?
@@ -1152,6 +1206,7 @@ class BugTargetView:
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this target."""
         params = BugTaskSearchParams(orderby="-datecreated",
+                                     omit_dupes=True,
                                      user=getUtility(ILaunchBag).user)
 
         tasklist = self.context.searchTasks(params)

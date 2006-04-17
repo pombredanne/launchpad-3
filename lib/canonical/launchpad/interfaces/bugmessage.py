@@ -7,9 +7,7 @@ __metaclass__ = type
 __all__ = ['IBugMessage', 'IBugMessageSet']
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBugMessage(Interface):
     """A link between a bug and a message."""

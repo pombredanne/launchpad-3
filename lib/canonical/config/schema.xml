@@ -57,6 +57,8 @@
             default="specs.launchpad.net" />
         <key name="oops_root_url" datatype="string" required="no"
             default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
+        <key name="default_batch_size" datatype="integer" required="no"
+            default="50" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
             default="0">
             <description>
@@ -332,6 +334,23 @@
             required="yes" />
         <key name="buglist_batch_size" datatype="integer"
             required="no" default="20" />
+        <key name="bugnotification_dbuser"
+             datatype="string" required="no" default="bugnotification">
+            <description>
+                The database user wich will be used to send bug
+                notifications.
+            </description>
+        </key>
+        <key name="bugnotification_interval" datatye="integer"
+            required="no" default="5">
+          <description>
+              The number of minutes that at most should pass between
+              changes to a bug to cause them to be grouped together into a
+              single notification.
+          </description>
+        </key>
+        <key name="debbugs_db_location" datatype="string"
+            required="no" default="/srv/bugs-mirror.debian.org/" />
     </sectiontype>
 
     <sectiontype name="poimport">

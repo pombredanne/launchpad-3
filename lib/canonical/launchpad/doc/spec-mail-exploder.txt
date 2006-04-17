@@ -83,6 +83,40 @@ is SpecificationHandler.
     >>> handler is not None
     True
 
+It has a helper method to help associate a URL with a specification. We
+use this method instead of simply ISpecificationSet.getByURL() since
+the Ubuntu wikis are special, they have more than one domain name
+mapping to the same wiki. So if we start with the correct URL, of
+course we get the specification with that URL.
+
+    >>> spec = handler._getSpecByURL(
+    ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
+    >>> spec.specurl
+    u'https://wiki.ubuntu.com/MediaIntegrityCheck'
+
+But if someone would edit the same wiki page on wiki.edubuntu.org, we
+would want the same spec's subscribers to be notified about it.
+
+    >>> spec = handler._getSpecByURL(
+    ...     'https://wiki.edubuntu.org/MediaIntegrityCheck')
+    >>> spec.specurl
+    u'https://wiki.ubuntu.com/MediaIntegrityCheck'
+
+And the same with wiki.kubuntu.org URLs.
+
+    >>> spec = handler._getSpecByURL(
+    ...     'https://wiki.kubuntu.org/MediaIntegrityCheck')
+    >>> spec.specurl
+    u'https://wiki.ubuntu.com/MediaIntegrityCheck'
+
+If no matching specification is found, None is returned.
+
+    >>> spec = handler._getSpecByURL(
+    ...     'https://wiki.kubuntu.org/NonExistant')
+    >>> spec is None
+    True
+
+
 We use a logger to see what the handler does:
 
     >>> from canonical.launchpad.scripts import log
@@ -94,9 +128,6 @@ spec, and mails it to the related people.
 
     >>> handler.process(
     ...     moin_change, 'notifications@specs.launchpad.net', log=log)
-    DEBUG:...:Found a spec URL: https://wiki.ubuntu.com/MediaIntegrityCheck
-    DEBUG:...:Found a corresponding spec: media-integrity-check
-    DEBUG:...:Sending notification to: test@canonical.com
     True
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)
@@ -147,9 +178,6 @@ Launchpad, nothing happens.
     >>> moin_change = read_test_message('moin-change-nonexistant.txt')
     >>> handler.process(
     ...     moin_change, 'notifications@specs.launchpad.net', log=log)
-    DEBUG:...:Found a spec URL: https://wiki.ubuntu.com/NonExistant
-    DEBUG:...:Didn't find a corresponding spec for
-              https://wiki.ubuntu.com/NonExistant
     True
 
     >>> print getUtility(ISpecificationSet).getByURL(
@@ -201,3 +229,63 @@ Again, no emails were sent:
     >>> transaction.commit()
     >>> len(stub.test_emails)
     0
+
+Let's pass a notification from wiki.kubuntu.org regarding
+MediaIntegrityCheck to see that the correct specification will be found,
+and that the notification will be forwarded to the specification's
+subscribers:
+
+    >>> kubuntu_change = read_test_message('moin-change-kubuntu.txt')
+    >>> log._log.setLevel(10)
+    >>> handler.process(
+    ...     kubuntu_change, 'notifications@specs.launchpad.net', log=log)
+    True
+
+    >>> log._log.setLevel(OLD_LOG_LEVEL)
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> to_addrs == spec.notificationRecipientAddresses()
+    True
+
+Lastly, let's simulate sending a moin notification, and use
+handleMail() instead to ensure that handler above handles the email.
+This will make sure that the handler is setup properly to handle
+unknown users, since webmaster@ubuntu.com doesn't belong to any Person
+in Launchpad:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> getUtility(IPersonSet).getByEmail('webmaster@ubuntu.com') is None
+    True
+
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
+
+    >>> moin_change = read_test_message('moin-change.txt')
+    >>> moin_change['X-Original-To'] = "notifications@%s" % (
+    ...     config.launchpad.specs_domain)
+    >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
+
+    >>> from canonical.launchpad.mail.sendmail import sendmail
+    >>> from canonical.launchpad.mail.incoming import handleMail
+    >>> sendmail(moin_change)
+    '...'
+    >>> transaction.commit()
+    >>> handleMail()
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> to_addrs == spec.notificationRecipientAddresses()
+    True
+
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_msg['Message-Id'] == moin_change['Message-Id']
+    True
+
+    >>> LibrarianTestSetup().tearDown()

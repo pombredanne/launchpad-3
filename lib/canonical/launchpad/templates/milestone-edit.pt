@@ -6,19 +6,22 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Change milestone details</h1>
-    </metal:heading>
+
+<body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/target/@@+portlet-details" />
+  <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/target/@@+portlet-milestones" />
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/target/@@+portlet-milestones" />
 </metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Milestone title</h3>
+  <h1>Change milestone details</h1>
+</metal:heading>
 
     <div metal:fill-slot="main">
 

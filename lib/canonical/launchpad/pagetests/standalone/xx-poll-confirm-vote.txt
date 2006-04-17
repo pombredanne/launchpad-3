@@ -3,7 +3,7 @@
 
   >>> print http(r"""
   ... GET /people/ubuntu-team/+poll/director-2004 HTTP/1.1
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
+  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -22,7 +22,7 @@
 
   >>> print http(r"""
   ... POST /people/ubuntu-team/+poll/director-2004 HTTP/1.1
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
+  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... token=9WjxQq2V9p&showvote=Show+My+Vote""")
@@ -61,7 +61,7 @@
 
   >>> print http(r"""
   ... GET /people/ubuntu-team/+poll/leader-2004 HTTP/1.1
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
+  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -77,7 +77,7 @@
 
   >>> print http(r"""
   ... POST /people/ubuntu-team/+poll/leader-2004 HTTP/1.1
-  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
+  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206amR1Yg==
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... token=W7gR5mjNrX&showvote=Show+My+Vote""")

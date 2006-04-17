@@ -23,8 +23,8 @@ from interfaces import IBatch
 
 from sqlos.interfaces import ISelectResults
 
-# XXX: replace this with a configuration option
-#   -- kiko, 2006-03-13
+# The base batch size, which can be overridden by users of _Batch such
+# as BatchNavigator. In Launchpad, we override it via a config option.
 BATCH_SIZE = 50
 
 class _Batch(object):
@@ -37,10 +37,7 @@ class _Batch(object):
 
         # We only check the length of the list once, because if the
         # list is a SelectResults from SQLObject, list.count() hits
-        # the database each time.  Ideally SQLObject would be smart
-        # enough to cache it for us, but for now we take the easy
-        # route.
-        #   -- Andrew Bennetts, 2005-06-22
+        # the database each time.
         if _listlength is None:
             if ISelectResults.providedBy(results):
                 listlength = results.count()
@@ -112,7 +109,8 @@ class _Batch(object):
 
     def prevBatch(self):
         # The only case in which we should /not/ offer a previous batch
-        # is when we are already at position zero.
+        # is when we are already at position zero, which also happens
+        # when the list is empty.
         if self.start == 0:
             return None
         if self.start > self.listlength:
@@ -121,7 +119,7 @@ class _Batch(object):
             start = self.start - self.size
         if start < 0:
             # This situation happens, for instance, when you have a
-            # 20-item batch and you manually set your batch_start to 15;
+            # 20-item batch and you manually set your start to 15;
             # in this case, hopping back one batch would be starting at
             # -5, which doesn't really make sense.
             start = 0

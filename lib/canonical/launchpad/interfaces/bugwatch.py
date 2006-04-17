@@ -9,11 +9,9 @@ __all__ = [
     'IBugWatchSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBugWatch(Interface):
     """A bug on a remote system."""
@@ -73,8 +71,8 @@ class IBugWatchSet(Interface):
     def get(id):
         """Get an IBugWatch by its ID.
 
-        Raise a canonical.launchpad.interfaces.NotFoundError if there is
-        no IBugWatch matching the given id.
+        Raise a NotFoundError if there is no IBugWatch
+        matching the given id.
         """
 
     def search():

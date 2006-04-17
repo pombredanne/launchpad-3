@@ -4,6 +4,30 @@
       i18n:domain="malone"
 >
   <body>
+
+  <div metal:fill-slot="head_epilogue">
+    <style type="text/css">
+        .section-header {
+          padding-left: 3px;
+          color: #828282;
+          border: 1px solid #cfcfcf;
+          background-color: #E0E0E0;
+          text-align: left;
+        }
+
+        .section {
+          padding-top: 4px;
+          border-style: solid;
+          border-color: #cfcfcf;
+          border-width: 0px 1px 0px 1px;
+        }
+
+        label {
+          font-weight: normal;
+        }
+    </style>
+  </div>
+
     <metal:heading fill-slot="pageheading">    
       <h1 tal:content="string:${context/displayname}'s bug reports by package">
         Foo Bar's bug reports by package
@@ -11,10 +35,18 @@
     </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:content="structure context/@@+portlet-otherpackages" />
+    <tal:do_not_show_portlets_advanced_form
+      condition="not: view/shouldShowAdvancedForm">
+      <div tal:content="structure context/@@+portlet-otherpackages" />
+    </tal:do_not_show_portlets_advanced_form>
+    <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
+      <div tal:replace="structure context/@@+portlet-details" />
+    </tal:show_portlets_advanced>
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
+      <tal:do_not_show_advanced_form
+        condition="not: view/shouldShowAdvancedForm">
       <strong>
         <small tal:content="view/current_package/displayname">
           mozilla-firefox (Ubuntu)
@@ -27,7 +59,10 @@
           <input type="text" name="field.searchtext" size="20"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
-          <span class="discreet">(Advanced search coming soon)</span>
+          <a href="#"
+             tal:attributes="href view/getBugContactPackageAdvancedSearchURL">
+            <small>Advanced</small>
+          </a>
           <div style="margin-top: 5px">
             <small>
               Sort by:
@@ -41,8 +76,15 @@
             -->
         </script>
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
-    </div>
+      </div>
+      </tal:do_not_show_advanced_form>
+
+      <tal:show_advanced condition="view/shouldShowAdvancedForm">
+        <metal:advanced_form
+          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+      </tal:show_advanced>
     <div class="visualClear">&nbsp;</div>
+
   </div>
 </body>
 </html>

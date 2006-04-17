@@ -5,13 +5,16 @@ lib/canonical/launchpad/doc.
 """
 
 import unittest
+import logging
 import os
 
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 import sqlos.connection
 
 from canonical.config import config
-from canonical.functional import FunctionalDocFileSuite
+from canonical.functional import (
+        FunctionalDocFileSuite, SystemDoctestLayer, ZopelessLayer,
+        )
 from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
         _disconnect_sqlos, _reconnect_sqlos
@@ -76,7 +79,7 @@ def librarianSetUp(test):
 def librarianTearDown(test):
     LibrarianTestSetup().tearDown()
     tearDown(test)
-    
+
 def importdSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='importd').setUp()
@@ -96,6 +99,11 @@ def supportTrackerTearDown(test):
     LibrarianTestSetup().tearDown()
     LaunchpadZopelessTestSetup().tearDown()
 
+def karmaUpdaterTearDown(test):
+    # We can't detect db changes made by the subprocess
+    LaunchpadTestSetup().force_dirty_database()
+    tearDown(test)
+
 def branchStatusSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='launchpad').setUp()
@@ -106,10 +114,22 @@ def branchStatusTearDown(test):
     test._authserver.tearDown()
     LaunchpadZopelessTestSetup().tearDown()
 
+def bugNotificationSendingSetup(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(
+        dbuser=config.malone.bugnotification_dbuser).setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def bugNotificationSendingTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
 
 # Files that have special needs can construct their own suite
+# XXX: Note the wierd path differences between specifying a DocFileSuite
+# and a FunctionalDocFileSuite. No idea why there are differences between
+# the relative paths, or how to fix this -- StuartBishop 20060228
 special = {
-
     # No setup or teardown at all, since it is demonstrating these features.
     'testing.txt': DocFileSuite(
             '../doc/testing.txt', optionflags=default_optionflags
@@ -124,43 +144,67 @@ special = {
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport.txt': FunctionalDocFileSuite(
+    'poexport.txt': DocFileSuite(
             '../doc/poexport.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown
+            setUp=poExportSetUp, tearDown=poExportTearDown,
+            optionflags=default_optionflags
             ),
-    'poexport-template-tarball.txt': FunctionalDocFileSuite(
+    'poexport-template-tarball.txt': DocFileSuite(
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
     'librarian.txt': FunctionalDocFileSuite(
-            '../doc/librarian.txt',
+            'launchpad/doc/librarian.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
     'message.txt': FunctionalDocFileSuite(
-            '../doc/message.txt',
+            'launchpad/doc/message.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
     'cve-update.txt': FunctionalDocFileSuite(
-            '../doc/cve-update.txt',
+            'launchpad/doc/cve-update.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
     'nascentupload.txt': FunctionalDocFileSuite(
-            '../doc/nascentupload.txt',
+            'launchpad/doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown
             ),
-    'revision.txt': FunctionalDocFileSuite(
+    'revision.txt': DocFileSuite(
             '../doc/revision.txt',
             setUp=importdSetUp, tearDown=importdTearDown),
     'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
-            '../doc/support-tracker-emailinterface.txt',
+            'launchpad/doc/support-tracker-emailinterface.txt',
             setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown),
+    'karmaupdater.txt': FunctionalDocFileSuite(
+            'launchpad/doc/karmaupdater.txt',
+            setUp=setUp, tearDown=karmaUpdaterTearDown,
+            optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
+            ),
+    'bugnotification-sending.txt': DocFileSuite(
+            '../doc/bugnotification-sending.txt',
+            optionflags=default_optionflags,
+            setUp=bugNotificationSendingSetup,
+            tearDown=bugNotificationSendingTearDown),
+    'bugmail-headers.txt': DocFileSuite(
+            '../doc/bugmail-headers.txt',
+            optionflags=default_optionflags,
+            setUp=bugNotificationSendingSetup,
+            tearDown=bugNotificationSendingTearDown),
     'branch-status-client.txt': FunctionalDocFileSuite(
-            '../doc/branch-status-client.txt',
+            'launchpad/doc/branch-status-client.txt',
             setUp=branchStatusSetUp, tearDown=branchStatusTearDown),
     'translationimportqueue.txt': FunctionalDocFileSuite(
-            '../doc/translationimportqueue.txt',
-            setUp=librarianSetUp, tearDown=librarianTearDown),
+            'launchpad/doc/translationimportqueue.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            )
     }
+
+special['poexport.txt'].layer = ZopelessLayer
+special['support-tracker-emailinterface.txt'].layer = ZopelessLayer
+special['branch-status-client.txt'].layer = ZopelessLayer
+special['bugnotification-sending.txt'].layer = ZopelessLayer
+special['bugmail-headers.txt'].layer = ZopelessLayer
 
 def test_suite():
     suite = unittest.TestSuite()
@@ -170,6 +214,8 @@ def test_suite():
     keys.sort()
     for key in keys:
         special_suite = special[key]
+        if getattr(special_suite, 'layer', None) is None:
+            special_suite.layer = SystemDoctestLayer
         suite.addTest(special_suite)
 
     testsdir = os.path.abspath(
@@ -190,11 +236,13 @@ def test_suite():
     #   -- Andrew Bennetts, 2005-03-01.
     filenames.sort()
     for filename in filenames:
-        path = os.path.join('../doc/', filename)
-        suite.addTest(FunctionalDocFileSuite(
+        path = os.path.join('launchpad/doc/', filename)
+        one_test = FunctionalDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
-            optionflags=default_optionflags
-            ))
+            optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
+            )
+        suite.addTest(one_test)
 
     return suite
 

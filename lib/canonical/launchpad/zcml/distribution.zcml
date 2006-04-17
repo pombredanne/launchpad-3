@@ -13,8 +13,9 @@
             permission="launchpad.Edit"
             set_attributes="displayname title summary description
                             translationgroup translationpermission
-                            members owner bugcontact official_malone
-                            official_rosetta"
+                            driver members owner bugcontact
+                            official_malone official_rosetta
+                            security_contact"
             />
     </content>
 
@@ -196,35 +197,21 @@
     </browser:addform>
 
     <browser:addform
-        name="+addmilestone"
-        for="canonical.launchpad.interfaces.IDistribution"
-        schema="canonical.launchpad.interfaces.IMilestone"
-        class="canonical.launchpad.browser.milestone.MilestoneAddView"
-        facet="overview"
-        label="Add a milestone"
-        fields="name dateexpected"
-        keyword_arguments="name dateexpected"
-        permission="launchpad.Edit"
-        template="../templates/milestone-add.pt"
-        lp:url="/distros/$Distribution.name/+addmilestone">
-    </browser:addform>
-
-    <browser:addform
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report a bug"
-        fields="packagename title comment private"
+        fields="packagename title comment private security_related"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
-        keyword_arguments="packagename title comment private"
+        keyword_arguments="packagename title comment private security_related"
         permission="launchpad.AnyPerson"
         template="../templates/bugtarget-filebug.pt"
         lp:url="/distros/$Distribution.name/+filebug">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="30" />
+           displayWidth="50" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
@@ -250,8 +237,20 @@
         fields="official_rosetta official_malone"
         permission="launchpad.Edit"
         label="Describe Launchpad usage"
-        template="../templates/distribution-edit.pt"
+        template="../templates/object-launchpadusage.pt"
         />
+
+    <browser:editform
+        name="+driver"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionEditView"
+        fields="driver"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-driver.pt"
+        lp:url="/$Project.name/+driver">
+    </browser:editform>
 
     <browser:editform
         name="+selectmemberteam"

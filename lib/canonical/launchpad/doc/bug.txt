@@ -77,7 +77,7 @@ include a URL to the bug inside the email.
 
     >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(firefox_crashes)
-    http://.../malone/bugs/6
+    http://.../bugs/6
 
 Bug Privacy
 ===========
@@ -95,7 +95,7 @@ private. A bug cannot be made private by an anonymous user.
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
       ...
-    Unauthorized: ('private', 'launchpad.Edit')
+    Unauthorized: (..., 'private', 'launchpad.Edit')
 
 We have to be logged in, so let's do that:
 
@@ -131,7 +131,7 @@ Now we can mark bug #6 private:
 
     >>> old_state = capture_state(
     ...     firefox_crashes, "id", "title", "description", "name",
-    ...     "private", "duplicateof")
+    ...     "private", "duplicateof", "security_related")
     >>> firefox_crashes.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
@@ -194,7 +194,8 @@ And again, let's fake setting the bug private:
 
     >>> old_state = capture_state(
     ...     blackhole_trash_folder, "id", "title",
-    ...     "description", "name", "private", "duplicateof")
+    ...     "description", "name", "private", "duplicateof",
+    ...     "security_related")
     >>> blackhole_trash_folder.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,
@@ -243,7 +244,7 @@ Unauthorized:
     >>> blackhole_trash_folder.title
     Traceback (most recent call last):
       ...
-    Unauthorized: ('title', 'launchpad.View')
+    Unauthorized: (..., 'title', 'launchpad.View')
 
 And, as you might have guessed, is once again invisible in searches
 (notice that bug #6 is also invisible to No Privileges Person):

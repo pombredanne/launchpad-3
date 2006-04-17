@@ -19,7 +19,7 @@ Test that the project edit page works when we POST changes.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1917
   ... Content-Type: multipart/form-data; boundary=---------------------------13925234164844313391724926109
-  ... Referer: http://localhost:9000/projects/gnome/+edit
+  ... Referer: http://.../projects/gnome/+edit
   ... 
   ... -----------------------------13925234164844313391724926109
   ... Content-Disposition: form-data; name="field.displayname"

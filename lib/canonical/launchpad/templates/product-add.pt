@@ -1,31 +1,40 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
 
-  <body>
+<body>
 
-    <div metal:fill-slot="main">
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
 
-      <div metal:use-macro="context/@@launchpad_addform/addform">
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
 
-        <h1 tal:condition="view/label"
-            tal:content="view/label"
-            metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+</metal:heading>
 
-        <p metal:fill-slot="extra_info">
-          When you enter the details of the product, it will immediately be
-          available for use with Malone (the bug tracker) and Rosetta (the
-          translations system).
-        </p>
+<div metal:fill-slot="main">
 
-      </div>
+  <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    </div>
-    
-  </body>
+    <p metal:fill-slot="extra_info">
+      Before you register a product from scratch, you might want to search
+      through the
+      <a href="/products/">existing products registered in Launchpad</a>
+      and see if the
+      product you are thinking of is not already in there. If so, you can
+      just ask in #launchpad for that product to be made part of this
+      project.
+    </p>
 
+  </div>
+
+</div>
+</body>
 </html>
 
