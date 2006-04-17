@@ -69,7 +69,6 @@ The First One
   ...
   Location: http://localhost:9000/token/.../+validateemail
   <BLANKLINE>
-  ...
 
 
   >>> path = '%s/+validateemail' % base_path
@@ -179,8 +178,8 @@ The Second One
   ... """ % base_path)
   HTTP/1.1 303 See Other
   ...
-  Location: .../+validateemail
-  ...
+  Location: http://localhost:9000/token/.../+validateemail
+  <BLANKLINE>
 
 
   >>> path = '%s/+validateemail' % base_path

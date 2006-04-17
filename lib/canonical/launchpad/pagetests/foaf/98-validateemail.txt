@@ -55,7 +55,6 @@
   ...
   Location: http://localhost:9000/token/.../+validateemail
   <BLANKLINE>
-  ...
 
 
   >>> path = "%s/+validateemail" % base_path

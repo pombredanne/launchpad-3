@@ -86,6 +86,10 @@ class BaseLoginTokenView(LaunchpadView):
         assert self.expected_token_types
         if (self.context.date_consumed is not None
             or self.context.tokentype not in self.expected_token_types):
+            # This is either a consumed token or the user handcrafted the URL
+            # trying to do something that this token wasn't generated for
+            # (i.e. creating a new account with a VALIDATEEMAIL token), so we
+            # redirect back to the default page as it'll know what to do.
             self.request.response.redirect(canonical_url(self.context))
         else:
             return LaunchpadView.render(self)
@@ -447,8 +451,8 @@ class ValidateEmailView(BaseLoginTokenView):
         requester = self.context.requester
         # build a list of already validated and preferred emailaddress
         # in lowercase for comparision reasons
-        emails = set(email.email.lower() for email in
-                     requester.validatedemails)
+        emails = set(email.email.lower() 
+                     for email in requester.validatedemails)
         emails.add(requester.preferredemail.email.lower())
 
         guessed = []
