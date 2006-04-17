@@ -83,7 +83,6 @@ sign-only key validation page instead of the regular sign-up page.
   ...
   Location: http://localhost:9000/token/.../+validatesignonlygpg
   <BLANKLINE>
-  ...
 
 
 We get redirected to the sign-only OpenPGP key validation page, which

@@ -86,7 +86,6 @@ Go to the link sent by email, to validate the email address.
   ...
   Location: http://localhost:9000/token/.../+validategpg
   <BLANKLINE>
-  ...
 
 Get Redirected
 
