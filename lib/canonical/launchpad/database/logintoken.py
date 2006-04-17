@@ -89,7 +89,7 @@ class LoginToken(SQLBase):
     def sendPasswordResetEmail(self, appurl):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
-        fromaddress = "Launchpad Team <noreply@launchpad.net>"
+        fromaddress = "Launchpad <noreply@launchpad.net>"
         replacements = {'longstring': self.token,
                         'toaddress': self.email, 
                         'appurl': appurl}
@@ -104,8 +104,8 @@ class LoginToken(SQLBase):
         replacements = {'longstring': self.token, 'appurl': appurl}
         message = template % replacements
 
-        fromaddress = "The Launchpad Team <noreply@launchpad.net>"
-        subject = "Launchpad Account Creation Instructions"
+        fromaddress = "Launchpad <noreply@launchpad.net>"
+        subject = "Finish your Launchpad registration"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
 

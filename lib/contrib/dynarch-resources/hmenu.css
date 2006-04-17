@@ -45,9 +45,11 @@ div.dynarch-popup-menu tr.item td.icon div { width: 18px; height: 18px; }
 div.dynarch-popup-menu tr.item td.icon { padding: 0px 1px; height: 18px; width: 18px; }
 div.dynarch-popup-menu tr.item td.label { padding: 1px 15px 1px 3px; /* white-space: nowrap; */}
 div.dynarch-popup-menu tr.item td.arrow { width: 11px; }
+/*
 div.dynarch-popup-menu tr.item td.arrow div { width: 11px; background: transparent url("rarrow.gif") no-repeat 0% 50%; }
 div.dynarch-popup-menu tr.hover td.arrow div,
 div.dynarch-popup-menu tr.active td.arrow div { background: transparent url("rarrow-hover.gif") no-repeat 0% 50%; }
+*/
 
 div.dynarch-popup-menu tr.separator td div {
   margin: 2px;

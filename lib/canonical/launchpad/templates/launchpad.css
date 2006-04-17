@@ -174,14 +174,11 @@ th.icon.right, td.icon.right {
   padding-left: 0;
 }
 table.listing {
-  font-size: 85%;
+  font-size: smaller;
   margin: 1em 0;
 }
 table.listing, table.listing>tbody {
   border-bottom: 1px solid #8cacbb;
-}
-table.listing>tbody {
-  font-size: smaller;
 }
 table.listing>thead, table.listing>thead>tr>th,table.listing tfoot tr {
   border: 1px solid #8cacbb;
