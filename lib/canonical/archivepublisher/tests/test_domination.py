@@ -113,7 +113,7 @@ class TestDominator(unittest.TestCase):
 
 
 def test_suite():
-    # XXX: Open a bug on this test suite - it was disabled but no information
+    # XXX: Bug 39880- it was disabled but no information
     # left as to why this was done or who did it -- StuartBishop 20060227
     suite = unittest.TestSuite()
     return suite

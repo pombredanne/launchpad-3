@@ -114,23 +114,14 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         transaction.abort()
         branch = database.Branch.get(1)
         if branch.mirror_failures == 0:
-            # XXX: Open a bug on this instead of generating noise
-            # -- StuartBishop 20060329
-            # print >> sys.stderr, (
-            #     "canonical.launchpad.scripts.supermirror.tests."
-            #     "test_branchtomirror.testMissingFileRevisionData "
-            #     "disabled until bzr is updated to correctly detect "
-            #     "this corruption.")
+            # Disabled due to Bug 39884. Remove after closing.
             pass
         else:
-            # XXX: Open a bug on this instead of generating noise
-            # -- StuartBishop 20060329
-            # print >> sys.stderr, (
-            #     "canonical.launchpad.scripts.supermirror.tests."
-            #     "test_branchtomirror.testMissingFileRevisionData appears "
-            #     "to work now bzr is updated, please remove the 'bzr needs "
-            #     "updating' warning messages.")
             self.assertEqual(1, branch.mirror_failures)
+            self.fail(
+                "Bug 39884 appears to be fixed. Close and remove this assert"
+                )
+
 
 
 def test_suite():
