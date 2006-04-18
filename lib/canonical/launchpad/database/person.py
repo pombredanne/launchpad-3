@@ -487,6 +487,8 @@ class Person(SQLBase):
     @property
     def is_valid_person(self):
         """See IPerson."""
+        if self.teamowner is not None:
+            return False
         try:
             if ValidPersonOrTeamCache.get(self.id) is not None:
                 return True
