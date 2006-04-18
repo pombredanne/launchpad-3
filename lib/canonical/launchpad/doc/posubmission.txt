@@ -14,7 +14,7 @@ We will need extra permissions to use this method.
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
 
-It needs that there is no references to it to be able to remove it.
+It needs that there are no references to it to be able to remove it.
 
     >>> from canonical.launchpad.database import POSubmission
     >>> posubmission = POSubmission.get(1)
@@ -27,7 +27,7 @@ Restore the database access after the failure.
 
     >>> transaction.abort()
 
-Let's retry with a submission that we know it's not referenced.
+Let's retry with a submission that we know is not referenced.
 
     >>> posubmission = POSubmission.get(693)
     >>> posubmission.deleteMe()
