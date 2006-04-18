@@ -167,6 +167,15 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
+    name="+specfeedback"
+    facet="specifications"
+    class="canonical.launchpad.browser.PersonSpecFeedbackView"
+    permission="zope.Public"
+    template="../templates/person-specfeedback.pt"
+    lp:url="/people/$Person.name/+specfeedback" />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+specworkload"
     facet="specifications"
     permission="zope.Public"
@@ -294,20 +303,6 @@
           name="+editemails"
           template="../templates/person-editemails.pt"
           lp:url="/people/$person.id/+editemails" />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.SpecificationTargetView"
-    facet="specifications"
-    permission="zope.Public"
-    >
-    <!-- there is trickery here, in the view class, which detects the view
-    name and then gives the template a different set of specs to work
-    with.-->
-    <browser:page
-        name="+specs"
-        template="../templates/specificationtarget-index.pt" />
   </browser:pages>
 
   <browser:pages

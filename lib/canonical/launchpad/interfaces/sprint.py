@@ -28,6 +28,7 @@ class ISprint(IHasOwner, IHasSpecifications):
         'for this sprint, or conference, or meeting. This will part of '
         'the URL so pick something short. A single word is all you get.'),
         constraint=name_validator)
+    displayname = Attribute('A pseudonym for the title.')
     title = TextLine(
         title=_('Title'), required=True, description=_("Please provide "
         "a title for this meeting. This will be shown in listings of "
@@ -59,16 +60,10 @@ class ISprint(IHasOwner, IHasSpecifications):
     attendees = Attribute('The set of attendees at this sprint.')
     attendances = Attribute('The set of SprintAttendance records.')
     
-    def specifications(quantity=None):
-        """Inherited from IHasSpecifications. 
-        In this case it returns Specifications to be discussed at this 
-        sprint, and by default only shows specifications that are not 
-        complete."""
-    
     def specificationLinks(status=None):
-        """Return the SprintSpecification records matching the status given,
-        or all of them if no status is passed. They should be in order of
-        priority, highest first.
+        """Return the SprintSpecification records matching the filter,
+        quantity and sort given. The rules for filtering and sorting etc are
+        the same as those for IHasSpecifications.specifications()
         """
 
     def getSpecificationLink(id):
@@ -76,6 +71,16 @@ class ISprint(IHasOwner, IHasSpecifications):
         ID. We use the naked ID because there is no unique name for a spec
         outside of a single product or distro, and a sprint can cover
         multiple products and distros.
+        """
+
+    def acceptSpecificationLinks(idlist):
+        """Accept the given sprintspec items, and return the number of
+        sprintspec items that remain proposed.
+        """
+
+    def declineSpecificationLinks(idlist):
+        """Decline the given sprintspec items, and return the number of
+        sprintspec items that remain proposed.
         """
 
     # subscription-related methods

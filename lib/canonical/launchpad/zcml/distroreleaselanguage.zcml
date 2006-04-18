@@ -27,7 +27,7 @@
     class="canonical.launchpad.browser.DistroReleaseLanguageView">
     <browser:page
       name="+index"
-      template="../templates/distroreleaselanguage.pt"
+      template="../templates/distroreleaselanguage-index.pt"
       lp:url="/distros/ubuntu/hoary/+lang/$DistroReleaseLanguage.language/"
       />
     <browser:page

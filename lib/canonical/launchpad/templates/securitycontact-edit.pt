@@ -7,19 +7,20 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-    <metal:heading fill-slot="pageheading">
-      <h1>Change security contact</h1>
-    </metal:heading>
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Change security contact</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
-
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Form Label comes from ZCML label="xxx"</h1>
 
     <p metal:fill-slot="extra_info">
       When a bug is reported as a security vulnerability, the security

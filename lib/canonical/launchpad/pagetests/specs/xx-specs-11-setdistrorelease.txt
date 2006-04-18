@@ -120,7 +120,7 @@ redirected back to the spec page when we are done.
   ... 
   ... 
   ... -----------------------------20513410904024403932114303780
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
   ... Continue
   ... -----------------------------20513410904024403932114303780--
@@ -147,7 +147,7 @@ first be approved.
   >>> result = unicode(http(r"""
   ... GET /distros/ubuntu/hoary/+specs HTTP/1.1
   ... """))
-  >>> 'CD Media Integrity Check' not in result
+  >>> '<td>CD Media Integrity Check' not in result
   True
 
 However, we can expect to find it on the approvals page.

@@ -7,13 +7,18 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/product/@@+portlet-details" />
 </metal:leftportlets>
 
-<div metal:fill-slot="main">
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/product/@@+portlet-details" />
+</metal:rightportlets>
 
-    <h1>Overview</h1>
+<metal:heading fill-slot="pageheading">
+  <h1 tal:content="context/title">Foo Release</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
 
     <p class="documentDescription" tal:content="context/summary"
        tal:condition="context/summary">

@@ -60,7 +60,7 @@
         <browser:page
             name="+index"
             facet="overview"
-            template="../templates/sourcepackage.pt"
+            template="../templates/sourcepackage-index.pt"
             lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+index" />
         <browser:page
             name="+gethelp"
