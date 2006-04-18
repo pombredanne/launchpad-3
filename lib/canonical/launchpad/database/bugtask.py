@@ -195,28 +195,57 @@ class BugTask(SQLBase, BugTaskMixin):
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.severity
 
-    def transitionToStatus(self, status):
+    def transitionToStatus(self, new_status):
         """See canonical.launchpad.interfaces.IBugTask."""
-        if status == self.status:
+        if self.status == new_status:
             # No change in the status, so nothing to do.
+            return
+
+        if new_status == dbschema.BugTaskStatus.UNKNOWN:
+            # We record no dates when the status is set to UNKNOWN, so
+            # just update the value and exit.
+            self.status = new_status
             return
 
         UTC = pytz.timezone('UTC')
         now = datetime.datetime.now(UTC)
-        # Record the date of the particular kinds of status change
-        # that interest us.
-        if status == dbschema.BugTaskStatus.CONFIRMED:
+
+        # Record the date of the particular kinds of transitions into
+        # certain states.
+        if ((self.status.value < dbschema.BugTaskStatus.CONFIRMED.value) and
+            (new_status.value >= dbschema.BugTaskStatus.CONFIRMED.value)):
+            # Even if the bug task skips the Confirmed status
+            # (e.g. goes directly to Fix Committed), we'll record a
+            # confirmed date at the same time anyway, otherwise we get
+            # a strange gap in our data, and potentially misleading
+            # reports.
             self.dateconfirmed = now
-        elif status == dbschema.BugTaskStatus.INPROGRESS:
+
+        if ((self.status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
+            (new_status.value >= dbschema.BugTaskStatus.INPROGRESS.value)):
+            # Same idea with In Progress as the comment above about
+            # Confirmed.
             self.dateinprogress = now
-        elif ((self.status in UNRESOLVED_BUGTASK_STATUSES) and
-              (status in RESOLVED_BUGTASK_STATUSES)):
+
+        if ((self.status in UNRESOLVED_BUGTASK_STATUSES) and
+            (new_status in RESOLVED_BUGTASK_STATUSES)):
             self.dateclosed = now
 
-        if status in UNRESOLVED_BUGTASK_STATUSES:
+        # Ensure that we don't have dates recorded for state
+        # transitions, if the bugtask has regressed to an earlier
+        # workflow state. We want to ensure that, for example, a
+        # bugtask that went Unconfirmed => Confirmed => Unconfirmed
+        # has a dateconfirmed value of None.
+        if new_status in UNRESOLVED_BUGTASK_STATUSES:
             self.dateclosed = None
 
-        self.status = status
+        if new_status < dbschema.BugTaskStatus.CONFIRMED:
+            self.dateconfirmed = None
+
+        if new_status < dbschema.BugTaskStatus.INPROGRESS:
+            self.dateinprogress = None
+
+        self.status = new_status
 
     def transitionToAssignee(self, assignee):
         if assignee == self.assignee:

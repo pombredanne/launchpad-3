@@ -1,12 +1,12 @@
 BugTask Status Workflow
 =======================
 
-BugTasks have a natural status workflow: Unconfirmed, Confirmed, In
-Progress, Fix Committed, etc. Some transitions cause other things to
-happen.
+BugTasks have a natural status workflow: Unconfirmed => Confirmed => In
+Progress => Fix Committed => Fix Released, etc. Some state transitions
+have "side effects".
 
-Currently, the only other thing that happens is that we record the
-date on which some status transitions occurred.
+Currently, the only side effect is that we record the date on which some
+status transitions occurred.
 
 Here are examples of each transition that we record. First, let's create
 a new bug to work with:
@@ -81,6 +81,15 @@ value.
     >>> ubuntu_firefox_task.dateconfirmed == prev_dateconfirmed
     True
 
+If the status regresses to an earlier workflow state, the dateconfirmed
+is set to None, because it wouldn't make sense to have a dateconfirmed
+on a bug that's Unconfirmed.
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+
+    >>> ubuntu_firefox_task.dateconfirmed is None
+    True
+
 Marking the bug In Progress sets IBugTask.dateinprogress.
 
     >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.INPROGRESS)
@@ -95,6 +104,14 @@ Marking the bug In Progress sets IBugTask.dateinprogress.
     >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.INPROGRESS)
 
     >>> ubuntu_firefox_task.dateinprogress == prev_dateinprogress
+    True
+
+If the status regresses to an earlier workflow state, then
+dateinprogress is set to None, similar to the logic behind dateconfirmed:
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+
+    >>> ubuntu_firefox_task.dateinprogress is None
     True
 
 If the status is changed from any unresolved status to any resolved

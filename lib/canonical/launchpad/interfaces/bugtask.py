@@ -140,8 +140,8 @@ class IBugTask(IHasDateCreated, IHasBug):
         severity.
         """
 
-    def transitionToStatus(status):
-        """Perform a workflow transition to the given status.
+    def transitionToStatus(new_status):
+        """Perform a workflow transition to the new_status.
 
         For certain statuses, e.g. Confirmed, other actions will
         happen, like recording the date when the task enters this
