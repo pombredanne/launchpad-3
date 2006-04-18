@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from StringIO import StringIO
 from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
@@ -47,6 +46,11 @@ class TestArchiveOverrider(TestCase):
         self.ztm = initZopeless(dbuser='lucille')
         self.log = MockLogger()
 
+        self.ubuntu = getUtility(IDistributionSet)['ubuntu']
+        self.hoary = self.ubuntu['hoary']
+        self.component_main = getUtility(IComponentSet)['main']
+        self.section_base = getUtility(ISectionSet)['base']
+
     def tearDown(self):
         LaunchpadTestSetup().tearDown()
         self.ztm.uninstall()
@@ -56,19 +60,60 @@ class TestArchiveOverrider(TestCase):
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
         changer.initialize()
-
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
-        hoary = ubuntu['hoary']
-        component_main = getUtility(IComponentSet)['main']
-        section_base = getUtility(ISectionSet)['base']
-
-        self.assertEqual(ubuntu, changer.distro)
-        self.assertEqual(hoary, changer.distrorelease)
+        self.assertEqual(self.ubuntu, changer.distro)
+        self.assertEqual(self.hoary, changer.distrorelease)
         self.assertEqual(PackagePublishingPocket.RELEASE, changer.pocket)
-        self.assertEqual(component_main, changer.component)
-        self.assertEqual(section_base, changer.section)
+        self.assertEqual(self.component_main, changer.component)
+        self.assertEqual(self.section_base, changer.section)
         self.assertEqual(PackagePublishingPriority.EXTRA, changer.priority)
+        self.log.read()
 
+    def test_initialize_only_component(self):
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='main')
+        changer.initialize()
+        self.assertEqual(self.component_main, changer.component)
+        self.assertEqual(None, changer.section)
+        self.assertEqual(None, changer.priority)
+        self.log.read()
+
+    def test_initialize_only_section(self):
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            section_name='base')
+        changer.initialize()
+        self.assertEqual(None, changer.component)
+        self.assertEqual(self.section_base, changer.section)
+        self.assertEqual(None, changer.priority)
+        self.log.read()
+
+    def test_initialize_only_priority(self):
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            priority_name='extra')
+        changer.initialize()
+        self.assertEqual(None, changer.component)
+        self.assertEqual(None, changer.section)
+        self.assertEqual(PackagePublishingPriority.EXTRA, changer.priority)
+        self.log.read()
+
+    def test_initialize_only_component(self):
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='main')
+        changer.initialize()
+        component_main = getUtility(IComponentSet)['main']
+        self.assertEqual(component_main, changer.component)
+        self.assertEqual(None, changer.section)
+        self.assertEqual(None, changer.priority)
+        self.log.read()
+
+    def test_initialize_missing_args(self):
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary')
+        self.assertRaises(
+            ArchiveOverriderError, changer.initialize)
         self.log.read()
 
     def test_initialize_broken_distro(self):
@@ -144,7 +189,7 @@ class TestArchiveOverrider(TestCase):
             "INFO: Override Priority to: 'EXTRA'\n"
             "INFO: 'mozilla-firefox/main/web' source overriden")
 
-    def test_processSourceChange_failed(self):
+    def test_processSourceChange_error(self):
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -171,7 +216,7 @@ class TestArchiveOverrider(TestCase):
             "INFO: 'pmount/universe/editors/IMPORTANT' "
             "binary overriden in hoary/i386")
 
-    def test_processBinaryChange_failed(self):
+    def test_processBinaryChange_error(self):
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base', priority_name='extra')
@@ -199,7 +244,7 @@ class TestArchiveOverrider(TestCase):
             "INFO: 'mozilla-firefox/main/base/EXTRA' "
             "binary overriden in warty/i386")
 
-    def test_processChildrenChange_failed(self):
+    def test_processChildrenChange_error(self):
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
