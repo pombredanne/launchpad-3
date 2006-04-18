@@ -502,7 +502,7 @@ class Person(SQLBase):
         # No warning, as we don't want to place the burden on callsites
         # to check this.
         if not self.is_valid_person:
-            return
+            return None
 
         try:
             action = KarmaAction.byName(action_name)
