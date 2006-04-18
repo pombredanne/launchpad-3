@@ -10,14 +10,12 @@ __all__ = [
     'IContinent'
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Int, TextLine
 
 from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.validators.name import valid_name
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ICountry(Interface):
     """The country description."""

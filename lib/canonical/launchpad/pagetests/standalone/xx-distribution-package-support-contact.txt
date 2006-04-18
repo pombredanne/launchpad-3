@@ -13,7 +13,7 @@ Any logged in person has access to the page.
   >>> print http(r"""
   ... GET /distros/ubuntu/+source/mozilla-firefox/+support-contact HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """, handle_errors=False)
   HTTP/1.1 200 Ok
   ...
 

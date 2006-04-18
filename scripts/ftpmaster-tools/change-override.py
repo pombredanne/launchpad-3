@@ -21,6 +21,9 @@ from canonical.launchpad.database import (DistroArchReleaseBinaryPackage,
 from canonical.launchpad.interfaces import (IBinaryPackageNameSet,
                                             IDistributionSet, NotFoundError)
 
+from canonical.lp.dbschema import (
+    PackagePublishingPocket, PackagePublishingPriority)
+
 from contrib.glock import GlobalLock
 
 ################################################################################
@@ -51,6 +54,7 @@ def process_source_change(distrorelease, package):
         new_component = Options.component
     if Options.section:
         new_section = Options.section
+
     spr = distrorelease.getSourcePackage(package).releasehistory[-1]
     drspr = DistroReleaseSourcePackageRelease(distrorelease, spr)
     drspr.changeOverride(new_component=new_component, new_section=new_section)
@@ -69,10 +73,12 @@ def process_binary_change(distrorelease, package):
         new_priority = Options.priority
     for distroarchrelease in distrorelease.architectures:
         binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-        darbp = DistroArchReleaseBinaryPackage(distroarchrelease, binarypackagename)
+        darbp = DistroArchReleaseBinaryPackage(
+            distroarchrelease, binarypackagename)
         try:
-            darbp.changeOverride(new_component=new_component, new_priority=new_priority,
-                                 new_section=new_section)
+            darbp.changeOverride(
+                new_component=new_component, new_priority=new_priority,
+                new_section=new_section)
         except NotFoundError:
             pass
     Ztm.commit()
@@ -96,7 +102,7 @@ def init():
                       action="store_false", help="don't actually do anything")
     parser.add_option("-p", "--priority", dest="priority",
                       help="move package to PRIORITY")
-    parser.add_option("-s", "--suite", dest="distrorelease",
+    parser.add_option("-s", "--suite", dest="suite",
                       help="move package in suite SUITE")
     parser.add_option("-S", "--source-and-binary", dest="sourceandchildren",
                       default=False, action="store_true",
@@ -113,18 +119,13 @@ def init():
     if len(args) < 1:
         Log.error("Need to be given the name of a package to move.")
         sys.exit(1)
-    
-    if not Options.component:
-        Log.error("Need to be given a component to move package to.")
-        sys.exit(1)
 
     Log.debug("Acquiring lock")
     Lock = GlobalLock('/var/lock/launchpad-change-component.lock')
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    Ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
-                       dbhost="jubany")
+    Ztm = initZopeless(dbuser="lucille")
 
     execute_zcml_for_scripts()
 
@@ -132,9 +133,12 @@ def init():
         Options.distro = "ubuntu"
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
-    if not Options.distrorelease:
-        Options.distrorelease = Options.distro.currentrelease.name
-    Options.distrorelease = Options.distro.getRelease(Options.distrorelease)
+    if not Options.suite:
+        Options.distrorelease = Options.distro.currentrelease
+        Options.pocket = PackagePublishingPocket.RELEASE
+    else:
+        Options.distrorelease, Options.pocket = (
+            Options.distro.getDistroReleaseAndPocket(Options.suite))
 
     return args
 
@@ -146,11 +150,13 @@ def validate_options():
         sys.exit(1)
 
     if Options.component:
-        valid_components = dict([(c.name,c) for c in Options.distrorelease.components])
+        valid_components = dict([(c.name,c) for c in
+                                 Options.distrorelease.components])
+
         if Options.component not in valid_components:
-            Log.error("%s is not a valid component for %s/%s." % (Options.component,
-                                                                  Options.distro.name,
-                                                                  Options.distrorelease.name))
+            Log.error("%s is not a valid component for %s/%s."
+                      % (Options.component, Options.distro.name,
+                         Options.distrorelease.name))
             sys.exit(1)
         Options.component = valid_components[Options.component]
 
@@ -166,7 +172,8 @@ def validate_options():
 
     if Options.priority:
         valid_priorities = dict(
-            [(p.name,p) for p in Options.distrorelease.priorites])
+            [(priority.name.lower(), priority)
+             for p in PackagePublishingPriority.items])
         if Options.priority not in valid_priorities:
             Log.error("%s is not a valid priority for %s/%s."
                       % (Options.priority, Options.distro.name,
@@ -183,7 +190,8 @@ def main():
     validate_options()
     
     for package in arguments:
-        if Options.sourceonly or Options.binaryandsource or Options.sourceandchildren:
+        if (Options.sourceonly or Options.binaryandsource or
+            Options.sourceandchildren):
             process_source_change(Options.distrorelease, package)
 
         if Options.sourceandchildren:

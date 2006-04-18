@@ -11,10 +11,7 @@ __all__ = [
 
 from zope.schema import Datetime, Int, Text
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 class ILoginToken(Interface):
     """The object that stores one time tokens used for validating email
@@ -57,12 +54,24 @@ class ILoginToken(Interface):
         title=_('OpenPGP key fingerprint used to retrive key information when necessary.'),
         required=False,
         )
+    date_consumed = Datetime(
+        title=_('Date and time this was consumed'), 
+        required=False, readonly=False
+        )
 
     # used for launchpad page layout
     title = Attribute('Title')
 
     # Quick fix for Bug #2481
     password = Attribute('Password')
+
+    def consume():
+        """Mark this token as consumed by setting date_consumed.
+
+        As a consequence of a token being consumed, all tokens requested by
+        the same person and with the same requesteremail will also be marked
+        as consumed.
+        """
 
     def destroySelf():
         """Remove this LoginToken from the database.
@@ -100,18 +109,20 @@ class ILoginTokenSet(Interface):
         Return the default value if there's no such LoginToken.
         """
 
-    def searchByEmailAndRequester(email, requester):
-        """Return all LoginTokens for the given email and requester."""
+    def searchByEmailRequesterAndType(email, requester, type):
+        """Return all LoginTokens for the given email, requester and type."""
 
-    def deleteByEmailAndRequester(email, requester):
-        """Delete all LoginToken entries with the given email and requester."""
+    def deleteByEmailRequesterAndType(email, requester, type):
+        """Delete all LoginToken entries with the given email, requester and
+        type."""
 
-    def searchByFingerprintAndRequester(fingerprint, requester):
-        """Return all LoginTokens for the given fingerprint and requester."""
+    def searchByFingerprintRequesterAndType(fingerprint, requester, type):
+        """Return all LoginTokens for the given fingerprint, requester and
+        type."""
 
-    def deleteByFingerprintAndRequester(fingerprint, requester):
-        """Delete all LoginToken entries with the given fingerprint
-        and requester.
+    def deleteByFingerprintRequesterAndType(fingerprint, requester, type):
+        """Delete all LoginToken entries with the given fingerprint,
+        requester and type.
         """
 
     def getPendingGPGKeys(self, requesterid=None):

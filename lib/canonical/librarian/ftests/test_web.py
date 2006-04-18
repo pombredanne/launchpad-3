@@ -6,6 +6,7 @@ from urllib2 import urlopen, HTTPError
 
 import transaction
 
+from canonical.functional import FunctionalLayer, ZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.librarian.ftests.harness import LibrarianTestSetup
@@ -18,6 +19,7 @@ from canonical.database.sqlbase import commit
 
 class LibrarianWebTestCase(unittest.TestCase):
     """Test the librarian's web interface."""
+    layer = FunctionalLayer
 
     # Add stuff to a librarian via the upload port, then check that it's
     # immediately visible on the web interface. (in an attempt to test ddaa's
@@ -160,6 +162,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
+    layer = ZopelessLayer
     def setUp(self):
         LaunchpadZopelessTestSetup().setUp()
         LibrarianTestSetup().setUp()

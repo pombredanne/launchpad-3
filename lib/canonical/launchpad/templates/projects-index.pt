@@ -3,47 +3,53 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">    
-      <h1>Projects registered in Launchpad</h1>
-    </metal:heading>
 
-    <div metal:fill-slot="main">
-      <tal:notsearching condition="not:view/searchrequested">
-        <p>
-          In Launchpad, <dfn>projects</dfn> are groups of software products
-          that share a development community.
-          Examples include <a href="gnome">Gnome</a>, <a href="kde"><abbr>KDE</abbr></a>,
-          and <a href="mozilla">Mozilla</a>.
-          There are currently
-          <a href="+all"><span tal:replace="context/count_all">5</span>
-          projects</a> registered.
-        </p>
-        <p>
-          For individual computer programs, see
-          <a href="/products">products</a>.
-        </p>
-        <p>
-          For groups of people, see
-          <a href="/people">Launchpad teams</a>.
-        </p>
-      </tal:notsearching>
+<body>
 
-    <form method="get">
-            <input name="text" tal:attributes="value view/text" />
-              <input
-                tal:condition="view/searchrequested"
-                type="submit"
-                value="Search Again"
-              />
-              <input
-                tal:condition="not: view/searchrequested"
-                type="submit"
-                value="Search Projects"
-              />
-    </form>
+<metal:heading fill-slot="pageheading">    
+  <h1>Projects registered in Launchpad</h1>
+</metal:heading>
 
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="portlet">
+    <h4>About Projects in Launchpad:</h4>
+    <div class="portletBody portletContent">
+      <img src="/@@/info" />
+      In Launchpad, <dfn>projects</dfn> are groups of software products
+      that share a development community.
+      Examples include <a href="gnome">Gnome</a>,
+      <a href="kde"><abbr>KDE</abbr></a>, and
+      <a href="mozilla">Mozilla</a>.  There are currently
+      <a href="+all"><span tal:replace="context/count_all">5</span>
+      projects</a> registered.
+    </div>
+  </div>
+</metal:rightportlets>
 
+<div metal:fill-slot="main">
+
+  <form method="get">
+    <label for="text">Search products:</label>
+    <input name="text" tal:attributes="value view/text" />
+    <input
+      tal:condition="view/searchrequested"
+      type="submit" value="Search Again" />
+    <input
+      tal:condition="not: view/searchrequested"
+      type="submit" value="Search" />
+  </form>
+
+  <tal:notsearching condition="not:view/searchrequested">
+    <p>
+      For individual computer programs, applications or libraries,
+      see <a href="/products">products</a>.
+    </p>
+
+    <p>
+      For groups of people, see
+      <a href="/people">Launchpad teams</a>.
+    </p>
+  </tal:notsearching>
 
   <tal:searching condition="view/searchrequested">
 

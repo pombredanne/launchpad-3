@@ -61,9 +61,6 @@ class PasswordChangeWidget(PasswordWidget):
     def getInputValue(self):
         """Ensure both text boxes contain the same value and inherited checks
 
-        >>> from canonical.functional import FunctionalTestSetup
-        >>> FunctionalTestSetup().setUp()
-
         >>> from zope.publisher.browser import TestRequest
         >>> from zope.schema import Field
         >>> field = Field(__name__='foo', title=u'Foo')
@@ -88,8 +85,6 @@ class PasswordChangeWidget(PasswordWidget):
         Traceback (most recent call last):
             [...]
         WidgetInputError: ('foo', u'Foo', u'Passwords do not match.')
-
-        >>> FunctionalTestSetup().tearDown()
         """
         value1 = self.request.form.get(self.name, None)
         value2 = self.request.form.get('%s_dupe' % self.name, None)

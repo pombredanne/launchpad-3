@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 #
 
 import unittest
@@ -10,8 +10,9 @@ import shutil
 
 from canonical.lp.dbschema import PackagePublishingStatus
 
-from canonical.archivepublisher.tests.util import FakeSource, FakeBinary, _deepCopy, \
-                                         FakeDistroRelease
+from canonical.archivepublisher.tests.util import (
+        FakeSource, FakeBinary, _deepCopy, FakeDistroRelease
+        )
 
 sourceinput1 = {
     "foo": [ FakeSource("1.0-2", PackagePublishingStatus.PUBLISHED),
@@ -112,11 +113,13 @@ class TestDominator(unittest.TestCase):
 
 
 def test_suite():
-    return None
-#    suite = unittest.TestSuite()
-#    loader = unittest.TestLoader()
-#    suite.addTest(loader.loadTestsFromTestCase(TestDominator))
-#    return suite
+    # XXX: Bug 39880- it was disabled but no information
+    # left as to why this was done or who did it -- StuartBishop 20060227
+    suite = unittest.TestSuite()
+    return suite
+    loader = unittest.TestLoader()
+    suite.addTest(loader.loadTestsFromTestCase(TestDominator))
+    return suite
 
 def main(argv):
     suite = test_suite()

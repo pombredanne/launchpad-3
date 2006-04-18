@@ -74,8 +74,7 @@ class IPerson(IHasSpecifications):
             )
     password = Password(
             title=_('Password'), required=True, readonly=False,
-            description=_("The password you will use to access "
-                "Launchpad services. ")
+            description=_("Enter the same password in each field.")
             )
     karma = Int(
             title=_('Karma'), readonly=False,

@@ -11,14 +11,12 @@ __all__ = [
 
 from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
     ITicketTarget)
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
@@ -83,6 +81,15 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team who handles security-related issues "
             "for this distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted for any release in this "
+            "distribution. Note that you can also specify a driver "
+            "on each release who's permissions will be limited to that "
+            "specific release."),
         required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),

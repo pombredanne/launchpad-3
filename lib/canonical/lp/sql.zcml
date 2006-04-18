@@ -3,11 +3,11 @@
     database encoding is not UNICODE
     -->
   <subscriber
-    factory=".sql.confirmEncoding"
+    handler=".sql.confirmEncoding"
     for="zope.app.appsetup.IProcessStartingEvent"
     />
   <subscriber
-    factory=".sql.confirmNoAddMissingFrom"
+    handler=".sql.confirmNoAddMissingFrom"
     for="zope.app.appsetup.IProcessStartingEvent"
     />
 </configure>

@@ -3,7 +3,7 @@
 These may be fed back into Zope3 at some point.
 
 """
-from date import IDateWidget, DateWidget
+from date import IDateWidget, DateWidget, DatetimeDisplayWidget
 from owner import IUserWidget, HiddenUserWidget
 from popup import ISinglePopupWidget, SinglePopupWidget
 from context import IContextWidget, ContextWidget

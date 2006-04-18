@@ -10,22 +10,22 @@ Let's add 100 files to the queue so we have enough entries to play with.
   ...     'pagetests/standalone/xx-translation-import-queue-filtering.tar.gz')
   >>> tarball = open(test_file_name)
   >>> print http(r"""
-  ... POST /products/evolution/+series/main/+translations-upload HTTP/1.1
+  ... POST /products/evolution/trunk/+translations-upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 1689
   ... Content-Type: multipart/form-data; boundary=---------------------------1154239704143730702744913602
-  ... Referer: http://localhost:9000/products/evolution/+series/main/+translations-upload
   ... 
   ... -----------------------------1154239704143730702744913602
   ... Content-Disposition: form-data; name="file"; filename="foo.tar.gz"
   ... Content-Type: application/x-gzip
+  ... 
   ... %s
   ... -----------------------------1154239704143730702744913602
   ... Content-Disposition: form-data; name="translations_upload"
   ... 
   ... Request Upload
   ... -----------------------------1154239704143730702744913602--
-  ... """ % tarball.read())
+  ... """ % tarball.read(), handle_errors=False)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...Thank you for your upload. 100 files from the tarball will be reviewed...
@@ -37,7 +37,6 @@ we have all the entries we just imported.
   >>> print http(r"""
   ... GET /rosetta/imports HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/products/evolution/+series/main/+translations-upload
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -55,7 +54,7 @@ we have all the entries we just imported.
   ...Only .po files...
   ...Only .pot files...
   ...1...50...of...100 results...
-  ...href="http://localhost:9000/rosetta/imports/+index?start=50...
+  ...href="http://.../rosetta/imports/+index?start=50...
 
 The entries that need review, as we can see, initially, are all entries.
 
@@ -115,7 +114,7 @@ Let's change the status of the first entry on the queue to be blocked.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/rosetta/imports/+index
+  Location: http://.../rosetta/imports/+index
   ...
 
 We can see now an entry blocked.
@@ -152,7 +151,7 @@ Let's delete the second entry.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/rosetta/imports/+index
+  Location: http://.../rosetta/imports/+index
   ...
 
 And see that we have one deleted.

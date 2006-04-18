@@ -1,0 +1,77 @@
+LoginToken
+==========
+
+This is the mechanism we use whenever we need to confirm a person has access
+to the emails sent to a given email address. The process works as follows:
+    
+    1) User tries to do something in Launchpad that requires the confirmation
+       of an email address.
+
+    2) We send a message with a link containing a one-time randomly generated
+       token and instructions on how to finish the confirmation process.
+
+    3) User follows the link sent by email and provide any extra information
+       needed, which varies according to the LoginToken's type and submits the
+       page form.
+
+    4) The token is now marked as consumed, together with any other tokens of
+       the same type and for the same email address.
+
+
+    >>> from canonical.launchpad.database.person import Person
+    >>> from canonical.launchpad.database.logintoken import LoginTokenSet
+    >>> from canonical.lp.dbschema import LoginTokenType
+    >>> from canonical.launchpad.mail import stub
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> import transaction
+    >>> foobar = Person.byName('name16')
+
+Let's create a new LoginToken to confirm an email address for foobar.
+
+    >>> token = LoginTokenSet().new(
+    ...     foobar, 'foo.bar@canonical.com', 'foo.bar2@canonical.com',
+    ...     LoginTokenType.VALIDATEEMAIL)
+    >>> token.sendEmailValidationRequest('http://localhost:9000')
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> to_addrs
+    ['foo.bar2@canonical.com']
+
+As the process is not yet finished, foobar will see this as one of his
+unconfirmed email addresses.
+
+    >>> flush_database_updates()
+    >>> foobar.unvalidatedemails
+    Set([u'foo.bar2@canonical.com'])
+
+It's possible to create another token for the same purpose, but this won't
+cause that email to show up twice on foobar's list of unconfirmed emails.
+
+    >>> token2 = LoginTokenSet().new(
+    ...     foobar, 'foo.bar@canonical.com', 'foo.bar2@canonical.com',
+    ...     LoginTokenType.VALIDATEEMAIL)
+    >>> flush_database_updates()
+    >>> foobar.unvalidatedemails
+    Set([u'foo.bar2@canonical.com'])
+
+Once foobar finished the process, confirming his new email address, we mark
+the token as consumed.
+
+    >>> token.date_consumed is not None
+    False
+    >>> token.consume()
+    >>> token.date_consumed is not None
+    True
+
+This will also mark the other token as consumed, as the process is already
+finished and thus it can't be used anymore.
+    
+    >>> token2.date_consumed is not None
+    True
+
+Now that the token was consumed, that new email won't show up on foobar's list
+of unconfirmed emails anymore.
+
+    >>> flush_database_updates()
+    >>> foobar.unvalidatedemails
+    Set([])

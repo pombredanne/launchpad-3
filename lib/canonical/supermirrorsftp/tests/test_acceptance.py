@@ -28,6 +28,8 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.testing import reset_logging
+from canonical.functional import ZopelessLayer
 
 
 class SFTPSetup(TacTestSetup):
@@ -38,7 +40,7 @@ class SFTPSetup(TacTestSetup):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
         os.makedirs(self.root, 0700)
-        shutil.copytree(sibpath(__file__, 'keys'), 
+        shutil.copytree(sibpath(__file__, 'keys'),
                         os.path.join(self.root, 'keys'))
 
     @property
@@ -50,6 +52,7 @@ class SFTPSetup(TacTestSetup):
 
 
 class SFTPTestCase(BzrTestCase):
+    layer = ZopelessLayer
 
     def setUp(self):
         super(SFTPTestCase, self).setUp()
@@ -74,10 +77,10 @@ class SFTPTestCase(BzrTestCase):
         self.userHome = os.path.abspath(tempfile.mkdtemp())
         os.makedirs(os.path.join(self.userHome, '.ssh'))
         shutil.copyfile(
-            sibpath(__file__, 'id_dsa'), 
+            sibpath(__file__, 'id_dsa'),
             os.path.join(self.userHome, '.ssh', 'id_dsa'))
         shutil.copyfile(
-            sibpath(__file__, 'id_dsa.pub'), 
+            sibpath(__file__, 'id_dsa.pub'),
             os.path.join(self.userHome, '.ssh', 'id_dsa.pub'))
         os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa'), 0600)
         self.realHome = os.environ['HOME']
@@ -120,6 +123,7 @@ class SFTPTestCase(BzrTestCase):
         super(SFTPTestCase, self).tearDown()
         sftp._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
+        reset_logging()
 
 
 class AcceptanceTests(SFTPTestCase):
@@ -128,6 +132,7 @@ class AcceptanceTests(SFTPTestCase):
     initial implementation of bzr support, converted from the English at
     https://wiki.launchpad.canonical.com/SupermirrorTaskList
     """
+    layer = ZopelessLayer
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
@@ -165,7 +170,7 @@ class AcceptanceTests(SFTPTestCase):
         finally:
             os.chdir(old_dir)
 
-    def test_2_namespace_restrictions(self):        
+    def test_2_namespace_restrictions(self):
         """
         The namespace restrictions described in
         SupermirrorFilesystemHierarchy should be enforced. So operations

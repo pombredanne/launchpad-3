@@ -27,11 +27,11 @@ class SprintSpecification(SQLBase):
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
     status = EnumCol(schema=SprintSpecificationStatus, notNull=True,
-        default=SprintSpecificationStatus.SUBMITTED)
+        default=SprintSpecificationStatus.PROPOSED)
     whiteboard = StringCol(notNull=False, default=None)
 
     @property
     def is_confirmed(self):
         """See ISprintSpecification."""
-        return self.status == SprintSpecificationStatus.CONFIRMED
+        return self.status == SprintSpecificationStatus.ACCEPTED
 

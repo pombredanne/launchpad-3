@@ -2,10 +2,14 @@
   <h4>Distribution packaging:</h4>
 
   <div class="portletBody portletContent ">
-    This branch or series is packaged in the following places:
+    This series is packaged in the following places:
     <ul>
       <li tal:repeat="package context/sourcepackages">
-         <a tal:content="package/displayname"
+         <span tal:replace="package/distrorelease/distribution/name"
+         />
+         <span tal:replace="package/distrorelease/name"
+         />
+         <a tal:content="package/name"
             tal:attributes="href package/fmt:url">apache</a>
       </li>
     </ul>

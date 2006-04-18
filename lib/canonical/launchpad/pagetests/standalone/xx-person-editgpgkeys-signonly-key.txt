@@ -80,12 +80,9 @@ sign-only key validation page instead of the regular sign-up page.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: .../+validatesignonlygpg
   ...
-  ...<h1>You're being redirected</h1>
-  ...
+  Location: http://localhost:9000/token/.../+validatesignonlygpg
+  <BLANKLINE>
 
 
 We get redirected to the sign-only OpenPGP key validation page, which
@@ -244,10 +241,11 @@ Check that the key has been imported:
   ...
 
 
-Now that the key has been validated, the login token is removed:
+Now that the key has been validated, the login token is consumed:
 
-  >>> print LoginToken.selectOneBy(token=token)
-  None
+  >>> print LoginToken.selectOneBy(token=token).date_consumed is not None
+  True
+  
 
 
 Kill stub KeyServer

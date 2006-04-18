@@ -28,8 +28,6 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bugattachment import IBugAttachment
-from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -442,7 +440,7 @@ class IBugTaskSet(Interface):
     def get(task_id):
         """Retrieve a BugTask with the given id.
 
-        Raise a zope.exceptions.NotFoundError if there is no IBugTask
+        Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
         """
