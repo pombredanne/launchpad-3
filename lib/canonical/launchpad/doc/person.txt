@@ -12,6 +12,7 @@ we're going to demonstrate.
 ...     IPersonSet, IPerson, IEmailAddressSet)
 >>> from canonical.launchpad.ftests import login
 >>> from canonical.launchpad.helpers import contactEmailAddresses
+>>> from canonical.lp.dbschema import EmailAddressStatus
 
 >>> login("robertc@robertcollins.net")
 
@@ -34,9 +35,15 @@ IPersonSet. All you need for that is a valid email address.
 >>> p, email = personset.createPersonAndEmail('randomuser@randomhost.com')
 >>> p.teamowner is None
 True
+>>> email.status == EmailAddressStatus.NEW
+True
+>>> p.is_valid_person # Not valid because no preferred email address
+False
 
 >>> vcs_imports = personset.getByName('vcs-imports')
 >>> vcs_imports.teamowner is None
+False
+>>> vcs_imports.is_valid_person # Not valid person because it is a team
 False
 >>> lifeless = personset.getByName('lifeless')
 >>> lifeless.teamowner is None
@@ -47,6 +54,8 @@ person is a member of a team. It accepts an object implementing
 IPerson, which is the common use case when checking permissions.
 
 >>> ddaa = personset.getByName('ddaa')
+>>> ddaa.is_valid_person
+True
 >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
 True
 
@@ -185,7 +194,7 @@ True
 True
 
 Note that we don't bother migrating karma - it will just be reset next
-time the caches are rebuilt
+time the caches are rebuilt.
 
 >>> empty.karma
 0
