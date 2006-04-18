@@ -7,6 +7,7 @@ It was developed to fix bug #32610.
 First we do some needed initializations.
 
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+    >>> from canonical.ftests.pgsql import PgTestSetup
     >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
     >>> import subprocess, sys
 
@@ -49,6 +50,10 @@ We can remove all translations from a concrete potemplate.
     DEBUG   Removed 12 submissions in total.
     <BLANKLINE>
 
+We need to force a DB reset because the changes are done from an external
+script and the test system is not able to detect the database changes.
+
+    >>> PgTestSetup._reset_db = True
     >>> LaunchpadFunctionalTestSetup().tearDown()
 
 Or even a concrete language.
@@ -72,6 +77,10 @@ Or even a concrete language.
     DEBUG   Removed 12 submissions in total.
     <BLANKLINE>
 
+We need to force a DB reset because the changes are done from an external
+script and the test system is not able to detect the database changes.
+
+    >>> PgTestSetup._reset_db = True
     >>> LaunchpadFunctionalTestSetup().tearDown()
 
 
@@ -83,17 +92,21 @@ And it also works for products!
     >>> process = subprocess.Popen([
     ...     sys.executable,
     ...     'scripts/rosetta/remove-upstream-translations.py',
-    ...     '-p', 'evolution', '-s', 'main', '-vvv'],
+    ...     '-p', 'evolution', '-s', 'trunk', '-vvv'],
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
-    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Evolution MAIN...
+    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Evolution trunk...
     DEBUG   Before the removal, latest submission came from: Mark Shuttleworth
     DEBUG   Removed 12 submissions
     DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Removed 12 submissions in total.
     <BLANKLINE>
 
+We need to force a DB reset because the changes are done from an external
+script and the test system is not able to detect the database changes.
+
+    >>> PgTestSetup._reset_db = True
     >>> LaunchpadFunctionalTestSetup().tearDown()

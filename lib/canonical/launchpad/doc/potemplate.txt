@@ -18,7 +18,7 @@ This method will return all IPOTemplate that have a given name.
     >>> for potemplate in evolution_templates:
     ...     print potemplate.title
     Template "evolution-2.2" in Ubuntu Hoary package "evolution"
-    Template "evolution-2.2" in Evolution MAIN
+    Template "evolution-2.2" in Evolution trunk
 
 
 POTemplateSubset

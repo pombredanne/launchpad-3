@@ -10,7 +10,6 @@ from zope.event import notify
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.event.sqlobjectevent import (SQLObjectCreatedEvent,
     SQLObjectModifiedEvent)
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
@@ -51,10 +50,10 @@ class DummyPOMsgSet:
         self.isfuzzy = False
         self.commenttext = None
 
-    @cachedproperty
+    @property
     def pluralforms(self):
         """See IPOMsgSet."""
-        return _get_pluralforms(self) 
+        return _get_pluralforms(self)
 
     @property
     def active_texts(self):
@@ -108,7 +107,7 @@ class POMsgSet(SQLBase):
         orderBy='pluralform')
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
-    @cachedproperty
+    @property
     def pluralforms(self):
         """See IPOMsgSet."""
         return _get_pluralforms(self) 
@@ -475,13 +474,17 @@ class POMsgSet(SQLBase):
         # make sure we are working with the very latest data
         flush_database_updates()
 
+        # we only want to calculate the number of plural forms expected for
+        # this pomsgset once
+        pluralforms = self.pluralforms
+
         # calculate the number of published plural forms
         published_count = POSelection.select("""
             POSelection.pomsgset = %s AND
             POSelection.publishedsubmission IS NOT NULL AND
             POSelection.pluralform < %s
-            """ % sqlvalues(self.id, self.pluralforms)).count()
-        if published_count == self.pluralforms:
+            """ % sqlvalues(self.id, pluralforms)).count()
+        if published_count == pluralforms:
              self.publishedcomplete = True
         else:
              self.publishedcomplete = False
@@ -495,8 +498,8 @@ class POMsgSet(SQLBase):
             POSelection.pomsgset = %s AND
             POSelection.activesubmission IS NOT NULL AND
             POSelection.pluralform < %s
-            """ % sqlvalues(self.id, self.pluralforms)).count()
-        if active_count == self.pluralforms:
+            """ % sqlvalues(self.id, pluralforms)).count()
+        if active_count == pluralforms:
             self.iscomplete = True
         else:
             self.iscomplete = False
@@ -519,7 +522,7 @@ class POMsgSet(SQLBase):
             ActiveSubmission.id = POSelection.activesubmission AND
             PublishedSubmission.id = POSelection.publishedsubmission AND
             ActiveSubmission.datecreated > PublishedSubmission.datecreated
-            """ % sqlvalues(self.id, self.pluralforms),
+            """ % sqlvalues(self.id, pluralforms),
             clauseTables=['POSelection',
                           'POSubmission AS ActiveSubmission',
                           'POSubmission AS PublishedSubmission']).count()

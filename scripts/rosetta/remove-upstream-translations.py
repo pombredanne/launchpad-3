@@ -86,65 +86,47 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
                         pofile.latestsubmission.person.displayname)
             pofile_items_deleted = 0
             pofile.latestsubmission = None
-            # Here we have the parameters we will use to get chunks of
-            # pomsgsets to prevent that we
-            step = 2000
-            start = 0
-            end = step
-            while True:
-                pomsgsets = list(pofile.pomsgsets[start:end])
-                if len(pomsgsets) == 0:
-                    # There are no entries to process
-                    break
-                for pomsgset in pomsgsets:
-                    for poselection in pomsgset.selections:
-                        if (poselection.activesubmission is not None and
-                            poselection.activesubmission.origin ==
-                                RosettaTranslationOrigin.SCM):
-                            poselection.activesubmission = None
-                            # We removed at least one translation, we cannot have
-                            # this pomsgset as iscomplete anymore, we are missing
-                            # one translation!.
-                            pomsgset.iscomplete = False
-                        if (poselection.publishedsubmission is not None and
-                            poselection.publishedsubmission.origin ==
-                                RosettaTranslationOrigin.SCM):
-                            poselection.publishedsubmission = None
-                            # We removed at least one translation, we cannot have
-                            # this pomsgset as iscomplete anymore, we are missing
-                            # one translation!.
-                            pomsgset.publishedcomplete = False
-                    # We are going to delete POSubmissions here, and we need that
-                    # the database has all changes we did to remove the references
-                    # to the removed object.
-                    flush_database_updates()
-                    for posubmission in pomsgset.submissions:
-                        if (not posubmission.active_selections and
-                            not posubmission.published_selections and
-                            posubmission.origin == RosettaTranslationOrigin.SCM):
-                            posubmission.deleteMe()
-                            pofile_items_deleted += 1
-                    # Let's fix the flags that depend on translations, we modified
-                    # the IPOMsgSet and we should leave it in a consistent status.
-                    pomsgset.updateFlags()
-                # Update the indexes to get the next bunch of pomsgsets.
-                start += step
-                end += step
-                # Update the statistics here to prevent inconsistent data
-                # if next transaction fails before we finish processing
-                # this IPOFile.
-                pofile.updateStatistics()
-                ztm.commit()
+            for pomsgset in pofile.pomsgsets:
+                for poselection in pomsgset.selections:
+                    if (poselection.activesubmission is not None and
+                        poselection.activesubmission.origin ==
+                            RosettaTranslationOrigin.SCM):
+                        poselection.activesubmission = None
+                        # We removed at least one translation, we cannot have
+                        # this pomsgset as iscomplete anymore, we are missing
+                        # one translation!.
+                        pomsgset.iscomplete = False
+                    if (poselection.publishedsubmission is not None and
+                        poselection.publishedsubmission.origin ==
+                            RosettaTranslationOrigin.SCM):
+                        poselection.publishedsubmission = None
+                        # We removed at least one translation, we cannot have
+                        # this pomsgset as iscomplete anymore, we are missing
+                        # one translation!.
+                        pomsgset.publishedcomplete = False
+                # We are going to delete POSubmissions here, and we need that
+                # the database has all changes we did to remove the references
+                # to the removed object.
+                flush_database_updates()
+                for posubmission in pomsgset.submissions:
+                    if (not posubmission.active_selections and
+                        not posubmission.published_selections and
+                        posubmission.origin == RosettaTranslationOrigin.SCM):
+                        posubmission.deleteMe()
+                        pofile_items_deleted += 1
+                # Let's fix the flags that depend on translations, we modified
+                # the IPOMsgSet and we should leave it in a consistent status.
+                pomsgset.updateFlags()
             items_deleted += pofile_items_deleted
             logger_object.debug(
                  'Removed %d submissions' % pofile_items_deleted)
             pofile.updateStatistics()
             pofile.recalculateLatestSubmission()
+            ztm.commit()
             if pofile.latestsubmission is not None:
                 logger_object.debug(
                     'After the removal, latest submission came from: %s' %
                         pofile.latestsubmission.person.displayname)
-            ztm.commit()
 
     # We finished the removal process, is time to notify the amount of entries
     # that we removed.
