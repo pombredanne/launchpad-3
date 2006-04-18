@@ -56,7 +56,7 @@ script and the test system is not able to detect the database changes.
     >>> PgTestSetup._reset_db = True
     >>> LaunchpadFunctionalTestSetup().tearDown()
 
-Or even a concrete language.
+Or with a concrete language.
 
     >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
 
@@ -83,6 +83,38 @@ script and the test system is not able to detect the database changes.
     >>> PgTestSetup._reset_db = True
     >>> LaunchpadFunctionalTestSetup().tearDown()
 
+Or even with a concrete IPOTemplateName.
+
+    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable,
+    ...     'scripts/rosetta/remove-upstream-translations.py',
+    ...     '-d', 'ubuntu', '-r', 'hoary', '-n', 'evolution', '-t', 'evolution-2.2',
+    ...     '-vvv'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
+    DEBUG   Removed 0 submissions
+    DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
+    DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Removed 0 submissions
+    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Before the removal, latest submission came from: Valentina Commissari
+    DEBUG   Removed 12 submissions
+    DEBUG   After the removal, latest submission came from: Foo Bar
+    DEBUG   Removed 12 submissions in total.
+    <BLANKLINE>
+
+We need to force a DB reset because the changes are done from an external
+script and the test system is not able to detect the database changes.
+
+    >>> PgTestSetup._reset_db = True
+    >>> LaunchpadFunctionalTestSetup().tearDown()
 
 And it also works for products!
 

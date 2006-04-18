@@ -218,13 +218,17 @@ def main(argv):
             potemplates = list(
                 potemplateset.getByName(options.potemplatename))
     else:
-        potemplates = list(potemplateset.getSubset(
+        potemplate_subset = potemplateset.getSubset(
             distrorelease=distrorelease, sourcepackagename=sourcepackagename,
-            productseries=series))
+            productseries=series)
         if options.potemplatename is not None:
-            potemplate = potemplates.getPOTemplateByName(
+            potemplate = potemplate_subset.getPOTemplateByName(
                 options.potemplatename)
             potemplates = [potemplate]
+        else:
+            # Get a list from the subset of potemplates to be able to do
+            # transaction commits.
+            potemplates = list(potemplate_subset)
 
     lang_code = None
     variant = None
