@@ -17,27 +17,26 @@
   <div tal:replace="structure context/product/@@+portlet-releases" />
 </metal:rightportlets>
 
-    <div metal:fill-slot="main">
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Foo Series: main</h3>
+</metal:heading>
 
-      <div metal:use-macro="context/@@launchpad_editform/editform">
+<div metal:fill-slot="main">
 
-          <h1 tal:condition="view/label"
-              tal:content="view/label"
-              metal:fill-slot="heading"
-              >Form Label will come from ZCML label="xxx"</h1>
+  <div metal:use-macro="context/@@launchpad_editform/editform">
 
-          <p metal:fill-slot="extra_info">
-            The information you enter here for
-            <span tal:replace="context/product/displayname">Apache</span>
-            will be displayed on the release home page, and used in RSS feeds.
-            If you need to modify the actual version number
-            (<span tal:replace="context/version">2.1.6</span>),
-            <a href="/feedback">ask a Launchpad admin</a> to help you.
-          </p>
+    <p metal:fill-slot="extra_info">
+      The information you enter here for
+      <span tal:replace="context/product/displayname">Apache</span>
+      will be displayed on the release home page, and used in RSS feeds.
+      If you need to modify the actual version number
+      (<span tal:replace="context/version">2.1.6</span>),
+      <a href="/feedback">ask a Launchpad admin</a> to help you.
+    </p>
 
-      </div>
+  </div>
     
-    </div>
+</div>
 
-  </body>
+</body>
 </html>

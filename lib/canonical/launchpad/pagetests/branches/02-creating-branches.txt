@@ -9,13 +9,13 @@ the product code facet page.
   ... GET /products/applets/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ..."http://localhost:9000/products/applets/+addbranch"...
+  ..."http://.../products/applets/+addbranch"...
 
   >>> print http(r"""
   ... GET /products/applets/+branches HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ..."http://localhost:9000/products/applets/+addbranch"...
+  ..."http://.../products/applets/+addbranch"...
 
 Let's make sure we can load the branch creation form on a product.
 
@@ -34,10 +34,7 @@ has been stripped.
   >>> print http(r"""
   ... POST /products/applets/+addbranch HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1276
   ... Content-Type: multipart/form-data; boundary=---------------------------10133907381973361475472259166
-  ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
-  ... Referer: http://localhost:9000/products/applets/+addbranch
   ... 
   ... -----------------------------10133907381973361475472259166
   ... Content-Disposition: form-data; name="field.name"
@@ -80,7 +77,7 @@ has been stripped.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name16/+branch/applets/main
+  Location: http://.../people/name16/+branch/applets/main
 
 Let's make sure we can see the page for the newly created branch.
 This page includes a link to other branches associated with that product,
@@ -111,7 +108,7 @@ We can also create a branch from a person's page. First, check that the
   ... GET /people/lifeless/+branches HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ..."http://localhost:9000/people/lifeless/+addbranch"...
+  ..."http://.../people/lifeless/+addbranch"...
 
 When creating a branch from a person, we have the option not to specify an
 associated product.
@@ -135,7 +132,6 @@ has been stripped.
   ... Content-Length: 1315
   ... Content-Type: multipart/form-data; boundary=---------------------------16855892469756896411380849908
   ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
-  ... Referer: http://localhost:9000/people/lifeless/+addbranch
   ... 
   ... -----------------------------16855892469756896411380849908
   ... Content-Disposition: form-data; name="field.product"
@@ -178,7 +174,7 @@ has been stripped.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name16/+branch/+junk/pyresources
+  Location: http://.../people/name16/+branch/+junk/pyresources
 
 Let's make sure we can see the page for the newly created junk branch.
 Because it has no product, it has no link to other product branches.

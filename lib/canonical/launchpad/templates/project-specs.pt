@@ -23,7 +23,7 @@
         <th>Status</th>
         <th>Delivery</th>
         <th>Assignee</th>
-        <th tal:content="view/goaltitle">Hack!</th>
+        <th>Product</th>
       </tr>
     </thead>
     <tbody class="lesser">
@@ -37,7 +37,10 @@
         <td><a tal:content="spec/name/fmt:shorten/35"
                tal:attributes="
                  href spec/fmt:url;
-                 title spec/title">foo-bar-baz</a></td>
+                 title spec/title">foo-bar-baz</a>
+            <img src="/@@/info" alt="Informational"
+                 tal:condition="spec/informational" />
+        </td>
         <td>
           <span class="sortkey" tal:content="spec/status/sortkey" />
           <span tal:content="spec/status/title"
@@ -53,13 +56,7 @@
             Carlos Perello Marin
           </a>
         </td>
-        <td>
-          <a tal:condition="spec/has_release_goal"
-             tal:attributes="href spec/goal/fmt:url"
-             tal:content="spec/goal/name">
-            Ubuntu 6.04
-          </a>
-        </td>
+        <td tal:content="spec/product/displayname">Firefox</td>
       </tr>
     </tbody>
   </table>
@@ -70,6 +67,12 @@
 
   <p tal:condition="view/specs" class="discreet">
     <span tal:replace="view/specs/count:len">7</span> specification(s) listed.
+  </p>
+
+  <p tal:condition="view/specs" class="discreet">
+    This listing shows by default all the unimplemented, unapproved
+    specifications currently associated with all products in 
+    <span tal:replace="context/displayname">Mozilla</span>.
   </p>
 
 </div>

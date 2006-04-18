@@ -5,13 +5,22 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-series" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Product Title</h3>
+  <h1>Register another product series</h1>
+</metal:heading>
+
 <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_addform/addform">
-
-      <h1 metal:fill-slot="heading">Register a new product release
-        series for <span tal:replace="context/displayname">Mozilla
-        Firefox</span></h1>
 
       <div metal:fill-slot="extra_info" class="documentDescription">
         A product release series aggregates a set of releases. Examples

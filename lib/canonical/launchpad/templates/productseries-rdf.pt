@@ -8,7 +8,7 @@
     <lp:ProductSeries>
         <lp:specifiedAt
             tal:attributes="rdf:resource
-                string:${context/product/fmt:url}/+series/${context/name}/+rdf" />
+                string:${context/product/fmt:url}/${context/name}/+rdf" />
         <lp:name tal:content="context/name">name</lp:name>
         <lp:displayName tal:content="context/displayname">
             Display Name
@@ -29,7 +29,7 @@
         <lp:release tal:repeat="release context/releases">
             <lp:ProductRelease>
                 <lp:specifiedAt tal:attributes="rdf:resource
-                    string:${release/product/fmt:url}/+series/${release/productseries/name}/${release/version}/+rdf" />
+                    string:${release/product/fmt:url}/${release/productseries/name}/${release/version}/+rdf" />
             </lp:ProductRelease>
         </lp:release>
     </lp:ProductSeries>

@@ -83,7 +83,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/token/.../+newaccount
-  ...
+  <BLANKLINE>
 
 
   >>> path = '%s/+newaccount' % base_path
@@ -179,7 +179,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/token/.../+newaccount
-  ...
+  <BLANKLINE>
 
 
   >>> path = '%s/+newaccount' % base_path
@@ -383,5 +383,18 @@ redirection_url in the form post below.
   HTTP/1.1 303 See Other
   ...
   Location: https://shipit.ubuntu.com
+  ...
+
+
+  If we try to go to that token's page again, we'll see a message explaining
+  that the confirmation that token was created for is already concluded, so we
+  don't need to do anything else.
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... """ % base_path)
+  HTTP/1.1 200 Ok
+  ...
+  ...Confirmation already concluded...
   ...
 
