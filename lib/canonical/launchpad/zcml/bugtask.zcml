@@ -33,24 +33,25 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <allow attributes="id bug bugID target" />
+        <allow attributes="id bug bugID target dateassigned datecreated
+                           dateconfirmed dateinprogress dateclosed" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         priority severity assignee binarypackagename
-                        bugwatch dateassigned datecreated age owner
-                        targetname title related_tasks statusdisplayhtml
-                        statuselsewhere asEmailHeaderValue
+                        bugwatch age owner targetname title related_tasks
+                        statusdisplayhtml statuselsewhere asEmailHeaderValue
                         target_uses_malone bugtask_branches" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setSeverityFromDebbugs
-                        updateTargetNameCache" />
+                        updateTargetNameCache transitionToStatus
+                        transitionToAssignee" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
-                            distrorelease milestone status statusexplanation
+                            distrorelease milestone statusexplanation
                             priority severity assignee binarypackagename
                             bugwatch dateassigned datecreated age owner
                             targetname title related_tasks statusdisplayhtml

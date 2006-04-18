@@ -28,7 +28,8 @@ from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
-    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
+    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage,
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 
 debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
@@ -112,8 +113,11 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
-    dateassigned = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    dateassigned = UtcDateTimeCol(notNull=False, default=None)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    dateconfirmed = UtcDateTimeCol(notNull=False, default=None)
+    dateinprogress = UtcDateTimeCol(notNull=False, default=None)
+    dateclosed = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     # The targetnamecache is a value that is only supposed to be set when a
     # bugtask is created/modified or by the update-bugtask-targetnamecaches
@@ -190,6 +194,47 @@ class BugTask(SQLBase, BugTaskMixin):
         except KeyError:
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.severity
+
+    def transitionToStatus(self, status):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        if status == self.status:
+            # No change in the status, so nothing to do.
+            return
+
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+        # Record the date of the particular kinds of status change
+        # that interest us.
+        if status == dbschema.BugTaskStatus.CONFIRMED:
+            self.dateconfirmed = now
+        elif status == dbschema.BugTaskStatus.INPROGRESS:
+            self.dateinprogress = now
+        elif ((self.status in UNRESOLVED_BUGTASK_STATUSES) and
+              (status in RESOLVED_BUGTASK_STATUSES)):
+            self.dateclosed = now
+
+        if status in UNRESOLVED_BUGTASK_STATUSES:
+            self.dateclosed = None
+
+        self.status = status
+
+    def transitionToAssignee(self, assignee):
+        if assignee == self.assignee:
+            # No change to the assignee, so nothing to do.
+            return
+
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+        if self.assignee and not assignee:
+            # The assignee is being cleared, so clear the dateassigned
+            # value.
+            self.dateassigned = None
+        if not self.assignee and assignee:
+            # The task is going from not having an assignee to having
+            # one, so record when this happened
+            self.dateassigned = now
+
+        self.assignee = assignee
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -531,7 +576,7 @@ class BugTaskSet:
         if not bugtask.target_uses_malone:
             bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
             bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
-            bugtask.status = dbschema.BugTaskStatus.UNKNOWN
+            bugtask.transitionToStatus(dbschema.BugTaskStatus.UNKNOWN)
 
         return bugtask
 

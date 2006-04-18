@@ -1,0 +1,150 @@
+BugTask Status Workflow
+=======================
+
+BugTasks have a natural status workflow: Unconfirmed, Confirmed, In
+Progress, Fix Committed, etc. Some transitions cause other things to
+happen.
+
+Currently, the only other thing that happens is that we record the
+date on which some status transitions occurred.
+
+Here are examples of each transition that we record. First, let's create
+a new bug to work with:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILaunchBag)
+
+    >>> login("foo.bar@canonical.com")
+    >>> foobar = getUtility(ILaunchBag).user
+
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+
+    >>> new_bug = ubuntu_mozilla_firefox.createBug(
+    ...     owner=foobar, title="a new bug", comment="a test comment")
+
+    >>> ubuntu_firefox_task = new_bug.bugtasks[0]
+
+    >>> print ubuntu_firefox_task.distribution.name
+    ubuntu
+    >>> print ubuntu_firefox_task.sourcepackagename.name
+    mozilla-firefox
+
+Only its datecreated value will be set. All other dates will be None.
+
+    >>> ubuntu_firefox_task.datecreated
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.dateconfirmed is None
+    True
+
+    >>> ubuntu_firefox_task.dateassigned is None
+    True
+
+    >>> ubuntu_firefox_task.dateinprogress is None
+    True
+
+    >>> ubuntu_firefox_task.dateclosed is None
+    True
+
+The bug status cannot be set directly, but the value can be retrieved
+directly.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+
+    >>> ubuntu_firefox_task.status = BugTaskStatus.CONFIRMED
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute: ...
+
+    >>> print ubuntu_firefox_task.status.title
+    Unconfirmed
+
+Confirming the bug will set IBugTask.dateconfirmed. As with all the
+dates we track on bug tasks, this date value is set/changed only when
+the task enters that state from another state. Setting an already
+CONFIRMED task to CONFIRMED again will not alter the dateconfirmed
+value.
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+
+    >>> print ubuntu_firefox_task.status.title
+    Confirmed
+    >>> ubuntu_firefox_task.dateconfirmed
+    datetime.datetime...
+
+    >>> prev_dateconfirmed = ubuntu_firefox_task.dateconfirmed
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+
+    >>> ubuntu_firefox_task.dateconfirmed == prev_dateconfirmed
+    True
+
+Marking the bug In Progress sets IBugTask.dateinprogress.
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.INPROGRESS)
+
+    >>> print ubuntu_firefox_task.status.title
+    In Progress
+    >>> ubuntu_firefox_task.dateinprogress
+    datetime.datetime...
+
+    >>> prev_dateinprogress = ubuntu_firefox_task.dateinprogress
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.INPROGRESS)
+
+    >>> ubuntu_firefox_task.dateinprogress == prev_dateinprogress
+    True
+
+If the status is changed from any unresolved status to any resolved
+status (Rejected or Fix Released), the dateclosed property is set. The
+dateclosed is always set to None when the task's status is set to an
+open status.
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.REJECTED)
+
+    >>> ubuntu_firefox_task.dateclosed
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> ubuntu_firefox_task.dateclosed is None
+    True
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> ubuntu_firefox_task.dateclosed
+    datetime.datetime...
+
+Changing from one closed status to another does not change the
+dateclosed.
+
+    >>> print ubuntu_firefox_task.status.title
+    Fix Released
+    >>> prev_dateclosed = ubuntu_firefox_task.dateclosed
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.REJECTED)
+
+    >>> print ubuntu_firefox_task.status.title
+    Rejected
+    >>> ubuntu_firefox_task.dateclosed == prev_dateclosed
+    True
+
+Lastly, IBugTask.dateassigned is set when a bugtask goes from being
+unassigned, to assigned, but not if the assignee changes from one person
+to another.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> sample_person = getUtility(IPersonSet).get(12)
+
+    >>> ubuntu_firefox_task.transitionToAssignee(foobar)
+
+    >>> ubuntu_firefox_task.dateassigned
+    datetime.datetime...
+
+    >>> prev_dateassigned = ubuntu_firefox_task.dateassigned
+    >>> ubuntu_firefox_task.transitionToAssignee(sample_person)
+    >>> ubuntu_firefox_task.dateassigned == prev_dateassigned
+    True
+
+    >>> ubuntu_firefox_task.transitionToAssignee(None)
+    >>> ubuntu_firefox_task.dateassigned is None
+    True
