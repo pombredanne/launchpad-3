@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import re
 
 from xml.sax.saxutils import escape
 
@@ -261,8 +260,8 @@ class NewLineToSpacesWidget(TextWidget):
     """A widget that replaces new line characters with spaces."""
 
     def _toFieldValue(self, input):
-        if input == self._missing:
-            return self.context.missing_value
-        else:
-            value = TextWidget._toFieldValue(self, input)
-            return re.sub('[\n\r]', ' ', value)
+        value = TextWidget._toFieldValue(self, input)
+        if value is not self.context.missing_value:
+            lines = value.splitlines()
+            value = ' '.join(lines)
+        return value
