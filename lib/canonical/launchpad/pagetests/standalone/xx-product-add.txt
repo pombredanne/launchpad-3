@@ -93,6 +93,17 @@ Project.
   ...<h4>The Mozilla Project:</h4>...
 
 
+We should have an automatic trunk series for this new product too.
+
+  >>> print http(r"""
+  ... GET /products/testing/trunk HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Series overview...
+
+
+
 Tests if the validator is working for the URL fields
 
 POST on Home-Page field without the HTTP://

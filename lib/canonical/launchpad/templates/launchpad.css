@@ -113,7 +113,6 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 100%;
   font-weight: normal;
   margin: 0;
-  padding-top: 0.5em;
   text-align: left;
 }
 h1 :link, h2 :link, h3 :link, h4 :link, h5 :link, h6 :link,
@@ -129,7 +128,11 @@ h2 {
   font-size: 1.25em;
   margin: 0.5em 0;
 }
-h3, h4, h5, h6 {
+h3 {
+  font-size: 1.1em;
+  margin-bottom: 0.5em;
+}
+h4, h5, h6 {
   font-size: 1em;
   margin-bottom: 0;
 }
@@ -171,14 +174,11 @@ th.icon.right, td.icon.right {
   padding-left: 0;
 }
 table.listing {
-  font-size: 85%;
+  font-size: smaller;
   margin: 1em 0;
 }
 table.listing, table.listing>tbody {
   border-bottom: 1px solid #8cacbb;
-}
-table.listing>tbody {
-  font-size: smaller;
 }
 table.listing>thead, table.listing>thead>tr>th,table.listing tfoot tr {
   border: 1px solid #8cacbb;
@@ -687,7 +687,7 @@ tr.highlight {
 .importanceMinorRow    { background-color: #A5AFC8; }
 .importanceWishlistRow { background-color: #8FA9D9; }
 
-/* Spec status and priority */
+/* Spec definition, delivery and priority */
 
 .specstatusIMPLEMENTED     { color: Green; }
 .specstatusINFORMATIONAL   { color: Green; }
@@ -700,7 +700,7 @@ tr.highlight {
 .specstatusOBSOLETE        { color: Gray; }
 
 .specpriorityNOTFORUS      { color: Gray; }
-.specpriorityPROPOSED      { color: Gray; }
+.specpriorityUNDEFINED     { color: Gray; }
 .specpriorityLOW           { color: Black; }
 .specpriorityMEDIUM        { color: Orange; }
 .specpriorityHIGH          { color: Red; }
@@ -717,6 +717,13 @@ tr.highlight {
 .specdeliveryNEEDSREVIEW        {color: Purple; }
 .specdeliveryAWAITINGDEPLOYMENT {color: Red; }
 .specdeliveryIMPLEMENTED        {color: Green; }
+
+
+/* Ticket status */
+
+.ticketstatusOPEN            { color: Black; }
+.ticketstatusANSWERED        { color: Green; }
+.ticketstatusREJECTED        { color: Red; }
 
 /* Board-like comment CSS */
 
@@ -928,7 +935,7 @@ ul.search>li, li.search {
   font-size: larger;
 }
 
-/* sabdfl 22/10/2005 indented and moreindented useful for listings */
+/* indented and moreindented useful for listings */
 .indented {
   margin-left: 1em;
 }

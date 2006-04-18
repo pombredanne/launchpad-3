@@ -12,9 +12,12 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Carlos Perello Marin</h3>
+  <h1>Feature specification workload</h1>
+</metal:heading>
 
-  <h1>Specification workload</h1>
+<div metal:fill-slot="main">
 
   <div tal:replace="structure context/@@+table-specworkload" />
 

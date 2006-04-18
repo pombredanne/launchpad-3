@@ -3,7 +3,7 @@
 
   <div class="portletBody portletContent ">
     <tal:block condition="context/releases">
-      The following releases have been made from this branch:
+      The following releases have been made in this series:
       <ul>
         <li tal:repeat="release context/releases">
            <a tal:attributes="href release/fmt:url">
@@ -14,7 +14,7 @@
     </tal:block>
 
     <tal:block condition="not: context/releases">
-      No releases have yet been registered from this branch. You can
+      No releases have yet been registered for this series. You can
       <a href="+addrelease">register a release here</a>.
     </tal:block>
 

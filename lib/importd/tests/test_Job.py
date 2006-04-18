@@ -153,7 +153,7 @@ class sampleData:
     package_import_distrorelease_id = 3 # ubuntu hoary
     package_job_name = 'pkg-ubuntu-hoary-evolution-1.0'
     cvs_job_id = 3 # this is ProductSeries.id 3 for the evolution
-    cvs_job_name = 'gnome-evolution-main'
+    cvs_job_name = 'gnome-evolution-trunk'
     product_id = 5
     product_name = 'evolution'
 

@@ -30,6 +30,11 @@
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
     </content>
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProductReleaseNavigation"
+        />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="ProductReleaseContextMenu"
@@ -51,7 +56,7 @@
         permission="zope.Public">
         <browser:page
             name="+index"
-            template="../templates/productrelease.pt" />
+            template="../templates/productrelease-index.pt" />
         <!-- ProductReleases Portlets -->
         <browser:page
             name="+portlet-details"
@@ -81,14 +86,14 @@
       class="canonical.launchpad.browser.productrelease.ProductReleaseEditView"
       facet="overview"
       label="Edit product release details"
-      fields="title summary description changelog"
+      fields="summary description changelog"
       permission="launchpad.Edit"
       template="../templates/productrelease-edit.pt"
       lp:url="/products/$Product.name/$ProductRelease.version/+edit">
       <browser:widget
         field="summary"
         class="zope.app.form.browser.TextAreaWidget"
-        width="60"
+        width="62"
         height="5" />
     </browser:editform>
 
@@ -100,7 +105,7 @@
         label="Review product release details"
         fields="version productseries"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
+        template="../templates/productrelease-admin.pt"
         lp:url="/products/$Product.name/$ProductRelease.name/+review">
         <browser:widget
             field="version"

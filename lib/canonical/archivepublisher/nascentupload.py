@@ -166,7 +166,7 @@ class NascentUploadedFile:
             cksum, size, section, priority, filename = fileline.strip().split()
         self.fsroot = fsroot
         self.filename = filename
-        self.full_filename = os.path.join(fsroot,filename)
+        self.full_filename = os.path.join(fsroot, filename)
         self._digest = cksum
         self._size = int(size)
         self.component, self.section = split_section(section)
@@ -211,7 +211,7 @@ class NascentUploadedFile:
         """
         if self._values_checked:
             return
-        if not os.path.exists(os.path.join(self.fsroot,self.filename)):
+        if not self.present:
             raise FileNotFound(
                 "File %s as mentioned in the changes file was not found." % (
                 self.filename))
@@ -220,7 +220,7 @@ class NascentUploadedFile:
         # the size of the file as read-in.
         cksum = md5.md5()
         sha_cksum = sha.sha()
-        ckfile = open(os.path.join(self.fsroot, self.filename), "r")
+        ckfile = open(self.full_filename, "r")
         size = 0
         for chunk in filechunks(ckfile):
             cksum.update(chunk)
@@ -1309,11 +1309,28 @@ class NascentUpload:
                         target_file.write(chunk)
                     target_file.close()
                     library_file.close()
+
             try:
                 sub_dsc_file.checkValues()
             except UploadError, e:
                 self.reject("Unable to validate %s from %s: %s" % (
                     sub_dsc_file.filename, dsc_file.filename, e))
+
+            # try to check dsc-mentioned file against its copy already
+            # in librarian, if it's new (aka not found in librarian)
+            # dismiss. It prevent us to have scary duplicated filenames
+            # in Librarian and missapplied files in archive, fixes
+            # bug # 38636 and friends.
+            try:
+                library_file = self.distro.getFileByName(
+                    sub_dsc_file.filename, source=True, binary=False)
+                # REJECT the upload if they don't match.
+                if sub_dsc_file.sha_digest != library_file.content.sha1:
+                    self.reject("SHA1 sum of uploaded file does not "
+                                "match extant file in archive")
+            except NotFoundError:
+                # Ignore these as the file does not exist in the distro yet
+                pass
 
         # Since we verified the dsc okay, we can have a go at the source itself
         self.verify_uploaded_source()

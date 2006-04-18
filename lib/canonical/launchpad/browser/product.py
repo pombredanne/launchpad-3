@@ -59,10 +59,6 @@ class ProductNavigation(
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
 
-    @stepthrough('+series')
-    def traverse_series(self, name):
-        return self.context.getSeries(name)
-
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
@@ -76,8 +72,12 @@ class ProductNavigation(
             raise NotFoundError
         return self.context.getTicket(ticket_num)
 
-    def traverse(self, name):
+    @stepthrough('+release')
+    def traverse_release(self, name):
         return self.context.getRelease(name)
+
+    def traverse(self, name):
+        return self.context.getSeries(name)
 
 
 class ProductSetNavigation(GetitemNavigation):
@@ -148,16 +148,19 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'reassign', 'distributions', 'packages', 'branches',
-        'branch_add', 'series_add', 'milestone_add', 'launchpad_usage',
+        'edit', 'driver', 'reassign', 'distributions', 'packages', 'branches',
+        'branch_add', 'series_add', 'launchpad_usage',
         'administer', 'rdf']
 
-    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals for all series'
+        return Link('+driver', text, summary, icon='edit')
+
     def reassign(self):
         text = 'Change Maintainer'
         return Link('+reassign', text, icon='edit')
@@ -170,7 +173,6 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Packages'
         return Link('+packages', text, icon='info')
 
-    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
@@ -183,12 +185,6 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Register Branch'
         return Link('+addbranch', text, icon='add')
 
-    @enabled_with_permission('launchpad.Edit')
-    def milestone_add(self):
-        text = 'Add Milestone'
-        return Link('+addmilestone', text, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
         text = 'Define Launchpad Usage'
         return Link('+launchpad', text, icon='edit')
@@ -244,23 +240,33 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'new']
+    links = ['listall', 'doc', 'roadmap', 'table', 'new']
 
     def listall(self):
         text = 'List All'
-        return Link('+specs?show=all', text, icon='info')
+        summary = 'Show all specifications for %s' %  self.context.title
+        return Link('+specs?show=all', text, summary, icon='info')
+
+    def doc(self):
+        text = 'Documentation'
+        summary = 'List all complete informational specifications'
+        return Link('+documentation', text, summary,
+            icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
-        return Link('+roadmap', text, icon='info')
+        summary = 'Show the recommended sequence of specification implementation'
+        return Link('+roadmap', text, summary, icon='info')
 
     def table(self):
         text = 'Assignments'
-        return Link('+assignments', text, icon='info')
+        summary = 'Show the full assignment of work, drafting and approving'
+        return Link('+assignments', text, summary, icon='info')
 
     def new(self):
         text = 'New Specification'
-        return Link('+addspec', text, icon='add')
+        summary = 'Register a new specification for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 
 class ProductBountiesMenu(ApplicationMenu):
@@ -357,7 +363,7 @@ class ProductView:
                 object_translatable = {
                     'title': productseries.title,
                     'potemplates': productseries.currentpotemplates,
-                    'base_url': '/products/%s/+series/%s' %(
+                    'base_url': '/products/%s/%s' %(
                         self.context.name,
                         productseries.name)
                     }
@@ -476,11 +482,11 @@ class ProductSeriesAddView(AddView):
         """Handle a request to create a new series for this product."""
         # Ensure series name is lowercase
         self.series = self.context.newSeries(
-            data["name"], data["displayname"], data["summary"])
+            data["owner"], data["name"], data["summary"])
 
     def nextURL(self):
         assert self.series
-        return '+series/%s' % self.series.name
+        return self.series.name
 
 
 class ProductRdfView(object):
@@ -566,19 +572,10 @@ class ProductAddView(AddView):
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        fields = ["name",
-                  "displayname",
-                  "title",
-                  "summary",
-                  "description",
-                  "project",
-                  "homepageurl",
-                  "sourceforgeproject",
-                  "freshmeatproject",
-                  "wikiurl",
-                  "screenshotsurl",
-                  "downloadurl",
-                  "programminglang"]
+        fields = ["name", "displayname", "title", "summary", "description",
+                  "project", "homepageurl", "sourceforgeproject",
+                  "freshmeatproject", "wikiurl", "screenshotsurl",
+                  "downloadurl", "programminglang"]
         owner = IPerson(request.principal, None)
         if self.isVCSImport(owner):
             # vcs-imports members get it easy and are able to change this
@@ -615,20 +612,20 @@ class ProductAddView(AddView):
             reviewed = False
         productset = getUtility(IProductSet)
         product = productset.createProduct(owner=owner,
-                                           reviewed=reviewed,
-                                           name=data.get("name"),
-                                           displayname=data.get("displayname"),
-                                           title=data.get("title"),
-                                           summary=data.get("summary"),
-                                           description=data.get("description"),
-                                           project=data.get("project"),
-                                           homepageurl=data.get("homepageurl"),
-                                           screenshotsurl=data.get("screenshotsurl"),
-                                           wikiurl=data.get("wikiurl"),
-                                           downloadurl=data.get("downloadurl"),
-                                           freshmeatproject=data.get("freshmeatproject"),
-                                           sourceforgeproject=data.get("sourceforgeproject"))
+            reviewed=reviewed, name=data.get("name"),
+            displayname=data.get("displayname"), title=data.get("title"),
+            summary=data.get("summary"), description=data.get("description"),
+            project=data.get("project"), homepageurl=data.get("homepageurl"),
+            screenshotsurl=data.get("screenshotsurl"),
+            wikiurl=data.get("wikiurl"), downloadurl=data.get("downloadurl"),
+            freshmeatproject=data.get("freshmeatproject"),
+            sourceforgeproject=data.get("sourceforgeproject"))
         notify(ObjectCreatedEvent(product))
+        trunk = product.newSeries(owner, 'trunk', 'The "trunk" series '
+            'represents the primary line of development rather than '
+            'a stable release branch. This is sometimes also called MAIN '
+            'or HEAD.')
+        notify(ObjectCreatedEvent(trunk))
         self._nextURL = data['name']
         return product
 

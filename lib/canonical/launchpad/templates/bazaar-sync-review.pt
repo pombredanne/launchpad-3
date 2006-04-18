@@ -50,7 +50,7 @@
                   <tal:block repeat="series multipleseries">
                     <dt tal:condition="series/needsSyncReview">
                       <dfn><a
-                        tal:attributes="href string:/products/${product/name}/+series/${series/name}/+sourceadmin"
+                        tal:attributes="href string:/products/${product/name}/${series/name}/+sourceadmin"
                         tal:content="series/name"
                       >series</a></dfn>
                     </dt>
