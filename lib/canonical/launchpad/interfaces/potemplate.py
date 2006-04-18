@@ -329,13 +329,13 @@ class IPOTemplateSubset(Interface):
     def getPOTemplateByName(name):
         """Return the IPOTemplate with the given name or None.
 
-        The IPOTemplate is restricted to this concret IPOTemplateSubset.
+        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
         """
 
     def getPOTemplateByTranslationDomain(translation_domain):
         """Return the IPOTemplate with the given translation_domain or None.
 
-        The IPOTemplate is restricted to this concret IPOTemplateSubset.
+        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
         """
 
     def getPOTemplateByPath(path):

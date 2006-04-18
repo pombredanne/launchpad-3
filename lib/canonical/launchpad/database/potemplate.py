@@ -621,8 +621,7 @@ class POTemplateSubset:
         self.orderby = []
 
         assert productseries is None or distrorelease is None, (
-            'A product release must not be used with a source package name or'
-            ' a distro release.')
+            'A product series must not be used with a distro release.')
 
         assert productseries is not None or distrorelease is not None, (
             'Either productseries or distrorelease must be not None.')
@@ -693,19 +692,19 @@ class POTemplateSubset:
     def getPOTemplateByName(self, name):
         """See IPOTemplateSubset."""
         queries = [self.query]
-        clausetables = self.clausetables
+        clausetables = list(self.clausetables)
 
         queries.append('POTemplate.potemplatename = POTemplateName.id')
         queries.append('POTemplateName.name = %s' % sqlvalues(name))
         clausetables.append('POTemplateName')
 
         return POTemplate.selectOne(' AND '.join(queries),
-            clauseTables=self.clausetables)
+            clauseTables=clausetables)
 
     def getPOTemplateByTranslationDomain(self, translation_domain):
         """See IPOTemplateSubset."""
         queries = [self.query]
-        clausetables = self.clausetables
+        clausetables = list(self.clausetables)
 
         queries.append('POTemplate.potemplatename = POTemplateName.id')
         queries.append('POTemplateName.translationdomain = %s' %
@@ -713,7 +712,7 @@ class POTemplateSubset:
         clausetables.append('POTemplateName')
 
         return POTemplate.selectOne(' AND '.join(queries),
-            clauseTables=self.clausetables)
+            clauseTables=clausetables)
 
     def getPOTemplateByPath(self, path):
         """See IPOTemplateSubset."""
