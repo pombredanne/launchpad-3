@@ -462,7 +462,7 @@ cannot edit upstream tasks.
     >>> upstream_task.transitionToStatus(STATUS_CONFIRMED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
 Let's login and try again.
 
@@ -479,12 +479,12 @@ is not marked private. So, as an anonymous user, we can edit anything:
     >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
-    >>> distro_release_task.assignee = sample_person
+    >>> distro_release_task.transitionToAssignee(sample_person)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'assignee', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToAssignee', 'launchpad.Edit')
 
 But once authenticated:
 
@@ -493,7 +493,7 @@ But once authenticated:
 We can edit the task:
 
     >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
-    >>> distro_release_task.assignee = sample_person
+    >>> distro_release_task.transitionToAssignee(sample_person)
 
 Null Bug Tasks
 --------------
@@ -633,7 +633,7 @@ properties of the bugtask.
     ...     BugTaskStatus.FIXCOMMITTED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
 The private bugs will be invisible to No Privileges Person in the search
 results:

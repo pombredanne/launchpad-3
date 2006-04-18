@@ -119,11 +119,12 @@ class BugTaskAssigneeWidget(Widget):
 
     def applyChanges(self, content):
         """See zope.app.form.interfaces.IInputWidget."""
-        field = self.context
-        value = self.getInputValue()
+        assignee_field = self.context
+        bugtask = assignee_field.context
+        new_assignee = self.getInputValue()
 
-        if field.query(content, self) != value:
-            field.set(content, value)
+        if bugtask.assignee != new_assignee:
+            bugtask.transitionToAssignee(new_assignee)
             return True
         else:
             return False

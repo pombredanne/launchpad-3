@@ -52,7 +52,7 @@
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
                             distrorelease milestone statusexplanation
-                            priority severity assignee binarypackagename
+                            priority severity binarypackagename
                             bugwatch dateassigned datecreated age owner
                             targetname title related_tasks statusdisplayhtml
                             statuselsewhere setStatusFromDebbugs

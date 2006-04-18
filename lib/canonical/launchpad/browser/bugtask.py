@@ -563,15 +563,17 @@ class BugTaskEditView(GeneralFormView):
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
         field_names_to_apply = list(field_names)
-        field_names_to_apply.remove("assignee")
-        field_names_to_apply.remove("status")
+        if "assignee" in field_names_to_apply:
+            field_names_to_apply.remove("assignee")
+        if "status" in field_names_to_apply:
+            field_names_to_apply.remove("status")
 
         changed = applyWidgetsChanges(
             self, self.schema, target=bugtask,
             names=field_names_to_apply)
 
-        new_status = new_values.pop("status")
-        new_assignee = new_values.pop("assignee")
+        new_status = new_values.pop("status", None)
+        new_assignee = new_values.pop("assignee", None)
         # Set the "changed" flag properly, just in case status and/or
         # assignee happen to be the only values that changed.
         if ((bugtask.status != new_status) or

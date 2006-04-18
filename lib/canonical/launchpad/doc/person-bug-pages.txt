@@ -89,7 +89,7 @@ Let's first close a bug setting its status to 'Rejected'.
     >>> login("foo.bar@canonical.com")
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> reported_bugtasks[0].status = BugTaskStatus.REJECTED
+    >>> reported_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
     >>> flush_database_updates()
 
 And now we query for it.
