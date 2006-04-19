@@ -449,8 +449,8 @@ def get_bug_edit_notification_texts(bug_delta):
                     added_bugtask.targetname)
                 change_info += u"   %s\n" % added_bugtask.bugwatch.url
             else:
-                change_info = u"** Also affects: %s\n" %
-                    added_bugtask.targetname
+                change_info = u"** Also affects: %s\n" % (
+                    added_bugtask.targetname)
             change_info += u"%13s: %s\n" % (u"Importance",
                 added_bugtask.importance.title)
             if added_bugtask.assignee:
