@@ -617,17 +617,18 @@ class POTemplateSubset:
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
         self.productseries = productseries
+        self.clausetables = []
+        self.orderby = []
 
-        if (productseries is not None and (distrorelease is not None or
-            sourcepackagename is not None or
-            from_sourcepackagename is not None)):
-            raise AssertionError('A product release must not be used with a'
-                                 ' source package name or a distro release.')
-        elif productseries is not None:
+        assert productseries is None or distrorelease is None, (
+            'A product series must not be used with a distro release.')
+
+        assert productseries is not None or distrorelease is not None, (
+            'Either productseries or distrorelease must be not None.')
+
+        if productseries is not None:
             self.query = ('POTemplate.productseries = %s' %
                 sqlvalues(productseries.id))
-            self.orderby = None
-            self.clausetables = None
         elif distrorelease is not None and from_sourcepackagename is not None:
             self.query = ('POTemplate.from_sourcepackagename = %s AND'
                           ' POTemplate.distrorelease = %s ' %
@@ -638,17 +639,12 @@ class POTemplateSubset:
             self.query = ('POTemplate.sourcepackagename = %s AND'
                           ' POTemplate.distrorelease = %s ' %
                             sqlvalues(sourcepackagename.id, distrorelease.id))
-            self.orderby = None
-            self.clausetables = None
-        elif distrorelease is not None:
+        else:
             self.query = (
                 'POTemplate.distrorelease = DistroRelease.id AND'
                 ' DistroRelease.id = %s' % sqlvalues(distrorelease.id))
-            self.orderby = 'DistroRelease.name'
-            self.clausetables = ['DistroRelease']
-        else:
-            raise AssertionError(
-                'You need to specify the kind of subset you want.')
+            self.orderby.append('DistroRelease.name')
+            self.clausetables.append('DistroRelease')
 
     def __iter__(self):
         """See IPOTemplateSubset."""
@@ -695,14 +691,28 @@ class POTemplateSubset:
 
     def getPOTemplateByName(self, name):
         """See IPOTemplateSubset."""
-        try:
-            ptn = POTemplateName.byName(name)
-        except SQLObjectNotFound:
-            return None
+        queries = [self.query]
+        clausetables = list(self.clausetables)
 
-        query = '%s AND POTemplate.potemplatename = %d' % (self.query, ptn.id)
+        queries.append('POTemplate.potemplatename = POTemplateName.id')
+        queries.append('POTemplateName.name = %s' % sqlvalues(name))
+        clausetables.append('POTemplateName')
 
-        return POTemplate.selectOne(query, clauseTables=self.clausetables)
+        return POTemplate.selectOne(' AND '.join(queries),
+            clauseTables=clausetables)
+
+    def getPOTemplateByTranslationDomain(self, translation_domain):
+        """See IPOTemplateSubset."""
+        queries = [self.query]
+        clausetables = list(self.clausetables)
+
+        queries.append('POTemplate.potemplatename = POTemplateName.id')
+        queries.append('POTemplateName.translationdomain = %s' %
+            sqlvalues(translation_domain))
+        clausetables.append('POTemplateName')
+
+        return POTemplate.selectOne(' AND '.join(queries),
+            clauseTables=clausetables)
 
     def getPOTemplateByPath(self, path):
         """See IPOTemplateSubset."""
