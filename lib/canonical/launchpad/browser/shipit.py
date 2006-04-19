@@ -79,6 +79,17 @@ class ShipItUnauthorizedView(SystemErrorView):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
+    possible_origins = {
+        ShipItFlavour.UBUNTU: 'shipit-ubuntu',
+        ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
+        ShipItFlavour.EDUBUNTU: 'shipit-edubuntu'}
+        
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.flavour = _get_flavour_from_layer(request)
+        self.origin = self.possible_origins[self.flavour]
+
     def getApplicationURL(self):
         return 'https://launchpad.net'
 
@@ -105,6 +116,22 @@ class ShipItLoginView(LoginOrRegister):
             self.request.response.redirect('myrequest')
 
 
+def _get_flavour_from_layer(request):
+    """Check what ShipIt Layer the given request provides and return the
+    ShipItFlavour corresponding to that layer.
+    """
+    if ShipItUbuntuLayer.providedBy(request):
+        return ShipItFlavour.UBUNTU
+    elif ShipItEdUbuntuLayer.providedBy(request):
+        return ShipItFlavour.EDUBUNTU
+    elif ShipItKUbuntuLayer.providedBy(request):
+        return ShipItFlavour.KUBUNTU
+    else:
+        raise AssertionError(
+            'This request must provide one of ShipItEdUbuntuLayer, '
+            'ShipItKUbuntuLayer or ShipItUbuntuLayer')
+
+
 class ShipItRequestView(GeneralFormView):
     """The view for people to create/edit ShipIt requests."""
 
@@ -123,22 +150,16 @@ The comment left by the user:
 
     %(reason)s
 """
+    
+    from_email_addresses = {
+        ShipItFlavour.UBUNTU: config.shipit.shipit_ubuntu_from_email,
+        ShipItFlavour.EDUBUNTU: config.shipit.shipit_edubuntu_from_email,
+        ShipItFlavour.KUBUNTU: config.shipit.shipit_kubuntu_from_email}
 
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
-        if ShipItUbuntuLayer.providedBy(request):
-            self.flavour = ShipItFlavour.UBUNTU
-            self.from_email_address = config.shipit.shipit_ubuntu_from_email
-        elif ShipItEdUbuntuLayer.providedBy(request):
-            self.flavour = ShipItFlavour.EDUBUNTU
-            self.from_email_address = config.shipit.shipit_edubuntu_from_email
-        elif ShipItKUbuntuLayer.providedBy(request):
-            self.flavour = ShipItFlavour.KUBUNTU
-            self.from_email_address = config.shipit.shipit_kubuntu_from_email
-        else:
-            raise AssertionError(
-                'This request must provide one of ShipItEdUbuntuLayer, '
-                'ShipItKUbuntuLayer or ShipItUbuntuLayer')
+        self.flavour = _get_flavour_from_layer(request)
+        self.from_email_address = self.from_email_addresses[self.flavour]
 
     @property
     def initial_values(self):
@@ -245,7 +266,9 @@ The comment left by the user:
         else:
             # Nothing to do
             pass
-        return 'Done'
+        return (
+            'Request accepted. Please note that requests usually take from '
+            '4 to 6 weeks to deliver, depending on the country of shipping.')
 
     def validate(self, data):
         errors = []
@@ -442,6 +465,9 @@ class ShippingRequestApproveOrDenyView(
                 quantities[flavour] = {}
                 for arch in self.quantity_fields_mapping[flavour]:
                     field_name = self.quantity_fields_mapping[flavour][arch]
+                    if field_name is None:
+                        # We don't ship this arch for this flavour
+                        continue
                     quantities[flavour][arch] = kw[field_name]
 
         if action == 'Approve':
@@ -481,6 +507,9 @@ class ShippingRequestApproveOrDenyView(
         for flavour in self.quantity_fields_mapping:
             for arch in self.quantity_fields_mapping[flavour]:
                 field_name = self.quantity_fields_mapping[flavour][arch]
+                if field_name is None:
+                    # We don't ship this arch for this flavour
+                    continue
                 requested_cds = requested[flavour][arch]
                 initial[field_name] = requested_cds.quantityapproved
         return initial
@@ -544,6 +573,9 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         for flavour in self.quantity_fields_mapping:
             for arch in self.quantity_fields_mapping[flavour]:
                 field_name = self.quantity_fields_mapping[flavour][arch]
+                if field_name is None:
+                    # We don't ship this arch for this flavour
+                    continue
                 requested_cds = requested[flavour][arch]
                 initial[field_name] = requested_cds.quantityapproved
 
@@ -580,8 +612,11 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         for flavour in self.quantity_fields_mapping:
             quantities[flavour] = {}
             for arch in self.quantity_fields_mapping[flavour]:
-                field = self.quantity_fields_mapping[flavour][arch]
-                quantities[flavour][arch] = kw[field]
+                field_name = self.quantity_fields_mapping[flavour][arch]
+                if field_name is None:
+                    # We don't ship this arch for this flavour
+                    continue
+                quantities[flavour][arch] = kw[field_name]
 
         current_order.highpriority = kw['highpriority']
         current_order.setQuantities(quantities)

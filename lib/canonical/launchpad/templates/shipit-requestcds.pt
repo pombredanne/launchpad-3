@@ -24,12 +24,7 @@
     </div>
 
     <tal:current_request condition="view/current_order">
-      <p class="informational message">
-        This request hasn't been shipped yet. You can change it now, if you
-        want, and these changes will be applied before it's shipped.
-      </p>
-
-      <h2>Request Details</h2>
+      <h2>Current Request Details</h2>
       <ul>
         <tal:block repeat="requested_cds view/current_order/getAllRequestedCDs">
           <li tal:condition="requested_cds/quantity">
@@ -49,7 +44,7 @@
     </tal:current_request>
 
     <tal:pastrequests condition="view/user/pastShipItRequests">
-      <h1>Your previous requests</h1>
+      <h1>Shipped/Cancelled requests</h1>
 
       <ul>
         <li tal:repeat="pastorder view/user/pastShipItRequests">

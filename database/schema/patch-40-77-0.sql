@@ -1,9 +1,13 @@
 SET client_min_messages=ERROR;
 
+-- XXX: This patch will require lots of data migration!
+
 --ALTER TABLE ShippingRequest DROP COLUMN approved;
 --ALTER TABLE ShippingRequest DROP COLUMN whoapproved;
 
 --ALTER TABLE RequestedCDs DROP COLUMN quantityapproved;
+
+ALTER TABLE RequestedCDs ALTER COLUMN quantityapproved SET NOT NULL;
 
 ALTER TABLE StandardShipItRequest ADD COLUMN flavour integer;
 ALTER TABLE StandardShipItRequest DROP COLUMN description;

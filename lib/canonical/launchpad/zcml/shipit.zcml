@@ -120,15 +120,6 @@
         template="../templates/shipit-index.pt"
         lp:url="/shipit/+index" />
 
-    <!--
-    <browser:page
-        for="canonical.launchpad.interfaces.IShipItApplication"
-        template="../templates/shipit-myrequest.pt"
-        class="canonical.launchpad.browser.ShipItRequestView"
-        permission="launchpad.AnyPerson"
-        name="myrequest" />
-    -->
-
     <browser:generalform
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItRequestView"

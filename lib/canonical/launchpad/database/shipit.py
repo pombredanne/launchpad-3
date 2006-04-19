@@ -118,10 +118,6 @@ class ShippingRequest(SQLBase):
 
     def _getRequestedCDsByFlavourAndArch(self, flavour, arch):
         query = AND(RequestedCDs.q.requestID==self.id,
-                    # XXX: Do I need this clause here? I think I should assert
-                    # somewhere else that a given ShippingRequest can only
-                    # have RequestedCDs for one distrorelease.
-                    RequestedCDs.q.distrorelease==CURRENT_SHIPIT_DISTRO_RELEASE,
                     RequestedCDs.q.flavour==flavour,
                     RequestedCDs.q.architecture==arch)
         return RequestedCDs.selectOne(query)
@@ -256,8 +252,8 @@ class ShippingRequestSet:
         # architectures so we don't need to bother about creating them later.
         for flavour in ShipItFlavour.items:
             for arch in ShipItArchitecture.items:
-                RequestedCDs(request=request, flavour=flavour, 
-                             architecture=arch, quantity=0)
+                RequestedCDs(
+                    request=request, flavour=flavour, architecture=arch)
 
         return request
 
@@ -639,8 +635,8 @@ class RequestedCDs(SQLBase):
 
     implements(IRequestedCDs)
 
-    quantity = IntCol(notNull=True)
-    quantityapproved = IntCol(default=None)
+    quantity = IntCol(notNull=True, default=0)
+    quantityapproved = IntCol(notNull=True, default=0)
 
     request = ForeignKey(
         dbName='request', foreignKey='ShippingRequest', notNull=True)

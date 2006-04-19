@@ -19,7 +19,8 @@ from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, SHIPIT_URL)
+    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, SHIPIT_EDUBUNTU_URL,
+    SHIPIT_KUBUNTU_URL, SHIPIT_UBUNTU_URL)
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -108,6 +109,12 @@ class LoginOrRegister:
     submitted = False
     email = None
 
+    registered_origins = {
+        'shipit-ubuntu': SHIPIT_UBUNTU_URL,
+        'shipit-edubuntu': SHIPIT_EDUBUNTU_URL,
+        'shipit-kubuntu': SHIPIT_KUBUNTU_URL,
+        'ubuntuwiki': UBUNTU_WIKI_URL}
+
     def process_form(self):
         """Determines whether this is the login form or the register
         form, and delegates to the appropriate function.
@@ -139,15 +146,14 @@ class LoginOrRegister:
         """
         request = self.request
         origin = request.get('origin')
-        if origin == 'ubuntuwiki':
-            return UBUNTU_WIKI_URL
-        elif origin == 'shipit':
-            return SHIPIT_URL
-        else:
+        try:
+            return self.registered_origins[origin]
+        except KeyError:
             referrer = request.getHeader('Referer')
             if referrer:
-                for url in (request.getApplicationURL(), UBUNTU_WIKI_URL,
-                            SHIPIT_URL):
+                redirectable_referrers = self.registered_origins.values()
+                redirectable_referrers.append(request.getApplicationURL())
+                for url in redirectable_referrers:
                     if referrer.startswith(url):
                         return referrer
             return None

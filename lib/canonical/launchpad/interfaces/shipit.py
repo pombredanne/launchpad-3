@@ -3,7 +3,8 @@
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
            'ShippingRequestStatus', 'IShipment', 'IShippingRun',
-           'IShipItCountry', 'IShippingRunSet', 'IShipmentSet', 'SHIPIT_URL',
+           'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
+           'SHIPIT_UBUNTU_URL', 'SHIPIT_EDUBUNTU_URL', 'SHIPIT_KUBUNTU_URL',
            'ShippingRequestPriority', 'IShipItReport', 'IShipItReportSet',
            'CURRENT_SHIPIT_DISTRO_RELEASE', 'IShippingRequestAdmin',
            'IShippingRequestEdit']
@@ -22,8 +23,10 @@ from canonical.launchpad.interfaces.validation import (
 
 from canonical.launchpad import _
 
-SHIPIT_URL = 'https://shipit.ubuntu.com'
-CURRENT_SHIPIT_DISTRO_RELEASE = ShipItDistroRelease.BREEZY
+SHIPIT_UBUNTU_URL = 'https://shipit.ubuntu.com'
+SHIPIT_KUBUNTU_URL = 'https://shipit.kubuntu.com'
+SHIPIT_EDUBUNTU_URL = 'https://shipit.edubuntu.com'
+CURRENT_SHIPIT_DISTRO_RELEASE = ShipItDistroRelease.DAPPER
 
 
 def _valid_positive_int(value):
@@ -367,21 +370,21 @@ class IStandardShipItRequest(Interface):
 
     id = Int(title=_('The unique ID'), required=True, readonly=True)
 
-    flavour = Choice(title=_('Distro Flavour'), required=True, readonly=False,
-                     vocabulary='ShipItFlavour')
+    flavour = Choice(title=_('Distribution Flavour'), required=True,
+                     readonly=False, vocabulary='ShipItFlavour')
     quantityx86 = Int(
-        title=_('Intel/x86 CDs'), required=True, readonly=False,
-        description=_('Number of Intel/x86 CDs in this request.'),
+        title=_('PC CDs'), required=True, readonly=False,
+        description=_('Number of PC CDs in this request.'),
         constraint=_valid_positive_int)
 
     quantityppc = Int(
-        title=_('PowerPC CDs'), required=True, readonly=False,
-        description=_('Number of PowerPC CDs in this request.'),
+        title=_('Mac CDs'), required=True, readonly=False,
+        description=_('Number of Mac CDs in this request.'),
         constraint=_valid_positive_int)
 
     quantityamd64 = Int(
-        title=_('AMD64 CDs'), required=True, readonly=False,
-        description=_('Number of AMD64 CDs in this request.'),
+        title=_('64-bit PC CDs'), required=True, readonly=False,
+        description=_('Number of 64-bit PC CDs in this request.'),
         constraint=_valid_positive_int)
 
     isdefault = Bool(
