@@ -95,19 +95,19 @@ class IBugTask(IHasDateCreated, IHasBug):
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
         "the status of this bug task in Malone."))
-    dateassigned = Datetime(
+    date_assigned = Datetime(
         title=_("Date Assigned"),
         description=_("The date on which this task was assigned to someone."))
     datecreated = Datetime(
         title=_("Date Created"),
         description=_("The date on which this task was created."))
-    dateconfirmed = Datetime(
+    date_confirmed = Datetime(
         title=_("Date Confirmed"),
         description=_("The date on which this task was marked Confirmed."))
-    dateinprogress = Datetime(
+    date_inprogress = Datetime(
         title=_("Date In Progress"),
         description=_("The date on which this task was marked In Progress."))
-    dateclosed = Datetime(
+    date_closed = Datetime(
         title=_("Date Closed"),
         description=_(
             "The date on which this task was marked either Fix Committed or "

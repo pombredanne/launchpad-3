@@ -113,11 +113,11 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
-    dateassigned = UtcDateTimeCol(notNull=False, default=None)
+    date_assigned = UtcDateTimeCol(notNull=False, default=None)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    dateconfirmed = UtcDateTimeCol(notNull=False, default=None)
-    dateinprogress = UtcDateTimeCol(notNull=False, default=None)
-    dateclosed = UtcDateTimeCol(notNull=False, default=None)
+    date_confirmed = UtcDateTimeCol(notNull=False, default=None)
+    date_inprogress = UtcDateTimeCol(notNull=False, default=None)
+    date_closed = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     # The targetnamecache is a value that is only supposed to be set when a
     # bugtask is created/modified or by the update-bugtask-targetnamecaches
@@ -219,17 +219,17 @@ class BugTask(SQLBase, BugTaskMixin):
             # confirmed date at the same time anyway, otherwise we get
             # a strange gap in our data, and potentially misleading
             # reports.
-            self.dateconfirmed = now
+            self.date_confirmed = now
 
         if ((self.status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
             (new_status.value >= dbschema.BugTaskStatus.INPROGRESS.value)):
             # Same idea with In Progress as the comment above about
             # Confirmed.
-            self.dateinprogress = now
+            self.date_inprogress = now
 
         if ((self.status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
-            self.dateclosed = now
+            self.date_closed = now
 
         # Ensure that we don't have dates recorded for state
         # transitions, if the bugtask has regressed to an earlier
@@ -237,13 +237,13 @@ class BugTask(SQLBase, BugTaskMixin):
         # bugtask that went Unconfirmed => Confirmed => Unconfirmed
         # has a dateconfirmed value of None.
         if new_status in UNRESOLVED_BUGTASK_STATUSES:
-            self.dateclosed = None
+            self.date_closed = None
 
         if new_status < dbschema.BugTaskStatus.CONFIRMED:
-            self.dateconfirmed = None
+            self.date_confirmed = None
 
         if new_status < dbschema.BugTaskStatus.INPROGRESS:
-            self.dateinprogress = None
+            self.date_inprogress = None
 
         self.status = new_status
 
@@ -257,11 +257,11 @@ class BugTask(SQLBase, BugTaskMixin):
         if self.assignee and not assignee:
             # The assignee is being cleared, so clear the dateassigned
             # value.
-            self.dateassigned = None
+            self.date_assigned = None
         if not self.assignee and assignee:
             # The task is going from not having an assignee to having
             # one, so record when this happened
-            self.dateassigned = now
+            self.date_assigned = now
 
         self.assignee = assignee
 

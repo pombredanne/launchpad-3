@@ -33,8 +33,8 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <allow attributes="id bug bugID target dateassigned datecreated
-                           dateconfirmed dateinprogress dateclosed" />
+        <allow attributes="id bug bugID target date_assigned datecreated
+                           date_confirmed date_inprogress date_closed" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
@@ -53,8 +53,8 @@
             set_attributes="product sourcepackagename distribution
                             distrorelease milestone statusexplanation
                             priority severity binarypackagename
-                            bugwatch dateassigned datecreated age owner
-                            targetname title related_tasks statusdisplayhtml
+                            bugwatch datecreated age owner targetname
+                            title related_tasks statusdisplayhtml
                             statuselsewhere setStatusFromDebbugs
                             setSeverityFromDebbugs" />
     </content>
