@@ -78,7 +78,7 @@ We can filter our search results by reporter
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.owner': 'name12',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
@@ -95,7 +95,7 @@ But if we query for an invalid person, the view displays a nice error message
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.owner': 'invalid-reporter',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
@@ -109,7 +109,7 @@ The same if we try with an invalid assignee
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.assignee': 'invalid-assignee',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
@@ -183,7 +183,7 @@ The simple search form returns only open bugtasks.
     >>> form_values = {
     ...     'search': 'Search',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> mozilla_search_listingview = create_view(
     ...     mozilla, "+bugs", form_values)
@@ -208,7 +208,7 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'advanced': 1,
     ...     'field.status': 'Rejected', 
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> mozilla_search_listingview = create_view(mozilla, '+bugs', form_values)
     >>> rejected_bugtasks = list(mozilla_search_listingview.search().batch)

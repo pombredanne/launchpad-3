@@ -235,7 +235,8 @@ to notice:
  * A Launchpad account is created for new.user@canonical.com as a side
    effect of the import, because they are subscribed to the bug.
  * The "RESOLVED WONTFIX" status is converted to a status of REJECTED
-   and a priority of WONTFIX
+   and a priority of WONTFIX. # XXX mpt 20060418: priority is hidden, but may
+   be reinstated. https://wiki.launchpad.canonical.com/MaloneSimplifications
  * An fact that the "unknown" package does not exist in Ubuntu has
    been logged, along with the exception raised by getPackageNames().
 

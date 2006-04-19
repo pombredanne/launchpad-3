@@ -84,6 +84,9 @@ If the value is None, a dash is displayed:
     >>> print priority_widget()
     <span>&mdash;</span>
 
+XXX mpt 20060418: priority is hidden but may be reinstated.
+https://wiki.launchpad.canonical.com/MaloneSimplifications
+
 We can set a specific value to be displayed using setRenderedValue():
 
     >>> from canonical.lp.dbschema import BugTaskStatus

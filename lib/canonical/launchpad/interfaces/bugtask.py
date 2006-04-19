@@ -77,6 +77,8 @@ class IBugTask(IHasDateCreated, IHasBug):
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     priority = Choice(
         title=_('Priority'), vocabulary='BugTaskPriority', required=False)
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
         default=dbschema.BugTaskImportance.UNTRIAGED)
@@ -151,7 +153,7 @@ class IBugTask(IHasDateCreated, IHasBug):
 
         For an upstream task, this value might look like:
 
-          product=firefox; status=New; priority=None; assignee=None;
+          product=firefox; status=New; assignee=None;
 
         See doc/bugmail-headers.txt for a complete explanation and more
         examples.
@@ -192,6 +194,8 @@ class IBugTaskSearch(Interface):
         title=_('Priority'),
         value_type=IBugTask['priority'],
         required=False)
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     owner = Choice(
@@ -275,6 +279,8 @@ class IBugTaskDelta(Interface):
         {'old' : BugTaskPriority.FOO, 'new' : BugTaskPriority.BAR}, or None,
         if no change was made to the priority.
         """)
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
     importance = Attribute(
         """The change made to the importance of this task.
 
@@ -386,6 +392,8 @@ class BugTaskSearchParams:
         self.searchtext = searchtext
         self.status = status
         self.priority = priority
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
         self.importance = importance
         self.milestone = milestone
         self.assignee = assignee
@@ -473,6 +481,8 @@ class IBugTaskSet(Interface):
 
         Exactly one of product, distribution or distrorelease must be provided.
         """
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
 
     def maintainedBugTasks(person, minimportance=None, minpriority=None,
                            showclosed=None, orderby=None, user=None):
@@ -495,6 +505,8 @@ class IBugTaskSet(Interface):
         bugtask of a private bug for which the user is not subscribed. If
         <user> is None, no private bugtasks will be returned.
         """
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
 
     # XXX: get rid of this kludge when we have proper security for
     # scripts   -- kiko, 2006-03-23

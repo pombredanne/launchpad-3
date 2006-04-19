@@ -33,7 +33,7 @@ canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
 Using the advanced form we can query for closed bugs.
 
     >>> form = {
-    ...     'orderby': u'-priority', 
+    ...     'orderby': u'-importance', 
     ...     'advanced': 1,
     ...     'search': 'Search',
     ...     'field.status': 'Fix Released'}
@@ -66,7 +66,7 @@ But the advanced search allows us to query only the bug tasks that aren't
 assigned.
 
     >>> form = {
-    ...     'orderby': u'-priority', 'assignee_option': 'none',
+    ...     'orderby': u'-importance', 'assignee_option': 'none',
     ...     'field.assignee': '', 'advanced': 1,
     ...     'search': 'Search'}
     >>> reported_bugtasks_view = create_view(name16, '+reportedbugs', form)
@@ -100,7 +100,7 @@ Let's first close a bug setting its status to 'Rejected'.
 And now we query for it.
 
     >>> form = {
-    ...     'orderby': u'-priority', 
+    ...     'orderby': u'-importance', 
     ...     'assignee_option': 'none',
     ...     'field.assignee': '', 
     ...     'advanced': 1,
@@ -135,7 +135,7 @@ with any importance.
 Using the advanced form we can query for closed bugs someone is subscribed to. 
 
     >>> form = {
-    ...     'orderby': u'-priority', 
+    ...     'orderby': u'-importance', 
     ...     'assignee_option': 'any',
     ...     'field.assignee': '', 
     ...     'advanced': 1,

@@ -100,6 +100,8 @@ class BugTask(SQLBase, BugTaskMixin):
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = dbschema.EnumCol(
         dbName='priority', notNull=False, schema=dbschema.BugTaskPriority, default=None)
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
     importance = dbschema.EnumCol(
         dbName='importance', notNull=True,
         schema=dbschema.BugTaskImportance,
@@ -214,6 +216,8 @@ class BugTask(SQLBase, BugTaskMixin):
             assignee_value = 'None'
 
         # Calculate an appropriate display value for the priority.
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
         if self.priority:
             priority_value = self.priority.title
         else:
@@ -262,10 +266,9 @@ class BugTask(SQLBase, BugTaskMixin):
                  'componentname': component})
 
         header_value += ((
-            ' status=%(status)s; priority=%(priority)s; '
+            ' status=%(status)s; '
             'assignee=%(assignee)s;') %
             {'status': self.status.title,
-             'priority': priority_value,
              'assignee': assignee_value})
 
         return header_value
@@ -307,6 +310,8 @@ class BugTaskSet:
         "milestone": "BugTask.milestone",
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated"}
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
 
     title = "A set of bug tasks"
 
@@ -328,6 +333,8 @@ class BugTaskSet:
 
         # These arguments can be processed in a loop without any other
         # special handling.
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
         standard_args = {
             'bug': params.bug,
             'status': params.status,
@@ -481,6 +488,8 @@ class BugTaskSet:
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
         if product:
             assert distribution is None, (
                 "Can't pass both distribution and product.")
@@ -548,6 +557,8 @@ class BugTaskSet:
             committed = dbschema.BugTaskStatus.FIXCOMMITTED
             filters.append('BugTask.status < %s' % sqlvalues(committed))
 
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
         if minpriority is not None:
             filters.append('BugTask.priority >= %s' % sqlvalues(minpriority))
         if minimportance is not None:

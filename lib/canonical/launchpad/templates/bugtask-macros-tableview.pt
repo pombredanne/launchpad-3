@@ -80,10 +80,6 @@
         tal:attributes="class python:view.getSortClass('importance')">
       <a href="#" tal:attributes="href python:view.getSortLink('importance')">Importance</a>
     </th>
-    <th tal:condition="python:'priority' in listing_columns"
-        tal:attributes="class python:view.getSortClass('priority')">
-      <a href="#" tal:attributes="href python:view.getSortLink('priority')">Priority</a>
-    </th>
     <th tal:condition="python:'assignedto' in listing_columns"
         tal:attributes="class python:view.getSortClass('assignee')">
       <a href="#" tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
@@ -129,9 +125,6 @@
     </th>
     <th tal:condition="python:'importance' in listing_columns">
       Importance
-    </th>
-    <th tal:condition="python:'priority' in listing_columns">
-      Priority
     </th>
     <th tal:condition="python:'assignedto' in listing_columns">
       Assignee
@@ -196,16 +189,6 @@
       tal:attributes="class string:importance${task/importance/title}">
       Medium
   </td>
-  <tal:priority condition="python:'priority' in listing_columns">
-    <td tal:condition="task/priority"
-        tal:content="task/priority/title"
-        tal:attributes="class string:priority${task/priority/title}">
-      High
-    </td>
-    <td tal:condition="not:task/priority">
-      &mdash;
-    </td>
-  </tal:priority>
   <td tal:condition="python:'assignedto' in listing_columns">
     <a tal:condition="task/assignee"
        tal:attributes="href task/assignee/fmt:url"
@@ -318,48 +301,21 @@
                 <table>
                   <tr>
                     <td>
-                      <small><strong>Severity</strong></small>
+                      <small><strong>Importance</strong></small>
                     </td>
                   </tr>
                   <tr>
                     <td>
                       <small>
-                        <span tal:repeat="widget_value view/getSeverityWidgetValues">
-                          <span tal:define="widget_id string:severity.${widget_value/title}">
-                            <input name="field.severity:list"
+                        <span tal:repeat="widget_value view/getImportanceWidgetValues">
+                          <span tal:define="widget_id string:importance.${widget_value/title}">
+                            <input name="field.importance:list"
                                    type="checkbox"
                                    tal:attributes="value widget_value/value;
                                                    checked widget_value/checked;
                                                    id widget_id">
                             <label tal:content="widget_value/title"
                                    tal:attributes="for widget_id">Critical</label>
-                            <br />
-                          </span>
-                        </span>
-                      </small>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-              <td width="20%%">
-                <table>
-                  <tr>
-                    <td>
-                      <small><strong>Priority</strong></small>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      <small>
-                        <span tal:repeat="widget_value view/getPriorityWidgetValues">
-                          <span tal:define="widget_id string:priority.${widget_value/title}">
-                            <input name="field.priority:list"
-                                   type="checkbox"
-                                   tal:attributes="value widget_value/value;
-                                                   checked widget_value/checked;
-                                                   id widget_id">
-                            <label tal:content="widget_value/title"
-                                   tal:attributes="for widget_id">High</label>
                             <br />
                           </span>
                         </span>

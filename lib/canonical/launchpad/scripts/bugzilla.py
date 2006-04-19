@@ -36,6 +36,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugTaskPriority, BugAttachmentType)
+    # XXX mpt 20060418: priority is hidden but may be reinstated.
+    # https://wiki.launchpad.canonical.com/MaloneSimplifications
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -230,6 +232,8 @@ class Bug:
 
     def mapPriority(self, bugtask):
         """Set a Launchpad bug task's priority based on this bug's priority."""
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
         bugtask.priority = {
             'P1': BugTaskPriority.HIGH,
             'P2': BugTaskPriority.MEDIUM,
@@ -247,6 +251,8 @@ class Bug:
 
         If the bug is marked WONTFIX, set the bug task's priority to
         WONTFIX.
+        XXX mpt 20060418: priority is hidden but may be reinstated.
+        https://wiki.launchpad.canonical.com/MaloneSimplifications
 
         Additional information about the bugzilla status is appended
         to the bug task's status explanation.

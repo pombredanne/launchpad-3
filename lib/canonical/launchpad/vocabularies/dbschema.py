@@ -83,6 +83,8 @@ BugTaskStatusVocabulary = vocab_factory(
     dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
 BugTaskPriorityVocabulary = vocab_factory(
     dbschema.BugTaskPriority, noshow=[dbschema.BugTaskPriority.UNKNOWN])
+    # XXX mpt 20060418: priority is hidden but may be reinstated.
+    # https://wiki.launchpad.canonical.com/MaloneSimplifications
 BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)

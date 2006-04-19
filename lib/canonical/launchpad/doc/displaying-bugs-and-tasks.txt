@@ -11,6 +11,8 @@ Displaying an Icon with fmt:icon
 fmt:icon is a TALES adapter that can be used to render an <img> tag
 containing the appropriate icon for a bugtask. Currently, the icon
 display is dependant on the priority of the IBugTask object.
+XXX mpt 20060418: priority is now hidden, so this should be altered
+to use importance instead.
 
 Let's use a few examples to demonstrate:
 

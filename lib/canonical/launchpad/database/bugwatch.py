@@ -16,6 +16,8 @@ from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
 from canonical.lp.dbschema import (
     BugTrackerType, BugTaskPriority, BugTaskImportance)
+    # XXX mpt 20060418: priority is hidden but may be reinstated.
+    # https://wiki.launchpad.canonical.com/MaloneSimplifications
 
 from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
@@ -106,6 +108,8 @@ class BugWatch(SQLBase):
             linked_bugtask.priority = BugTaskPriority.UNKNOWN
             linked_bugtask.importance = BugTaskImportance.UNKNOWN
             linked_bugtask.assignee = None
+            # XXX mpt 20060418: priority is hidden but may be reinstated.
+            # https://wiki.launchpad.canonical.com/MaloneSimplifications
 
 
 class BugWatchSet(BugSetBase):

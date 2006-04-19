@@ -145,7 +145,8 @@ from a bug task.
 
 We don't yet support updating the priority and importance for Bugzilla
 bugs, so let's set them to some bogus value, to see that they get set
-to UNKNOWN.
+to UNKNOWN. XXX mpt 20060418: priority is hidden but may be reinstated.
+https://wiki.launchpad.canonical.com/MaloneSimplifications
 
     >>> from canonical.lp.dbschema import BugTaskPriority, BugTaskImportance
     >>> thunderbird_task.priority = BugTaskPriority.HIGH

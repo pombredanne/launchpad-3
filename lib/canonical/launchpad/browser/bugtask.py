@@ -60,6 +60,8 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.lp.dbschema import (
     BugTaskPriority, BugTaskImportance, BugTaskStatus)
+    # XXX mpt 20060418: priority is hidden but may be reinstated.
+    # https://wiki.launchpad.canonical.com/MaloneSimplifications
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, DBItemDisplayWidget)
 
@@ -569,6 +571,8 @@ class BugTaskEditView(GeneralFormView):
             #     -- Bjorn Tillenius, 2006-03-01
             bugtask.status = BugTaskStatus.UNKNOWN
             bugtask.priority = BugTaskPriority.UNKNOWN
+            # XXX mpt 20060418: priority is hidden but may be reinstated.
+            # https://wiki.launchpad.canonical.com/MaloneSimplifications
             bugtask.importance = BugTaskImportance.UNKNOWN
             bugtask.assignee = None
 
@@ -908,6 +912,8 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def getPriorityWidgetValues(self):
         """Return data used to render the priority checkboxes."""
+        # XXX mpt 20060418: priority is hidden but may be reinstated.
+        # https://wiki.launchpad.canonical.com/MaloneSimplifications
         return self.getWidgetValues(vocabulary_name="BugTaskPriority")
 
     def getImportanceWidgetValues(self):

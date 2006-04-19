@@ -5,7 +5,7 @@ Bugs are problems in software. When a bug gets assigned to a specific
 upstream or distro/sourcepackagename/binarypackagename, a bug /task/ is
 created. In essence, a bug task is a bug that needs to be fixed in a specific
 place. Where a bug has things like a title, comments and subscribers, it's
-the bug task that tracks priority, importance, assignee, etc.
+the bug task that tracks importance, assignee, etc.
 
 Working with Bug Tasks in Launchpad
 ===================================
@@ -41,7 +41,8 @@ to access those other objects:
     >>> bug_one = bugset.get(1)
     >>> sabdfl = personset.get(1)
 
-Next, we need to grab some values to provide for priority, importance, and status.
+Next, we need to grab some values to provide for priority, importance, and status. XXX mpt 20060418: priority is hidden but may be reinstated.
+https://wiki.launchpad.canonical.com/MaloneSimplifications
 
     >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance,
     ...     BugTaskPriority)
@@ -841,7 +842,7 @@ Remote BugTasks
 ---------------
 
 If a bug task's target isn't using Malone officially, we say that it's a remote
-bug task. Such bug tasks let the status, priority and importance be UNKNOWN.
+bug task. Such bug tasks let the status, priority, and importance be UNKNOWN.
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> evolution_task = bug_one.bugtasks[0]

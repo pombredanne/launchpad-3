@@ -159,7 +159,7 @@ subscribed:
 
 Foo Bar is sent an email giving him complete information about the bug
 that has just been retargeted, including the title, description, status,
-priority, etc.
+importance, etc.
 
     >>> import email
 
@@ -184,17 +184,14 @@ priority, etc.
     Public bug reported:
     <BLANKLINE>
     Affects: firefox (upstream)
-           Severity: Minor
-           Priority: Wontfix
-         Assignee: Mark Shuttleworth
+         Importance: Minor
+           Assignee: Mark Shuttleworth
              Status: Unconfirmed
     Affects: pmount (Ubuntu)
-           Severity: Normal
-           Priority: Medium
+         Importance: Medium
              Status: Unconfirmed
     Affects: mozilla-firefox (Debian)
-           Severity: Minor
-           Priority: High
+         Importance: Minor
              Status: Confirmed
     <BLANKLINE>
     <BLANKLINE>

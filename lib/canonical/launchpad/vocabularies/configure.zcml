@@ -64,6 +64,8 @@
     name="BugTaskPriority"
     factory="canonical.launchpad.vocabularies.BugTaskPriorityVocabulary"
     />
+    <!-- XXX mpt 20060418: priority is hidden but may be reinstated. -->
+    <!-- https://wiki.launchpad.canonical.com/MaloneSimplifications -->
 
   <vocabulary
     name="BugTaskImportance"
@@ -254,6 +256,8 @@
     name="RemoteBugTaskPriority"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskPriorityVocabulary"
     />
+    <!-- XXX mpt 20060418: priority is hidden but may be reinstated. -->
+    <!-- https://wiki.launchpad.canonical.com/MaloneSimplifications -->
 
   <vocabulary
     name="RemoteBugTaskImportance"

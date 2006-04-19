@@ -453,7 +453,6 @@ def get_bug_edit_notification_texts(bug_delta):
                     added_bugtask.targetname
             change_info += u"%13s: %s\n" % (u"Importance",
                 added_bugtask.importance.title)
-            change_info += u"%13s: %s\n" % (u"Priority", priority_title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
                 change_info += u"%13s: %s <%s>\n" % (
