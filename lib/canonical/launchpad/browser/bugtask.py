@@ -749,7 +749,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-class BugTaskSearchListingView(LaunchpadView):
+class BugTaskSearchListingView(GeneralFormView):
     """Base class for bug listings.
 
     Subclasses should define getExtraSearchParams() to filter the
