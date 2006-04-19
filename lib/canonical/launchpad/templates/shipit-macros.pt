@@ -1,34 +1,47 @@
 <metal:quantity_widgets define-macro="quantity_widgets">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
-        :widgets: A dictionary mapping ShipItFlavour and ShipItArchitecture
-                  objects to their corresponding widgets.
+    :widgets_matrix: A matrix in which each row contains a ShipItFlavour and
+                     one quantity widget for each ShipItArchitecture that we
+                     ship CDs. These widgets should always be ordered according
+                     to their architectures, and the order should be 
+                     (PC, 64-bit PC, Mac).
   </tal:comment>
 
-  <ul>
-    <li tal:repeat="flavour widgets">
-      <label tal:content="flavour/title">Ubuntu</label>
-      <table>
-        <tr>
-          <tal:block repeat="arch python:widgets[flavour]">
-          <tal:block define="widget python:widgets[flavour][arch]">
-            <tal:has-widget condition="widget">
-              <span metal:use-macro="context/@@shipit_macros/display_widget" />
-            </tal:has-widget>
 
-            <!-- XXX: Need to find a way to make these widgets line up
-            properly -->
-            <tal:has-no-widget condition="not: widget">
-              <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
-              <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
-            </tal:has-no-widget>
-          </tal:block>
-          </tal:block>
-        </tr>
-      </table>
-      <br />
-    </li>
-  </ul>
+
+  <table cols="3">
+    <tr>
+      <thead>
+      <th></th>
+      <th>PC</th>
+      <th>64-bit PC</th>
+      <th>Mac</th>
+      </thead>
+    </tr>
+    <tr tal:repeat="row nocall:widgets_matrix">
+      <tal:block repeat="cel row">
+        <tal:comment replace="nothing">
+          We need to save the widget with this nocall: here because if we
+          don't do that, our dear zope will turn it into a string for us.
+        </tal:comment>
+        <tal:save-widget define="widget nocall:cel">
+
+        <tal:is-header condition="repeat/cel/start">
+            <th tal:content="cel" />
+          </tal:is-header>
+        <tal:is-not-header condition="not: repeat/cel/start">
+          <td style="text-align: center">
+            <tal:block condition="cel">
+              <span metal:use-macro="context/@@shipit_macros/display_raw_widget" />
+            </tal:block>
+            <span tal:condition="not: cel">n/a</span>
+          </td>
+        </tal:is-not-header>
+        </tal:save-widget>
+      </tal:block>
+    </tr>
+  </table>
 
 </metal:quantity_widgets>
 
@@ -41,17 +54,25 @@
 
   <th tal:content="widget/label">Label:</th>
   <td>
-    <div tal:attributes="class python:error and 'error' or None"
-         tal:define="error widget/error">
-      <span tal:replace="structure widget" />
-      <span tal:condition="widget/required"
-            class="fieldRequired"
-            title="Required">(Required)</span>
-      <div tal:condition="error" tal:content="structure error" />
-    </div>
+    <span metal:use-macro="context/@@shipit_macros/display_raw_widget" />
   </td>
 </metal:display_widget>
 
+<metal:display_raw_widget define-macro="display_raw_widget">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+        :widget: The widget that's going to be rendered.
+  </tal:comment>
+
+  <div tal:attributes="class python:error and 'error' or None"
+       tal:define="error widget/error">
+    <span tal:replace="structure widget" />
+    <span tal:condition="widget/required"
+          class="fieldRequired"
+          title="Required">(Required)</span>
+    <div tal:condition="error" tal:content="structure error" />
+  </div>
+</metal:display_raw_widget>
 
 <metal:shipping_details define-macro="shipping_details">
   <tal:comment replace="nothing">

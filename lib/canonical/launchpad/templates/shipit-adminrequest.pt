@@ -30,7 +30,7 @@
 
       <h2>Quantities</h2>
 
-      <tal:block define="widgets view/getWidgetsFromFieldsMapping">
+      <tal:block define="widgets_matrix view/widgetsMatrixWithFlavours">
         <metal:quantity_widgets
             use-macro="context/@@shipit_macros/quantity_widgets" />
       </tal:block>

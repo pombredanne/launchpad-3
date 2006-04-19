@@ -407,33 +407,39 @@ class StandardShipItRequestAddView(AddView):
 
 class ShippingRequestAdminMixinView:
 
-    def getWidgetsFromFieldsMapping(self):
-        """Return a dictionary mapping ShipItFlavour and ShipItArchitecture
-        items to their corresponding quantity widgets.
+    # This is the order in which we display the distribution flavours
+    # in the UI
+    ordered_flavours = [
+        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.EDUBUNTU]
 
-        The widgets names are obtained from a dictionary called
-        quantity_fields_mapping that must be defined by child classes. This
-        dictionary is of the form
-            {ShipItFlavour.UBUNTU: 
-                {ShipItArchitecture.X86: 'ubuntu_quantityx86approved',
-                 ShipItArchitecture.PPC: 'ubuntu_quantityppcapproved',
-                 ...
-                }
-             ...
-            }
+    # This is the order in which we display the quantity widgets for each
+    # flavour in the UI
+    ordered_architectures = [ShipItArchitecture.X86,
+                             ShipItArchitecture.AMD64,
+                             ShipItArchitecture.PPC]
+
+    def widgetsMatrixWithFlavours(self):
+        """Return a matrix in which each row contains a ShipItFlavour and one
+        quantity widget for each ShipItArchitecture that we ship CDs. 
+
+        The architectures of CDs that we ship are dependent on the
+        flavour.
+
+        The matrix returned by this method is meant to be used by the
+        quantity_widgets macro, defined in templates/shipit-macros.pt.
         """
-        widgets = {}
-        for flavour in self.quantity_fields_mapping:
-            arches = {}
-            for arch in self.quantity_fields_mapping[flavour]:
+        matrix = []
+        for flavour in self.ordered_flavours:
+            row = [flavour.title]
+            for arch in self.ordered_architectures:
                 widget_name = self.quantity_fields_mapping[flavour][arch]
                 if widget_name is not None:
                     widget_name += '_widget'
-                    arches[arch] = getattr(self, widget_name)
+                    row.append(getattr(self, widget_name))
                 else:
-                    arches[arch] = None
-            widgets[flavour] = arches
-        return widgets
+                    row.append(None)
+            matrix.append(row)
+        return matrix
 
 
 class ShippingRequestApproveOrDenyView(
