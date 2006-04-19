@@ -10,19 +10,20 @@
       <label tal:content="flavour/title">Ubuntu</label>
       <table>
         <tr>
-        <tal:block repeat="arch python:widgets[flavour]">
-          <td align="right">
-            <strong tal:content="arch/title" />:
-          </td>
-          <td align="left" 
-              tal:define="widget python:widgets[flavour][arch]">
-            <div tal:attributes="class python:error and 'portalError' or None"
-                 tal:define="error widget/error">
-              <span tal:content="structure widget" />
-              <div tal:condition="error" tal:content="structure error" />
-            </div>
-          </td>
-        </tal:block>
+          <tal:block repeat="arch python:widgets[flavour]">
+          <tal:block define="widget python:widgets[flavour][arch]">
+            <tal:has-widget condition="widget">
+              <span metal:use-macro="context/@@shipit_macros/display_widget" />
+            </tal:has-widget>
+
+            <!-- XXX: Need to find a way to make these widgets line up
+            properly -->
+            <tal:has-no-widget condition="not: widget">
+              <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+              <td>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
+            </tal:has-no-widget>
+          </tal:block>
+          </tal:block>
         </tr>
       </table>
       <br />
@@ -40,7 +41,7 @@
 
   <th tal:content="widget/label">Label:</th>
   <td>
-    <div tal:attributes="class python:error and 'portalError' or None"
+    <div tal:attributes="class python:error and 'error' or None"
          tal:define="error widget/error">
       <span tal:replace="structure widget" />
       <span tal:condition="widget/required"
@@ -114,3 +115,177 @@
     </tr>
   </table>
 </metal:shipping_details>
+
+<metal:meta-master define-macro="meta-master">
+<head>
+    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <!-- Launchpad style sheet -->
+    <style type="text/css"
+        media="screen">@import url(/@@/launchpad.css);</style>
+    <!-- Launchpad JS code -->
+    <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <script type="text/javascript" src="/@@/sorttable.js"></script>
+
+    <metal:extra-head define-slot="extra-head" />
+
+    <style type="text/css">
+      <!-- 
+        /* Undo Ubuntu's CSS treachery */
+        .shipitPortlet {
+            font-size: 80%;
+         }
+        .shipitPortlet .shipitPortletBody {
+            position: relative;
+            top: -1px;
+            background: transparent;
+            border: 1px solid #8cacbb;
+            padding: 1em;
+            margin: 0;
+        }
+        .shipitPortlet h4 {
+          margin: 0;
+          background-color: #dee7ec;
+          border: 1px solid #8cacbb;
+          padding: 0em 0.3em 0em 1em;
+          text-transform: lowercase;
+          display: block;
+          font-size: 1em;
+          font-weight: normal;
+        }
+        #body {
+          margin: 1em;
+        }
+        :link {
+          color: #660000;
+        }
+        :visited {
+          color: #993333;
+        }
+      -->
+    </style>
+
+    <metal:block define-slot="head_epilogue"></metal:block>
+</head>
+
+  <body>
+    <div id="pageWrapper">
+
+      <div id="mastWrapper">
+        <div id="masthead">
+           <metal:logo define-slot="header-logo" />
+           <div id="search">
+            <tal:block condition="request/lp:person">
+              <form action="/+logout" class="login" method="POST">
+                Logged in as <span tal:replace="request/lp:person/displayname" />
+                  &ndash;
+                <input type="submit" value="Log Out" />
+              </form>
+            </tal:block>
+
+            <tal:block condition="not: request/lp:person">
+              Not logged in &#8212;
+              <a href="/">
+                Log In / Register
+              </a>
+            </tal:block>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="visualClear" id="body">
+      <metal:block define-slot="body">
+      </metal:block>
+    </div>
+
+    <table id="portal-columns">
+      <tbody>
+        <tr>
+          <td style="height: 1px;"></td>
+          <td
+            id="portal-column-content"
+            rowspan="2"
+          >
+            <div id="region-content">
+              <tal:maintenance
+                replace="structure context/@@+maintenancemessage" />
+              <tal:notifications
+                define="notifications request/notifications"
+                condition="notifications"
+              >
+                <metal:notifications
+                  use-macro="context/@@+main-template-macros/notifications" />
+              </tal:notifications>
+              <metal:main define-slot="main" tal:condition="nothing">
+                <p>Main content area.</p>
+              </metal:main>
+            </div>
+          </td>
+
+                <!-- start of right (by default at least) column -->
+          <td
+            id="portal-column-two"
+            metal:define-slot="column_two"
+            rowspan="2"
+          >
+            <div
+              tal:define="appmenu context/menu:application"
+              tal:condition="appmenu"
+              class="portlet portletBody portletContent"
+            >
+              <ul class="menu">
+                <tal:block repeat="link appmenu">
+                  <li
+                    tal:condition="link/selected"
+                    class="current"
+                  >
+                    <tal:block condition="link/linked">
+                      <strong>
+                        <a 
+                          tal:attributes="href link/url"
+                          tal:content="link/text"
+                        >link text</a>
+                      </strong>
+                    </tal:block>
+                    <tal:block condition="not: link/linked">
+                      <strong tal:content="link/text">link text</strong>
+                    </tal:block>
+                  </li>
+                  <li tal:condition="not: link/selected">
+                    <a
+                      tal:attributes="href link/url"
+                      tal:content="link/text"
+                    >link text</a>
+                  </li>
+                </tal:block>
+              </ul>
+            </div>
+                        <metal:portlets define-slot="portlets_two">
+
+                        </metal:portlets>
+          </td>
+                <!-- end of the right (by default at least) column -->
+        </tr>
+        <tr>
+                <!-- start of the left (by default at least) column -->
+          <td
+            id="portal-column-one"
+            metal:define-slot="column_one"
+          >
+                    <metal:portlets define-slot="portlets_one">
+
+                    </metal:portlets>
+          </td>
+                <!-- end of the left (by default at least) column -->
+
+          </tr>
+      </tbody>
+    </table>
+    <!-- end column wrapper -->
+
+    <div class="visualClear">&nbsp;</div>
+
+    <metal:footer define-slot="footer" />
+
+</body>
+</metal:meta-master>

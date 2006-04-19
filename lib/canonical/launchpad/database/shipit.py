@@ -25,36 +25,15 @@ from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.datetimeutils import make_mondays_between
 
 from canonical.lp.dbschema import (
-        ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
-        ShippingService)
+    ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
+    ShippingService)
 from canonical.launchpad.interfaces import (
-        IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
-        IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
-        ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
-        IShipmentSet, ShippingRequestPriority, IShipItReport, IShipItReportSet,
-        CURRENT_SHIPIT_DISTRO_RELEASE)
+    IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
+    IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
+    ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
+    IShipmentSet, ShippingRequestPriority, IShipItReport, IShipItReportSet,
+    CURRENT_SHIPIT_DISTRO_RELEASE)
 from canonical.launchpad.database.country import Country
-
-
-class RequestedCDsDescriptor:
-    """Property-like descriptor that gets and sets any attribute in a
-    RequestedCDs object of a given architecture.
-    """
-
-    def __init__(self, architecture, attrname):
-        self.attrname = attrname
-        self.architecture = architecture
-
-    def __get__(self, inst, cls=None):
-        if inst is None:
-            return self
-        else:
-            request = inst._getRequestedCDsByArch(self.architecture)
-            return getattr(request, self.attrname)
-
-    def __set__(self, inst, value):
-        request = inst._getRequestedCDsByArch(self.architecture)
-        setattr(request, self.attrname, value)
 
 
 class ShippingRequest(SQLBase):
@@ -139,6 +118,9 @@ class ShippingRequest(SQLBase):
 
     def _getRequestedCDsByFlavourAndArch(self, flavour, arch):
         query = AND(RequestedCDs.q.requestID==self.id,
+                    # XXX: Do I need this clause here? I think I should assert
+                    # somewhere else that a given ShippingRequest can only
+                    # have RequestedCDs for one distrorelease.
                     RequestedCDs.q.distrorelease==CURRENT_SHIPIT_DISTRO_RELEASE,
                     RequestedCDs.q.flavour==flavour,
                     RequestedCDs.q.architecture==arch)
@@ -190,6 +172,9 @@ class ShippingRequest(SQLBase):
                 if not only_approved:
                     setattr(requested_cds, 'quantity', quantity)
                 setattr(requested_cds, 'quantityapproved', quantity)
+
+    def _setQuantityForFlavourAndArch(self, flavour, arch, quantity):
+        """Set the quantity of requested CDs for the given flavour and arch."""
 
     def highlightColour(self):
         """See IShippingRequest"""
@@ -613,7 +598,6 @@ class ShippingRequestSet:
                 % sqlvalues(monday_date, monday_date + timedelta(days=7)))
             query_str = base_query + date_filter
             cur.execute(query_str)
-            #requests, x86cds, amdcds, ppccds = cur.fetchone()
             year, weeknum, weekday = monday_date.isocalendar()
             row = [year, weeknum]
             row.extend(cur.fetchone())
@@ -862,10 +846,12 @@ class ShippingRun(SQLBase):
             row = []
             for label, attr in file_fields:
                 value = getattr(request, attr)
-                if isinstance(value, (unicode, str)):
+                if isinstance(value, basestring):
                     # Text fields can't have non-ASCII characters or commas.
                     # This is a restriction of the shipping company.
                     value = value.replace(',', ';')
+                    # Here we can be sure value can be encoded into ASCII
+                    # because we always check this in the UI.
                     value = value.encode('ASCII')
                 row.append(value)
 

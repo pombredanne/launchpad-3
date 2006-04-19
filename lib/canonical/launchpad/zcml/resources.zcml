@@ -119,11 +119,11 @@
     <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
     <resource name="kubuntu-header-bg4.png" file="../images/kubuntu-header-bg4.png" />
     <resource name="kubuntu-crystal.png" file="../images/kubuntu-crystal.png" />
-    <resource name="kubuntu-tab_off_ns1.png" file="../images/kubuntu-tab_off_ns1.png" />
-    <resource name="kubuntu-tab_off_ns2.png" file="../images/kubuntu-tab_off_ns2.png" />
-    <resource name="kubuntu-tab_on_ns2.png" file="../images/kubuntu-tab_on_ns2.png" />
-    <resource name="kubuntu-tab_on_ns1.png" file="../images/kubuntu-tab_on_ns1.png" />
-    <resource name="kubuntu-favicon.ico" file="../images/kubuntu-favicon.ico" />
+    <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
+    <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
+    <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />
+    <resource name="kubuntu-tab_on_ns1.gif" file="../images/kubuntu-tab_on_ns1.gif" />
+    <resource name="kubuntu-favicon.png" file="../images/kubuntu-favicon.png" />
 
     <!-- Shipit EdUbuntu images (from www.edubuntu.org) -->
     <resource name="edubuntu-header.png" file="../images/edubuntu-header.png" />

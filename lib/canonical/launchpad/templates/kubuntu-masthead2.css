@@ -1,3 +1,12 @@
+/*
+This is a copy (without any modifications) of the css used on edubuntu's
+website. We can't add a reference to edubuntu.org from shipit because the
+machines have different IP addresses, and this would cause web browsers to
+complain that there's data coming from an untrusted source (edubuntu.org,
+in this case), displaying the open padlock icon and as a consequence, 
+scarring users.
+*/
+
 #mastWrapper {
 background: url(/@@/kubuntu-header-bg4.png) bottom left repeat-x #fff;
 }

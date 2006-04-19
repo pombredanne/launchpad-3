@@ -24,6 +24,7 @@ __all__ = [
     'valid_shipit_addressline2',
     'valid_shipit_organization',
     'valid_shipit_province',
+    'shipit_postcode_required',
     'valid_distrotask',
     'valid_upstreamtask',
     ]
@@ -60,6 +61,15 @@ def _valid_ascii_text(text):
             by our shipping company. Please change these to ASCII
             equivalents. (For instance, '%s' should be changed to 'e')"""
             % (first_non_ascii_char, e_with_accute))))
+
+
+def shipit_postcode_required(country):
+    """Return True if a postcode is required to ship CDs to country."""
+    code = country.iso3166code2
+    if code in ('US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES'):
+        return True
+    else:
+        return False
 
 
 def valid_shipit_organization(value):

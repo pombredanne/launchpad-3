@@ -32,10 +32,11 @@ from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
     ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData,
-    IShippingRunSet, IShipItApplication, IShipItReportSet)
+    IShippingRunSet, IShipItApplication, IShipItReportSet, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
@@ -125,7 +126,6 @@ The comment left by the user:
 
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
-        self.user = getUtility(ILaunchBag).user
         if ShipItUbuntuLayer.providedBy(request):
             self.flavour = ShipItFlavour.UBUNTU
             self.from_email_address = config.shipit.shipit_ubuntu_from_email
@@ -185,7 +185,10 @@ The comment left by the user:
             self.flavour, quantities[ShipItArchitecture.X86].quantity,
             quantities[ShipItArchitecture.AMD64].quantity,
             quantities[ShipItArchitecture.PPC].quantity)
-        return getattr(standard, 'id', None)
+        if standard is None:
+            return None
+        else:
+            return standard.id
 
     @cachedproperty('_current_order')
     def current_order(self):
@@ -249,16 +252,11 @@ The comment left by the user:
         # We use a custom template with some extra widgets, so we have to
         # cheat here and access self.request.form
         if not self.request.form.get('ordertype'):
-            # XXX: Should we raise an UnexpectedFormData here? I haven't done
-            # that because it inherits from AssertionError, and thus I don't
-            # think it's going to be handled anywhere.
-            errors.append(LaunchpadValidationError(_(
-                'Please select the number of CDs you would like.')))
+            errors.append(UnexpectedFormData(_(
+                'The number of requested CDs was not provided.')))
 
         country = data['country']
-        code = data['country'].iso3166code2
-        if (code in ('US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES')
-            and not data['postcode']):
+        if shipit_postcode_required(country) and not data['postcode']:
             errors.append(LaunchpadValidationError(_(
                 "Shipping to your country requires a postcode, but you didn't "
                 "provide one. Please enter one below.")))
@@ -377,6 +375,7 @@ class StandardShipItRequestAddView(AddView):
         quantityppc = data.get('quantityppc')
         # XXX: Need to do something about this 'isdefault' because we need a
         # default request for each flavour we have.
+        # Guilherme Salgado, 2006-04-05
         isdefault = data.get('isdefault')
         request = getUtility(IStandardShipItRequestSet).new(
             flavour, quantityx86, quantityamd64, quantityppc, isdefault)
@@ -386,13 +385,30 @@ class StandardShipItRequestAddView(AddView):
 class ShippingRequestAdminMixinView:
 
     def getWidgetsFromFieldsMapping(self):
+        """Return a dictionary mapping ShipItFlavour and ShipItArchitecture
+        items to their corresponding quantity widgets.
+
+        The widgets names are obtained from a dictionary called
+        quantity_fields_mapping that must be defined by child classes. This
+        dictionary is of the form
+            {ShipItFlavour.UBUNTU: 
+                {ShipItArchitecture.X86: 'ubuntu_quantityx86approved',
+                 ShipItArchitecture.PPC: 'ubuntu_quantityppcapproved',
+                 ...
+                }
+             ...
+            }
+        """
         widgets = {}
-        for flavour in ShipItFlavour.items:
+        for flavour in self.quantity_fields_mapping:
             arches = {}
-            for arch in ShipItArchitecture.items:
+            for arch in self.quantity_fields_mapping[flavour]:
                 widget_name = self.quantity_fields_mapping[flavour][arch]
-                widget_name += '_widget'
-                arches[arch] = getattr(self, widget_name)
+                if widget_name is not None:
+                    widget_name += '_widget'
+                    arches[arch] = getattr(self, widget_name)
+                else:
+                    arches[arch] = None
             widgets[flavour] = arches
         return widgets
 
@@ -401,8 +417,6 @@ class ShippingRequestApproveOrDenyView(
         GeneralFormView, ShippingRequestAdminMixinView):
     """The page where admins can Approve/Deny existing requests."""
 
-    __launchpad__facetname = 'overview'
-
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86approved',
@@ -410,12 +424,12 @@ class ShippingRequestApproveOrDenyView(
              ShipItArchitecture.AMD64: 'ubuntu_quantityamd64approved'},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86approved',
-             ShipItArchitecture.PPC: 'kubuntu_quantityppcapproved',
+             ShipItArchitecture.PPC: None,
              ShipItArchitecture.AMD64: 'kubuntu_quantityamd64approved'},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86approved',
-             ShipItArchitecture.PPC: 'edubuntu_quantityppcapproved',
-             ShipItArchitecture.AMD64: 'edubuntu_quantityamd64approved'}
+             ShipItArchitecture.PPC: None,
+             ShipItArchitecture.AMD64: None}
         }
 
     def process(self, *args, **kw):
@@ -491,8 +505,6 @@ class ShippingRequestApproveOrDenyView(
 class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
     """The page where admins can create new requests or change existing ones."""
 
-    __launchpad__facetname = 'overview'
-
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
             {ShipItArchitecture.X86: 'ubuntu_quantityx86',
@@ -500,12 +512,12 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
              ShipItArchitecture.AMD64: 'ubuntu_quantityamd64'},
         ShipItFlavour.KUBUNTU:
             {ShipItArchitecture.X86: 'kubuntu_quantityx86',
-             ShipItArchitecture.PPC: 'kubuntu_quantityppc',
+             ShipItArchitecture.PPC: None,
              ShipItArchitecture.AMD64: 'kubuntu_quantityamd64'},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86',
-             ShipItArchitecture.PPC: 'edubuntu_quantityppc',
-             ShipItArchitecture.AMD64: 'edubuntu_quantityamd64'}
+             ShipItArchitecture.PPC: None,
+             ShipItArchitecture.AMD64: None}
         }
 
     current_order = None
@@ -542,9 +554,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
     def validate(self, data):
         errors = []
         country = data['country']
-        code = data['country'].iso3166code2
-        if (code in ('US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES')
-            and not data['postcode']):
+        if shipit_postcode_required(country) and not data['postcode']:
             errors.append(LaunchpadValidationError(_(
                 "Shipping to your country requires a postcode, but you didn't "
                 "provide one. Please enter one below.")))
