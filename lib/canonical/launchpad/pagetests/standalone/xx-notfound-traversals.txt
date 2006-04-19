@@ -139,6 +139,7 @@ Test the DARBPR page for a REMOVED package:
 >>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
 >>> check("/distros/ubuntu/+source/evolution/+portlet-bugfilters")
+>>> check_not_found("/distros/ubuntu/+source/evolution/+translations")
 
 >>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
