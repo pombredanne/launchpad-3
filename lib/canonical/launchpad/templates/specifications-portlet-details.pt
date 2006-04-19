@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Launchpad feature tracking:</h4>
+  <h4>Release planning with Blueprint:</h4>
 
   <div class="portletBody portletContent">
 
@@ -9,7 +9,7 @@
     distribution. It tracks the dependencies between features and will use
     those to create a recommended project plan for you. You can assign
     features to milestones to show your users what you expect to deliver in
-    a given milestone.
+    a given milestone or release.
 	
   </div>
 

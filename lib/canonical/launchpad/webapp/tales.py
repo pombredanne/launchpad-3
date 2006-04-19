@@ -621,11 +621,9 @@ class FormattersAPI:
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             bugnum = match.group('bugnum')
-            # Use a hardcoded url so we still have a link for bugs that don't
-            # exist, or are private.
-            # XXX SteveAlexander 2005-07-14, I can't get a canonical_url for
-            #     a private bug.  I should be able to do so.
-            url = '/malone/bugs/%s' % bugnum
+            # XXX, Brad Bollenbach, 2006-04-10: Use a hardcoded url so
+            # we still have a link for bugs that don't exist.
+            url = '/bugs/%s' % bugnum
             # The text will have already been cgi escaped.
             text = match.group('bug')
             bugset = getUtility(IBugSet)

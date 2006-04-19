@@ -75,22 +75,14 @@ class ProjectSetContextMenu(ContextMenu):
         text = 'List All Projects'
         return Link('+all', text, icon='list')
 
+
 class ProjectFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'bounties', 'calendar']
-
-    def overview(self):
-        target = ''
-        text = 'Overview'
-        return Link(target, text)
-
-    def bugs(self):
-        target = '+bugs'
-        text = 'Bugs'
-        return Link(target, text)
+    enable_only = ['overview', 'bugs', 'bounties', 'calendar',
+                   'specifications']
 
     def calendar(self):
         target = '+calendar'
@@ -104,7 +96,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'reassign', 'rdf', 'changetranslators']
+    links = ['edit', 'driver', 'reassign', 'rdf', 'changetranslators']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -113,6 +105,11 @@ class ProjectOverviewMenu(ApplicationMenu):
     def reassign(self):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
+
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals for all products'
+        return Link('+driver', text, summary, icon='edit')
 
     def rdf(self):
         text = structured(
@@ -138,6 +135,30 @@ class ProjectBountiesMenu(ApplicationMenu):
     def link(self):
         text = 'Link Existing Bounty'
         return Link('+linkbounty', text, icon='edit')
+
+
+class ProjectSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'specifications'
+    links = ['listall', 'doc', 'roadmap', 'assignments',]
+
+    def listall(self):
+        text = 'List All'
+        return Link('+specs?show=all', text, icon='info')
+
+    def doc(self):
+        text = 'Documentation'
+        summary = 'Show all completed informational specifications'
+        return Link('+documentation', text, summary, icon="info")
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+roadmap', text, icon='info')
+
+    def assignments(self):
+        text = 'Assignments'
+        return Link('+assignments', text, icon='info')
 
 
 class ProjectView(object):
@@ -346,12 +367,12 @@ class ProjectAddView(AddView):
         # Now create a new project in the db
         project = getUtility(IProjectSet).new(
             name=self.name,
-            title=data['title'],
             displayname=data['displayname'],
+            title=data['title'],
+            homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=owner,
-            homepageurl=data['homepageurl'])
+            owner=owner)
         notify(ObjectCreatedEvent(project))
         self._nextURL = canonical_url(project)
         return project

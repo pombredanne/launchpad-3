@@ -300,7 +300,6 @@ class Bugzilla:
         self.bugtaskset = getUtility(IBugTaskSet)
         self.bugwatchset = getUtility(IBugWatchSet)
         self.cveset = getUtility(ICveSet)
-        self.milestoneset = getUtility(IMilestoneSet)
         self.extrefset = getUtility(IBugExternalRefSet)
         self.personset = getUtility(IPersonSet)
         self.emailset = getUtility(IEmailAddressSet)
@@ -396,12 +395,11 @@ class Bugzilla:
         # generate a Launchpad name from the Milestone name:
         name = re.sub(r'[^a-z0-9\+\.\-]', '-', bug.target_milestone.lower())
 
-        for milestone in self.ubuntu.milestones:
-            if milestone.name == name:
-                return milestone
-        else:
-            milestone = self.milestoneset.new(name, distribution=self.ubuntu)
+        milestone = self.ubuntu.getMilestone(name)
+        if milestone is not None:
             return milestone
+        else:
+            return self.ubuntu.currentrelease.newMilestone(name)
 
     def getLaunchpadUpstreamProduct(self, bug):
         """Find the upstream product for the given Bugzilla bug.

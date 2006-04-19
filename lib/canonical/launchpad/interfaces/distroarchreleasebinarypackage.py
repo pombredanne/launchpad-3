@@ -10,6 +10,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
+
 class IDistroArchReleaseBinaryPackage(Interface):
 
     distroarchrelease = Attribute("The distribution architecture release.")
@@ -49,10 +50,13 @@ class IDistroArchReleaseBinaryPackage(Interface):
         version, in this architecture release.
         """
 
-    def changeOverride(new_component, new_section, new_priority):
-        """Change the component, section and/or priority of a
-        DistroArchReleaseBinaryPackageRelease."""
-        
+    def changeOverride(new_component=None, new_section=None,
+                       new_priority=None):
+        """Change the component, section and/or priority.
+
+        It is changed only if the argument is not None.
+        """
+
     def supersede():
         """Supersede a DistroArchReleaseBinaryPackageRelease.
 

@@ -20,7 +20,7 @@ getPOTemplateByPath
     >>> potemplate = potemplatesubset.getPOTemplateByPath(
     ...     'po/evolution-2.2-test.pot')
     >>> print potemplate.title
-    Template "evolution-2.2-test" in Evolution MAIN
+    Template "evolution-2.2-test" in Evolution trunk
 
 
 POTemplate
@@ -32,5 +32,5 @@ Check that we can get IPOFile based on its path.
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByPath('es.po')
     >>> print pofile.title
-    Spanish (es) translation of evolution-2.2 in Evolution MAIN
+    Spanish (es) translation of evolution-2.2 in Evolution trunk
 

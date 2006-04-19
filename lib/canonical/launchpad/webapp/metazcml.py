@@ -271,8 +271,6 @@ def navigation(_context, module, classes):
         #     permission=PublicPermission, provides=provides)
 
         # Also register the navigation as a traversal component for XMLRPC.
-        # XXX: Layer?? Request??? wtf is the layer being set to an IRequest?
-        # -- StuartBishop 20060324
         xmlrpc_layer = IXMLRPCRequest
         view(_context, factory, xmlrpc_layer, name, for_,
              permission=PublicPermission, provides=provides)

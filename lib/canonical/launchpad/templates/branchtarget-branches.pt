@@ -3,14 +3,15 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Bazaar branches</h1>
-    </metal:heading>
+<body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context Title</h3>
+  <h1>Bazaar branches</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 

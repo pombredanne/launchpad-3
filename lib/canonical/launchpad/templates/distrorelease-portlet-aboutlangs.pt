@@ -7,7 +7,12 @@
     "<span tal:replace="context/name">hoary</span>" release of
     <span tal:replace="context/distribution/displayname">Ubuntu</span>. Pick
     a language to see the actual application translation statuses in that
-    language.
+    language.<br />
+    <br />
+    Your preferred languages list reflects the languages we think you are
+    most interested in. Choose "<a href="/rosetta/prefs/">Select
+    languages...</a>" to ensure that the languages you speak are included in
+    all translation pages.
   </div>
 </div>
 

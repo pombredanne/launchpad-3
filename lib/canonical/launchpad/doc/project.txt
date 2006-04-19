@@ -37,3 +37,36 @@ getByName() also accepts an argument to ignore inactive projects.
 
 >>> print projectset.getByName('gnome', ignore_inactive=True)
 None
+
+
+Specification Listings
+======================
+
+We should be able to generate filtered lists of specs on a project.
+
+ >>> mozilla = projectset.getByName('mozilla')
+ >>> from canonical.lp.dbschema import SpecificationFilter
+
+First, there should be only one informational spec for mozilla:
+
+ >>> filter = [SpecificationFilter.INFORMATIONAL]
+ >>> for spec in mozilla.specifications(filter=filter):
+ ...    print spec.name
+ extension-manager-upgrades
+
+
+There are no completed specs for mozilla:
+
+ >>> filter = [SpecificationFilter.COMPLETE]
+ >>> for spec in mozilla.specifications(filter=filter):
+ ...    print spec.name
+
+
+And there are five incomplete specs:
+
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> mozilla.specifications(filter=filter).count()
+ 5
+
+
+

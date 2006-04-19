@@ -20,7 +20,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, GetitemNavigation, Navigation)
+    StandardLaunchpadFacets, ContextMenu, Link,
+    enabled_with_permission, GetitemNavigation, Navigation)
 
 
 class MilestoneSetNavigation(GetitemNavigation):
@@ -55,24 +56,24 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit']
+    links = ['edit', 'admin']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Milestone'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        text = 'Admin Milestone'
+        return Link('+admin', text, icon='edit')
+
 
 class MilestoneAddView:
     def create(self, name, dateexpected=None):
-        """Inject the relevant product or distribution into the kw args."""
-        product = None
-        distribution = None
-        if IProduct.providedBy(self.context):
-            product = self.context.id
-        elif IDistribution.providedBy(self.context):
-            distribution = self.context.id
-        return getUtility(IMilestoneSet).new(name, product=product,
-            distribution=distribution, dateexpected=dateexpected)
+        """We will use the newMilestone method on the ProductSeries or
+        Distrorelease context to make the milestone."""
+        return self.context.newMilestone(name, dateexpected=dateexpected)
 
     def add(self, content):
         """Skipping 'adding' this content to a container, because

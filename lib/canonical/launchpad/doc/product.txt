@@ -100,3 +100,39 @@ It provides information on all the translatables available, too:
     evolution
     netapplet
 
+
+Specification Listings
+======================
+
+We should be able to get lists of specifications in different states
+related to a product.
+
+Basically, we can filter by completeness, and by whether or not the spec is
+informational.
+
+ >>> firefox = productset.getByName('firefox')
+ >>> from canonical.lp.dbschema import SpecificationFilter
+
+First, there should be only one informational spec for firefox:
+
+ >>> filter = [SpecificationFilter.INFORMATIONAL]
+ >>> for spec in firefox.specifications(filter=filter):
+ ...    print spec.name
+ extension-manager-upgrades
+
+
+There are no completed specs for firefox:
+
+ >>> filter = [SpecificationFilter.COMPLETE]
+ >>> for spec in firefox.specifications(filter=filter):
+ ...    print spec.name
+
+
+And there are five incomplete specs:
+
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> firefox.specifications(filter=filter).count()
+ 5
+
+
+

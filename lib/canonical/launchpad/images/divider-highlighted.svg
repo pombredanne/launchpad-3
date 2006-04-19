@@ -8,38 +8,39 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://inkscape.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="512.00000px"
-   height="64.000000px"
+   width="512"
+   height="64"
    id="svg2"
    sodipodi:version="0.32"
-   inkscape:version="0.42.2"
-   sodipodi:docbase="/Users/mpt/Documents/Design/Launchpad"
+   inkscape:version="0.43"
+   sodipodi:docbase="/home/mpt/hacking/lp/trivial/lib/canonical/launchpad/images"
    sodipodi:docname="divider-highlighted.svg"
-   inkscape:export-filename="/Users/mpt/Documents/Design/Launchpad/hierarchy-divider.png"
+   inkscape:export-filename="/home/mpt/hacking/lp/trivial/lib/canonical/launchpad/images/divider-highlighted.png"
    inkscape:export-xdpi="90.000000"
-   inkscape:export-ydpi="90.000000">
+   inkscape:export-ydpi="90.000000"
+   version="1.0">
   <defs
      id="defs4" />
   <sodipodi:namedview
      id="base"
-     pagecolor="#000000"
+     pagecolor="#00d500"
      bordercolor="#666666"
      borderopacity="1.0"
-     inkscape:pageopacity="0.0000000"
+     inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.0000000"
-     inkscape:cx="495.40093"
-     inkscape:cy="39.121509"
+     inkscape:zoom="12.065009"
+     inkscape:cx="475.92985"
+     inkscape:cy="52.451721"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:grid-bbox="true"
      inkscape:grid-points="true"
      gridempspacing="4"
-     inkscape:window-width="1023"
+     inkscape:window-width="1014"
      inkscape:window-height="686"
      inkscape:window-x="0"
-     inkscape:window-y="22" />
+     inkscape:window-y="25" />
   <metadata
      id="metadata7">
     <rdf:RDF>
@@ -56,25 +57,20 @@
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       style="fill:#8cacbb;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000"
-       d="M 476.00000,0.0000000 L 508.00000,32.000000 L 476.00000,64.000000 L 0.0000000,64.000000 L 0.0000000,0.0000000 L 476.00000,0.0000000 z "
-       id="path1315"
-       sodipodi:nodetypes="cccccc" />
+       id="path2039"
+       d="M 479,0 L 511,32 L 479,64 L 480,64 L 512,32 L 480,0"
+       style="fill:#b5cad4;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     <path
-       style="fill:#d2dfe5;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000"
-       d="M 476.00000,0.0000000 L 508.00000,32.000000 L 476.00000,64.000000 L 477.00000,64.000000 L 509.00000,32.000000 L 477.00000,0.0000000"
-       id="path1306" />
-    <path
-       id="path2035"
-       d="M 477.00000,0.0000000 L 509.00000,32.000000 L 477.00000,64.000000 L 478.00000,64.000000 L 510.00000,32.000000 L 478.00000,0.0000000"
-       style="fill:#000000;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000" />
-    <path
-       style="fill:#666666;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000"
-       d="M 478.00000,0.0000000 L 510.00000,32.000000 L 478.00000,64.000000 L 479.00000,64.000000 L 511.00000,32.000000 L 479.00000,0.0000000"
+       style="fill:#8cacbb;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 478,0 L 510,32 L 478,64 L 479,64 L 511,32 L 479,0"
        id="path2037" />
     <path
-       id="path2039"
-       d="M 479.00000,0.0000000 L 511.00000,32.000000 L 479.00000,64.000000 L 480.00000,64.000000 L 512.00000,32.000000 L 480.00000,0.0000000"
-       style="fill:#999999;fill-opacity:1.0000000;fill-rule:evenodd;stroke:none;stroke-width:1.0000000px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1.0000000" />
+       style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 477,0 L 509,32 L 477,64 L 478,64 L 510,32 L 478,0"
+       id="path1306" />
+    <path
+       style="fill:#8cacbb;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="M 477,0 L 509,32 L 477,64 L 0,64 L 0,0 L 477,0 z "
+       id="path4877" />
   </g>
 </svg>

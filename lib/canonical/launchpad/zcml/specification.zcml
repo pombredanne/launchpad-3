@@ -15,7 +15,8 @@
       set_attributes="title summary status specurl needs_discussion
                       superseded_by milestone productseries distrorelease
                       product distribution approver assignee drafter
-                      whiteboard man_days delivery goalstatus" />
+                      whiteboard man_days delivery goalstatus
+                      informational" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved name" />
@@ -64,6 +65,12 @@
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />
     <browser:page
+      name="+listing-feedback"
+      template="../templates/specification-listing-feedback.pt" />
+    <browser:page
+      name="+listing-simple"
+      template="../templates/specification-listing-simple.pt" />
+    <browser:page
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />
     <browser:page
@@ -109,6 +116,7 @@
     schema="canonical.launchpad.interfaces.ISpecificationSubscription"
     class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
     fields="person"
+    label="Subscribe someone else"
     arguments="person"
     permission="launchpad.AnyPerson"
     template="../templates/specification-addsubscriber.pt"
@@ -119,6 +127,7 @@
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationRetargetingView"
+    label="Retarget specification"
     fields="product distribution"
     keyword_arguments="product distribution"
     permission="launchpad.Edit"
@@ -130,6 +139,7 @@
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationSupersedingView"
+    label="Mark specification superseded"
     fields="superseded_by"
     keyword_arguments="superseded_by"
     permission="launchpad.Edit"
@@ -141,7 +151,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Edit summary and title"
-    fields="title specurl summary whiteboard"
+    fields="title specurl summary informational whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-edit.pt">
     <browser:widget
@@ -171,7 +181,7 @@
   <browser:generalform
     name="+setrelease"
     schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
+    class="canonical.launchpad.browser.SpecificationGoalSetView"
     label="Target to a distribution release"
     fields="distrorelease whiteboard"
     keyword_arguments="distrorelease whiteboard"
@@ -186,7 +196,7 @@
   <browser:generalform
     name="+setseries"
     schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
+    class="canonical.launchpad.browser.SpecificationGoalSetView"
     label="Target to a product series"
     fields="productseries whiteboard"
     keyword_arguments="productseries whiteboard"
