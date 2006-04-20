@@ -75,7 +75,7 @@ Let's be sure that we can request po files without translations as the
 No Privileges Person.
 
   >>> print http(r"""
-  ... POST /products/evolution/+series/main/+pots/evolution-2.2/cy/+export HTTP/1.1
+  ... POST /products/evolution/+series/trunk/+pots/evolution-2.2/cy/+export HTTP/1.1
   ... Content-Length: 9
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -87,7 +87,7 @@ No Privileges Person.
 And that we don't take the ownership if we are not valid translators for that language.
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+pots/evolution-2.2/cy HTTP/1.1
+  ... GET /products/evolution/+series/trunk/+pots/evolution-2.2/cy HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Creator:...
@@ -97,7 +97,7 @@ And that we don't take the ownership if we are not valid translators for that la
 But if we request an export from a valid translator, he gets the ownership
 
   >>> print http(r"""
-  ... POST /products/evolution/+series/main/+pots/evolution-2.2/sv/+export HTTP/1.1
+  ... POST /products/evolution/+series/trunk/+pots/evolution-2.2/sv/+export HTTP/1.1
   ... Content-Length: 9
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
@@ -109,7 +109,7 @@ But if we request an export from a valid translator, he gets the ownership
 And that we don't take the ownership if we are not valid translators for that language.
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+pots/evolution-2.2/sv HTTP/1.1
+  ... GET /products/evolution/+series/trunk/+pots/evolution-2.2/sv HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Creator:...
