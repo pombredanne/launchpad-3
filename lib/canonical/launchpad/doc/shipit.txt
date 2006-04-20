@@ -11,6 +11,7 @@ these CDs are sent to the user.
   >>> from canonical.lp.dbschema import ShipItFlavour, ShipItArchitecture
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
+  >>> from canonical.launchpad.database import ShippingRun
   >>> from canonical.launchpad.interfaces import (
   ...    IStandardShipItRequestSet, IShippingRequestSet, IPersonSet,
   ...    IShippingRequest, ILaunchBag, ShippingRequestStatus, IShipmentSet,
@@ -129,23 +130,23 @@ Instead, it'll be part of the past requests of that recipient.
 Searching for requests
 ----------------------
 
-We have 12 custom requests. Two of them are cancelled.
+We have 13 custom requests. Two of them are cancelled.
 
   >>> [r.recipient.name 
   ...  for r in requestset.search(request_type='custom', omit_cancelled=False)]
-  [u'cprov', u'ddaa', u'debonzi', u'kurem', u'ddaa', u'carlos', u'daf', 
+  [u'cprov', u'ddaa', u'debonzi', u'kurem', u'ddaa', u'jordi', u'carlos', u'daf',
    u'tsukimi', u'jdub', u'marilize', u'jblack', u'name16']
 
   >>> [r.recipient.name for r in requestset.search(request_type='custom')]
-  [u'ddaa', u'debonzi', u'kurem', u'ddaa', u'carlos', u'daf', u'tsukimi',
-   u'jdub', u'marilize', u'jblack']
+  [u'ddaa', u'debonzi', u'kurem', u'ddaa', u'jordi', u'carlos', u'daf',
+   u'tsukimi', u'jdub', u'marilize', u'jblack']
 
-From the ten non-cancelled, two are approved.
+From the eleven non-cancelled, three are approved.
 
   >>> approved = ShippingRequestStatus.APPROVED
   >>> [r.recipient.name 
   ...  for r in requestset.search(request_type='custom', status=approved)]
-  [u'ddaa', u'jblack']
+  [u'ddaa', u'jordi', u'jblack']
 
 We have also four non-cancelled standard requests:
 
@@ -199,14 +200,37 @@ When exporting requests, we'll want to get all approved requests that weren't
 approved yet, with a given priority. This is done using the
 getUnshippedRequests method of ShippingRequestSet.
 
-  >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
-  4
+  >>> import transaction
+  >>> transaction.commit()
+  >>> normal = ShippingRequestPriority.HIGH
+  >>> unshipped_requests = requestset.getUnshippedRequests(normal)
+  >>> unshipped_requests.count()
+  1
 
-Now we do an export of all normal priority orders that are ready to be
-shipped.
+To actually export the files and upload them to Librarian we use
+ShippingRequestSet.exportRequestsToFiles(). Let's do an export of all high
+priority requests.
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().setUp()
+
+  >>> requestset.exportRequestsToFiles(normal, transaction)
+  >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
+  >>> run.requests.count()
+  1
+  >>> run.requests[0].highpriority
+  True
+  >>> print run.csvfile.read()
+  "recordnr","Ship to company","Ship to name","Ship to addr1","Ship to addr2","Ship to city","Ship to county","Ship to zip","Ship to country","Ship to phone","Ship to email address","ship Ubuntu quantity PC","ship Ubuntu quantity 64-bit PC","ship Ubuntu quantity Mac","ship KUbuntu quantity PC","ship KUbuntu quantity 64-bit PC","ship KUbuntu quantity Mac","ship EdUbuntu quantity PC","ship EdUbuntu quantity 64-bit PC","ship EdUbuntu quantity Mac","token","Ship via","display" 
+  "16","Something","Jordi Mallach","Somewhere","in this world","whatever","not mandatory","999432423","IO","+55 16 3374-2027","jordi@ubuntu.com","9","3","9","0","0","0","0","0","0","...","TNT","0" 
+  <BLANKLINE>
+
+
+Now we do an export of all normal priority requests that are ready to be
+shipped, by running the shipit-exports cronscript.
+
+  >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
+  4
 
   >>> import subprocess
   >>> process = subprocess.Popen(
@@ -218,10 +242,14 @@ shipped.
   >>> process.returncode
   0
 
-  >>> import transaction
   >>> transaction.commit()
   >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
   0
+  >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
+  >>> run.requests.count()
+  4
+  >>> run.requests[0].highpriority
+  False
 
   >>> LibrarianTestSetup().tearDown()
 
@@ -239,12 +267,13 @@ to each country.
     >>> for line in csv_file.readlines():
     ...     line
     'Country,Shipped Ubuntu x86 CDs,Shipped Ubuntu AMD64 CDs,Shipped Ubuntu PPC CDs,Shipped KUbuntu x86 CDs,Shipped KUbuntu AMD64 CDs,Shipped KUbuntu PPC CDs,Shipped EdUbuntu x86 CDs,Shipped EdUbuntu AMD64 CDs,Shipped EdUbuntu PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent\r\n'
-    'Bermuda,5,3,2,0,0,0,0,0,0,1,0,10,100.00%,12.35%,North America\r\n'
-    'British Indian Ocean Territory,9,6,9,0,0,0,0,0,0,1,0,24,100.00%,29.63%,Asia\r\n'
-    'Burkina Faso,10,3,2,0,0,0,0,0,0,1,0,15,100.00%,18.52%,Africa\r\n'
-    'China,0,3,0,0,0,0,0,0,0,1,0,3,100.00%,3.70%,Asia\r\n'
-    'Heard Island and McDonald Islands,5,0,0,0,0,0,0,0,0,1,0,5,100.00%,6.17%,Antarctica\r\n'
-    '\xc3\x85land Islands,9,6,9,0,0,0,0,0,0,0,1,24,100.00%,29.63%,Europe\r\n'
+    'Bermuda,5,3,2,0,0,0,0,0,0,1,0,10,100.00%,9.80%,North America\r\n'
+    'British Indian Ocean Territory,18,9,18,0,0,0,0,0,0,1,1,22,100.00%,44.12%,Asia\r\n'
+    'Burkina Faso,10,3,2,0,0,0,0,0,0,1,0,15,100.00%,14.71%,Africa\r\n'
+    'China,0,3,0,0,0,0,0,0,0,1,0,3,100.00%,2.94%,Asia\r\n'
+    'Heard Island and McDonald Islands,5,0,0,0,0,0,0,0,0,1,0,5,100.00%,4.90%,Antarctica\r\n'
+    '\xc3\x85land Islands,9,6,9,0,0,0,0,0,0,0,1,24,100.00%,23.53%,Europe\r\n'
+
 
 There's another report which gives us the number of shipments of all shipment
 sizes we had.
@@ -257,6 +286,7 @@ sizes we had.
     '5,1\r\n'
     '10,1\r\n'
     '15,1\r\n'
+    '21,1\r\n'
     '24,2\r\n'
 
 There's also a report of requests by week.
@@ -270,7 +300,7 @@ There's also a report of requests by week.
     '2005,14,0,,,,,,,,,\r\n'
     '2005,15,0,,,,,,,,,\r\n'
     '2005,16,0,,,,,,,,,\r\n'
-    '2005,17,4,36,23,31,0,0,0,0,0,0\r\n'
+    '2005,17,5,45,26,40,0,0,0,0,0,0\r\n'
     '2005,18,4,36,18,46,0,0,0,0,0,0\r\n'
     '2005,19,1,9,6,9,0,0,0,0,0,0\r\n'
     '2005,20,1,9,6,9,0,0,0,0,0,0\r\n'

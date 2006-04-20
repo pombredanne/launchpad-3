@@ -1,25 +1,27 @@
 <metal:quantity_widgets define-macro="quantity_widgets">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
+
     :widgets_matrix: A matrix in which each row contains a ShipItFlavour and
                      one quantity widget for each ShipItArchitecture that we
                      ship CDs. These widgets should always be ordered according
                      to their architectures, and the order should be 
-                     (PC, 64-bit PC, Mac).
+                     the same as in view/ordered_architectures.
+
+    :view/ordered_architectures: A list of ShipItArchitecture objects in the
+                                 order they should be diplayed in the UI.
   </tal:comment>
 
-
-
-  <table cols="3">
+  <table tal:attributes="cols view/ordered_architectures/count:len">
     <tr>
       <thead>
-      <th></th>
-      <th>PC</th>
-      <th>64-bit PC</th>
-      <th>Mac</th>
+        <th></th>
+        <tal:headers repeat="arch view/ordered_architectures">
+          <th tal:content="arch/title" />
+        </tal:headers>
       </thead>
     </tr>
-    <tr tal:repeat="row nocall:widgets_matrix">
+    <tr tal:repeat="row widgets_matrix">
       <tal:block repeat="cel row">
         <tal:comment replace="nothing">
           We need to save the widget with this nocall: here because if we

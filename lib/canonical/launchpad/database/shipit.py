@@ -8,15 +8,18 @@ __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
 
 from StringIO import StringIO
 import csv
-from datetime import timedelta
+from datetime import datetime, timedelta
 import random
 
 from zope.interface import implements
 from zope.component import getUtility
 
+import pytz
+
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
+from canonical.uuid import generate_uuid
 from canonical.database.sqlbase import (
     SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
@@ -32,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
     ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
     IShipmentSet, ShippingRequestPriority, IShipItReport, IShipItReportSet,
-    CURRENT_SHIPIT_DISTRO_RELEASE)
+    CURRENT_SHIPIT_DISTRO_RELEASE, MAX_SHIPPINGRUN_SIZE, ILibraryFileAliasSet)
 from canonical.launchpad.database.country import Country
 
 
@@ -376,6 +379,54 @@ class ShippingRequestSet:
                                 standard_type.quantityppc)
 
         return query
+
+    def exportRequestsToFiles(self, priority, ztm):
+        """See IShippingRequestSet"""
+        request_ids = [
+            request.id for request in self.getUnshippedRequests(priority)]
+        # The MAX_SHIPPINGRUN_SIZE is not a hard limit, and it doesn't make 
+        # sense to split a shippingrun into two just because there's 10 
+        # requests more than the limit, so we only split them if there's at
+        # least 50% more requests than MAX_SHIPPINGRUN_SIZE.
+        file_counter = 1
+        while len(request_ids):
+            ztm.begin()
+            if len(request_ids) > MAX_SHIPPINGRUN_SIZE * 1.5:
+                request_ids_subset = request_ids[:MAX_SHIPPINGRUN_SIZE]
+                request_ids[:MAX_SHIPPINGRUN_SIZE] = []
+            else:
+                request_ids_subset = request_ids[:]
+                request_ids = []
+            shippingrun = self._create_shipping_run(request_ids_subset)
+            now = datetime.now(pytz.timezone('UTC'))
+            filename = 'Ubuntu'
+            if priority == ShippingRequestPriority.HIGH:
+                filename += '-High-Pri'
+            filename += '-%s-%d.%s.csv' % (
+                now.strftime('%y-%m-%d'), file_counter, generate_uuid())
+            shippingrun.exportToCSVFile(filename)
+            ztm.commit()
+
+    def _create_shipping_run(self, request_ids):
+        """Create and return a ShippingRun containing all requests whose ids
+        are in request_ids.
+        
+        Each request will be added to the ShippingRun only if it's approved, 
+        not cancelled and not part of another shipment.
+        """
+        shippingrun = ShippingRunSet().new()
+        for request_id in request_ids:
+            request = self.get(request_id)
+            if not request.isApproved():
+                # This request's status may have been changed after we started
+                # running the script. Now it's not approved anymore and we can't
+                # export it.
+                continue
+            assert not request.cancelled
+            assert request.shipment is None
+            shipment = ShipmentSet().new(
+                request, request.shippingservice, shippingrun)
+        return shippingrun
 
     def _sumRequestedCDCount(self, quantities):
         """Sum the values of a dictionary mapping flavour and architectures 
@@ -800,8 +851,18 @@ class ShippingRun(SQLBase):
         clausetables = ['ShippingRun', 'Shipment']
         return ShippingRequest.select(query, clauseTables=clausetables)
 
-    def exportToCSVFile(self):
+    def exportToCSVFile(self, filename):
         """See IShippingRun"""
+        csv_file = self._createCSVFile()
+        csv_file.seek(0)
+        self.csvfile = getUtility(ILibraryFileAliasSet).create(
+            name=filename, size=len(csv_file.getvalue()), file=csv_file,
+            contentType='text/plain')
+
+    def _createCSVFile(self):
+        """Return a csv file containing all requests that are part of this
+        shippingrun.
+        """
         file_fields = (('recordnr', 'id'),
                        ('Ship to company', 'organization'),
                        ('Ship to name', 'recipientdisplayname'),

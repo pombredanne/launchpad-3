@@ -7,7 +7,7 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'SHIPIT_UBUNTU_URL', 'SHIPIT_EDUBUNTU_URL', 'SHIPIT_KUBUNTU_URL',
            'ShippingRequestPriority', 'IShipItReport', 'IShipItReportSet',
            'CURRENT_SHIPIT_DISTRO_RELEASE', 'IShippingRequestAdmin',
-           'IShippingRequestEdit']
+           'IShippingRequestEdit', 'MAX_SHIPPINGRUN_SIZE']
 
 from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -27,6 +27,9 @@ SHIPIT_UBUNTU_URL = 'https://shipit.ubuntu.com'
 SHIPIT_KUBUNTU_URL = 'https://shipit.kubuntu.com'
 SHIPIT_EDUBUNTU_URL = 'https://shipit.edubuntu.com'
 CURRENT_SHIPIT_DISTRO_RELEASE = ShipItDistroRelease.DAPPER
+
+# The maximum number of requests in a single shipping run
+MAX_SHIPPINGRUN_SIZE = 10000
 
 
 def _valid_positive_int(value):
@@ -298,6 +301,13 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
+    def exportRequestsToFiles(priority, ztm):
+        """Group all approved, unshipped and non-cancelled requests into
+        one or more ShippingRuns with at most MAX_SHIPPINGRUN_SIZE requests 
+        each and for each ShippingRun export it into a CSV file and upload it
+        to the Librarian.
+        """
+
     def getOldestPending():
         """Return the oldest request with status PENDING.
         
@@ -480,8 +490,9 @@ class IShippingRun(Interface):
     requests = Attribute(_('All requests that are part of this shipping run.'))
 
     def exportToCSVFile():
-        """Return a csv file containing all requests that are part of this
-        shippingrun.
+        """Generate a CSV file with all requests that are part of this
+        shipping run, upload it to the Librarian and store the Librarian
+        reference on the csvfile attribute.
         """
 
 
