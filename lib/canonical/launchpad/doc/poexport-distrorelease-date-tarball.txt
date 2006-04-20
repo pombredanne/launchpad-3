@@ -67,7 +67,7 @@ Get some dates.
 Create a Spanish PO file, with an active translation submission created on
 2000/01/01.
 
-    >>> es = template.getOrCreatePOFile('es')
+    >>> es = template.newPOFile('es')
     >>> pomsgset = es.createMessageSetFromMessageSet(potmsgset)
     >>> translations = { 0: u'blah (es)' }
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
@@ -78,7 +78,7 @@ Create a Spanish PO file, with an active translation submission created on
 Create a Welsh PO file, with an active translation submission created on
 2000/01/03.
 
-    >>> cy = template.getOrCreatePOFile('cy')
+    >>> cy = template.newPOFile('cy')
     >>> pomsgset = cy.createMessageSetFromMessageSet(potmsgset)
     >>> translations = { 0: u'blah (cy)' }
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,

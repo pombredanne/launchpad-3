@@ -248,25 +248,28 @@ class IPOTemplate(IRosettaStats):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def getOrCreatePOFile(language_code, variant=None, owner=None):
-        """Create and return a new po file in the given language. The
-        variant is optional.
+    def newPOFile(language_code, variant=None, requester=None):
+        """Return a new IPOFile for the given language. The variant is
+        optional.
 
         Raise LanguageNotFound if the language does not exist in the
         database.
+
+        We should not have already an IPOFile for the given language_code and
+        variant.
         """
 
-    def getPOFileOrDummy(language_code, variant=None, owner=None):
-        """Get a POFile for the given language and optional variant, and if
-        none exists then return a DummyPOFile.
+    def getDummyPOFile(language_code, variant=None, requester=None):
+        """Return a DummyPOFile if there isn't already a persistent IPOFile
 
         Raise LanguageNotFound if the language does not exist in the
-        database. This method is designed to be used by traversal code in
-        the case of a GET request (read-only). Instead of creating a PO file
-        just because someone is LOOKING at an empty pofile, we would just
-        show them the DummyPOFile. If they actually POST to the POFile then
-        the traversal code should use POTemplate.getOrCreatePOFile which
-        will create an empty POFile and return that instead of the Dummy.
+        database.
+
+        This method is designed to be used by read only actions. This way you
+        only create a POFile when you actually need to store data.
+
+        We should not have already a POFile for the given language_code and
+        variant.
         """
 
     def createMessageSetFromMessageID(msgid):
