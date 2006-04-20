@@ -408,8 +408,8 @@ def get_bug_edit_notification_texts(bug_delta):
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("binarypackagename", "name"), ("severity", "title"),
-                ("priority", "title"), ("bugwatch", "title")):
+                ("severity", "title"), ("priority", "title"),
+                ("bugwatch", "title")):
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -651,10 +651,6 @@ def get_task_delta(old_task, new_task):
             changes["sourcepackagename"] = {}
             changes["sourcepackagename"]["old"] = old_task.sourcepackagename
             changes["sourcepackagename"]["new"] = new_task.sourcepackagename
-        if old_task.binarypackagename != new_task.binarypackagename:
-            changes["binarypackagename"] = {}
-            changes["binarypackagename"]["old"] = old_task.binarypackagename
-            changes["binarypackagename"]["new"] = new_task.binarypackagename
     else:
         raise TypeError(
             "Can't calculate delta on bug tasks of incompatible types: "

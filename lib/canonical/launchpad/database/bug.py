@@ -326,9 +326,9 @@ class BugSet:
         return None
 
     def createBug(self, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, datecreated=None,
-        title=None, security_related=False, private=False, owner=None):
+                  product=None, comment=None, description=None, msg=None,
+                  datecreated=None, title=None, security_related=False,
+                  private=False, owner=None):
         """See IBugSet."""
         if comment is description is msg is None:
             raise AssertionError(
@@ -376,10 +376,8 @@ class BugSet:
         # Create the task on a source package name if one was passed.
         if distribution:
             BugTaskSet().createTask(
-                bug=bug,
-                distribution=distribution,
+                bug=bug, distribution=distribution,
                 sourcepackagename=sourcepackagename,
-                binarypackagename=binarypackagename,
                 owner=owner)
 
         return bug

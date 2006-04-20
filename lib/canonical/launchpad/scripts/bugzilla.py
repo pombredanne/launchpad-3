@@ -376,7 +376,6 @@ class Bugzilla:
         return {
             'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
-            'binarypackagename': binpkg
             }
 
     def getLaunchpadMilestone(self, bug):
@@ -513,7 +512,6 @@ class Bugzilla:
                     lp_bug,
                     owner=lp_bug.owner,
                     distribution=self.debian,
-                    binarypackagename=target['binarypackagename'],
                     sourcepackagename=target['sourcepackagename'])
                 debtask.datecreated = bug.creation_ts
                 debtask.bugwatch = watch
