@@ -67,7 +67,8 @@ class FileBugView(SQLObjectAddView):
                 bugtarget = context.getSourcePackage(sourcepackagename.name)
                 bug = bugtarget.createBug(
                     title=title, comment=comment, private=private,
-                    security_related=security_related, owner=current_user)
+                    security_related=security_related, owner=current_user,
+                    binarypackagename=binarypackagename)
         else:
             bug = context.createBug(
                 title=title, comment=comment, private=private,

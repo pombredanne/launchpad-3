@@ -326,9 +326,9 @@ class BugSet:
         return None
 
     def createBug(self, distribution=None, sourcepackagename=None,
-                  product=None, comment=None, description=None, msg=None,
-                  datecreated=None, title=None, security_related=False,
-                  private=False, owner=None):
+                  binarypackagename=None, product=None, comment=None,
+                  description=None, msg=None, datecreated=None, title=None,
+                  security_related=False, private=False, owner=None):
         """See IBugSet."""
         if comment is description is msg is None:
             raise AssertionError(
@@ -352,6 +352,13 @@ class BugSet:
 
         if not datecreated:
             datecreated = UTC_NOW
+
+        # Store binary package name in the description, because
+        # storing it as a separate field was a maintenance burden to
+        # developers.
+        if binarypackagename:
+            description = "Binary package hint: %s\n\n%s" % (
+                binarypackagename.name, description)
 
         bug = Bug(
             title=title, description=description, private=private,
