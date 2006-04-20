@@ -103,6 +103,13 @@ def _can_edit_translations(pofile, person):
 
     Return True or False indicating whether the person is allowed
     to edit these translations.
+
+    Admins and Rosetta experts are always able to edit any translation.
+    If the IPOFile is for an IProductSeries, the owner of the IProduct has
+    also permissions.
+    Any other mortal will have rights depending on if he/she is on the right
+    translation team for the given IPOFile.translationpermission and the
+    language associated with this IPOFile.
     """
     # If the person is None, then they cannot edit
     if person is None:

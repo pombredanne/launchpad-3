@@ -55,6 +55,10 @@ class POTemplateNavigation(Navigation):
             return pofile
         else:
             # It's a POST.
+            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
+            # POST we got, a Log out action will be also a POST and we should
+            # not create an IPOFile in that case. See bug #40275 for more
+            # information.
             pofile = self.context.getPOFileByLang(name)
             if pofile is None:
                 # The user is going to write something that needs an IPOFile

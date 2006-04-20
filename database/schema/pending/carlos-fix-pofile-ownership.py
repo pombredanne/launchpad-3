@@ -24,7 +24,7 @@ def parse_options(args):
         default=False,
         action='store_true',
         help=("Whether the script should only check if the po file ownership"
-            "is correct.")
+              " is correct.")
         )
 
     # Add the verbose/quiet options.
@@ -40,7 +40,10 @@ def main(argv):
     # Get the global logger for this task.
     logger_object = logger(options, 'rosetta-fixes')
 
-    logger_object.info('Starting the po file process...')
+    if options.check:
+        logger_object.info('Starting the po file checking...')
+    else:
+        logger_object.info('Starting the po file process...')
 
     # Setup zcml machinery to be able to use getUtility
     execute_zcml_for_scripts()
@@ -54,9 +57,17 @@ def main(argv):
     fixed_entries = 0
     for pofile_id in pofile_ids:
         pofile = POFile.get(pofile_id)
+        # Store current owner as a backup.
         current_owner = pofile.owner
+        # We need to change the owner to someone that always have permissions,
+        # like Rosetta experts, to be sure that the old owner has permissions
+        # already to edit that file, this is needed because IPOFile.owner has
+        # always permissions and we want to ignore that check to be sure
+        # whether it needs to be fixed.
         pofile.owner = rosetta_expert
         if pofile.canEditTranslations(current_owner):
+            # The original owner has enough permissions to keep the ownership
+            # of this file.
             pofile.owner = current_owner
         else:
             fixed_entries += 1

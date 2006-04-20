@@ -255,7 +255,7 @@ class IPOTemplate(IRosettaStats):
         Raise LanguageNotFound if the language does not exist in the
         database.
 
-        We should not have a persistent IPOFile for the same language_code and
+        We should not have already an IPOFile for the given language_code and
         variant.
         """
 
@@ -266,8 +266,9 @@ class IPOTemplate(IRosettaStats):
         database.
 
         This method is designed to be used by read only actions. This way you
-        only create persistent IPOFile when you actually need to store data.
-        We should not have a persistent IPOFile for the same language_code and
+        only create a POFile when you actually need to store data.
+
+        We should not have already a POFile for the given language_code and
         variant.
         """
 

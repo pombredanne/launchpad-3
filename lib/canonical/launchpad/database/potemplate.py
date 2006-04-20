@@ -457,7 +457,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getDummyPOFile(self, language_code, variant=None, requester=None):
         """See IPOTemplate."""
-        # see if one exists already
+        # see if a valid one exists.
         existingpo = self.getPOFileByLang(language_code, variant)
         assert existingpo is None, (
             'There is already a valid IPOFile (%s)' % existingpo.title)
