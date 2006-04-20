@@ -278,10 +278,13 @@ def contactEmailAddresses(person):
     Finally, if <person> doesn't have a preferred email neither implement
     ITeam, the Set will be empty.
     """
-    from canonical.launchpad.mail import format_address
     emails = set()
     if person.preferredemail is not None:
-        emails.add(format_address(None, person.preferredemail.email))
+        # XXX: This str() call can be removed as soon as Andrew lands his
+        # unicode-simple-sendmail branch, because that will make
+        # simple_sendmail handle unicode email addresses.
+        # Guilherme Salgado, 2006-04-20
+        emails.add(str(person.preferredemail.email))
         return emails
 
     if ITeam.providedBy(person):

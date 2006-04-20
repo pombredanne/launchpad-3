@@ -15,7 +15,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.config import config
-from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
@@ -99,14 +99,20 @@ class TeamMembership(SQLBase):
         elif status in [deactivated, expired]:
             _cleanTeamParticipation(self.person, self.team)
 
-        # Send email notifications only if it wasn't the actual member who
-        # declined/proposed himself.
+        # Send status change notifications only if it wasn't the actual member
+        # who declined/proposed himself. In the case where the member is
+        # proposing himself, a more detailed notification is sent to the team
+        # admins (by a subscriber of JoinTeamRequestEvent), explaining that
+        # a new member is waiting for approval.
         if self.person != self.reviewer and self.status != proposed:
             self._sendStatusChangeNotification(old_status)
 
     def _sendStatusChangeNotification(self, old_status):
-        """ """
-        from_addr = config.membership_status_change_address
+        """Send a status change notification to all team admins and the
+        member whose membership's status changed.
+        """
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
         new_status = self.status
         admins_emails = self.team.getTeamAdminsEmailAddresses()
         # self.person might be a team, so we can't rely on its preferredemail.
