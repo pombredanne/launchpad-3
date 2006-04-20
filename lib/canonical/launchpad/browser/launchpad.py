@@ -251,7 +251,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'branches', 'calendar']
 
     def overview(self):
         target = ''
@@ -284,6 +284,12 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = 'bounties'
         text = 'Bounties'
         summary = 'The Launchpad Universal Bounty Tracker'
+        return Link(target, text, summary)
+
+    def branches(self):
+        target = 'bazaar'
+        text = 'Branches'
+        summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
     def calendar(self):

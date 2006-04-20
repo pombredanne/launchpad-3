@@ -8,6 +8,7 @@ __all__ = [
     'PersonSetNavigation',
     'PeopleContextMenu',
     'PersonFacets',
+    'PersonBranchesMenu',
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
@@ -205,7 +206,7 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'branches', 'translations', 'calendar']
 
     def overview(self):
         text = 'Overview'
@@ -239,6 +240,12 @@ class PersonFacets(StandardLaunchpadFacets):
             )
         return Link('+bounties', text, summary)
 
+    def branches(self):
+        text = 'Branches'
+        summary = ('Bazaar Branches and revisions registered and authored '
+                   'by %s' % self.context.browsername)
+        return Link('+branches', text, summary)
+
     def translations(self):
         target = '+translations'
         text = 'Translations'
@@ -255,6 +262,32 @@ class PersonFacets(StandardLaunchpadFacets):
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link('+calendar', text, summary, enabled=enabled)
+
+
+class PersonBranchesMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'branches'
+
+    links = ['authored', 'registered', 'subscribed', 'addbranch']
+
+    def authored(self):
+        text = 'Branches Authored'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Branches Registered'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Branches Subscribed'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def addbranch(self):
+        text = 'Register Branch'
+        return Link('+addbranch', text, icon='add')
+
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -385,8 +418,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editwikinames', 'editircnicknames', 'editjabberids',
              'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages',
-             'branches', 'authored', 'registered', 'subscribed', 'addbranch']
+             'codesofconduct', 'administer', 'common_packages',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -467,28 +499,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
-
-    def branches(self):
-        text = 'Bzr Branches'
-        summary = 'Branches and revisions by %s' % self.context.browsername
-        return Link('+branches', text, summary)
-
-    def authored(self):
-        text = 'Branches Authored'
-        return Link('+authoredbranches', text, icon='branch')
-
-    def registered(self):
-        text = 'Branches Registered'
-        return Link('+registeredbranches', text, icon='branch')
-
-    def subscribed(self):
-        text = 'Branches Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
-
-    def addbranch(self):
-        text = 'Register Branch'
-        return Link('+addbranch', text, icon='add')
-
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
