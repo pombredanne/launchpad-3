@@ -202,9 +202,16 @@ class BugTask(SQLBase, BugTaskMixin):
             return
 
         if new_status == dbschema.BugTaskStatus.UNKNOWN:
-            # We record no dates when the status is set to UNKNOWN, so
-            # just update the value and exit.
+            # Ensure that all status-related dates are cleared,
+            # because it doesn't make sense to have any values set for
+            # date_confirmed, date_closed, etc. when the status
+            # becomes UNKNOWN.
             self.status = new_status
+
+            self.date_confirmed = None
+            self.date_inprogress = None
+            self.date_closed = None
+
             return
 
         UTC = pytz.timezone('UTC')
@@ -248,6 +255,7 @@ class BugTask(SQLBase, BugTaskMixin):
         self.status = new_status
 
     def transitionToAssignee(self, assignee):
+        """See canonical.launchpad.interfaces.IBugTask."""
         if assignee == self.assignee:
             # No change to the assignee, so nothing to do.
             return

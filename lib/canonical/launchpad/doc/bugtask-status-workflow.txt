@@ -171,3 +171,31 @@ setting an assignee has "side effects".
     >>> ubuntu_firefox_task.transitionToAssignee(None)
     >>> ubuntu_firefox_task.date_assigned is None
     True
+
+date_xxx and the UNKNOWN status
+-------------------------------
+
+When an IBugTask is set to status UNKNOWN, the date_confirmed,
+date_closed, and date_inprogress fields are all set to None.
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+
+    >>> ubuntu_firefox_task.date_confirmed
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.date_inprogress
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.date_closed
+    datetime.datetime...
+
+    >>> ubuntu_firefox_task.transitionToStatus(BugTaskStatus.UNKNOWN)
+
+    >>> ubuntu_firefox_task.date_confirmed is None
+    True
+
+    >>> ubuntu_firefox_task.date_inprogress is None
+    True
+
+    >>> ubuntu_firefox_task.date_closed is None
+    True
