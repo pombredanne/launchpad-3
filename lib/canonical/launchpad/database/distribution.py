@@ -93,7 +93,8 @@ class Distribution(SQLBase, BugTargetBase):
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution')
+    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
+        orderBy=['dateexpected', 'name'])
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
     official_malone = BoolCol(dbName='official_malone', notNull=True,

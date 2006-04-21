@@ -66,11 +66,9 @@ The First One
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...<h1>You're being redirected</h1>
-  ...
+  Location: http://localhost:9000/token/.../+validateemail
+  <BLANKLINE>
 
 
   >>> path = '%s/+validateemail' % base_path
@@ -180,8 +178,8 @@ The Second One
   ... """ % base_path)
   HTTP/1.1 303 See Other
   ...
-  Location: .../+validateemail
-  ...
+  Location: http://localhost:9000/token/.../+validateemail
+  <BLANKLINE>
 
 
   >>> path = '%s/+validateemail' % base_path

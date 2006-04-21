@@ -112,7 +112,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+reassign", auth=True)
 >>> check("/distros/ubuntu/+selectmemberteam", auth=True)
 >>> check("/distros/ubuntu/+changetranslators", auth=True)
->>> check("/distros/ubuntu/+addmilestone", auth=True)
+>>> check("/distros/ubuntu/hoary/+addmilestone", auth=True)
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)

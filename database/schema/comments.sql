@@ -966,11 +966,14 @@ COMMENT ON COLUMN LoginToken.created IS 'The timestamp that this request was mad
 COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.TokenType.';
 COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
 COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
+COMMENT ON COLUMN LoginToken.date_consumed IS 'The date and time when this token was consumed. It\'s NULL if it hasn\'t been consumed yet.';
 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
 COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
+COMMENT ON COLUMN Milestone.distrorelease IS 'The distrorelease for which this is a milestone. A milestone on a distrorelease is ALWAYS also a milestone for the same distribution. This is because milestones started out on products/distributions but are moving to being on series/distroreleases.';
+COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroreleases.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
 COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
 

@@ -82,6 +82,8 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     nominatedarchindep = Attribute(
         "Distroarchrelease designed to build architeture independent "
         "packages whithin this distrorelease context.")
+    milestones = Attribute(
+        'The milestones associated with this distrorelease.')
     drivers = Attribute(
         'A list of the people or teams who are drivers for this release. '
         'This list is made up of any drivers or owners from this '
@@ -266,6 +268,9 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
 
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
+
+    def newMilestone(name, dateexpected=None):
+        """Create a new milestone for this DistroRelease."""
 
     def initialiseFromParent():
         """Copy in all of the parent distrorelease's configuration. This

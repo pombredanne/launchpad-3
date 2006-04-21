@@ -325,9 +325,15 @@ class IPOTemplateSubset(Interface):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
-        """Return the IPOTemplate from this subset that has the given name.
+        """Return the IPOTemplate with the given name or None.
 
-        Return None if there is no such IPOTemplate.
+        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
+        """
+
+    def getPOTemplateByTranslationDomain(translation_domain):
+        """Return the IPOTemplate with the given translation_domain or None.
+
+        The IPOTemplate is restricted to this concrete IPOTemplateSubset.
         """
 
     def getPOTemplateByPath(path):
