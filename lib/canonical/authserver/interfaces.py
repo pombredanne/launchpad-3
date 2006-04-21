@@ -152,6 +152,12 @@ class IUserDetailsStorageV2(Interface):
 class IBranchDetailsStorage(Interface):
     """An interface for updating the status of branches in Launchpad."""
 
+    def getBranchPullQueue():
+        """Get the list of branches to be pulled by the supermirror.
+
+        :returns: a list of (branch_id, pull_url) pairs.
+        """
+
     def startMirroring(branchID):
         """Notify Launchpad that the given branch has started mirroring.
 

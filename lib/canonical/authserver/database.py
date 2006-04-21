@@ -22,6 +22,7 @@ from twisted.enterprise import adbapi
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
 from canonical.database.sqlbase import sqlvalues, quote
+from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 
 from canonical.authserver.interfaces import (
@@ -668,6 +669,25 @@ class DatabaseBranchDetailsStorage:
         :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
         """
         self.connectionPool = connectionPool
+
+    def getBranchPullQueue(self):
+        ri = self.connectionPool.runInteraction
+        return ri(self._getBranchPullQueueInteraction)
+
+    def _getBranchPullQueue(self, transaction):
+        transaction.execute(utf8("""
+            SELECT id, url FROM Branch
+              WHERE (last_mirror_attempt is NULL 
+                     OR (%s - last_mirror_attempt > '1 day'))
+            """ % UTC_NOW))
+        result = []
+        for (branch_id, url) in transaction.fetchall():
+            # XXX: 20060421 jamesh
+            # we need to convert url to pull_url here using same
+            # rules as the Branch.pull_url property.  Do we need to
+            # handle all cases in that property?
+            result.append((branch_id, url))
+        return result
 
     def startMirroring(self, branchID):
         """See IBranchDetailsStorage"""
