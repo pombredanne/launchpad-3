@@ -319,8 +319,8 @@ class TranslationImportQueueEntry(SQLBase):
         potemplateset = getUtility(IPOTemplateSet)
         potemplate_subset = potemplateset.getSubset(
             distrorelease=self.distrorelease)
-        potemplate = potemplate_subset.getPOTemplateByName(
-            translation_domain.lower())
+        potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
+            translation_domain)
 
         if potemplate is None:
             # The potemplate is not yet imported, we cannot attach this .po

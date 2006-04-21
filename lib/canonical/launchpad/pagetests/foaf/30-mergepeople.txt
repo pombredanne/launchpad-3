@@ -153,7 +153,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/token/.../+accountmerge
-  ...
+  <BLANKLINE>
 
 
   Now the user goes to the page we sent a link via email to validate the first
@@ -201,7 +201,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/token/.../+accountmerge
-  ...
+  <BLANKLINE>
 
 
   Now the user proves that he's the owner of the second email address of the

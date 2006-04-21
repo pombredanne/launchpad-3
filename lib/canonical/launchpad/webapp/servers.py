@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-# XXX: Open a bug on this warning - we need to migrate to the WSGI publisher
+# XXX: Bug 39889
 import warnings
 warnings.filterwarnings(
         'ignore', 'PublisherHTTPServer', DeprecationWarning

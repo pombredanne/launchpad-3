@@ -11,7 +11,7 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
 
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -39,9 +39,24 @@ class LoginToken(SQLBase):
     created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
+    date_consumed = UtcDateTimeCol(default=None)
     password = '' # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
+
+    def consume(self):
+        """See ILoginToken."""
+        self.date_consumed = UTC_NOW
+
+        if self.fingerprint is not None:
+            tokens = LoginTokenSet().searchByFingerprintRequesterAndType(
+                self.fingerprint, self.requester, self.tokentype)
+        else:
+            tokens = LoginTokenSet().searchByEmailRequesterAndType(
+                self.email, self.requester, self.tokentype)
+
+        for token in tokens:
+            token.date_consumed = UTC_NOW
 
     def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""
@@ -125,36 +140,40 @@ class LoginTokenSet:
         except SQLObjectNotFound:
             return default
 
-    def searchByEmailAndRequester(self, email, requester):
+    def searchByEmailRequesterAndType(self, email, requester, type):
         """See ILoginTokenSet."""
         requester_id = None
         if requester is not None:
             requester_id = requester.id
         return LoginToken.select(AND(LoginToken.q.email==email,
-                                     LoginToken.q.requesterID==requester_id))
+                                     LoginToken.q.requesterID==requester_id,
+                                     LoginToken.q.tokentype==type))
 
-    def deleteByEmailAndRequester(self, email, requester):
+    def deleteByEmailRequesterAndType(self, email, requester, type):
         """See ILoginTokenSet."""
-        for token in self.searchByEmailAndRequester(email, requester):
+        for token in self.searchByEmailRequesterAndType(email, requester, type):
             token.destroySelf()
 
-    def searchByFingerprintAndRequester(self, fingerprint, requester):
+    def searchByFingerprintRequesterAndType(self, fingerprint, requester, type):
         """See ILoginTokenSet."""
         return LoginToken.select(AND(LoginToken.q.fingerprint==fingerprint,
-                                     LoginToken.q.requesterID==requester.id))
+                                     LoginToken.q.requesterID==requester.id,
+                                     LoginToken.q.tokentype==type))
 
     def getPendingGPGKeys(self, requesterid=None):
         """See ILoginTokenSet."""
-        query = 'tokentype=%s ' % LoginTokenType.VALIDATEGPG.value
+        query = ('date_consumed IS NULL AND tokentype = %s '
+                 % sqlvalues(LoginTokenType.VALIDATEGPG))
 
         if requesterid:
             query += 'AND requester=%s' % requesterid
 
         return LoginToken.select(query)
 
-    def deleteByFingerprintAndRequester(self, fingerprint, requester):
-        for token in self.searchByFingerprintAndRequester(fingerprint,
-                                                          requester):
+    def deleteByFingerprintRequesterAndType(self, fingerprint, requester, type):
+        tokens = self.searchByFingerprintRequesterAndType(
+            fingerprint, requester, type)
+        for token in tokens:
             token.destroySelf()
 
     def new(self, requester, requesteremail, email, tokentype,
