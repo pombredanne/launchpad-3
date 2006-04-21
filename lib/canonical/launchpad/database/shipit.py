@@ -160,9 +160,6 @@ class ShippingRequest(SQLBase):
         self._setQuantities(quantities)
 
     def _setQuantities(self, quantities, only_approved=False):
-#         attrname = 'quantity'
-#         if approved:
-#             attrname = 'quantityapproved'
         for flavour, arches_and_quantities in quantities.items():
             for arch, quantity in arches_and_quantities.items():
                 assert quantity >= 0

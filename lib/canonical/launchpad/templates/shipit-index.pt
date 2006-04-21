@@ -21,7 +21,7 @@
           </tal:block>
 
           <p>ShipIt lets you request <span tal:replace="view/flavour/title" />
-             6.06 (Dapper Drake) CDs that will be posted to you free of charge.
+             6.06 LTS (Dapper Drake) CDs that will be posted to you free of charge.
           </p>
 
           <p

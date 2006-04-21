@@ -674,7 +674,7 @@ def productseries(context, view):
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
-shipit_adminrequest = 'Approve/Deny a request'
+shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
 

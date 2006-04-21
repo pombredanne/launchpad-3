@@ -23,15 +23,15 @@
     </tr>
     <tr tal:repeat="row widgets_matrix">
       <tal:block repeat="cel row">
-        <tal:comment replace="nothing">
-          We need to save the widget with this nocall: here because if we
-          don't do that, our dear zope will turn it into a string for us.
-        </tal:comment>
-        <tal:save-widget define="widget nocall:cel">
+      <tal:comment replace="nothing">
+        We need to save the widget with this nocall: here because if we
+        don't do that, our dear zope will turn it into a string for us.
+      </tal:comment>
+      <tal:save-widget define="widget nocall:cel">
 
         <tal:is-header condition="repeat/cel/start">
-            <th tal:content="cel" />
-          </tal:is-header>
+          <th tal:content="cel" />
+        </tal:is-header>
         <tal:is-not-header condition="not: repeat/cel/start">
           <td style="text-align: center">
             <tal:block condition="cel">
@@ -40,7 +40,8 @@
             <span tal:condition="not: cel">n/a</span>
           </td>
         </tal:is-not-header>
-        </tal:save-widget>
+
+      </tal:save-widget>
       </tal:block>
     </tr>
   </table>
@@ -60,6 +61,7 @@
   </td>
 </metal:display_widget>
 
+
 <metal:display_raw_widget define-macro="display_raw_widget">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
@@ -75,6 +77,7 @@
     <div tal:condition="error" tal:content="structure error" />
   </div>
 </metal:display_raw_widget>
+
 
 <metal:shipping_details define-macro="shipping_details">
   <tal:comment replace="nothing">
@@ -138,6 +141,7 @@
     </tr>
   </table>
 </metal:shipping_details>
+
 
 <metal:meta-master define-macro="meta-master">
 <head>
@@ -217,94 +221,16 @@
     </div>
 
     <div class="visualClear" id="body">
+      <tal:maintenance replace="structure context/@@+maintenancemessage" />
+      <tal:notifications define="notifications request/notifications"
+                         condition="notifications">
+        <metal:notifications
+          use-macro="context/@@+main-template-macros/notifications" />
+      </tal:notifications>
+
       <metal:block define-slot="body">
       </metal:block>
     </div>
-
-    <table id="portal-columns">
-      <tbody>
-        <tr>
-          <td style="height: 1px;"></td>
-          <td
-            id="portal-column-content"
-            rowspan="2"
-          >
-            <div id="region-content">
-              <tal:maintenance
-                replace="structure context/@@+maintenancemessage" />
-              <tal:notifications
-                define="notifications request/notifications"
-                condition="notifications"
-              >
-                <metal:notifications
-                  use-macro="context/@@+main-template-macros/notifications" />
-              </tal:notifications>
-              <metal:main define-slot="main" tal:condition="nothing">
-                <p>Main content area.</p>
-              </metal:main>
-            </div>
-          </td>
-
-                <!-- start of right (by default at least) column -->
-          <td
-            id="portal-column-two"
-            metal:define-slot="column_two"
-            rowspan="2"
-          >
-            <div
-              tal:define="appmenu context/menu:application"
-              tal:condition="appmenu"
-              class="portlet portletBody portletContent"
-            >
-              <ul class="menu">
-                <tal:block repeat="link appmenu">
-                  <li
-                    tal:condition="link/selected"
-                    class="current"
-                  >
-                    <tal:block condition="link/linked">
-                      <strong>
-                        <a 
-                          tal:attributes="href link/url"
-                          tal:content="link/text"
-                        >link text</a>
-                      </strong>
-                    </tal:block>
-                    <tal:block condition="not: link/linked">
-                      <strong tal:content="link/text">link text</strong>
-                    </tal:block>
-                  </li>
-                  <li tal:condition="not: link/selected">
-                    <a
-                      tal:attributes="href link/url"
-                      tal:content="link/text"
-                    >link text</a>
-                  </li>
-                </tal:block>
-              </ul>
-            </div>
-                        <metal:portlets define-slot="portlets_two">
-
-                        </metal:portlets>
-          </td>
-                <!-- end of the right (by default at least) column -->
-        </tr>
-        <tr>
-                <!-- start of the left (by default at least) column -->
-          <td
-            id="portal-column-one"
-            metal:define-slot="column_one"
-          >
-                    <metal:portlets define-slot="portlets_one">
-
-                    </metal:portlets>
-          </td>
-                <!-- end of the left (by default at least) column -->
-
-          </tr>
-      </tbody>
-    </table>
-    <!-- end column wrapper -->
 
     <div class="visualClear">&nbsp;</div>
 

@@ -9339,18 +9339,20 @@ ALTER TABLE sshkey ENABLE TRIGGER ALL;
 
 ALTER TABLE standardshipitrequest DISABLE TRIGGER ALL;
 
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (1, 5, 2, 3, true, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (2, 5, 0, 0, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (3, 10, 2, 3, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (1, 8, 1, 1, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (2, 5, 0, 0, true, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (3, 0, 0, 1, false, 1);
 INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (4, 10, 0, 0, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (5, 0, 0, 3, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (6, 0, 2, 0, false, 1);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (7, 10, 0, 0, true, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (8, 0, 0, 3, false, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (9, 0, 0, 1, false, 2);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (10, 5, 0, 0, true, 3);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (11, 10, 0, 0, false, 3);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (12, 50, 0, 0, false, 3);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (5, 0, 1, 0, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (6, 1, 0, 0, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (7, 1, 0, 0, true, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (8, 5, 0, 0, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (9, 10, 0, 0, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (10, 0, 0, 1, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (11, 0, 0, 5, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (12, 8, 0, 2, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (13, 5, 0, 0, true, 3);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (14, 1, 0, 0, false, 3);
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;

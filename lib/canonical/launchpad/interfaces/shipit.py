@@ -548,36 +548,26 @@ class IShippingRequestAdmin(Interface):
     """
 
     ubuntu_quantityx86 = Int(
-        title=_('PC'), description=_('Quantity of Ubuntu X86 CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
+        title=_('PC'), description=_('Quantity of Ubuntu PC CDs'),
+        required=False, readonly=False, constraint=_valid_positive_int)
     ubuntu_quantityppc = Int(
-        title=_('Mac'), description=_('Quantity of Ubuntu PPC CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
+        title=_('Mac'), description=_('Quantity of Ubuntu Mac CDs'),
+        required=False, readonly=False, constraint=_valid_positive_int)
     ubuntu_quantityamd64 = Int(
-        title=_('64-bit PC'), description=_('Quantity of Ubuntu AMD64 CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
+        title=_('64-bit PC'), description=_('Quantity of Ubuntu 64-bit PC CDs'),
+        required=False, readonly=False, constraint=_valid_positive_int)
 
-    # XXX: Maybe we won't have all architectures for kubuntu?
     kubuntu_quantityx86 = Int(
-        title=_('PC'), description=_('Quantity of KUbuntu X86 CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
-    kubuntu_quantityppc = Int(
-        title=_('Mac'), description=_('Quantity of KUbuntu PPC CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
+        title=_('PC'), description=_('Quantity of KUbuntu PC CDs'),
+        required=False, readonly=False, constraint=_valid_positive_int)
     kubuntu_quantityamd64 = Int(
-        title=_('64-bit PC'), description=_('Quantity of KUbuntu AMD64 CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
+        title=_('64-bit PC'),
+        description=_('Quantity of KUbuntu 64-bit PC CDs'),
+        required=False, readonly=False, constraint=_valid_positive_int)
 
-    # XXX: Maybe we won't have all architectures for edubuntu?
     edubuntu_quantityx86 = Int(
-        title=_('PC'), description=_('Quantity of EdUbuntu X86 CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
-    edubuntu_quantityppc = Int(
-        title=_('Mac'), description=_('Quantity of EdUbuntu PPC CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
-    edubuntu_quantityamd64 = Int(
-        title=_('64-bit PC'), description=_('Quantity of EdUbuntu AMD64 CDs'),
-        required=True, readonly=False, constraint=_valid_positive_int)
+        title=_('PC'), description=_('Quantity of EdUbuntu PC CDs'),
+        required=False, readonly=False, constraint=_valid_positive_int)
 
     highpriority = IShippingRequest.get('highpriority')
     recipientdisplayname = IShippingRequest.get('recipientdisplayname')
@@ -607,28 +597,16 @@ class IShippingRequestEdit(Interface):
         description=_('Quantity of Ubuntu AMD64 Approved CDs'), required=False, 
         readonly=False, constraint=_valid_positive_int)
 
-    # XXX: Maybe we won't have all architectures for kubuntu?
     kubuntu_quantityx86approved = Int(
         title=_('PC'), description=_('Quantity of KUbuntu X86 Approved CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
-    kubuntu_quantityppcapproved = Int(
-        title=_('Mac'), description=_('Quantity of KUbuntu PPC Approved CDs'),
         required=False, readonly=False, constraint=_valid_positive_int)
     kubuntu_quantityamd64approved = Int(
         title=_('64-bit PC'),
         description=_('Quantity of KUbuntu AMD64 Approved CDs'), required=False,
         readonly=False, constraint=_valid_positive_int)
 
-    # XXX: Maybe we won't have all architectures for edubuntu?
     edubuntu_quantityx86approved = Int(
         title=_('PC'), description=_('Quantity of EdUbuntu X86 Approved CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
-    edubuntu_quantityppcapproved = Int(
-        title=_('Mac'), description=_('Quantity of EdUbuntu PPC Approved CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
-    edubuntu_quantityamd64approved = Int(
-        title=_('64-bit PC'),
-        description=_('Quantity of EdUbuntu AMD64 Approved CDs'),
         required=False, readonly=False, constraint=_valid_positive_int)
 
     highpriority = IShippingRequest.get('highpriority')

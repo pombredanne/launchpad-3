@@ -23,6 +23,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import ShipItFlavour, ShipItArchitecture
+from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -407,6 +408,10 @@ class StandardShipItRequestAddView(AddView):
 
 class ShippingRequestAdminMixinView:
 
+    # The name of the RequestedCDs' attribute from where we get the number we
+    # use as initial value to our quantity widgets.
+    quantity_attrname = None
+
     # This is the order in which we display the distribution flavours
     # in the UI
     ordered_flavours = [
@@ -441,10 +446,26 @@ class ShippingRequestAdminMixinView:
             matrix.append(row)
         return matrix
 
+    def getInitialQuantityWidgetsValuesFromExistingOrder(self, order):
+        initial = {}
+        requested = order.getRequestedCDsGroupedByFlavourAndArch()
+        for flavour in self.quantity_fields_mapping:
+            for arch in self.quantity_fields_mapping[flavour]:
+                field_name = self.quantity_fields_mapping[flavour][arch]
+                if field_name is None:
+                    # We don't ship this arch for this flavour
+                    continue
+                requested_cds = requested[flavour][arch]
+                initial[field_name] = getattr(
+                    requested_cds, self.quantity_attrname)
+        return initial
+
 
 class ShippingRequestApproveOrDenyView(
         GeneralFormView, ShippingRequestAdminMixinView):
     """The page where admins can Approve/Deny existing requests."""
+
+    quantity_attrname = 'quantityapproved'
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
@@ -492,8 +513,6 @@ class ShippingRequestApproveOrDenyView(
             # Do something here to tell the user this action is not expected.
             pass
 
-        return 'Done'
-
     def _makeNextURL(self, previous_action):
         # Need to flush all updates so that getOldestPending() can see the
         # updated values.
@@ -507,17 +526,9 @@ class ShippingRequestApproveOrDenyView(
 
     @property
     def initial_values(self):
-        initial = {}
-        initial['highpriority'] = self.context.highpriority
-        requested = self.context.getRequestedCDsGroupedByFlavourAndArch()
-        for flavour in self.quantity_fields_mapping:
-            for arch in self.quantity_fields_mapping[flavour]:
-                field_name = self.quantity_fields_mapping[flavour][arch]
-                if field_name is None:
-                    # We don't ship this arch for this flavour
-                    continue
-                requested_cds = requested[flavour][arch]
-                initial[field_name] = requested_cds.quantityapproved
+        order = self.context
+        initial = self.getInitialQuantityWidgetsValuesFromExistingOrder(order)
+        initial['highpriority'] = order.highpriority
         return initial
 
     def recipientHasOtherShippedRequests(self):
@@ -539,6 +550,8 @@ class ShippingRequestApproveOrDenyView(
 
 class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
     """The page where admins can create new requests or change existing ones."""
+
+    quantity_attrname = 'quantity'
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
@@ -569,27 +582,22 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
 
     @property
     def initial_values(self):
-        initial = {}
         if self.current_order is None:
-            return initial
+            return {}
 
         order = self.current_order
+        initial = self.getInitialQuantityWidgetsValuesFromExistingOrder(order)
         initial['highpriority'] = order.highpriority
-        requested = order.getRequestedCDsGroupedByFlavourAndArch()
-        for flavour in self.quantity_fields_mapping:
-            for arch in self.quantity_fields_mapping[flavour]:
-                field_name = self.quantity_fields_mapping[flavour][arch]
-                if field_name is None:
-                    # We don't ship this arch for this flavour
-                    continue
-                requested_cds = requested[flavour][arch]
-                initial[field_name] = requested_cds.quantityapproved
 
         for field in self.shipping_details_fields:
             initial[field] = getattr(order, field)
+
         return initial
 
     def validate(self, data):
+        # XXX: Even shipit admins shouldn't be allowed to make requests with 0
+        # CDs. We need to check this here.
+        # Guilherme Salgado, 2006-04-21
         errors = []
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
@@ -610,9 +618,11 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
                 kw['city'], kw['addressline1'], kw['phone'],
                 kw['addressline2'], kw['province'], kw['postcode'],
                 kw['organization'])
+            msg = 'New request created successfully: %d' % current_order.id
         else:
             for name in self.shipping_details_fields:
                 setattr(current_order, name, kw[name])
+            msg = 'Request %d changed' % current_order.id
 
         quantities = {}
         for flavour in self.quantity_fields_mapping:
@@ -622,13 +632,14 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
                 if field_name is None:
                     # We don't ship this arch for this flavour
                     continue
-                quantities[flavour][arch] = kw[field_name]
+                quantities[flavour][arch] = intOrZero(kw[field_name])
 
         current_order.highpriority = kw['highpriority']
         current_order.setQuantities(quantities)
         if not current_order.isApproved():
             current_order.approve()
-        return 'Done'
+        self._nextURL = canonical_url(current_order)
+        self.request.response.addNotification(msg)
 
 
 class ShipItReportsView(LaunchpadView):
