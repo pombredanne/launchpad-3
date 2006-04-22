@@ -8,9 +8,14 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3><span tal:replace="context/target/displayname">Firefox</span>
+      Feature Specification:</h3>
+</metal:heading>
 
   <div metal:fill-slot="main">
 

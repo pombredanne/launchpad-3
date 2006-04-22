@@ -137,6 +137,9 @@ class LaunchpadBrowserPublication(
         #t.join(con._dm)
 
     def beforeTraversal(self, request):
+        # Tell our custom database adapter that the request has started.
+        da.set_request_started()
+
         newInteraction(request)
         transaction.begin()
 

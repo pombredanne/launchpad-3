@@ -11,23 +11,25 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
-from canonical.launchpad.interfaces import (IDistroArchReleaseBinaryPackage,
-                                            NotFoundError)
-
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
-from canonical.launchpad.database.distroarchreleasebinarypackagerelease import \
-    DistroArchReleaseBinaryPackageRelease
-from distroreleasepackagecache import DistroReleasePackageCache
-from canonical.launchpad.database.publishing import (BinaryPackagePublishingHistory,
-                                                     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.database.binarypackagerelease import \
-    BinaryPackageRelease
-
 from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease
+    )
+from canonical.launchpad.database.distroarchreleasebinarypackagerelease import (
+    DistroArchReleaseBinaryPackageRelease
+    )
+from canonical.launchpad.database.distroreleasepackagecache import (
+    DistroReleasePackageCache
+    )
+from canonical.launchpad.database.publishing import (
+    BinaryPackagePublishingHistory,SecureBinaryPackagePublishingHistory
+    )
+from canonical.launchpad.interfaces import (
+    IDistroArchReleaseBinaryPackage,NotFoundError
+    )
+
 
 class DistroArchReleaseBinaryPackage:
     """A Binary Package in the context of a Distro Arch Release. 
@@ -211,10 +213,10 @@ class DistroArchReleaseBinaryPackage:
         """See IDistroArchReleaseBinaryPackage."""
 
         # Check we have been asked to do something
-        if (new_component is None and new_section is None 
+        if (new_component is None and new_section is None
             and new_priority is None):
             raise AssertionError("changeOverride must be passed a new"
-                                 "component, section or priority.")
+                                 "component, section and/or priority.")
 
         # Retrieve current publishing info
         current = self.current_published
@@ -236,13 +238,13 @@ class DistroArchReleaseBinaryPackage:
         SecureBinaryPackagePublishingHistory(
             binarypackagerelease=current.binarypackagerelease,
             distroarchrelease=current.distroarchrelease,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False,
+            pocket=current.pocket,
             component=new_component,
             section=new_section,
             priority=new_priority,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=current.pocket,
-            embargo=False,
             )
 
     def supersede(self):

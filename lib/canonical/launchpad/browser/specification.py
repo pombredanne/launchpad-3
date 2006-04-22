@@ -10,6 +10,7 @@ __all__ = [
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
+    'SpecificationGoalSetView',
     'SpecificationSupersedingView',
     'SpecificationRetargetingView',
     ]
@@ -26,6 +27,8 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, GeneralFormView)
+
+from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import (
     SpecificationStatus, SpecificationGoalStatus)
@@ -237,6 +240,34 @@ class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class SpecificationGoalSetView(GeneralFormView):
+
+    def process(self, productseries=None, distrorelease=None,
+        whiteboard=None):
+        # XXX sabdfl it would be better to display only one or the other
+        # option in the form, with a radio button, as kiko pointed out in
+        # his review. XXX MPT feel free to help me here, I don't know how to
+        # make the form display either/or.
+        if productseries and distrorelease:
+            return 'Please choose a series OR a release, not both.'
+        if not (productseries or distrorelease):
+            return 'Please choose a series or release for this spec.'
+        if productseries is not None:
+            self.context.productseries = productseries
+            goal = productseries
+        if distrorelease is not None:
+            self.context.distrorelease = distrorelease
+            goal = distrorelease
+        # By default, all new goals start out PROPOSED
+        self.context.goalstatus = SpecificationGoalStatus.PROPOSED
+        # Now we want to auto-approve the goal if the person making
+        # the proposal has permission to do this anyway
+        if check_permission('launchpad.Driver', goal):
+            self.context.goalstatus = SpecificationGoalStatus.ACCEPTED
+        self._nextURL = canonical_url(self.context)
+        return 'Done.'
 
 
 class SpecificationRetargetingView(GeneralFormView):

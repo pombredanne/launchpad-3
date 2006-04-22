@@ -142,8 +142,8 @@ class MockRootFolder:
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller propogates cookies between subsequent requests.
     This is a nice feature, except it triggers a bug in Launchpad where
-    sending both Basic Auth and cookie credentials raises an exception.
-    XXX: Open a bug on this
+    sending both Basic Auth and cookie credentials raises an exception
+    (Bug 39881).
     """
     def __init__(self, *args, **kw):
         if kw.get('debug'):

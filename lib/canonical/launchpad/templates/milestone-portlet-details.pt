@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/displayname">milestone</span> details:</h4>
+  <h4><span tal:replace="context/title">Milestone title</span> details:</h4>
 
   <div class="portletBody portletContent">
 
@@ -14,7 +14,11 @@
 
     <b>For:</b>
     <a tal:content="context/target/displayname"
-       tal:attributes="href context/target/fmt:url">Ubuntu</a><br />
+       tal:attributes="href context/target/fmt:url">Ubuntu</a>
+    <a tal:content="context/series_target/displayname"
+       tal:condition="context/series_target"
+       tal:attributes="href context/series_target/fmt:url">Hoary</a>
+    <br />
 	
   </div>
 
