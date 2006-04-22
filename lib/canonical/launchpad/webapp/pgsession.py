@@ -46,7 +46,7 @@ class PGSessionBase:
         cursor.execute('SAVEPOINT pgsessionbase_upsert')
         try:
             cursor.execute(insert_query, args)
-        except psycopg.IntegrityError:
+        except (psycopg.IntegrityError, psycopg.ProgrammingError):
             cursor.execute("ROLLBACK TO pgsessionbase_upsert")
             if update_query:
                 cursor.execute(update_query, args)
