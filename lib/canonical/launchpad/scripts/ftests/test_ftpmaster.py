@@ -8,7 +8,7 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.functional import ZopelessLayer
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet, ISectionSet)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -38,12 +38,13 @@ class MockLogger:
         self.logs.append("ERROR: %s" % txt)
 
 
-class TestArchiveOverrider(TestCase):
+class TestArchiveOverrider(LaunchpadZopelessTestCase):
     layer = ZopelessLayer
+    dbuser = 'lucille'
 
     def setUp(self):
-        LaunchpadTestSetup().setUp()
-        self.ztm = initZopeless(dbuser='lucille')
+        """Setup the test environment and retrieve useful instances."""
+        LaunchpadZopelessTestCase.setUp(self)
         self.log = MockLogger()
 
         self.ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -51,11 +52,11 @@ class TestArchiveOverrider(TestCase):
         self.component_main = getUtility(IComponentSet)['main']
         self.section_base = getUtility(ISectionSet)['base']
 
-    def tearDown(self):
-        LaunchpadTestSetup().tearDown()
-        self.ztm.uninstall()
-
     def test_initialize_success(self):
+        """Test ArchiveOverrider initialization process.
+
+        Check if the correct attributes are built after initialization.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -69,6 +70,11 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_only_component(self):
+        """Test initialize() only for changing component.
+
+        Check if the correct attribute is built and it doesn't raise
+        any exception.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main')
@@ -79,6 +85,11 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_only_section(self):
+        """Test initialize() only for changing section.
+
+        Check if the correct attribute is built and it doesn't raise
+        any exception.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             section_name='base')
@@ -89,6 +100,11 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_only_priority(self):
+        """Test initialize() only for changing section.
+
+        Check if the correct attribute is built and it doesn't raise
+        any exception.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             priority_name='extra')
@@ -98,18 +114,8 @@ class TestArchiveOverrider(TestCase):
         self.assertEqual(PackagePublishingPriority.EXTRA, changer.priority)
         self.log.read()
 
-    def test_initialize_only_component(self):
-        changer = ArchiveOverrider(
-            self.log, distro_name='ubuntu', suite='hoary',
-            component_name='main')
-        changer.initialize()
-        component_main = getUtility(IComponentSet)['main']
-        self.assertEqual(component_main, changer.component)
-        self.assertEqual(None, changer.section)
-        self.assertEqual(None, changer.priority)
-        self.log.read()
-
     def test_initialize_missing_args(self):
+        """ArchiveOverrider should raise if no required attributes are passed"""
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary')
         self.assertRaises(
@@ -117,6 +123,7 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_broken_distro(self):
+        """ArchiveOverrider should raise on a unknown distribution name"""
         changer = ArchiveOverrider(
             self.log, distro_name='foo', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -125,6 +132,7 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_broken_suite(self):
+        """ArchiveOverrider should raise if no a unknown suite name"""
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='bar',
             component_name='main', section_name='base', priority_name='extra')
@@ -133,6 +141,14 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_full_suite(self):
+        """ArchiveOverrider accepts full suite name.
+
+        It split suite name into 'distrorelease' and 'pocket' attributes after
+        initialize().
+        """
+        # XXX cprov 20060424: change-override API doesn't handle pockets
+        # properly yet. It may need a deep redesign on how we model the
+        # packages meta-classes (SourcePackage, DistributionSourcePackage, etc)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -153,6 +169,7 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_broken_component(self):
+        """Raises on a unknown/unselected component name."""
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='baz', section_name='base', priority_name='extra')
@@ -161,6 +178,7 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_broken_section(self):
+        """Raises on a unknown/unselected section name."""
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='bozo', priority_name='extra')
@@ -169,6 +187,7 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_initialize_broken_priority(self):
+        """Raises on a unknown priority  name."""
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='bingo')
@@ -177,6 +196,13 @@ class TestArchiveOverrider(TestCase):
         self.log.read()
 
     def test_processSourceChange_success(self):
+        """Check processSourceChange method call.
+
+        It simply wraps changeOverride method on
+        IDistroreleaseSourcePackageRelease, which is already tested in place.
+        Inspect the log to verify if the correct source was picked and correct
+        arguments was passed.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base', priority_name='extra')
@@ -187,9 +213,13 @@ class TestArchiveOverrider(TestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'mozilla-firefox/main/web' source overriden")
+            "INFO: 'mozilla-firefox/main/web' source overridden")
 
     def test_processSourceChange_error(self):
+        """processSourceChange warns the user about an unpublished source.
+
+        Inspect the log messages.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -203,6 +233,13 @@ class TestArchiveOverrider(TestCase):
             "ERROR: u'Source package mozilla-firefox not published in hoary'")
 
     def test_processBinaryChange_success(self):
+        """Check processBinaryChange() method call.
+
+        It simply wraps changeOverride method on
+        IDistroArchReleaseBinaryPackage, which is already tested in place.
+        Inspect the log messages, check if the correct binary was picked
+        and correct argument was passed.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -214,9 +251,13 @@ class TestArchiveOverrider(TestCase):
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
             "INFO: 'pmount/universe/editors/IMPORTANT' "
-            "binary overriden in hoary/i386")
+            "binary overridden in hoary/i386")
 
     def test_processBinaryChange_error(self):
+        """processBinaryChange warns the user about an unpublished binary.
+
+        Inspect the log messages.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base', priority_name='extra')
@@ -227,9 +268,18 @@ class TestArchiveOverrider(TestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'evolution' binary isn't published in warty/i386")
+            "ERROR: 'evolution' binary not found in warty/i386")
 
     def test_processChildrenChange_success(self):
+        """processChildrenChanges, modify the source and its binary children.
+
+        It simply used the local processChangeSource on a passed name and
+        processChangeBinary on each retrieved binary child.
+        Inspect the log and to ensure we are passing correct arguments and
+        picking the correct source.
+        """
+        # XXX cprov 20060424: this test needs to be extended to check the
+        # behaviour when there are published binaries (needs richer sampledata)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
@@ -242,9 +292,13 @@ class TestArchiveOverrider(TestCase):
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'IMPORTANT'\n"
             "INFO: 'mozilla-firefox/main/base/EXTRA' "
-            "binary overriden in warty/i386")
+            "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):
+        """processChildrenChange warns the user about an unpublished source.
+
+        Inspect the log messages.
+        """
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
