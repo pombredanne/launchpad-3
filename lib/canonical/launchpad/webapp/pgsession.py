@@ -46,6 +46,9 @@ class PGSessionBase:
         cursor.execute('SAVEPOINT pgsessionbase_upsert')
         try:
             cursor.execute(insert_query, args)
+        # XXX: When production servers are running Dapper (or just a more
+        # modern psycopg) we will only need to catc IntegrityError.
+        # -- StuartBishop 20060424
         except (psycopg.IntegrityError, psycopg.ProgrammingError):
             cursor.execute("ROLLBACK TO pgsessionbase_upsert")
             if update_query:
