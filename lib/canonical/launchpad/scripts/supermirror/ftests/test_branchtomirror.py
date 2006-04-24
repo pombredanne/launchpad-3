@@ -1,14 +1,18 @@
+import logging
 import os
 import shutil
-import sys
+import socket
+from StringIO import StringIO
 import tempfile
 import unittest
 
 import bzrlib.branch
+import bzrlib.errors
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.weave import Weave
 
 import transaction
+from canonical.testing import reset_logging
 from canonical.launchpad import database
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
@@ -131,6 +135,63 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
             #     "to work now bzr is updated, please remove the 'bzr needs "
             #     "updating' warning messages.")
             self.assertEqual(1, branch.mirror_failures)
+
+
+class TestErrorHandling(unittest.TestCase):
+
+    def setUp(self):
+        # Set up a mock logger so we don't generate noise on stdout.
+        logger = logging.getLogger('branch-puller')
+        logger.propagate = 0
+        self.mock_handler = logging.StreamHandler(StringIO())
+        logger.addHandler(self.mock_handler)
+        self.errors = []
+        client = BranchStatusClient()
+        self.branch = BranchToMirror('foo', 'bar', client, 1)
+        # Stub out everything that we don't need to test
+        client.startMirroring = lambda branch_id: None
+        self.branch._mirrorFailed = lambda err: self.errors.append(err)
+        self.branch._openSourceBranch = lambda: None
+        self.branch._openDestBranch = lambda: None
+        self.branch._pullSourceToDest = lambda: None
+
+    def tearDown(self):
+        logger = logging.getLogger('branch-puller')
+        logger.removeHandler(self.mock_handler)
+        reset_logging()
+
+    def _runMirrorAndCheckError(self, error_type):
+        self.branch.mirror()
+        self.assertEqual(len(self.errors), 1)
+        self.assertTrue(isinstance(self.errors[0], error_type))
+
+    def testSourceBranchSocketErrorHandling(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise socket.error('foo')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        self._runMirrorAndCheckError(socket.error)
+
+    def testSourceBranchBzrErrorHandling(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise bzrlib.errors.BzrError('foo')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        self._runMirrorAndCheckError(bzrlib.errors.BzrError)
+
+    def testPullSocketErrorandling(self):
+        self.errors = []
+        def stubPullSourceToDest():
+            raise socket.error('foo')
+        self.branch._pullSourceToDest = stubPullSourceToDest
+        self._runMirrorAndCheckError(socket.error)
+
+    def testPullBzrErrorandling(self):
+        self.errors = []
+        def stubPullSourceToDest():
+            raise bzrlib.errors.BzrError('foo')
+        self.branch._pullSourceToDest = stubPullSourceToDest
+        self._runMirrorAndCheckError(bzrlib.errors.BzrError)
 
 
 def test_suite():
