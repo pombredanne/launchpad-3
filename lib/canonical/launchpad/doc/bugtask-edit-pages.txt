@@ -69,10 +69,6 @@ to show that the milestone value is cleared.
     ...     'field.product': 'ubuntu',
     ...     'field.status': bug_one_in_firefox.status.title,
     ...     'field.importance': bug_one_in_firefox.importance.title,
-    ...     'field.priority': bug_one_in_firefox.priority.title}
-
-XXX mpt 20060418: priority is hidden but may be reinstated.
-https://wiki.launchpad.canonical.com/MaloneSimplifications
 
     >>> request = LaunchpadTestRequest(form=form_values)
 

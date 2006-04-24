@@ -63,7 +63,7 @@ DBItemDisplayWidget
 -------------------
 
 This widget is used for displaying DBItem attributes of the bug task,
-like status, priority, and importance. It displays the title of the item
+like status and importance. It displays the title of the item
 in a span with the appropriate css class:
 
     >>> from canonical.widgets.bugtask import DBItemDisplayWidget
@@ -77,15 +77,12 @@ in a span with the appropriate css class:
 If the value is None, a dash is displayed:
 
     >>> ubuntu_thunderbird = bug_nine.bugtasks[1]
-    >>> ubuntu_thunderbird.priority is None
+    >>> ubuntu_thunderbird.importance is None
     True
-    >>> priority_field = IBugTask['priority'].bind(ubuntu_thunderbird)
-    >>> priority_widget = DBItemDisplayWidget(priority_field, None, None)
-    >>> print priority_widget()
+    >>> importance_field = IBugTask['importance'].bind(ubuntu_thunderbird)
+    >>> importance_widget = DBItemDisplayWidget(importance_field, None, None)
+    >>> print importance_widget()
     <span>&mdash;</span>
-
-XXX mpt 20060418: priority is hidden but may be reinstated.
-https://wiki.launchpad.canonical.com/MaloneSimplifications
 
 We can set a specific value to be displayed using setRenderedValue():
 
