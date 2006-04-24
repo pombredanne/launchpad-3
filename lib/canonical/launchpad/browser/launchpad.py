@@ -18,8 +18,8 @@ __all__ = [
 import cgi
 import urllib
 import os.path
+import time
 from datetime import timedelta, datetime
-from time import sleep, time
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
@@ -469,7 +469,7 @@ class SoftTimeoutView(LaunchpadView):
 
     def __call__(self):
         """Generate a soft timeout by sleeping enough time."""
-        start_time = time()
+        start_time = time.time()
         celebrities = getUtility(ILaunchpadCelebrities)
         if (self.user is None or
             not self.user.inTeam(celebrities.launchpad_developers)):
@@ -480,11 +480,13 @@ class SoftTimeoutView(LaunchpadView):
         if soft_timeout == 0:
             return 'No soft timeout threshold is set.'
 
-        sleep(soft_timeout/1000.0)
-        time_to_generate_page = (time() - start_time) * 1000
+        time.sleep(soft_timeout/1000.0)
+        time_to_generate_page = (time.time() - start_time) * 1000
+        # In case we didn't sleep enogh time, sleep a while longer to
+        # pass the soft timeout threshold.
         while time_to_generate_page < soft_timeout:
-            sleep(0.1)
-            time_to_generate_page = (time() - start_time) * 1000
+            time.sleep(0.1)
+            time_to_generate_page = (time.time() - start_time) * 1000
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
