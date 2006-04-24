@@ -40,6 +40,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
+
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
@@ -279,6 +280,10 @@ def contactEmailAddresses(person):
     """
     emails = set()
     if person.preferredemail is not None:
+        # XXX: This str() call can be removed as soon as Andrew lands his
+        # unicode-simple-sendmail branch, because that will make
+        # simple_sendmail handle unicode email addresses.
+        # Guilherme Salgado, 2006-04-20
         emails.add(str(person.preferredemail.email))
         return emails
 
