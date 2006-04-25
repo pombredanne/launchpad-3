@@ -112,7 +112,7 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
                     if (not posubmission.active_selections and
                         not posubmission.published_selections and
                         posubmission.origin == RosettaTranslationOrigin.SCM):
-                        posubmission.deleteMe()
+                        posubmission.destroySelf()
                         pofile_items_deleted += 1
                 # Let's fix the flags that depend on translations, we modified
                 # the IPOMsgSet and we should leave it in a consistent status.
@@ -215,8 +215,8 @@ def main(argv):
             logger_object.warning('Nothing to do. Exiting...')
             return 0
         else:
-            potemplates = list(
-                potemplateset.getByName(options.potemplatename))
+            potemplates = potemplateset.getAllByName(
+                options.potemplatename)
     else:
         potemplate_subset = potemplateset.getSubset(
             distrorelease=distrorelease, sourcepackagename=sourcepackagename,

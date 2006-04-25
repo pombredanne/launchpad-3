@@ -7,9 +7,10 @@ We need to get a POTMsgSet object to performe this test.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IPOTemplateSet
-    >>> potemplate_set = getUtility(IPOTemplateSet)
-    >>> potemplate = potemplate_set['pmount'][0]
+    >>> from canonical.launchpad.database import POTemplate
+    >>> potemplate = POTemplate.get(1)
+    >>> potmsgsets = potemplate.getPOTMsgSets()
+    >>> potmsgset = potmsgsets.next()
 
 
 POTMsgSet.getPOMsgSet
@@ -17,8 +18,6 @@ POTMsgSet.getPOMsgSet
 
 A request for a POMsgSet with a variant field value should not break.
 
-    >>> potmsgsets = potemplate.getPOTMsgSets()
-    >>> potmsgset = potmsgsets.next()
     >>> potmsgset.getPOMsgSet('en', 'boldquot') is None
     True
 

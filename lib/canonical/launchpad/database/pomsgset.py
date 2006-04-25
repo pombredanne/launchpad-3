@@ -50,6 +50,8 @@ class DummyPOMsgSet:
         self.isfuzzy = False
         self.commenttext = None
 
+    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
+    # tests fail, for more information take a look to bug #41268
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
@@ -107,6 +109,8 @@ class POMsgSet(SQLBase):
         orderBy='pluralform')
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
+    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
+    # tests fail, for more information take a look to bug #41268
     @property
     def pluralforms(self):
         """See IPOMsgSet."""

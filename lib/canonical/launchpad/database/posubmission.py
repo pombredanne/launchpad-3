@@ -39,10 +39,6 @@ class POSubmission(SQLBase):
     published_selections = SQLMultipleJoin('POSelection',
         joinColumn='publishedsubmission')
 
-    def deleteMe(self):
-        """See IPOSubmission."""
-        POSubmission.delete(self.id)
-
 # XXX do we want to indicate the difference between a from-scratch
 # submission and an editorial decision (for example, when someone is
 # reviewing a file and says "yes, let's use that one")?

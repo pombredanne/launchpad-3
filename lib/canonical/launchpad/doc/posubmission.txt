@@ -3,10 +3,11 @@ POSubmission
 
 This class links the translations submitted by a translator with the associated.
 
-deleteMe
---------
+destroySelf
+-----------
 
-With this method, we allow to remove a submission.
+With this method, we allow to remove a submission, it comes from SQLObject,
+but we test it here to be sure it appears in our public interfaces.
 
 We will need extra permissions to use this method.
 
@@ -18,7 +19,7 @@ It needs that there are no references to it to be able to remove it.
 
     >>> from canonical.launchpad.database import POSubmission
     >>> posubmission = POSubmission.get(1)
-    >>> posubmission.deleteMe()
+    >>> posubmission.destroySelf()
     Traceback (most recent call last):
     ...
     IntegrityError:...
@@ -30,7 +31,7 @@ Restore the database access after the failure.
 Let's retry with a submission that we know is not referenced.
 
     >>> posubmission = POSubmission.get(693)
-    >>> posubmission.deleteMe()
+    >>> posubmission.destroySelf()
 
 It should not exist now.
 

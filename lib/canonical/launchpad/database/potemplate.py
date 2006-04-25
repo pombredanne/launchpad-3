@@ -717,14 +717,6 @@ class POTemplateSet:
         for potemplate in res:
             yield potemplate
 
-    def __getitem__(self, name):
-        """See IPOTemplateSet."""
-        results = self.getByName(name)
-        if results.count() == 0:
-            raise NotFoundError(name)
-
-        return results
-
     def getByIDs(self, ids):
         """See IPOTemplateSet."""
         values = ",".join(sqlvalues(*ids))
@@ -733,12 +725,12 @@ class POTemplateSet:
                       "distrorelease", "sourcepackagename"],
             orderBy=["POTemplate.id"])
 
-    def getByName(self, name):
+    def getAllByName(self, name):
         """See IPOTemplateSet."""
-        return POTemplate.select(
+        return helpers.shortlist(POTemplate.select(
             'POTemplate.potemplatename = POTemplateName.id AND'
             ' POTemplateName.name = %s' % sqlvalues(name),
-            clauseTables=['POTemplateName'])
+            clauseTables=['POTemplateName']))
 
     def getSubset(self, distrorelease=None, sourcepackagename=None,
                   productseries=None):
