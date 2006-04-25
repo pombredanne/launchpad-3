@@ -39,7 +39,7 @@ True
 >>> view.missing_title_or_summary_text()
 '(this branch has no title)'
 
->>> new = branchset.new('no_title', ddaa, gterm_product, None,
+>>> new = branchset.new('no_summary', ddaa, gterm_product, None,
 ...     title='something', summary=None)
 >>> view = getView(new, '+index', TestRequest())
 >>> view.missing_title_or_summary_text()
