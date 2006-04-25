@@ -94,10 +94,9 @@ def sync_watch(watch, ztm, logger, debbugs_db):
             # we need a new task to link the bug to the debian package
             logger.info('Linking %d and debian %s/%s' % (
                 malone_bug.id, srcpkgname.name, binpkgname.name))
-            bugtask = malone_bug.addTask(owner=malone_bug.owner,
-                distribution=debian,
-                sourcepackagename=srcpackagename,
-                binarypackagename=binpackagename)
+            bugtask = malone_bug.addTask(
+                owner=malone_bug.owner, distribution=debian,
+                sourcepackagename=srcpackagename)
             bugtask.bugwatch = watch
             waschanged = True
         else:
