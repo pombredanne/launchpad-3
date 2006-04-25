@@ -48,6 +48,10 @@ generate_overrides()
 from canonical.config import config
 config.setDefaultSection('testrunner')
 
+# Remove this directory from path:
+sys.path[:] = [p for p in sys.path if os.path.abspath(p) != here]
+
+
 # Turn on psycopg debugging wrapper
 #import canonical.database.debug
 #canonical.database.debug.install()
