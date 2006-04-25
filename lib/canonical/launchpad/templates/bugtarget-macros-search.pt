@@ -1,0 +1,34 @@
+<metal:block metal:define-macro="simple-search-form">
+<form method="GET" name="search" action="">
+  <input type="text" name="field.searchtext" size="20"
+         tal:attributes="value python:request.form.get('field.searchtext', '')" />
+  <input type="submit" name="search" value="Search" />
+  <span tal:content="structure view/status_widget/hidden" />
+  <span tal:content="structure view/severity_widget/hidden" />
+  <span tal:content="structure view/priority_widget/hidden" />
+  <span tal:content="structure view/assignee_widget/hidden" />
+  <span tal:content="structure view/owner_widget/hidden" />
+  <span tal:content="structure view/milestone_widget/hidden" />
+  <span tal:content="structure view/omit_dupes_widget/hidden" />
+  <span tal:content="structure view/has_patch_widget/hidden" />
+  <span tal:content="structure view/component_widget/hidden" />
+  <span tal:content="structure view/has_no_package_widget/hidden" />
+  <a href="#"
+     tal:attributes="href advanced_search_url|string:?advanced=1">
+    <small>Advanced</small>
+  </a>
+  <div style="margin-top: 5px">
+    <small>
+      Sort by:
+      <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+    </small>
+  </div>
+  <div metal:define-slot="extra-search-widgets">
+  </div>
+</form>
+<script>
+  <!--
+      document.forms["search"].elements['field.searchtext'].focus();
+    -->
+</script>
+</metal:block>
