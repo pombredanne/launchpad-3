@@ -67,6 +67,10 @@ relevant launchpad person.
   ...            fingerprint='C85826521A6EF6A6037BB3F79FF2583E681B6469',
   ...            keysize=1024, algorithm=dsa, active=True, can_encrypt=True)
 
+
+Force weird behavior with rfc2047 sentences containing '.' on
+bar_1.0-4, which caused bug # 41102.
+
   >>> p = Person.byName('cprov')
   >>> p.displayname = "Celso R. Providelo"
 
@@ -121,7 +125,7 @@ And then we need a way to process the uploads from the queue
   ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
   ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
-  ...                                 "-v", "-C", "insecure", temp_dir,
+  ...                                 "-v", "-C", "anything", temp_dir,
   ...                                 "--log-file", uploader_log])
   ...     return process.wait() == 0
 
@@ -215,11 +219,11 @@ and arch-independant binaries.
 
   >>> expect_okays('bar_1.0-1', True)
 
-  expect_okays('bar_1.0-1_binary', True)
+  >>> expect_okays('bar_1.0-1_binary', True)
 
   >>> expect_okays('bar_1.0-2', False)
 
-  expect_okays('bar_1.0-2_binary', False)
+  >>> expect_okays('bar_1.0-2_binary', False)
 
 Check the rejection of a malicious version of bar package which refers
 to a different 'bar_1.0.orig.tar.gz'.
@@ -242,9 +246,12 @@ Inspect the uploader log to find the rejection message.
   ...
   <BLANKLINE>
 
+Remove rejected uploads.
+
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
   >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-3.distro'))
+
 
   >>> expect_okays('bar_1.0-4', False)
   >>> print open(uploader_log).read()
