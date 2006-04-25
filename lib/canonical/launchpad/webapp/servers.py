@@ -344,10 +344,14 @@ class PMDBHTTPServer(PublisherHTTPServer):
 class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the InternalHTTPLayer on a request."""
 
-    def __call__(self, input_stream, output_steam, env):
+    # XXX: this is only used for supermirror-pull-list.txt, and that
+    # functionality should be provided by the internal xmlrpc server.
+    # See bug 40383. -- David Allouche 2005-04-20
+
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
         request = HTTPPublicationRequestFactory.__call__(
-            self, input_stream, output_steam, env)
+            self, input_stream, env, output_stream)
         canonical.launchpad.layers.setFirstLayer(
             request, canonical.launchpad.layers.InternalHTTPLayer)
         return request

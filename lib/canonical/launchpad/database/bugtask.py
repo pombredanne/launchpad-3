@@ -104,9 +104,6 @@ class BugTask(SQLBase, BugTaskMixin):
         dbName='severity', notNull=True,
         schema=dbschema.BugTaskSeverity,
         default=dbschema.BugTaskSeverity.NORMAL)
-    binarypackagename = ForeignKey(
-        dbName='binarypackagename', foreignKey='BinaryPackageName',
-        notNull=False, default=None)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
@@ -339,7 +336,6 @@ class BugTaskSet:
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
-            'binarypackagename': params.binarypackagename,
             'owner': params.owner,
         }
         # Loop through the standard, "normal" arguments and build the
@@ -473,7 +469,6 @@ class BugTaskSet:
 
     def createTask(self, bug, owner, product=None, distribution=None,
                    distrorelease=None, sourcepackagename=None,
-                   binarypackagename=None,
                    status=IBugTask['status'].default,
                    priority=IBugTask['priority'].default,
                    severity=IBugTask['severity'].default,
@@ -521,7 +516,6 @@ class BugTaskSet:
             distribution=distribution,
             distrorelease=distrorelease,
             sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename,
             status=status,
             priority=priority,
             severity=severity,

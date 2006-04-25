@@ -226,6 +226,12 @@ over the | operator and that tsearch2 removes the unnecessary branckets.
     >>> ftq('foo & bar-baz')
     foo&((bar&baz)|barbaz) <=> 'foo' & ( 'bar' & 'baz' | 'barbaz' )
 
+    >>> ftq('-foo bar-')
+    !foo&bar <=> !'foo' & 'bar'
+
+    >>> ftq('---foo--- ---bar---')
+    foo&bar <=> 'foo' & 'bar'
+
 
 Most punctuation characters are converted to whitespace outside of
 words, or treated as a hypen inside words. The exceptions are the
@@ -269,6 +275,18 @@ apostrophe was not inside a word. So we strip it in these cases.
     cool <=> 'cool'
     >>> ftq("('cool' AND bananas)")
     (cool&bananas) <=> 'cool' & 'banana'
+
+It was also noticed through Bug #39828 that tsearch2 will not cope if the
+! character is embedded inside or found at the end of a word.
+
+    >>> ftq('cool!')
+    cool <=> 'cool'
+    >>> ftq('hi!mom')
+    hi&mom <=> 'hi' & 'mom'
+    >>> ftq('hi!!!!!mom')
+    hi&mom <=> 'hi' & 'mom'
+    >>> ftq('hi !mom')
+    hi&!mom <=> 'hi' & !'mom'
 
 Stop words (words deemed too common in English to search on) are removed
 from queries by tsearch2. 

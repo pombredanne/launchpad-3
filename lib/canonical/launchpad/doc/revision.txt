@@ -80,3 +80,75 @@ records are only created by a non-zope batch job.
 >>> rev_no_2 = RevisionNumber(sequence=2, branch=branch, revision=revision_2)
 >>> rev_no_1.branch == rev_no_2.branch == branch
 True
+
+=== Deleting Revision Numbers ===
+
+If a branch gets overwritten or some revisions get uncommitted,
+Launchpad's view of the branch will differ from the actual state of
+the branch.
+
+If the bzr branch now has fewer revisions than Launchpad's view of the
+branch, then some of RevisionNumber records will need to be removed.
+The branch scanner does this by calling destroySelf() on the excess
+records.
+
+As the branch scanner manipulates branch information through the zope
+interfaces, the RevisionNumber objects in question will be security
+wrapped.  It is important that they be deletable in this state.
+
+First, get a branch via the IPersonSet utility:
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+  >>> branch = person.getBranch(None, 'junk.dev')
+
+
+The branch in question is security proxied, and has 6 revisions:
+
+  >>> type(branch)
+  <type 'zope.security._proxy._Proxy'>
+  >>> branch.revision_count()
+  6
+
+
+We can get the last revision from the branch:
+
+  >>> [revno_6] = branch.latest_revisions(1)
+  >>> revno_6.sequence
+  6
+  >>> revno_6.branch == branch
+  True
+  >>> print revno_6.revision.revision_id
+  foo@localhost-20051031170357-1301ad6d387feb23
+
+
+The revision number object is security proxied, so that you can't
+access attributes not exposed in its interface:
+
+  >>> type(revno_6)
+  <type 'zope.security._proxy._Proxy'>
+  >>> revno_6.forbidden_attribute
+  Traceback (most recent call last):
+    ...
+  ForbiddenAttribute: ('forbidden_attribute', <RevisionNumber at ...>)
+
+
+This revision can then be deleted in the same way the branch scanner
+does, leaving only 5 revisions in the branch:
+
+  >>> revno_6.destroySelf()
+  >>> branch.revision_count()
+  5
+
+
+Note that while the RevisionNumber object linking the revision to the
+branch has been destroyed, the associated revision object is not (it
+may be referenced by some other branch):
+
+  >>> from canonical.launchpad.interfaces import IRevisionSet
+  >>> revision = getUtility(IRevisionSet).getByRevisionId(
+  ...     'foo@localhost-20051031170357-1301ad6d387feb23')
+  >>> print revision.revision_id
+  foo@localhost-20051031170357-1301ad6d387feb23
+

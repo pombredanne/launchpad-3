@@ -2,10 +2,10 @@ Introduction
 ============
 
 Bugs are problems in software. When a bug gets assigned to a specific
-upstream or distro/sourcepackagename/binarypackagename, a bug /task/ is
-created. In essence, a bug task is a bug that needs to be fixed in a specific
-place. Where a bug has things like a title, comments and subscribers, it's
-the bug task that tracks priority, severity, assignee, etc.
+upstream or distro/sourcepackagename, a bug /task/ is created. In
+essence, a bug task is a bug that needs to be fixed in a specific
+place. Where a bug has things like a title, comments and subscribers,
+it's the bug task that tracks priority, severity, assignee, etc.
 
 Working with Bug Tasks in Launchpad
 ===================================
@@ -372,7 +372,6 @@ test it in isolation.
     ...     distribution = None
     ...     distrorelease = None
     ...     sourcepackagename = None
-    ...     binarypackagename = None
     ...     product = None
     ...
     ...     # This next line is a hack to take a copy of the method and
@@ -415,15 +414,8 @@ Distribution and sourcepackagename.
     >>> bugtask._calculate_targetname()
     '[spn.name] ([distribution.displayname])'
 
-Distribution and sourcepackagename and binarypackagename.
-
-    >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] [bpn.name] ([distribution.displayname])'
-
 Reset the state of our bugtask.
 
-    >>> bugtask.binarypackagename = None
     >>> bugtask.sourcepackagename = None
     >>> bugtask.distribution = None
 
@@ -439,12 +431,6 @@ Distrorelease and sourcepackagename.
     >>> bugtask.sourcepackagename = NamedThing('spn')
     >>> bugtask._calculate_targetname()
     '[spn.name] ([distrorelease.fullreleasename])'
-
-Distrorelease, sourcepackagename and binarypackagename.
-
-    >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] [bpn.name] ([distrorelease.fullreleasename])'
 
 Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
@@ -536,8 +522,6 @@ like these, use the NullBugTask object.
     >>> null_bugtask.severity is None
     True
     >>> null_bugtask.assignee is None
-    True
-    >>> null_bugtask.binarypackagename is None
     True
     >>> null_bugtask.bugwatch is None
     True

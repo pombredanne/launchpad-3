@@ -11,18 +11,23 @@ __all__ = [
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
     'FOAFApplicationNavigation',
-    'MaloneApplicationNavigation'
+    'MaloneApplicationNavigation',
+    'SoftTimeoutView',
     ]
 
 import cgi
 import urllib
 import os.path
+import time
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 import canonical.launchpad.layers
+from canonical.config import config
+from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadRoot, IRosettaApplication,
     IMaloneApplication, IProductSet, IShipItApplication, IPersonSet,
@@ -35,7 +40,7 @@ from canonical.launchpad.interfaces import (
     IMilestone, IDistribution, IDistroRelease, IDistroArchRelease,
     IDistributionSourcePackage, ISourcePackage,
     IDistroArchReleaseBinaryPackage, IDistroReleaseBinaryPackage,
-    IPerson, IProject, ISprint)
+    IPerson, IProject, ISprint, ILaunchpadCelebrities)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -458,3 +463,30 @@ class FOAFApplicationNavigation(Navigation):
     def people(self):
         # DEPRECATED
         return getUtility(IPersonSet)
+
+
+class SoftTimeoutView(LaunchpadView):
+
+    def __call__(self):
+        """Generate a soft timeout by sleeping enough time."""
+        start_time = time.time()
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (self.user is None or
+            not self.user.inTeam(celebrities.launchpad_developers)):
+            raise Unauthorized
+
+        self.request.response.setHeader('content-type', 'text/plain')
+        soft_timeout = intOrZero(config.launchpad.soft_request_timeout)
+        if soft_timeout == 0:
+            return 'No soft timeout threshold is set.'
+
+        time.sleep(soft_timeout/1000.0)
+        time_to_generate_page = (time.time() - start_time) * 1000
+        # In case we didn't sleep enogh time, sleep a while longer to
+        # pass the soft timeout threshold.
+        while time_to_generate_page < soft_timeout:
+            time.sleep(0.1)
+            time_to_generate_page = (time.time() - start_time) * 1000
+        return (
+            'Soft timeout threshold is set to %s ms. This page took'
+            ' %s ms to render.' % (soft_timeout, time_to_generate_page))

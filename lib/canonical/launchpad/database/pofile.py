@@ -103,6 +103,13 @@ def _can_edit_translations(pofile, person):
 
     Return True or False indicating whether the person is allowed
     to edit these translations.
+
+    Admins and Rosetta experts are always able to edit any translation.
+    If the IPOFile is for an IProductSeries, the owner of the IProduct has
+    also permissions.
+    Any other mortal will have rights depending on if he/she is on the right
+    translation team for the given IPOFile.translationpermission and the
+    language associated with this IPOFile.
     """
     # If the person is None, then they cannot edit
     if person is None:
@@ -865,11 +872,18 @@ class DummyPOFile(RosettaStats):
     def __init__(self, potemplate, language, owner=None):
         self.potemplate = potemplate
         self.language = language
-        self.owner = owner
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
         self.lasttranslator = None
         self.contributors = []
+
+        # The default POFile owner is the Rosetta Experts team unless the
+        # given owner has rights to write into that file.
+        if self.canEditTranslations(owner):
+            self.owner = owner
+        else:
+            self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
+
 
     def __getitem__(self, msgid_text):
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)

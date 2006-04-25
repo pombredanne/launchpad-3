@@ -57,7 +57,7 @@ class IBugTask(IHasDateCreated, IHasBug):
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
     sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
+        title=_("Package"), required=False,
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
@@ -84,9 +84,6 @@ class IBugTask(IHasDateCreated, IHasBug):
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
-    binarypackagename = Choice(
-        title=_('Binary PackageName'), required=False,
-        vocabulary='BinaryPackageName')
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -222,11 +219,9 @@ class IPersonBugTaskSearch(IBugTaskSearch):
 class IBugTaskDelta(Interface):
     """The change made to a bug task (e.g. in an edit screen).
 
-    If product is not None, both sourcepackagename and binarypackagename must
-    be None.
+    If product is not None, the sourcepackagename must be None.
 
-    Likewise, if sourcepackagename and/or binarypackagename is not
-    None, product must be None.
+    Likewise, if sourcepackagename is not None, product must be None.
     """
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
@@ -241,13 +236,6 @@ class IBugTaskDelta(Interface):
         The value is a dict with the keys
         {'old' : ISourcePackageName, 'new' : ISourcePackageName},
         or None, if no change was made to the sourcepackagename.
-        """)
-    binarypackagename = Attribute(
-        """The change made to the IBinaryPackageName of this task.
-
-        The value is a dict like
-        {'old' : IBinaryPackageName, 'new' : IBinaryPackageName},
-        or None, if no change was made to the binarypackagename.
         """)
     target = Attribute(
         """The change made to the IMilestone for this task.
@@ -297,9 +285,6 @@ class IDistroBugTask(IBugTask):
         description=_("The source package in which the bug occurs. "
         "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
-    binarypackagename = Choice(
-        title=_('Binary PackageName'), required=False,
-        vocabulary='BinaryPackageName')
     distribution = Choice(
         title=_("Distribution"), required=True, vocabulary='Distribution')
 
@@ -309,9 +294,6 @@ class IDistroReleaseBugTask(IBugTask):
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
-    binarypackagename = Choice(
-        title=_('Binary PackageName'), required=False,
-        vocabulary='BinaryPackageName')
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
@@ -371,8 +353,7 @@ class BugTaskSearchParams:
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  priority=None, severity=None, milestone=None,
-                 assignee=None, sourcepackagename=None,
-                 binarypackagename=None, owner=None,
+                 assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None):
@@ -384,7 +365,6 @@ class BugTaskSearchParams:
         self.milestone = milestone
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
-        self.binarypackagename = binarypackagename
         self.owner = owner
         self.statusexplanation = statusexplanation
         self.attachmenttype = attachmenttype
@@ -457,9 +437,8 @@ class IBugTaskSet(Interface):
         """
 
     def createTask(bug, product=None, distribution=None, distrorelease=None,
-                   sourcepackagename=None, binarypackagename=None, status=None,
-                   priority=None, severity=None, assignee=None, owner=None,
-                   milestone=None):
+                   sourcepackagename=None, status=None, priority=None,
+                   severity=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug contacts will be automatically

@@ -105,7 +105,8 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         self.enabled = False
         template = get_email_template('notify-mirror-owner.txt')
-        fromaddress = "Launchpad Mirror Prober <noreply@launchpad.net>"
+        fromaddress = format_address(
+            "Launchpad Mirror Prober", config.noreply_from_address)
 
         replacements = {'distro': self.distribution.title,
                         'mirror_name': self.name}

@@ -229,7 +229,7 @@ But the unprivileged account should not.
 
 Now, we get an IPOFile that does not have a translation team assigned.
 
-    >>> pofile_cy = potemplate.getPOFileOrDummy('cy')
+    >>> pofile_cy = potemplate.getDummyPOFile('cy')
 
 Valentina Commissari is not a translator for this language and does not
 have permissions.
@@ -432,7 +432,7 @@ for the offset, the count of messages to show and the kind of messages to show.
 This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
 
-    >>> pofile_tlh = potemplate.getPOFileOrDummy('tlh')
+    >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
     >>> request = DummyRequest()
     >>> pofile_view = POFileTranslateView(pofile_tlh, request)
     >>> pofile_view.initialize()

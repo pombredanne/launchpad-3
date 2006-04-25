@@ -155,8 +155,11 @@ class TranslationImportQueueEntryView(GeneralFormView):
                 self.context.path = '%st' % self.context.path
         else:
             # We are hadling an IPOFile import.
-            pofile = potemplate.getOrCreatePOFile(language.code, variant,
-                self.context.importer)
+            pofile = potemplate.getPOFileByLang(language.code, variant)
+            if pofile is None:
+                # We don't have such IPOFile, we need to create it.
+                pofile = potemplate.newPOFile(
+                    language.code, variant, self.context.importer)
             self.context.pofile = pofile
 
         self.context.status = RosettaImportStatus.APPROVED
