@@ -282,6 +282,49 @@ We don't know the IPOFile where it should be imported.
     >>> es_without_potemplate_entry.guessed_pofile is None
     True
 
+Sometimes, a translation domain is not following the restrictions we have for
+name fields, and thus, we need to be sure that we look for KDE .pot files
+using the translation domain instead the name.
+
+We will see it working here with this example:
+
+    >>> kde_pot_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'po/kio_sftp.pot', 'foo content', True, rosetta_expert,
+    ...      distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=kdebase)
+
+Create the template name and attach this new import to it.
+
+    >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplatenameset = getUtility(IPOTemplateNameSet)
+    >>> kdebugdialog_template_name = potemplatenameset.new(
+    ...     'kio_sftp', 'kio_sftp')
+    >>> potemplateset = getUtility(IPOTemplateSet)
+    >>> subset = potemplateset.getSubset(
+    ...     distrorelease=hoary_distrorelease, sourcepackagename=kdebase)
+    >>> kde_pot_entry.potemplate = subset.new(
+    ...     kdebugdialog_template_name, 'po/kio_sftp.pot', rosetta_expert)
+    >>> kde_pot_entry.potemplate.title
+    u'Template "kio-sftp" in Ubuntu Hoary package "kdebase"'
+
+And set this entry as already imported.
+
+    >>> kde_pot_entry.status = RosettaImportStatus.IMPORTED
+    >>> flush_database_updates()
+
+Let's attach a .po file from kde-i18n-es
+
+    >>> es_entry = translationimportqueue.addOrUpdateEntry(
+    ...     'messages/kdebase/kio_sftp.po', 'foo content', True,
+    ...     rosetta_expert, distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=kde_i18n_es)
+
+And we will get the right IPOFile.
+
+    >>> es_entry.guessed_pofile.title
+    u'Spanish (es) translation of kio-sftp in Ubuntu Hoary package "kdebase"'
+
 Finally, we abort the transaction to undo all changes done.
 
     >>> transaction.abort()

@@ -10,17 +10,45 @@ Test that the security setup for IPOTemplateSet is working
 POTemplateSubset
 ================
 
-getPOTemplateByPath
+getPOTemplateByName
 -------------------
+
+This method gives us the IPOTemplate that belongs to this subset and its name
+is the given one.
 
     >>> from canonical.launchpad.database import ProductSeries
     >>> productseries = ProductSeries.get(3)
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=productseries)
+    >>> potemplate = potemplatesubset.getPOTemplateByName(
+    ...     'evolution-2.2')
+    >>> print potemplate.title
+    Template "evolution-2.2" in Evolution trunk
+
+getPOTemplateByPath
+-------------------
+
+This method gives us the IPOTemplate that belongs to this subset and its path
+in the source code is the given one.
+
     >>> potemplate = potemplatesubset.getPOTemplateByPath(
     ...     'po/evolution-2.2-test.pot')
     >>> print potemplate.title
     Template "evolution-2.2-test" in Evolution trunk
+
+getPOTemplateByTranslationDomain
+--------------------------------
+
+This method gives us the IPOTemplate that belongs to this subset and its
+translation domain is the given one.
+
+    >>> productseries = ProductSeries.get(5)
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries)
+    >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
+    ...     'NetApplet')
+    >>> print potemplate.title
+    Template "netapplet" in NetApplet releases
 
 
 POTemplate

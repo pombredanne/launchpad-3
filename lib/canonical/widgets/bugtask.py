@@ -4,11 +4,13 @@
 
 __metaclass__ = type
 
+
 from xml.sax.saxutils import escape
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
     IDisplayWidget, IInputWidget, InputErrors, ConversionError)
@@ -252,3 +254,14 @@ class DBItemDisplayWidget(BrowserWidget):
                 cssClass="%s%s" % (dbitem_field.__name__, dbitem.title))
         else:
             return renderElement('span', contents='&mdash;')
+
+
+class NewLineToSpacesWidget(TextWidget):
+    """A widget that replaces new line characters with spaces."""
+
+    def _toFieldValue(self, input):
+        value = TextWidget._toFieldValue(self, input)
+        if value is not self.context.missing_value:
+            lines = value.splitlines()
+            value = ' '.join(lines)
+        return value
