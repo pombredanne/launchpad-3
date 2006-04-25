@@ -1603,6 +1603,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (51, 'jordi@ubuntu.c
 INSERT INTO emailaddress (id, email, person, status) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (53, 'bugzilla-importer@launchpad.net', 58, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (54, 'rosetta@launchpad.net', 30, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (55, 'cprov@ubuntu.com', 28, 2);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -9347,6 +9348,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (49, 16, 57, 3, '2005-10-13 13:03:41.668724', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (50, 1, 59, 3, '2005-10-13 13:03:41.668724', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (51, 1, 60, 3, '2006-04-06 10:17:11.833824', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (52, 28, 17, 2, '2006-04-25 10:17:11.833824', NULL, NULL, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9437,6 +9439,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (91, 57, 16);
 INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
 INSERT INTO teamparticipation (id, team, person) VALUES (93, 59, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (94, 60, 1);
+INSERT INTO teamparticipation (id, team, person) VALUES (95, 17, 28);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
