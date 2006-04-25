@@ -15,7 +15,7 @@
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
-        <allow attributes="id private bugtasks subscriptions" />
+        <allow attributes="id private bugtasks subscriptions date_last_updated" />
         <require
             permission="launchpad.View"
             attributes="datecreated name title description ownerID
@@ -33,10 +33,11 @@
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
                         linkMessage addBranch"
-            set_attributes="datecreated name title description ownerID
-                            owner duplicateof communityscore communitytimestamp
-                            hits hitstimestamp activityscore activitytimestamp
-                            activity initial_message private security_related"
+            set_attributes="datecreated date_last_updated name title description
+                            ownerID owner duplicateof communityscore
+                            communitytimestamp hits hitstimestamp activityscore
+                            activitytimestamp activity initial_message private
+                            security_related"
             />
     </content>
 

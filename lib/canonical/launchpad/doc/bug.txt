@@ -47,6 +47,9 @@ To search for bugs matching specific criteria, use IBugSet.searchAsUser:
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import ILaunchBag
 
+    >>> def current_user():
+    ...     return getUtility(ILaunchBag).user
+
     >>> login("foo.bar@canonical.com")
 
     >>> firefox_test_bug = bugset.get(3)
@@ -54,7 +57,7 @@ To search for bugs matching specific criteria, use IBugSet.searchAsUser:
     >>> flush_database_updates()
 
     >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_crashes, user=getUtility(ILaunchBag).user)
+    ...     duplicateof=firefox_crashes, user=current_user())
     >>> print dups_of_bug_six.count()
     1
     >>> dups_of_bug_six[0].id
@@ -63,7 +66,7 @@ To search for bugs matching specific criteria, use IBugSet.searchAsUser:
     >>> firefox_test_bug.duplicateof = None
     >>> flush_database_updates()
     >>> dups_of_bug_six = bugset.searchAsUser(
-    ...     duplicateof=firefox_crashes, user=getUtility(ILaunchBag).user)
+    ...     duplicateof=firefox_crashes, user=current_user())
     >>> print dups_of_bug_six.count()
     0
 
@@ -111,7 +114,7 @@ bug after it's been marked private. So, if Sample Person is to mark the
 firefox_crashes bug private, we must first ensure that Sample Person is
 subscribed to the bug!
 
-    >>> sample_person = getUtility(ILaunchBag).user
+    >>> sample_person = current_user()
     >>> subscription = firefox_crashes.subscribe(sample_person)
 
 Now we can mark bug #6 private:
@@ -156,7 +159,7 @@ the firefox_crashes bug, we can still access properties of this bug:
 Note that a search will return all the bugs, as well:
 
     >>> all_bugs = bugset.searchAsUser(
-    ...     user=getUtility(ILaunchBag).user, orderBy="id")
+    ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
@@ -175,7 +178,7 @@ Likewise Foo Bar, an admin, can access the bug.
 Bug #6 is returned by the search results for an admin as well:
 
     >>> all_bugs = bugset.searchAsUser(
-    ...     user=getUtility(ILaunchBag).user, orderBy="id")
+    ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
     [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
@@ -228,7 +231,7 @@ Jeff Waugh, a member of the Ubuntu Team, is able to access this bug:
 and see it (bug #2) in searches:
 
     >>> all_bugs = bugset.searchAsUser(
-    ...     user=getUtility(ILaunchBag).user, orderBy="id")
+    ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
     [1, 2, 3, 4, 5, 7, 8, 9, 10]
 
@@ -250,7 +253,7 @@ And, as you might have guessed, is once again invisible in searches
 (notice that bug #6 is also invisible to No Privileges Person):
 
     >>> all_bugs = bugset.searchAsUser(
-    ...     user=getUtility(ILaunchBag).user, orderBy="id")
+    ...     user=current_user(), orderBy="id")
     >>> [bug.id for bug in all_bugs]
     [1, 3, 4, 5, 7, 8, 9, 10]
 
@@ -351,12 +354,53 @@ on them, e.g. IDistroRelease and ISourcePackage.
 >>> ubuntu_warty = getUtility(IDistroReleaseSet).get(1)
 >>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
 >>> ubuntu_warty.createBug(
-...     owner=getUtility(ILaunchBag).user, title="test", comment="test")
+...     owner=current_user(), title="test", comment="test")
 Traceback (most recent call last):
   ...
 NotImplementedError: A new bug cannot be filed directly on a distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release in the not-too-distant future. For now, you probably meant to file the bug on the distribution instead.
 >>> ubuntu_warty_firefox.createBug(
-...     owner=getUtility(ILaunchBag).user, title="test", comment="test")
+...     owner=current_user(), title="test", comment="test")
 Traceback (most recent call last):
   ...
 NotImplementedError: A new bug cannot be filed directly on a source package in a specific distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release source package in the not-too-distant future. For now, you probably meant to file the bug on the distro-wide (i.e. not release-specific) source package.
+
+Date Last Updated
+-----------------
+
+Malone tracks the last time a change was made to a
+bug. IBug.date_last_updated stores the date when the most recent of one
+of the following events occur:
+
+  * a comment is added
+  * the description or summary is changed
+  * the status, assignee, or importance are changed
+  * a branch or attachment is added
+
+Let's have a look at some examples:
+
+When a bug is created, its date_last_updated is set right away, to
+ensure that new bugs sort appropriately.
+
+  >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+
+  >>> firefox_bug = firefox.createBug(
+  ...     title="a test firefox bug",
+  ...     comment="a description of the bug",
+  ...     owner=current_user())
+
+  >>> getUtility(IOpenLaunchBag).add(firefox_bug)
+
+  >>> firefox_bug.datecreated == firefox_bug.date_last_updated
+  True
+
+Adding a comment updates date_last_updated.
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> comment = firefox_bug.newMessage(
+  ...     owner=current_user(),
+  ...     subject="blah blah blah",
+  ...     content="blah blah blah")
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True

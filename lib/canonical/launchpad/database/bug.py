@@ -54,6 +54,7 @@ class Bug(SQLBase):
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
     communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
                                         notNull=True, default=DEFAULT)

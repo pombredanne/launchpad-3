@@ -50,6 +50,8 @@ class IBug(IMessageTarget):
         title=_('Bug ID'), required=True, readonly=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_last_updated = Datetime(
+        title=_('Date Last Updated'), required=True, readonly=True)
     name = BugNameField(
         title=_('Nickname'), required=False,
         description=_("""A short and unique name for this bug.

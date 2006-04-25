@@ -43,6 +43,11 @@
    handler="canonical.launchpad.subscribers.karma.bug_comment_added" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.IBugMessage
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
+
+<subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    handler="canonical.launchpad.subscribers.karma.extref_added" />
