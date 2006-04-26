@@ -941,10 +941,10 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the component widget be shown on the advanced search page?"""
         context = self.context
         return (
-            IDistribution.providedBy(context) or
+            (IDistribution.providedBy(context) and
+             context.currentrelease is not None) or
             IDistroRelease.providedBy(context) or
-            ISourcePackage.providedBy(context) or
-            IDistributionSourcePackage.providedBy(context))
+            ISourcePackage.providedBy(context))
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
