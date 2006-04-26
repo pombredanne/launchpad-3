@@ -166,6 +166,7 @@ Now we remove the only email address nonempty had.
 >>> empty = nonempty
 
 Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
+
 >>> login('mark@hbd.com')
 >>> ubuntu_team = personset.getByName('ubuntu-team')
 >>> ubuntu_translators = personset.getByName('ubuntu-translators')
@@ -177,6 +178,7 @@ Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
 while empty is an active member. After the merge, 'Sample Person' will be an
 active member of that team.
+
 >>> sample in ubuntu_translators.inactivemembers
 True
 >>> empty in ubuntu_translators.activemembers
@@ -186,11 +188,38 @@ True
 >>> sample.karma
 91
 
+Branches whose owner is being merged are uniquified by appending '-N' where N
+is a unique integer. We create "peoplemerge" and "peoplemerge-1" branches owned
+by empty, and a "peoplemerge" branch owned by 'Sample Person' to test that
+branch name uniquifying works.
+
+Branches with greater IDs will get greater numerical suffixes, so we create
+"peoplemerge" first, and it will be renamed "peoplemerge-1". The extant
+"peoplemerge-1" branch will be renamed "peoplemerge-2".
+
+>>> from canonical.launchpad.interfaces import ProductSet, BranchSet
+>>> branchset = getUtility(BranchSet)
+>>> peoplemerge = branchset.new('peoplemerge', sample, None, None)
+>>> peoplemerge1 = branchset.new('peoplemerge', empty, None, None)
+>>> peoplemerge2 = branchset.new('peoplemerge-1', empty, None, None)
+
 >>> personset.merge(empty, sample)
+
+Check that 'Sample Person' has indeed become an active member of 'Ubuntu
+Translators'
 
 >>> sample in ubuntu_translators.activemembers
 True
 >>> sample.inTeam(ubuntu_translators)
+True
+
+Check that the branches have been renamed properly.
+
+>>> sample.getBranch(None, 'peoplemerge') == peoplemerge
+True
+>>> sample.getBranch(None, 'peoplemerge-1') == peoplemerge1
+True
+>>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge2
 True
 
 Note that we don't bother migrating karma - it will just be reset next
@@ -205,6 +234,7 @@ time the caches are rebuilt.
 >>> cur = Person._connection._connection.cursor()
 
 A merged account gets a -merged suffix on its name.
+
 >>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
 >>> cur.fetchone()[0] == empty.id
 True
