@@ -15,10 +15,13 @@ This method will return all IPOTemplate that have a given name.
     >>> evolution_templates = potemplate_set.getAllByName('evolution-2.2')
     >>> len(evolution_templates)
     2
-    >>> for potemplate in evolution_templates:
-    ...     print potemplate.title
-    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
-    Template "evolution-2.2" in Evolution trunk
+    >>> titles = [potemplate.title
+    ...           for potemplate in evolution_templates
+    ...          ]
+    >>> 'Template "evolution-2.2" in Ubuntu Hoary package "evolution"' in titles
+    True
+    >>> 'Template "evolution-2.2" in Evolution trunk' in titles
+    True
 
 
 POTemplateSubset

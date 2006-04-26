@@ -19,10 +19,18 @@ It needs that there are no references to it to be able to remove it.
 
     >>> from canonical.launchpad.database import POSubmission
     >>> posubmission = POSubmission.get(1)
-    >>> posubmission.destroySelf()
-    Traceback (most recent call last):
-    ...
-    IntegrityError:...
+
+XXX CarlosPerelloMarin 20060426: We need to use try/except here because
+Dapper (my laptop) raises an IntegrityError but Breezy (pqm) raises
+ProgrammingError. We use DatabaseError because it's a superclass of both and 
+should be available on both systems.
+
+    >>> from psycopg import DatabaseError
+    >>> try:
+    ...     posubmission.destroySelf()
+    ... except DatabaseError:
+    ...     print 'We were not able to remove this posubmission'
+    We were not able to remove this posubmission
 
 Restore the database access after the failure.
 

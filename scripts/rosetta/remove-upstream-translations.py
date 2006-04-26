@@ -74,7 +74,9 @@ def remove_upstream_entries(ztm, potemplates, lang_code=None, variant=None):
     items_deleted = 0
     for potemplate in potemplates:
         if lang_code is None:
-            pofiles = list(potemplate.pofiles)
+            pofiles = sorted(
+                list(potemplate.pofiles),
+                key=lambda p: (p.language.code, p.variant))
         else:
             pofiles = [potemplate.getPOFileByLang(lang_code, variant)]
 

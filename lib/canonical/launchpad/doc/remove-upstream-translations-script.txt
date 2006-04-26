@@ -37,16 +37,16 @@ We can remove all translations from a concrete potemplate.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Before the removal, latest submission came from: Valentina Commissari
+    DEBUG   Removed 12 submissions
+    DEBUG   After the removal, latest submission came from: Foo Bar
     DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Removed 0 submissions
     DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
-    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Valentina Commissari
-    DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Foo Bar
     DEBUG   Removed 12 submissions in total.
     <BLANKLINE>
 
@@ -97,16 +97,16 @@ Or even with a concrete IPOTemplateName.
     ...     )
     >>> (output, empty) = process.communicate()
     >>> print output
+    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+    DEBUG   Before the removal, latest submission came from: Valentina Commissari
+    DEBUG   Removed 12 submissions
+    DEBUG   After the removal, latest submission came from: Foo Bar
     DEBUG   Processing Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Before the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Removed 0 submissions
     DEBUG   After the removal, latest submission came from: Carlos Perelló Marín
     DEBUG   Processing Xhosa (xh) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
     DEBUG   Removed 0 submissions
-    DEBUG   Processing Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
-    DEBUG   Before the removal, latest submission came from: Valentina Commissari
-    DEBUG   Removed 12 submissions
-    DEBUG   After the removal, latest submission came from: Foo Bar
     DEBUG   Removed 12 submissions in total.
     <BLANKLINE>
 
