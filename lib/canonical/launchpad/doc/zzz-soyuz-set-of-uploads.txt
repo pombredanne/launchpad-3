@@ -119,13 +119,13 @@ And then we need a way to process the uploads from the queue
 
   >>> from canonical.config import config
   >>> import subprocess, sys
-  >>> def process_uploads():
+  >>> def process_uploads(upload_policy):
   ...     # reset previous log content if it exists
   ...     if os.path.exists(uploader_log):
   ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
   ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
-  ...                                 "-v", "-C", "anything", temp_dir,
+  ...                                 "-v", "-C", upload_policy, temp_dir,
   ...                                 "--log-file", uploader_log])
   ...     return process.wait() == 0
 
@@ -199,9 +199,9 @@ process_new and simple_publish we are in a position to run the tests.
 
 We can also define another helper function...
 
-  >>> def expect_okays(leafname, is_new):
+  >>> def expect_okays(leafname, is_new, upload_policy='anything'):
   ...     punt_upload_into_queue(leafname)
-  ...     assert process_uploads(), "Upload processes failed"
+  ...     assert process_uploads(upload_policy), "Upload processes failed"
   ...     # There is always a lockfile in incoming...
   ...     assert len(os.listdir(incoming_dir)) == 1, "Incoming should be empty"
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty"
@@ -252,6 +252,8 @@ Remove rejected uploads.
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
   >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-3.distro'))
 
+Check the email recipient for displayname containing special chars,
+'.', must be rfc2047 compilant:
 
   >>> expect_okays('bar_1.0-4', False)
   >>> print open(uploader_log).read()
@@ -261,6 +263,26 @@ Remove rejected uploads.
   INFO       Recipients: "Celso R. Providelo" <celso.providelo@canonical.com>
   ...
   <BLANKLINE>
+
+
+Check if we forcibly add the changer as recipient for "sync" uploads,
+which contains unsigned changesfile.
+
+  >>> expect_okays('bar_1.0-5', False, upload_policy='sync')
+  >>> print open(uploader_log).read()
+  DEBUG   Initialising connection.
+  ...
+  DEBUG   Building recipients list.
+  DEBUG   Changes file is unsigned, adding changer as recipient
+  DEBUG   Adding recipient: '"Celso R. Providelo" <celso.providelo@canonical.com>'
+  DEBUG   Creating a New queue entry
+  DEBUG   Setting it to ACCEPTED
+  INFO    Would be sending a mail:
+  INFO       Subject: Accepted bar 1.0-5 (source)
+  INFO       Recipients: "Celso R. Providelo" <celso.providelo@canonical.com>
+  ...
+  <BLANKLINE>
+
 
 Nice! That's enough for now.. let's kill the process and clean
 everything up.

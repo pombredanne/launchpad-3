@@ -1768,11 +1768,11 @@ class NascentUpload:
         """Build self.recipients up to include every address we trust."""
         recipients = []
         self.logger.debug("Building recipients list.")
+        maintainer = self.changes_maintainer['person']
+        changer = self.changed_by['person']
+
         if self.signer:
             recipients.append(self.signer_address['person'])
-
-            maintainer = self.changes_maintainer['person']
-            changer = self.changed_by['person']
 
             if (maintainer != self.signer and
                 self.is_person_in_keyring(maintainer)):
@@ -1784,7 +1784,12 @@ class NascentUpload:
                 self.logger.debug("Adding changed-by to recipients")
                 recipients.append(changer)
         else:
-            self.logger.debug("Changes file is unsigned, skipping mails")
+            # Only autosync policy allow unsigned changes
+            # We rely on the person running sync-tool about the identity
+            # of the changer.
+            self.logger.debug(
+                "Changes file is unsigned, adding changer as recipient")
+            recipients.append(changer)
 
         recipients = self.policy.filterRecipients(self, recipients)
         for person in recipients:
@@ -2050,9 +2055,6 @@ class NascentUpload:
             if self.signer:
                 interpolations['MAINTAINERFROM'] = self.changed_by['rfc2047']
 
-            if interpolations['ANNOUNCE'] is None:
-                interpolations['ANNOUNCE'] = 'nowhere'
-
             self.build_recipients()
 
             interpolations['RECIPIENT'] = ", ".join(self.recipients)
@@ -2068,8 +2070,10 @@ class NascentUpload:
                 return True, [new_msg % interpolations]
             else:
                 if self.policy.autoApprove(self):
-                    return True, [accept_msg % interpolations,
-                                  announce_msg % interpolations]
+                    messages = [accept_msg % interpolations]
+                    if interpolations['ANNOUNCE'] is not None:
+                        messages.append(announce_msg % interpolations)
+                    return True, messages
                 else:
                     interpolations["SUMMARY"] += ("\nThis upload awaits "
                                                   "approval by a distro "
