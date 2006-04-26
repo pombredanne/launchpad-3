@@ -13,7 +13,6 @@
   Upotreba:
   <BLANKLINE>
   %s [opcije] &lt;uređaj&gt; [&lt;etiketa&gt;]
-  ...
   </textarea>
   <BLANKLINE>
   <BLANKLINE>
