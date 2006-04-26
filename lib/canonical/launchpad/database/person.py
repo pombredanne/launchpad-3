@@ -1348,6 +1348,8 @@ class PersonSet:
             while (product, new_name) in possible_conflicts:
                 new_name = '%s-2' % new_name
             possible_conflicts.append((product, new_name))
+            new_name = new_name.encode('US-ASCII')
+            name = name.encode('US-ASCII')
             cur.execute('''
                 UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
                 WHERE owner = %(from_id)s AND name = %(name)s
