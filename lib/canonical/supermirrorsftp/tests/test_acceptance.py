@@ -13,7 +13,8 @@ import gc
 
 from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
-from bzrlib.tests import TestCase as BzrTestCase
+from bzrlib.tests.repository_implementations.test_repository import (
+    TestCaseWithRepository)
 from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp
@@ -51,7 +52,7 @@ class SFTPSetup(TacTestSetup):
             ))
 
 
-class SFTPTestCase(BzrTestCase):
+class SFTPTestCase(TestCaseWithRepository):
     layer = ZopelessLayer
 
     def setUp(self):
@@ -133,15 +134,24 @@ class AcceptanceTests(SFTPTestCase):
     https://wiki.launchpad.canonical.com/SupermirrorTaskList
     """
     layer = ZopelessLayer
+    #bzrdir_format = None
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
 
         # Create a local branch with one revision
-        self.local_branch = ScratchDir(files=['foo']).open_branch()
-        wt = self.local_branch.bzrdir.open_workingtree()
-        wt.add('foo')
-        wt.commit('Added foo')
+        self.local_branch = self.make_branch('.')
+        tree = self.local_branch.bzrdir.create_workingtree()
+        self.build_tree(['foo'])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+
+        ##XXX Robert's quick notes on making a knit branch:
+        #import bzrlib.bzrdir, bzrlib.repository
+        #d = bzrlib.bzrdir.BzrDir.create('.')
+        #r = bzrlib.repository.KnitRepositoryFormat1().init(d)
+        #d.create_branch()
+        #d.create_workingtree()
 
     def test_1_bzr_sftp(self):
         """
@@ -303,7 +313,26 @@ class AcceptanceTests(SFTPTestCase):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    # Construct a test suite that runs AcceptanceTests with several different
+    # repository formats.
+    from bzrlib.repository import (
+        RepositoryFormat, RepositoryTestProviderAdapter, RepositoryFormat6)
+    from bzrlib.tests import (
+        adapt_modules, default_transport, TestSuite, iter_suite_tests)
+    supported_formats = [RepositoryFormat6()]
+    supported_formats.extend(RepositoryFormat._formats.values())
+    adapter = RepositoryTestProviderAdapter(
+        default_transport,
+        # None here will cause a readonly decorator to be created
+        # by the TestCaseWithTransport.get_readonly_transport method.
+        None,
+        [(format, format._matchingbzrdir) for format in 
+         supported_formats])
+
+    suite = unittest.TestSuite()
+    for test in iter_suite_tests(unittest.makeSuite(AcceptanceTests)):
+        suite.addTests(adapter.adapt(test))
+    return suite
 
 
 # Kill any daemons left lying around from a previous interrupted run.
