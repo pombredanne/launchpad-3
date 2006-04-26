@@ -197,11 +197,11 @@ Branches with greater IDs will get greater numerical suffixes, so we create
 "peoplemerge" first, and it will be renamed "peoplemerge-1". The extant
 "peoplemerge-1" branch will be renamed "peoplemerge-2".
 
->>> from canonical.launchpad.interfaces import ProductSet, BranchSet
->>> branchset = getUtility(BranchSet)
+>>> from canonical.launchpad.interfaces import IProductSet, IBranchSet
+>>> branchset = getUtility(IBranchSet)
 >>> peoplemerge = branchset.new('peoplemerge', sample, None, None)
 >>> peoplemerge1 = branchset.new('peoplemerge', empty, None, None)
->>> peoplemerge2 = branchset.new('peoplemerge-1', empty, None, None)
+>>> peoplemerge2 = branchset.new('peoplemerge-2', empty, None, None)
 
 >>> personset.merge(empty, sample)
 
@@ -217,9 +217,9 @@ Check that the branches have been renamed properly.
 
 >>> sample.getBranch(None, 'peoplemerge') == peoplemerge
 True
->>> sample.getBranch(None, 'peoplemerge-1') == peoplemerge1
+>>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge1
 True
->>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge2
+>>> sample.getBranch(None, 'peoplemerge-2-2') == peoplemerge2
 True
 
 Note that we don't bother migrating karma - it will just be reset next

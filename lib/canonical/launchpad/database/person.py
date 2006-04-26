@@ -1334,6 +1334,27 @@ class PersonSet:
             )
         skip.append(('wikiname', 'person'))
 
+        # Update the Branches that will not conflict, and fudge the names of
+        # ones that *do* conflict
+        cur.execute('''
+            SELECT product, name FROM Branch WHERE owner = %(to_id)d
+            ''' % vars())
+        possible_conflicts = list(tuple(r) for r in cur.fetchall())
+        cur.execute('''
+            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
+            ''' % vars())
+        for id, product, name in list(cur.fetchall()):
+            new_name = name
+            while (product, new_name) in possible_conflicts:
+                new_name = '%s-2' % new_name
+            possible_conflicts.append((product, new_name))
+            cur.execute('''
+                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
+                WHERE owner = %(from_id)s AND name = %(name)s
+                    AND (%(product)s IS NULL OR product = %(product)s)
+                ''', vars())
+        skip.append(('branch','owner'))
+        
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331
