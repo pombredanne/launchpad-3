@@ -346,8 +346,8 @@ sourcepackage. E.g.
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]
 [16]
 
-Note that there are some IBugTargets that don't allow bugs to be directly filed
-on them, e.g. IDistroRelease and ISourcePackage.
+There are some IBugTargets that don't allow bugs to be directly filed on
+them, e.g. IDistroRelease and ISourcePackage.
 
 >>> from canonical.launchpad.interfaces import IDistroReleaseSet
 

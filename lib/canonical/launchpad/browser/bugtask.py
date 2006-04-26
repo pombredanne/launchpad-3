@@ -451,7 +451,7 @@ class BugTaskEditView(GeneralFormView):
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                edit_field_names += ['sourcepackagename', 'binarypackagename']
+                edit_field_names += ['sourcepackagename']
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
@@ -636,7 +636,7 @@ class BugTaskStatusView(LaunchpadView):
         if IUpstreamBugTask.providedBy(self.context):
             self.label = 'Product fix request'
         else:
-            field_names += ['sourcepackagename', 'binarypackagename']
+            field_names += ['sourcepackagename']
             self.label = 'Source package fix request'
 
         self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
