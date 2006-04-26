@@ -88,6 +88,7 @@ for the ubuntutest distribution.
   >>> breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
   ...                              True, breezy.owner)
   >>> breezy.nominatedarchindep = breezy_i386
+  >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> breezy.initialiseFromParent()
 
 Commit all that so that the scripts can see it.
@@ -266,7 +267,8 @@ Check the email recipient for displayname containing special chars,
 
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
-which contains unsigned changesfile.
+which contains unsigned changesfile. Ensure it sends email to the
+changer and the distrorelease changes maillisting.
 
   >>> expect_okays('bar_1.0-5', False, upload_policy='sync')
   >>> print open(uploader_log).read()
@@ -281,8 +283,15 @@ which contains unsigned changesfile.
   INFO       Subject: Accepted bar 1.0-5 (source)
   INFO       Recipients: "Celso R. Providelo" <celso.providelo@canonical.com>
   ...
+  INFO    Announcing to breezy-changes@ubuntu.com
+  INFO
+  INFO    Thank you for your contribution to ubuntutest.
+  INFO
+  INFO    Would be sending a mail:
+  INFO       Subject: Accepted bar 1.0-5 (source)
+  INFO       Recipients: breezy-changes@ubuntu.com
+  ...
   <BLANKLINE>
-
 
 Nice! That's enough for now.. let's kill the process and clean
 everything up.

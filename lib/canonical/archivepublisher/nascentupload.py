@@ -2058,7 +2058,6 @@ class NascentUpload:
             self.build_recipients()
 
             interpolations['RECIPIENT'] = ", ".join(self.recipients)
-
             interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
 
             interpolations = self.policy.filterInterpolations(
@@ -2070,10 +2069,8 @@ class NascentUpload:
                 return True, [new_msg % interpolations]
             else:
                 if self.policy.autoApprove(self):
-                    messages = [accept_msg % interpolations]
-                    if interpolations['ANNOUNCE'] is not None:
-                        messages.append(announce_msg % interpolations)
-                    return True, messages
+                    return True, [accept_msg % interpolations,
+                                  announce_msg % interpolations]
                 else:
                     interpolations["SUMMARY"] += ("\nThis upload awaits "
                                                   "approval by a distro "
