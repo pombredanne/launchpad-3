@@ -364,6 +364,11 @@ class DebBugs(ExternalBugTracker):
             debian_bug = self.debbugs_db[int(bug_id)]
         except KeyError:
             raise BugNotFound(bug_id)
+        if not debian_bug.severity:
+            # 'normal' is the default severity in debbugs.
+            severity = 'normal'
+        else:
+            severity = debian_bug.severity
         new_remote_status = ' '.join(
-            [debian_bug.status, debian_bug.severity] + debian_bug.tags)
+            [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status

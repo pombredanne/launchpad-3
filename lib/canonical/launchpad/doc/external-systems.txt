@@ -243,6 +243,19 @@ The retrieval of the remote status is done by _getRemoteStatus().
     >>> external_debbugs._getRemoteStatus('304014')
     'open important'
 
+Sometimes the severity field is missing in the bug summary. That will
+cause severity to be set to normal, which is the default in debbugs.
+
+    >>> import email
+    >>> summary = email.message_from_file(
+    ...     open(os.path.join(
+    ...         test_db_location, 'db-h', '01', '237001.summary')))
+    >>> 'Severity' not in summary
+    True
+
+    >>> external_debbugs._getRemoteStatus('237001')
+    'open normal'
+
 If we pass a bug number that doesn't exist in the debbugs db,
 BugNotFound is raised.
 
