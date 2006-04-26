@@ -1,5 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+from zope.schema import TextLine, Text, Field, Int
 from zope.interface import Interface, Attribute
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
@@ -27,7 +28,9 @@ class IPOFile(IRosettaStats):
 
     topcomment = Attribute("The main comment for this .po file.")
 
-    header = Attribute("The header of this .po file.")
+    header = Text(
+        title=u'The header of this .po file.',
+        required=False)
 
     fuzzyheader = Attribute("Whether the header is fuzzy or not.")
 
@@ -39,11 +42,15 @@ class IPOFile(IRosettaStats):
 
     owner = Attribute("The owner for this pofile.")
 
-    pluralforms = Attribute("The number of plural forms this PO file has.")
+    pluralforms = Int(
+        title=u'The published number of plural forms this PO file has.',
+        required=True)
 
     variant = Attribute("The language variant for this PO file.")
 
-    path = Attribute("The path to the file that was imported")
+    path = TextLine(
+        title=u'The path to the file that was imported',
+        required=True)
 
     exportfile = Attribute("The Librarian alias of the last cached export.")
 
@@ -54,9 +61,12 @@ class IPOFile(IRosettaStats):
 
     datecreated = Attribute("The fate this file was created.")
 
-    latestsubmission = Attribute("""The translation submissions which was
-        most recently added, or None if there are no submissions belonging
-        to this PO file.""")
+    latestsubmission = Field(
+        title=u'Translation submission which was most recently added.',
+        description=(u'Translation submission which was most recently added,'
+            u' or None if there are no submissions belonging to this IPOFile.'
+            ),
+        required=False)
 
     translators = Attribute("A list of Translators that have been "
         "designated as having permission to edit these files in this "
@@ -71,12 +81,14 @@ class IPOFile(IRosettaStats):
 
     fuzzy_count = Attribute("The number of 'fuzzy' messages in this po file.")
 
-    from_sourcepackagename = Attribute("The source package this pofile"
-        " comes from (set it only if it's different from the"
-        " IPOTemplate.sourcepackagenameprevious).")
+    from_sourcepackagename = Field(
+        title=u'The source package this pofile comes from.',
+        description=(u'The source package this pofile comes from (set it only'
+            u' if it\'s different from IPOFile.potemplate.sourcepackagename).'
+            ),
+        required=False)
 
-    def __len__():
-        """Returns the number of current IPOMessageSets in this PO file."""
+    pomsgsets = Attribute("All IPOMsgset objects related to this IPOFile.")
 
     def translatedCount():
         """
@@ -99,9 +111,6 @@ class IPOFile(IRosettaStats):
         """
         Return an iterator over untranslated message sets in this PO file.
         """
-
-    # Invariant: translatedCount() + untranslatedCount() = __len__()
-    # XXX: add a test for this
 
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this PO file."""
@@ -241,6 +250,9 @@ class IPOFile(IRosettaStats):
         If a logger argument is given, any problem found with the
         import will be logged there.
         """
+
+    def recalculateLatestSubmission():
+        """Update IPOFile.latestsubmission with latest submission."""
 
 
 class IPOFileSet(Interface):
