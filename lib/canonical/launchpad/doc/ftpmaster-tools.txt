@@ -235,7 +235,7 @@ component 'universe':
   DEBUG   Initialising connection.
   INFO    Override Component to: 'universe'
   INFO    Override Section to: 'base'
-  INFO    'mozilla-firefox/main/web' source overriden
+  INFO    'mozilla-firefox/main/web' source overridden
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
 
@@ -256,7 +256,7 @@ to component 'main':
   DEBUG   Initialising connection.
   INFO    Override Component to: 'main'
   INFO    Override Section to: 'base'
-  INFO    'pmount/main/editors' source overriden
+  INFO    'pmount/main/editors' source overridden
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
 
