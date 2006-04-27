@@ -10,6 +10,7 @@ from xml.sax.saxutils import escape
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
@@ -203,6 +204,57 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assign_to_me
             else:
                 return self.assigned_to
+
+
+#XXX: This should be tested.
+class BugTaskBugWatchWidget(RadioWidget):
+    _messageNoValue = "None, the information is updated manually."
+    _joinButtonToMessageTemplate = (
+        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+
+    #XXX: This method is copied from RadioWidget.renderItems() and
+    #     modified to  actualy work. RadioWidget.renderItems() should be
+    #     fixed upstream so that this method won't be necessary.
+    #     http://www.zope.org/Collectors/Zope3-dev/592 
+    #     -- Bjorn Tillenius, 2006-04-26
+    def renderItems(self, value):
+        """Render the items with with the correct radio button selected."""
+        #XXX: This works around the fact that we incorrectly gets the form
+        #     value instead of a valid field value.
+        #     -- Bjorn Tillenius, 2006-04-26
+        if value == self._missing:
+            value = self.context.missing_value
+        # check if we want to select first item, the previously selected item
+        # or the "no value" item.
+        no_value = None
+        if (value == self.context.missing_value
+            and getattr(self, 'firstItem', False)
+            and len(self.vocabulary) > 0
+            and self.context.required):
+                # Grab the first item from the iterator:
+                values = [iter(self.vocabulary).next().value]
+        elif value != self.context.missing_value:
+            values = [value]
+        else:
+            # the "no value" option will be checked
+            no_value = 'checked'
+            values = []
+
+        items = self.renderItemsWithValues(values)
+        if not self.context.required:
+            kwargs = {
+                'value': '',
+                'name': self.name,
+                'cssClass': self.cssClass,
+                'type': 'radio'}
+            if no_value:
+                kwargs['checked']=no_value
+            option = renderElement('input', **kwargs)
+            option = self._joinButtonToMessageTemplate %(
+                option, self.translate(self._messageNoValue))
+            items.insert(0, option)
+
+        return items
 
 
 class AssigneeDisplayWidget(BrowserWidget):

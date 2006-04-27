@@ -61,7 +61,8 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.lp.dbschema import (
     BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, DBItemDisplayWidget, NewLineToSpacesWidget)
+    AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
+    NewLineToSpacesWidget)
 
 
 def get_sortorder_from_request(request):
@@ -461,6 +462,7 @@ class BugTaskEditView(GeneralFormView):
             self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.milestone_widget = None
+            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
         else:
             # Set up the milestone widget as an input widget only if the
             # has launchpad.Edit permissions on the distribution, for
