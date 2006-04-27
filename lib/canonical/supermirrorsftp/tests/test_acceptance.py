@@ -148,13 +148,6 @@ class AcceptanceTests(SFTPTestCase):
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
 
-        ##XXX Robert's quick notes on making a knit branch:
-        #import bzrlib.bzrdir, bzrlib.repository
-        #d = bzrlib.bzrdir.BzrDir.create('.')
-        #r = bzrlib.repository.KnitRepositoryFormat1().init(d)
-        #d.create_branch()
-        #d.create_workingtree()
-
     def test_1_bzr_sftp(self):
         """
         The bzr client should be able to read and write to the Supermirror SFTP
