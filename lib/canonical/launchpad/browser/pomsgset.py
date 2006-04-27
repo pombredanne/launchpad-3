@@ -1,19 +1,38 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POMsgSetView']
+__all__ = [
+    'POMsgSetView',
+    'POMsgSetURL'
+    ]
 
 import re
 import gettextpo
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
-
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError
-    )
-from canonical.launchpad.webapp import LaunchpadView
+    UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
+    ILanguageSet, ICanonicalUrlData)
+from canonical.launchpad.webapp import LaunchpadView, canonical_url
+
+class POMsgSetURL:
+    implements(ICanonicalUrlData)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def path(self):
+        pomsgset = self.context
+        return '%s/%s' % (
+            canonical_url(pomsgset.pofile), str(pomsgset.potmsgset.sequence))
+
+    @property
+    def inside(self):
+        return self.context.pofile
 
 
 class POMsgSetView(LaunchpadView):
@@ -146,6 +165,92 @@ class POMsgSetView(LaunchpadView):
         else:
             return self.context.isfuzzy
 
+    @property
+    def lacks_plural_form_information(self):
+        """Return whether we know the plural forms for this language."""
+        if self.context.pofile.potemplate.hasPluralMessage():
+            # If there are no plural forms, we don't mind if we have or not
+            # the plural form information.
+            return self.context.pofile.language.pluralforms is None
+        else:
+            return False
+
+    @property
+    def second_lang_code(self):
+        second_lang_code = self.form.get('alt', '')
+        if (second_lang_code == '' and
+            self.context.pofile.language.alt_suggestion_language is not None):
+            return self.context.pofile.language.alt_suggestion_language.code
+        elif second_lang_code == '':
+            return None
+        else:
+            return second_lang_code
+
+    @property
+    def is_at_beginning(self):
+        """Return whether we are at the beginning of the form."""
+        return self.context.potmsgset.sequence == 0
+
+    @property
+    def is_at_end(self):
+        """Return whether we are at the end of the form."""
+        potmsgset = self.context.potmsgset
+        return potmsgset.sequence == len(potmsgset.potemplate)
+
+    @property
+    def beginning_URL(self):
+        """Return the URL to be at the beginning of the translation form."""
+        return self.createURL(sequence=1)
+
+    @property
+    def end_URL(self):
+        """Return the URL to be at the end of the translation form."""
+        number_msgsets = len(self.context.potmsgset.potemplate)
+        return self.createURL(sequence=number_msgsets)
+
+    @property
+    def previous_URL(self):
+        """Return the URL to get previous self.count number of message sets.
+        """
+        if self.context.potmsgset.sequence > 1:
+            return self.createURL(self.context.potmsgset.sequence)
+        else:
+            # We don't have more entries before this one, return always the
+            # first entry.
+            return self.createURL(1)
+
+    @property
+    def next_URL(self):
+        """Return the URL to get next self.count number of message sets."""
+        number_msgsets = len(self.context.potmsgset.potemplate)
+        current_msgset = self.context.potmsgset.sequence
+        assert (current_msgset + 1 < number_msgsets), (
+            'Only have %d messages, requested %d' % (
+                number_msgsets, current_msgset + 1))
+
+        return self.createURL(sequence=current_msgset + 1)
+
+    def createURL(self, sequence=None):
+        """Build the current URL."""
+        if sequence is None:
+            # We don't change the IPOMsgSet.
+            url = canonical_url(self.context)
+        else:
+            assert sequence > 0, ("%r is not a valid sequence number." % name)
+
+            potmsgset = self.potmsgset.potemplate.getPOTMsgSetBySequence(
+                sequence)
+            pomsgset = potmsgset.getPOMsgSet(
+                self.context.pofile.language.code,
+                self.context.pofile.variant)
+            url = canonical_url(pomsgset)
+
+        if self.second_lang_code is None:
+            return url
+        else:
+            query = urllib.urlencode({'alt': self.second_lang_code})
+            return '%s?%s' % (url, query)
+
     def _prepare_translations(self):
         """Prepare self.translations to be used."""
         if self.translations is not None:
@@ -188,6 +293,22 @@ class POMsgSetView(LaunchpadView):
                 return None
         else:
             raise IndexError('Translation out of range')
+
+    def lang_selector(self):
+        second_lang_code = self.second_lang_code
+        langset = getUtility(ILanguageSet)
+        html = ('<select name="alt" title="Make suggestions from...">\n'
+                '<option value=""')
+        if self.second_lang_pofile is None:
+            html += ' selected="yes"'
+        html += '></option>\n'
+        for lang in langset.common_languages:
+            html += '<option value="' + lang.code + '"'
+            if second_lang_code == lang.code:
+                html += ' selected="yes"'
+            html += '>' + lang.englishname + '</option>\n'
+        html += '</select>\n'
+        return html
 
     def set_second_lang_pofile(self, second_lang_pofile):
         """Store the selected second_lang_pofile reference.
