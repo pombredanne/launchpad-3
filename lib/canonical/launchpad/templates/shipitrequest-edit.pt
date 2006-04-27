@@ -75,29 +75,38 @@
 
     <h2>Requested quantities</h2>
 
-    <ul tal:define="allquantities context/getRequestedCDsGroupedByFlavourAndArch">
-      <li tal:repeat="flavour allquantities">
-        <label tal:content="flavour/title">Ubuntu</label>
-        <table>
-          <tr>
-            <tal:block repeat="arch python:allquantities[flavour]">
-              <td align="right">
-                <span tal:replace="arch/title" />:
-              </td>
-              <td align="left">
-                <strong tal:content="python:allquantities[flavour][arch].quantity" />
-            </tal:block>
-          </tr>
-        </table>
-        <br />
-      </li>
-    </ul>
+    <table class="listing"
+           tal:attributes="cols view/ordered_architectures/count:len">
+      <tr>
+      <thead>
+        <th>&nbsp;</th>
+        <tal:headers repeat="arch view/ordered_architectures">
+          <th tal:content="arch/title" />
+        </tal:headers>
+      </thead>
+      </tr>
+      <tr tal:repeat="row view/quantities_matrix">
+        <tal:block repeat="cel row">
+          <tal:is-header condition="repeat/cel/start">
+            <th tal:content="cel" />
+          </tal:is-header>
+          <tal:is-not-header condition="not: repeat/cel/start">
+            <td style="text-align: right">
+              <span tal:replace="cel" />
+            </td>
+          </tal:is-not-header>
+        </tal:block>
+      </tr>
+    </table>
 
-    <div style="text-align: right;" tal:condition="not: context/isDenied">
-      <form name="denyrequest" action="" method="POST">
-        <input type="submit" value="Deny" name="FORM_SUBMIT" />
-      </form>
-    </div>
+    <tal:not-cancelled-or-shipped 
+      tal:condition="not: view/contextCancelledOrShipped">
+      <div style="text-align: right;" tal:condition="not: context/isDenied">
+        <form name="denyrequest" action="" method="POST">
+          <input type="submit" value="Deny" name="FORM_SUBMIT" />
+        </form>
+      </div>
+    </tal:not-cancelled-or-shipped>
 
     <h2>Approved quantities</h2>
 
@@ -117,7 +126,8 @@
       </label>
 
       <br />
-      <div style="text-align: right;">
+      <div style="text-align: right;" 
+           tal:condition="not: view/contextCancelledOrShipped">
         <tal:block condition="not: context/cancelled">
           <tal:block condition="not: context/isApproved">
             <input type="submit" value="Approve" name="FORM_SUBMIT" />
@@ -183,7 +193,7 @@
       </tr>
     </table>
 
-    <ul>
+    <ul tal:condition="not: view/contextCancelledOrShipped">
       <li class="edit">
         <a tal:attributes="href string:/adminrequest?order=${context/id}">
           Edit shipping details

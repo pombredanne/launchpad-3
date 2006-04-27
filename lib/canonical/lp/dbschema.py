@@ -3255,15 +3255,15 @@ class ShipItFlavour(DBSchema):
         """)
 
     KUBUNTU = Item(2, """
-        KUbuntu
+        Kubuntu
 
-        The KUbuntu flavour.
+        The Kubuntu flavour.
         """)
 
     EDUBUNTU = Item(3, """
-        EdUbuntu
+        Edubuntu
 
-        The EdUbuntu flavour.
+        The Edubuntu flavour.
         """)
 
 

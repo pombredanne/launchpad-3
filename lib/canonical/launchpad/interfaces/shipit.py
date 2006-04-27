@@ -558,15 +558,15 @@ class IShippingRequestAdmin(Interface):
         required=False, readonly=False, constraint=_valid_positive_int)
 
     kubuntu_quantityx86 = Int(
-        title=_('PC'), description=_('Quantity of KUbuntu PC CDs'),
+        title=_('PC'), description=_('Quantity of Kubuntu PC CDs'),
         required=False, readonly=False, constraint=_valid_positive_int)
     kubuntu_quantityamd64 = Int(
         title=_('64-bit PC'),
-        description=_('Quantity of KUbuntu 64-bit PC CDs'),
+        description=_('Quantity of Kubuntu 64-bit PC CDs'),
         required=False, readonly=False, constraint=_valid_positive_int)
 
     edubuntu_quantityx86 = Int(
-        title=_('PC'), description=_('Quantity of EdUbuntu PC CDs'),
+        title=_('PC'), description=_('Quantity of Edubuntu PC CDs'),
         required=False, readonly=False, constraint=_valid_positive_int)
 
     highpriority = IShippingRequest.get('highpriority')
@@ -598,15 +598,15 @@ class IShippingRequestEdit(Interface):
         readonly=False, constraint=_valid_positive_int)
 
     kubuntu_quantityx86approved = Int(
-        title=_('PC'), description=_('Quantity of KUbuntu X86 Approved CDs'),
+        title=_('PC'), description=_('Quantity of Kubuntu X86 Approved CDs'),
         required=False, readonly=False, constraint=_valid_positive_int)
     kubuntu_quantityamd64approved = Int(
         title=_('64-bit PC'),
-        description=_('Quantity of KUbuntu AMD64 Approved CDs'), required=False,
+        description=_('Quantity of Kubuntu AMD64 Approved CDs'), required=False,
         readonly=False, constraint=_valid_positive_int)
 
     edubuntu_quantityx86approved = Int(
-        title=_('PC'), description=_('Quantity of EdUbuntu X86 Approved CDs'),
+        title=_('PC'), description=_('Quantity of Edubuntu X86 Approved CDs'),
         required=False, readonly=False, constraint=_valid_positive_int)
 
     highpriority = IShippingRequest.get('highpriority')

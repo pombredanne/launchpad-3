@@ -63,6 +63,13 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="*"
+      name="+launchpad_forbidden_macros"
+      template="../templates/launchpad-forbidden-macros.pt"
+      permission="zope.Public"
+      />
+
   <!-- Login and logout pages, and login status. -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadApplication"

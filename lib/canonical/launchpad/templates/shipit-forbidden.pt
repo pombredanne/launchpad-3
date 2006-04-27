@@ -8,7 +8,7 @@
     <metal:heading fill-slot="pageheading">
       <h1>Not allowed here</h1>
     </metal:heading>
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="body">
       <span metal:use-macro="context/@@+launchpad_forbidden_macros/body" />
     </div>
   </body>

@@ -691,6 +691,8 @@ shipit_index = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
 
+shipit_forbidden = 'Forbidden'
+
 shipit_myrequest = "Your ShipIt order"
 
 shipit_oops = 'Error: Oops'

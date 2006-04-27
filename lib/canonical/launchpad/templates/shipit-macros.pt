@@ -15,7 +15,7 @@
   <table tal:attributes="cols view/ordered_architectures/count:len">
     <tr>
       <thead>
-        <th></th>
+        <th>&nbsp;</th>
         <tal:headers repeat="arch view/ordered_architectures">
           <th tal:content="arch/title" />
         </tal:headers>
@@ -144,6 +144,9 @@
 
 
 <metal:meta-master define-macro="meta-master">
+
+<metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+
 <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->

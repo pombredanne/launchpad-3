@@ -65,7 +65,7 @@ class StandardShipItRequestURL:
 class ShipItUnauthorizedView(SystemErrorView):
 
     response_code = 403
-    forbidden_page = ViewPageTemplateFile('../templates/launchpad-forbidden.pt')
+    forbidden_page = ViewPageTemplateFile('../templates/shipit-forbidden.pt')
 
     def __call__(self):
         # Users should always go to shipit.ubuntu.com and login before
@@ -419,9 +419,9 @@ class ShippingRequestAdminMixinView:
 
     # This is the order in which we display the quantity widgets for each
     # flavour in the UI
-    ordered_architectures = [ShipItArchitecture.X86,
-                             ShipItArchitecture.AMD64,
-                             ShipItArchitecture.PPC]
+    ordered_architectures = [
+        ShipItArchitecture.X86, ShipItArchitecture.AMD64,
+        ShipItArchitecture.PPC]
 
     def widgetsMatrixWithFlavours(self):
         """Return a matrix in which each row contains a ShipItFlavour and one
@@ -433,6 +433,7 @@ class ShippingRequestAdminMixinView:
         The matrix returned by this method is meant to be used by the
         quantity_widgets macro, defined in templates/shipit-macros.pt.
         """
+        # XXX: This needs to be unit tested
         matrix = []
         for flavour in self.ordered_flavours:
             row = [flavour.title]
@@ -446,7 +447,7 @@ class ShippingRequestAdminMixinView:
             matrix.append(row)
         return matrix
 
-    def getInitialQuantityWidgetsValuesFromExistingOrder(self, order):
+    def getQuantityWidgetsInitialValuesFromExistingOrder(self, order):
         initial = {}
         requested = order.getRequestedCDsGroupedByFlavourAndArch()
         for flavour in self.quantity_fields_mapping:
@@ -525,9 +526,26 @@ class ShippingRequestApproveOrDenyView(
         return url
 
     @property
+    def quantities_matrix(self):
+        # XXX: This needs a unit test
+        matrix = []
+        quantities = self.context.getRequestedCDsGroupedByFlavourAndArch()
+        for flavour in self.ordered_flavours:
+            x86 = quantities[flavour][ShipItArchitecture.X86]
+            amd64 = quantities[flavour][ShipItArchitecture.AMD64]
+            ppc = quantities[flavour][ShipItArchitecture.PPC]
+            if (x86.quantity + amd64.quantity + ppc.quantity) == 0:
+                continue
+            row = [flavour.title]
+            for arch in self.ordered_architectures:
+                row.append(quantities[flavour][arch].quantity)
+            matrix.append(row)
+        return matrix
+
+    @property
     def initial_values(self):
         order = self.context
-        initial = self.getInitialQuantityWidgetsValuesFromExistingOrder(order)
+        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(order)
         initial['highpriority'] = order.highpriority
         return initial
 
@@ -586,7 +604,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             return {}
 
         order = self.current_order
-        initial = self.getInitialQuantityWidgetsValuesFromExistingOrder(order)
+        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(order)
         initial['highpriority'] = order.highpriority
 
         for field in self.shipping_details_fields:

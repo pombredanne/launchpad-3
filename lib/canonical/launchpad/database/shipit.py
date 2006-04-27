@@ -130,6 +130,7 @@ class ShippingRequest(SQLBase):
         return RequestedCDs.selectBy(requestID=self.id)
 
     def getRequestedCDsGroupedByFlavourAndArch(self):
+        """See IShippingRequest"""
         requested_cds = {}
         for flavour in ShipItFlavour.items:
             requested_arches = {}

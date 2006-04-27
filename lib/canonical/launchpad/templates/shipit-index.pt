@@ -5,7 +5,7 @@
       i18n:domain="launchpad">
 
   <body>
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="body">
     
       <tal:block condition="not: request/lp:person">
               
@@ -32,7 +32,9 @@
 
           <p>To make requests, or view or change existing requests, you need to
           sign in using your <a href="https://launchpad.net">Launchpad</a>
-          account first. You can 
+          account first.
+          <br />
+          You can 
           <a tal:attributes="
               href string:https://launchpad.net/+login?origin=${view/origin}"
           >create a new account</a> if you don't have one already.</p>
