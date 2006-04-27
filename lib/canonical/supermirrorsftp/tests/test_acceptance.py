@@ -120,8 +120,8 @@ class SFTPTestCase(TestCaseWithRepository):
 
         os.environ['HOME'] = self.realHome
         self.authserver.tearDown()
-        LaunchpadZopelessTestSetup().tearDown()
         super(SFTPTestCase, self).tearDown()
+        LaunchpadZopelessTestSetup().tearDown()
         sftp._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
         reset_logging()
