@@ -30,15 +30,7 @@
   </p>
 
   <p class="highlighted" tal:condition="not:context/summary">
-    <tal:comment condition="nothing">
-      <!-- XXX: That duplicates the 'edit' link from the action portlet and
-           should be changed when bug #5313 is fixed to comply with DNRY.
-             DavidAllouche 2005-12-02
-      -->
-    </tal:comment>
-    <i>This branch has no summary. You can 
-    <img src="/@@/edit.gif" />
-    <a tal:attributes="href view/edit_link_url">edit branch details</a>.</i>
+    <i>This branch has no summary.</i>
   </p>
 
   <tal:pull-branch condition="context/url">

@@ -11,9 +11,11 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
-<div metal:fill-slot="main" tal:define="branchviewset view/branches">
-
+<metal:heading fill-slot="pageheading">    
   <h1>Bazaar Branches</h1>
+</metal:heading>
+
+<div metal:fill-slot="main" tal:define="branchviewset view/branches">
 
   <table class="listing sortable" id="branchtable"
          tal:condition="branchviewset">
@@ -26,7 +28,7 @@
         <th>Status</th>
       </tr>
     </thead>
-    <tbody class="lesser">
+    <tbody>
       <tr tal:repeat="branch branchviewset">
         <tal:comment condition="nothing">
           <!-- Do not change the information displayed in this table without

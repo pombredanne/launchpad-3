@@ -11,11 +11,22 @@
 <metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/browsername">Context Title</h3>
+  <h1>Bazaar branches</h1>
+</metal:heading>
+
 <div metal:fill-slot="main"
      tal:define="branchviewset view/branches;
                  branchset view/branches">
 
-  <h1>Bazaar Branches</h1>
+  <tal:comment condition="nothing">
+  <!-- XXX: There are distinct branchset and branchviewset variables because it
+  is planned to implement a stateful search functionality. The page must look
+  obviously different if there is no matching branch (non-empty branchset,
+  empty branchviewset) or if there is just no branch to match against (empty
+  branchset). - David Allouche 2005-04-21 -->
+  </tal:comment>
 
   <table class="listing sortable" id="branchtable"
          tal:condition="branchset">
@@ -29,7 +40,7 @@
         <th>Status</th>
       </tr>
     </thead>
-    <tbody class="lesser">
+    <tbody>
       <tr tal:repeat="branch branchviewset">
         <td tal:define="role python:view.branch_role(branch)">
           <span class="sortkey" tal:content="role/sortkey">12</span>

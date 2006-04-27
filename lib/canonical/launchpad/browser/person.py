@@ -328,7 +328,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'roadmap',]
+             'workload', 'roadmap']
 
     def registrant(self):
         text = 'Registrant'

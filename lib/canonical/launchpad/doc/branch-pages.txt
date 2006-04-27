@@ -53,8 +53,8 @@ True
 
 == PersonBranchesView ==
 
-PersonBranchesView is the view used to product the branch table in a person.
-Its distinguishing feature is the branch_role method, that explains why the
+PersonBranchesView is the view used to produce the branch table in a person.
+Its distinguishing feature is the branch_role method, which explains why the
 branch appears in the table.
 
 >>> from canonical.launchpad.interfaces import IPersonSet
