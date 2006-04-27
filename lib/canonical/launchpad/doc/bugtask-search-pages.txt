@@ -130,6 +130,44 @@ The same if we try with an invalid assignee
     >>> distro_advanced_search_listingview.assignee_error
     u"There's no person with the name or email address 'invalid-assignee'"
 
+Searching by component is possible, as long as the context has defined a
+.currentrelease.
+
+    >>> form_values = {
+    ...     'search': 'Search bugs in Ubuntu',
+    ...     'advanced': 1,
+    ...     'field.component': 1,
+    ...     'field.orderby': '-priority,-severity'}
+
+    >>> distro_advanced_search_listingview = create_view(
+    ...     ubuntu, '+bugs', form_values)
+
+    >>> distro_advanced_search_listingview.shouldShowComponentWidget()
+    True
+
+    >>> found_bugs = list(distro_advanced_search_listingview.search().batch)
+
+    >>> sorted([bug.id for bug in found_bugs])
+    [25]
+
+If the context does *not* have a currentrelease, component searching is
+ambiguous, because a package may be published in a different component
+in each release. In this case, the component search widget is hidden.
+
+    >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
+
+    >>> form_values = {
+    ...     'search': 'Search bugs in Gentoo',
+    ...     'advanced': 1,
+    ...     'field.component': 1,
+    ...     'field.orderby': '-priority,-severity'}
+
+    >>> distro_advanced_search_listingview = create_view(
+    ...     gentoo, '+bugs', form_values)
+
+    >>> distro_advanced_search_listingview.shouldShowComponentWidget()
+    False
+
 Distribution Release search page
 ================================
 
