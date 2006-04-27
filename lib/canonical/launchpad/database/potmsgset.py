@@ -124,8 +124,10 @@ class POTMsgSet(SQLBase):
         if pomsgset is None:
             # There isn't a POMsgSet yet, we return a Dummy one until we get a
             # write operation that creates the real one.
-            pofile = self.potemplate.getPOFileOrDummy(
-                language_code, variant)
+            pofile = self.potemplate.getPOFileByLang(language_code, variant)
+            if pofile is None:
+                pofile = self.potemplate.getDummyPOFile(
+                    language_code, variant)
             return DummyPOMsgSet(pofile, self)
         else:
             return pomsgset

@@ -104,10 +104,12 @@
                 </td>
               </tr>
             </thead>
-            <tbody tal:define="pomsgset_view view">
+            <tbody>
+              <tal:block define="pomsgset_view nocall:view">
                 <metal:pomsgsetview
                   use-macro="view/@@+pomsgset-translate/pomsgset-view"
                   />
+              </tal:block>
             </tbody>
             <tfoot>
               <tr>
@@ -123,13 +125,6 @@
           </table>
 
         </form>
-        <p class="discreet">
-          Translation status:
-          <span class="language-code"
-                tal:content="context/pofile/language/englishname"
-                tal:omit-tag="">Spanish</span>
-          <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
-        </p>
       </tal:havepluralforms>
     </div>
 

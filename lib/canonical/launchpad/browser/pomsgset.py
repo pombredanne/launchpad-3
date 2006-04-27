@@ -66,6 +66,9 @@ class POMsgSetView(LaunchpadView):
         self._suggested_submissions = None
         self._second_language_submissions = None
 
+        # Initialize the tab index for the form entries.
+        self._table_index_value = 0
+
         # Handle any form submission.
         self.process_form()
 
@@ -229,6 +232,12 @@ class POMsgSetView(LaunchpadView):
                 number_msgsets, current_msgset + 1))
 
         return self.createURL(sequence=current_msgset + 1)
+
+    @property
+    def tab_index(self):
+        """Return the tab index value to navigate the form."""
+        self._table_index_value += 1
+        return self._table_index_value
 
     def createURL(self, sequence=None):
         """Build the current URL."""
