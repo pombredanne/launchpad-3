@@ -54,8 +54,7 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-from canonical.launchpad.browser.specificationtarget import (
-    HasSpecificationsView)
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -81,7 +80,7 @@ from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -1963,7 +1962,8 @@ class RequestPeopleMergeMultipleEmailsView:
 def sendMergeRequestEmail(token, dupename, appurl):
     template = open(
         'lib/canonical/launchpad/emailtemplates/request-merge.txt').read()
-    fromaddress = "Launchpad Account Merge <noreply@ubuntu.com>"
+    fromaddress = format_address(
+        "Launchpad Account Merge", config.noreply_from_address)
 
     replacements = {'longstring': token.token,
                     'dupename': dupename,

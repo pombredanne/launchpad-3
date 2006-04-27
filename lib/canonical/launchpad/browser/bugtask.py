@@ -61,7 +61,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.lp.dbschema import (
     BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, DBItemDisplayWidget)
+    AssigneeDisplayWidget, DBItemDisplayWidget, NewLineToSpacesWidget)
 
 
 def get_sortorder_from_request(request):
@@ -451,7 +451,7 @@ class BugTaskEditView(GeneralFormView):
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                edit_field_names += ['sourcepackagename', 'binarypackagename']
+                edit_field_names += ['sourcepackagename']
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
@@ -656,7 +656,7 @@ class BugTaskStatusView(LaunchpadView):
         if IUpstreamBugTask.providedBy(self.context):
             self.label = 'Product fix request'
         else:
-            field_names += ['sourcepackagename', 'binarypackagename']
+            field_names += ['sourcepackagename']
             self.label = 'Source package fix request'
 
         self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
@@ -824,6 +824,7 @@ class BugTaskSearchListingView(LaunchpadView):
                 getVocabularyRegistry().get(None, "Component"),
                 self.request)
 
+        self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
 
@@ -960,10 +961,10 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the component widget be shown on the advanced search page?"""
         context = self.context
         return (
-            IDistribution.providedBy(context) or
+            (IDistribution.providedBy(context) and
+             context.currentrelease is not None) or
             IDistroRelease.providedBy(context) or
-            ISourcePackage.providedBy(context) or
-            IDistributionSourcePackage.providedBy(context))
+            ISourcePackage.providedBy(context))
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?

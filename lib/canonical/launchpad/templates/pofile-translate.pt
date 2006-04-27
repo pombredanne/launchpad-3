@@ -168,7 +168,7 @@
                 </td>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="greater">
               <tal:pomsgsetview condition="view/pomsgset_views"
                                 repeat="pomsgset_view view/pomsgset_views">
                 <metal:pomsgsetview

@@ -1,5 +1,9 @@
   Now, 'myemail' is a MODERATED team, and 'salgado' will join again.
 
+  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  fixed.
+  >>> from canonical.launchpad.mail import stub
+  >>> stub.test_emails[:] = []
 
   >>> print http(r"""
   ... GET /people/myemail/+join HTTP/1.1
@@ -39,11 +43,12 @@
   new member waiting for approval. (this notification is sent to all team
   administrators, but in this case we don't have team administrators)
 
-  >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> assert not stub.test_emails
   >>> to_addrs
   ['foo@baz.com']
+  >>> 'Reply-To: guilherme.salgado@canonical.com' in raw_msg
+  True
 
 
   Proposed Members are not shown as "real" team members by our API.

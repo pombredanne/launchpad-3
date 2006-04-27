@@ -51,10 +51,6 @@
       name="+index"
       facet="overview"
       template="../templates/distributionsourcepackage-index.pt" />
-    <browser:page
-      name="+translations"
-      facet="translations"
-      template="../templates/sourcepackage-translations.pt" />
 
     <!-- DistributionSourcePackage Portlets -->
     <browser:page

@@ -239,8 +239,14 @@ class TranslationImportQueueEntry(SQLBase):
             return self._guessed_pofile_from_path
 
         # Get or create an IPOFile based on the info we guess.
-        return self.potemplate.getOrCreatePOFile(
-            language.code, variant=language_variant, owner=self.importer)
+        pofile = self.potemplate.getPOFileByLang(
+            language.code, variant=language_variant)
+        if pofile is None:
+            pofile = self.potemplate.newPOFile(
+                language.code, variant=language_variant,
+                requester=self.importer)
+
+        return pofile
 
     @property
     def import_into(self):
@@ -319,8 +325,8 @@ class TranslationImportQueueEntry(SQLBase):
         potemplateset = getUtility(IPOTemplateSet)
         potemplate_subset = potemplateset.getSubset(
             distrorelease=self.distrorelease)
-        potemplate = potemplate_subset.getPOTemplateByName(
-            translation_domain.lower())
+        potemplate = potemplate_subset.getPOTemplateByTranslationDomain(
+            translation_domain)
 
         if potemplate is None:
             # The potemplate is not yet imported, we cannot attach this .po
@@ -328,8 +334,10 @@ class TranslationImportQueueEntry(SQLBase):
             return None
 
         # Get or create an IPOFile based on the info we guess.
-        pofile = potemplate.getOrCreatePOFile(
-            language.code, variant=variant, owner=self.importer)
+        pofile = potemplate.getPOFileByLang(language.code, variant=variant)
+        if pofile is None:
+            pofile = potemplate.newPOFile(
+                language.code, variant=variant, requester=self.importer)
 
         # We need to note the sourcepackagename from where this entry came.
         pofile.from_sourcepackagename = self.sourcepackagename
