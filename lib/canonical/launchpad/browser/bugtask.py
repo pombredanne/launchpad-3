@@ -453,14 +453,22 @@ class BugTaskEditView(GeneralFormView):
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
                 edit_field_names += ['sourcepackagename', 'binarypackagename']
+            if self.context.bugwatch is not None:
+                # If the bugtask is linked to a bug watch, the bugtask
+                # is in read-only mode, since the status is pulled from
+                # the remote bug.
+                self.assignee_widget = CustomWidgetFactory(
+                    AssigneeDisplayWidget)
+                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            else:
+                edit_field_names += [
+                    'status', 'priority', 'severity', 'assignee']
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
                 ]
-            self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
-            self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-            self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
-            self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.milestone_widget = None
             self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
         else:
@@ -570,10 +578,11 @@ class BugTaskEditView(GeneralFormView):
             #     Malone status, but it's not trivial to do at the
             #     moment. I will fix this later.
             #     -- Bjorn Tillenius, 2006-03-01
-            bugtask.status = BugTaskStatus.UNKNOWN
-            bugtask.priority = BugTaskPriority.UNKNOWN
-            bugtask.severity = BugTaskSeverity.UNKNOWN
-            bugtask.assignee = None
+            if bugtask.bugwatch is not None:
+                bugtask.status = BugTaskStatus.UNKNOWN
+                bugtask.priority = BugTaskPriority.UNKNOWN
+                bugtask.severity = BugTaskSeverity.UNKNOWN
+                bugtask.assignee = None
 
         if milestone_cleared:
             self.request.response.addWarningNotification(
