@@ -441,11 +441,10 @@
                 mirrors.
             </description>
         </key>
-        <key name="warn_about_no_published_uploads" datatype="boolean" 
-             default="yes">
+        <key name="timeout" datatype="integer" default="30">
             <description>
-                Should we warn if we don't find any published records for a
-                given (distro[arch]release,pocket,component) tuple?
+                The time in seconds that the mirror prober will wait for a
+                reply.
             </description>
         </key>
     </sectiontype>
