@@ -139,16 +139,16 @@ class TestBzrSync(helpers.WebserverTestCase):
         uncommit(self.bzr_branch)
 
     def test_empty_branch(self):
-        """Importing an empty branch does nothing."""
+        # Importing an empty branch does nothing.
         self.syncAndCount()
 
     def test_import_revision(self):
-        """Importing a revision in history adds one revision and number."""
+        # Importing a revision in history adds one revision and number.
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
 
     def test_import_uncommit(self):
-        """Second import honours uncommit."""
+        # Second import honours uncommit.
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.uncommitRevision()
@@ -156,7 +156,7 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.assertEqual(self.db_branch.revision_count(), 0)
 
     def test_import_recommit(self):
-        """Second import honours uncommit followed by commit."""
+        # Second import honours uncommit followed by commit.
         self.commitRevision('first')
         self.syncAndCount(new_revisions=1, new_numbers=1)
         self.uncommitRevision()
@@ -167,7 +167,7 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.assertEqual(revno.revision.log_body, 'second')
 
     def test_import_revision_with_url(self):
-        """Importing a revision passing the url parameter works."""
+        # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
         bzrsync = BzrSync(self.trans_manager, self.db_branch.id,
@@ -176,7 +176,7 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.assertCounts(counts, new_revisions=1, new_numbers=1)
 
     def test_new_author(self):
-        """Importing a different committer adds it as an author."""
+        # Importing a different committer adds it as an author.
         author = "Another Author <another@example.com>"
         self.commitRevision(committer=author)
         self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
@@ -185,7 +185,7 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.assertEquals(db_author.name, author)
 
     def test_new_parent(self):
-        """Importing two revisions should import a new parent."""
+        # Importing two revisions should import a new parent.
         self.commitRevision()
         self.commitRevision()
         self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)

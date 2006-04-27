@@ -48,26 +48,19 @@ class BzrSync:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
 
-    def syncHistory(self, doparents=True):
-        """Import all revisions in the branch's revision-history.
-
-        :param doparents: If true, also import parents of imported revisions.
-        """
-        self.logger.info(
-            "synchronizing ancestry for branch: %s", self.bzr_branch.base)
-
+    def syncHistory(self):
+        """Import all revisions in the branch's revision-history."""
         # Keep track if something was actually loaded in the database.
         didsomething = False
 
+        self.logger.info(
+            "synchronizing ancestry for branch: %s", self.bzr_branch.base)
+
         # synchronise Revision objects
-        if doparents:
-            ancestry = self.bzr_branch.repository.get_ancestry(
-                self.bzr_branch.last_revision())
-            for revision_id in ancestry:
-                didsomething |= self.syncRevision(revision_id)
-        else:
-            for revision_id in self.bzr_history:
-                didsomething |= self.syncRevision(revision_id)
+        ancestry = self.bzr_branch.repository.get_ancestry(
+            self.bzr_branch.last_revision())
+        for revision_id in ancestry:
+            didsomething |= self.syncRevision(revision_id)
 
         self.logger.info(
             "synchronizing revision numbers for branch: %s",
@@ -172,18 +165,18 @@ class BzrSync:
         assert db_revision is not None, (
             "revision %s has not been imported" % revision_id)
         db_revno = RevisionNumber.selectOneBy(
-            sequence=bzr_revno, branchID=self.db_branch.id)
+            sequence=sequence, branchID=self.db_branch.id)
 
-        # If the database revision history has diverged, truncate the
-        # history from this point.  We will recreate the revision
-        # number objects with correct data.
+        # If the database revision history has diverged, so we
+        # truncate the database history from this point on.  The
+        # replacement revision numbers will be created in their place.
         if db_revno is not None and db_revno.revision != db_revision:
             didsomething |= self.truncateHistory(sequence)
             db_revno = None
 
-        if db_revno is not None:
+        if db_revno is None:
             db_revno = RevisionNumber(
-                sequence=bzr_revno,
+                sequence=sequence,
                 revision=db_revision.id,
                 branch=self.db_branch.id)
             didsomething = True
@@ -214,7 +207,7 @@ class BzrSync:
 
         self.logger.debug("Truncating revision numbers from %d on", from_rev)
         revnos = RevisionNumber.select(AND(
-            Branch.q.branchID=self.db_branch.id,
+            RevisionNumber.q.branchID == self.db_branch.id,
             RevisionNumber.q.sequence >= from_rev))
         didsomething = False
         for revno in revnos:
