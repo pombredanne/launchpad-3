@@ -42,7 +42,6 @@ class BzrSync:
             branch_url = self.db_branch.url
         self.bzr_branch = BzrBranch.open(branch_url)
         self.bzr_history = self.bzr_branch.revision_history()
-        self._seen_ids = set()
         self._admin = getUtility(ILaunchpadCelebrities).admin
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
