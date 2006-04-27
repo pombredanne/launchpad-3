@@ -134,7 +134,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         return Link('+builds', text, icon='info')
 
     def queue(self):
-        text = 'View Queue'
+        text = 'View Uploads'
         return Link('+queue', text, icon='info')
 
 
@@ -193,8 +193,6 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 class DistroReleaseView(BuildRecordsView, QueueItemsView):
 
     def initialize(self):
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
         self.text = self.request.form.get('text')
         self.matches = 0
         self._results = None

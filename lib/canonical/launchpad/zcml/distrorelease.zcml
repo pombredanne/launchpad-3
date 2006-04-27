@@ -128,11 +128,6 @@
       lp:url="/distros/$distribution/$distrorelease/+builds-list"
       />
     <browser:page
-      name="+queue-list"
-      template="../templates/queue-list.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue-list"
-      />
-    <browser:page
       name="+portlet-details"
       facet="overview"
       template="../templates/distrorelease-portlet-details.pt"

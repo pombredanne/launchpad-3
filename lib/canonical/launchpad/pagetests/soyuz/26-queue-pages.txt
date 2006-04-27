@@ -26,14 +26,15 @@ Inspect the ACCEPTED queue
   ... queue_state=accepted&queue_text=""")
   HTTP/1.1 200 Ok
   Content-Length: ...
-  ...No accepted queue items for...Breezy Badger Autotest.
+  ...The Accepted queue...is empty.
   ...
 
 
-Accept an item:
+Accept an item (requires Admin):
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 24
   ... QUEUE_ID=4&Accept=Accept""")
   HTTP/1.1 200 Ok
@@ -55,10 +56,11 @@ Check if the item was moved to the correct place, the ACCEPTED queue:
   ...alsa-utils...
 
 
-Reject an item:
+Reject an item (requires Admin):
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 24
   ... QUEUE_ID=3&Reject=Reject""")
   HTTP/1.1 200 Ok
@@ -101,4 +103,25 @@ Check if the results were already filtered:
   ...pmount (i386)...
   ...mozilla-firefox (i386)...
 
+Check if the anonymouns are denied to see UNAPPROVED queue:
 
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Content-Length: 32
+  ... queue_state=unapproved&queue_text=""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...Sorry, you do not have permission to view this queue, we have
+  ...excluded any packages from this listing.
+  ...
+
+Check if annonymous actions are refused:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Content-Length: 24
+  ... QUEUE_ID=1&Reject=Reject""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...pmount (i386)...
+  ...mozilla-firefox (i386)...

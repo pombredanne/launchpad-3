@@ -13,9 +13,151 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:replace="context/title"/> queue</h1>
+  <h1>Upload and build queue</h1>
 
-  <div tal:replace="structure context/@@+queue-list"/>
+  <p class="portalMessage"
+     tal:define="message view/performQueueAction"
+     tal:condition="message"
+     tal:content="structure message">
+     This call to view/performQueueAction actually parses the form and does
+     the database queries based on actions posted (packages accepted or
+     rejected), and shows the status of those actions here.
+  </p>
+
+  <div class="queue_list" tal:condition="not: view/setupQueueList">
+
+    <tal:batch define="batch view/batchnav/currentBatch">
+    <form name="queue_items_state" action="" method="POST">
+
+      Show:
+
+      <select name="queue_state" size="1">
+
+        <option tal:attributes="selected view/show_new"
+                value="new">New</option>
+        <tal:admin condition="context/required:launchpad.Admin">
+          <option tal:attributes="selected view/show_unapproved"
+                    value="unapproved">Unapproved</option>
+        </tal:admin>
+        <option tal:attributes="selected view/show_accepted"
+                value="accepted">Accepted</option>
+
+        <option tal:attributes="selected view/show_rejected"
+                value="rejected">Rejected</option>
+
+        <option tal:attributes="selected view/show_done"
+                value="done">Done</option>
+      </select>
+
+      uploads with names like:
+
+      <input size="10" type="text" name="queue_text"
+                       tal:attributes="value view/name_filter" />
+
+      <input type="submit" value="Update" />
+
+    </form>
+
+    <br />
+
+     <tal:navigation
+          tal:condition="batch"
+          replace="structure view/batchnav/@@+navigation-links" />
+
+     <form name="queue_items_action" action="" method="POST">
+     <table class="listing sortable" tal:condition="batch"
+            id="distroreleasequeue">
+       <thead>
+         <tr>
+           <th>
+           </th>
+           <th>
+             Package
+           </th>
+           <th>
+             Version
+           </th>
+           <th>
+             Pocket
+           </th>
+           <th>
+             Age
+           </th>
+           <th>
+             Changes File
+           </th>
+         </tr>
+       </thead>
+       <tbody class="lesser">
+         <tal:batch repeat="queue batch">
+           <tr>
+              <td class="icon left">
+                 <input type="checkbox" name="QUEUE_ID"
+                        tal:attributes="value queue/id"
+                        tal:condition="view/availableActions"/>
+              </td>
+  	      <td>
+                <span tal:replace="queue/displayname"/>
+                <img tal:condition="queue/containsSource"
+                     alt="[Source]" src="/@@/package-source" title="Source"/>
+                <img tal:condition="queue/containsBuild"
+                     alt="[Build]" src="/@@/package-binary" title="Binary"/>
+                <img tal:condition="queue/containsInstaller"
+                     alt="[Installer]" src="/@@/ubuntu.gif"
+                     title="Installer"/>
+                <img tal:condition="queue/containsTranslation"
+                     alt="[Translation]" src="/@@/translations"
+                     title="Translation"/>
+                <img tal:condition="queue/containsUpgrader"
+                     alt="[Upgrader]" src="/@@/topic_icon.gif"
+                     title="Upgrader"/>
+              </td>
+              <td tal:content="queue/sourceversion">2.0.17-6</td>
+              <td tal:content="queue/pocket/title">Updates</td>
+              <td tal:content="queue/datecreated/fmt:datetime">
+                2006-03-15
+              </td>
+              <td>[<a tal:attributes="
+                href queue/changesfile/url">view</a>]
+              </td>
+           </tr>
+         </tal:batch>
+       </tbody>
+     </table>
+
+     <tal:has_items tal:condition="batch">
+     <table class="listing" tal:condition="view/availableActions">
+       <tfoot>
+         <tr>
+           <td colspan="6">
+                 <input tal:repeat="action view/availableActions"
+                        tal:attributes="value action; name action"
+                        value="1" type="submit"/>
+           </td>
+         </tr>
+       </tfoot>
+     </table>
+     </tal:has_items>
+
+     </form>
+
+     <p class="portalError"
+        tal:condition="not: view/have_queue_permission">
+        Sorry, you do not have permission to view this queue, we have
+        excluded any packages from this listing.
+     </p>
+
+     <div class="portalMessage" tal:condition="not: batch">
+       The <span tal:replace="view/state/title" /> queue
+       is empty.
+     </div>
+
+     <tal:navigation
+          tal:condition="batch"
+          replace="structure view/batchnav/@@+navigation-links" />
+
+  </tal:batch>
+</div>
 
 </div>
 

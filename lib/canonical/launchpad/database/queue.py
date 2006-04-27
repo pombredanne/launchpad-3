@@ -13,8 +13,6 @@ __all__ = [
 import os
 import shutil
 import tempfile
-import pytz
-from datetime import datetime
 
 from zope.interface import implements
 
@@ -196,13 +194,6 @@ class DistroReleaseQueue(SQLBase):
             arch_tags.append(tag)
         filename += "+".join(arch_tags) + ".changes"
         return filename
-
-    @property
-    def age(self):
-        """See IDistroReleaseQueue"""
-        UTC = pytz.timezone('UTC')
-        now = datetime.now(UTC)
-        return now - self.datecreated
 
     @cachedproperty
     def datecreated(self):

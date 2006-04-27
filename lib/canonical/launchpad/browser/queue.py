@@ -16,6 +16,8 @@ from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
+from canonical.launchpad.helpers import check_permission
+
 QUEUE_SIZE = 20
 
 
@@ -24,7 +26,7 @@ class QueueItemsView(LaunchpadView):
 
     It retrieves the UI queue_state selector action and sets up a proper
     batched list with the requested results. See further UI details in
-    template/queue-items.pt and callsite details in DistroRelease
+    template/distrorelease-queue.pt and callsite details in DistroRelease
     view classes.
     """
     __used_for__ = IHasQueueItems
@@ -35,23 +37,50 @@ class QueueItemsView(LaunchpadView):
         Returns None, so use tal:condition="not: view/setupQueueList" to
         invoke it in template.
         """
-        # recover selected queue state and name
-        self.state = self.request.get('queue_state', '')
-        self.text = self.request.get('queue_text', '')
 
-        # map state text tag back to dbschema
-        state_map = {
-            '': DistroReleaseQueueStatus.NEW,
-            'new': DistroReleaseQueueStatus.NEW,
-            'unapproved': DistroReleaseQueueStatus.UNAPPROVED,
-            'accepted': DistroReleaseQueueStatus.ACCEPTED,
-            'rejected': DistroReleaseQueueStatus.REJECTED,
-            'done': DistroReleaseQueueStatus.DONE,
-            }
+        # recover selected queue state and name filter
+        self.state_txt = self.request.get('queue_state', '')
+        self.name_filter = self.request.get('queue_text', '')
+
+        # expose state for page template. the fallback is "new"
+        self.show_new = False
+        self.show_unapproved = False
+        self.show_accepted = False
+        self.show_rejected = False
+        self.show_done = False
+
+        self.have_queue_permission = True
+
+        if self.state_txt == 'unapproved':
+            self.state = DistroReleaseQueueStatus.UNAPPROVED
+            self.show_unapproved = True
+        elif self.state_txt == 'accepted':
+            self.state = DistroReleaseQueueStatus.ACCEPTED
+            self.show_accepted = True
+        elif self.state_txt == 'rejected':
+            self.state = DistroReleaseQueueStatus.REJECTED
+            self.show_rejected = True
+        elif self.state_txt == 'done':
+            self.state = DistroReleaseQueueStatus.DONE
+            self.show_done = True
+        else:
+            # this is the fallback
+            self.state = DistroReleaseQueueStatus.NEW
+            self.show_new = True
+
+        # enforce security again: only someone with launchpad.Admin on the
+        # distrorelease should be able to see the unapproved queue
+        # NB: sabdfl: this is not a rigorous way of enforcing this kind of
+        # security!
+        if (self.state == DistroReleaseQueueStatus.UNAPPROVED and
+            not check_permission('launchpad.Admin', self.context)):
+            self.batchnav = BatchNavigator([], self.request, size=QUEUE_SIZE)
+            self.have_queue_permission = False
+            return
 
         # request context queue items according the selected state
         queue_items = self.context.getQueueItems(
-            status=state_map[self.state], name=self.text)
+            status=self.state, name=self.name_filter)
         self.batchnav = BatchNavigator(queue_items, self.request,
                                        size=QUEUE_SIZE)
 
@@ -60,17 +89,22 @@ class QueueItemsView(LaunchpadView):
 
         Returns a list of labeled actions or an empty list.
         """
-        # map of available actions keyed by status
-        available_actions = {
-            '': ['Accept', 'Reject'],
-            'new': ['Accept', 'Reject'],
-            'unapproved': ['Accept', 'Reject'],
-            'accepted': ['Reject'],
-            'rejected': ['Accept'],
-            'done': [],
-            }
+        # deny actions for non-admin
+        if not check_permission('launchpad.Admin', self.context):
+            return []
 
-        return available_actions[self.state]
+        # states that support actions
+        muttable_states = [
+            DistroReleaseQueueStatus.NEW,
+            DistroReleaseQueueStatus.UNAPPROVED,
+            ]
+
+        # return actions only for supported states
+        if self.state in muttable_states:
+            return ['Accept', 'Reject']
+
+        # no actions for unsupported states
+        return []
 
     def performQueueAction(self):
         """Execute the designed action over the selected queue items.
@@ -78,7 +112,11 @@ class QueueItemsView(LaunchpadView):
         Returns a message describing the action executed or None if nothing
         was done.
         """
+        # XXX cprov 20060411: those checks should not be performed here
+        # dismiss actions for non-POST forms and non-admins.
         if self.request.method != "POST":
+            return
+        if not check_permission('launchpad.Admin', self.context):
             return
 
         accept = self.request.form.get('Accept', '')
@@ -118,3 +156,4 @@ class QueueItemsView(LaunchpadView):
 
         report = '%s<br>%s' % (header, ', '.join(success + failure))
         return report
+
