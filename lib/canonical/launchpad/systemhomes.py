@@ -10,7 +10,7 @@ from canonical.launchpad.interfaces import (
     IRegistryApplication, IFOAFApplication, IMaloneApplication,
     IBazaarApplication, IShipItApplication, IBugSet, IBugWatchSet,
     IBugExternalRefSet, IBugTaskSet, IBugTrackerSet, ILaunchBag,
-    BugTaskSearchParams)
+    BugTaskSearchParams, IBranchSet)
 
 class RegistryApplication:
     implements(IRegistryApplication)
@@ -69,3 +69,14 @@ class BazaarApplication:
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
+
+    @property
+    def all(self):
+        branches = getUtility(IBranchSet).all
+        return branches
+
+    def getMatchingBranches(self):
+        """See IBazaarApplication."""
+        return self.branches
+
+
