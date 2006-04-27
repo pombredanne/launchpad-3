@@ -52,10 +52,10 @@
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
                             distrorelease milestone statusexplanation
-                            priority severity bugwatch age owner targetname
-                            title related_tasks statusdisplayhtml
-                            statuselsewhere setStatusFromDebbugs
-                            setSeverityFromDebbugs" />
+                            priority severity bugwatch datecreated
+                            age owner targetname title related_tasks
+                            statusdisplayhtml statuselsewhere
+                            setStatusFromDebbugs setSeverityFromDebbugs" />
     </content>
 
     <browser:defaultView

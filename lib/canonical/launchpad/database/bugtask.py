@@ -194,6 +194,12 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def transitionToStatus(self, new_status):
         """See canonical.launchpad.interfaces.IBugTask."""
+        if not new_status:
+            # This is mainly to facilitate tests which, unlike the
+            # normal status form, don't always submit a status when
+            # testing the edit form.
+            return
+
         if self.status == new_status:
             # No change in the status, so nothing to do.
             return

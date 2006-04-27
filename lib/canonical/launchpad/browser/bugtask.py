@@ -575,9 +575,11 @@ class BugTaskEditView(GeneralFormView):
         new_status = new_values.pop("status", None)
         new_assignee = new_values.pop("assignee", None)
         # Set the "changed" flag properly, just in case status and/or
-        # assignee happen to be the only values that changed.
-        if ((bugtask.status != new_status) or
-            (bugtask.assignee != new_assignee)):
+        # assignee happen to be the only values that changed. We
+        # explicitly verify that we got a new status and/or assignee,
+        # because our test suite doesn't always pass all form values.
+        if ((new_status and (bugtask.status != new_status)) or
+            (new_assignee and (bugtask.assignee != new_assignee))):
             changed = True
             bugtask.transitionToStatus(new_status)
             bugtask.transitionToAssignee(new_assignee)
