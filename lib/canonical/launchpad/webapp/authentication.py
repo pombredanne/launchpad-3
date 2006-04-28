@@ -17,6 +17,7 @@ from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
+import canonical.encoding
 from canonical.launchpad.interfaces import IPersonSet, IPasswordEncryptor
 
 from canonical.launchpad.webapp.interfaces import ILoggedOutEvent
@@ -160,6 +161,7 @@ class SSHADigestEncryptor:
         return salt
 
     def encrypt(self, plaintext, salt=None):
+        assert canonical.encoding.is_basic_http_safe_ascii(plaintext)
         plaintext = str(plaintext)
         if salt is None:
             salt = self.generate_salt()

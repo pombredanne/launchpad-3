@@ -17,7 +17,6 @@ import pytz
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.interfaces import WidgetsError
-from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.database.sqlbase import flush_database_updates
@@ -29,11 +28,11 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp import (
-    canonical_url, GetitemNavigation, LaunchpadView)
+    canonical_url, GeneralFormView, GetitemNavigation, LaunchpadView)
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
-    IGPGKeySet, IGPGHandler, EmailAddressAlreadyTaken, GPGVerificationError)
+    IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, 
+    IGPGKeySet, IGPGHandler, GPGVerificationError)
 
 UTC = pytz.timezone('UTC')
 
@@ -105,20 +104,7 @@ class BaseLoginTokenView(LaunchpadView):
         self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
         self.request.response.redirect(canonical_url(
-                self.context.requester))
-
-    def validateRequesterPassword(self, password):
-        """Return True if <password> is the same as the requester's password.
-
-        In case of failure, an error message is assigned to self.errormessage.
-        """
-        assert self.context.requester is not None
-        encryptor = getUtility(IPasswordEncryptor)
-        if encryptor.validate(password, self.context.requester.password):
-            return True
-        else:
-            self.errormessage = "Wrong password. Please check and try again."
-            return False
+            self.context.requester))
 
     def logInPersonByEmail(self, email):
         """Login the person with the given email address."""
@@ -127,41 +113,44 @@ class BaseLoginTokenView(LaunchpadView):
         logInPerson(self.request, principal, email)
 
 
-class ResetPasswordView(BaseLoginTokenView):
+class ResetPasswordView(BaseLoginTokenView, GeneralFormView):
 
     def initialize(self):
-        BaseLoginTokenView.initialize(self)
         self.email = None
         self.expected_token_types = [LoginTokenType.PASSWORDRECOVERY]
+        self.top_of_page_errors = []
+        self.render()
 
-    def processForm(self):
-        """Check the email address, check if both passwords match and then
-        reset the user's password. When password is successfully changed, the
-        LoginToken (self.context) used is removed, so nobody can use it again.
-        """
-        if self.request.method != "POST":
-            return
+    def validate(self, form_values):
+        """Validate the email address."""
 
-        form = self.request.form
-        self.email = form.get("email").strip()
+        email = form_values.get("email").strip()
         # All operations with email addresses must be case-insensitive. We
         # enforce that in EmailAddressSet, but here we only do a comparison,
         # so we have to .lower() them first.
-        if self.email.lower() != self.context.email.lower():
-            self.errormessage = (
+        if email.lower() != self.context.email.lower():
+            self.top_of_page_errors.append(
                 "The email address you provided didn't match the address "
                 "you provided when requesting the password reset.")
-            return
+            raise WidgetsError(self.top_of_page_errors)
 
-        password = form.get("password")
-        password2 = form.get("password2")
-        if not password and not password2:
-            self.errormessage = "Your password cannot be empty."
-            return
+    def success(self, message):
+        """Indicate to the user that the token has been successfully processed.
 
-        if password != password2:
-            self.errormessage = "Password didn't match."
-            return
+        This involves adding a notification message, and redirecting the
+        user to their Launchpad page.
+        """
+        assert not self.top_of_page_errors and not self.errors, \
+               'token processing can not succeed with an error message set'
+        self.request.response.addInfoNotification(message)
+        self.request.response.redirect(canonical_url(
+            self.context.requester))
+
+    def process(self, password, email):
+        """Reset the user's password. When password is successfully changed,
+        the LoginToken (self.context) used is removed, so nobody can use
+        it again.
+        """
 
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(self.context.email)
@@ -182,12 +171,10 @@ class ResetPasswordView(BaseLoginTokenView):
         if naked_person.preferredemail != emailaddress:
             naked_person.validateAndEnsurePreferredEmail(emailaddress)
 
-        encryptor = getUtility(IPasswordEncryptor)
-        password = encryptor.encrypt(password)
         naked_person.password = password
         self.context.consume()
 
-        if form.get('logmein'):
+        if self.request.form.get('logmein'):
             self.logInPersonByEmail(self.context.email)
 
         self.success(_('Your password has been reset successfully'))
@@ -215,13 +202,7 @@ class ValidateEmailView(BaseLoginTokenView):
             self.setTeamContactAddress()
             if not self.errormessage:
                 self.success(_('Contact email address validated successfully'))
-            return
-
-        password = self.request.form.get("password")
-        if not self.validateRequesterPassword(password):
-            return
-
-        if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
+        elif self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
             self.markEmailAddressAsValidated()
             if not self.errormessage:
                 self.success(_('Email address successfully confirmed'))
@@ -511,47 +492,54 @@ class ValidateEmailView(BaseLoginTokenView):
         return email
 
 
-class NewAccountView(AddView, BaseLoginTokenView):
+class NewAccountView(BaseLoginTokenView, GeneralFormView):
 
-    def __init__(self, context, request):
-        AddView.__init__(self, context, request)
+    def initialize(self):
         self.expected_token_types = [LoginTokenType.NEWACCOUNT]
-        self._nextURL = '.'
         self.top_of_page_errors = []
-        # XXX: We need to duplicate this code here because we inherit
-        # from AddView and LaunchpadView. This shouldn't be needed once we 
-        # make AddView inherit from LaunchpadView. 
-        # Guilherme Salgado, 2006-04-11
-        if (context.date_consumed is not None 
-            or context.tokentype not in self.expected_token_types):
-            self.request.response.redirect(canonical_url(self.context))
 
-    def nextURL(self):
-        return self._nextURL
+    def success(self, message):
+        """Indicate to the user that the token has been successfully processed.
 
-    def createAndAdd(self, data):
+        This involves adding a notification message, and redirecting the
+        user to their Launchpad page or to the page where he requested the
+        new account.
+        """
+        assert not self.top_of_page_errors and not self.errors, \
+               'token processing can not succeed with an error message set'
+        self.request.response.addInfoNotification(message)
+        if self.context.redirection_url:
+            url = self.context.redirection_url
+        else:
+            url = canonical_url(getUtility(ILaunchBag).user)
+        self.request.response.redirect(url)
+
+    def validate(self, form_values):
+        """Verify if the email address is not used."""
+
+        if getUtility(IEmailAddressSet).getByEmail(self.context.email):
+            self.top_of_page_errors.append(_(
+                'The email address %s is already registered.'
+                % self.context.email))
+            raise WidgetsError(self.top_of_page_errors)
+
+    def process(self, displayname, hide_email_addresses, password):
         """Check if both passwords match and then create a new Person.
         If everything went ok, we delete the LoginToken (self.context) from
         the database, so nobody can use it again.
         """
-        try:
-            person, email = getUtility(IPersonSet).createPersonAndEmail(
-                    self.context.email, displayname=data['displayname'],
-                    password=data['password'], passwordEncrypted=True)
-        except EmailAddressAlreadyTaken, e:
-            self.top_of_page_errors.append(str(e))
-            raise WidgetsError(self.top_of_page_errors)
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+                self.context.email, displayname=displayname,
+                password=password, passwordEncrypted=True,
+                hide_email_addresses=hide_email_addresses)
 
         notify(ObjectCreatedEvent(person))
         notify(ObjectCreatedEvent(email))
 
         person.validateAndEnsurePreferredEmail(email)
-        self._nextURL = self.context.redirection_url
-        if not self._nextURL:
-            self._nextURL = canonical_url(person)
         self.context.consume()
         self.logInPersonByEmail(email.email)
-        return True
+        self.success(_("Registration completed successfully"))
 
 
 class MergePeopleView(BaseLoginTokenView):
@@ -563,29 +551,28 @@ class MergePeopleView(BaseLoginTokenView):
         self.dupe = getUtility(IPersonSet).getByEmail(self.context.email)
 
     def processForm(self):
-        """Check if the password is correct and perform the merge."""
+        """Perform the merge."""
         if self.request.method != "POST":
             return
 
         # Merge requests must have a valid user account (one with a preferred
         # email) as requester.
         assert self.context.requester.preferredemail is not None
-        if self.validateRequesterPassword(self.request.form.get("password")):
-            self._doMerge()
-            if self.mergeCompleted: 
-                self.success(
-                        _('The accounts have been merged successfully. '
-                          'Everything that belonged to the duplicated ' 
-                          'account should now belong to your own account.'))
-            else:
-                self.success(
-                        _('The e-mail address %s has been assigned to you, but '
-                          'the duplicate account you selected has other ' 
-                          'registered e-mail addresses too. To ' 
-                          'complete the merge, you have to prove that you have '
-                          'access to all those e-mail addresses.' %
-                          self.context.email))
-            self.context.consume()
+        self._doMerge()
+        if self.mergeCompleted: 
+            self.success(
+                    _('The accounts have been merged successfully. '
+                      'Everything that belonged to the duplicated ' 
+                      'account should now belong to your own account.'))
+        else:
+            self.success(
+                    _('The e-mail address %s has been assigned to you, but '
+                      'the duplicate account you selected has other ' 
+                      'registered e-mail addresses too. To ' 
+                      'complete the merge, you have to prove that you have '
+                      'access to all those e-mail addresses.' %
+                      self.context.email))
+        self.context.consume()
 
     def _doMerge(self):
         # The user proved that he has access to this email address of the
@@ -599,9 +586,6 @@ class MergePeopleView(BaseLoginTokenView):
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
-
-        if self.request.form.get('logmein'):
-            self.logInPersonByEmail(email.email)
 
         # Now we must check if the dupe account still have registered email
         # addresses. If it hasn't we can actually do the merge.

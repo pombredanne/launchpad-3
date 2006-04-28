@@ -1,7 +1,8 @@
-from zope.schema import Text, TextLine, Field
-from zope.schema.interfaces import IText, ITextLine, IField
+from zope.schema import Password, Text, TextLine, Field
+from zope.schema.interfaces import IPassword, IText, ITextLine, IField
 from zope.interface import implements
 
+import canonical.encoding
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
 
@@ -22,6 +23,10 @@ class ITimeInterval(ITextLine):
 
 class IBugField(IField):
     """A Field that allows entry of a Bug number or nickname"""
+
+class IPasswordField(IPassword):
+    """A field that ensures we only use http basic authentication safe
+    ascii characters."""
 
 
 # Title
@@ -64,26 +69,35 @@ class StrippingTextLine(TextLine):
         return TextLine.fromUnicode(self, str.strip())
 
 
+class PasswordField(Password):
+    implements(IPasswordField)
+
+    def _validate(self, value):
+        if not canonical.encoding.is_basic_http_safe_ascii(value):
+            raise LaunchpadValidationError(_(
+                "The password provided contains non-ASCII characters."))
+
+
 class ContentNameField(TextLine):
     """Base class for fields that are used by unique 'name' attributes."""
- 
+
     errormessage = _("%s is already taken.") 
 
     @property
     def _content_iface(self):
         """Return the content interface. 
-        
+
         Override this in subclasses.
         """
         return None
- 
+
     def _getByName(self, name):
         """Return the content object with the given name.
-        
+
         Override this in subclasses.
         """
         raise NotImplementedError
-      
+
     def _validate(self, name):
         """Raise a LaunchpadValidationError if the name is not available.
 
@@ -96,7 +110,7 @@ class ContentNameField(TextLine):
             name == getattr(self.context, self.__name__)):
             # The name wasn't changed.
             return
-      
+
         contentobj = self._getByName(name)
         if contentobj is not None:
             raise LaunchpadValidationError(self.errormessage % name)
