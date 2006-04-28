@@ -131,7 +131,7 @@ class SFTPTestCase(TestCaseWithRepository):
         reset_logging()
 
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
-        # is "a little bogus".  Because we aren't used the bzr test runner, we
+        # is "a little bogus".  Because we aren't using the bzr test runner, we
         # have to manually clean up the test????.tmp dirs.
         shutil.rmtree(TestCaseInTempDir.TEST_ROOT)
         TestCaseInTempDir.TEST_ROOT = None
