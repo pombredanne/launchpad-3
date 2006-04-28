@@ -5,15 +5,23 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <a tal:attributes="href context/fmt:url"
-        >Series &ldquo;<tal:series replace="context/displayname"
-        >Main</tal:series>&rdquo;</a>
-      </div>
-      <h1>Change release series details</h1>
-    </metal:heading>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:condition="context/product/project"
+       tal:replace="structure context/product/project/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/product/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Foo Series: main</h3>
+  <h1>Change series details</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 

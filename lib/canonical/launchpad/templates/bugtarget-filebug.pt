@@ -3,9 +3,22 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="malone"
 >
-  <body>
+<body>
 
-  <div metal:fill-slot="main">
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-latestbugs" />
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Foo Series: main</h3>
+  <h1>Report a new bug</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
 
   <p class="error message"
      tal:define="status view/update"
@@ -125,7 +138,7 @@
     </p>
   </tal:not_uses_malone>
 
-  </div>
+</div>
 
 </html>
 

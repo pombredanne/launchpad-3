@@ -96,12 +96,6 @@ from canonical.ftests import pgsql
 # installed.
 pgsql.installFakeConnect()
 
-# This is a terrible hack to divorce the FunctionalTestSetup from
-# its assumptions about the ZODB.
-# XXX: Still needed under Z3.2?
-#from zope.app.testing.functional import FunctionalTestSetup
-#FunctionalTestSetup.__init__ = lambda *x: None
-
 from zope.testing import testrunner
 
 defaults = [

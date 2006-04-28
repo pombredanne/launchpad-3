@@ -182,11 +182,10 @@ We also see our name in the "feedback requests" portlet.
 
   >>> print http(r"""
   ... GET /products/firefox/+spec/canvas HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...Feedback requests:...
-  ...Foo Bar...
+  ...Mark Shuttleworth...
 
 And we see the "Give Feedback" menu item.
 

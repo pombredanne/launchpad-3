@@ -228,8 +228,8 @@ And we can find builds for a given distribution by type.
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
   ...     l.datecreated, l.id, l.buildstate.value
-  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 7, 1)
   (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 16, 1)
+  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 7, 1)
   (datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>), 2, 1)
 
 Retrive the current PENDING builds

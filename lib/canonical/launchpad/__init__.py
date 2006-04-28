@@ -2,11 +2,7 @@
 
 # This deprecation causes a load of spurious DeprecationWarnings.
 # Hopefully this decision will be reversed before 3.3 is released causing
-# this to become a load of spurious exceptions.
-# XXX: Open a bug on this, citing
-# http://mail.zope.org/pipermail/zope3-dev/2005-May/014424.html
-# and http://mail.zope.org/pipermail/zope3-dev/2005-December/016781.html
-# (the latter apparently discussing undeprecating this)
+# this to become a load of spurious exceptions. Bug 39883.
 import warnings
 warnings.filterwarnings(
         'ignore', r'.*Use explicit i18n:translate=""', DeprecationWarning

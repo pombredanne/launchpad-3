@@ -5,17 +5,16 @@
 __metaclass__ = type
 
 from difflib import unified_diff
-import itertools
 import re
-import sets
 import textwrap
 
+from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
-    IUpstreamBugTask)
+    IUpstreamBugTask, ITeamMembershipSet)
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -408,8 +407,8 @@ def get_bug_edit_notification_texts(bug_delta):
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("binarypackagename", "name"), ("severity", "title"),
-                ("priority", "title"), ("bugwatch", "title")):
+                ("severity", "title"), ("priority", "title"),
+                ("bugwatch", "title")):
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -651,10 +650,6 @@ def get_task_delta(old_task, new_task):
             changes["sourcepackagename"] = {}
             changes["sourcepackagename"]["old"] = old_task.sourcepackagename
             changes["sourcepackagename"]["new"] = new_task.sourcepackagename
-        if old_task.binarypackagename != new_task.binarypackagename:
-            changes["binarypackagename"] = {}
-            changes["binarypackagename"]["old"] = old_task.binarypackagename
-            changes["binarypackagename"]["new"] = new_task.binarypackagename
     else:
         raise TypeError(
             "Can't calculate delta on bug tasks of incompatible types: "
@@ -888,21 +883,18 @@ def notify_join_request(event):
 
     user = event.user
     team = event.team
-    to_addrs = sets.Set()
-    for person in itertools.chain(team.administrators, [team.teamowner]):
-        to_addrs.update(contactEmailAddresses(person))
-
-    if to_addrs:
-        url = '%s/+member/%s' % (canonical_url(team), user.name)
-        replacements = {'browsername': user.browsername,
-                        'name': user.name,
-                        'teamname': team.browsername,
-                        'url': url}
-        template = get_email_template('pending-membership-approval.txt')
-        msg = template % replacements
-        fromaddress = "Launchpad <noreply@ubuntu.com>"
-        subject = "Launchpad: New member awaiting approval."
-        simple_sendmail(fromaddress, to_addrs, subject, msg)
+    tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
+    assert tm is not None
+    to_addrs = team.getTeamAdminsEmailAddresses()
+    replacements = {'browsername': user.browsername,
+                    'name': user.name,
+                    'teamname': team.browsername,
+                    'url': canonical_url(tm)}
+    msg = get_email_template('pending-membership-approval.txt') % replacements
+    subject = "Launchpad: New %s member awaiting approval." % team.name
+    from_addr = config.noreply_from_address
+    headers = {"Reply-To": user.preferredemail.email}
+    simple_sendmail(from_addr, to_addrs, subject, msg, headers=headers)
 
 
 def send_ticket_notification(ticket_event, subject, body):

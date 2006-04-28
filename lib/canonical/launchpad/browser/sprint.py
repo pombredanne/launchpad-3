@@ -21,13 +21,20 @@ from canonical.launchpad.interfaces import ILaunchBag, ISprint, ISprintSet
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 
-from canonical.lp.dbschema import SprintSpecificationStatus
+from canonical.lp.dbschema import (
+    SprintSpecificationStatus, SpecificationFilter)
+
+from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
     ApplicationMenu, StandardLaunchpadFacets, LaunchpadView)
 
+from canonical.launchpad.browser.specificationtarget import (
+    HasSpecificationsView)
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 
@@ -70,22 +77,27 @@ class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'deferred', 'settopics']
+    links = ['assignments', 'declined', 'settopics', 'roadmap']
 
     def assignments(self):
         text = 'Assignments'
         summary = 'View the specification assignments'
         return Link('+assignments', text, summary, icon='info')
 
-    def deferred(self):
-        text = 'Deferred Topics'
+    def declined(self):
+        text = 'Declined Topics'
         summary = 'Show topics that were not accepted for discussion'
-        return Link('+specs?show=deferred', text, summary, icon='info')
+        return Link('+specs?acceptance=declined', text, summary, icon='info')
 
     def settopics(self):
         text = 'Set Topics'
         summary = 'Approve or defer topics for discussion'
         return Link('+settopics', text, summary, icon='edit')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        summary = 'Suggest a sequence of implementation for these features'
+        return Link('+roadmap', text, summary, icon='info')
 
 
 class SprintSetNavigation(GetitemNavigation):
@@ -103,19 +115,11 @@ class SprintSetContextMenu(ContextMenu):
         return Link('+new', text, icon='add')
 
 
-class SprintView(LaunchpadView):
+class SprintView(HasSpecificationsView, LaunchpadView):
 
     __used_for__ = ISprint
 
     def initialize(self):
-        self._sprint_spec_links = None
-        self._count = None
-        self.show = self.request.form.get('show', None)
-
-        # XXX: These appear not to be used.  SteveAlexander 2006-03-06.
-        self.use_detailed_listing = True
-        self.use_compact_listing = False
-
         self.notices = []
 
     def attendance(self):
@@ -130,36 +134,17 @@ class SprintView(LaunchpadView):
     @cachedproperty
     def spec_links(self):
         """List all of the SprintSpecifications appropriate for this view."""
-        if self.show is None:
-            spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.CONFIRMED)
-        elif self.show == 'all':
-            spec_links = self.context.specificationLinks()
-        elif self.show == 'deferred':
-            spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.DEFERRED)
-        elif self.show == 'submitted':
-            spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.SUBMITTED)
-        sprint_spec_links = [
-            link for link in spec_links if link.specification.is_incomplete]
-        self._count = len(sprint_spec_links)
-        if self._count > 5:
-            # XXX: These appear not to be used.  SteveAlexander 2006-03-06.
-            self.use_detailed_listing = False
-            self.use_compact_listing = True
-        return sprint_spec_links
+        filter = self.spec_filter
+        return shortlist(self.context.specificationLinks(filter=filter))
 
-    @property
+    @cachedproperty
     def count(self):
-        if self._count is None:
-            # creating list of spec links will set self._count as a side-effect
-            dummy = self.spec_links
-        return self._count
+        return len(self.spec_links)
 
-    @property
-    def specs(self):
-        return [speclink.specification for speclink in self.spec_links()]
+    @cachedproperty
+    def proposed_count(self):
+        filter = [SpecificationFilter.PROPOSED]
+        return self.context.specificationLinks(filter=filter).count()
 
 
 class SprintAddView(SQLObjectAddView):
@@ -191,7 +176,7 @@ class SprintEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class SprintTopicSetView(LaunchpadView):
+class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
     """Custom view class to process the results of this unusual page.
 
     It is unusual because we want to display multiple objects with
@@ -205,14 +190,16 @@ class SprintTopicSetView(LaunchpadView):
         self.process_form()
 
     @cachedproperty
-    def speclinks(self):
-        """Return the specification links with SUBMITTED status this sprint.
-
-        For the moment, we just filter the list in Python.
+    def spec_filter(self):
+        """Return the specification links with PROPOSED status for this
+        sprint.
         """
-        speclinks = shortlist(self.context.specificationLinks())
-        return [speclink for speclink in speclinks
-                if speclink.status == SprintSpecificationStatus.SUBMITTED]
+        return [SpecificationFilter.PROPOSED]
+
+    @cachedproperty
+    def spec_links(self):
+        filter = self.spec_filter
+        return self.context.specificationLinks(filter=filter)
 
     def process_form(self):
         """Largely copied from webapp/generalform.py, without the
@@ -252,19 +239,16 @@ class SprintTopicSetView(LaunchpadView):
             selected_specs = [selected_specs]
 
         if action == 'Accepted':
-            new_status = SprintSpecificationStatus.CONFIRMED
+            action_fn = self.context.acceptSpecificationLinks
         else:
-            new_status = SprintSpecificationStatus.DEFERRED
-
-        for sprintspec_id in selected_specs:
-            sprintspec = self.context.getSpecificationLink(sprintspec_id)
-            sprintspec.status = new_status
+            action_fn = self.context.declineSpecificationLinks
+        leftover = action_fn(selected_specs)
 
         # Status message like: "Accepted 27 specification(s)."
         self.status_message = '%s %d specification(s).' % (
             action, len(selected_specs))
 
-        if not selected_specs:
+        if leftover == 0:
             # they are all done, so redirect back to the spec listing page
             self.request.response.redirect(
                 canonical_url(self.context)+'/+specs')

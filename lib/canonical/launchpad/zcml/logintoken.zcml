@@ -18,6 +18,12 @@
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+index" />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.ILoginToken"
+        path_expression="token"
+        parent_utility="canonical.launchpad.interfaces.ILoginTokenSet"
+        />
+
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
         name="+index"

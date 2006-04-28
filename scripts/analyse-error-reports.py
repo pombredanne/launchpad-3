@@ -182,7 +182,7 @@ class ErrorSummary:
         elif etype in ['SoftRequestTimeout']:
             self.addOops(self.softtimeout, etype, evalue, url, oopsid,
                          local_referer, is_bot)
-        elif etype in ['NotFound', 'NotFoundError']:
+        elif etype in ['NotFound']:
             self.addOops(self.notfound, etype, evalue, url, oopsid,
                          local_referer, is_bot)
         else:

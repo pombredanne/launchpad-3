@@ -28,8 +28,6 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bugattachment import IBugAttachment
-from canonical.launchpad.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -52,6 +50,7 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 
+
 class IBugTask(IHasDateCreated, IHasBug):
     """A bug needing fixing in a particular product or package."""
 
@@ -59,7 +58,7 @@ class IBugTask(IHasDateCreated, IHasBug):
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
     sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
+        title=_("Package"), required=False,
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
@@ -86,9 +85,6 @@ class IBugTask(IHasDateCreated, IHasBug):
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
-    binarypackagename = Choice(
-        title=_('Binary PackageName'), required=False,
-        vocabulary='BinaryPackageName')
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -96,12 +92,23 @@ class IBugTask(IHasDateCreated, IHasBug):
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
         "the status of this bug task in Malone."))
-    dateassigned = Datetime(
+    date_assigned = Datetime(
         title=_("Date Assigned"),
         description=_("The date on which this task was assigned to someone."))
     datecreated = Datetime(
         title=_("Date Created"),
         description=_("The date on which this task was created."))
+    date_confirmed = Datetime(
+        title=_("Date Confirmed"),
+        description=_("The date on which this task was marked Confirmed."))
+    date_inprogress = Datetime(
+        title=_("Date In Progress"),
+        description=_("The date on which this task was marked In Progress."))
+    date_closed = Datetime(
+        title=_("Date Closed"),
+        description=_(
+            "The date on which this task was marked either Fix Committed or "
+            "Fix Released."))
     age = Datetime(
         title=_("Age"),
         description=_(
@@ -128,6 +135,22 @@ class IBugTask(IHasDateCreated, IHasBug):
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
         the Malone severity values, and returns the relevant Malone
         severity.
+        """
+
+    def transitionToStatus(new_status):
+        """Perform a workflow transition to the new_status.
+
+        For certain statuses, e.g. Confirmed, other actions will
+        happen, like recording the date when the task enters this
+        status.
+        """
+
+    def transitionToAssignee(assignee):
+        """Perform a workflow transition to the given assignee.
+
+        When the bugtask assignee is changed from None to an IPerson
+        object, the dateassigned is set on the task. If the assignee
+        value is set to None, dateassigned is also set to None.
         """
 
     def updateTargetNameCache():
@@ -210,6 +233,7 @@ class IBugTaskSearch(Interface):
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
 
+
 class IPersonBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a person."""
     sourcepackagename = Choice(
@@ -224,11 +248,9 @@ class IPersonBugTaskSearch(IBugTaskSearch):
 class IBugTaskDelta(Interface):
     """The change made to a bug task (e.g. in an edit screen).
 
-    If product is not None, both sourcepackagename and binarypackagename must
-    be None.
+    If product is not None, the sourcepackagename must be None.
 
-    Likewise, if sourcepackagename and/or binarypackagename is not
-    None, product must be None.
+    Likewise, if sourcepackagename is not None, product must be None.
     """
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
@@ -243,13 +265,6 @@ class IBugTaskDelta(Interface):
         The value is a dict with the keys
         {'old' : ISourcePackageName, 'new' : ISourcePackageName},
         or None, if no change was made to the sourcepackagename.
-        """)
-    binarypackagename = Attribute(
-        """The change made to the IBinaryPackageName of this task.
-
-        The value is a dict like
-        {'old' : IBinaryPackageName, 'new' : IBinaryPackageName},
-        or None, if no change was made to the binarypackagename.
         """)
     target = Attribute(
         """The change made to the IMilestone for this task.
@@ -299,9 +314,6 @@ class IDistroBugTask(IBugTask):
         description=_("The source package in which the bug occurs. "
         "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
-    binarypackagename = Choice(
-        title=_('Binary PackageName'), required=False,
-        vocabulary='BinaryPackageName')
     distribution = Choice(
         title=_("Distribution"), required=True, vocabulary='Distribution')
 
@@ -311,9 +323,6 @@ class IDistroReleaseBugTask(IBugTask):
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
-    binarypackagename = Choice(
-        title=_('Binary PackageName'), required=False,
-        vocabulary='BinaryPackageName')
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')
@@ -373,8 +382,7 @@ class BugTaskSearchParams:
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  priority=None, severity=None, milestone=None,
-                 assignee=None, sourcepackagename=None,
-                 binarypackagename=None, owner=None,
+                 assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None):
@@ -386,7 +394,6 @@ class BugTaskSearchParams:
         self.milestone = milestone
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
-        self.binarypackagename = binarypackagename
         self.owner = owner
         self.statusexplanation = statusexplanation
         self.attachmenttype = attachmenttype
@@ -459,9 +466,8 @@ class IBugTaskSet(Interface):
         """
 
     def createTask(bug, product=None, distribution=None, distrorelease=None,
-                   sourcepackagename=None, binarypackagename=None, status=None,
-                   priority=None, severity=None, assignee=None, owner=None,
-                   milestone=None):
+                   sourcepackagename=None, status=None, priority=None,
+                   severity=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug contacts will be automatically

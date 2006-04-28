@@ -74,8 +74,7 @@ class IPerson(IHasSpecifications):
             )
     password = Password(
             title=_('Password'), required=True, readonly=False,
-            description=_("The password you will use to access "
-                "Launchpad services. ")
+            description=_("Enter the same password in each field.")
             )
     karma = Int(
             title=_('Karma'), readonly=False,
@@ -462,6 +461,11 @@ class IPerson(IHasSpecifications):
         It's also responsible for filling/cleaning the TeamParticipation
         table when the transition requires it and setting the expiration
         date, reviewer and reviewercomment.
+        """
+
+    def getTeamAdminsEmailAddresses():
+        """Return a set containing the email addresses of all administrators
+        of this team.
         """
 
     def getSubTeams():
