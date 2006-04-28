@@ -6,10 +6,11 @@
 __metaclass__ = type
 
 
-from os import mkdir
-from os.path import dirname, join, isdir, exists
-from shutil import rmtree, copytree
-from subprocess import call, Popen, PIPE
+import os
+from os.path import join, isdir, exists
+from shutil import rmtree
+from subprocess import Popen, PIPE
+import tempfile
 from unittest import TestLoader
 
 import transaction
@@ -19,6 +20,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.launchpad.scripts.supermirror.ftests import createbranch
 
 
 class BranchScannerTest(LaunchpadFunctionalTestCase):
@@ -28,38 +30,44 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
 
     def setUp(self):
         LaunchpadFunctionalTestCase.setUp(self)
+        # Clear the HOME environment variable in order to ignore existing
+        # user config files.
+        self.testdir = tempfile.mkdtemp()
+        self._saved_environ = dict(os.environ)
+        os.environ['HOME'] = self.testdir
         self.warehouse = None
 
+    def tearDown(self):
+        rmtree(self.testdir)
+        os.environ.clear()
+        os.environ.update(self._saved_environ)            
+
     def setupWarehouse(self):
+        """Create a sandbox branch warehouse for testing.
+
+        See doc/bazaar for more context on the branch warehouse concept.
+        """
         warehouse_url = config.supermirror.warehouse_root_url
         assert warehouse_url.startswith('file://')
         warehouse = warehouse_url[len('file://'):]
         if isdir(warehouse):
             rmtree(warehouse)
-        mkdir(warehouse)
+        os.mkdir(warehouse)
         self.warehouse = warehouse
 
-    def expandTestBranch(self, name):
-        tarball = join(dirname(__file__), name + '.tgz')
-        returncode = call(['tar', 'xzf', tarball], cwd=self.warehouse)
-        assert returncode == 0
-        assert isdir(join(self.warehouse, name))
-
-    def installTestBranch(self, name, db_branch):
-        origin = join(self.warehouse, name)
+    def installTestBranch(self, db_branch):
+        """Create a test data in the warehouse for the given branch object."""
         destination = join(self.warehouse, '%08x' % db_branch.id)
         assert not exists(destination)
-        returncode = call(['cp', '-a', origin, destination])
-        assert returncode == 0
+        createbranch(destination)
 
     def test_branch_scanner_script(self):
-        """branch-scanner.py does something"""
+        # this test checks that branch-scanner.py does something
         login(ANONYMOUS)
         self.setupWarehouse()
-        self.expandTestBranch('onerev')
         branch = getUtility(IBranchSet)[self.branch_id]
         assert branch.revision_history.count() == 0
-        self.installTestBranch('onerev', branch)
+        self.installTestBranch(branch)
         # run branch-scanner.py and check the process outputs
         script = join(config.root, 'cronscripts', 'branch-scanner.py')
         process = Popen([script, '-q'],
@@ -75,7 +83,7 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
         history = branch.revision_history
         self.assertEqual(history.count(), 1)
         revision = history[0].revision
-        self.assertEqual(revision.log_body, 'Log message')
+        self.assertEqual(revision.log_body, 'message')
 
 
 def test_suite():

@@ -173,7 +173,10 @@ class IBranch(IHasOwner):
                          "Canonical-internal path, so we don't display this "
                          "on the main website.")
     warehouse_url = Attribute(
-        "URL to access the branch by id on the warehouse filesystem.")
+        "URL for accessing the branch by ID. "
+        "This is for in-datacentre services only and allows such services to "
+        "be unaffected during branch renames. "
+        "See doc/bazaar for more information about the branch warehouse.")
 
     # Bug attributes
     related_bugs = Attribute(
