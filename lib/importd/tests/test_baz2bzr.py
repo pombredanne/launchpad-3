@@ -10,7 +10,6 @@ import sys
 import os
 import pty
 import resource
-import shutil
 from StringIO import StringIO
 from subprocess import Popen, call, STDOUT, PIPE
 import unittest
@@ -26,8 +25,7 @@ from canonical.launchpad.interfaces import (
 
 from importd import baz2bzr
 from importd.tests import TestUtil
-from importd.tests.helpers import (
-    SandboxHelper, ZopelessUtilitiesHelper)
+from importd.tests.helpers import SandboxHelper, ZopelessUtilitiesHelper
 
 
 class ProductSeriesHelper:
@@ -46,7 +44,7 @@ class ProductSeriesHelper:
         """Create a sample ProductSeries with targetarch* details."""
         assert self.series is None
         product = getUtility(IProductSet)['gnome-terminal']
-        series = product.newSeries('importd-test', displayname='', summary='')
+        series = product.newSeries(product.owner, 'importd-test', summary='')
         self.series = series
         parser = pybaz.NameParser(self.version.fullname)
         series.targetarcharchive = self.version.archive.name
@@ -59,7 +57,7 @@ class ProductSeriesHelper:
         """Create a sample ProductSeries without targetarch* details."""
         assert self.series is None
         product = getUtility(IProductSet)['gnome-terminal']
-        series = product.newSeries('importd-test', displayname='', summary='')
+        series = product.newSeries(product.owner, 'importd-test', summary='')
         self.series = series
         series.targetarcharchive = None
         series.targetarchcategory = None
@@ -78,6 +76,72 @@ class ProductSeriesHelper:
         return series
 
 
+class Baz2bzrArchiveHelper:
+    """Helper to create a Arch fixture for baz2bzr."""
+
+    def __init__(self, sandbox_helper, version):
+        self.sandbox_helper = sandbox_helper
+        self.version = version
+        self.tree = None
+
+    def setUp(self):
+        self._archive_dir = self.sandbox_helper.path('archives')
+        os.mkdir(self._archive_dir)
+
+    def tearDown(self):
+        pass
+
+    def _createArchive(self):
+        """Create and register the Arch archive for self.version."""
+        archive = self.version.archive
+        params = pybaz.ArchiveLocationParams()
+        archive_url = os.path.join(self._archive_dir, archive.name)
+        archive_location = pybaz.ArchiveLocation(archive_url)
+        archive_location.create_master(archive, params)
+
+    def _createTree(self):
+        """Create a working tree for self.version and save as self.tree."""
+        assert self.tree is None
+        path = self.sandbox_helper.path('tree')
+        os.mkdir(path)
+        self.tree = pybaz.init_tree(path, self.version, nested=True)
+
+    def setUpTwoRevisions(self):
+        """Create the Arch branch self.version with two sample revisions."""
+        self._createArchive()
+        self._createTree()
+        msg = self.tree.log_message()
+        msg['Summary'] = "Initial revision"
+        msg['CSCVSID'] = 'MAIN.1'
+        msg['Keywords'] = 'cscvs:MAIN.1'
+        msg.description = (
+            "Author: david\n"
+            "Date: 2006-02-21 17:21:18 GMT\n"
+            "Initial revision\n")
+        self.tree.import_(msg)
+        msg = self.tree.log_message()
+        msg['Summary'] = "change 1"
+        msg['CSCVSID'] = 'MAIN.2'
+        msg['Keywords'] = 'cscvs:MAIN.2'
+        msg.description = (
+            "Author: david\n"
+            "Date: 2006-02-21 17:21:20 GMT\n"
+            "change 1\n")
+        self.tree.commit(msg)
+
+    def setUpThirdRevision(self):
+        """Add the third sample revision to self.version."""
+        msg = self.tree.log_message()
+        msg['Summary'] = "change 2"
+        msg['CSCVSID'] = 'MAIN.3'
+        msg['Keywords'] = 'cscvs:MAIN.3'
+        msg.description = (
+            "Author: david\n"
+            "Date: 2006-02-21 17:21:49 GMT\n"
+            "change 2\n")
+        self.tree.commit(msg)
+        
+
 class Baz2bzrTestCase(unittest.TestCase):
     """Base class for baz2bzr test cases."""
 
@@ -89,39 +153,27 @@ class Baz2bzrTestCase(unittest.TestCase):
         self.series_helper.setUpTestSeries()
         self.version = self.series_helper.version
         self.series_id = self.series_helper.series.id
-        self.sandbox_helper.mkdir('archives')
+        self.archive_helper = Baz2bzrArchiveHelper(
+            self.sandbox_helper, self.version)
+        self.archive_helper.setUp()
         self.bzrworking = self.sandbox_helper.path('bzrworking')
 
     def tearDown(self):
+        self.archive_helper.tearDown()
         self.sandbox_helper.tearDown()
         self.series_helper.tearDown()
-
-    def extractCannedArchive(self, name):
-        """Extract the canned archive with the given sequence number.
-
-        Remove any previously extracted canned archive.
-        """
-        basedir = os.path.dirname(__file__)
-        # Use the saved cwd to turn __file__ into an absolute path
-        basedir = os.path.join(self.sandbox_helper.here, basedir)
-        tarball = os.path.join(basedir, 'importd@example.com-%s.tgz' % name)
-        target_dir = self.sandbox_helper.path('archives')
-        archive_path = os.path.join(target_dir, 'importd@example.com')
-        if os.path.isdir(archive_path):
-            shutil.rmtree(archive_path)
-        retcode = call(['tar', 'xzf', tarball], cwd=target_dir)
-        assert retcode == 0, 'failed to extract canned archive %s' % name
-
-    def registerCannedArchive(self):
-        """Register a canned archive created by extractCannedArchive."""
-        path = os.path.join(self.sandbox_helper.path('archives'),
-                            'importd@example.com')
-        location = pybaz.ArchiveLocation(path)
-        location.register()
 
     def bzrBranch(self, path):
         """Return the bzrlib Branch object for the produced branch."""
         return bzrlib.branch.Branch.open(path)
+
+    def setUpTwoRevisions(self):
+        """Create the Arch branch self.version with two sample revisions."""
+        self.archive_helper.setUpTwoRevisions()
+
+    def setUpThirdRevision(self):
+        """Add the third sample revision to self.version."""
+        self.archive_helper.setUpThirdRevision()
 
     def assertRevisionMatchesExpected(self, branch, index):
         """Match revision attributes against expected data."""
@@ -280,7 +332,24 @@ class Baz2bzrTestCase(unittest.TestCase):
         self.assertEqual(returncode, 0,
             'baz2bzr failed (status %d)\n%s' % (returncode,  output))
         return output
-        
+
+    @staticmethod
+    def _quoteMultiline(text):
+        return '\n'.join(repr(line) for line in text.split('\n'))
+
+    def assertOutputEqual(self, output, expected):
+        """Variant of TestCase.assertEqual optimised for multiple lines.
+
+        Gives a easier to read message when output and expected are multi-lines
+        strings.
+        """
+        if output != expected:
+            self.fail("output != expected.\n"
+                      "Output:\n%s\n"
+                      "Expected:\n%s\n" % (
+                self._quoteMultiline(output),
+                self._quoteMultiline(expected)))
+
 
 class TestBaz2bzrImportFeature(Baz2bzrTestCase):
     """Test integration of baz2bzr with bzrtools.baz_import."""
@@ -299,33 +368,29 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
 
     def test_conversion(self):
         # Initial conversion creates a bzr branch
-        self.extractCannedArchive('two-revisions')
-        self.registerCannedArchive()
+        self.setUpTwoRevisions()
         self.callBaz2bzr(['-q', str(self.series_id), '/dev/null'])
         branch = self.bzrBranch(self.bzrworking)
         self.assertHistoryMatchesExpectedTwo(branch)
 
         # If the Arch branch has new revisions, subsequent conversion appends
         # new revisions to the bzr branch
-        self.extractCannedArchive('three-revisions')
+        self.setUpThirdRevision()
         self.callBaz2bzr(['-q', str(self.series_id), '/dev/null'])
         self.assertHistoryMatchesExpectedThree(branch)
 
     def test_pipe_output(self):
-        self.extractCannedArchive('two-revisions')
-        self.registerCannedArchive()
+        self.setUpTwoRevisions()
         output = self.pipeBaz2bzr([str(self.series_id), '/dev/null'])
-        self.assertEqual(output, '\n'.join(self.expected_lines))
+        self.assertOutputEqual(output, '\n'.join(self.expected_lines))
 
     def test_pty_output(self):
-        self.extractCannedArchive('two-revisions')
-        self.registerCannedArchive()
+        self.setUpTwoRevisions()
         output = self.ptyBaz2bzr([str(self.series_id), '/dev/null'])
-        self.assertEqual(output, '\r\n'.join(self.expected_lines))
+        self.assertOutputEqual(output, '\r\n'.join(self.expected_lines))
 
     def test_blacklist(self):
-        self.extractCannedArchive('two-revisions')
-        self.registerCannedArchive()
+        self.setUpTwoRevisions()
         blacklist_path = self.sandbox_helper.path('blacklist')
         blacklist_file = open(blacklist_path, 'w')
         print >> blacklist_file, self.version.fullname
@@ -358,8 +423,7 @@ class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
         # baz2bzr pushes to a mirror branch (and creates it if it does not
         # exist), and, if necessary, register the branch in Launchpad and
         # associate it to the ProductSeries that contains the VCS details.
-        self.extractCannedArchive('two-revisions')
-        self.registerCannedArchive()
+        self.setUpTwoRevisions()
         self.callBaz2bzr([
             '-q', str(self.series_id), '/dev/null', self.mirror_prefix])
         # XXX: The bazb2zr script modifies the database and the rest of the
@@ -377,28 +441,25 @@ class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
         self.assertHistoryMatchesExpectedTwo(branch)
         # If the Arch branch has new revisions, the new bzr revisions are
         # pushed to the existing mirror branch.
-        self.extractCannedArchive('three-revisions')
+        self.setUpThirdRevision()
         self.callBaz2bzr([
             '-q', str(self.series_id), '/dev/null', self.mirror_prefix])
         self.assertHistoryMatchesExpectedThree(branch)
 
     def test_pipe_output(self):
-        self.extractCannedArchive('two-revisions')
-        self.registerCannedArchive()
+        self.setUpTwoRevisions()
         output = self.pipeBaz2bzr([
             str(self.series_id), '/dev/null', self.mirror_prefix])
-        self.assertEqual(output, '\n'.join(self.expected_lines))
+        self.assertOutputEqual(output, '\n'.join(self.expected_lines))
 
     def test_pty_output(self):
-        self.extractCannedArchive('two-revisions')
-        self.registerCannedArchive()
+        self.setUpTwoRevisions()
         output = self.ptyBaz2bzr([
             str(self.series_id), '/dev/null', self.mirror_prefix])
-        self.assertEqual(output, '\r\n'.join(self.expected_lines))
+        self.assertOutputEqual(output, '\r\n'.join(self.expected_lines))
 
     expected_lines = TestBaz2bzrImportFeature.expected_lines[:-1] + [
         'get destination history',
-        '0/1 merge weaves',
         '0/2 inventory fetch',
         '1/2 inventory fetch',
         '2/2 inventory fetch',

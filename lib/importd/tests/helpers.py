@@ -2,6 +2,7 @@
 # Author: David Allouche <david@allouche.net>
 
 import os
+import sys
 import stat
 import shutil
 import unittest
@@ -171,7 +172,6 @@ class BazTreeHelper(object):
 
     def setUpTree(self):
         assert self.tree is None
-        sandbox_path = self.sandbox_helper.sandbox_path
         path = self.sandbox_helper.path('tree')
         os.mkdir(path)
         self.tree = arch.init_tree(path, self.version, nested=True)
