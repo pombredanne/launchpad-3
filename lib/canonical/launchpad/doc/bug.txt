@@ -404,3 +404,22 @@ Adding a comment updates date_last_updated.
 
   >>> firefox_bug.date_last_updated > current_date_last_updated
   True
+
+Changing the bug summary updates date_last_updated.
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> from canonical.launchpad.interfaces import IBug
+
+  >>> bug_before_modification = capture_state(
+  ...     firefox_bug, *IBug.names())
+
+  >>> firefox_bug.title = "a new title"
+
+  >>> bug_summary_changed = SQLObjectModifiedEvent(
+  ...     firefox_bug, bug_before_modification, ["title"])
+
+  >>> notify(bug_summary_changed)
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
