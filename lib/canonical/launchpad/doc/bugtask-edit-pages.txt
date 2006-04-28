@@ -109,7 +109,7 @@ XXX: We really should update the status from the bug watch, but that's
      -- Bjorn Tillenius, 2006-03-01
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> thunderbird_task.status = BugTaskStatus.UNCONFIRMED
+    >>> thunderbird_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
     >>> request = LaunchpadTestRequest(
     ...     form={
     ...         'FORM_SUBMIT': '',

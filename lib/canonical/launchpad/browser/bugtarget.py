@@ -18,8 +18,8 @@ from canonical.launchpad.webapp import canonical_url
 class FileBugView(SQLObjectAddView):
     """Browser view for filebug forms.
 
-    This class handles bugs filed on an IBugTarget, and the 'generic' bug
-    filing, where a distribution argument is passed with the form.
+    This class handles bugs filed on an IBugTarget, and the 'generic'
+    bug filing, where a distribution argument is passed with the form.
     """
 
     notification = "Thank you for your bug report."

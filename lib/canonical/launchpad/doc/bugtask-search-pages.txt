@@ -196,7 +196,7 @@ be logged in.
     >>> login("test@canonical.com")
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> open_bugtasks[0].status = BugTaskStatus.REJECTED
+    >>> open_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
     >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.
@@ -241,7 +241,7 @@ The simple search form returns only open bugtasks.
 And now we'll change the status of one of the bugtasks (we are still
 logged in from earlier):
 
-    >>> open_bugtasks[0].status = BugTaskStatus.REJECTED 
+    >>> open_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
     >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.

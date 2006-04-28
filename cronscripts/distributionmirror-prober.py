@@ -11,6 +11,7 @@ import itertools
 from StringIO import StringIO
 
 from twisted.internet import reactor
+from twisted.internet.defer import DeferredSemaphore
 
 from zope.component import getUtility
 
@@ -57,6 +58,7 @@ def main(argv):
     logfiles = {}
     probed_mirrors = []
 
+    semaphore = DeferredSemaphore(50)
     for mirror_id in mirror_ids:
         mirror = mirror_set[mirror_id]
         if mirror.http_base_url is None:
@@ -85,7 +87,7 @@ def main(argv):
             prober.deferred.addErrback(logger_obj.error)
 
             prober.deferred.addBoth(checkComplete, url, unchecked_urls)
-            reactor.connectTCP(prober.host, prober.port, prober)
+            semaphore.run(prober.probe)
 
     if mirror_ids:
         reactor.run()
