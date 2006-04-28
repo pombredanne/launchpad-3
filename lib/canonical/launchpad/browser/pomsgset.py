@@ -350,7 +350,7 @@ class POMsgSetView(LaunchpadView):
     #   - items actually published or currently active elsewhere
     #   - new submissions to ANY similar pofile for the same msgset from
     #     people who did not have write permission THERE
-    def get_wiki_submissions(self, index):
+    def get_wiki_submissions(self, index, maxentries=None):
         # the UI expects these to come after suggested and current, and will
         # present at most three of them
         if self._wiki_submissions is not None:
@@ -358,19 +358,21 @@ class POMsgSetView(LaunchpadView):
         curr = self.getTranslation(index)
 
         wiki = self.context.getWikiSubmissions(index)
-        suggested = self.get_suggested_submissions(index)
+        suggested = self.get_suggested_submissions(index, maxentries)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]
-        current = self.get_current_submissions(index)
+        current = self.get_current_submissions(index, maxentries)
         current_texts = [c.potranslation.translation
                          for c in current]
         self._wiki_submissions = [submission for submission in wiki
             if submission.potranslation.translation != curr and
             submission.potranslation.translation not in suggested_texts and
-            submission.potranslation.translation not in current_texts][:3]
+            submission.potranslation.translation not in current_texts]
+        if maxentries is not None:
+            self._wiki_submissions = self._wiki_submissions[:maxentries]
         return self._wiki_submissions
 
-    def get_current_submissions(self, index):
+    def get_current_submissions(self, index, maxentries=None):
         # the ui expectes these after the suggested ones and will show at
         # most 3 of them
         if self._current_submissions is not None:
@@ -378,26 +380,31 @@ class POMsgSetView(LaunchpadView):
         curr = self.getTranslation(index)
 
         current = self.context.getCurrentSubmissions(index)
-        suggested = self.get_suggested_submissions(index)
+        suggested = self.get_suggested_submissions(index, maxentries)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]
         self._current_submissions = [submission
             for submission in current 
             if submission.potranslation.translation != curr and
-            submission.potranslation.translation not in suggested_texts][:3]
+            submission.potranslation.translation not in suggested_texts]
+        if maxentries is not None:
+            self._current_submissions = self._current_submissions[:maxentries]
         return self._current_submissions
 
-    def get_suggested_submissions(self, index):
+    def get_suggested_submissions(self, index, maxentries=None):
         # these are expected to be shown first, we will show at most 3 of
         # them
         if self._suggested_submissions is not None:
             return self._suggested_submissions
 
-        sugg = self.context.getSuggestedSubmissions(index)
-        self._suggested_submissions = helpers.shortlist(sugg[:3])
+        self._suggested_submissions = (
+            self.context.getSuggestedSubmissions(index))
+        if maxentries is not None:
+            self._suggested_submissions = (
+                self._suggested_submissions[:maxentries])
         return self._suggested_submissions
 
-    def get_alternate_language_submissions(self, index):
+    def get_alternate_language_submissions(self, index, maxentries=None):
         """Get suggestions for translations from the alternate language for
         this potemplate."""
         if self._second_language_submissions is not None:
@@ -406,8 +413,11 @@ class POMsgSetView(LaunchpadView):
             return []
         sec_lang = self.second_lang_pofile.language
         sec_lang_potmsgset = self.second_lang_msgset.potmsgset
-        curr = sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index)
-        self._second_language_submissions = curr[:3]
+        self._second_language_submissions = (
+            sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index))
+        if maxentries is not None:
+            self._second_language_submissions = (
+                self._second_language_submissions[:maxentries])
         return self._second_language_submissions
 
     def process_form(self):

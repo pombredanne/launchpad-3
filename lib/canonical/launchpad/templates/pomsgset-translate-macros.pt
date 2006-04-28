@@ -23,9 +23,8 @@
               >suggestion</div>
             <div class="discreet">
               &mdash;
-              <span tal:replace="submission/person/browsername">
-                Foo Bar
-              </span>
+              <a tal:content="submission/person/browsername"
+                 tal:attributes="href submission/person/fmt:url">Foo Bar</a>
             </div>
           </tal:submission>
         </tal:block>
@@ -43,7 +42,8 @@
           >suggestion</div>
           <div class="discreet">
             &mdash;
-            <span tal:replace="submission/person/browsername">Foo Bar</span>
+            <a tal:content="submission/person/browsername"
+               tal:attributes="href submission/person/fmt:url" >Foo Bar</a>
             <tal:block
               define="submissions_remaining python:len(submissions)-1"
               condition="submissions_remaining">
@@ -59,6 +59,8 @@
   <tal:comment replace="nothing">
   This macro expects the following variable defined:
       :pomsgset_view: An IPOMsgSet View.
+      :maxentries: The maxentries of suggestions we should show. If it's not
+                   defined, we show all available entries.
   </tal:comment>
   <tr>
     <td style="text-align: right;">
@@ -206,7 +208,7 @@
       </td>
     </tr>
     <tal:block
-      define="submissions python:pomsgset_view.get_suggested_submissions(index)">
+      define="submissions python:pomsgset_view.get_suggested_submissions(index, maxentries=maxentries)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><tal:block
@@ -217,7 +219,7 @@
       </metal:submissions>
     </tal:block>
     <tal:block
-      define="submissions python:pomsgset_view.get_current_submissions(index)">
+      define="submissions python:pomsgset_view.get_current_submissions(index, maxentries=maxentries)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><tal:block
@@ -228,7 +230,7 @@
       </metal:submissions>
     </tal:block>
     <tal:block
-      define="submissions python:pomsgset_view.get_wiki_submissions(index)">
+      define="submissions python:pomsgset_view.get_wiki_submissions(index, maxentries=maxentries)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><tal:block
@@ -240,7 +242,7 @@
     </tal:block>
     <tal:block
       define="submissions
-      python:pomsgset_view.get_alternate_language_submissions(index)">
+      python:pomsgset_view.get_alternate_language_submissions(index, maxentries=maxentries)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><tal:block
