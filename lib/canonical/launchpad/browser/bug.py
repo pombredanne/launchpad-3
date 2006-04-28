@@ -307,6 +307,7 @@ class BugAlsoReportInView(GeneralFormView):
             * We have a unique upstream task
             * We have a unique distribution task
             * If bugtracker is not None, remotebug has to be not None
+            * If the target uses Malone, a bug watch can't be added.
         """
         errors = []
         widgets_data = {}
@@ -316,10 +317,20 @@ class BugAlsoReportInView(GeneralFormView):
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
         if product:
+            target = product
             valid_upstreamtask(self.context.bug, product)
-        if distribution:
+        elif distribution:
+            target = distribution
             valid_distrotask(self.context.bug, distribution, sourcepackagename)
-        if bugtracker is not None and remotebug is None:
+        else:
+            raise UnexpectedFormData(
+                'Neither product nor distribution was provided')
+        if bugtracker is not None and target.official_malone:
+            errors.append(LaunchpadValidationError(
+                "%s uses Malone as its bug tracker, therefor it can't be"
+                " linked to a remote bug watch.",
+                target.displayname))
+        elif bugtracker is not None and remotebug is None:
             errors.append(LaunchpadValidationError(
                 "Please specify the remote bug number in the remote "
                 "bug tracker."))
@@ -359,7 +370,7 @@ class BugAlsoReportInView(GeneralFormView):
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch
 
-        if not target.official_malone:
+        if not target.official_malone and taskadded.bugwatch is not None:
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
             taskadded.status = BugTaskStatus.UNKNOWN

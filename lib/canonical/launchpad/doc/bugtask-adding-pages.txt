@@ -61,36 +61,36 @@ If we specify a valid product, no errors will occur, and a bugtask will
 be created:
 
     >>> request = LaunchpadTestRequest(
-    ...     form={'FORM_SUBMIT': '', 'field.product': 'thunderbird'})
+    ...     form={'FORM_SUBMIT': '', 'field.product': 'alsa-utils'})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
     SQLObjectCreatedEvent: <BugTask at ...>
 
-The Thunderbird bug task was added to the bug:
+The ALSA bug task was added to the bug:
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
+    alsa-utils (upstream)
     firefox (upstream)
-    thunderbird (upstream)
 
-Since Thunderbird doesn't use Malone, the status, severity and priority
-are set to Unknown. They will be set later, if it's linked to a bug watch.
+ALSA doesn't use Malone, but since no bug watch was specified,
+the status, severity and priority are set to the default values.
 
-    >>> thunderbird_task = bug_four.bugtasks[1]
-    >>> thunderbird_task.target.official_malone
+    >>> alsa_task = bug_four.bugtasks[0]
+    >>> alsa_task.target.official_malone
     False
-    >>> thunderbird_task.status.title
-    'Unknown'
-    >>> thunderbird_task.priority.title
-    'Unknown'
-    >>> thunderbird_task.severity.title
-    'Unknown'
+    >>> alsa_task.status.title
+    'Unconfirmed'
+    >>> alsa_task.priority is None
+    True
+    >>> alsa_task.severity.title
+    'Normal'
 
 At the same form, we can add a bug watch. If we specify a remote bug
 tracker, but omit the remote bug number, an error message is given:
 
     >>> request = LaunchpadTestRequest(
-    ...     form={'FORM_SUBMIT': '', 'field.product': 'evolution',
+    ...     form={'FORM_SUBMIT': '', 'field.product': 'thunderbird',
     ...           'field.bugtracker-empty-marker': '1',
     ...           'field.bugtracker': '2'})
     >>> add_task_view = get_and_setup_view(
@@ -111,37 +111,6 @@ If we specify a remote bug number as well, both the task and the bug
 watch will be added:
 
     >>> request = LaunchpadTestRequest(
-    ...     form={'FORM_SUBMIT': '', 'field.product': 'evolution',
-    ...           'field.bugtracker-empty-marker': 1, 'field.bugtracker': 2,
-    ...           'field.remotebug': '42'})
-    >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+upstreamtask', request)
-    SQLObjectCreatedEvent: <BugWatch at ...>
-    SQLObjectCreatedEvent: <BugTask at ...>
-
-    >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
-
-    >>> for bugwatch in bug_four.watches:
-    ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
-    GnomeGBug GTracker: 42
-
-Since Evolution uses Malone as its official bug tracker, the bug watch
-didn't get linked to the created task:
-
-    >>> evolution_task = bug_four.bugtasks[0]
-    >>> evolution_task.product.official_malone
-    True
-    >>> evolution_task.bugwatch is None
-    True
-
-However, if we add a bug watch together with a product which doesn't
-use Malone, the bug watch will be linked to the task, since the task
-will use the watch to keep track of its status:
-
-    >>> request = LaunchpadTestRequest(
     ...     form={'FORM_SUBMIT': '', 'field.product': 'thunderbird',
     ...           'field.bugtracker-empty-marker': 1, 'field.bugtracker': 2,
     ...           'field.remotebug': '84'})
@@ -152,19 +121,44 @@ will use the watch to keep track of its status:
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
-    evolution (upstream)
     firefox (upstream)
     thunderbird (upstream)
 
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
-    GnomeGBug GTracker: 42
     GnomeGBug GTracker: 84
 
-    >>> thunderbird_task = bug_four.bugtasks[2]
+The bug watch got linked to the create task, and all the bug task's
+attribute got initialised to Unknown. The bugtask will be synced with
+the bug watch's status at a later stage.
+
+    >>> thunderbird_task = bug_four.bugtasks[1]
     >>> thunderbird_task.product.official_malone
     False
-    >>> thunderbird_task.bugwatch == bug_four.watches[1]
+    >>> thunderbird_task.bugwatch == bug_four.watches[0]
     True
+
+    >>> thunderbird_task.status.title
+    'Unknown'
+    >>> thunderbird_task.priority.title
+    'Unknown'
+    >>> thunderbird_task.severity.title
+    'Unknown'
+
+
+If we try to add a bug watch together with a product which does use
+Malone, an error will occur.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'FORM_SUBMIT': '', 'field.product': 'evolution',
+    ...           'field.bugtracker-empty-marker': 1, 'field.bugtracker': 2,
+    ...           'field.remotebug': '42'})
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+upstreamtask', request)
+    >>> add_task_view.process_status
+    u'Please fix the problems below and try again.'
+    >>> add_task_view.top_of_page_errors
+    LaunchpadValidationError:
+    ...Evolution uses Malone as its bug tracker...
 
     >>> on_created_listener.unregister()
