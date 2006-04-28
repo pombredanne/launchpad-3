@@ -13,6 +13,7 @@ import gc
 
 from bzrlib.bzrdir import ScratchDir
 import bzrlib.branch
+from bzrlib.tests import TestCaseInTempDir
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 from bzrlib.errors import NoSuchFile, NotBranchError
@@ -129,6 +130,12 @@ class SFTPTestCase(TestCaseWithRepository):
         shutil.rmtree(self.userHome)
         reset_logging()
 
+        # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
+        # is "a little bogus".  Because we aren't used the bzr test runner, we
+        # have to manually clean up the test????.tmp dirs.
+        shutil.rmtree(TestCaseInTempDir.TEST_ROOT)
+        TestCaseInTempDir.TEST_ROOT = None
+
 
 class AcceptanceTests(SFTPTestCase):
     """ 
@@ -142,8 +149,8 @@ class AcceptanceTests(SFTPTestCase):
         super(AcceptanceTests, self).setUp()
 
         # Create a local branch with one revision
-        self.local_branch = self.make_branch('.')
-        tree = self.local_branch.bzrdir.create_workingtree()
+        tree = self.make_branch_and_tree('.')
+        self.local_branch = tree.branch
         self.build_tree(['foo'])
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
