@@ -103,6 +103,9 @@ class IBug(IMessageTarget):
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+    subscribers_from_duplicates = Attribute(
+        "The list of IPersons that are in the subscription list for this bug "
+        "solely because they are subscribed to a duplicate of this bug.")
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")

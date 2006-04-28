@@ -1,7 +1,8 @@
 <div class="portlet">
   <h4>Subscribers to bug <span tal:replace="context/id">4</span>:</h4>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="subscribers_from_dupes context/subscribers_from_duplicates">
 
     <ul class="people">
       <li tal:repeat="sub context/subscriptions">
@@ -13,5 +14,17 @@
         <i>No subscribers</i>
       </li>
     </ul>
+
+    <div tal:condition="subscribers_from_dupes">
+      <br />
+      <b>From duplicates:</b>
+      <ul class="people">
+        <li tal:repeat="subscriber subscribers_from_dupes">
+          <a href="#"
+             tal:content="subscriber/browsername"
+             tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>
+        </li>
+      </ul>
+    </div>
 
 </div>
