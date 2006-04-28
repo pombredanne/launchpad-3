@@ -110,7 +110,7 @@ class POTMsgSet(SQLBase):
         else:
             variantspec = ('= %s' % quote(variant))
 
-        pomsgset = POMsgSet.selectOne('''
+        return POMsgSet.selectOne('''
             POMsgSet.potmsgset = %d AND
             POMsgSet.pofile = POFile.id AND
             POFile.language = Language.id AND
@@ -121,17 +121,36 @@ class POTMsgSet(SQLBase):
                    quote(language_code)),
             clauseTables=['POFile', 'Language'])
 
-        if pomsgset is None:
-            # There isn't a POMsgSet yet, we return a Dummy one until we get a
-            # write operation that creates the real one.
-            pofile = self.potemplate.getPOFileByLang(language_code, variant)
-            if pofile is None:
-                pofile = self.potemplate.getDummyPOFile(
-                    language_code, variant)
-            return DummyPOMsgSet(pofile, self)
+    def getDummyPOMsgSet(self, language_code, variant=None):
+        """See IPOTMsgSet."""
+        # Make sure there's no existing POMsgSet for the given language and
+        # variant
+        if variant is None:
+            variantspec = 'IS NULL'
         else:
-            return pomsgset
+            variantspec = ('= %s' % quote(variant))
 
+        existing_pomsgset = POMsgSet.selectOne('''
+            POMsgSet.potmsgset = %d AND
+            POMsgSet.pofile = POFile.id AND
+            POFile.language = Language.id AND
+            POFile.variant %s AND
+            Language.code = %s
+            ''' % (self.id,
+                   variantspec,
+                   quote(language_code)),
+            clauseTables=['POFile', 'Language'])
+
+        pofile = self.potemplate.getPOFileByLang(language_code, variant)
+        if pofile is None:
+            pofile = self.potemplate.getDummyPOFile(language_code, variant)
+
+        assert existing_pomsgset is None, (
+            "There is already a valid IPOMsgSet for the '%s' msgid on %s"
+            " translation for %s." % (
+                self.primemsgid_.msgid, pofile.title))
+
+        return DummyPOMsgSet(pofile, self)
 
     def translationsForLanguage(self, language):
         # To start with, find the number of plural forms. We either want the

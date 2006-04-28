@@ -74,17 +74,6 @@ class DummyPOMsgSet:
         """See IPOMsgSet."""
         return []
 
-    def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, ignore_errors=False, force_edition_rights=False):
-        """See IPOMsgSet."""
-        # Need to create a valid IPOMsgSet as we get a write operation.
-        pomsgset = self.pofile.createMessageSetFromMessageSet(self.potmsgset)
-
-        # Now, we call to the same method of the new created IPOMsgSet to get
-        # the translations updated.
-        pomsgset.updateTranslationSet(person, new_translations, fuzzy,
-            published, ignore_errors, force_edition_rights)
-
 
 class POMsgSet(SQLBase):
     implements(IPOMsgSet)

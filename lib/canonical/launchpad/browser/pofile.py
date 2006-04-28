@@ -36,6 +36,11 @@ class POFileNavigation(Navigation):
     usedfor = IPOFile
 
     def traverse(self, name):
+        """Return the IPOMsgSet associated with the given name."""
+
+        assert self.request.method in ['GET', 'HEAD', 'POST'], (
+            'We only know about GET, HEAD, and POST')
+
         try:
             sequence = int(name)
         except ValueError:
@@ -54,8 +59,26 @@ class POFileNavigation(Navigation):
             raise UnexpectedFormData(
                 "%r is not a valid sequence number." % name)
 
-        return potmsgset.getPOMsgSet(
+        # Need to check in our database whether we have already the requested
+        # POMsgSet.
+        pomsgset = potmsgset.getPOMsgSet(
             self.context.language.code, self.context.variant)
+
+        if pomsgset is not None:
+            # Already have a valid POMsgSet entry, just return it.
+            return pomsgset
+        elif self.request.method in ['GET', 'HEAD']:
+            # It's just a query, get a fake one so we don't create new
+            # POMsgSet just because someone is browsing the web.
+            return potmsgset.getDummyPOMsgSet(
+                self.context.language.code, self.context.variant)
+        else:
+            # It's a POST.
+            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
+            # POST we got, a Log out action will be also a POST and we should
+            # not create a POMsgSet in that case. See bug #40275 for more
+            # information.
+            return self.context.createMessageSetFromMessageSet(potmsgset)
 
 
 class POFileFacets(StandardLaunchpadFacets):

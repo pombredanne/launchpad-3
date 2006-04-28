@@ -307,14 +307,8 @@ class POFile(SQLBase, RosettaStats):
             # There is no IPOTMsgSet for this id.
             return None
 
-        pomsgset = POMsgSet.selectOneBy(
+        return POMsgSet.selectOneBy(
             potmsgsetID=potmsgset.id, pofileID=self.id)
-        if pomsgset is None:
-            # There isn't a POMsgSet yet, we return a Dummy one until we get a
-            # write operation that creates the real one.
-            return DummyPOMsgSet(self, potmsgset)
-        else:
-            return pomsgset
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
