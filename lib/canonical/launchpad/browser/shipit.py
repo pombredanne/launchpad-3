@@ -137,12 +137,14 @@ class ShipItRequestView(GeneralFormView):
     """The view for people to create/edit ShipIt requests."""
 
     mail_template = """
-The user %(recipientname)s, logged in with the email address %(recipientemail)s,
-placed a new request in ShipIt, leaving also a comment. This might mean
-(s)he's asking for more CDs, so this request is pending approval.
+%(recipientname)s, logged in with the email address
+%(recipientemail)s, made a new request in ShipIt but the request
+was not automatically approved. This is either because the user wanted
+additional CDs or because (s)he already has a request sent to the shipping
+company.
 
 %(recipientname)s already has %(shipped_requests)d requests sent to the shipping
-company.
+company already.
 
 This request can be seen at:
 %(requesturl)s
@@ -161,6 +163,14 @@ The comment left by the user:
         GeneralFormView.__init__(self, context, request)
         self.flavour = _get_flavour_from_layer(request)
         self.from_email_address = self.from_email_addresses[self.flavour]
+
+    @property
+    def is_edubuntu(self):
+        return self.flavour == ShipItFlavour.EDUBUNTU
+
+    @property
+    def is_kubuntu(self):
+        return self.flavour == ShipItFlavour.KUBUNTU
 
     @property
     def initial_values(self):
@@ -248,6 +258,8 @@ The comment left by the user:
                 kw['city'], kw['addressline1'], kw['phone'],
                 kw['addressline2'], kw['province'], kw['postcode'],
                 kw['organization'], kw['reason'])
+            if self.user.shippedShipItRequestsOfCurrentRelease():
+                need_notification = True
         else:
             if current_order.reason is None and kw['reason'] is not None:
                 # The user entered something in the 'reason' entry for the
@@ -293,11 +305,11 @@ The comment left by the user:
         subject = '[ShipIt] New Request Pending Approval (#%d)' % order.id
         recipient = order.recipient
         headers = {'Reply-To': recipient.preferredemail.email}
+        shipped_requests = recipient.shippedShipItRequestsOfCurrentRelease()
         replacements = {'recipientname': order.recipientdisplayname,
                         'recipientemail': recipient.preferredemail.email,
                         'requesturl': canonical_url(order),
-                        'shipped_requests':
-                            recipient.shippedShipItRequests().count(),
+                        'shipped_requests': shipped_requests.count(),
                         'reason': order.reason}
         message = self.mail_template % replacements
         shipit_admins = config.shipit.shipit_admins_email
@@ -552,7 +564,8 @@ class ShippingRequestApproveOrDenyView(
     def recipientHasOtherShippedRequests(self):
         """Return True if the recipient has other requests that were already
         sent to the shipping company."""
-        shipped_requests = self.context.recipient.shippedShipItRequests()
+        recipient = self.context.recipient
+        shipped_requests = recipient.shippedShipItRequestsOfCurrentRelease()
         if not shipped_requests:
             return False
         elif (shipped_requests.count() == 1 

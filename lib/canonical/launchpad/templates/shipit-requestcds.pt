@@ -71,22 +71,41 @@
 
     <h1>How many CDs would you like?</h1> 
 
-    <p>Ubuntu CDs are made specifically for various types of
-    computers.</p>
+    <tal:edubuntu condition="view/is_edubuntu">
+      <p>Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
+        The <strong>PC</strong> Edition will run on almost all PCs. This 
+        includes most machines with Intel/AMD/etc type processors and computers
+        that can also run Microsoft Windows.
+      </p>
+    </tal:edubuntu>
 
-    <ul>
-      <li>The <strong>PC</strong> Edition will run on almost all PCs.
-      This includes most machines with Intel/AMD/etc type processors
-      and computers that can also run Microsoft Windows. Choose this
-      if you are unsure.</li>
+    <tal:not-edubuntu condition="not: view/is_edubuntu">
+      <p>
+        <span tal:replace="view/flavour/title" /> CDs are made specifically
+        for various types of computers. The available architectures for 
+        <span tal:replace="view/flavour/title" /> can be described as follows:
+      </p>
 
-      <li>The <strong>64-bit PC</strong> Edition will run on computers
-      based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
-      EM64T Xeon).</li>
+      <ul>
+        <li>
+          The <strong>PC</strong> Edition will run on almost all PCs.
+          This includes most machines with Intel/AMD/etc type processors
+          and computers that can also run Microsoft Windows. Choose this
+          if you are unsure.
+        </li>
 
-      <li>The <strong>Mac</strong> Edition will run on Apple Macintosh
-      G3, G4, and G5 computers including iBooks and PowerBooks.</li> 
-    </ul>
+        <li>
+          The <strong>64-bit PC</strong> Edition will run on computers
+          based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
+          EM64T Xeon).
+        </li>
+
+        <li tal:condition="not: view/is_kubuntu">
+          The <strong>Mac</strong> Edition will run on Apple Macintosh
+          G3, G4, and G5 computers including iBooks and PowerBooks.
+        </li> 
+      </ul>
+    </tal:not-edubuntu>
 
     <br />
 

@@ -26,7 +26,8 @@
     <td width="80%">
 
     <div tal:condition="view/recipientHasOtherShippedRequests"
-         tal:define="shipped_requests context/recipient/shippedShipItRequests"
+         tal:define="shipped_requests
+                     context/recipient/shippedShipItRequestsOfCurrentRelease"
          class="informational message">
      <p>This person has other requests already sent to the shipping company.
      </p>
