@@ -397,7 +397,7 @@ class POMsgSetView(LaunchpadView):
         if self._suggested_submissions is not None:
             return self._suggested_submissions
 
-        self._suggested_submissions = (
+        self._suggested_submissions = list(
             self.context.getSuggestedSubmissions(index))
         if maxentries is not None:
             self._suggested_submissions = (
