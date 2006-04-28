@@ -6,6 +6,7 @@ __all__ = [
     'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
     'JabberIDSet', 'IrcID', 'IrcIDSet']
 
+import itertools
 import sets
 from datetime import datetime, timedelta
 import pytz
@@ -26,7 +27,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import shortlist, contactEmailAddresses
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -59,7 +60,7 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort)
+    SpecificationSort, SpecificationFilter)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -257,32 +258,120 @@ class Person(SQLBase):
         # Person.displayname is NOT NULL
         return self.displayname
 
-    def specifications(self, quantity=None, sort=None):
-        query = """
-            Specification.owner = %(my_id)d
-            OR Specification.approver = %(my_id)d
-            OR Specification.assignee = %(my_id)d
-            OR Specification.drafter = %(my_id)d
-            OR Specification.id IN (
-                SELECT SpecificationFeedback.specification
-                FROM SpecificationFeedback
-                WHERE SpecificationFeedback.reviewer = %(my_id)s
-                UNION
-                SELECT SpecificationSubscription.specification
-                FROM SpecificationSubscription
-                WHERE SpecificationSubscription.person = %(my_id)d
-                )
-            """ % {'my_id': self.id}
+    @property
+    def has_any_specifications(self):
+        """See IHasSpecifications."""
+        return self.all_specifications.count()
 
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        # eliminate mutables
+        if not filter:
+            # if no filter was passed (None or []) then we must decide the
+            # default filtering, and for a person we want related incomplete
+            # specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a person 
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # if no roles are given then we want everything
+        linked = False
+        roles = set([
+            SpecificationFilter.CREATOR,
+            SpecificationFilter.ASSIGNEE,
+            SpecificationFilter.DRAFTER,
+            SpecificationFilter.APPROVER,
+            SpecificationFilter.FEEDBACK,
+            SpecificationFilter.SUBSCRIBER])
+        for role in roles:
+            if role in filter:
+                linked = True
+        if not linked:
+            for role in roles:
+                filter.append(role)
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        else:
-            raise AssertionError('Unknown sort %s' % sort)
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
 
-        return shortlist(Specification.select(
-                    query, orderBy=order, limit=quantity))
+        # figure out what set of specifications we are interested in. for
+        # products, we need to be able to filter on the basis of:
+        #
+        #  - role (owner, drafter, approver, subscriber, assignee etc)
+        #  - completeness.
+        #  - informational.
+        #
+
+        # in this case the "base" is quite complicated because it is
+        # determined by the roles so lets do that first
+
+        base = '(1=0'  # we want to start with a FALSE and OR them
+        if SpecificationFilter.CREATOR in filter:
+            base += ' OR Specification.owner = %(my_id)d'
+        if SpecificationFilter.ASSIGNEE in filter:
+            base += ' OR Specification.assignee = %(my_id)d'
+        if SpecificationFilter.DRAFTER in filter:
+            base += ' OR Specification.drafter = %(my_id)d'
+        if SpecificationFilter.APPROVER in filter:
+            base += ' OR Specification.approver = %(my_id)d'
+        if SpecificationFilter.SUBSCRIBER in filter:
+            base += """ OR Specification.id in
+                (SELECT specification FROM SpecificationSubscription
+                 WHERE person = %(my_id)d)"""
+        if SpecificationFilter.FEEDBACK in filter:
+            base += """ OR Specification.id in
+                (SELECT specification FROM SpecificationFeedback
+                 WHERE reviewer = %(my_id)d)"""
+        base += ') '
+        
+        base = base % {'my_id': self.id}
+
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -399,6 +488,8 @@ class Person(SQLBase):
     @property
     def is_valid_person(self):
         """See IPerson."""
+        if self.teamowner is not None:
+            return False
         try:
             if ValidPersonOrTeamCache.get(self.id) is not None:
                 return True
@@ -412,7 +503,7 @@ class Person(SQLBase):
         # No warning, as we don't want to place the burden on callsites
         # to check this.
         if not self.is_valid_person:
-            return
+            return None
 
         try:
             action = KarmaAction.byName(action_name)
@@ -517,6 +608,14 @@ class Person(SQLBase):
                  'Person.teamowner IS NOT NULL' % self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
+    def getTeamAdminsEmailAddresses(self):
+        """See IPerson."""
+        assert self.teamowner is not None
+        to_addrs = set()
+        for person in itertools.chain(self.administrators, [self.teamowner]):
+            to_addrs.update(contactEmailAddresses(person))
+        return to_addrs
+
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
         """See IPerson."""
@@ -555,10 +654,8 @@ class Person(SQLBase):
             # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
             expires = now
 
-        tm.setStatus(status)
+        tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires
-        tm.reviewer = reviewer
-        tm.reviewercomment = comment
 
         tm.syncUpdate()
 
@@ -821,9 +918,12 @@ class Person(SQLBase):
     @property
     def unvalidatedemails(self):
         """See IPerson."""
-        query = ("requester=%s AND (tokentype=%s OR tokentype=%s)" 
-                 % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
-                             LoginTokenType.VALIDATETEAMEMAIL))
+        query = """
+            requester = %s
+            AND (tokentype=%s OR tokentype=%s)
+            AND date_consumed IS NULL
+            """ % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
+                            LoginTokenType.VALIDATETEAMEMAIL)
         return sets.Set([token.email for token in LoginToken.select(query)])
 
     @property
@@ -1234,6 +1334,29 @@ class PersonSet:
             )
         skip.append(('wikiname', 'person'))
 
+        # Update the Branches that will not conflict, and fudge the names of
+        # ones that *do* conflict
+        cur.execute('''
+            SELECT product, name FROM Branch WHERE owner = %(to_id)d
+            ''' % vars())
+        possible_conflicts = list(tuple(r) for r in cur.fetchall())
+        cur.execute('''
+            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
+            ''' % vars())
+        for id, product, name in list(cur.fetchall()):
+            new_name = name
+            while (product, new_name) in possible_conflicts:
+                new_name = '%s-2' % new_name
+            possible_conflicts.append((product, new_name))
+            new_name = new_name.encode('US-ASCII')
+            name = name.encode('US-ASCII')
+            cur.execute('''
+                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
+                WHERE owner = %(from_id)s AND name = %(name)s
+                    AND (%(product)s IS NULL OR product = %(product)s)
+                ''', vars())
+        skip.append(('branch','owner'))
+        
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331
@@ -1654,9 +1777,15 @@ class GPGKeySet:
     def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
-            query = ('active=false AND fingerprint NOT IN '
-                     '(SELECT fingerprint from LoginToken WHERE fingerprint '
-                     'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
+            query = """
+                active = false 
+                AND fingerprint NOT IN 
+                    (SELECT fingerprint FROM LoginToken 
+                     WHERE fingerprint IS NOT NULL 
+                           AND requester = %s 
+                           AND date_consumed is NULL
+                    )
+                """ % sqlvalues(ownerid)
         else:
             query = 'active=true'
 

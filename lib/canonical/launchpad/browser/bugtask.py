@@ -20,6 +20,7 @@ __all__ = [
     'get_sortorder_from_request',
     'BugTargetTextView']
 
+import cgi
 import urllib
 
 from zope.event import notify
@@ -36,6 +37,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.lp import dbschema
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
@@ -59,7 +61,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.lp.dbschema import (
     BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, DBItemDisplayWidget)
+    AssigneeDisplayWidget, DBItemDisplayWidget, NewLineToSpacesWidget)
 
 
 def get_sortorder_from_request(request):
@@ -449,7 +451,7 @@ class BugTaskEditView(GeneralFormView):
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                edit_field_names += ['sourcepackagename', 'binarypackagename']
+                edit_field_names += ['sourcepackagename']
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
@@ -542,23 +544,45 @@ class BugTaskEditView(GeneralFormView):
         bugtask_before_modification = helpers.Snapshot(
             bugtask, providing=providedBy(bugtask))
 
-        # If the user is reassigning an upstream task to a different product,
-        # we'll clear out the milestone value, to avoid violating DB constraints
-        # that ensure an upstream task can't be assigned to a milestone on a
-        # different product.
+        # If the user is reassigning an upstream task to a different
+        # product, we'll clear out the milestone value, to avoid
+        # violating DB constraints that ensure an upstream task can't
+        # be assigned to a milestone on a different product.
         milestone_cleared = None
         if (IUpstreamBugTask.providedBy(bugtask) and
             (bugtask.product != new_values.get("product")) and
             'milestone' in field_names and bugtask.milestone):
             milestone_cleared = bugtask.milestone
             bugtask.milestone = None
-            # Remove the "milestone" field from the list of fields whose changes
-            # we want to apply, because we don't want the form machinery to try
-            # and set this value back to what it was!
+            # Remove the "milestone" field from the list of fields
+            # whose changes we want to apply, because we don't want
+            # the form machinery to try and set this value back to
+            # what it was!
             field_names.remove("milestone")
 
+        # We special case setting assignee and status, because there's
+        # a workflow associated with changes to these fields.
+        field_names_to_apply = list(field_names)
+        if "assignee" in field_names_to_apply:
+            field_names_to_apply.remove("assignee")
+        if "status" in field_names_to_apply:
+            field_names_to_apply.remove("status")
+
         changed = applyWidgetsChanges(
-            self, self.schema, target=bugtask, names=field_names)
+            self, self.schema, target=bugtask,
+            names=field_names_to_apply)
+
+        new_status = new_values.pop("status", None)
+        new_assignee = new_values.pop("assignee", None)
+        # Set the "changed" flag properly, just in case status and/or
+        # assignee happen to be the only values that changed. We
+        # explicitly verify that we got a new status and/or assignee,
+        # because our test suite doesn't always pass all form values.
+        if ((new_status and (bugtask.status != new_status)) or
+            (new_assignee and (bugtask.assignee != new_assignee))):
+            changed = True
+            bugtask.transitionToStatus(new_status)
+            bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             #XXX: Reset the bug task's status information. The right
@@ -566,10 +590,10 @@ class BugTaskEditView(GeneralFormView):
             #     Malone status, but it's not trivial to do at the
             #     moment. I will fix this later.
             #     -- Bjorn Tillenius, 2006-03-01
-            bugtask.status = BugTaskStatus.UNKNOWN
+            bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
             bugtask.priority = BugTaskPriority.UNKNOWN
             bugtask.severity = BugTaskSeverity.UNKNOWN
-            bugtask.assignee = None
+            bugtask.transitionToAssignee(None)
 
         if milestone_cleared:
             self.request.response.addWarningNotification(
@@ -634,7 +658,7 @@ class BugTaskStatusView(LaunchpadView):
         if IUpstreamBugTask.providedBy(self.context):
             self.label = 'Product fix request'
         else:
-            field_names += ['sourcepackagename', 'binarypackagename']
+            field_names += ['sourcepackagename']
             self.label = 'Source package fix request'
 
         self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
@@ -753,6 +777,11 @@ class BugTaskSearchListingView(LaunchpadView):
     Subclasses should define getExtraSearchParams() to filter the
     search.
     """
+
+    form_has_errors = False 
+    owner_error = ""
+    assignee_error = ""
+
     @property
     def columns_to_show(self):
         """Returns a sequence of column names to be shown in the listing."""
@@ -797,7 +826,9 @@ class BugTaskSearchListingView(LaunchpadView):
                 getVocabularyRegistry().get(None, "Component"),
                 self.request)
 
+        self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
         setUpWidgets(self, self.schema, IInputWidget)
+        self.validateVocabulariesAdvancedForm()
 
     def showTableView(self):
         """Should the search results be displayed as a table?"""
@@ -813,18 +844,16 @@ class BugTaskSearchListingView(LaunchpadView):
         If :searchtext: is None, the searchtext will be gotten from the
         request.
 
-        :extra_params: is a dict that provides search params added to the search
-        criteria taken from the request. Params in :extra_params: take
+        :extra_params: is a dict that provides search params added to the
+        search criteria taken from the request. Params in :extra_params: take
         precedence over request params.
         """
-        data = {}
-        data.update(
-            getWidgetsData(
-                self, self.schema,
-                names=[
-                    "searchtext", "status", "assignee", "severity",
-                    "priority", "owner", "omit_dupes", "has_patch",
-                    "milestone", "component", "has_no_package"]))
+        data = getWidgetsData(
+            self, self.schema,
+            names=[
+                "searchtext", "status", "assignee", "severity",
+                "priority", "owner", "omit_dupes", "has_patch",
+                "milestone", "component", "has_no_package"])
 
         if extra_params:
             data.update(extra_params)
@@ -922,10 +951,6 @@ class BugTaskSearchListingView(LaunchpadView):
         """The Search button for the advanced search page."""
         return "Search bugs in %s" % self.context.displayname
 
-    def getAdvancedSearchActionURL(self):
-        """Return a URL to be used as the action for the advanced search."""
-        return self.getSimpleSearchURL()
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+bugs"
@@ -938,10 +963,10 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the component widget be shown on the advanced search page?"""
         context = self.context
         return (
-            IDistribution.providedBy(context) or
+            (IDistribution.providedBy(context) and
+             context.currentrelease is not None) or
             IDistroRelease.providedBy(context) or
-            ISourcePackage.providedBy(context) or
-            IDistributionSourcePackage.providedBy(context))
+            ISourcePackage.providedBy(context))
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
@@ -1089,6 +1114,35 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             return True
 
+    def shouldShowAdvancedForm(self):
+        if (self.request.form.get('advanced')
+            or self.form_has_errors):
+            return True
+        else:
+            return False
+
+    def validateVocabulariesAdvancedForm(self):
+        """Validate person vocabularies in advanced form.
+
+        If a vocabulary lookup fail set a custom error message and set
+        self.form_has_errors to True.
+        """
+        error_message = _(
+            "There's no person with the name or email address '%s'")
+        try:
+            getWidgetsData(self, self.schema, names=["assignee"])
+        except WidgetsError:
+            self.assignee_error = error_message % (
+                cgi.escape(self.request.get('field.assignee')))
+        try:
+            getWidgetsData(self, self.schema, names=["owner"])
+        except WidgetsError:
+            self.owner_error = error_message % (
+                cgi.escape(self.request.get('field.owner')))
+
+        if self.assignee_error or self.owner_error:
+            self.form_has_errors = True
+
     def getSortClass(self, colname):
         """Return a class appropriate for sorted columns"""
         sorted, ascending = self._getSortStatus(colname)
@@ -1133,7 +1187,6 @@ class BugTaskSearchListingView(LaunchpadView):
         Return the IProject if yes, otherwise return None.
         """
         return IProject(self.context, None)
-        
 
     def _personContext(self):
         """Is this page being viewed in a person context?

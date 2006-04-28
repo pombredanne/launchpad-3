@@ -6,18 +6,21 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-summary" />
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-summary" />
+</metal:leftportlets>
 
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-preflangs" />
-  </metal:rightportlets>
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-preflangs" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Mozilla Firefox Series: 1.0</h3>
+  <h1>Translation templates</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
-
-  <h1>Translation templates</h1>
 
   <div tal:replace="structure context/@@+potlist" />
 

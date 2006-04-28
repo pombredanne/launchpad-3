@@ -27,7 +27,7 @@
         <lp:inProductSeries>
             <lp:ProductSeries>
                 <lp:specifiedAt tal:attributes="rdf:resource
-                    string:${context/product/fmt:url}/+series/${context/productseries/name}/+rdf" />
+                    string:${context/product/fmt:url}/${context/productseries/name}/+rdf" />
             </lp:ProductSeries>
         </lp:inProductSeries>
         <lp:owner>

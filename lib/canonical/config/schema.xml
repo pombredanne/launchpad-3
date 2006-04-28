@@ -57,6 +57,8 @@
             default="specs.launchpad.net" />
         <key name="oops_root_url" datatype="string" required="no"
             default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
+        <key name="default_batch_size" datatype="integer" required="no"
+            default="50" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
             default="0">
             <description>
@@ -351,6 +353,13 @@
             required="no" default="/srv/bugs-mirror.debian.org/" />
     </sectiontype>
 
+    <sectiontype name="rosettaadmin">
+        <description>
+            Configuration for Rosetta admin tools
+        </description>
+        <key name="dbuser" datatype="string" default="rosettaadmin" />
+    </sectiontype>
+
     <sectiontype name="poimport">
         <description>
             Configuration for cronscripts/rosetta-poimport
@@ -369,6 +378,7 @@
         <description>
             Rosetta-specific configuration options
         </description>
+        <section name="*" type="rosettaadmin" attribute="rosettaadmin" required="no" />
         <section name="*" type="poimport" attribute="poimport" required="no" />
         <section name="*" type="poattach" attribute="poattach" required="no" />
     </sectiontype>
@@ -439,11 +449,10 @@
                 mirrors.
             </description>
         </key>
-        <key name="warn_about_no_published_uploads" datatype="boolean" 
-             default="yes">
+        <key name="timeout" datatype="integer" default="30">
             <description>
-                Should we warn if we don't find any published records for a
-                given (distro[arch]release,pocket,component) tuple?
+                The time in seconds that the mirror prober will wait for a
+                reply.
             </description>
         </key>
     </sectiontype>
@@ -664,6 +673,8 @@
             required="no" default="false" />
         <key name="bounce_address" datatype="string" required="no"
             default="bounces@canonical.com" />
+        <key name="noreply_from_address" datatype="string" 
+            required="no" default="noreply@launchpad.net" />
         <key name="admin_address" datatype="string" required="no"
             default="system-error@launchpad.ubuntu.com" />
         <key name="pid_dir" datatype="existing-directory" required="no"

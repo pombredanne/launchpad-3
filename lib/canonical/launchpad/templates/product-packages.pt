@@ -6,14 +6,21 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Product Title</h3>
+  <h1>Distribution packages</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 
-  <h1>Distribution packages</h1>
-
-  <p class="documentDescription">This page lists any distribution packages
+  <p>
+    This page lists any distribution packages
     that are known for the different release series of
     <span tal:replace="context/displayname">Foomatic</span>.
   </p>

@@ -101,11 +101,11 @@ class BugWatch(SQLBase):
         self.remotestatus = remote_status
         self.lastchanged = UTC_NOW
         for linked_bugtask in self.bugtasks:
-            linked_bugtask.status = malone_status
+            linked_bugtask.transitionToStatus(malone_status)
             # We don't yet support updating the following values.
             linked_bugtask.priority = BugTaskPriority.UNKNOWN
             linked_bugtask.severity = BugTaskSeverity.UNKNOWN
-            linked_bugtask.assignee = None
+            linked_bugtask.transitionToAssignee(None)
 
 
 class BugWatchSet(BugSetBase):

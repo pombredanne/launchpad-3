@@ -42,7 +42,7 @@
     </tr>
     <tr tal:repeat="series batch"
         tal:attributes="onclick
-            string:window.location='/products/${series/product/name}/+series/${series/name}/+sourceadmin';">
+            string:window.location='/products/${series/product/name}/${series/name}/+sourceadmin';">
       <td tal:content="series/product/name">$Product.name</td>
       <td tal:content="series/name">$Series.name</td>
       <td tal:content="series/datestarted/fmt:date | string: -- "

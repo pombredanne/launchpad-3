@@ -1,0 +1,20 @@
+NewLineToSpaces Widget
+======================
+
+This custom widget is used to replace new line characters to spaces.
+
+  >>> from canonical.widgets.bugtask import NewLineToSpacesWidget
+  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.interfaces import IBugTaskSearch
+
+We pass a string with some new line characters to the widget
+
+  >>> field = IBugTaskSearch['searchtext']
+  >>> request = TestRequest(
+  ...     form={'field.searchtext':'some text\rwith\nnew\r\nlines'})
+  >>> widget = NewLineToSpacesWidget(field, request)
+
+And check that the new lines were replaced by spaces.
+
+  >>> widget.getInputValue()
+  u'some text with new lines'

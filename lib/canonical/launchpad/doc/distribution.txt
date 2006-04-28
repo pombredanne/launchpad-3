@@ -282,3 +282,70 @@ Gentoo only uses Malone
 
 
 
+Specification Listings
+======================
+
+We should be able to get lists of specifications in different states
+related to a distro.
+
+Basically, we can filter by completeness, and by whether or not the spec is
+informational.
+
+ >>> kubuntu = distroset.getByName("kubuntu")
+
+ >>> from canonical.lp.dbschema import SpecificationFilter
+
+First, there should be one informational spec for kubuntu, but it is
+complete so it will not show up unless we explicitly ask for complete specs:
+
+ >>> filter = [SpecificationFilter.INFORMATIONAL]
+ >>> kubuntu.specifications(filter=filter).count()
+ 0
+ >>> filter = [SpecificationFilter.INFORMATIONAL,
+ ...           SpecificationFilter.COMPLETE]
+ >>> kubuntu.specifications(filter=filter).count()
+ 1
+
+
+There are 2 completed specs for Kubuntu:
+
+ >>> filter = [SpecificationFilter.COMPLETE]
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...    print spec.name, spec.is_complete
+ thinclient-local-devices True
+ usplash-on-hibernation True
+
+
+And there are four incomplete specs:
+
+ >>> filter = [SpecificationFilter.INCOMPLETE]
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...    print spec.name, spec.is_complete
+ cluster-installation False
+ revu False
+ kde-desktopfile-langpacks False
+ krunch-desktop-plan False
+
+
+If we ask for all specs, we get them in the order of priority.
+
+ >>> filter = [SpecificationFilter.ALL]
+ >>> for spec in kubuntu.specifications(filter=filter):
+ ...    print spec.priority.title, spec.name
+ Essential cluster-installation
+ High revu
+ Medium thinclient-local-devices
+ Low usplash-on-hibernation
+ Undefined kde-desktopfile-langpacks
+ Not krunch-desktop-plan
+
+
+And if we ask just for specs, we get the incomplete ones.
+
+ >>> for spec in kubuntu.specifications():
+ ...     print spec.name, spec.is_complete
+ cluster-installation False
+ revu False
+ kde-desktopfile-langpacks False
+ krunch-desktop-plan False
+

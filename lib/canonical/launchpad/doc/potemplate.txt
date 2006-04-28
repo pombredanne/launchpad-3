@@ -7,20 +7,65 @@ Test that the security setup for IPOTemplateSet is working
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
+getAllByName
+---------
+
+This method will return all IPOTemplate that have a given name.
+
+    >>> evolution_templates = potemplate_set.getAllByName('evolution-2.2')
+    >>> len(evolution_templates)
+    2
+    >>> titles = [potemplate.title
+    ...           for potemplate in evolution_templates
+    ...          ]
+    >>> 'Template "evolution-2.2" in Ubuntu Hoary package "evolution"' in titles
+    True
+    >>> 'Template "evolution-2.2" in Evolution trunk' in titles
+    True
+
+
 POTemplateSubset
 ================
 
-getPOTemplateByPath
+getPOTemplateByName
 -------------------
+
+This method gives us the IPOTemplate that belongs to this subset and its name
+is the given one.
 
     >>> from canonical.launchpad.database import ProductSeries
     >>> productseries = ProductSeries.get(3)
     >>> potemplatesubset = potemplate_set.getSubset(
     ...     productseries=productseries)
+    >>> potemplate = potemplatesubset.getPOTemplateByName(
+    ...     'evolution-2.2')
+    >>> print potemplate.title
+    Template "evolution-2.2" in Evolution trunk
+
+getPOTemplateByPath
+-------------------
+
+This method gives us the IPOTemplate that belongs to this subset and its path
+in the source code is the given one.
+
     >>> potemplate = potemplatesubset.getPOTemplateByPath(
     ...     'po/evolution-2.2-test.pot')
     >>> print potemplate.title
-    Template "evolution-2.2-test" in Evolution MAIN
+    Template "evolution-2.2-test" in Evolution trunk
+
+getPOTemplateByTranslationDomain
+--------------------------------
+
+This method gives us the IPOTemplate that belongs to this subset and its
+translation domain is the given one.
+
+    >>> productseries = ProductSeries.get(5)
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries)
+    >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
+    ...     'NetApplet')
+    >>> print potemplate.title
+    Template "netapplet" in NetApplet releases
 
 
 POTemplate
@@ -32,5 +77,5 @@ Check that we can get IPOFile based on its path.
     >>> potemplate = POTemplate.get(1)
     >>> pofile = potemplate.getPOFileByPath('es.po')
     >>> print pofile.title
-    Spanish (es) translation of evolution-2.2 in Evolution MAIN
+    Spanish (es) translation of evolution-2.2 in Evolution trunk
 

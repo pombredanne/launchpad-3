@@ -21,8 +21,10 @@ class ISprintSpecification(Interface):
         "spec name, because multiple specs at a sprint could have the same "
         "name.")
     sprint = Choice(title=_('Sprint'), required=True, readonly=True,
-        description=_("The meeting or sprint at which this specification will "
-        "be discussed or implemented."), vocabulary='Sprint')
+        description=_("Select the meeting or sprint at which you would like "
+        "feature to be discussed or implemented. The meeting organisers "
+        "will review and approve or decline this request."),
+        vocabulary='Sprint')
     specification = Int(title=_('Specification'), required=True,
         readonly=True)
     status = Choice(title=_('Agenda Status'), required=True,

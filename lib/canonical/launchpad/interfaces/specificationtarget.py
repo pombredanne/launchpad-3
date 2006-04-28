@@ -21,11 +21,26 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    def specifications(quantity=None, sort=None):
-        """Specifications for this target, sorting based on the given
-        indicator (a dbschema).
+    all_specifications = Attribute(
+        'A list of all specifications, regardless of status or approval '
+        'or completion, for this object.')
 
-        If there is a quantity, then limit it to that number.
+    has_any_specifications = Attribute(
+        'A true or false indicator of whether or not this object has any '
+        'specifications associated with it, regardless of their status.')
+
+    def specifications(quantity=None, sort=None, filter=None):
+        """Specifications for this target.
+
+        The sort is a dbschema which indicates the preferred sort order. The
+        filter is an indicator of the kinds of specs to be returned, and
+        appropriate filters depend on the kind of object this method is on.
+        If there is a quantity, then limit the result to that number.
+
+        In the case where the filter is [] or None, the content class will
+        decide what its own appropriate "default" filter is. In some cases,
+        it will show all specs, in others, all approved specs, and in
+        others, all incomplete specs.
         """
 
 
@@ -52,4 +67,15 @@ class ISpecificationGoal(ISpecificationTarget):
     def declineSpecificationGoal(spec):
         """Declines the specification as a goal for this item."""
 
+    def acceptSpecificationGoals(speclist):
+        """Accepts the list of specifications as goals for this item.
+
+        Returns the number of proposed specifications left.
+        """
+
+    def declineSpecificationGoals(speclist):
+        """Declines the list of specifications as goals for this item.
+
+        Returns the number of proposed specifications left.
+        """
 

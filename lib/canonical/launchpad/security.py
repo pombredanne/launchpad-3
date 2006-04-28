@@ -17,7 +17,8 @@ from canonical.launchpad.interfaces import (
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITranslationImportQueueEntry,
-    ITranslationImportQueue, IDistributionMirror, IHasBug)
+    ITranslationImportQueue, IDistributionMirror, IHasBug,
+    IBazaarApplication)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -85,11 +86,16 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         assert self.obj.target
         admins = getUtility(ILaunchpadCelebrities).admin
-        distroreleaseowner = None
-        if self.obj.distrorelease:
-            distroreleaseowner = self.obj.distrorelease.owner
+        goaldrivers = []
+        goalowner = None
+        if self.obj.goal is not None:
+            goalowner = self.obj.goal.owner
+            goaldrivers = self.obj.goal.drivers
+        for driver in goaldrivers:
+            if user.inTeam(driver):
+                return True
         return (user.inTeam(self.obj.target.owner) or 
-                user.inTeam(distroreleaseowner) or 
+                user.inTeam(goalowner) or 
                 user.inTeam(self.obj.owner) or 
                 user.inTeam(self.obj.drafter) or 
                 user.inTeam(self.obj.assignee) or 
@@ -204,6 +210,18 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         if user.inTeam(admins):
             return True
         return user.inTeam(self.obj.target.owner)
+
+
+class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        """Only the Launchpad admins need this, we are only going to use it
+        for connecting up series and distroreleases where we did not have
+        them."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
 
 
 class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
@@ -331,7 +349,10 @@ class AdminDistroRelease(AdminByAdminsTeam):
     so for the moment we are locking down admin and edit on distributions
     and distroreleases to the Launchpad admin team.
     
-    NB: Please consult with SABDFL before modifying this permission.
+    NB: Please consult with SABDFL before modifying this permission because
+        changing it could cause the archive to get rearranged, with tons of
+        files moved to the new namespace, and mirrors would get very very
+        upset. Then James T would be on your case.
     """
     permission = 'launchpad.Admin'
     usedfor = IDistroRelease
@@ -353,6 +374,35 @@ class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(self.obj.distribution.owner) or
                 user.inTeam(admins))
 
+
+class DistroReleaseDrivers(AuthorizationBase):
+    """The drivers of a distrorelease can approve or decline features and
+    bugs for targeting to the distrorelease.
+    """
+    permission = 'launchpad.Driver'
+    usedfor = IDistroRelease
+
+    def checkAuthenticated(self, user):
+        for driver in self.obj.drivers:
+            if user.inTeam(driver):
+                return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
+
+
+class ProductSeriesDrivers(AuthorizationBase):
+    """The drivers of a product series can approve or decline features and
+    bugs for targeting to the series.
+    """
+    permission = 'launchpad.Driver'
+    usedfor = IProductSeries
+
+    def checkAuthenticated(self, user):
+        for driver in self.obj.drivers:
+            if user.inTeam(driver):
+                return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
 
 
 class EditBugTask(AuthorizationBase):
@@ -516,6 +566,31 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
         return user.inTeam(admins) or user.inTeam(rosetta_experts)
+
+
+class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
+    """Base class that allows only the Launchpad admins and Bazaar
+    experts."""
+
+    def checkAuthenticated(self, user):
+        bzrexpert = getUtility(ILaunchpadCelebrities).bazaar_expert
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins) or user.inTeam(bzrexpert)
+
+
+class OnlyVcsImportsAndAdmins(AuthorizationBase):
+    """Base class that allows only the Launchpad admins and VCS Imports
+    experts."""
+
+    def checkAuthenticated(self, user):
+        vcsexpert = getUtility(ILaunchpadCelebrities).vcs_imports
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins) or user.inTeam(vcsexpert)
+
+
+class AdminTheBazaar(OnlyVcsImportsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IBazaarApplication
 
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):

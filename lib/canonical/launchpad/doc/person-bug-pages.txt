@@ -89,7 +89,7 @@ Let's first close a bug setting its status to 'Rejected'.
     >>> login("foo.bar@canonical.com")
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> reported_bugtasks[0].status = BugTaskStatus.REJECTED
+    >>> reported_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
     >>> flush_database_updates()
 
 And now we query for it.
@@ -232,7 +232,7 @@ without a package argument, it defaults to the "current package", found
 by looking in the request.
 
     >>> packagebugs_search_view.getBugContactPackageAdvancedSearchURL()
-    u'.../people/name12/+packagebugs-advanced-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search'
+    u'.../people/name12/+packagebugs-search?advanced=1&field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search'
 
 Finally, there is a helper method that returns a list of dicts used to
 render the overview report.
