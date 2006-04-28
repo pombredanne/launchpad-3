@@ -10,4 +10,7 @@ UPDATE KarmaAction SET name='bugtaskimportancechanged', title='Bug importance ch
 -- Then, set the default to the new value 'Untriaged'.
 ALTER TABLE BugTask ALTER COLUMN importance SET DEFAULT 5;
 
+-- Finally, drop the priority field.
+ALTER TABLE BugTask DROP COLUMN priority;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 39, 0);
