@@ -38,10 +38,9 @@
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
                         distrorelease milestone status statusexplanation
-                        importance assignee binarypackagename
-                        bugwatch dateassigned datecreated age owner
-                        targetname title related_tasks statusdisplayhtml
-                        statuselsewhere asEmailHeaderValue
+                        importance assignee bugwatch dateassigned
+                        datecreated age owner targetname title related_tasks
+                        statusdisplayhtml statuselsewhere asEmailHeaderValue
                         target_uses_malone bugtask_branches" />
         <require
             permission="launchpad.Edit"
@@ -51,7 +50,7 @@
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
                             distrorelease milestone status statusexplanation
-                            importance assignee binarypackagename
+                            importance assignee
                             bugwatch dateassigned datecreated age owner
                             targetname title related_tasks statusdisplayhtml
                             statuselsewhere setStatusFromDebbugs
@@ -356,8 +355,8 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status importance assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status importance assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
@@ -376,8 +375,8 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status importance assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status importance assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt"
@@ -408,8 +407,8 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status importance assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status importance assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
@@ -428,8 +427,8 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status importance assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status importance assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt"

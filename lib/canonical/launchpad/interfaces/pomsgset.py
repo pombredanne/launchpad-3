@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
+from zope.schema import Bool
 
 __metaclass__ = type
 
@@ -12,15 +13,20 @@ class IPOMsgSet(Interface):
 
     pofile = Attribute("The PO file this set is associated with.")
 
-    publishedcomplete = Attribute("""Whether the translation was complete or
-        not. in the PO file which is published. It is considered complete
-        if all message IDs have a translation, or the full set of
-        translations in the case of plural forms.""")
+    publishedcomplete = Bool(
+        title=(u'Whether the translation was complete or not in the PO file'
+            u'which is published.'),
+        description=(u'It is considered complete if all message IDs have a'
+            u' translation, or the full set of translations in the case of'
+            u' plural forms.'),
+        required=True)
 
-    iscomplete = Attribute("""Whether the translation is complete or not in
-        the Rosetta db. It is considered complete if all message IDs
-        have a translation, or the full set of translations in the case
-        of plural forms.""")
+    iscomplete = Bool(
+        title=u'Whether the translation is complete or not.',
+        description=(u'It is considered complete if all message IDs have a'
+            u' translation, or the full set of translations in the case of'
+            u' plural forms.'),
+        required=True)
 
     publishedfuzzy = Attribute("""Whether this set was marked as fuzzy in
         the PO file it came from.""")
@@ -53,6 +59,11 @@ class IPOMsgSet(Interface):
         for it to be complete, in the case of a translation that includes
         plurals. This depends on the language and in some cases even the
         specific text being translated per po-file.""")
+
+    selections = Attribute(
+        """All IPOSelection associated with this IPOMsgSet.""")
+    submissions = Attribute(
+        """All IPOSubmissions associated with this IPOMsgSet.""")
 
     def selection(pluralform):
         """Returns the POSelection for this po msgset and
@@ -109,4 +120,10 @@ class IPOMsgSet(Interface):
 
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error
+        """
+
+    def updateFlags():
+        """Update the complete and fuzzy flags for this IPOMsgSet.
+
+        The new values will reflect current status of this entry.
         """

@@ -131,9 +131,9 @@ class QueueAction:
         # if not found defaults to 'ubuntu'
         distroset = getUtility(IDistributionSet)
         try:
-            self.distribution = distroset.getByName(self.distribution_name)
+            self.distribution = distroset[self.distribution_name]
         except NotFoundError, info:
-            self.distribution = distroset.getByName('ubuntu')
+            self.distribution = distroset['ubuntu']
 
         if self.distrorelease_name:
             # defaults to distro.currentrelease if passed distrorelease is

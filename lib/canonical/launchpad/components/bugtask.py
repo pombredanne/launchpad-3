@@ -26,13 +26,11 @@ class BugTaskDelta:
     """See canonical.launchpad.interfaces.IBugTaskDelta."""
     implements(IBugTaskDelta)
     def __init__(self, bugtask, product=None, sourcepackagename=None,
-                 binarypackagename=None, status=None, importance=None,
-                 assignee=None, milestone=None,
-                 statusexplanation=None, bugwatch=None):
+                 status=None, importance=None, assignee=None,
+                 milestone=None, statusexplanation=None, bugwatch=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
-        self.binarypackagename = binarypackagename
         self.status = status
         self.importance = importance
         self.assignee = assignee
@@ -62,14 +60,10 @@ class BugTaskMixin:
         """See canonical.launchpad.interfaces.IBugTask.
 
         Depending on whether the task has a distribution,
-        distrorelease, sourcepackagename, binarypackagename, and/or
-        product, the targetname will have one of these forms:
+        distrorelease, sourcepackagename, and/or product, the targetname
+        will have one of these forms:
         * sourcepackagename.name (distribution.displayname)
-        * sourcepackagename.name binarypackagename.name
-            (distribution.displayname)
         * sourcepackagename.name (distrorelease.fullreleasename)
-        * sourcepackagename.name binarypackagename.name
-            (distrorelease.fullreleasename)
         * distribution.displayname
         * distrorelease.fullreleasename
         * product.name (upstream)
@@ -79,16 +73,9 @@ class BugTaskMixin:
                 sourcepackagename_name = None
             else:
                 sourcepackagename_name = self.sourcepackagename.name
-            if self.binarypackagename is None:
-                binarypackagename_name = None
-            else:
-                binarypackagename_name = self.binarypackagename.name
             L = []
             if self.sourcepackagename:
                 L.append(sourcepackagename_name)
-            if (binarypackagename_name and
-                binarypackagename_name != sourcepackagename_name):
-                L.append(binarypackagename_name)
             if L:
                 name = " ".join(L)
                 if self.distribution:
@@ -198,7 +185,6 @@ class NullBugTask(BugTaskMixin):
         self.priority = None
         self.importance = None
         self.assignee = None
-        self.binarypackagename = None
         self.bugwatch = None
         self.owner = None
 

@@ -1,6 +1,20 @@
 <div>
-  <small tal:content="structure context/@@+navigation-links" />
+  <tal:no-results condition="not: context/batch">
+    <tal:search-performed condition="request/search|nothing">
+      <p>No results for search 
+        <strong tal:content="request/field.searchtext|nothing" /></p>
+    </tal:search-performed>
+
+    <tal:no-search-performed condition="not: request/search|nothing">
+      <p>There's no open bugs currently.</p>
+    </tal:no-search-performed>
+  </tal:no-results>
+
+  <tal:results condition="context/batch">
+    <small tal:content="structure context/@@+navigation-links" />
+  </tal:results>
 </div>
+<tal:results condition="context/batch">
   <table class="listing sortable" id="buglisting">
     <thead>
       <tr>
@@ -50,3 +64,4 @@
 <div>
   <small tal:content="structure context/@@+navigation-links" />
 </div>
+</tal:results>

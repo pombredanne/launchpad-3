@@ -122,9 +122,8 @@ EVENT: source package assignment edited
   >>> from canonical.lp.dbschema import BugTaskStatus
   >>> from canonical.launchpad.interfaces import IBugTask
   >>> edit_fields = [
-  ...     "distribution", "sourcepackagename", "binarypackagename",
-  ...     "milestone", "status", "priority", "importance", "assignee",
-  ...     "bugwatch"]
+  ...     "distribution", "sourcepackagename", "milestone", "status",
+  ...     "importance", "assignee", "bugwatch"]
   >>> old_source_package_assignment = Snapshot(
   ...   source_package_assignment, providing=IDistroBugTask)
   >>> source_package_assignment.status = BugTaskStatus.CONFIRMED

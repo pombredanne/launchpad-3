@@ -2368,7 +2368,7 @@ class BranchLifecycleStatus(DBSchema):
 
         This branch has just been created, and we know nothing else about
         it.
-        """)
+        """, sortkey=60)
 
     EXPERIMENTAL = Item(10, """
         Experimental
@@ -2376,7 +2376,7 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains code that is considered experimental. It is
         still under active development and should not be merged into
         production infrastructure.
-        """)
+        """, sortkey=30)
 
     DEVELOPMENT = Item(30, """
         Development
@@ -2384,7 +2384,7 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains substantial work that is shaping up nicely, but
         is not yet ready for merging or production use. The work is
         incomplete, or untested.
-        """)
+        """, sortkey=20)
 
     MATURE = Item(50, """
         Mature
@@ -2393,21 +2393,21 @@ class BranchLifecycleStatus(DBSchema):
         completely addresses the issues it is supposed to, that it is tested,
         and that it has been found to be stable enough for the developer to
         recommend it to others for inclusion in their work.
-        """)
+        """, sortkey=10)
 
     MERGED = Item(70, """
         Merged
 
         This code has successfully been merged into its target branch(es),
         and no further development is anticipated on the branch.
-        """)
+        """, sortkey=40)
 
     ABANDONED = Item(80, """
         Abandoned
 
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
-        """)
+        """, sortkey=50)
 
 
 class BranchReviewStatus(DBSchema):
