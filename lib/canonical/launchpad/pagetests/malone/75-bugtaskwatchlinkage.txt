@@ -90,3 +90,44 @@ Now we try to access the BugWatch edit page
   ...thunderbird (upstream)...
   ...
 
+If you make a mistake when entering the bug watch information, the
+watch can be edited.
+
+  >>> print http(r"""
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/2/watches/5/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h1>Change bug watch</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/watches/5/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 411
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugtracker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugtracker-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.remotebug"
+  ... 
+  ... 103
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: 0
+  ...
+  Location: http://localhost:9000/distros/debian/+source/mozilla-firefox/+bug/2

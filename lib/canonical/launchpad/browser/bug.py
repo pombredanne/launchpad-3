@@ -72,7 +72,7 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
              'addsubscriber', 'addattachment', 'addbranch', 'linktocve',
-             'unlinkcve', 'addwatch', 'filebug', 'activitylog', 'backportfix']
+             'unlinkcve', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -126,10 +126,6 @@ class BugContextMenu(ContextMenu):
         enabled = bool(self.context.bug.cves)
         text = 'Remove CVE Link'
         return Link('+unlinkcve', text, icon='edit', enabled=enabled)
-
-    def addwatch(self):
-        text = 'Link to Other Bug Tracker'
-        return Link('+addwatch', text, icon='add')
 
     def filebug(self):
         bugtarget = self.context.target
