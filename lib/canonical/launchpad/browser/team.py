@@ -110,8 +110,8 @@ class TeamEmailView:
                 return
 
             if request.form.get('REMOVE_UNVALIDATED'):
-                getUtility(ILoginTokenSet).deleteByEmailAndRequester(
-                    email, self.context)
+                getUtility(ILoginTokenSet).deleteByEmailRequesterAndType(
+                    email, self.context, LoginTokenType.VALIDATETEAMEMAIL)
                 self.feedback = (
                     "The email address '%s' has been removed." % email)
             elif request.form.get('VALIDATE'):

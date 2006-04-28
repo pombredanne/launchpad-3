@@ -111,6 +111,22 @@ class Branch(SQLBase):
         else:
             return self.unique_name
 
+    @property
+    def sort_key(self):
+        """Key for sorting branches for display."""
+        if self.product is None:
+            product = None
+        else:
+            product = self.product.name
+        if self.author is None:
+            author = None
+        else:
+            author = self.author.browsername
+        status = self.lifecycle_status.sortkey
+        name = self.name
+        owner = self.owner.name
+        return (product, status, author, name, owner)
+
     def revision_count(self):
         return RevisionNumber.selectBy(branchID=self.id).count()
 
@@ -185,16 +201,22 @@ class BranchSet:
             raise NotFoundError(branch_id)
         return branch
 
+    def __iter__(self):
+        """See IBranchSet."""
+        return iter(Branch.select())
+
+    @property
+    def all(self):
+        branches = Branch.select()
+        branches.prejoin(['author', 'product'])
+        return branches
+
     def get(self, branch_id, default=None):
         """See IBranchSet."""
         try:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
-
-    def __iter__(self):
-        """See IBranchSet."""
-        return iter(Branch.select())
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
