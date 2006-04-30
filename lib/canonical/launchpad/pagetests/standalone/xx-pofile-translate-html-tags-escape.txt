@@ -1,0 +1,20 @@
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+              <textarea style="width: 100%;" lang="hr"
+                        rows="12"
+                        name="msgset_67_hr_translation_0"
+                        dir="ltr" tabindex="1">
+  Upotreba:
+  <BLANKLINE>
+  %s [opcije] &lt;uređaj&gt; [&lt;etiketa&gt;]
+  </textarea>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  ...
