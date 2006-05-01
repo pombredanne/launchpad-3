@@ -8,11 +8,10 @@
 <facet facet="translations">
 
     <content class="canonical.launchpad.database.POFile">
+        <allow interface="canonical.launchpad.interfaces.IPOFile" />
         <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IPOFile"
-            set_attributes="header pluralforms path from_sourcepackagename"
-            />
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IPOFile" />
     </content>
 
     <browser:url

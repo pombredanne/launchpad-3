@@ -6779,12 +6779,6 @@ INSERT INTO potranslation (id, translation) VALUES (12, '_Añadir grupo');
 INSERT INTO potranslation (id, translation) VALUES (13, 'Upotreba:
 
 %s [opcije] <uređaj> [<etiketa>]
-
-  Montiraj <device> u direktorij ispod %s ako su policy zahtjevi
-  zadovoljeni (vidi pmount(1) za detalje). Ako <label> je zadan, točka montiranja
-  će biti %s/<label>, inače će biti %s<device>.
-  Ako ne postoji točka montiranja, biti će kreirana.
-
 ');
 INSERT INTO potranslation (id, translation) VALUES (14, '%s --lock <device> <pid>
   Spriječi daljnje pmounts <device> sve dok nije ponovno otključan. <pid>

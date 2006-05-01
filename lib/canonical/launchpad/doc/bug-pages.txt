@@ -1,3 +1,59 @@
+Bug Filing Pages
+================
+
+Filing a Distribution Bug
+-------------------------
+
+The distribution filebug page will always attach a bugtask to a
+sourcepackage, if the user provides a valid name of a specific package
+when reporting the bug.
+
+If the package name entered by the user happens to be a binary package
+name, that information is recorded in the description of the bug report.
+
+    >>> from zope.component import getView, getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugTaskSet, IBugSet, IDistributionSet, BugTaskSearchParams,
+    ...     ILaunchBag)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> request = LaunchpadTestRequest(form={
+    ...     'field.title': 'bug in bin pkg',
+    ...     'field.comment': 'a bug in a bin pkg',
+    ...     'packagename_option': 'choose',
+    ...     'field.packagename': 'linux-2.6.12',
+    ...     'UPDATE_SUBMIT': 'Submit Bug Report'})
+
+    >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
+
+    >>> ubuntu_filebug.update()
+    ''
+
+    >>> current_user = getUtility(ILaunchBag).user
+    >>> search_params = BugTaskSearchParams(
+    ...     searchtext="bin pkg", user=current_user)
+
+    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(
+    ...     search_params)[0]
+
+The user specified a binary package name, so that's been added to the
+bug description:
+
+    >>> print latest_ubuntu_bugtask.bug.description
+    Binary package hint: linux-2.6.12
+    <BLANKLINE>
+    <BLANKLINE>
+    a bug in a bin pkg
+
+And the source package from which the binary was built has been set on
+the bugtask.
+
+    >>> print latest_ubuntu_bugtask.sourcepackagename.name
+    linux-source-2.6.15
+
 Bug Portlets
 ============
 
@@ -10,12 +66,8 @@ remain in the current context. If the dupe has not been reported in
 the current context, the dupe link will be to the generic
 /bugs/$bug.id redirect link.
 
-    >>> from zope.component import getView, getUtility
-    >>> from canonical.launchpad.interfaces import IBugTaskSet, IBugSet
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
-    >>> bugtaskset = getUtility(IBugTaskSet)
     >>> bugset = getUtility(IBugSet)
+    >>> bugtaskset = getUtility(IBugTaskSet)
     >>> request = LaunchpadTestRequest()
 
 Bug 6 is a duplicate of bug 5, and since both bugs affect Firefox, the
@@ -43,8 +95,6 @@ duplicate link remains in the current context.
 
 Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
 and see how the returned link changes.
-
-    >>> login("foo.bar@canonical.com")
 
     >>> bug_two = bugset.get(2)
     >>> bug_two.duplicateof = 5
