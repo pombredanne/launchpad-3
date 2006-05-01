@@ -336,10 +336,9 @@ class IShippingRequestSet(Interface):
         StandardShipItRequests or None.
         """
 
-    def search(recipient_name):
-        """Search for requests made by any recipient whose name or email
-        address match <recipient_name>.
-        """
+    def search(status=ShippingRequestStatus.ALL, flavour=None,
+               recipient_text=None, omit_cancelled=True):
+        """Search for requests that match the given arguments."""
 
     def generateShipmentSizeBasedReport():
         """Generate a csv file with the size of shipments and the number of

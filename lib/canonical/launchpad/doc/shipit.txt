@@ -130,51 +130,41 @@ Instead, it'll be part of the past requests of that recipient.
 Searching for requests
 ----------------------
 
-We have 13 custom requests. Two of them are cancelled.
+We have 15 requests, and two of them are cancelled
 
-  >>> [r.recipient.name 
-  ...  for r in requestset.search(request_type='custom', omit_cancelled=False)]
-  [u'cprov', u'ddaa', u'debonzi', u'kurem', u'ddaa', u'jordi', u'carlos', u'daf',
-   u'tsukimi', u'jdub', u'marilize', u'jblack', u'name16']
+  >>> sorted(r.recipient.name 
+  ...        for r in requestset.search(omit_cancelled=False))
+  [u'cprov', u'ddaa', u'ddaa', u'ddaa', u'debonzi', u'jblack', u'jblack',
+   u'jdub', u'jordi', u'kreutzm', u'lifeless', u'marilize', u'name16',
+   u'no-priv', u'stub']
 
-  >>> [r.recipient.name for r in requestset.search(request_type='custom')]
-  [u'ddaa', u'debonzi', u'kurem', u'ddaa', u'jordi', u'carlos', u'daf',
-   u'tsukimi', u'jdub', u'marilize', u'jblack']
+  >>> sorted(r.recipient.name for r in requestset.search())
+  [u'ddaa', u'ddaa', u'ddaa', u'debonzi', u'jblack', u'jblack', u'jdub',
+   u'jordi', u'kreutzm', u'lifeless', u'marilize', u'no-priv', u'stub']
 
-From the eleven non-cancelled, three are approved.
+From the thirteen non-cancelled, 2 are pending review, because their
+recipients asked for extra CDs.
+
+  >>> pending = ShippingRequestStatus.PENDING
+  >>> for request in requestset.search(status=pending):
+  ...     print request.id, ":", request.reason
+  12 : I want 100 more CDs.
+  13 : I need 50 more CDs to give away to my friends.
+
+
+All other requests are automatically approved.
 
   >>> approved = ShippingRequestStatus.APPROVED
-  >>> [r.recipient.name 
-  ...  for r in requestset.search(request_type='custom', status=approved)]
-  [u'ddaa', u'jordi', u'jblack']
-
-We have also four non-cancelled standard requests:
-
-  >>> [r.recipient.name for r in
-  ...  requestset.search(request_type='standard', omit_cancelled=False)]
-  [u'lifeless', u'kreutzm', u'no-priv', u'stub']
-
-And all standard requests are approved automatically.
-
-  >>> [r.recipient.name for r in
-  ...       requestset.search(request_type='standard', status=approved)]
-  [u'lifeless', u'kreutzm', u'no-priv', u'stub']
+  >>> sorted((r.id, r.recipient.name) for r in
+  ...         requestset.search(status=approved))
+  [(1, u'no-priv'), (2, u'stub'), (3, u'kreutzm'), (4, u'lifeless'),
+   (5, u'ddaa'), (7, u'debonzi'), (14, u'jblack'), (15, u'ddaa'),
+   (16, u'jordi'), (17, u'jblack'), (18, u'ddaa')]
 
 
-It's also possible to search for standard requests of a specific type.
+It's also possible to search for requests containing CDs of a given flavour.
 
-  >>> standardrequest = getUtility(IStandardShipItRequestSet).get(3)
-  >>> requests = requestset.search(request_type='standard',
-  ...                              standard_type=standardrequest)
-  >>> requests.count()
-  1
-  >>> quantities = requests[0].getRequestedCDsGroupedByFlavourAndArch()
-  >>> quantities[UBUNTU][X86].quantity == standardrequest.quantityx86
-  True
-  >>> quantities[UBUNTU][AMD64].quantity == standardrequest.quantityamd64
-  True
-  >>> quantities[UBUNTU][PPC].quantity == standardrequest.quantityppc
-  True
+  >>> ubuntu = ShipItFlavour.UBUNTU
 
 Another way of searching is by using any part of the recipient's name or the
 beginning of his email address.
@@ -189,8 +179,8 @@ beginning of his email address.
 
   >>> [r.recipient.preferredemail.email
   ...  for r in requestset.search(status=ShippingRequestStatus.PENDING,
-  ...                             recipient_text='david.allouche')]
-  [u'david.allouche@canonical.com']
+  ...                             recipient_text='marilize')]
+  [u'marilize@hbd.com']
 
 
 Exporting requests
@@ -202,8 +192,8 @@ getUnshippedRequests method of ShippingRequestSet.
 
   >>> import transaction
   >>> transaction.commit()
-  >>> normal = ShippingRequestPriority.HIGH
-  >>> unshipped_requests = requestset.getUnshippedRequests(normal)
+  >>> high = ShippingRequestPriority.HIGH
+  >>> unshipped_requests = requestset.getUnshippedRequests(high)
   >>> unshipped_requests.count()
   1
 
@@ -214,15 +204,16 @@ priority requests.
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().setUp()
 
-  >>> requestset.exportRequestsToFiles(normal, transaction)
+  >>> requestset.exportRequestsToFiles(high, transaction)
+  >>> flush_database_updates()
   >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
   >>> run.requests.count()
   1
   >>> run.requests[0].highpriority
   True
   >>> print run.csvfile.read()
-  "recordnr","Ship to company","Ship to name","Ship to addr1","Ship to addr2","Ship to city","Ship to county","Ship to zip","Ship to country","Ship to phone","Ship to email address","ship Ubuntu quantity PC","ship Ubuntu quantity 64-bit PC","ship Ubuntu quantity Mac","ship KUbuntu quantity PC","ship KUbuntu quantity 64-bit PC","ship KUbuntu quantity Mac","ship EdUbuntu quantity PC","ship EdUbuntu quantity 64-bit PC","ship EdUbuntu quantity Mac","token","Ship via","display" 
-  "16","Something","Jordi Mallach","Somewhere","in this world","whatever","not mandatory","999432423","IO","+55 16 3374-2027","jordi@ubuntu.com","9","3","9","0","0","0","0","0","0","...","TNT","0" 
+  "recordnr","Ship to company","Ship to name","Ship to addr1","Ship to addr2","Ship to city","Ship to county","Ship to zip","Ship to country","Ship to phone","Ship to email address","ship Ubuntu quantity PC","ship Ubuntu quantity 64-bit PC","ship Ubuntu quantity Mac","ship KUbuntu quantity PC","ship KUbuntu quantity 64-bit PC","ship KUbuntu quantity Mac","ship EdUbuntu quantity PC","ship EdUbuntu quantity 64-bit PC","ship EdUbuntu quantity Mac","token","Ship via","display"
+  "16","Something","Jordi Mallach","Somewhere","in this world","whatever","not mandatory","999432423","IO","+55 16 3374-2027","jordi@ubuntu.com","0","0","0","5","0","0","5","0","0","4szmks93z2","TNT","0"
   <BLANKLINE>
 
 
@@ -230,7 +221,7 @@ Now we do an export of all normal priority requests that are ready to be
 shipped, by running the shipit-exports cronscript.
 
   >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
-  4
+  6
 
   >>> import subprocess
   >>> process = subprocess.Popen(
@@ -243,11 +234,12 @@ shipped, by running the shipit-exports cronscript.
   0
 
   >>> transaction.commit()
+  >>> flush_database_updates()
   >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
   0
   >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
   >>> run.requests.count()
-  4
+  6
   >>> run.requests[0].highpriority
   False
 
@@ -267,12 +259,12 @@ to each country.
     >>> for line in csv_file.readlines():
     ...     line
     'Country,Shipped Ubuntu x86 CDs,Shipped Ubuntu AMD64 CDs,Shipped Ubuntu PPC CDs,Shipped KUbuntu x86 CDs,Shipped KUbuntu AMD64 CDs,Shipped KUbuntu PPC CDs,Shipped EdUbuntu x86 CDs,Shipped EdUbuntu AMD64 CDs,Shipped EdUbuntu PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent\r\n'
-    'Bermuda,5,3,2,0,0,0,0,0,0,1,0,10,100.00%,9.80%,North America\r\n'
-    'British Indian Ocean Territory,18,9,18,0,0,0,0,0,0,1,1,22,100.00%,44.12%,Asia\r\n'
-    'Burkina Faso,10,3,2,0,0,0,0,0,0,1,0,15,100.00%,14.71%,Africa\r\n'
-    'China,0,3,0,0,0,0,0,0,0,1,0,3,100.00%,2.94%,Asia\r\n'
+    'Bermuda,8,1,1,0,0,0,0,0,0,1,0,10,100.00%,9.80%,North America\r\n'
+    'British Indian Ocean Territory,9,6,10,6,5,0,6,0,0,4,1,8,100.00%,41.18%,Asia\r\n'
+    'Burkina Faso,10,0,0,0,0,0,0,0,0,1,0,10,100.00%,9.80%,Africa\r\n'
+    'China,0,1,0,0,0,0,0,0,0,1,0,1,100.00%,0.98%,Asia\r\n'
     'Heard Island and McDonald Islands,5,0,0,0,0,0,0,0,0,1,0,5,100.00%,4.90%,Antarctica\r\n'
-    '\xc3\x85land Islands,9,6,9,0,0,0,0,0,0,0,1,24,100.00%,23.53%,Europe\r\n'
+    '\xc3\x85land Islands,9,6,9,8,2,0,0,0,0,1,1,17,100.00%,33.33%,Europe\r\n'
 
 
 There's another report which gives us the number of shipments of all shipment
@@ -282,11 +274,10 @@ sizes we had.
     >>> for line in csv_file.readlines():
     ...     line
     'Number of CDs,Number of Shipments\r\n'
-    '3,1\r\n'
-    '5,1\r\n'
-    '10,1\r\n'
-    '15,1\r\n'
-    '21,1\r\n'
+    '1,2\r\n'
+    '2,1\r\n'
+    '5,2\r\n'
+    '10,4\r\n'
     '24,2\r\n'
 
 There's also a report of requests by week.
@@ -297,19 +288,6 @@ There's also a report of requests by week.
     >>> for line in csv_file.readlines():
     ...     line
     'Year,Week number,Requests,Ubuntu Requested X86 CDs,Ubuntu Requested AMD64 CDs,Ubuntu Requested PPC CDs,KUbuntu Requested X86 CDs,KUbuntu Requested AMD64 CDs,KUbuntu Requested PPC CDs,EdUbuntu Requested X86 CDs,EdUbuntu Requested AMD64 CDs,EdUbuntu Requested PPC CDs\r\n'
-    '2005,14,0,,,,,,,,,\r\n'
-    '2005,15,0,,,,,,,,,\r\n'
-    '2005,16,0,,,,,,,,,\r\n'
-    '2005,17,5,45,26,40,0,0,0,0,0,0\r\n'
-    '2005,18,4,36,18,46,0,0,0,0,0,0\r\n'
-    '2005,19,1,9,6,9,0,0,0,0,0,0\r\n'
-    '2005,20,1,9,6,9,0,0,0,0,0,0\r\n'
-    '2005,21,0,,,,,,,,,\r\n'
-    '2005,22,0,,,,,,,,,\r\n'
-    '2005,23,0,,,,,,,,,\r\n'
-    '2005,24,0,,,,,,,,,\r\n'
-    '2005,25,0,,,,,,,,,\r\n'
-    '2005,26,1,10,3,2,0,0,0,0,0,0\r\n'
 
 All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.

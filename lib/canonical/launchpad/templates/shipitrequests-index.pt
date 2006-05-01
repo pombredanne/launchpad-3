@@ -18,9 +18,7 @@
   <table>
     <tbody>
     <tr>
-      <td align="right">
-        <label>Show:</label>
-      </td>
+      <th>Show:</th>
       <td>
         <select name="statusfilter">
           <option value="pending" 
@@ -40,30 +38,26 @@
       </td>
     </tr>
     <tr>
-      <td align="right">
-        <label>for:</label>
-      </td>
+      <th>with:</th>
       <td>
-        <select name="typefilter">
-          <option value="custom" 
-                  tal:attributes="selected python: view.selectedType == 'custom'">
-            Custom quantities</option>
+        <select name="flavourfilter">
           <option value="any" 
-                  tal:attributes="selected python: view.selectedType == 'any'">
-            Any quantities</option>
-          <option value="standard"
-                  tal:attributes="selected python: view.selectedType == 'standard'">
-            All standard quantities</option>
-          <option tal:repeat="option view/standardShipItRequests"
-                  tal:attributes="value option/id;
-                                  selected python: view.selectedType == option.id">
-            <span tal:replace="option/flavour/title" />:
-            <span tal:replace="option/description" /></option>
+            tal:attributes="
+              selected python:view.selectedFlavour == 'any'">
+            Any flavour
+          </option>
+          <option tal:repeat="flavour view/all_flavours"
+                  tal:attributes="
+                    value flavour/name;
+                    selected python: view.selectedFlavour == flavour.name">
+            <span tal:replace="flavour/title">Ubuntu</span>
+          </option>
         </select>
+        CDs
       </td>
     </tr>
     <tr>
-      <td align="right"><label>from:</label></td>
+      <th>from:</th>
       <td>
         <input type="text" size="30" name="recipient_text"
                tal:attributes="value view/recipient_text" />
@@ -71,7 +65,7 @@
       </td>
     </tr>
     <tr>
-      <td align="right"><label>sorted by:</label></td>
+      <th>sorted by:</th>
       <td>
         <select name="orderby" tal:define="orderby python: request.get('orderby')">
           <option value="daterequested" 
@@ -105,7 +99,7 @@
     </p>
 
     <tal:block condition="bn/currentBatch">
-      <table width="80%" class="listing" id="results" style="border-left: none">
+      <table width="90%" class="listing" id="results" style="border-left: none">
         <thead>
           <tr>
             <th>id</th>
@@ -159,7 +153,7 @@
           </tal:block>
         </tbody>
       </table>
-      <table width="80%" class="listing">
+      <table width="90%" class="listing">
         <tbody>
           <tr class="results" style="background: #f7ebd6">
             <td> 

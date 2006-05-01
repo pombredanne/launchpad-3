@@ -305,14 +305,6 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequestSet"
         permission="launchpad.Admin"
-        class="canonical.launchpad.browser.RedirectToOldestPendingRequest"
-        attribute="__call__"
-        name="+oldestpending">
-    </browser:page>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IShippingRequestSet"
-        permission="launchpad.Admin"
         name="+portlet-navigation"
         template="../templates/shipit-portlet-navigation.pt"
         lp:url="/shipit/requests/+portlet-navigation">

@@ -136,9 +136,12 @@ class ShippingRequest(SQLBase):
             requested_arches = {}
             for arch in ShipItArchitecture.items:
                 cds = self._getRequestedCDsByFlavourAndArch(flavour, arch)
-                assert cds is not None
-                requested_arches[arch] = cds
-            requested_cds[flavour] = requested_arches
+                if cds is not None:
+                    requested_arches[arch] = cds
+
+            if requested_arches:
+                requested_cds[flavour] = requested_arches
+
         return requested_cds
 
     def setQuantitiesBasedOnStandardRequest(self, request_type):
@@ -166,12 +169,12 @@ class ShippingRequest(SQLBase):
                 assert quantity >= 0
                 requested_cds = self._getRequestedCDsByFlavourAndArch(
                     flavour, arch)
+                if requested_cds is None:
+                    requested_cds = RequestedCDs(
+                        request=self, flavour=flavour, architecture=arch)
                 if not only_approved:
                     setattr(requested_cds, 'quantity', quantity)
                 setattr(requested_cds, 'quantityapproved', quantity)
-
-    def _setQuantityForFlavourAndArch(self, flavour, arch, quantity):
-        """Set the quantity of requested CDs for the given flavour and arch."""
 
     def highlightColour(self):
         """See IShippingRequest"""
@@ -249,13 +252,6 @@ class ShippingRequestSet:
             recipientdisplayname=recipientdisplayname,
             organization=organization, phone=phone)
 
-        # Now we create RequestedCDs objects for all different flavours and
-        # architectures so we don't need to bother about creating them later.
-        for flavour in ShipItFlavour.items:
-            for arch in ShipItArchitecture.items:
-                RequestedCDs(
-                    request=request, flavour=flavour, architecture=arch)
-
         return request
 
     def getUnshippedRequests(self, priority):
@@ -282,16 +278,19 @@ class ShippingRequestSet:
         except IndexError:
             return None
 
-    def search(self, request_type='any', standard_type=None,
-               status=ShippingRequestStatus.ALL, recipient_text=None, 
-               omit_cancelled=True, orderBy=ShippingRequest.sortingColumns):
+    def search(self, status=ShippingRequestStatus.ALL, flavour=None, 
+               recipient_text=None, omit_cancelled=True, 
+               orderBy=ShippingRequest.sortingColumns):
         """See IShippingRequestSet"""
         queries = []
         clauseTables = []
-        if request_type != 'any':
-            type_based_query = self._getTypeBasedQuery(
-                request_type, standard_type=standard_type)
-            queries.append('ShippingRequest.id IN (%s)' % type_based_query)
+
+        if flavour is not None:
+            queries.append("""
+                (RequestedCDs.request = ShippingRequest.id
+                 AND RequestedCDs.flavour = %s)
+                """ % sqlvalues(flavour))
+            clauseTables.append('RequestedCDs')
 
         if recipient_text:
             recipient_text = recipient_text.lower()
@@ -321,62 +320,12 @@ class ShippingRequestSet:
             pass
 
         query = " AND ".join(queries)
-        return ShippingRequest.select(query, distinct=True, orderBy=orderBy)
-
-    def _getTypeBasedQuery(self, request_type, standard_type=None):
-        """Return the SQL query to get all requests of a given type.
-
-        The type must be either 'custom', 'standard' or 'any'.
-        If the type is 'standard', then standard_type can be any of the
-        StandardShipItRequests.
-        """
-        arch = ShipItArchitecture
-        query = """
-            SELECT ShippingRequest.id FROM ShippingRequest,
-                                           RequestedCDs as ReqX86,
-                                           RequestedCDs as ReqAMD64,
-                                           RequestedCDs as ReqPPC
-            WHERE ReqX86.architecture = %s AND
-                  ReqAMD64.architecture = %s AND
-                  ReqPPC.architecture = %s AND
-                  ReqX86.request = ShippingRequest.id AND
-                  ReqAMD64.request = ShippingRequest.id AND
-                  ReqPPC.request = ShippingRequest.id AND
-                  ReqX86.flavour = ReqAMD64.flavour AND
-                  ReqPPC.flavour = ReqAMD64.flavour
-        """ % sqlvalues(arch.X86, arch.AMD64, arch.PPC)
-
-        if request_type == 'custom':
-            if standard_type is not None:
-                raise AssertionError(
-                    'standard_type must be None if request_type is custom.')
-            query += """
-                AND ReqX86.quantity != 0 AND ReqAMD64.quantity != 0
-                AND ReqPPC.quantity != 0
-                AND (ReqX86.flavour, ReqX86.quantity, ReqAMD64.quantity,
-                     ReqPPC.quantity)
-                NOT IN (SELECT flavour, quantityx86, quantityamd64, quantityppc
-                        FROM StandardShipItRequest)
-                """
-        elif request_type == 'standard' and standard_type is None:
-            query += """
-                AND (ReqX86.flavour, ReqX86.quantity, ReqAMD64.quantity,
-                     ReqPPC.quantity)
-                IN (SELECT flavour, quantityx86, quantityamd64, quantityppc
-                    FROM StandardShipItRequest)
-                """
-        else:
-            query += """
-                AND ReqX86.flavour = %s
-                AND ReqX86.quantity = %s
-                AND ReqAMD64.quantity = %s
-                AND ReqPPC.quantity = %s
-                """ % sqlvalues(standard_type.flavour, 
-                                standard_type.quantityx86,
-                                standard_type.quantityamd64, 
-                                standard_type.quantityppc)
-
-        return query
+        # See https://launchpad.net/products/launchpad/+bug/3096 for an
+        # explanation of why I'm doing this.
+        if not query:
+            query = "1 = 1"
+        return ShippingRequest.select(
+            query, clauseTables=clauseTables, distinct=True, orderBy=orderBy)
 
     def exportRequestsToFiles(self, priority, ztm):
         """See IShippingRequestSet"""
@@ -465,7 +414,8 @@ class ShippingRequestSet:
                                   % sqlvalues(country.id))
                 requests = ShippingRequest.select(
                     query_str, clauseTables=['RequestedCDs', 'Shipment'])
-                quantities[flavour][arch] = requests.sum(attr_to_sum_on)
+                quantities[flavour][arch] = intOrZero(
+                    requests.sum(attr_to_sum_on))
         return quantities
 
     def generateCountryBasedReport(self):
@@ -566,6 +516,9 @@ class ShippingRequestSet:
                         'kubuntu': ShipItFlavour.KUBUNTU,
                         'edubuntu': ShipItFlavour.EDUBUNTU}
 
+        # XXX: This query will have to be re-written now that we don't
+        # necessarily have 9 RequestedCDs rows for each request.
+        # -- Guilherme Salgado, 2006-04-28
         base_query = """
             SELECT 
               COUNT(shippingrequest.id), 
@@ -910,14 +863,19 @@ class ShippingRun(SQLBase):
                     value = value.encode('ASCII')
                 row.append(value)
 
-            requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
+            all_requested_cds = request.getRequestedCDsGroupedByFlavourAndArch()
             # The order that the flavours and arches appear in the following
             # two for loops must match the order the headers appear in
             # extra_fields.
             for flavour in [ubuntu, kubuntu, edubuntu]:
                 for arch in [x86, amd64, ppc]:
-                    quantity = requested_cds[flavour][arch].quantityapproved
-                    row.append(quantity)
+                    try:
+                        requested_cds = all_requested_cds[flavour][arch]
+                    except KeyError:
+                        quantityapproved = 0
+                    else:
+                        quantityapproved = requested_cds.quantityapproved
+                    row.append(quantityapproved)
 
             row.append(request.shipment.logintoken)
             row.append(request.shippingservice.title)

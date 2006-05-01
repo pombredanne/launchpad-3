@@ -7,9 +7,8 @@ __all__ = [
     'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
     'ShipItUnauthorizedView', 'StandardShipItRequestsView',
     'ShippingRequestURL', 'StandardShipItRequestURL', 'ShipItExportsView',
-    'ShipItNavigation', 'RedirectToOldestPendingRequest', 'ShipItReportsView',
-    'StandardShipItRequestSetNavigation', 'ShippingRequestSetNavigation',
-    'ShippingRequestAdminView']
+    'ShipItNavigation', 'ShipItReportsView', 'ShippingRequestAdminView',
+    'StandardShipItRequestSetNavigation', 'ShippingRequestSetNavigation']
 
 
 from zope.event import notify
@@ -205,6 +204,8 @@ The comment left by the user:
         """Return all standard ShipIt Requests."""
         return getUtility(IStandardShipItRequestSet).getByFlavour(self.flavour)
 
+    # XXX: This is overly complex and should probably be moved into database
+    # code. -- Guilherme Salgado, 2006-04-28
     @cachedproperty
     def current_order_standard_id(self):
         """The current order's StandardShipItRequest id, or None in case
@@ -212,11 +213,27 @@ The comment left by the user:
         of self.flavour."""
         if self.current_order is None:
             return None
+
         quantities = self.current_order.getQuantitiesByFlavour(self.flavour)
+        if quantities is None:
+            return None
+
+        try:
+            x86_quantity = quantities[ShipItArchitecture.X86].quantity
+        except KeyError:
+            x86_quantity = 0
+        try:
+            amd64_quantity = quantities[ShipItArchitecture.AMD64].quantity
+        except KeyError:
+            amd64_quantity = 0
+        try:
+            ppc_quantity = quantities[ShipItArchitecture.PPC].quantity
+        except KeyError:
+            ppc_quantity = 0
+
         standard = getUtility(IStandardShipItRequestSet).getByNumbersOfCDs(
-            self.flavour, quantities[ShipItArchitecture.X86].quantity,
-            quantities[ShipItArchitecture.AMD64].quantity,
-            quantities[ShipItArchitecture.PPC].quantity)
+            self.flavour, x86_quantity, amd64_quantity, ppc_quantity)
+
         if standard is None:
             return None
         else:
@@ -317,25 +334,20 @@ The comment left by the user:
             self.from_email_address, shipit_admins, subject, message, headers)
 
 
-class RedirectToOldestPendingRequest:
-    """A simple view to redirect to the oldest pending request."""
-
-    def __call__(self):
-        oldest_pending = getUtility(IShippingRequestSet).getOldestPending()
-        self.request.response.redirect(canonical_url(oldest_pending))
-
-
 class ShippingRequestsView:
     """The view to list ShippingRequests that match a given criteria."""
 
     submitted = False
     selectedStatus = 'pending'
-    selectedType = 'any'
+    selectedFlavour = 'any'
     recipient_text = ''
 
     def standardShipItRequests(self):
         """Return a list with all standard ShipIt Requests."""
         return getUtility(IStandardShipItRequestSet).getAll()
+
+    def all_flavours(self):
+        return ShipItFlavour.items
 
     def processForm(self):
         """Process the form, if it was submitted."""
@@ -357,27 +369,16 @@ class ShippingRequestsView:
             status = ShippingRequestStatus.ALL
 
         requestset = getUtility(IShippingRequestSet)
-        self.selectedType = request.get('typefilter')
-        # self.selectedType may be one of 'custom', 'standard', 'any' or the
-        # id of a StandardShipItRequest.
-        if self.selectedType in ('custom', 'standard', 'any'):
-            # The user didn't select any specific standard type
-            standard_type = None
-            request_type = self.selectedType
+        self.selectedFlavour = request.get('flavourfilter')
+        if self.selectedFlavour == 'any':
+            flavour = None
         else:
-            # In this case the user selected a specific standard type, which
-            # means self.selectedType is the id of a StandardShipItRequest.
-            assert self.selectedType.isdigit()
-            self.selectedType = int(self.selectedType)
-            standard_type = getUtility(IStandardShipItRequestSet).get(
-                self.selectedType)
-            request_type = 'standard'
+            flavour = ShipItFlavour.items[self.selectedFlavour]
 
         orderby = str(request.get('orderby'))
         self.recipient_text = request.get('recipient_text')
         results = requestset.search(
-            request_type=request_type, standard_type=standard_type,
-            status=status, recipient_text=self.recipient_text,
+            status=status, flavour=flavour, recipient_text=self.recipient_text,
             orderBy=orderby)
         self.batchNavigator = self._getBatchNavigator(results)
 
@@ -409,9 +410,6 @@ class StandardShipItRequestAddView(AddView):
         quantityx86 = data.get('quantityx86')
         quantityamd64 = data.get('quantityamd64')
         quantityppc = data.get('quantityppc')
-        # XXX: Need to do something about this 'isdefault' because we need a
-        # default request for each flavour we have.
-        # Guilherme Salgado, 2006-04-05
         isdefault = data.get('isdefault')
         request = getUtility(IStandardShipItRequestSet).new(
             flavour, quantityx86, quantityamd64, quantityppc, isdefault)
@@ -466,11 +464,14 @@ class ShippingRequestAdminMixinView:
             for arch in self.quantity_fields_mapping[flavour]:
                 field_name = self.quantity_fields_mapping[flavour][arch]
                 if field_name is None:
-                    # We don't ship this arch for this flavour
                     continue
-                requested_cds = requested[flavour][arch]
-                initial[field_name] = getattr(
-                    requested_cds, self.quantity_attrname)
+                try:
+                    requested_cds = requested[flavour][arch]
+                except KeyError:
+                    value = 0
+                else:
+                    value = getattr(requested_cds, self.quantity_attrname)
+                initial[field_name] = value
         return initial
 
 
@@ -543,15 +544,17 @@ class ShippingRequestApproveOrDenyView(
         matrix = []
         quantities = self.context.getRequestedCDsGroupedByFlavourAndArch()
         for flavour in self.ordered_flavours:
-            x86 = quantities[flavour][ShipItArchitecture.X86]
-            amd64 = quantities[flavour][ShipItArchitecture.AMD64]
-            ppc = quantities[flavour][ShipItArchitecture.PPC]
-            if (x86.quantity + amd64.quantity + ppc.quantity) == 0:
-                continue
-            row = [flavour.title]
+            total = 0
+            flavour_quantities = []
             for arch in self.ordered_architectures:
-                row.append(quantities[flavour][arch].quantity)
-            matrix.append(row)
+                try:
+                    requested_cds = quantities[flavour][arch]
+                except KeyError:
+                    continue
+                total += requested_cds.quantity
+                flavour_quantities.append(requested_cds.quantity)
+            if total > 0:
+                matrix.append([flavour.title] + flavour_quantities)
         return matrix
 
     @property
