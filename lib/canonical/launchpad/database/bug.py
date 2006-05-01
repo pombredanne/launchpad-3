@@ -116,21 +116,6 @@ class Bug(SQLBase):
         messages = sorted(self.messages, key=lambda ob: ob.id)
         return messages[0]
 
-    @property
-    def subscribers_from_duplicates(self):
-        """See IBug."""
-        if self.private:
-            # There are never any implicit subscribers to private bugs!
-            return []
-
-        subscribers_from_dupes = set()
-        for dupe in self.duplicates:
-            subscribers_from_dupes.update(dupe._getDirectSubscribers())
-
-        subscribers_from_dupes.difference_update(self._getDirectSubscribers())
-
-        return subscribers_from_dupes
-
     def followup_subject(self):
         return 'Re: '+ self.title
 
@@ -154,6 +139,20 @@ class Bug(SQLBase):
         """See canonical.launchpad.interfaces.IBug."""
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
+
+    def getSubscribersFromDuplicates(self):
+        """See IBug."""
+        if self.private:
+            # There are never any implicit subscribers to private bugs!
+            return []
+
+        subscribers_from_dupes = set()
+        for dupe in self.duplicates:
+            subscribers_from_dupes.update(dupe._getDirectSubscribers())
+
+        subscribers_from_dupes.difference_update(self._getDirectSubscribers())
+
+        return subscribers_from_dupes
 
     def _getDirectSubscribers(self):
         """Return a list of people subscribed directly to this bug.
@@ -180,10 +179,10 @@ class Bug(SQLBase):
             emails.update(contactEmailAddresses(direct_subscriber))
 
         # Add subscribers of duplicates of this bug.
-        for dupe_subscriber in self.subscribers_from_duplicates:
+        for dupe_subscriber in self.getSubscribersFromDuplicates():
             emails.update(contactEmailAddresses(dupe_subscriber))
 
-        return sorted(emails)
+        return list(emails)
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""
