@@ -19,7 +19,7 @@ Let's mark bug #10 as a dupe of bug #4 to demonstrate.
   >>> browser.getControl("Duplicate Of").value = '4'
   >>> browser.getControl("Change").click()
 
-The subscribers portlet for bug #4 now includes a "From duplicates:" section.
+The subscribers portlet for bug #4 now includes a "From duplicates" section.
 
   >>> browser.open("http://localhost:9000/products/firefox/+bug/4")
 
