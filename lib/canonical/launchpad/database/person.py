@@ -1339,15 +1339,18 @@ class PersonSet:
         cur.execute('''
             SELECT product, name FROM Branch WHERE owner = %(to_id)d
             ''' % vars())
-        possible_conflicts = list(tuple(r) for r in cur.fetchall())
+        possible_conflicts = set(tuple(r) for r in cur.fetchall())
         cur.execute('''
             SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
+            ORDER BY id
             ''' % vars())
         for id, product, name in list(cur.fetchall()):
             new_name = name
+            suffix = 1
             while (product, new_name) in possible_conflicts:
-                new_name = '%s-2' % new_name
-            possible_conflicts.append((product, new_name))
+                new_name = '%s-%d' % (name, suffix)
+                suffix += 1
+            possible_conflicts.add((product, new_name))
             new_name = new_name.encode('US-ASCII')
             name = name.encode('US-ASCII')
             cur.execute('''
@@ -1356,7 +1359,7 @@ class PersonSet:
                     AND (%(product)s IS NULL OR product = %(product)s)
                 ''', vars())
         skip.append(('branch','owner'))
-        
+
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331

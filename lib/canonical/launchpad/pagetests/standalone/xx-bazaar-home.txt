@@ -1,4 +1,4 @@
-
+Check that the Bazaar home page works.
 
   >>> print http(r"""
   ... GET /bazaar HTTP/1.1

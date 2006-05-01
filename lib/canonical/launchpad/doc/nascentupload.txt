@@ -264,6 +264,7 @@ Finally we can ask the upload to process itself.
   DEBUG: Building recipients list.
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
+  DEBUG: Adding recipient: 'Daniel Silverstone <daniel.silverstone@canonical.com>'
   DEBUG: Build ... created
   DEBUG: Creating a New queue entry
   >>> print success
