@@ -7,17 +7,12 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface import implements
 from canonical.launchpad.interfaces import (
-    IRegistryApplication, IFOAFApplication, IMaloneApplication,
-    IBazaarApplication, IShipItApplication, IBugSet, IBugWatchSet,
-    IBugExternalRefSet, IBugTaskSet, IBugTrackerSet, ILaunchBag,
-    BugTaskSearchParams)
+    IRegistryApplication, IMaloneApplication, IBazaarApplication,
+    IShipItApplication, IBugSet, IBugWatchSet, IBugExternalRefSet,
+    IBugTaskSet, IBugTrackerSet, ILaunchBag, BugTaskSearchParams)
 
 class RegistryApplication:
     implements(IRegistryApplication)
-
-
-class FOAFApplication:
-    implements(IFOAFApplication)
 
 
 class ShipItApplication:
