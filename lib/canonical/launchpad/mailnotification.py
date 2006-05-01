@@ -586,8 +586,7 @@ def add_bug_duplicate_notification(duplicate_bug, user):
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
 
-    Appends people CC'd on the dup target as well, if this bug is a
-    duplicate.
+    This also includes global subscribers, like the IRC bot.
     """
     subscriptions = []
     if not bug.private:
