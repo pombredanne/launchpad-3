@@ -1,18 +1,20 @@
-import logging
+import httplib
 import os
 import shutil
 import socket
-from StringIO import StringIO
 import tempfile
 import unittest
+import urllib2
 
 import bzrlib.branch
 import bzrlib.errors
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.weave import Weave
+from bzrlib.errors import (
+    BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
+    NotBranchError)
 
 import transaction
-from canonical.testing import reset_logging
 from canonical.launchpad import database
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
@@ -140,58 +142,89 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
 class TestErrorHandling(unittest.TestCase):
 
     def setUp(self):
-        # Set up a mock logger so we don't generate noise on stdout.
-        logger = logging.getLogger('branch-puller')
-        logger.propagate = 0
-        self.mock_handler = logging.StreamHandler(StringIO())
-        logger.addHandler(self.mock_handler)
         self.errors = []
         client = BranchStatusClient()
         self.branch = BranchToMirror('foo', 'bar', client, 1)
         # Stub out everything that we don't need to test
         client.startMirroring = lambda branch_id: None
-        self.branch._mirrorFailed = lambda err: self.errors.append(err)
+        self.branch._mirrorFailed = lambda err, m=None: self.errors.append(err)
         self.branch._openSourceBranch = lambda: None
         self.branch._openDestBranch = lambda: None
         self.branch._pullSourceToDest = lambda: None
 
-    def tearDown(self):
-        logger = logging.getLogger('branch-puller')
-        logger.removeHandler(self.mock_handler)
-        reset_logging()
-
-    def _runMirrorAndCheckError(self, error_type):
+    def _runMirrorAndCheckError(self, expected_error):
         self.branch.mirror()
         self.assertEqual(len(self.errors), 1)
-        self.assertTrue(isinstance(self.errors[0], error_type))
+        error = str(self.errors[0])
+        if not error.startswith(expected_error):
+            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
 
-    def testSourceBranchSocketErrorHandling(self):
+    def testHTTPError(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise urllib2.HTTPError(
+                'http://something', httplib.UNAUTHORIZED, 
+                'Authorization Required', 'some headers',
+                open(tempfile.mkstemp()[1]))
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'Private branch; required authentication'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testSocketErrorHandling(self):
         self.errors = []
         def stubOpenSourceBranch():
             raise socket.error('foo')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        self._runMirrorAndCheckError(socket.error)
+        expected_msg = 'A socket error occurred:'
+        self._runMirrorAndCheckError(expected_msg)
 
-    def testSourceBranchBzrErrorHandling(self):
+    def testUnsupportedFormatErrorHandling(self):
         self.errors = []
         def stubOpenSourceBranch():
-            raise bzrlib.errors.BzrError('foo')
+            raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        self._runMirrorAndCheckError(bzrlib.errors.BzrError)
+        expected_msg = 'The supermirror does not support branches'
+        self._runMirrorAndCheckError(expected_msg)
 
-    def testPullSocketErrorandling(self):
+    def testUnknownFormatError(self):
         self.errors = []
-        def stubPullSourceToDest():
-            raise socket.error('foo')
-        self.branch._pullSourceToDest = stubPullSourceToDest
-        self._runMirrorAndCheckError(socket.error)
+        def stubOpenSourceBranch():
+            raise UnknownFormatError('Some junk')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'Unknown branch format:'
+        self._runMirrorAndCheckError(expected_msg)
 
-    def testPullBzrErrorandling(self):
         self.errors = []
-        def stubPullSourceToDest():
-            raise bzrlib.errors.BzrError('foo')
-        self.branch._pullSourceToDest = stubPullSourceToDest
-        self._runMirrorAndCheckError(bzrlib.errors.BzrError)
+        def stubOpenSourceBranch():
+            raise UnknownFormatError(
+                'Loads of junk\n with two or more\n newlines.')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'Not a branch'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testParamikoNotPresent(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise ParamikoNotPresent('No module named paramiko')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'The supermirror does not support mirroring branches'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testNotBranchError(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise NotBranchError('/foo/baz/')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'Not a branch:'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testBzrErrorHandling(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise BzrError('A generig bzr error')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'A generig bzr error'
+        self._runMirrorAndCheckError(expected_msg)
 
 
 def test_suite():

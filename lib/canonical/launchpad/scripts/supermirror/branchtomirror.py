@@ -1,9 +1,9 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-import logging
+import httplib
 import os
 import socket
-import traceback
+import urllib2
 
 import bzrlib.branch
 import bzrlib.errors
@@ -52,44 +52,62 @@ class BranchToMirror:
         assert self._dest_branch is not None
         self._dest_branch.pull(self._source_branch, overwrite=True)
 
-    def _mirrorFailed(self, error):
-        self.branch_status_client.mirrorFailed(self.branch_id, str(error))
+    def _mirrorFailed(self, error_msg):
+        """Log that the mirroring of this branch failed."""
+        self.branch_status_client.mirrorFailed(self.branch_id, str(error_msg))
 
     def mirror(self):
-        logger = logging.getLogger('supermirror-pull')
+        """Open source and destination branches and pull source into
+        destination.
+        """
         self.branch_status_client.startMirroring(self.branch_id)
-        try: 
-            self._openSourceBranch()
-        # XXX: We catch socket.error here to prevent bzrlib regressions/bugs
-        # to break the supermirror-puller. In case we catch a socket.error
-        # we'll log it so kiko nag mbp to fix them in bzrlib.
-        # Guilherme Salgado, 2006-04-24
-        except (socket.error, bzrlib.errors.BzrError), e:
-            if isinstance(e, socket.error):
-                logger.warn(
-                    'Possible bug found in bzrlib:\n%s' % traceback.print_exc())
-            self._mirrorFailed(e)
-            return
-
         self._openDestBranch()
 
-        try:
+        try: 
+            self._openSourceBranch()
             self._pullSourceToDest()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
-        # XXX: We catch socket.error here to prevent bzrlib regressions/bugs
-        # to break the supermirror-puller. In case we catch a socket.error
-        # we'll log it so kiko nag mbp to fix them in bzrlib.
-        # Guilherme Salgado, 2006-04-24
-        except (socket.error, bzrlib.errors.BzrError), e:
-            if isinstance(e, socket.error):
-                logger.warn(
-                    'Possible bug found in bzrlib:\n%s' % traceback.print_exc())
-            self._mirrorFailed(e)
-            return
+        except urllib2.HTTPError, e:
+            msg = str(e)
+            if int(e.code) == httplib.UNAUTHORIZED:
+                # Maybe this will be caugnt in bzrlib one day, and then we'll
+                # be able to get rid of this.
+                # https://launchpad.net/products/bzr/+bug/42383
+                msg = 'Private branch; required authentication'
+            self._mirrorFailed(msg)
 
-        self.branch_status_client.mirrorComplete(self.branch_id)
+        except socket.error, e:
+            msg = 'A socket error occurred: %s' % str(e)
+            self._mirrorFailed(msg)
+
+        except bzrlib.errors.UnsupportedFormatError, e:
+            msg = ("The supermirror does not support branches from before "
+                   "bzr 0.7. Please upgrade the branch using bzr upgrade.")
+            self._mirrorFailed(msg)
+
+        except bzrlib.errors.UnknownFormatError, e:
+            if e.args[0].count('\n') >= 2:
+                msg = 'Not a branch'
+            else:
+                msg = 'Unknown branch format: %s' % e.args[0]
+            self._mirrorFailed(msg)
+
+        except bzrlib.errors.ParamikoNotPresent, e:
+            msg = ("The supermirror does not support mirroring branches "
+                   "from SFTP URLs. Please register a HTTP location for "
+                   "this branch.")
+            self._mirrorFailed(msg)
+
+        except bzrlib.errors.NotBranchError, e:
+            self._mirrorFailed(e)
+
+        except bzrlib.errors.BzrError, e:
+            self._mirrorFailed(e)
+
+        else:
+            self.branch_status_client.mirrorComplete(self.branch_id)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
