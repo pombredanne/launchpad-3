@@ -51,6 +51,7 @@ class BranchContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranch
+    facet = 'branches'
     links = ['edit', 'lifecycle', 'subscription', 'administer']
 
     def edit(self):

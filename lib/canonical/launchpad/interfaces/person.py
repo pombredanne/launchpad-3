@@ -159,7 +159,7 @@ class IPerson(IHasSpecifications):
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
     is_valid_person = Bool(
-            title=_("This is a active user and not a team."), readonly=True
+            title=_("This is an active user and not a team."), readonly=True
             )
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
@@ -461,6 +461,11 @@ class IPerson(IHasSpecifications):
         It's also responsible for filling/cleaning the TeamParticipation
         table when the transition requires it and setting the expiration
         date, reviewer and reviewercomment.
+        """
+
+    def getTeamAdminsEmailAddresses():
+        """Return a set containing the email addresses of all administrators
+        of this team.
         """
 
     def getSubTeams():
