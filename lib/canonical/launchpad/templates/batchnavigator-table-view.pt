@@ -1,7 +1,6 @@
-<div>
-  <small tal:content="structure context/@@+navigation-links" />
-</div>
-  <table class="listing sortable" id="buglisting">
+<div class="lesser" tal:content="structure context/@@+navigation-links" />
+<table class="listing" id="buglisting">
+
     <thead>
       <tr>
         <th tal:condition="context/show_column/id|nothing">ID</th>
@@ -33,20 +32,19 @@
         </td>
         <td tal:content="bugtask/targetname"
             tal:condition="context/show_column/targetname|nothing"
-            nowrap>mozilla-firefox (Ubuntu)</td>
+        >mozilla-firefox (Ubuntu)</td>
         <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
             tal:condition="context/show_column/packagename|nothing"
-            nowrap>mozilla-firefox (Ubuntu)</td>
+        >mozilla-firefox (Ubuntu)</td>
         <td tal:content="structure bugtask/product/name|string:&mdash;"
             tal:condition="context/show_column/productname|nothing"
-            nowrap>firefox</td>
+        >firefox</td>
         <td tal:content="bugtask/severity/title"
             tal:condition="context/show_column/importance|nothing">Critical</td>
         <td tal:content="bugtask/status/title"
             tal:condition="context/show_column/status|nothing">Confirmed</td>
       </tr>
     </tbody>
-  </table>
-<div>
-  <small tal:content="structure context/@@+navigation-links" />
-</div>
+
+</table>
+<div class="lesser" tal:content="structure context/@@+navigation-links" />
