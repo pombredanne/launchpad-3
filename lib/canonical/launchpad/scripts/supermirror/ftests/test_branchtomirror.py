@@ -86,12 +86,12 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         TestCaseInTempDir.TEST_ROOT = None
 
     def testMissingSourceWhines(self):
-        non_existant_branch = "/nonsensedir"
+        non_existant_branch = "nonsensedir"
         client = BranchStatusClient()
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1)
         mybranch = BranchToMirror(
-            non_existant_branch, "/anothernonsensedir", client, 1)
+            non_existant_branch, "anothernonsensedir", client, 1)
         mybranch.mirror()
         transaction.abort()
         branch = database.Branch.get(1)
