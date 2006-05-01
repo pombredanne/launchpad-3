@@ -1,0 +1,58 @@
+ShipIt Pages
+============
+
+    >>> from canonical.launchpad.database import ShippingRequest
+    >>> jordis_request = ShippingRequest.get(16)
+
+Let's define a helper function to make it easier to construct a view.
+
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import TestRequest
+    >>> def create_view(context, name, form=None):
+    ...     view = getView(context, name, TestRequest(form=form))
+    ...     return view
+
+/shipit/requests/XX
+-----------------
+
+This is the page where shipit admins go to approve, deny or change an existing
+request.
+
+In this page we display a table of Flavours X Architectures, containing the
+widgets for the quantities of requested CDs of a given flavour and arch. These
+widgets must always be ordered according to the order we use in the table
+headers, or we'll start shipping wrong CDs to people. This order is specified
+by the ordered_flavours and ordered_architectures attributes of the view
+class.
+
+    >>> review_request_view = create_view(jordis_request, '+edit')
+    >>> [flavour.title for flavour in review_request_view.ordered_flavours]
+    ['Ubuntu', 'Kubuntu', 'Edubuntu']
+
+    >>> [arch.title for arch in review_request_view.ordered_architectures]
+    ['PC', '64-bit PC', 'Mac']
+
+And this is the order we use when generating the widgets matrix.
+
+    >>> matrix = review_request_view.widgetsMatrixWithFlavours()
+    >>> for row in matrix:
+    ...     newrow = []
+    ...     for cel in row:
+    ...         if isinstance(cel, basestring) or cel is None:
+    ...             newrow.append(cel)
+    ...         else:
+    ...             newrow.append(cel.label)
+    ...     print newrow
+    ['Ubuntu', u'PC', u'64-bit PC', u'Mac']
+    ['Kubuntu', u'PC', u'64-bit PC', None]
+    ['Edubuntu', u'PC', None, None]
+
+Similarly to the quantity widgets, we use a table to display the quantities
+requested by the user. But in this case, the shipit admins are not supposed to
+change these values, so we don't need widgets.
+
+    >>> for row in review_request_view.quantities_matrix:
+    ...     print row
+    ['Kubuntu', 5]
+    ['Edubuntu', 5]
+

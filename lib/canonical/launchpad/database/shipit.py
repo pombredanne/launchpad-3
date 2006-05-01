@@ -241,8 +241,7 @@ class ShippingRequestSet:
             organization=None, reason=None, shockandawe=None):
         """See IShippingRequestSet"""
         if not recipient.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
-            # Non shipit-admins can't place more than one order at a time
-            # neither specify a name different than their own.
+            # Non shipit-admins can't place more than one order at a time.
             assert recipient.currentShipItRequest() is None
 
         request = ShippingRequest(
@@ -739,6 +738,7 @@ class StandardShipItRequestSet:
         return StandardShipItRequest.selectOneBy(
             flavour=flavour, quantityx86=quantityx86,
             quantityamd64=quantityamd64, quantityppc=quantityppc)
+
 
 class Shipment(SQLBase):
     """See IShipment"""

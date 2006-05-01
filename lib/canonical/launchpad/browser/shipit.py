@@ -443,7 +443,6 @@ class ShippingRequestAdminMixinView:
         The matrix returned by this method is meant to be used by the
         quantity_widgets macro, defined in templates/shipit-macros.pt.
         """
-        # XXX: This needs to be unit tested
         matrix = []
         for flavour in self.ordered_flavours:
             row = [flavour.title]
@@ -540,7 +539,9 @@ class ShippingRequestApproveOrDenyView(
 
     @property
     def quantities_matrix(self):
-        # XXX: This needs a unit test
+        """Return a matrix of Flavours x Architectures where the values are
+        the requested quantities for CDs of that Flavour and Architecture.
+        """
         matrix = []
         quantities = self.context.getRequestedCDsGroupedByFlavourAndArch()
         for flavour in self.ordered_flavours:
