@@ -116,11 +116,12 @@ class TestBzrSync(unittest.TestCase):
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
 
-    def commitRevision(self, message=None, committer=None):
+    def commitRevision(self, message=None, committer=None,
+                       pending_merges=[]):
         file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
         file.write(str(time.time()+random.random()))
         file.close()
-        working_tree = self.bzr_branch.working_tree()
+        working_tree = self.bzr_branch.bzrdir.open_workingtree()
         inventory = working_tree.read_working_inventory()
         if not inventory.has_filename("file"):
             working_tree.add("file")
@@ -128,6 +129,7 @@ class TestBzrSync(unittest.TestCase):
             message = self.LOG
         if committer is None:
             committer = self.AUTHOR
+        working_tree.add_pending_merge(*pending_merges)
         working_tree.commit(message, committer=committer)
 
     def uncommitRevision(self):
@@ -183,6 +185,28 @@ class TestBzrSync(unittest.TestCase):
         self.commitRevision()
         self.commitRevision()
         self.syncAndCount(new_revisions=2, new_numbers=2, new_parents=1)
+
+    def test_shorten_history(self):
+        # commit some revisions with two paths to the head revision
+        self.commitRevision()
+        merge_rev_id = self.bzr_branch.last_revision()
+        self.commitRevision()
+        self.commitRevision(pending_merges=[merge_rev_id])
+        self.syncAndCount(new_revisions=3, new_numbers=3, new_parents=3)
+
+        # now do a sync with a the shorter history.
+        old_revision_history = self.bzr_branch.revision_history()
+        new_revision_history = (old_revision_history[:-2] +
+                                old_revision_history[-1:])
+
+        counts = self.getCounts()
+        bzrsync = BzrSync(transaction, self.db_branch.id)
+        bzrsync.bzr_history = new_revision_history
+        bzrsync.syncHistory()
+        # the new history is one revision shorter:
+        self.assertCounts(
+            counts, new_revisions=0, new_numbers=-1,
+            new_parents=0, new_authors=0)
 
 
 TestUtil.register(__name__)
