@@ -29,6 +29,11 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, NotFoundError)
 
 
+class RevisionModifiedError(Exception):
+    """An error indicating that a revision has been modified."""
+    pass
+
+
 class BzrSync:
     """Import version control metadata from Bazaar2 branches into the database.
     """
@@ -114,14 +119,30 @@ class BzrSync:
                 revisionID=db_revision.id, orderBy='sequence'))
             bzr_parents = bzr_revision.parent_ids
 
-            assert len(bzr_parents) == len(db_parents), (
-                'parent counts in db and branch (%d != %d)' %
-                (len(db_parents), len(bzr_parents)))
+            seen_parents = set()
             for sequence, parent_id in enumerate(bzr_parents):
-                assert (db_parents[sequence].sequence == sequence and
-                        db_parents[sequence].parent_id == parent_id), (
-                    'parent %d in db and branch do not match (%s != %s)' %
-                    (sequence, db_parents[sequence].parent_id, parent_id))
+                if parent_id in seen_parents:
+                    continue
+                seen_parents.add(parent_id)
+                matching_parents = [db_parent for db_parent in db_parents
+                                    if db_parent.parent_id == parent_id]
+                if len(matching_parents) == 0:
+                    raise RevisionModifiedError(
+                        'parent %s was added since last scan' % parent_id)
+                elif len(matching_parents) > 1:
+                    raise RevisionModifiedError(
+                        'parent %s is listed multiple times in db' % parent_id)
+                if matching_parents[0].sequence != sequence:
+                    raise RevisionModifiedError(
+                        'parent %s reordered (old index %d, new index %d)'
+                        % (parent_id, matching_parents[0].sequence, sequence))
+            if len(seen_parents) != len(db_parents):
+                removed_parents = [db_parent.parent_id
+                                   for db_parent in db_parents
+                                   if db_parent.parent_id not in seen_parents]
+                raise RevisionModifiedError(
+                    'some parents removed since last scan: %s'
+                    % (removed_parents,))
         else:
             # Revision not yet in the database. Load it.
             timestamp = bzr_revision.timestamp
@@ -136,7 +157,11 @@ class BzrSync:
                                    revision_date=revision_date,
                                    revision_author=db_author.id,
                                    owner=self._admin.id)
+            seen_parents = set()
             for sequence, parent_id in enumerate(bzr_revision.parent_ids):
+                if parent_id in seen_parents:
+                    continue
+                seen_parents.add(parent_id)
                 RevisionParent(revision=db_revision.id, sequence=sequence,
                                parent_id=parent_id)
             didsomething = True
