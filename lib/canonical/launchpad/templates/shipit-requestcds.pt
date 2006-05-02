@@ -5,13 +5,15 @@
 
 <body>
 
-  <div metal:fill-slot="body">
+<div metal:fill-slot="body">
 
   <table>
   <tbody>
   <tr>
   <td width="80%">
   
+  <tal:shipit-is-open condition="view/standardShipItRequests">
+
     <p class="informational message"
        tal:define="status view/process_status"
        tal:condition="status"
@@ -43,30 +45,11 @@
       </div>
     </tal:current_request>
 
-    <tal:pastrequests condition="view/user/pastShipItRequests">
+    <tal:pastrequests condition="view/user/pastShipItRequests"
+                      define="user view/user">
       <h1>Shipped/Cancelled requests</h1>
 
-      <ul>
-        <li tal:repeat="pastorder view/user/pastShipItRequests">
-          <span tal:replace="pastorder/totalCDs" /> CDs requested in
-          <span tal:replace="pastorder/daterequested/fmt:date" />.
-          <span tal:condition="pastorder/cancelled">This request was
-            cancelled, so no CDs were shipped.</span>
-          <tal:notcancelled tal:condition="not: pastorder/cancelled">
-            <tal:shipped condition="pastorder/shipment">
-              <span tal:replace="pastorder/totalapprovedCDs" />
-              CDs approved and sent to the shipping company in 
-              <span tal:replace="pastorder/shipment/shippingrun/datecreated/fmt:date" />.
-              <strong>Please note requests usually take from 4 to 6 weeks to
-                deliver, depending on the country of shipping.</strong>
-            </tal:shipped>
-            <tal:not-shipped condition="not: pastorder/shipment">
-              <span tal:condition="pastorder/isDenied">This request was
-                not approved, so no CDs were shipped.</span>
-            </tal:not-shipped>
-          </tal:notcancelled>
-        </li>
-      </ul>
+      <metal:pastrequests use-macro="context/@@shipit-macros/previous_requests" />
     </tal:pastrequests>
 
     <h1>How many CDs would you like?</h1> 
@@ -163,11 +146,24 @@
 
     </form>
 
-    </td>
-    </tr>
-    </table>  
+  </tal:shipit-is-open>
 
-  </div>
+  <tal:shipit-is-closed condition="not: view/standardShipItRequests">
+    <h1>ShipIt is currently closed</h1>
+
+    <tal:pastrequests condition="view/user/pastShipItRequests"
+                      define="user view/user">
+      <h2>Shipped/Cancelled requests</h2>
+
+      <metal:pastrequests use-macro="context/@@shipit-macros/previous_requests" />
+    </tal:pastrequests>
+  </tal:shipit-is-closed>
+
+  </td>
+  </tr>
+  </table>  
+
+</div>
 
 </body>
 </html>

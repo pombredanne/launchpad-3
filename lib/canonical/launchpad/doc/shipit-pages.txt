@@ -8,9 +8,47 @@ Let's define a helper function to make it easier to construct a view.
 
     >>> from zope.component import getView
     >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.layers import ShipItUbuntuLayer, setFirstLayer
     >>> def create_view(context, name, form=None):
-    ...     view = getView(context, name, TestRequest(form=form))
+    ...     request = TestRequest(form=form)
+    ...     request.notifications = []
+    ...     setFirstLayer(request, ShipItUbuntuLayer)
+    ...     view = getView(context, name, request)
     ...     return view
+
+
+/shipit/myrequest
+-----------------
+
+This is the only page that normal users have access to. Here they can make new
+requests, change/cancel existing ones and see the previous one that were
+shipped already.
+
+When a new version of Ubuntu is released, we usually rollout a new shipit
+code, but we need to keep it closed until everything is ready. It's a good
+thing to do this through the web UI, so we don't depend on a new rollout to
+open it. To achieve this we rely on the predefined quantities of CDs that
+people can choose when making a request. That is, if there's no predefined
+quantities, shipit is considered closed, otherwise it's considered open.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('test@canonical.com')
+    >>> from canonical.launchpad.systemhomes import ShipItApplication
+    >>> shipit = ShipItApplication()
+    >>> myrequest_view = create_view(shipit, 'myrequest')
+    >>> html = myrequest_view.render()
+    >>> 'How many CDs would you like?' in html
+    True
+    >>> 'ShipIt is currently closed' in html
+    False
+
+    >>> myrequest_view.standardShipItRequests = lambda: []
+    >>> html = myrequest_view.render()
+    >>> 'How many CDs would you like?' in html
+    False
+    >>> 'ShipIt is currently closed' in html
+    True
+
 
 /shipit/requests/XX
 -----------------
