@@ -35,6 +35,9 @@ class HasSpecificationsView(LaunchpadView):
     of the spec.
     """
 
+    def is_person(self):
+        return IPerson.providedBy(self.context)
+
     @cachedproperty
     def has_any_specifications(self):
         return self.context.has_any_specifications

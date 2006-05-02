@@ -28,7 +28,8 @@ from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
-    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
+    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage,
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 
 debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
@@ -109,8 +110,11 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
-    dateassigned = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    date_assigned = UtcDateTimeCol(notNull=False, default=None)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    date_confirmed = UtcDateTimeCol(notNull=False, default=None)
+    date_inprogress = UtcDateTimeCol(notNull=False, default=None)
+    date_closed = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     # The targetnamecache is a value that is only supposed to be set when a
     # bugtask is created/modified or by the update-bugtask-targetnamecaches
@@ -187,6 +191,90 @@ class BugTask(SQLBase, BugTaskMixin):
         except KeyError:
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.severity
+
+    def transitionToStatus(self, new_status):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        if not new_status:
+            # This is mainly to facilitate tests which, unlike the
+            # normal status form, don't always submit a status when
+            # testing the edit form.
+            return
+
+        if self.status == new_status:
+            # No change in the status, so nothing to do.
+            return
+
+        if new_status == dbschema.BugTaskStatus.UNKNOWN:
+            # Ensure that all status-related dates are cleared,
+            # because it doesn't make sense to have any values set for
+            # date_confirmed, date_closed, etc. when the status
+            # becomes UNKNOWN.
+            self.status = new_status
+
+            self.date_confirmed = None
+            self.date_inprogress = None
+            self.date_closed = None
+
+            return
+
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+
+        # Record the date of the particular kinds of transitions into
+        # certain states.
+        if ((self.status.value < dbschema.BugTaskStatus.CONFIRMED.value) and
+            (new_status.value >= dbschema.BugTaskStatus.CONFIRMED.value)):
+            # Even if the bug task skips the Confirmed status
+            # (e.g. goes directly to Fix Committed), we'll record a
+            # confirmed date at the same time anyway, otherwise we get
+            # a strange gap in our data, and potentially misleading
+            # reports.
+            self.date_confirmed = now
+
+        if ((self.status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
+            (new_status.value >= dbschema.BugTaskStatus.INPROGRESS.value)):
+            # Same idea with In Progress as the comment above about
+            # Confirmed.
+            self.date_inprogress = now
+
+        if ((self.status in UNRESOLVED_BUGTASK_STATUSES) and
+            (new_status in RESOLVED_BUGTASK_STATUSES)):
+            self.date_closed = now
+
+        # Ensure that we don't have dates recorded for state
+        # transitions, if the bugtask has regressed to an earlier
+        # workflow state. We want to ensure that, for example, a
+        # bugtask that went Unconfirmed => Confirmed => Unconfirmed
+        # has a dateconfirmed value of None.
+        if new_status in UNRESOLVED_BUGTASK_STATUSES:
+            self.date_closed = None
+
+        if new_status < dbschema.BugTaskStatus.CONFIRMED:
+            self.date_confirmed = None
+
+        if new_status < dbschema.BugTaskStatus.INPROGRESS:
+            self.date_inprogress = None
+
+        self.status = new_status
+
+    def transitionToAssignee(self, assignee):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        if assignee == self.assignee:
+            # No change to the assignee, so nothing to do.
+            return
+
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+        if self.assignee and not assignee:
+            # The assignee is being cleared, so clear the dateassigned
+            # value.
+            self.date_assigned = None
+        if not self.assignee and assignee:
+            # The task is going from not having an assignee to having
+            # one, so record when this happened
+            self.date_assigned = now
+
+        self.assignee = assignee
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -525,7 +613,7 @@ class BugTaskSet:
         if not bugtask.target_uses_malone:
             bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
             bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
-            bugtask.status = dbschema.BugTaskStatus.UNKNOWN
+            bugtask.transitionToStatus(dbschema.BugTaskStatus.UNKNOWN)
 
         return bugtask
 

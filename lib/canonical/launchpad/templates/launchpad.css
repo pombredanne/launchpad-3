@@ -721,6 +721,13 @@ tr.highlight {
 .specdeliveryAWAITINGDEPLOYMENT {color: Red; }
 .specdeliveryIMPLEMENTED        {color: Green; }
 
+.branchstatusMATURE             {color: DarkGreen;}
+.branchstatusDEVELOPMENT        {color: DarkRed;}
+.branchstatusEXPERIMENTAL       {color: #930;}
+.branchstatusMERGED             {color: Gray;}
+.branchstatusABANDONED          {color: Gray;}
+.branchstatusNEW                {color: Black;}
+
 
 /* Ticket status */
 

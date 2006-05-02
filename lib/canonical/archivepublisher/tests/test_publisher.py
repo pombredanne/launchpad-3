@@ -10,13 +10,13 @@ import shutil
 
 from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.archivepublisher.config import Config
-
+from canonical.archivepublisher.pool import (
+    DiskPool, Poolifier)
 from canonical.archivepublisher.tests import datadir
 
-from canonical.archivepublisher.tests.util import FakeDownloadClient, \
-                                         FakeSourcePublishing, \
-                                         FakeBinaryPublishing, \
-                                         _deepCopy, dist, drs
+from canonical.archivepublisher.tests.util import (
+    FakeSourcePublishing, FakeBinaryPublishing, FakeDownloadClient,
+    FakeLogger, _deepCopy, dist, drs)
 
 sourceinput1 = [
     FakeSourcePublishing("foo", "main", "foo.dsc", 1)
@@ -37,6 +37,7 @@ binaryinput2 = [
 
 cnf = Config(dist,drs)
 
+
 class TestPublisher(unittest.TestCase):
 
     # Setup creates a pool dir...
@@ -50,15 +51,17 @@ class TestPublisher(unittest.TestCase):
             cnf.cacheroot,
             cnf.miscroot ]:
             os.makedirs(thisdir)
-        self._libr = FakeDownloadClient();
+        self._libr = FakeDownloadClient()
         self._pooldir = cnf.poolroot
         self._overdir = cnf.overrideroot
         self._listdir = cnf.overrideroot
-        
+        self._logger = FakeLogger()
+        self._dp = DiskPool(Poolifier(),
+                            self._pooldir, self._logger)
+
     # Tear down blows the pool dir away...
     def tearDown(self):
         shutil.rmtree(cnf.distroroot)
-    
 
     def testImport(self):
         """canonical.archivepublisher.Publisher should be importable"""
@@ -67,30 +70,23 @@ class TestPublisher(unittest.TestCase):
     def testInstantiate(self):
         """canonical.archivepublisher.Publisher should be instantiatable"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
+        p = Publisher(self._logger, cnf, self._dp, dist, library=self._libr)
 
     def testPathFor(self):
         """canonical.archivepublisher.Publisher._pathfor should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
+        p = Publisher(self._logger, cnf, self._dp, dist, library=self._libr)
         cases = (
-            ("foo", "main", None, "%s/main/f/foo" % cnf.poolroot),
-            ("foo", "main", "foo.deb", "%s/main/f/foo/foo.deb" % cnf.poolroot)
+            ("main", "foo", None, "%s/main/f/foo" % cnf.poolroot),
+            ("main", "foo", "foo.deb", "%s/main/f/foo/foo.deb" % cnf.poolroot)
             )
         for case in cases:
-            self.assertEqual( case[3], p._pathfor(case[0],case[1],case[2]) )
-
-    def testPrepareDir(self):
-        """canonical.archivepublisher.Publisher._preparedir should work"""
-        from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
-        p._preparedir( "foo", "main" )
-        self.assertEqual( True, os.path.isdir("%s/main/f/foo" % self._pooldir))
+            self.assertEqual( case[3], p._pathfor(case[0], case[1], case[2]) )
 
     def testPublish(self):
         """canonical.archivepublisher.Publisher._publish should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
+        p = Publisher(self._logger, cnf, self._dp, dist, library=self._libr)
         p._publish( "foo", "main", "foo.txt", 1 )
         f = "%s/main/f/foo/foo.txt" % self._pooldir
         os.stat(f) # Raises if it's not there. That'll do for now
@@ -98,7 +94,7 @@ class TestPublisher(unittest.TestCase):
     def testFullPublishSource(self):
         """canonical.archivepublisher.Publisher.publish should work for sources"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
+        p = Publisher(self._logger, cnf, self._dp, dist, library=self._libr)
         src = _deepCopy(sourceinput1)
         p.publish( src )
         f = "%s/main/f/foo/foo.dsc" % self._pooldir
@@ -107,7 +103,7 @@ class TestPublisher(unittest.TestCase):
     def testFullPublishBinary(self):
         """canonical.archivepublisher.Publisher.publish should work for sources"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
+        p = Publisher(self._logger, cnf, self._dp, dist, library=self._libr)
         bin = _deepCopy(binaryinput1)
         p.publish( bin, False )
         f = "%s/main/f/foo/foo.deb" % self._pooldir
@@ -116,7 +112,7 @@ class TestPublisher(unittest.TestCase):
     def testPublishOverrides(self):
         """canonical.archivepublisher.Publisher.publishOverrides should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
+        p = Publisher(self._logger, cnf, self._dp, dist, library=self._libr)
         src = _deepCopy(sourceinput2)
         bin = _deepCopy(binaryinput2)
         p.publishOverrides( src, bin )
@@ -127,7 +123,7 @@ class TestPublisher(unittest.TestCase):
     def testPublishFileLists(self):
         """canonical.archivepublisher.Publisher.publishFileLists should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
+        p = Publisher(self._logger, cnf, self._dp, dist, library=self._libr)
         src = _deepCopy(sourceinput2)
         bin = _deepCopy(binaryinput2)
         p.publishFileLists( src, bin )
@@ -137,7 +133,7 @@ class TestPublisher(unittest.TestCase):
     def testGenerateConfig(self):
         """canonical.archivepublisher.Publisher.generateAptFTPConfig should work"""
         from canonical.archivepublisher import Publisher
-        p = Publisher(cnf, self._libr)
+        p = Publisher(self._logger, cnf, self._dp, dist, library=self._libr)
         s = p.generateAptFTPConfig()
         # XXX: dsilvers 2004-11-15
         # For now, all we can sensibly do is assert that the config was created
