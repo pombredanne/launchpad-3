@@ -22,4 +22,9 @@
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    handler="canonical.launchpad.subscribers.karma.bugtask_modified" />
 
+<subscriber
+   for="canonical.launchpad.interfaces.IBugTask
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   handler="canonical.launchpad.subscribers.buglastupdated.update_bug_date_last_updated" />
+
 </configure>
