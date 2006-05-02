@@ -19,7 +19,8 @@ from zope.component import getUtility
 from zope.event import notify
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
+    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
+    )
 
 from canonical.cachedproperty import cachedproperty
 
@@ -41,6 +42,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
+from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
@@ -103,6 +105,13 @@ def _can_edit_translations(pofile, person):
 
     Return True or False indicating whether the person is allowed
     to edit these translations.
+
+    Admins and Rosetta experts are always able to edit any translation.
+    If the IPOFile is for an IProductSeries, the owner of the IProduct has
+    also permissions.
+    Any other mortal will have rights depending on if he/she is on the right
+    translation team for the given IPOFile.translationpermission and the
+    language associated with this IPOFile.
     """
     # If the person is None, then they cannot edit
     if person is None:
@@ -186,8 +195,7 @@ class POFile(SQLBase, RosettaStats):
                         notNull=False,
                         default=None)
     path = StringCol(dbName='path',
-                     notNull=False,
-                     default=None)
+                     notNull=True)
     exportfile = ForeignKey(foreignKey='LibraryFileAlias',
                             dbName='exportfile',
                             notNull=False,
@@ -203,6 +211,9 @@ class POFile(SQLBase, RosettaStats):
 
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
+
+    # joins
+    pomsgsets = SQLMultipleJoin('POMsgSet', joinColumn='pofile')
 
     @property
     def title(self):
@@ -253,13 +264,6 @@ class POFile(SQLBase, RosettaStats):
         return POMsgSet.select(
             'POMsgSet.pofile = %d AND POMsgSet.sequence > 0' % self.id,
             orderBy='sequence')
-
-    # XXX: Carlos Perello Marin 15/10/04: I don't think this method is needed,
-    # it makes no sense to have such information or perhaps we should have it
-    # as pot's len + the obsolete msgsets from this .po file.
-    def __len__(self):
-        """See IPOFile."""
-        return self.translatedCount()
 
     def translated(self):
         """See IPOFile."""
@@ -855,6 +859,14 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         self.exportfile = None
 
+    def recalculateLatestSubmission(self):
+        """See IPOFile."""
+        self.latestsubmission = POSubmission.selectFirst('''
+            POSelection.activesubmission = POSubmission.id AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            POMSgSet.pofile = %s''' % sqlvalues(self),
+            orderBy=['-datecreated'], clauseTables=['POSelection', 'POMsgSet'])
+
 
 class DummyPOFile(RosettaStats):
     """Represents a POFile where we do not yet actually HAVE a POFile for
@@ -865,11 +877,18 @@ class DummyPOFile(RosettaStats):
     def __init__(self, potemplate, language, owner=None):
         self.potemplate = potemplate
         self.language = language
-        self.owner = owner
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
         self.lasttranslator = None
         self.contributors = []
+
+        # The default POFile owner is the Rosetta Experts team unless the
+        # given owner has rights to write into that file.
+        if self.canEditTranslations(owner):
+            self.owner = owner
+        else:
+            self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
+
 
     def __getitem__(self, msgid_text):
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)

@@ -6,6 +6,7 @@ __all__ = [
     'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
     'JabberIDSet', 'IrcID', 'IrcIDSet']
 
+import itertools
 import sets
 from datetime import datetime, timedelta
 import pytz
@@ -26,7 +27,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import shortlist, contactEmailAddresses
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -610,6 +611,14 @@ class Person(SQLBase):
                  'Person.teamowner IS NOT NULL' % self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
+    def getTeamAdminsEmailAddresses(self):
+        """See IPerson."""
+        assert self.teamowner is not None
+        to_addrs = set()
+        for person in itertools.chain(self.administrators, [self.teamowner]):
+            to_addrs.update(contactEmailAddresses(person))
+        return to_addrs
+
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
         """See IPerson."""
@@ -648,10 +657,8 @@ class Person(SQLBase):
             # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
             expires = now
 
-        tm.setStatus(status)
+        tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires
-        tm.reviewer = reviewer
-        tm.reviewercomment = comment
 
         tm.syncUpdate()
 
@@ -1329,6 +1336,32 @@ class PersonSet:
             """ % vars()
             )
         skip.append(('wikiname', 'person'))
+
+        # Update the Branches that will not conflict, and fudge the names of
+        # ones that *do* conflict
+        cur.execute('''
+            SELECT product, name FROM Branch WHERE owner = %(to_id)d
+            ''' % vars())
+        possible_conflicts = set(tuple(r) for r in cur.fetchall())
+        cur.execute('''
+            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
+            ORDER BY id
+            ''' % vars())
+        for id, product, name in list(cur.fetchall()):
+            new_name = name
+            suffix = 1
+            while (product, new_name) in possible_conflicts:
+                new_name = '%s-%d' % (name, suffix)
+                suffix += 1
+            possible_conflicts.add((product, new_name))
+            new_name = new_name.encode('US-ASCII')
+            name = name.encode('US-ASCII')
+            cur.execute('''
+                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
+                WHERE owner = %(from_id)s AND name = %(name)s
+                    AND (%(product)s IS NULL OR product = %(product)s)
+                ''', vars())
+        skip.append(('branch','owner'))
 
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case

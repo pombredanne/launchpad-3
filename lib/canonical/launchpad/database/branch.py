@@ -92,33 +92,62 @@ class Branch(SQLBase):
 
     @property
     def related_bugs(self):
+        """See IBranch."""
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
+    def warehouse_url(self):
+        """See IBranch."""
+        root = config.supermirror.warehouse_root_url
+        return "%s%08x" % (root, self.id)
+
+    @property
     def product_name(self):
+        """See IBranch."""
         if self.product is None:
             return '+junk'
         return self.product.name
 
     @property
     def unique_name(self):
+        """See IBranch."""
         return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
 
     @property
     def displayname(self):
+        """See IBranch."""
         if self.title:
             return self.title
         else:
             return self.unique_name
 
+    @property
+    def sort_key(self):
+        """See IBranch."""
+        if self.product is None:
+            product = None
+        else:
+            product = self.product.name
+        if self.author is None:
+            author = None
+        else:
+            author = self.author.browsername
+        status = self.lifecycle_status.sortkey
+        name = self.name
+        owner = self.owner.name
+        return (product, status, author, name, owner)
+
     def revision_count(self):
+        """See IBranch."""
         return RevisionNumber.selectBy(branchID=self.id).count()
 
     def latest_revisions(self, quantity=10):
+        """See IBranch."""
         return RevisionNumber.selectBy(
             branchID=self.id, orderBy='-sequence').limit(quantity)
 
     def revisions_since(self, timestamp):
+        """See IBranch."""
         return RevisionNumber.select(
             'Revision.id=RevisionNumber.revision AND '
             'RevisionNumber.branch = %d AND '
@@ -157,6 +186,7 @@ class Branch(SQLBase):
 
     @property
     def pull_url(self):
+        """See IBranch."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         if self.url is not None:
             # This is a pull branch, hosted externally.
@@ -185,16 +215,22 @@ class BranchSet:
             raise NotFoundError(branch_id)
         return branch
 
+    def __iter__(self):
+        """See IBranchSet."""
+        return iter(Branch.select())
+
+    @property
+    def all(self):
+        branches = Branch.select()
+        branches.prejoin(['author', 'product'])
+        return branches
+
     def get(self, branch_id, default=None):
         """See IBranchSet."""
         try:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
-
-    def __iter__(self):
-        """See IBranchSet."""
-        return iter(Branch.select())
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,

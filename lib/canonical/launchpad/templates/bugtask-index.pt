@@ -161,9 +161,22 @@
     <fieldset class="collapsible collapsed">
       <legend>Add comment to this bug</legend>
           <b>Subject:</b>
-          <input name="subject" type="text" size="50"
-                 tal:attributes="value context/bug/followup_subject" /><br />
-          <b>Comment:</b> <textarea name="comment" rows="10"></textarea>
+          <div>
+            <input name="subject" type="text" size="50"
+                   tal:attributes="value context/bug/followup_subject" />
+          </div>
+          <b>Comment:</b>
+          <div>
+            <textarea name="comment" rows="10"></textarea>
+          </div>
+          <div tal:condition="python:not context.bug.isSubscribed(view.user)">
+            <input type="checkbox" name="subscribe" id="subscribe"
+                   value="Subscribe" checked />
+            <label for="subscribe" style="font-weight: normal">
+              Subscribe me to this bug report
+            </label>
+          </div>
+          <br />
           <input type="submit" name="save" value="Add Comment" />
     </fieldset>
   </tal:logged-in>

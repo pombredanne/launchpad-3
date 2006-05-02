@@ -93,6 +93,14 @@ class IEmailCommand(Interface):
     def execute(context):
         """Execute the command in a context."""
 
+    def setAttributeValue(context, attr_name, attr_value):
+        """Set the value of the attribute.
+
+        Subclasses may want to override this if, for example, the
+        attribute is set through a special method instead of a normal
+        attribute.
+        """
+
     def __str__():
         """Return a textual representation of the command and its arguments."""
 

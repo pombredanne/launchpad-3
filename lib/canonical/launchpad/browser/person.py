@@ -8,6 +8,7 @@ __all__ = [
     'PersonSetNavigation',
     'PeopleContextMenu',
     'PersonFacets',
+    'PersonBranchesMenu',
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
@@ -54,8 +55,7 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-from canonical.launchpad.browser.specificationtarget import (
-    HasSpecificationsView)
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -81,7 +81,7 @@ from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.mail.sendmail import simple_sendmail, format_address
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -205,7 +205,7 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'branches', 'translations', 'calendar']
 
     def overview(self):
         text = 'Overview'
@@ -239,6 +239,12 @@ class PersonFacets(StandardLaunchpadFacets):
             )
         return Link('+bounties', text, summary)
 
+    def branches(self):
+        text = 'Branches'
+        summary = ('Bazaar Branches and revisions registered and authored '
+                   'by %s' % self.context.browsername)
+        return Link('+branches', text, summary)
+
     def translations(self):
         target = '+translations'
         text = 'Translations'
@@ -255,6 +261,32 @@ class PersonFacets(StandardLaunchpadFacets):
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link('+calendar', text, summary, enabled=enabled)
+
+
+class PersonBranchesMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'branches'
+
+    links = ['authored', 'registered', 'subscribed', 'addbranch']
+
+    def authored(self):
+        text = 'Branches Authored'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Branches Registered'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Branches Subscribed'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def addbranch(self):
+        text = 'Register Branch'
+        return Link('+addbranch', text, icon='add')
+
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -295,7 +327,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'roadmap',]
+             'workload', 'roadmap']
 
     def registrant(self):
         text = 'Registrant'
@@ -385,8 +417,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editwikinames', 'editircnicknames', 'editjabberids',
              'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages',
-             'branches', 'authored', 'registered', 'subscribed', 'addbranch']
+             'codesofconduct', 'administer', 'common_packages',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -467,28 +498,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
-
-    def branches(self):
-        text = 'Bzr Branches'
-        summary = 'Branches and revisions by %s' % self.context.browsername
-        return Link('+branches', text, summary)
-
-    def authored(self):
-        text = 'Branches Authored'
-        return Link('+authoredbranches', text, icon='branch')
-
-    def registered(self):
-        text = 'Branches Registered'
-        return Link('+registeredbranches', text, icon='branch')
-
-    def subscribed(self):
-        text = 'Branches Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
-
-    def addbranch(self):
-        text = 'Register Branch'
-        return Link('+addbranch', text, icon='add')
-
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -1963,7 +1972,8 @@ class RequestPeopleMergeMultipleEmailsView:
 def sendMergeRequestEmail(token, dupename, appurl):
     template = open(
         'lib/canonical/launchpad/emailtemplates/request-merge.txt').read()
-    fromaddress = "Launchpad Account Merge <noreply@ubuntu.com>"
+    fromaddress = format_address(
+        "Launchpad Account Merge", config.noreply_from_address)
 
     replacements = {'longstring': token.token,
                     'dupename': dupename,
