@@ -123,24 +123,33 @@ def update_bug_contact_subscriptions(modified_bugtask, event):
     if bugtask_after_modification.bug.private:
         return
 
+    is_upstream_task = IUpstreamBugTask.providedBy(modified_bugtask)
+    is_distro_task = IDistroBugTask.providedBy(modified_bugtask)
+    is_distrorelease_task = IDistroReleaseBugTask.providedBy(modified_bugtask)
+
     # Calculate the list of new bug contacts, if any.
     new_bugcontacts = []
-    if IUpstreamBugTask.providedBy(modified_bugtask):
+    if is_upstream_task:
         if (bugtask_before_modification.product !=
             bugtask_after_modification.product):
             if bugtask_after_modification.product.bugcontact:
                 new_bugcontacts.append(
                     bugtask_after_modification.product.bugcontact)
-    elif (IDistroBugTask.providedBy(modified_bugtask) or
-          IDistroReleaseBugTask.providedBy(modified_bugtask)):
+    elif is_distro_task or is_distrorelease_task:
         if bugtask_after_modification.sourcepackagename is None:
             # No new bug contacts to be subscribed.
             return
-        if (bugtask_before_modification.sourcepackagename !=
-            bugtask_after_modification.sourcepackagename):
-            new_sourcepackage = (
-                bugtask_after_modification.distribution.getSourcePackage(
-                bugtask_after_modification.sourcepackagename.name))
+
+        old_sp_name = bugtask_before_modification.sourcepackagename
+        new_sp_name = bugtask_after_modification.sourcepackagename
+        if old_sp_name != new_sp_name:
+            if is_distro_task:
+                distribution = bugtask_after_modification.distribution
+            else:
+                distribution = (
+                    bugtask_after_modification.distrorelease.distribution)
+            new_sourcepackage = (distribution.getSourcePackage(new_sp_name))
+
             for package_bug_contact in new_sourcepackage.bugcontacts:
                 new_bugcontacts.append(package_bug_contact.bugcontact)
 
