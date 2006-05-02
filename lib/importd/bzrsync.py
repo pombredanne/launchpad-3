@@ -64,7 +64,14 @@ class BzrSync:
         ancestry = self.bzr_branch.repository.get_ancestry(
             self.bzr_branch.last_revision())
         for revision_id in ancestry:
-            didsomething |= self.syncRevision(revision_id)
+            if revision_id is None:
+                continue
+            # If the revision is a ghost, it won't appear in the repository.
+            try:
+                revision = self.bzr_branch.repository.get_revision(revision_id)
+            except NoSuchRevision:
+                continue
+            didsomething |= self.syncRevision(revision)
 
         self.logger.info(
             "synchronizing revision numbers for branch: %s",
@@ -86,27 +93,18 @@ class BzrSync:
 
         return didsomething
 
-    def syncRevision(self, revision_id):
+    def syncRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
 
-        :param revision_id: GUID of the revision to import.
-        :type revision_id: str
+        :param bzr_revision: the revision to import
+        :type bzr_revision: bzrlib.revision.Revision
         """
-        if revision_id is None:
-            return False
-
+        revision_id = bzr_revision.revision_id
         self.logger.debug("synchronizing revision: %s", revision_id)
 
         # If didsomething is True, new information was found and
         # loaded into the database.
         didsomething = False
-
-        # If the revision is a ghost, it won't exist in the branch's
-        # repository.
-        try:
-            bzr_revision = self.bzr_branch.repository.get_revision(revision_id)
-        except NoSuchRevision:
-            return didsomething
 
         self.trans_manager.begin()
 

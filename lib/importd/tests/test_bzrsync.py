@@ -16,7 +16,7 @@ import transaction
 from canonical.launchpad.database import (
     Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 
-from importd.bzrsync import BzrSync
+from importd.bzrsync import BzrSync, RevisionModifiedError
 from importd.tests import TestUtil
 from importd.tests.helpers import WebserverHelper, ZopelessUtilitiesHelper
 
@@ -207,6 +207,46 @@ class TestBzrSync(unittest.TestCase):
         self.assertCounts(
             counts, new_revisions=0, new_numbers=-1,
             new_parents=0, new_authors=0)
+
+    def test_revision_modified(self):
+        # test that modifications to the parents list get caught.
+        class FakeRevision:
+            revision_id = ['rev42']
+            parent_ids = ['rev1', 'rev2']
+            committer = self.AUTHOR
+            message = self.LOG
+            timestamp = 1000000000.0
+            timezone = 0
+        bzrsync = BzrSync(transaction, self.db_branch.id)
+        # synchronise the fake revision:
+        counts = self.getCounts()
+        bzrsync.syncRevision(FakeRevision)
+        self.assertCounts(
+            counts, new_revisions=1, new_numbers=0,
+            new_parents=2, new_authors=0)
+
+        # verify that synchronising the revision twice passes and does
+        # not create a second revision object:
+        counts = self.getCounts()
+        bzrsync.syncRevision(FakeRevision)
+        self.assertCounts(
+            counts, new_revisions=0, new_numbers=0,
+            new_parents=0, new_authors=0)
+
+        # verify that adding a parent gets caught:
+        FakeRevision.parent_ids.append('rev3')
+        self.assertRaises(RevisionModifiedError,
+                          bzrsync.syncRevision, FakeRevision)
+
+        # verify that removing a parent gets caught:
+        FakeRevision.parent_ids = ['rev1']
+        self.assertRaises(RevisionModifiedError,
+                          bzrsync.syncRevision, FakeRevision)
+
+        # verify that reordering the parents gets caught:
+        FakeRevision.parent_ids = ['rev2', 'rev1']
+        self.assertRaises(RevisionModifiedError,
+                          bzrsync.syncRevision, FakeRevision)
 
 
 TestUtil.register(__name__)
