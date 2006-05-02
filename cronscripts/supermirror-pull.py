@@ -16,7 +16,7 @@ if __name__ == '__main__':
     if arguments:
         parser.error("Unhandled arguments %s" % repr(arguments))
 
-    log = logger(options, 'supermirror-pull')
+    log = logger(options, 'branch-puller')
 
     mirror()
 

@@ -8,6 +8,7 @@ from zope.app.testing.functional import *
 
 import logging
 from zope.testing.loggingsupport import Handler, InstalledHandler
+from zope.testbrowser import Browser
 from zope.app.component.hooks import setSite, getSite
 from zope.component import getUtility
 import zope.security.management
@@ -196,6 +197,10 @@ def FunctionalDocFileSuite(*paths, **kw):
         test.globs['debug_http'] = UnstickyCookieHTTPCaller(
                 port=9000,debug=True
                 )
+        # Set up a Browser object with handleErrors set to False, since
+        # that gives a tracebacks instead of unhelpful error messages.
+        test.globs['browser'] = Browser()
+        test.globs['browser'].handleErrors = False
         if stdout_logging:
             log = StdoutHandler('')
             log.setLoggerLevel(stdout_logging_level)

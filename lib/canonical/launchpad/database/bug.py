@@ -141,20 +141,49 @@ class Bug(SQLBase):
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 
+    def getSubscribersFromDuplicates(self):
+        """See IBug."""
+        if self.private:
+            # There are never any implicit subscribers to private bugs!
+            return []
+
+        subscribers_from_dupes = set()
+        for dupe in self.duplicates:
+            subscribers_from_dupes.update(dupe._getDirectSubscribers())
+
+        subscribers_from_dupes.difference_update(self._getDirectSubscribers())
+
+        return subscribers_from_dupes
+
+    def _getDirectSubscribers(self):
+        """Return a list of people subscribed directly to this bug.
+
+        For public bugs, this also includes assignees.
+        """
+        direct_subscribers = set()
+
+        for subscription in self.subscriptions:
+            direct_subscribers.add(subscription.person)
+
+        if not self.private:
+            # Collect implicit subscriptions. This only happens on public bugs.
+            for task in self.bugtasks:
+                if task.assignee is not None:
+                    direct_subscribers.add(task.assignee)
+
+        return direct_subscribers
+
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
         emails = Set()
-        for subscription in self.subscriptions:
-            emails.update(contactEmailAddresses(subscription.person))
+        for direct_subscriber in self._getDirectSubscribers():
+            emails.update(contactEmailAddresses(direct_subscriber))
 
-        if not self.private:
-            # Collect implicit subscriptions. This only happens on
-            # public bugs.
-            for task in self.bugtasks:
-                if task.assignee is not None:
-                    emails.update(contactEmailAddresses(task.assignee))
+        # Add subscribers of duplicates of this bug.
+        for dupe_subscriber in self.getSubscribersFromDuplicates():
+            emails.update(contactEmailAddresses(dupe_subscriber))
 
-        return sorted(emails)
+        return list(emails)
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""
