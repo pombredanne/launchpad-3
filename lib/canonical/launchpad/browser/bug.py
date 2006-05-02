@@ -253,6 +253,9 @@ class BugAlsoReportInView(GeneralFormView):
         """Override GeneralFormView.__init__() not to set up widgets."""
         self.context = context
         self.request = request
+        self.fieldNames = [
+            'do_add_unlinked_task', 'link_to_bugwatch',
+            'bugtracker', 'remotebug']
         self.errors = {}
 
     def process_form(self):
@@ -270,15 +273,14 @@ class BugAlsoReportInView(GeneralFormView):
 
     def render_upstreamtask(self):
         self.label = "Request fix in a product"
-        self.fieldNames = ['product', 'bugtracker', 'remotebug']
+        self.fieldNames.append('product')
         self._setUpWidgets()
         self.saved_process_form()
         return self.index()
 
     def render_distrotask(self):
         self.label = "Request fix in a distribution"
-        self.fieldNames = [
-            'distribution', 'sourcepackagename', 'bugtracker', 'remotebug']
+        self.fieldNames.extend(['distribution', 'sourcepackagename'])
         self._setUpWidgets()
         self.saved_process_form()
         return self.index()
@@ -290,7 +292,11 @@ class BugAlsoReportInView(GeneralFormView):
         them rendered automatically.
         """
         bug_watch_widgets = [
-            self.schema['bugtracker'], self.schema['remotebug']]
+            self.schema['bugtracker'],
+            self.schema['remotebug'],
+            self.schema['link_to_bugwatch'],
+            self.schema['do_add_unlinked_task'],
+            ]
         return [
             widget for widget in GeneralFormView.widgets(self)
             if widget.context not in bug_watch_widgets
@@ -307,6 +313,7 @@ class BugAlsoReportInView(GeneralFormView):
         """
         errors = []
         widgets_data = {}
+        link_to_bugwatch = data.get('link_to_bugwatch')
         bugtracker = data.get('bugtracker')
         remotebug = data.get('remotebug')
         product = data.get('product')
@@ -321,12 +328,12 @@ class BugAlsoReportInView(GeneralFormView):
         else:
             raise UnexpectedFormData(
                 'Neither product nor distribution was provided')
-        if bugtracker is not None and target.official_malone:
+        if link_to_bugwatch and target.official_malone:
             errors.append(LaunchpadValidationError(
                 "%s uses Malone as its bug tracker, therefor it can't be"
                 " linked to a remote bug watch.",
                 target.displayname))
-        elif bugtracker is not None and remotebug is None:
+        elif link_to_bugwatch and remotebug is None:
             errors.append(LaunchpadValidationError(
                 "Please specify the remote bug number in the remote "
                 "bug tracker."))
@@ -337,7 +344,8 @@ class BugAlsoReportInView(GeneralFormView):
             raise WidgetsError(errors, widgetsData=widgets_data)
 
     def process(self, product=None, distribution=None, sourcepackagename=None,
-                bugtracker=None, remotebug=None):
+                bugtracker=None, remotebug=None, link_to_bugwatch=False,
+                do_add_unlinked_task=None):
         """Create new bug task.
 
         Only one of product and distribution may be not None, and
@@ -357,7 +365,7 @@ class BugAlsoReportInView(GeneralFormView):
             raise UnexpectedFormData(
                 'Neither product nor distribution was provided')
 
-        if bugtracker is not None:
+        if link_to_bugwatch:
             user = getUtility(ILaunchBag).user
             bug_watch = getUtility(IBugWatchSet).createBugWatch(
                 bug=taskadded.bug, owner=user, bugtracker=bugtracker,
