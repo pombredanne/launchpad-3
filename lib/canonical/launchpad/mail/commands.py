@@ -25,10 +25,7 @@ from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.searchbuilder import NULL
 
-from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskImportance, BugTaskPriority)
-    # XXX mpt 20060418: priority is hidden but may be reinstated.
-    # https://wiki.launchpad.canonical.com/MaloneSimplifications
+from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
 
 
 def get_error_message(filename, **interpolation_items):
@@ -486,8 +483,6 @@ class EmailCommands:
         'severity': ReplacedByImportanceCommand,
         'priority': ReplacedByImportanceCommand,
     }
-    # XXX mpt 20060418: priority is hidden but may be reinstated.
-    # https://wiki.launchpad.canonical.com/MaloneSimplifications
 
     def names(self):
         """Returns all the command names."""

@@ -149,8 +149,6 @@ function will be used:
   ...             print '    Source package:', task.sourcepackagename.name
   ...         if task.assignee:
   ...             print '    Assignee:', task.assignee.displayname
-  ...         if task.priority:
-  ...             print '    Priority:', task.priority.name
   ...         if task.importance:
   ...             print '    Importance:', task.importance.name
   ...         if task.statusexplanation:
@@ -194,7 +192,6 @@ Now we import bug #1 and check the results:
       Distro: ubuntu
       Source package: mozilla-firefox
       Assignee: Sample Person
-      Priority: MEDIUM
       Importance: MEDIUM
       Explanation: status (Bugzilla status=NEW, product=Ubuntu, component=mozilla-firefox)
       Milestone: ubuntu-5.10
@@ -231,9 +228,7 @@ to notice:
 
  * A Launchpad account is created for new.user@canonical.com as a side
    effect of the import, because they are subscribed to the bug.
- * The "RESOLVED WONTFIX" status is converted to a status of REJECTED
-   and a priority of WONTFIX. # XXX mpt 20060418: priority is hidden, but may
-   be reinstated. https://wiki.launchpad.canonical.com/MaloneSimplifications
+ * The "RESOLVED WONTFIX" status is converted to a status of REJECTED.
  * An fact that the "unknown" package does not exist in Ubuntu has
    been logged, along with the exception raised by getPackageNames().
 
@@ -253,7 +248,6 @@ to notice:
       Status: REJECTED
       Distro: ubuntu
       Assignee: Sample Person
-      Priority: WONTFIX
       Importance: WISHLIST
       Explanation: Bugzilla status=RESOLVED WONTFIX, product=Ubuntu, component=unknown
   Messages:
@@ -290,7 +284,6 @@ Now import an ASSIGNED bug.  Things to note about this import:
       Distro: ubuntu
       Source package: netapplet
       Assignee: Foo Bar
-      Priority: HIGH
       Importance: CRITICAL
       Explanation: Bugzilla status=ASSIGNED, product=Ubuntu, component=netapplet
   CVEs:
@@ -334,7 +327,6 @@ Next we import a fixed bug:
       Distro: ubuntu
       Source package: mozilla-firefox
       Assignee: Sample Person
-      Priority: HIGH
       Importance: CRITICAL
       Explanation: Bugzilla status=CLOSED FIXED, product=Ubuntu, component=mozilla-firefox
   Messages:
@@ -369,14 +361,12 @@ and attach a watch to the upstream bug tracker:
       Distro: ubuntu
       Source package: evolution
       Assignee: Sample Person
-      Priority: HIGH
       Importance: CRITICAL
       Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
   Task: evolution (Debian)
       Status: UNKNOWN
       Distro: debian
       Source package: evolution
-      Priority: UNKNOWN
       Importance: UNKNOWN
       Watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
   Messages:
@@ -413,20 +403,6 @@ Bugzilla severities are mapped to the equivalent Launchpad importance values:
   enhancement  WISHLIST
 
 
-Priority Mapping
-----------------
-
-  >>> for priority in ['P1', 'P2', 'P3', 'P4', 'P5']:
-  ...     bug.priority = priority
-  ...     bug.mapPriority(bugtask)
-  ...     print '%-2s  %s' % (priority, bugtask.priority.name)
-  P1  HIGH
-  P2  MEDIUM
-  P3  MEDIUM
-  P4  LOW
-  P5  LOW
-
-
 Status Mapping
 --------------
 
@@ -461,21 +437,19 @@ If the bug has been resolved, the resolution will affect the status:
   ...                    'DUPLICATE', 'WORKSFORME', 'MOVED']:
   ...     bug.resolution = resolution
   ...     bugtask.statusexplanation = ''
-  ...     bug.mapPriority(bugtask)
   ...     bug.mapStatus(bugtask)
-  ...     print '%-10s  %-8s  %s' % (resolution, bugtask.status.name,
-  ...                                bugtask.priority.name)
-  FIXED       FIXRELEASED     MEDIUM
-  INVALID     REJECTED  MEDIUM
-  WONTFIX     REJECTED  WONTFIX
-  NOTABUG     REJECTED  MEDIUM
-  NOTWARTY    REJECTED  MEDIUM
-  UNIVERSE    REJECTED  MEDIUM
-  LATER       REJECTED  MEDIUM
-  REMIND      REJECTED  MEDIUM
-  DUPLICATE   REJECTED  MEDIUM
-  WORKSFORME  REJECTED  MEDIUM
-  MOVED       REJECTED  MEDIUM
+  ...     print '%-10s  %-8s  %s' % (resolution, bugtask.status.name)
+  FIXED       FIXRELEASED
+  INVALID     REJECTED
+  WONTFIX     REJECTED
+  NOTABUG     REJECTED
+  NOTWARTY    REJECTED
+  UNIVERSE    REJECTED
+  LATER       REJECTED
+  REMIND      REJECTED
+  DUPLICATE   REJECTED
+  WORKSFORME  REJECTED
+  MOVED       REJECTED
 
 
 Bug Target Mapping

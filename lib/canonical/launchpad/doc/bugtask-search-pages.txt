@@ -78,7 +78,7 @@ spaces.
     >>> form_values = {
     ...     'search': 'Search',
     ...     'field.searchtext': 'blackhole\n\rtrash\n\rfolder',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_search_listingview = create_view(
     ...     ubuntu, '+bugs', form_values)
@@ -140,7 +140,7 @@ Searching by component is possible, as long as the context has defined a
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.component': 1,
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     ubuntu, '+bugs', form_values)
@@ -163,7 +163,7 @@ in each release. In this case, the component search widget is hidden.
     ...     'search': 'Search bugs in Gentoo',
     ...     'advanced': 1,
     ...     'field.component': 1,
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     gentoo, '+bugs', form_values)

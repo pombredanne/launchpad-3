@@ -16,7 +16,6 @@ __all__ = [
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
-    'BugTaskPriorityVocabulary',
     'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
@@ -32,7 +31,6 @@ __all__ = [
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
-    'RemoteBugTaskPriorityVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'RemoteBugTaskStatusVocabulary',
     'SpecificationDeliveryVocabulary',
@@ -81,10 +79,6 @@ BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugTaskStatusVocabulary = vocab_factory(
     dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
-BugTaskPriorityVocabulary = vocab_factory(
-    dbschema.BugTaskPriority, noshow=[dbschema.BugTaskPriority.UNKNOWN])
-    # XXX mpt 20060418: priority is hidden but may be reinstated.
-    # https://wiki.launchpad.canonical.com/MaloneSimplifications
 BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
@@ -104,7 +98,6 @@ PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
-RemoteBugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)

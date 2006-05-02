@@ -37,10 +37,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
-from canonical.lp.dbschema import (
-    BugTaskPriority, BugTaskImportance, BugTaskStatus)
-    # XXX mpt 20060418: priority is hidden but may be reinstated.
-    # https://wiki.launchpad.canonical.com/MaloneSimplifications
+from canonical.lp.dbschema import (BugTaskImportance, BugTaskStatus)
 
 class BugSetNavigation(Navigation):
 

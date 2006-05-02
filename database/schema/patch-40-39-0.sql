@@ -12,5 +12,7 @@ ALTER TABLE BugTask ALTER COLUMN importance SET DEFAULT 5;
 
 -- Finally, drop the priority field.
 ALTER TABLE BugTask DROP COLUMN priority;
+-- We'll keep the bugtaskprioritychanged karma action around for a year,
+-- until its karma doesn't count any more.
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 39, 0);

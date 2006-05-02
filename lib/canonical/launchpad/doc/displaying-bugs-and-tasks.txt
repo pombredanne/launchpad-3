@@ -8,11 +8,9 @@ display bug and bug task information.
 Displaying an Icon with fmt:icon
 --------------------------------
 
-fmt:icon is a TALES adapter that can be used to render an <img> tag
-containing the appropriate icon for a bugtask. Currently, the icon
-display is dependant on the priority of the IBugTask object.
-XXX mpt 20060418: priority is now hidden, so this should be altered
-to use importance instead.
+fmt:icon is a TALES adapter that can be used to render an <img> tag containing
+the appropriate icon for a bugtask. The icon is dependent on the importance of
+the IBugTask object.
 
 Let's use a few examples to demonstrate:
 
@@ -27,22 +25,22 @@ Let's use a few examples to demonstrate:
   >>> from canonical.launchpad.ftests import test_tales
 
   >>> bugtaskset = getUtility(IBugTaskSet)
-  >>> high_priority_task = bugtaskset.get(4)
-  >>> medium_priority_task = bugtaskset.get(13)
-  >>> low_priority_task = bugtaskset.get(3)
-  >>> wontfix_priority_task = bugtaskset.get(2)
+  >>> high_importance_task = bugtaskset.get(4)
+  >>> medium_importance_task = bugtaskset.get(13)
+  >>> low_importance_task = bugtaskset.get(3)
+  >>> untriaged_task = bugtaskset.get(2)
 
-  >>> test_tales("bugtask/fmt:icon", bugtask=high_priority_task)
-  '<img alt="(high priority)" title="high priority" src="/@@/bug-high" />'
+  >>> test_tales("bugtask/fmt:icon", bugtask=high_importance_task)
+  '<img alt="(High importance)" title="High importance" src="/@@/bug-high" />'
 
-  >>> test_tales("bugtask/fmt:icon", bugtask=medium_priority_task)
-  '<img alt="(medium priority)" title="medium priority" src="/@@/bug-medium" />'
+  >>> test_tales("bugtask/fmt:icon", bugtask=medium_importance_task)
+  '<img alt="(Medium importance)" title="Medium importance" src="/@@/bug-medium" />'
 
-  >>> test_tales("bugtask/fmt:icon", bugtask=low_priority_task)
-  '<img alt="(low priority)" title="low priority" src="/@@/bug-low" />'
+  >>> test_tales("bugtask/fmt:icon", bugtask=low_importance_task)
+  '<img alt="(Low importance)" title="Low importance" src="/@@/bug-low" />'
 
-  >>> test_tales("bugtask/fmt:icon", bugtask=wontfix_priority_task)
-  '<img alt="(wontfix priority)" title="wontfix" src="/@@/bug" />'
+  >>> test_tales("bugtask/fmt:icon", bugtask=untriaged_task)
+  '<img alt="(Untriaged)" title="Untriaged" src="/@@/bug" />'
 
 Displaying Status
 -----------------

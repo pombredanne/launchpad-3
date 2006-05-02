@@ -182,7 +182,6 @@ class NullBugTask(BugTaskMixin):
         self.milestone = None
         self.status = None
         self.statusexplanation = None
-        self.priority = None
         self.importance = None
         self.assignee = None
         self.bugwatch = None

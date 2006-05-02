@@ -316,23 +316,17 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
     def icon(self):
         """Return the appropriate <img> tag for the bugtask icon.
 
-        The icon displayed is calculated based on the IBugTask.priority.
+        The icon displayed is calculated based on the IBugTask.importance.
         """
-        if self._context.priority:
-            priority_title = self._context.priority.title.lower()
+        if self._context.importance:
+            importance_title = self._context.importance.title.lower()
         else:
-            priority_title = None
+            importance_title = None
 
-        if not priority_title:
-            return '<img alt="(no priority)" title="no priority" src="/@@/bug" />'
-        elif priority_title == 'wontfix':
-            # Special-case Wontfix by returning the "generic" bug icon
-            # because we actually hope to eliminate Wontfix
-            # entirely. See
-            # https://wiki.launchpad.canonical.com/SimplifyingMalone
-            return '<img alt="(wontfix priority)" title="wontfix" src="/@@/bug" />'
+        if not importance_title:
+            return '<img alt="(Untriaged)" title="Untriaged" src="/@@/bug-untriaged" />'
         else:
-            return '<img alt="(%s priority)" title="%s priority" src="/@@/bug-%s" />' % (priority_title, priority_title, priority_title)
+            return '<img alt="(%s importance)" title="%s importance" src="/@@/bug-%s" />' % (importance_title, importance_title, importance_title)
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):

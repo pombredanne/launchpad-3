@@ -154,7 +154,7 @@ EVENT: upstream product assignment edited
 
   >>> edit_fields = [
   ...     "product", "milestone", "status", "assignee", "bugwatch",
-  ...     "priority", "importance"]
+  ...     "importance"]
   >>> old_product_assignment = Snapshot(
   ...     product_assignment, providing=IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED

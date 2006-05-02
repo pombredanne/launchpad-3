@@ -143,13 +143,10 @@ from a bug task.
     >>> thunderbird_task.bugwatch.remotestatus is None
     True
 
-We don't yet support updating the priority and importance for Bugzilla
-bugs, so let's set them to some bogus value, to see that they get set
-to UNKNOWN. XXX mpt 20060418: priority is hidden but may be reinstated.
-https://wiki.launchpad.canonical.com/MaloneSimplifications
+We don't yet support updating the importance for Bugzilla bugs, so let's set it
+to some bogus value, to see that it gets set to UNKNOWN.
 
-    >>> from canonical.lp.dbschema import BugTaskPriority, BugTaskImportance
-    >>> thunderbird_task.priority = BugTaskPriority.HIGH
+    >>> from canonical.lp.dbschema import BugTaskImportance
     >>> thunderbird_task.importance = BugTaskImportance.MAJOR
 
 We need to create a new ExternalBugtracker for the Mozilla tracker:
@@ -166,8 +163,6 @@ synced:
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     In Progress
-    >>> print thunderbird_task.priority.title
-    Unknown
     >>> print thunderbird_task.importance.title
     Unknown
     >>> print thunderbird_task.bugwatch.remotestatus

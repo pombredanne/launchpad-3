@@ -41,24 +41,20 @@ to access those other objects:
     >>> bug_one = bugset.get(1)
     >>> sabdfl = personset.get(1)
 
-Next, we need to grab some values to provide for priority, importance, and status. XXX mpt 20060418: priority is hidden but may be reinstated.
-https://wiki.launchpad.canonical.com/MaloneSimplifications
+Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance,
-    ...     BugTaskPriority)
+    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
     >>> STATUS_UNCONFIRMED = BugTaskStatus.UNCONFIRMED
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
     >>> IMPORTANCE_MEDIUM = BugTaskImportance.MEDIUM
-    >>> PRIORITY_MEDIUM = BugTaskPriority.MEDIUM
 
   i. Upstream -- a bug that has to be fixed in an upstream product
 
     >>> evolution = productset.get(5)
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=evolution, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.product == evolution
     True
 
@@ -71,8 +67,7 @@ https://wiki.launchpad.canonical.com/MaloneSimplifications
     >>> ubuntu = distroset.get(1)
     >>> distro_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> distro_task.distribution == ubuntu
     True
 
@@ -87,8 +82,7 @@ https://wiki.launchpad.canonical.com/MaloneSimplifications
     >>> warty = distoreleaseset.get(1)
     >>> distro_release_task = bugtaskset.createTask(
     ...     bug=bug_one, distrorelease=warty, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> distro_release_task.distrorelease == warty
     True
 
@@ -102,8 +96,7 @@ make sense to "backport a fix" to the current release:
     >>> hoary = distoreleaseset.get(3)
     >>> distro_release_task = bugtaskset.createTask(
     ...     bug=bug_one, distrorelease=hoary, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     Traceback (most recent call last):
       ...
     AssertionError: Bugtasks cannot be opened on the current release.
@@ -193,8 +186,7 @@ For a person:
     >>> evolution_sourcepackage = sourcepackagenameset.queryByName('evolution')
     >>> ubuntu_evolution_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=foobar,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_MEDIUM,
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM,
     ...     sourcepackagename=evolution_sourcepackage)
     >>> flush_database_updates()
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
@@ -511,8 +503,6 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.status is None
     True
-    >>> null_bugtask.priority is None
-    True
     >>> null_bugtask.sourcepackagename is None
     True
     >>> null_bugtask.distribution is None
@@ -783,8 +773,7 @@ Of course, it's also computed and set when a bugtask is created.
 
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=netapplet, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
-    ...     importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.targetname
     u'netapplet (upstream)'
 
@@ -826,7 +815,7 @@ Remote BugTasks
 ---------------
 
 If a bug task's target isn't using Malone officially, we say that it's a remote
-bug task. Such bug tasks let the status, priority, and importance be UNKNOWN.
+bug task. Such bug tasks let the status and importance be UNKNOWN.
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> evolution_task = bug_one.bugtasks[0]
@@ -879,7 +868,7 @@ ProgrammingError
     >>> import sys
     >>> try: bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distrorelease=warty,
-    ...     owner=sabdfl, status=STATUS_UNCONFIRMED, priority=PRIORITY_MEDIUM,
+    ...     owner=sabdfl, status=STATUS_UNCONFIRMED,
     ...     importance=IMPORTANCE_MEDIUM)
     ... except DatabaseError: print sys.exc_value
     ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
