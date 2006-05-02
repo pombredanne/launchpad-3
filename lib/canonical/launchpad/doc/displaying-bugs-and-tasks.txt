@@ -25,22 +25,30 @@ Let's use a few examples to demonstrate:
   >>> from canonical.launchpad.ftests import test_tales
 
   >>> bugtaskset = getUtility(IBugTaskSet)
-  >>> high_importance_task = bugtaskset.get(4)
-  >>> medium_importance_task = bugtaskset.get(13)
-  >>> low_importance_task = bugtaskset.get(3)
-  >>> untriaged_task = bugtaskset.get(2)
+  >>> critical_importance_task = bugtaskset.get()
+  >>> major_importance_task = bugtaskset.get()
+  >>> medium_importance_task = bugtaskset.get()
+  >>> minor_importance_task = bugtaskset.get()
+  >>> wishlist_task = bugtaskset.get()
+  >>> untriaged_task = bugtaskset.get()
 
   >>> test_tales("bugtask/fmt:icon", bugtask=high_importance_task)
-  '<img alt="(High importance)" title="High importance" src="/@@/bug-high" />'
+  '<img alt="(critical)" title="Critical importance" src="/@@/bug-high" />'
+
+  >>> test_tales("bugtask/fmt:icon", bugtask=high_importance_task)
+  '<img alt="(major)" title="Major importance" src="/@@/bug-high" />'
 
   >>> test_tales("bugtask/fmt:icon", bugtask=medium_importance_task)
-  '<img alt="(Medium importance)" title="Medium importance" src="/@@/bug-medium" />'
+  '<img alt="(medium)" title="Medium importance" src="/@@/bug-medium" />'
 
   >>> test_tales("bugtask/fmt:icon", bugtask=low_importance_task)
-  '<img alt="(Low importance)" title="Low importance" src="/@@/bug-low" />'
+  '<img alt="(minor)" title="Low importance" src="/@@/bug-low" />'
+
+  >>> test_tales("bugtask/fmt:icon", bugtask=high_importance_task)
+  '<img alt="(wishlist)" title="Wishlist" src="/@@/bug-high" />'
 
   >>> test_tales("bugtask/fmt:icon", bugtask=untriaged_task)
-  '<img alt="(Untriaged)" title="Untriaged" src="/@@/bug" />'
+  '<img alt="(untriaged)" title="Untriaged" src="/@@/bug" />'
 
 Displaying Status
 -----------------

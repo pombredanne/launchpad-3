@@ -324,9 +324,11 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
             importance_title = None
 
         if not importance_title:
-            return '<img alt="(Untriaged)" title="Untriaged" src="/@@/bug-untriaged" />'
+            return '<img alt="" src="/@@/bug" />'
+        elif importance_title == "untriaged":
+            return '<img alt="(untriaged)" title="Untriaged" src="/@@/bug-untriaged" />'
         else:
-            return '<img alt="(%s importance)" title="%s importance" src="/@@/bug-%s" />' % (importance_title, importance_title, importance_title)
+            return '<img alt="(%s)" title="%s importance" src="/@@/bug-%s" />' % (importance_title, importance_title, importance_title)
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
