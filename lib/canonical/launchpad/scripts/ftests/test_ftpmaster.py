@@ -12,8 +12,8 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet, ISectionSet)
 from canonical.launchpad.scripts.ftpmaster import (
-    ArchiveOverrider, ArchiveOverriderError)
-from canonical.lp import initZopeless
+    ArchiveOverrider, ArchiveOverriderError, ArchiveCruftChecker,
+    ArchiveCruftCheckerError)
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
@@ -311,6 +311,43 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
             "ERROR: 'pmount' source isn't published in warty")
+
+class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
+    layer = ZopelessLayer
+    dbuser = 'lucille'
+
+    def setUp(self):
+        """Setup the test environment and retrieve useful instances."""
+        LaunchpadZopelessTestCase.setUp(self)
+        self.log = MockLogger()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        self.breezy_autotest = self.ubuntutest['breezy-autotest']
+        # XXX cprov 20060502: ensure we have soyuz generated archive in place
+        self.archive_path = "/var/tmp/archive"
+
+    def test_initialize_success(self):
+        """Test ArchiveCruftChecker initialization process.
+
+        Check if the correct attributes are built after initialization.
+        """
+        checker = ArchiveCruftChecker(
+            self.log, distribution_name='ubuntutest', suite='breezy-autotest',
+            archive_path=self.archive_path)
+        checker.initialize()
+        self.assertEqual(self.ubuntutest, checker.distro)
+        self.assertEqual(self.breezy_autotest, checker.distrorelease)
+        self.assertEqual(PackagePublishingPocket.RELEASE, checker.pocket)
+        self.assertEqual(0, len(checker.nbs_to_remove))
+        self.assertEqual(0, len(checker.real_nbs))
+        self.assertEqual(0, len(checker.dubious_nbs))
+        self.assertEqual(0, len(checker.bin_pkgs))
+        self.assertEqual(0, len(checker.arch_any))
+        self.assertEqual(0, len(checker.source_versions))
+        self.assertEqual(0, len(checker.source_binaries))
+        self.log.read()
+
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
