@@ -53,7 +53,7 @@
           <tal:block replace="structure view/lang_selector" />
 
           <input
-            type="submit" name='pofile_translation_filter' value="Change" />
+            type="submit" name='select_alternate_language' value="Change" />
         </form>
 
         <!-- The translation form. -->

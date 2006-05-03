@@ -3,11 +3,13 @@
 __metaclass__ = type
 __all__ = [
     'POMsgSetView',
-    'POMsgSetURL'
+    'POMsgSetFacets',
+    'POMsgSetAppMenus'
     ]
 
 import re
 import gettextpo
+import urllib
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -15,24 +17,70 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet, ICanonicalUrlData)
-from canonical.launchpad.webapp import LaunchpadView, canonical_url
+    ILanguageSet)
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
+    canonical_url)
 
-class POMsgSetURL:
-    implements(ICanonicalUrlData)
+class POMsgSetFacets(StandardLaunchpadFacets):
+    usedfor = IPOMsgSet
+    defaultlink = 'translations'
+    enable_only = ['overview', 'translations']
 
-    def __init__(self, context):
-        self.context = context
+    def _parent_url(self):
+        """Return the URL of the thing the PO template of this PO file is
+        attached to.
+        """
 
-    @property
-    def path(self):
-        pomsgset = self.context
-        return '%s/%s' % (
-            canonical_url(pomsgset.pofile), str(pomsgset.potmsgset.sequence))
+        potemplate = self.context.pofile.potemplate
 
-    @property
-    def inside(self):
-        return self.context.pofile
+        if potemplate.distrorelease:
+            source_package = potemplate.distrorelease.getSourcePackage(
+                potemplate.sourcepackagename)
+            return canonical_url(source_package)
+        else:
+            return canonical_url(potemplate.productseries)
+
+    def overview(self):
+        target = self._parent_url()
+        text = 'Overview'
+        return Link(target, text)
+
+    def translations(self):
+        target = '+translate'
+        text = 'Translations'
+        return Link(target, text)
+
+
+class POMsgSetAppMenus(ApplicationMenu):
+    usedfor = IPOMsgSet
+    facet = 'translations'
+    links = ['overview', 'translate', 'switchlanguages',
+             'upload', 'download', 'viewtemplate']
+
+    def overview(self):
+        text = 'Overview'
+        return Link('../', text)
+
+    def translate(self):
+        text = 'Translate many'
+        return Link('../+translate', text, icon='languages')
+
+    def switchlanguages(self):
+        text = 'Switch Languages'
+        return Link('../../', text, icon='languages')
+
+    def upload(self):
+        text = 'Upload a File'
+        return Link('../+upload', text, icon='edit')
+
+    def download(self):
+        text = 'Download'
+        return Link('../+export', text, icon='download')
+
+    def viewtemplate(self):
+        text = 'View Template'
+        return Link('../../', text, icon='languages')
 
 
 class POMsgSetView(LaunchpadView):
@@ -68,6 +116,9 @@ class POMsgSetView(LaunchpadView):
 
         # Initialize the tab index for the form entries.
         self._table_index_value = 0
+
+        # Whether this page is redirecting or not.
+        self.redirecting = False
 
         # Handle any form submission.
         self.process_form()
@@ -192,7 +243,7 @@ class POMsgSetView(LaunchpadView):
     @property
     def is_at_beginning(self):
         """Return whether we are at the beginning of the form."""
-        return self.context.potmsgset.sequence == 0
+        return self.context.potmsgset.sequence == 1
 
     @property
     def is_at_end(self):
@@ -213,10 +264,10 @@ class POMsgSetView(LaunchpadView):
 
     @property
     def previous_URL(self):
-        """Return the URL to get previous self.count number of message sets.
+        """Return the URL to get previous message set.
         """
         if self.context.potmsgset.sequence > 1:
-            return self.createURL(self.context.potmsgset.sequence)
+            return self.createURL(self.context.potmsgset.sequence - 1)
         else:
             # We don't have more entries before this one, return always the
             # first entry.
@@ -227,7 +278,7 @@ class POMsgSetView(LaunchpadView):
         """Return the URL to get next self.count number of message sets."""
         number_msgsets = len(self.context.potmsgset.potemplate)
         current_msgset = self.context.potmsgset.sequence
-        assert (current_msgset + 1 < number_msgsets), (
+        assert (current_msgset + 1 <= number_msgsets), (
             'Only have %d messages, requested %d' % (
                 number_msgsets, current_msgset + 1))
 
@@ -243,7 +294,7 @@ class POMsgSetView(LaunchpadView):
         """Build the current URL."""
         if sequence is None:
             # We don't change the IPOMsgSet.
-            url = canonical_url(self.context)
+            url = '%s/+translate' % canonical_url(self.context)
         else:
             assert sequence > 0, ("%r is not a valid sequence number." % name)
 
@@ -252,7 +303,11 @@ class POMsgSetView(LaunchpadView):
             pomsgset = potmsgset.getPOMsgSet(
                 self.context.pofile.language.code,
                 self.context.pofile.variant)
-            url = canonical_url(pomsgset)
+            if pomsgset is None:
+                pomsgset = potmsgset.getDummyPOMsgSet(
+                    self.context.pofile.language.code,
+                    self.context.pofile.variant)
+            url = '%s/+translate' % canonical_url(pomsgset)
 
         if self.second_lang_code is None:
             return url
@@ -431,7 +486,8 @@ class POMsgSetView(LaunchpadView):
             return
 
         dispatch_table = {
-            'submit_translations': self._submit_translations
+            'submit_translations': self._submit_translations,
+            'select_alternate_language': self._select_alternate_language
             }
         dispatch_to = [(key, method)
                         for key,method in dispatch_table.items()
@@ -515,7 +571,8 @@ class POMsgSetView(LaunchpadView):
 
         if self.form_posted_translations is None:
             # There are not translations interesting for us.
-            return
+            self.redirecting = True
+            self.request.response.redirect(self.next_URL)
 
         has_translations = False
         for form_posted_translation_key in self.form_posted_translations.keys():
@@ -541,7 +598,6 @@ class POMsgSetView(LaunchpadView):
                 # user and jump to the next entry so this messageSet is
                 # not stored into the database.
                 self.error = str(e)
-                return
 
         try:
             self.context.updateTranslationSet(
@@ -553,3 +609,28 @@ class POMsgSetView(LaunchpadView):
             # Save the error message gettext gave us to show it to the
             # user.
             self.error = str(e)
+
+        if self.error is None:
+            self.redirecting = True
+            self.request.response.redirect(self.next_URL)
+        else:
+            # Notify the errors.
+            self.request.response.addErrorNotification(
+                "There is an error in the translation you provided."
+                " Please, correct it before continuing.")
+
+        # update the statistis for this po file
+        self.context.pofile.updateStatistics()
+
+    def _select_alternate_language(self):
+        """Handle a form submission to filter translations."""
+        # We need to redirect to the new URL based on the new given arguments.
+        self.redirecting = True
+        self.request.response.redirect(
+            self.createURL(sequence=self.context.potmsgset.sequence))
+
+    def render(self):
+        if self.redirecting:
+            return u''
+        else:
+            return LaunchpadView.render(self)

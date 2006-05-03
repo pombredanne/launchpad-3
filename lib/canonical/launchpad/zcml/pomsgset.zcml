@@ -5,6 +5,8 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
     <content class="canonical.launchpad.database.POMsgSet">
       <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
       <require
@@ -22,7 +24,13 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IPOMsgSet"
-        urldata="canonical.launchpad.browser.POMsgSetURL"
+        path_expression="string:${potmsgset/sequence}"
+        attribute_to_parent="pofile"
+        />
+
+    <browser:menus
+        module="canonical.launchpad.browser.pomsgset"
+        classes="POMsgSetFacets POMsgSetAppMenus"
         />
 
     <browser:page
@@ -38,5 +46,7 @@
         template="../templates/pomsgset-translate.pt"
         class="canonical.launchpad.browser.POMsgSetView"
         />
+
+</facet>
 
 </configure>

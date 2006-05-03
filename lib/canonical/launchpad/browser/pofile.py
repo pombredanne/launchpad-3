@@ -114,8 +114,8 @@ class POFileFacets(StandardLaunchpadFacets):
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages',
-             'upload', 'download', 'viewtemplate']
+    links = ['overview', 'translate', 'translate_with_details',
+             'switchlanguages', 'upload', 'download', 'viewtemplate']
 
     def overview(self):
         text = 'Overview'
@@ -124,6 +124,10 @@ class POFileAppMenus(ApplicationMenu):
     def translate(self):
         text = 'Translate'
         return Link('+translate', text, icon='languages')
+
+    def translate_with_details(self):
+        text = 'Translate with Details'
+        return Link('1/+translate', text, icon='languages')
 
     def switchlanguages(self):
         text = 'Switch Languages'
