@@ -52,6 +52,8 @@ __all__ = [
     'ValidTeamOwnerVocabulary',
     ]
 
+import cgi
+
 from zope.component import getUtility
 from zope.interface import implements, Attribute
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -991,6 +993,12 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
 
         for watch in bug.watches:
             yield self.toTerm(watch)
+
+    def toTerm(self, watch):
+        return SimpleTerm(
+            watch, watch.id, '%s <a href="%s">#%s</a>' % (
+                cgi.escape(watch.bugtracker.title), watch.url,
+                cgi.escape(watch.remotebug)))
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
