@@ -519,9 +519,4 @@ class IAddBugTaskForm(Interface):
     remotebug = TextLine(
         title=_('Remote Bug'), required=False, description=_(
             "The bug number of this bug in the remote bug tracker."))
-    do_add_unlinked_task = Bool(
-        title=u"Really add an unlinked bug task.",
-        description=u"Confirm that a bug task whose target doesn't use"
-            " Malone should be added even though no bug watch was specified.",
-        required=False)
 

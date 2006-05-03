@@ -246,16 +246,17 @@ class BugAlsoReportInView(GeneralFormView):
     schema = IAddBugTaskForm
     fieldNames = None
     index = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
+    confirmation_page = ViewPageTemplateFile(
+        '../templates/bugtask-confirm-unlinked.pt')
     process_status = None
     saved_process_form = GeneralFormView.process_form
+    show_confirmation = False
 
     def __init__(self, context, request):
         """Override GeneralFormView.__init__() not to set up widgets."""
         self.context = context
         self.request = request
-        self.fieldNames = [
-            'do_add_unlinked_task', 'link_to_bugwatch',
-            'bugtracker', 'remotebug']
+        self.fieldNames = ['link_to_bugwatch', 'bugtracker', 'remotebug']
         self.errors = {}
 
     def process_form(self):
@@ -285,6 +286,10 @@ class BugAlsoReportInView(GeneralFormView):
         self.saved_process_form()
         return self.index()
 
+    def getAllWidgets(self):
+        """Return all the widgets used by this view."""
+        return GeneralFormView.widgets(self)
+
     def widgets(self):
         """Return the widgets that should be rendered by the main macro.
 
@@ -295,12 +300,27 @@ class BugAlsoReportInView(GeneralFormView):
             self.schema['bugtracker'],
             self.schema['remotebug'],
             self.schema['link_to_bugwatch'],
-            self.schema['do_add_unlinked_task'],
             ]
         return [
             widget for widget in GeneralFormView.widgets(self)
             if widget.context not in bug_watch_widgets
             ]
+
+    def getBugTargetName(self):
+        """Return the name of the fix target.
+
+        This is either the chosen product or distribution.
+        """
+        if self.distribution_widget is not None:
+            target = self.distribution_widget.getInputValue()
+        elif self.product_widget is not None:
+            target = self.product_widget.getInputValue()
+        else:
+            return AssertionError(
+                'Either a product or distribution widget should be present'
+                ' in the form.')
+        return target.displayname
+
 
     def validate(self, data):
         """Validate the form.
@@ -343,20 +363,20 @@ class BugAlsoReportInView(GeneralFormView):
         if errors:
             raise WidgetsError(errors, widgetsData=widgets_data)
 
+    def submitted(self):
+        for submit_button in ['FORM_SUBMIT', 'CONFIRM', 'CANCEL']:
+            if submit_button in self.request.form:
+                return True
+        else:
+            return False
+
     def process(self, product=None, distribution=None, sourcepackagename=None,
-                bugtracker=None, remotebug=None, link_to_bugwatch=False,
-                do_add_unlinked_task=None):
+                bugtracker=None, remotebug=None, link_to_bugwatch=False):
         """Create new bug task.
 
         Only one of product and distribution may be not None, and
         if distribution is None, sourcepackagename has to be None.
         """
-        taskadded = getUtility(IBugTaskSet).createTask(
-            self.context.bug,
-            getUtility(ILaunchBag).user,
-            product=product,
-            distribution=distribution, sourcepackagename=sourcepackagename)
-
         if product is not None:
             target = product
         elif distribution is not None:
@@ -364,6 +384,24 @@ class BugAlsoReportInView(GeneralFormView):
         else:
             raise UnexpectedFormData(
                 'Neither product nor distribution was provided')
+
+        if not target.official_malone and not link_to_bugwatch:
+            if 'CANCEL' in self.request.form:
+                self._nextURL = None
+                return
+            elif 'FORM_SUBMIT' in self.request.form:
+                # The user hasn't confirmed that he really wants to add an
+                # unlinked task.
+                self._nextURL = None
+                self.show_confirmation = True
+                self.index = self.confirmation_page
+                return
+
+        taskadded = getUtility(IBugTaskSet).createTask(
+            self.context.bug,
+            getUtility(ILaunchBag).user,
+            product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
 
         if link_to_bugwatch:
             user = getUtility(ILaunchBag).user

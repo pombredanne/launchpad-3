@@ -34,8 +34,6 @@
 
 
     <div metal:fill-slot="extra_bottom">
-          <input
-            tal:replace="structure view/do_add_unlinked_task_widget/hidden" />
           <label tal:attributes="for view/link_to_bugwatch_widget/name">
             <tal:widget tal:content="structure view/link_to_bugwatch_widget" />
             <tal:label
