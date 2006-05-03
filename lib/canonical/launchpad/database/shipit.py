@@ -423,10 +423,10 @@ class ShippingRequestSet:
         csv_writer = csv.writer(csv_file)
         header = [
             'Country', 'Shipped Ubuntu x86 CDs', 'Shipped Ubuntu AMD64 CDs',
-            'Shipped Ubuntu PPC CDs', 'Shipped KUbuntu x86 CDs',
-            'Shipped KUbuntu AMD64 CDs', 'Shipped KUbuntu PPC CDs',
-            'Shipped EdUbuntu x86 CDs', 'Shipped EdUbuntu AMD64 CDs',
-            'Shipped EdUbuntu PPC CDs', 'Normal-prio shipments',
+            'Shipped Ubuntu PPC CDs', 'Shipped Kubuntu x86 CDs',
+            'Shipped Kubuntu AMD64 CDs', 'Shipped Kubuntu PPC CDs',
+            'Shipped Edubuntu x86 CDs', 'Shipped Edubuntu AMD64 CDs',
+            'Shipped Edubuntu PPC CDs', 'Normal-prio shipments',
             'High-prio shipments', 'Average request size',
             'Percentage of requested CDs that were approved',
             'Percentage of total shipped CDs', 'Continent']
@@ -494,114 +494,83 @@ class ShippingRequestSet:
 
     def generateWeekBasedReport(self, start_date, end_date):
         """See IShippingRequestSet"""
+        flavour = ShipItFlavour
+        arch = ShipItArchitecture
+        quantities_order = [
+            [flavour.UBUNTU, arch.X86, 'Ubuntu Requested PC CDs'],
+            [flavour.UBUNTU, arch.AMD64, 'Ubuntu Requested 64-bit PC CDs'],
+            [flavour.UBUNTU, arch.PPC, 'Ubuntu Requested Mac CDs'],
+            [flavour.KUBUNTU, arch.X86, 'Kubuntu Requested PC CDs'],
+            [flavour.KUBUNTU, arch.AMD64, 'Kubuntu Requested 64-bit PC CDs'],
+            [flavour.KUBUNTU, arch.PPC, 'Kubuntu Requested Mac CDs'],
+            [flavour.EDUBUNTU, arch.X86, 'Edubuntu Requested PC CDs'],
+            [flavour.EDUBUNTU, arch.AMD64, 'Edubuntu Requested 64-bit PC CDs'],
+            [flavour.EDUBUNTU, arch.PPC, 'Edubuntu Requested Mac CDs']]
+
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file)
-        header = ['Year', 'Week number', 'Requests', 
-                  'Ubuntu Requested X86 CDs',
-                  'Ubuntu Requested AMD64 CDs', 
-                  'Ubuntu Requested PPC CDs',
-                  'KUbuntu Requested X86 CDs',
-                  'KUbuntu Requested AMD64 CDs', 
-                  'KUbuntu Requested PPC CDs',
-                  'EdUbuntu Requested X86 CDs',
-                  'EdUbuntu Requested AMD64 CDs', 
-                  'EdUbuntu Requested PPC CDs']
+        header = ['Year', 'Week number', 'Requests']
+        for dummy, dummy, label in quantities_order:
+            header.append(label)
         csv_writer.writerow(header)
 
-        replacements = {'x86': ShipItArchitecture.X86, 
-                        'amd64': ShipItArchitecture.AMD64, 
-                        'ppc': ShipItArchitecture.PPC,
-                        'ubuntu': ShipItFlavour.UBUNTU,
-                        'kubuntu': ShipItFlavour.KUBUNTU,
-                        'edubuntu': ShipItFlavour.EDUBUNTU}
+        requests_base_query = """
+            SELECT COUNT(*) 
+            FROM ShippingRequest 
+            WHERE ShippingRequest.cancelled is false
+            """
 
-        # XXX: This query will have to be re-written now that we don't
-        # necessarily have 9 RequestedCDs rows for each request.
-        # -- Guilherme Salgado, 2006-04-28
-        base_query = """
-            SELECT 
-              COUNT(shippingrequest.id), 
-              -- Ubuntu requested CDs
-              SUM(r1.quantity),
-              SUM(r2.quantity), 
-              SUM(r3.quantity),
-
-              -- KUbuntu requested CDs
-              SUM(r4.quantity),
-              SUM(r5.quantity), 
-              SUM(r6.quantity),
-
-              -- EdUbuntu requested CDs
-              SUM(r7.quantity),
-              SUM(r8.quantity), 
-              SUM(r9.quantity)
-            FROM 
-              shippingrequest, 
-              -- Ubuntu requested CDs
-              requestedcds AS r1, 
-              requestedcds AS r2,
-              requestedcds AS r3,
-
-              -- KUbuntu requested CDs
-              requestedcds AS r4, 
-              requestedcds AS r5,
-              requestedcds AS r6,
-
-              -- EdUbuntu requested CDs
-              requestedcds AS r7, 
-              requestedcds AS r8,
-              requestedcds AS r9 
-            WHERE 
-              r1.request = r2.request AND 
-              r2.request = r3.request AND 
-              r3.request = r4.request AND
-              r4.request = r5.request AND 
-              r5.request = r6.request AND 
-              r6.request = r7.request AND
-              r7.request = r8.request AND 
-              r8.request = r9.request AND 
-              r9.request = shippingrequest.id AND
-              shippingrequest.cancelled = FALSE AND
-
-              -- Ubuntu requested CDs
-              r1.architecture = %(x86)s AND
-              r2.architecture = %(amd64)s AND
-              r3.architecture = %(ppc)s AND
-              r1.flavour = r2.flavour AND
-              r2.flavour = r3.flavour AND
-              r3.flavour = %(ubuntu)s AND
-
-              -- KUbuntu requested CDs
-              r4.architecture = %(x86)s AND
-              r5.architecture = %(amd64)s AND
-              r6.architecture = %(ppc)s AND
-              r4.flavour = r5.flavour AND
-              r5.flavour = r6.flavour AND
-              r6.flavour = %(kubuntu)s AND
-
-              -- EdUbuntu requested CDs
-              r7.architecture = %(x86)s AND
-              r8.architecture = %(amd64)s AND
-              r9.architecture = %(ppc)s AND
-              r7.flavour = r8.flavour AND
-              r8.flavour = r9.flavour AND
-              r9.flavour = %(edubuntu)s
-            """ % sqlvalues(**replacements)
+        sum_base_query = """
+            SELECT flavour, architecture, SUM(quantity)
+            FROM RequestedCDs, ShippingRequest
+            WHERE RequestedCDs.request = ShippingRequest.id
+                  AND ShippingRequest.cancelled IS FALSE
+            """
+        sum_group_by = " GROUP BY flavour, architecture"
 
         cur = cursor()
         for monday_date in make_mondays_between(start_date, end_date):
+            year, weeknum, weekday = monday_date.isocalendar()
+            row = [year, weeknum]
+
             date_filter = (
                 " AND shippingrequest.daterequested BETWEEN %s AND %s"
                 % sqlvalues(monday_date, monday_date + timedelta(days=7)))
-            query_str = base_query + date_filter
-            cur.execute(query_str)
-            year, weeknum, weekday = monday_date.isocalendar()
-            row = [year, weeknum]
+            requests_query = requests_base_query + date_filter
+            sum_query = sum_base_query + date_filter + sum_group_by
+
+            cur.execute(requests_query)
             row.extend(cur.fetchone())
+
+            cur.execute(sum_query)
+            sum_dict = self._convertResultsToDict(cur.fetchall())
+            for flavour, arch, dummy in quantities_order:
+                try:
+                    item = sum_dict[flavour]
+                except KeyError:
+                    sum = 0
+                else:
+                    sum = item.get(arch, 0)
+                row.append(sum)
+
             csv_writer.writerow(row)
 
         csv_file.seek(0)
         return csv_file
+
+    def _convertResultsToDict(self, results):
+        """Convert a list of (flavour_id, architecture_id, quantity) tuples
+        returned by a raw SQL query into a dictionary mapping ShipItFlavour
+        and ShipItArchitecture objects to the quantities.
+        """
+        sum_dict = {}
+        for flavour_id, arch_id, sum in results:
+            flavour = ShipItFlavour.items[flavour_id]
+            if sum_dict.get(flavour) is None:
+                sum_dict[flavour] = {}
+            arch = ShipItArchitecture.items[arch_id]
+            sum_dict[flavour].update({arch: sum})
+        return sum_dict
 
     def generateShipmentSizeBasedReport(self):
         """See IShippingRequestSet"""
@@ -834,12 +803,12 @@ class ShippingRun(SQLBase):
         extra_fields = ['ship Ubuntu quantity PC',
                         'ship Ubuntu quantity 64-bit PC',
                         'ship Ubuntu quantity Mac', 
-                        'ship KUbuntu quantity PC',
-                        'ship KUbuntu quantity 64-bit PC',
-                        'ship KUbuntu quantity Mac',
-                        'ship EdUbuntu quantity PC',
-                        'ship EdUbuntu quantity 64-bit PC',
-                        'ship EdUbuntu quantity Mac',
+                        'ship Kubuntu quantity PC',
+                        'ship Kubuntu quantity 64-bit PC',
+                        'ship Kubuntu quantity Mac',
+                        'ship Edubuntu quantity PC',
+                        'ship Edubuntu quantity 64-bit PC',
+                        'ship Edubuntu quantity Mac',
                         'token', 'Ship via', 'display']
         row.extend(extra_fields)
         csv_writer.writerow(row)

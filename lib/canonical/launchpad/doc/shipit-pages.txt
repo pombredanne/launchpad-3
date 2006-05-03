@@ -91,6 +91,6 @@ change these values, so we don't need widgets.
 
     >>> for row in review_request_view.quantities_matrix:
     ...     print row
-    ['Kubuntu', 5]
-    ['Edubuntu', 5]
+    ['Kubuntu', 5, 0, 0]
+    ['Edubuntu', 5, 0, 0]
 

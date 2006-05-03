@@ -124,14 +124,15 @@ def valid_shipit_phone(value):
     _valid_ascii_text(value)
     if len(value) > 16:
         raise LaunchpadValidationError(_(
-            "Your phone mumber must be less than 16 characters. Leave it "
-            "blank if it will not fit."))
+            "The province name can't have more than 30 characters."))
     return True
 
+
 def valid_shipit_province(value):
-    # XXX: The old shipit didn't have any constraint on the province field,
-    # but I guess this might be wrong. We have limits on the length of all
-    # other fields, so I guess this one has one too.
+    if len(value) > 30:
+        raise LaunchpadValidationError(_(
+            "Your province mumber must be less than 16 characters. Leave it "
+            "blank if it will not fit."))
     return True
 
 

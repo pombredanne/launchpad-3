@@ -1,4 +1,4 @@
-  The shipit admins can either do any changes they want to a request.
+  The shipit admins can do any changes they want to a request.
 
   First let's approve request number 5.
 

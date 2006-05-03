@@ -152,6 +152,11 @@
             displayWidth="30"
             displayMaxWidth="30" />
         <browser:widget
+            field="province"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="30"
+            displayMaxWidth="30" />
+        <browser:widget
             field="addressline1"
             class="zope.app.form.browser.TextWidget"
             displayWidth="30"

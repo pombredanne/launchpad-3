@@ -523,7 +523,7 @@ class ShippingRequestApproveOrDenyView(
             context.deny()
             self._nextURL = self._makeNextURL(previous_action='denied')
         else:
-            # Do something here to tell the user this action is not expected.
+            # Nothing to do.
             pass
 
     def _makeNextURL(self, previous_action):
@@ -551,9 +551,11 @@ class ShippingRequestApproveOrDenyView(
                 try:
                     requested_cds = quantities[flavour][arch]
                 except KeyError:
-                    continue
-                total += requested_cds.quantity
-                flavour_quantities.append(requested_cds.quantity)
+                    quantity = 0
+                else:
+                    quantity = requested_cds.quantity
+                total += quantity
+                flavour_quantities.append(quantity)
             if total > 0:
                 matrix.append([flavour.title] + flavour_quantities)
         return matrix
