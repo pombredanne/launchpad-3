@@ -49,11 +49,8 @@ class Job:
         self.RCS=""
         self.repository=""
         self.module=""
-        self.category=""
         self.archivename=""
         self.branchfrom="MAIN"
-        self.branchto="HEAD"
-        self.archversion=0
         self.frequency=None
         self.tagging_rules=[]
         self.__jobTrigger = None
@@ -171,37 +168,25 @@ class Job:
         If the importstatus is TESTING, and some arch namespace details are not
         filled in, we generate them.
         """
+        # XXX: This must stay consistent with importd.baz2bzr.arch_from_series
+        # because we are breaking DNRY -- David Allouche 2006-04-06
         archive = series.targetarcharchive
         category = series.targetarchcategory
         branch = series.targetarchbranch
         version = series.targetarchversion
         # Test for the truth value of the namespace components to indistinctly
         # handle None and empty string.
-        if series.importstatus in [ImportStatus.TESTING,
-                                   ImportStatus.AUTOTESTED,
-                                   ImportStatus.TESTFAILED]:
-            if not archive:
-                archive = (str(series.product.name)
-                           + '@autotest.bazaar.ubuntu.com')
-            if not category:
-                category = str(series.product.name)
-            if not branch:
-                # FIXME: if series.name starts with a digit, or contain
-                # anything but alphanumerics and minus, that will produce an
-                # illegal branch name. That could be fixed by doing url
-                # escaping using '-' instead of '%' as the escaping character.
-                # -- David Allouche 2005-06-18
-                branch = str(series.name) + '-TEST-DO-NOT-USE'
-            if not version:
-                version = '0'
-        assert archive
-        assert category
-        assert branch
-        assert version
-        self.archivename = str(archive)
-        self.category = str(category)
-        self.branchto = str(branch)
-        self.archversion = str(version)
+        all_are_set = bool(archive and category and branch and version)
+        none_is_set = not (archive or category or branch or version)
+        if all_are_set:
+            self.archivename = str(archive)
+            self.nonarchname = str('%s--%s--%s' % (category, branch, version))
+        elif none_is_set:
+            self.archivename = 'unnamed@bazaar.ubuntu.com'
+            self.nonarchname = 'series--%d' % series.id
+        else:
+            assert False, (
+                "all or none of the targetarch* fields must be set")
 
     def __str__(self):
         result=StringIO()
@@ -209,17 +194,15 @@ class Job:
         return result.getvalue()
 
     def output(self, receiver, terminator=""):
-        receiver("TYPE=%s%s" % (self.TYPE,terminator))
-        receiver("RCS=%s%s" % (self.RCS,terminator))
-        receiver("repository=%s%s" % (self.repository,terminator))
-        receiver("module=%s%s" % (self.module,terminator))
-        receiver("category=%s%s" % (self.category,terminator))
-        receiver("archivename=%s%s" % (self.archivename,terminator))
-        receiver("branchfrom=%s%s" % (self.branchfrom,terminator))
-        receiver("branchto=%s%s" % (self.branchto,terminator))
-        receiver("archversion=%s%s" % (self.archversion,terminator))
+        receiver("TYPE=%s%s" % (self.TYPE, terminator))
+        receiver("RCS=%s%s" % (self.RCS, terminator))
+        receiver("repository=%s%s" % (self.repository, terminator))
+        receiver("module=%s%s" % (self.module, terminator))
+        receiver("branchfrom=%s%s" % (self.branchfrom, terminator))
+        receiver("archivename=%s%s" % (self.archivename, terminator))
+        receiver("nonarchname=%s%s" % (self.nonarchname, terminator))
         if self.frequency:
-            receiver("frequency=%s%s" % (self.frequency,terminator))
+            receiver("frequency=%s%s" % (self.frequency, terminator))
 
     def toFile(self, fileName, dir=".", logger=None):
         if not os.path.isdir(dir):
@@ -279,13 +262,17 @@ class Job:
 
         :rtype: str
         """
-        return "%s/%s--%s--%s" % (
-            self.archivename, self.category, self.branchto, self.archversion)
+        return "%s/%s" % (self.archivename, self.bazNonarchVersion())
+
+    def bazNonarchVersion(self):
+        """Non-archive part of the Arch version."""
+        return self.nonarchname
 
     def getWorkingDir(self, dir):
         """create / reuse a working dir for the job to run in"""
-        version = arch.Version(self.bazFullPackageVersion())
-        path = os.path.join(dir, version.archive.name, version.nonarch)
+        archive = self.archivename
+        nonarch = self.bazNonarchVersion()
+        path = os.path.join(dir, archive, nonarch)
         if not os.access(path, os.F_OK):
             os.makedirs(path)
         return os.path.abspath(path)

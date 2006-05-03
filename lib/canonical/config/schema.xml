@@ -353,6 +353,13 @@
             required="no" default="/srv/bugs-mirror.debian.org/" />
     </sectiontype>
 
+    <sectiontype name="rosettaadmin">
+        <description>
+            Configuration for Rosetta admin tools
+        </description>
+        <key name="dbuser" datatype="string" default="rosettaadmin" />
+    </sectiontype>
+
     <sectiontype name="poimport">
         <description>
             Configuration for cronscripts/rosetta-poimport
@@ -371,6 +378,7 @@
         <description>
             Rosetta-specific configuration options
         </description>
+        <section name="*" type="rosettaadmin" attribute="rosettaadmin" required="no" />
         <section name="*" type="poimport" attribute="poimport" required="no" />
         <section name="*" type="poattach" attribute="poattach" required="no" />
     </sectiontype>
@@ -441,11 +449,10 @@
                 mirrors.
             </description>
         </key>
-        <key name="warn_about_no_published_uploads" datatype="boolean" 
-             default="yes">
+        <key name="timeout" datatype="integer" default="30">
             <description>
-                Should we warn if we don't find any published records for a
-                given (distro[arch]release,pocket,component) tuple?
+                The time in seconds that the mirror prober will wait for a
+                reply.
             </description>
         </key>
     </sectiontype>
@@ -593,19 +600,6 @@
         <key name="dbuser" datatype="string" required="yes" />
     </sectiontype>
 
-    <sectiontype name="branchupdater">
-        <key name="dbuser" datatype="string" required="yes">
-            <description>
-                The database user wich will be used to update branches.
-            </description>
-        </key>
-        <key name="prefixurl" datatype="string" required="yes">
-            <description>
-                URL prepended to branch ids to obtain branch URLs.
-            </description>
-        </key>
-    </sectiontype>
-
     <sectiontype name="builddmaster">
         <key name="dbuser" datatype="string" required="yes">
             <description>
@@ -641,6 +635,19 @@
             <description>
                 The XML-RPC endpoint URL for talking to the auth server
                 to update branch mirror details.
+            </description>
+        </key>
+        <key name="warehouse_root_url" datatype="canonical.config.urlbase">
+            <description>
+                URL prepended to branch ids to obtain internal branch URLs.
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="branchscanner">
+        <key name="dbuser" datatype="string">
+            <description>
+                The database user for the branch-scanner to update branches.
             </description>
         </key>
     </sectiontype>
@@ -698,7 +705,7 @@
         <section name="*" type="uploader" attribute="uploader" />
         <section name="*" type="uploadqueue" attribute="uploadqueue" />
         <section name="*" type="supermirror" attribute="supermirror" />
-        <section name="*" type="branchupdater" attribute="branchupdater" />
+        <section name="*" type="branchscanner" attribute="branchscanner" />
         <section name="*" type="builddmaster" attribute="builddmaster" />
         <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
         <section name="*" type="authserver" attribute="authserver" />

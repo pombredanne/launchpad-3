@@ -30,8 +30,7 @@ to edit the task.
   <select id="field.bugwatch" name="field.bugwatch" size="1" >
   ...
 
-Right, now let's link the bugwatch with the task, POSTING the results of the
-form.
+Right, now let's link the bugwatch with the task.
 
   >>> print http(r"""
   ... POST /products/thunderbird/+bug/9/+editstatus HTTP/1.1
