@@ -311,9 +311,9 @@ class BugAlsoReportInView(GeneralFormView):
 
         This is either the chosen product or distribution.
         """
-        if self.distribution_widget is not None:
+        if 'distribution' in self.fieldNames:
             target = self.distribution_widget.getInputValue()
-        elif self.product_widget is not None:
+        elif 'product' in self.fieldNames:
             target = self.product_widget.getInputValue()
         else:
             return AssertionError(

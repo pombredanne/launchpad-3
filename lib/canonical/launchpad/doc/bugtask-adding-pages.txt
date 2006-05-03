@@ -236,4 +236,28 @@ Malone, an error will occur.
     LaunchpadValidationError:
     ...Evolution uses Malone as its bug tracker...
 
+There's a method for easily retrieving the target display name for use
+on the confirmation page. If we request a fix in an upstream product,
+its display name is returned:
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'FORM_SUBMIT': '', 'field.product': 'alsa-utils',
+    ...           'field.bugtracker': 2})
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+upstreamtask', request)
+    >>> add_task_view.getBugTargetName()
+    u'alsa-utils'
+
+If we request a fix in a source package, the distribution's display
+name is returned.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'FORM_SUBMIT': '', 'field.distribution': 'debian',
+    ...           'field.sourcepackagename': 'evolution',
+    ...           'field.bugtracker': 2})
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+distrotask', request)
+    >>> add_task_view.getBugTargetName()
+    u'Debian'
+
     >>> on_created_listener.unregister()
