@@ -186,10 +186,7 @@ class POFileUploadView(POFileView):
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distrorelease=self.context.potemplate.distrorelease,
             productseries=self.context.potemplate.productseries,
-            potemplate=self.context.potemplate)
-
-        # We already know the pofile, we store a link to it directly.
-        entry.pofile = self.context
+            potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
             'Thank you for your upload. The PO file content will be imported'
