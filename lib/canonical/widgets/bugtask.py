@@ -209,7 +209,7 @@ class BugTaskAssigneeWidget(Widget):
 
 #XXX: This should be tested.
 class BugTaskBugWatchWidget(RadioWidget):
-    _messageNoValue = "None, the information is updated manually."
+    _messageNoValue = "None, the status of the bug is updated manually."
     _joinButtonToMessageTemplate = (
         u'<label style="font-weight: normal">%s&nbsp;%s</label>')
 
