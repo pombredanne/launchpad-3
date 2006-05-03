@@ -264,6 +264,12 @@ which the bug has not yet been reported.
 >>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
 >>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
+Viewing a bug in a distribution that doesn't use Malone officially, where the
+bugtask is also assigned to a milestone (a corner case, but one that was causing
+OOPS's all the same!):
+
+>>> check("/distros/debian/sarge/+source/mozilla-firefox/+bug/3/+viewstatus")
+
 The bug filing pages.
 
 >>> check("/products/firefox/+filebug", auth=True)
