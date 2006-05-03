@@ -36,7 +36,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="pf context/pofiles">
+      <tr tal:repeat="pf context/po_files_or_dummies">
         <td tal:content="pf/potemplate/sourcepackagename/name">apache2</td>
         <td>
           <a tal:attributes="href string:${pf/fmt:url}/+translate"

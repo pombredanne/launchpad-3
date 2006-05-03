@@ -67,6 +67,21 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
             orderBy=['POFile.id'])
 
     @property
+    def po_files_or_dummies(self):
+        """See IDistroReleaseLanguage."""
+        pofiles = self.pofiles
+        potemplates = self.distrorelease.currentpotemplates
+        pofiledb = {}
+        for pofile in pofiles:
+            pofiledb[pofile.potemplate] = pofile
+        result = []
+        for potemplate in potemplates:
+            result.append(
+                pofiledb.get(potemplate, DummyPOFile(
+                    potemplate, self.language)))
+        return result
+
+    @property
     def translators(self):
         return Translator.select('''
             Translator.translationgroup = TranslationGroup.id AND
