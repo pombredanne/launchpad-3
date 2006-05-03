@@ -6,15 +6,19 @@ __metaclass__ = type
 
 import datetime
 import pytz
-from zope.component import getUtility
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IBug, IBugTask, IBugMessage)
-from canonical.launchpad.event.interfaces import (
-    ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+from canonical.launchpad.interfaces import IBug, IHasBug
 
 def update_bug_date_last_updated(object, event):
     """Update IBug.date_last_updated to the current date."""
-    current_bug = getUtility(ILaunchBag).bug
+    if IBug.providedBy(object):
+        current_bug = object
+    elif IHasBug.providedBy(object):
+        current_bug = object.bug
+    else:
+        raise AssertionError(
+            "Unable to retrieve current bug to update 'date last updated'. "
+            "Event handler expects object implementing IBug or IHasBug. Got: %s" %
+            repr(object))
 
     UTC = pytz.timezone('UTC')
     now = datetime.datetime.now(UTC)

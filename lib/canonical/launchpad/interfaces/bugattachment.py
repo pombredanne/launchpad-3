@@ -16,12 +16,14 @@ from zope.schema import Object, Choice, Int, TextLine, Text, Bytes, Bool
 
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces import IHasBug
+
 from canonical.launchpad.fields import Title
 from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 from canonical.launchpad import _
 
-class IBugAttachment(Interface):
+class IBugAttachment(IHasBug):
     """A file attachment to an IBug."""
 
     id = Int(title=_('ID'), required=True, readonly=True)

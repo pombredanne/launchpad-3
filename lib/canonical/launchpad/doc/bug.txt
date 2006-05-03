@@ -20,8 +20,9 @@ To retrieve a specific Bug, use IBugSet.get:
     >>> print firefox_crashes.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
-Or you can use IBugSet.getByNameOrID to get it by its nickname
-    >>> blackhole_bug = bugset.getByNameOrID('blackhole') 
+Or you can use IBugSet.getByNameOrID to get it by its nickname:
+
+    >>> blackhole_bug = bugset.getByNameOrID('blackhole')
     >>> print blackhole_bug.title
     Blackhole Trash folder
 
@@ -496,12 +497,151 @@ Changing bug visibility.
 
 Changing bug security.
 
+  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> firefox_bug.security_related
+  False
+  >>> firefox_bug.security_related = True
+
+  >>> bug_security_changed = SQLObjectModifiedEvent(
+  ...     firefox_bug, bug_before_modification, ["security_related"])
+
+  >>> notify(bug_security_changed)
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
 Marking as duplicate.
+
+  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> print firefox_bug.duplicateof
+  None
+  >>> firefox_bug.duplicateof = firefox_crashes
+
+  >>> bug_duplicateof_changed = SQLObjectModifiedEvent(
+  ...     firefox_bug, bug_before_modification, ["duplicateof"])
+
+  >>> notify(bug_duplicateof_changed)
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
 
 Adding at attachment.
 
+  >>> from StringIO import StringIO
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> from canonical.launchpad.interfaces import (
+  ...     IBugAttachmentSet, IMessageSet, IBugMessageSet, ILibraryFileAliasSet)
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> firefox_bug.attachments.count()
+  0
+
+(Upload a file to the Librarian.)
+
+  >>> LibrarianTestSetup().setUp()
+  >>> filecontent = 'Some useful information.'
+  >>> filealias = getUtility(ILibraryFileAliasSet).create(
+  ...     name='foo.txt', size=len(filecontent),
+  ...     file=StringIO(filecontent), contentType='text/plain')
+
+(Attach it to the bug.)
+
+  >>> message = getUtility(IMessageSet).fromText(
+  ...     subject="title", content="added an attachment.")
+  >>> attachmentset = getUtility(IBugAttachmentSet)
+  >>> attachment = attachmentset.create(
+  ...     bug=firefox_bug, filealias=filealias, title='Some info.',
+  ...     message=message)
+
+  >>> notify(SQLObjectCreatedEvent(attachment))
+
+  >>> firefox_bug.attachments.count()
+  1
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
 Adding a branch.
+
+  >>> from canonical.launchpad.interfaces import IBranchSet
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> firefox_bug.bug_branches.count()
+  0
+
+  >>> branch_one = getUtility(IBranchSet).get(1)
+  >>> bug_branch = firefox_bug.addBranch(branch_one)
+  >>> notify(SQLObjectCreatedEvent(bug_branch))
+
+  >>> firefox_bug.bug_branches.count()
+  1
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
 
 Linking to a CVE.
 
-Linking to external bug tracker.
+  >>> from canonical.launchpad.interfaces import ICveSet
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> firefox_bug.cve_links.count()
+  0
+
+  >>> cveref = getUtility(ICveSet)["1999-8979"]
+  >>> bug_cveref = firefox_bug.linkCVE(cveref)
+  >>> notify(SQLObjectCreatedEvent(bug_cveref))
+
+  >>> firefox_bug.cve_links.count()
+  1
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
+Linking to an external bug tracker.
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IBugWatchSet, IBugTrackerSet)
+
+  >>> firefox_bug.watches.count()
+  0
+
+  >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
+  >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
+  ...     bug=firefox_bug, owner=current_user(), bugtracker=mozilla_bugtracker,
+  ...     remotebug='1234')
+
+  >>> notify(SQLObjectCreatedEvent(bugwatch))
+
+  >>> firefox_bug.watches.count()
+  1
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
+Subscribing and unsubscribing does *not* trigger an update of
+IBug.date_last_updated.
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> firefox_bug.isSubscribed(ubuntu_team)
+  False
+
+  >>> subscription = firefox_bug.subscribe(ubuntu_team)
+
+  >>> notify(SQLObjectCreatedEvent(subscription))
+
+  >>> firefox_bug.date_last_updated == current_date_last_updated
+  True
+
+  >>> firefox_bug.unsubscribe(ubuntu_team)
+
+  >>> firefox_bug.date_last_updated == current_date_last_updated
+  True
