@@ -21,7 +21,7 @@ so on.
 == Application homepages ==
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IMaloneApplication, IFOAFApplication, IBazaarApplication,
+    ...     IMaloneApplication, IBazaarApplication,
     ...     IRosettaApplication, ILaunchpadRoot, IRegistryApplication,
     ...     )
 
