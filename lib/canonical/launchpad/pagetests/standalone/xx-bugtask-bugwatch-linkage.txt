@@ -1,7 +1,3 @@
-    >>> from zope.testbrowser import Browser
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-
 If a bugtask is linked to a bug watch, the status and so on is not
 editable, since it's pulled from the remote bug. Let's take a look at
 the Debian task on bug #1.

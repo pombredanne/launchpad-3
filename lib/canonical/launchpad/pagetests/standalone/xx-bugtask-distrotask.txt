@@ -1,8 +1,3 @@
-
-    >>> from zope.testbrowser import Browser
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
-
 Let's add a task to bug 1.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
