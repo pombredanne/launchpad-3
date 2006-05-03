@@ -123,8 +123,9 @@ Now we can mark bug #6 private:
     >>> from canonical.launchpad.event import (
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
-    >>> from canonical.launchpad.interfaces import IPersonSet, IOpenLaunchBag
-    >>> from canonical.launchpad.helpers import capture_state
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IOpenLaunchBag, IBug)
+    >>> from canonical.launchpad.helpers import Snapshot
 
     >>> new_values = {"private" : True}
     >>> getUtility(IOpenLaunchBag).add(firefox_crashes)
@@ -133,9 +134,7 @@ Now we can mark bug #6 private:
 
     >>> notify(bug_will_be_set_private)
 
-    >>> old_state = capture_state(
-    ...     firefox_crashes, "id", "title", "description", "name",
-    ...     "private", "duplicateof", "security_related")
+    >>> old_state = Snapshot(firefox_crashes, providing=IBug)
     >>> firefox_crashes.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
@@ -196,10 +195,7 @@ And again, let's fake setting the bug private:
 
     >>> notify(bug_will_be_set_private)
 
-    >>> old_state = capture_state(
-    ...     blackhole_trash_folder, "id", "title",
-    ...     "description", "name", "private", "duplicateof",
-    ...     "security_related")
+    >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
     >>> blackhole_trash_folder.private = True
     >>> getUtility(IOpenLaunchBag).add(blackhole_trash_folder)
     >>> bug_set_private = SQLObjectModifiedEvent(
@@ -370,15 +366,9 @@ Date Last Updated
 -----------------
 
 Malone tracks the last time a change was made to a
-bug. IBug.date_last_updated stores the date when the most recent of one
-of the following events occur:
-
-  * a comment is added
-  * the description or summary is changed
-  * the status, assignee, or severity are changed
-  * a branch or attachment is added
-
-Let's have a look at some examples:
+bug. IBug.date_last_updated stores the date when anything is changed or
+added to a bug, with the exception of subscribing/unsubscribing. Let's
+look at an example of each.
 
 When a bug is created, its date_last_updated is set right away, to
 ensure that new bugs sort appropriately.
@@ -393,7 +383,7 @@ ensure that new bugs sort appropriately.
   >>> firefox_bug.datecreated == firefox_bug.date_last_updated
   True
 
-Adding a comment updates date_last_updated.
+Adding a comment.
 
   >>> current_date_last_updated = firefox_bug.date_last_updated
 
@@ -405,14 +395,13 @@ Adding a comment updates date_last_updated.
   >>> firefox_bug.date_last_updated > current_date_last_updated
   True
 
-Changing the bug summary updates date_last_updated.
+Changing the bug summary.
 
   >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> from canonical.launchpad.interfaces import IBug
 
-  >>> bug_before_modification = capture_state(
-  ...     firefox_bug, *IBug.names())
+  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
   >>> firefox_bug.title = "a new title"
 
@@ -424,12 +413,11 @@ Changing the bug summary updates date_last_updated.
   >>> firefox_bug.date_last_updated > current_date_last_updated
   True
 
-As does changing the description.
+Changing the description.
 
   >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> bug_before_modification = capture_state(
-  ...     firefox_bug, *IBug.names())
+  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
   >>> firefox_bug.description = "a new description"
 
@@ -441,33 +429,10 @@ As does changing the description.
   >>> firefox_bug.date_last_updated > current_date_last_updated
   True
 
-Updating the bug nickname, however, will *not* update the
-date_last_updated, because adding a nickname to a bug is a convenience,
-not really important enough to bump it up in the "most recently changed"
-sort order.
-
-  >>> current_date_last_updated = firefox_bug.date_last_updated
-
-  >>> bug_before_modification = capture_state(
-  ...     firefox_bug, *IBug.names())
-
-  >>> firefox_bug.name = "foo"
-
-  >>> bug_nickname_changed = SQLObjectModifiedEvent(
-  ...     firefox_bug, bug_before_modification, ["name"])
-
-  >>> notify(bug_nickname_changed)
-
-  >>> firefox_bug.date_last_updated == current_date_last_updated
-  True
-
-Updating bugtask severity, assignee, or status will update
-IBug.date_last_updated. Let's see an example of each.
+Modifying a bugtask will update IBug.date_last_updated.
 
   >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
-  >>> from canonical.launchpad.interfaces import IBugTask
-
-Changing severity:
+  >>> from canonical.launchpad.interfaces import IUpstreamBugTask
 
   >>> firefox_task = firefox_bug.bugtasks[0]
 
@@ -475,18 +440,68 @@ Changing severity:
 
   >>> print firefox_task.severity.title
   Normal
+  >>> print firefox_task.status.title
+  Unconfirmed
 
-  >>> bugtask_before_modification = capture_state(
-  ...     firefox_task, *IBugTask.names())
+  >>> bugtask_before_modification = Snapshot(
+  ...     firefox_task, providing=IUpstreamBugTask)
 
   >>> firefox_task.severity = BugTaskSeverity.CRITICAL
+  >>> firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
 
-  >>> bugtask_severity_modified = SQLObjectModifiedEvent(
-  ...     firefox_task, bugtask_before_modification, ["severity"])
+  >>> bugtask_modified = SQLObjectModifiedEvent(
+  ...     firefox_task, bugtask_before_modification,
+  ...     ["status", "severity"])
+
+  >>> notify(bugtask_modified)
 
   >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
 
-Changing assignee:
+Adding a new task.
 
+  >>> from canonical.launchpad.interfaces import IBugTaskSet
 
-Changing status:
+  >>> thunderbird = productset.getByName("thunderbird")
+
+  >>> print thunderbird.name
+  thunderbird
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> thunderbird_task = getUtility(IBugTaskSet).createTask(
+  ...     bug=firefox_bug, owner=foobar, product=thunderbird)
+
+  >>> notify(SQLObjectCreatedEvent(thunderbird_task))
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
+Changing bug visibility.
+
+  >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> firefox_bug.private
+  False
+  >>> firefox_bug.private = True
+
+  >>> bug_visibility_changed = SQLObjectModifiedEvent(
+  ...     firefox_bug, bug_before_modification, ["private"])
+
+  >>> notify(bug_visibility_changed)
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
+Changing bug security.
+
+Marking as duplicate.
+
+Adding at attachment.
+
+Adding a branch.
+
+Linking to a CVE.
+
+Linking to external bug tracker.
