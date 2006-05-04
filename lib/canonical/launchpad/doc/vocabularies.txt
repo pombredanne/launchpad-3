@@ -584,4 +584,17 @@ o SchemaVocabulary - launchpad Schema Vocabulary..
     >>> [schema.name for schema in vocabulary.search("m")]
     [u'enema', u'mark', u'schema', u'trema']
 
+o BugWatchVocabulary - all bug watches associated with a bugtask's bug
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bugtask = bug_one.bugtasks[0]
+    >>> vocab = vocabulary_registry.get(bugtask, "BugWatch")
+    >>> for term in vocab:
+    ...     print term.title
+    The Mozilla.org Bug Tracker <a...>#123543</a>
+    The Mozilla.org Bug Tracker <a...>#2000</a>
+    The Mozilla.org Bug Tracker <a...>#42</a>
+    Debian Bug tracker <a...>#304014</a>
+
 XXX: document more vocabularies here, particularly when they break!
