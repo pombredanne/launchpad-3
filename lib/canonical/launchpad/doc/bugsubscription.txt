@@ -1,9 +1,8 @@
 Introduction
 ============
 
-Bugs are problems reported in software. Bugs can be assigned to packages and
-products to be fixed. People can "subscribe" to bugs. This document is about
-people subscribing to bugs.
+A user can "subscribe" to a bug report to get email notifications when
+changes are made to the report.
 
 Accessing Bug Subscriber Lists
 ==============================
@@ -214,3 +213,58 @@ bug reports automatically:
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com']
+
+Subscribers and Duplicate Bugs
+------------------------------
+
+If bug A is a duplicate of bug B, the subscribers of bug A will get
+notifications when bug B is changed. This ensures that subscribers of
+duplicate bugs are kept "in the loop" about the problem. Let's use bug
+#4 and bug #10 to demonstrate:
+
+    >>> bug_four = bugset.get(4)
+    >>> bug_ten = bugset.get(10)
+
+    >>> sorted(bug_four.notificationRecipientAddresses())
+    ['test@canonical.com']
+
+    >>> sorted(bug_ten.notificationRecipientAddresses())
+    ['foo.bar@canonical.com']
+
+An IBug has a getSubscribersFromDuplicates() method, which returns a list
+of IPerson objects that are subscribed to this bug solely by virtue of
+being subscribed to a duplicate of this bug. So if they're subscribed to
+a duplicate of this bug, but *also* suscribed directly to this bug, they
+are not included in this list.
+
+    >>> def subscriber_names(subscribers):
+    ...     return sorted(subscriber.name for subscriber in subscribers)
+
+    >>> subscriber_names(bug_four.getSubscribersFromDuplicates())
+    []
+
+When bug #10 is marked as a duplicate of bug #4, the sole subscriber to
+bug #10, Foo Bar, will become part of the recipient list for bug #4.
+
+    >>> bug_ten.duplicateof = 4
+
+(Ensure the database is updated with the above change.)
+
+    >>> bug_ten.syncUpdate()
+
+    >>> subscriber_names(bug_four.getSubscribersFromDuplicates())
+    [u'name16']
+
+    >>> sorted(bug_four.notificationRecipientAddresses())
+    ['foo.bar@canonical.com', 'test@canonical.com']
+
+If bug #4 were *private* though, mail is sent only to its direct
+subscribers, in this case, just Sample Person:
+
+    >>> bug_four.private = True
+
+    >>> sorted(bug_four.getSubscribersFromDuplicates())
+    []
+
+    >>> sorted(bug_four.notificationRecipientAddresses())
+    ['test@canonical.com']

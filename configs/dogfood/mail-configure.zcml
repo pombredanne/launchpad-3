@@ -3,11 +3,15 @@
     xmlns:mail="http://namespaces.zope.org/mail"
     i18n_domain="zope">
 
-    <mail:queuedDelivery
-        permission="zope.SendMail"
-        queuePath="/srv/launchpad.net/launchpad-mailqueue"
-        mailer="smtp"
+    <mail:stubMailer
+        name="stub" from_addr="launchpad@localhost"
+        to_addr="launchpad@localhost"
         />
+
+    <!-- Development configuration to avoid spamming innocent people -->
+    <mail:queuedDelivery name="Mail" permission="zope.SendMail"
+        queuePath="/var/tmp/launchpad_mailqueue" mailer="stub" />
+
 
 </configure>
 

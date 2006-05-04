@@ -19,8 +19,8 @@ __all__ = [
     'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
     'ILaunchpadRoot', 'ILaunchpadApplication',
     'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
-    'IBazaarApplication', 'IFOAFApplication', 'IPasswordEncryptor',
-    'IReadZODBAnnotation', 'IWriteZODBAnnotation',
+    'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
+    'IWriteZODBAnnotation', 'ILaunchpadBrowserApplicationRequest',
     'IZODBAnnotation', 'IAuthorization',
     'IHasOwner', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
@@ -33,10 +33,8 @@ __all__ = [
     'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
-    'IBeforeTraverseEvent', 'BeforeTraverseEvent',
-    'IBreadcrumb', 'IBasicLaunchpadRequest',
-    'ILaunchpadBrowserApplicationRequest',
-    'IHasSecurityContact',
+    'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
+    'IBasicLaunchpadRequest', 'IHasSecurityContact',
     ]
 
 
@@ -153,10 +151,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
 class IRegistryApplication(ILaunchpadApplication):
     """Registry application root."""
-
-
-class IFOAFApplication(ILaunchpadApplication):
-    """FOAF application root."""
 
 
 class IShipItApplication(ILaunchpadApplication):

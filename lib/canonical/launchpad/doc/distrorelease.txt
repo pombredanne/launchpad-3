@@ -173,15 +173,18 @@ other things) the uploader for validating incoming uploads.
    restricted
    >>> for s in hoary.sections:
    ...     print s.name
+   base
+   web
    editors
+   admin
 
    >>> from canonical.launchpad.interfaces import (
    ...    IComponentSet, ISectionSet)
    >>> univ = getUtility(IComponentSet).ensure('universe')
-   >>> web = getUtility(ISectionSet).ensure('web')
+   >>> python = getUtility(ISectionSet).ensure('python')
 
    >>> hoary.addComponent(univ)
-   >>> hoary.addSection(web)
+   >>> hoary.addSection(python)
 
    >>> for c in hoary.components:
    ...     print c.name
@@ -191,9 +194,11 @@ other things) the uploader for validating incoming uploads.
 
    >>> for s in hoary.sections:
    ...     print s.name
+   base
    web
    editors
-
+   admin
+   python
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview
 
