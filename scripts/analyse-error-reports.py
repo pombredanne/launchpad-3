@@ -203,7 +203,7 @@ class ErrorSummary:
 
         total = len(errors)
         if count >= 0 and total > count:
-            fp.write('=== Top %d %s (total %s) ===\n\n' % (count, title, total))
+            fp.write('=== Top %d %s (total of %s unique items) ===\n\n' % (count, title, total))
             errors = errors[:count]
         else:
             fp.write('=== All %s ===\n\n' % title)
@@ -243,13 +243,13 @@ class ErrorSummary:
                  % sum(data.count for data in self.expired.itervalues()))
         fp.write(' * %d Soft Time Outs\n'
                  % sum(data.count for data in self.softtimeout.itervalues()))
-        fp.write(' * %d Not Found Errors\n\n'
+        fp.write(' * %d Pages Not Found\n\n'
                  % sum(data.count for data in self.notfound.itervalues()))
 
         self.printTable(fp, self.exceptions, 'Exceptions', count=EXC_COUNT)
         self.printTable(fp, self.expired, 'Time Out Pages', count=COUNT)
         self.printTable(fp, self.softtimeout, 'Soft Time Outs', count=COUNT)
-        self.printTable(fp, self.notfound, 'Not Found Errors', count=COUNT)
+        self.printTable(fp, self.notfound, 'Pages Not Found', count=COUNT)
 
     def printHtmlTable(self, fp, source, title):
         fp.write('<h2>All %s</h2>\n' % title)
@@ -310,7 +310,7 @@ class ErrorSummary:
                  % sum(data.count for data in self.expired.itervalues()))
         fp.write('<li><a href="#soft-timeouts">%d Soft Time Outs</a></li>\n'
                  % sum(data.count for data in self.softtimeout.itervalues()))
-        fp.write('<li><a href="#not-found">%d Not Found Pages</a></li>\n'
+        fp.write('<li><a href="#not-found">%d Pages Not Found</a></li>\n'
                  % sum(data.count for data in self.notfound.itervalues()))
         fp.write('</ul>\n\n')
 
@@ -321,7 +321,7 @@ class ErrorSummary:
         fp.write('<a name="soft-timeouts"></a>')
         self.printHtmlTable(fp, self.softtimeout, 'Soft Time Outs')
         fp.write('<a name="not-found"></a>')
-        self.printHtmlTable(fp, self.notfound, 'Not Found Pages')
+        self.printHtmlTable(fp, self.notfound, 'Pages Not Found')
 
         fp.write('</body>\n')
         fp.write('</html>\n')
