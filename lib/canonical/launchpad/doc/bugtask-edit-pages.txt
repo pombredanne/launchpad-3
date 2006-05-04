@@ -113,6 +113,8 @@ XXX: We really should update the status from the bug watch, but that's
     >>> request = LaunchpadTestRequest(
     ...     form={
     ...         'FORM_SUBMIT': '',
+    ...         'field.status': 'Confirmed',
+    ...         'field.severity': 'Critical',
     ...         'field.bugwatch': '6'})
     >>> edit_view = getView(
     ...     thunderbird_task, '+editstatus-page', request)

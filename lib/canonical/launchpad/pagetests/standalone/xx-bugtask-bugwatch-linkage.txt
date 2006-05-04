@@ -13,7 +13,7 @@ There's currently a bug watch linked to the task.
     >>> bugwatch_control.type
     'radio'
     >>> bugwatch_control.displayValue
-    ['\xa0Debian Bug tracker #304014']
+    ['...Debian...#304014...']
 
 This means that we only display the status, it's not possible to edit it:
 
