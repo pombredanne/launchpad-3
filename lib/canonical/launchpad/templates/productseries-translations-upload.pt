@@ -2,24 +2,42 @@
     xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
+    i18n:domain="launchpad"
+>
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:condition="not: context/potemplates" class="portlet">
+    <h4>No templates yet for <span tal:replace="context/name">1.0</span>:</h4>
+    <div class="portletBody portletContent">
+
+      <img src="/@@/info" />
+      At this stage there are no translation templates in place for 
+      <span tal:replace="context/title">Mozilla Firefox Series: 1.0</span>.
+      You should make sure that you upload a PO Template (.pot) rather than
+      a translation file (.po). We will review the template and if approved,
+      you can upload additional translations.
+    
+    </div>
+  </div>
+  <tal:per_template repeat="template context/potemplates">
+    <div tal:replace="structure template/@@+portlet-langstats" />
+  </tal:per_template>
 </metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Foo Series: main</h3>
+  <h1>Upload new translation resources</h1>
+</metal:heading>
+
 
 <div metal:fill-slot="main">
 
-  <h1>Upload new translation resources for <span tal:replace="context/title" />
-  </h1>
-
   <p>
-    Here you can upload either a single file (<code>.pot</code> /
+    Upload either a single file (<code>.pot</code> /
     <code>.po</code>) or a tar file containing a PO template and a set of PO
     files (<code>.tar</code>, <code>.tar.gz</code>, <code>.tgz</code> or
     <code>.tar.bz2</code>).

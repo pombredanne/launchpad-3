@@ -5,10 +5,10 @@
   <div class="portletBody">
     <div class="portletContent">
 
-      <ul tal:define="current_task view/currentBugTask">
+      <ul>
         <li tal:repeat="dupe view/duplicates">
-          <a tal:attributes="href string:${current_task/target/fmt:url}/+bug/${dupe/id};
-            title dupe/title">
+          <a tal:attributes="href dupe/url;
+                             title dupe/title">
              Bug #<span tal:replace="dupe/id">3445</span>
           </a>
         </li>

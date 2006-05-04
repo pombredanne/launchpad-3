@@ -28,6 +28,9 @@ def main():
     here = os.path.dirname(os.path.realpath(__file__))
 
     # Tabnanny
+    # NB. If tabnanny raises an exception, run 
+    # python /usr/lib/python2.4/tabnanny.py -vv lib/canonical
+    # for more detailed output.
     org_stdout = sys.stdout
     sys.stdout = StringIO()
     tabnanny.check(os.path.join(here, 'lib', 'canonical'))
@@ -166,7 +169,7 @@ def main():
 
         if proc.stdout in rlist:
             chunk = os.read(proc.stdout.fileno(), 1024)
-            print chunk,
+            sys.stdout.write(chunk)
             if chunk == "":
                 open_readers.remove(proc.stdout)
 

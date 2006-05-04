@@ -49,7 +49,7 @@ Then, let's simulate selecting the "me" radio button, to assign the
 bug to the currently logged-in user:
 
   >>> request = TestRequest(form={'field.assignee.option': 'assign_to_me'})
-  >>> widget = BugTaskAssigneeWidget(context, request)
+  >>> widget = BugTaskAssigneeWidget(context, None, request)
 
 Currently, the bugtask is not assigned to the current user:
 
@@ -249,5 +249,5 @@ Nor to another:
 
 All that's left now is a bit of cleanup:
 
-  >>> bugtask.assignee = ORIGINAL_ASSIGNEE
+  >>> bugtask.transitionToAssignee(ORIGINAL_ASSIGNEE)
 

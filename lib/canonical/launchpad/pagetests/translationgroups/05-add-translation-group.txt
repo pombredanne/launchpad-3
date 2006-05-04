@@ -8,7 +8,7 @@ any login credentials.
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
-  Content-Type: text/plain;charset=utf-8
+  Content-Type: text/plain
   Location: .../rosetta/groups/+new/+login
   ...
   <BLANKLINE>
@@ -106,7 +106,5 @@ and clean. Let's view it.
   <BLANKLINE>
   ...
       <title>\u201cThe PolyGlot Translation Group\u201d...
-  ...
-    <h1>Translation group overview</h1>
   ...
 

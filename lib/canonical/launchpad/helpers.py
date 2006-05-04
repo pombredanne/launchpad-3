@@ -15,7 +15,6 @@ import random
 import re
 import sha
 import tarfile
-import urlparse
 import warnings
 from StringIO import StringIO
 from math import ceil
@@ -40,6 +39,7 @@ from canonical.launchpad.interfaces import (
     IRequestLocalLanguages, ITeam, TranslationConstants)
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
+
 
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
@@ -254,11 +254,8 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     if you popen2() a command, write its standard input, then read its
     standard output, this can deadlock due to the parent process blocking on
     writing to the child, while the child process is simultaneously blocking
-    on writing to its parent. This function avoids that problem by writing and
-    reading incrementally.
-
-    When we make Python 2.4 a requirement, this function can probably be
-    replaced with something using subprocess.Popen.communicate().
+    on writing to its parent. This function avoids that problem by using
+    subprocess.Popen.communicate().
     """
 
     p = subprocess.Popen(
@@ -283,6 +280,10 @@ def contactEmailAddresses(person):
     """
     emails = set()
     if person.preferredemail is not None:
+        # XXX: This str() call can be removed as soon as Andrew lands his
+        # unicode-simple-sendmail branch, because that will make
+        # simple_sendmail handle unicode email addresses.
+        # Guilherme Salgado, 2006-04-20
         emails.add(str(person.preferredemail.email))
         return emails
 
@@ -897,6 +898,10 @@ def is_ascii_only(string):
 
 
 def capture_state(obj, *fields):
+    """Return a snapshot of obj.
+
+    Useful when publishing SQLObjectModifiedEvents in doctests.
+    """
     class State: pass
     state = State()
     for field in fields:
@@ -904,20 +909,4 @@ def capture_state(obj, *fields):
 
     return state
 
-
-def urlappend(baseurl, path):
-    """Append the given path to baseurl.
-
-    The path must not start with a slash, but a slash is added to baseurl
-    (before appending the path), in case it doesn't end with a slash.
-
-    >>> urlappend('http://foo.bar', 'spam/eggs')
-    'http://foo.bar/spam/eggs'
-    >>> urlappend('http://localhost:11375/foo', 'bar/baz')
-    'http://localhost:11375/foo/bar/baz'
-    """
-    assert not path.startswith('/')
-    if not baseurl.endswith('/'):
-        baseurl += '/'
-    return urlparse.urljoin(baseurl, path)
 

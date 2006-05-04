@@ -1,42 +1,34 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+      i18n:domain="launchpad"
+>
 
 <body>
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Ubuntu Linux</h3>
+  <h1>Distribution overview</h1>
+</metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:condition="context/currentrelease"
-         tal:replace="structure context/currentrelease/@@+portlet-langstats"
-         />
-    <div tal:replace="structure context/@@+portlet-bounties" />
-    <div tal:replace="structure context/@@+portlet-milestones" />
-    <div tal:replace="structure context/@@+portlet-latestspecs" />
+  <div tal:condition="context/currentrelease"
+       tal:replace="structure context/currentrelease/@@+portlet-langstats"
+       />
 </metal:leftportlets>
 
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-latestbugs" />
-    <div tal:replace="structure context/@@+portlet-latesttickets" />
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-milestones" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-  <h1><span tal:replace="context/title">TITLE</span>:
-    Distribution overview</h1>
 
   <p class="documentDescription" tal:content="context/summary">
       Distribution Summary
   </p>
 
-  <div class="highlighted" style="font-size: 80%;">
-    <p tal:replace="structure context/description/fmt:text-to-html">
-        Distribution description
-    </p>
-  </div>
-
-  <h2>Source packages in <span tal:replace="context/title"/></h2>
+  <h3>Search packages in <span tal:replace="context/title"/></h3>
 
   <form name="search" action="+search" method="GET">
   
@@ -49,11 +41,23 @@
 
   </form>
 
-  <p class="discreet">
-    Search for a software package in this distribution using the form above.
-    You will be shown a list of matching source packages, and can explore
-    the archive from there.
+  <p class="discreet lesser">
+    Search for a package in
+    <span tal:replace="context/displayname">Ubuntu</span> using the form.
+    Enter any word in the package title or description.
   </p>
+
+  <tal:description replace="structure context/description/fmt:text-to-html">
+    Distribution description
+  </tal:description>
+
+  <div tal:replace="structure context/@@+portlet-latesttickets" />
+
+  <div tal:replace="structure context/@@+portlet-latestbugs" />
+
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
+
+  <div tal:replace="structure context/@@+portlet-bounties" />
 
 </div>
 

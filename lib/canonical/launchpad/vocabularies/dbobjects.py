@@ -72,7 +72,7 @@ from canonical.launchpad.database import (
     BinaryAndSourcePackageName, Component)
 from canonical.launchpad.interfaces import (
     IDistribution, IEmailAddressSet, ILaunchBag, IPersonSet, ITeam,
-    IMilestoneSet, IPerson, IProduct)
+    IMilestoneSet, IPerson, IProduct, IProject)
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
@@ -91,6 +91,8 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
 
     def search(query=None):
         """Return an iterable of objects that match the search string.
+
+        The iterable must have a count() method.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
@@ -823,9 +825,10 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
         launchbag = getUtility(ILaunchBag)
         if launchbag.distribution:
             distribution = launchbag.distribution
-            for distrorelease in self._table.selectBy(
-                distributionID=distribution.id, **kw):
-                yield self.toTerm(distrorelease)
+            releases = self._table.selectBy(
+                distributionID=distribution.id, **kw)
+            for release in sorted(releases, key=lambda x: x.sortkey):
+                yield self.toTerm(release)
 
 
 class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
@@ -879,6 +882,10 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         target = None
+        project = launchbag.project
+        if project is not None:
+            target = project
+        
         product = launchbag.product
         if product is not None:
             target = product
@@ -895,7 +902,13 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # This fixes an urgent bug though, so I think this problem should be
         # revisited after we've unblocked users.
         if target is not None:
-            milestones = shortlist(target.milestones, longest_expected=40)
+            if IProject.providedBy(target):
+                milestones = shortlist((milestone
+                                        for product in target.products
+                                        for milestone in product.milestones),
+                                       longest_expected=40)
+            else:
+                milestones = shortlist(target.milestones, longest_expected=40)
         else:
             # We can't use context to reasonably filter the milestones, so let's
             # just grab all of them.
@@ -1097,7 +1110,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         releases = self._table.select(
             DistroRelease.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for release in releases:
+        for release in sorted(releases, key=lambda x: x.sortkey):
             yield self.toTerm(release)
 
     def toTerm(self, obj):

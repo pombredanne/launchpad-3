@@ -86,6 +86,7 @@ It was not rejected.
 
   >>> success, msgs = upload.do_accept()
   DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Creating a New queue entry
   DEBUG: Setting it to ACCEPTED
 
@@ -121,7 +122,7 @@ Check what was published in the target directory:
   >>> archive_dir = '/var/tmp/archive/'
   >>> upgrade_dir = 'ubuntutest/dists/breezy-autotest/main/dist-upgrader-all'
   >>> target_dir = os.path.join(archive_dir, upgrade_dir)
-  >>> content = os.listdir(target_dir)
+  >>> content = sorted(os.listdir(target_dir))
   >>> content
   ['20060302.0120', 'current']
 
@@ -133,10 +134,10 @@ the 'current' symbolic link (contents are the same)
 
   >>> assert os.path.islink(link_path) is True
 
-  >>> os.listdir(real_path)
+  >>> sorted(os.listdir(real_path))
   ['ReleaseAnouncement', 'dapper.tar.gz']
 
-  >>> os.listdir(link_path)
+  >>> sorted(os.listdir(link_path))
   ['ReleaseAnouncement', 'dapper.tar.gz']
 
 Remove the directory to keep the test working.

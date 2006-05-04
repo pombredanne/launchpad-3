@@ -24,7 +24,43 @@ MINUTES = 60 * SECONDS
 HOURS = 60 * MINUTES
 DAYS = 24 * HOURS
 
-class PGSessionDataContainer:
+class PGSessionBase:
+    database_adapter_name = 'session'
+
+    @property
+    def cursor(self):
+        da = getUtility(IZopeDatabaseAdapter, self.database_adapter_name)
+        return da().cursor()
+
+    def _upsert(self, insert_query, update_query=None, args={}):
+        """Attempt insert, and if it fails, attempt update if specified."""
+        cursor = self.cursor
+
+        # Try the insert, rolling back to savepoint on failure due to
+        # constraint violations. We could do this with locks, but the locks
+        # would not be released until transaction commit. This would cause
+        # performance problems, as our expected usage pattern is constant
+        # reads, occasional updates and rare inserts. Note that savepoints
+        # require PostgreSQL 8.1+ - We could also do a no savepoint version
+        # using a PL/pgSQL stored procedure if this is a problem.
+        cursor.execute('SAVEPOINT pgsessionbase_upsert')
+        try:
+            cursor.execute(insert_query, args)
+        # XXX: When production servers are running Dapper (or just a more
+        # modern psycopg) we will only need to catc IntegrityError.
+        # -- StuartBishop 20060424
+        except (psycopg.IntegrityError, psycopg.ProgrammingError):
+            cursor.execute("ROLLBACK TO pgsessionbase_upsert")
+            if update_query:
+                cursor.execute(update_query, args)
+
+        # Note - not in a finally: clause, as other psycopg exceptions
+        # will invalidate the connection. Savepoint will be released on
+        # rollback.
+        cursor.execute("RELEASE pgsessionbase_upsert")
+
+
+class PGSessionDataContainer(PGSessionBase):
     """An ISessionDataContainer that stores data in PostgreSQL
     
     PostgreSQL Schema:
@@ -53,37 +89,22 @@ class PGSessionDataContainer:
 
     session_data_table_name = 'SessionData'
     session_pkg_data_table_name = 'SessionPkgData'
-    database_adapter_name = 'session'
-
-    @property
-    def cursor(self):
-        da = getUtility(IZopeDatabaseAdapter, self.database_adapter_name)
-        return da().cursor()
 
     def __getitem__(self, client_id):
         """See zope.app.session.interfaces.ISessionDataContainer"""
         cursor = self.cursor
         self._sweep(cursor)
-        query = "SELECT COUNT(*) FROM %s WHERE client_id = %%(client_id)s" % (
-                self.session_data_table_name
-                )
-        cursor.execute(query.encode(PG_ENCODING), vars())
-        if cursor.fetchone()[0] == 0:
-            # Note that we don't raise a KeyError here - if the client_id
-            # is not yet a valid session identifier, make it so. If we fail
-            # to do this, the session machinery will do it for us, but will
-            # create a default SessionData instance instead of our customized
-            # PGSessionData.
-            self[client_id] = 'ignored'
+        # Ensure the row in session_data_table_name exists in the database.
+        # __setitem__ handles this for us.
+        self[client_id] = 'ignored'
         return PGSessionData(self, client_id)
 
     def __setitem__(self, client_id, session_data):
         """See zope.app.session.interfaces.ISessionDataContainer"""
-        query = "INSERT INTO %s (client_id) VALUES (%%(client_id)s)" % (
-                self.session_data_table_name
+        insert_query = "INSERT INTO %s (client_id) VALUES (%%(client_id)s)" % (
+                self.session_data_table_name,
                 )
-        client_id = client_id.encode(PG_ENCODING)
-        self.cursor.execute(query, vars())
+        self._upsert(insert_query, None, vars())
 
     _last_sweep = datetime.utcnow()
     fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
@@ -104,7 +125,7 @@ class PGSessionDataContainer:
         cursor.execute(query)
 
 
-class PGSessionData:
+class PGSessionData(PGSessionBase):
     implements(ISessionData)
 
     session_data_container = None
@@ -125,10 +146,6 @@ class PGSessionData:
             """ % (table_name, session_data_container.resolution)
         self.cursor.execute(query, [client_id.encode(PG_ENCODING)])
 
-    @property
-    def cursor(self):
-        return self.session_data_container.cursor
-
     def __getitem__(self, product_id):
         """Return an ISessionPkgData"""
         return PGSessionPkgData(self, product_id)
@@ -141,7 +158,7 @@ class PGSessionData:
         pass
 
 
-class PGSessionPkgData(DictMixin):
+class PGSessionPkgData(DictMixin, PGSessionBase):
     implements(ISessionPkgData)
 
     @property
@@ -160,8 +177,8 @@ class PGSessionPkgData(DictMixin):
     def _populate(self):
         self._data_cache = {}
         query = """
-            SELECT key, pickle FROM %s
-            WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
+            SELECT key, pickle FROM %s WHERE client_id = %%(client_id)s
+                AND product_id = %%(product_id)s
             """ % self.table_name
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
@@ -182,30 +199,25 @@ class PGSessionPkgData(DictMixin):
         cursor = self.cursor
 
         org_key = key
+
         key = key.encode(PG_ENCODING)
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
-        if self._data_cache.has_key(org_key):
-            query = """
-                UPDATE %s SET pickle = %%(pickled_value)s
+        table = self.table_name
+
+        insert_query = """
+            INSERT INTO %(table)s (client_id, product_id, key, pickle) VALUES (
+                %%(client_id)s, %%(product_id)s, %%(key)s, %%(pickled_value)s
+                )
+            """ % vars()
+        update_query = """
+            UPDATE %(table)s SET pickle = %%(pickled_value)s
                 WHERE client_id = %%(client_id)s
                     AND product_id = %%(product_id)s AND key = %%(key)s
-                """ % self.table_name
-            # NB. This might update 0 rows if another thread has deleted
-            # the key. If this happens we just don't care.
-            cursor.execute(query, vars())
-        
-        else:
-            # Inserting a new row. Because we are running in SERIALIZED
-            # transaction isolation level, if another thread has inserted
-            # this key already a serialization exception will be raised,
-            # which we need to deal with as normal.
-            query = """
-                INSERT INTO %s (client_id, product_id, key, pickle) VALUES (
-                    %%(client_id)s, %%(product_id)s, %%(key)s,
-                    %%(pickled_value)s)
-                """ % self.table_name
-            cursor.execute(query, vars())
+                    AND pickle <> %%(pickled_value)s
+            """ % vars()
+
+        self._upsert(insert_query, update_query, vars())
 
         # Store the value in the cache too
         self._data_cache[org_key] = value
@@ -214,17 +226,18 @@ class PGSessionPkgData(DictMixin):
         """Delete an item.
         
         Note that this will never fail in order to avoid
-        race conditions in code using the session machinery (well - it might
-        raise a normal serialization exception).
+        race conditions in code using the session machinery
         """
         try:
             del self._data_cache[key]
         except KeyError:
-            return # Not in the cache, then it won't be in the DB.
+            # Not in the cache, then it won't be in the DB. Or if it is,
+            # another process has inserted it and we should keep our grubby
+            # fingers out of it.
+            return
         query = """
-            DELETE FROM %s
-            WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
-                AND key = %%(key)s
+            DELETE FROM %s WHERE client_id = %%(client_id)s
+                AND product_id = %%(product_id)s AND key = %%(key)s
             """ % self.table_name
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)

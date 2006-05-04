@@ -3,25 +3,24 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
+    i18n:domain="launchpad"
+>
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:rightportlets>
 
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Set feature goals</h1>
+</metal:heading>
+
 <div metal:fill-slot="main">
-
-  <h1>Set goals</h1>
-
-  <p class="documentDescription">
-    This page allows you to accept or decline specifications as goals for
-    <span tal:replace="context/displayname">Mozilla Firefox 1.0</span>.
-  </p>
 
   <p
     tal:condition="view/status_message"
@@ -29,11 +28,11 @@
     class="error message"
   />
 
-  <p tal:condition="not: view/specs">
-    <i>There are no specifications currently proposed as goals for
+  <p class="informational message" tal:condition="not: view/specs">
+    There are no specifications currently proposed as goals for
     <span tal:replace="context/displayname">1.0</span>. You can check the
     list of specifications previously declined using the links to the right
-    of this page.</i>
+    of this page.
   </p>
 
   <form tal:attributes="action request/URL" method="POST">

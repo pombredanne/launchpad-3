@@ -17,18 +17,23 @@ from canonical.database.sqlbase import SQLBase
 class Milestone(SQLBase):
     implements(IMilestone)
 
-    product = ForeignKey(dbName='product', foreignKey='Product')
+    product = ForeignKey(dbName='product',
+        foreignKey='Product', default=None)
     distribution = ForeignKey(dbName='distribution',
-        foreignKey='Distribution')
+        foreignKey='Distribution', default=None)
+    productseries = ForeignKey(dbName='productseries',
+        foreignKey='ProductSeries', default=None)
+    distrorelease = ForeignKey(dbName='distrorelease',
+        foreignKey='DistroRelease', default=None)
     name = StringCol(notNull=True)
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
 
     # joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='milestone',
-        orderBy=['-priority', '-datecreated', '-severity'])
+        orderBy=['-severity', '-priority', 'id'])
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
-        orderBy=['-priority', 'status', 'title'])
+        orderBy=['-priority', 'status', 'delivery', 'title'])
 
     @property
     def target(self):
@@ -37,6 +42,14 @@ class Milestone(SQLBase):
             return self.product
         elif self.distribution:
             return self.distribution
+
+    @property
+    def series_target(self):
+        """See IMilestone."""
+        if self.productseries:
+            return self.productseries
+        elif self.distrorelease:
+            return self.distrorelease
 
     @property
     def displayname(self):
@@ -85,12 +98,4 @@ class MilestoneSet:
         if milestone is None:
             return default
         return milestone
-            
-    def new(self, name, product=None, distribution=None, dateexpected=None,
-        visible=True):
-        """See IMilestoneSet."""
-        return Milestone(name=name, product=product,
-            distribution=distribution, dateexpected=dateexpected,
-            visible=visible)
-
 

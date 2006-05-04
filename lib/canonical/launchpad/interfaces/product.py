@@ -17,7 +17,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, Description, Summary, Title)
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget,
+    IHasSecurityContact)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
@@ -34,7 +35,8 @@ class ProductNameField(ContentNameField):
         return getUtility(IProductSet).getByName(name)
 
 
-class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
+class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
+               IHasSecurityContact, ITicketTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -52,8 +54,13 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         title=_('Project'),
         required=False,
         vocabulary='Project',
-        description=_("""Optional related Project.
-            Used to group similar products in a coherent way."""))
+        description=_("""Optional project. In Launchpad, a "Project" is a
+            group that produces several related products. For example, the
+            Mozilla Project produces Firefox, Thunderbird and Gecko. This
+            information is used to group those products in a coherent way.
+            If you make this product part of a group, the group preferences
+            and decisions around bug tracking, translation and security
+            policy will apply to this product."""))
 
     owner = Choice(
         title=_('Owner'),
@@ -69,19 +76,33 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
             "product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this product"),
+        required=False, vocabulary='ValidPersonOrTeam')
+
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "This person or team will be able to set feature goals for "
+            "and approve bug targeting or backporting for ANY major series "
+            "in this product. You might want to leave this blank and just "
+            "appoint a team for each specific series, rather than having "
+            "one product team that does it all."),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     name = ProductNameField(
         title=_('Name'),
         constraint=name_validator,
-        description=_("""The short name of this product, which must be
-            unique among all the products. It should be at least one
-            lowercase letters or number followed by one or more chars,
-            numbers, plusses, dots or hyphens and will be part of the url
-            to this product in the Launchpad."""))
+        description=_("""At least one lowercase letter or number, followed by
+            letters, dots, hyphens or plusses.
+            Keep this name short, as it is used in URLs."""))
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The display name of this product is the name of
-            this product as it would appear in a paragraph of text."""))
+        description=_("""The name of the product as it would appear in a paragraph."""))
 
     title = Title(
         title=_('Title'),
@@ -93,8 +114,12 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
 
     description = Description(
         title=_('Description'),
-        description=_("""The product description, may be several paragraphs
-            of text, giving the product highlights and details."""))
+        required=False,
+        description=_("""Optional detailed product description, which may
+            be several paragraphs of text and include URL's to useful
+            information giving the product highlights and details. It will be
+            displayed as an extension of the summary, so don't repeat
+            yourself if you provide a description!"""))
 
     datecreated = TextLine(
         title=_('Date Created'),
@@ -237,6 +262,9 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     releaseroot = Text(title=_("The URL of the root directory for the product "
         "used when the series doesn't supply one."))
 
+    def getLatestBranches(quantity=5):
+        """Latest <quantity> branches registered for this product."""
+
     def getPackage(distrorelease):
         """Return a package in that distrorelease for this product."""
 
@@ -245,7 +273,7 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         None.
         """
 
-    def newSeries(name, displayname, summary):
+    def newSeries(owner, name, summary):
         """Creates a new ProductSeries for this product."""
 
     def getSeries(name):
@@ -282,7 +310,7 @@ class IProductSet(Interface):
     def get(productid):
         """Get a product by its id.
 
-        If the product can't be found a zope.exceptions.NotFoundError will be
+        If the product can't be found a NotFoundError will be
         raised.
         """
 

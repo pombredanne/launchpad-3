@@ -27,13 +27,10 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, IRemoteBugTask, NotFoundError,
-    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
+    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage,
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
-
-debbugsstatusmap = {'open':      dbschema.BugTaskStatus.UNCONFIRMED,
-                    'forwarded': dbschema.BugTaskStatus.CONFIRMED,
-                    'done':      dbschema.BugTaskStatus.FIXRELEASED}
 
 debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
                       'minor':     dbschema.BugTaskSeverity.MINOR,
@@ -108,16 +105,16 @@ class BugTask(SQLBase, BugTaskMixin):
         dbName='severity', notNull=True,
         schema=dbschema.BugTaskSeverity,
         default=dbschema.BugTaskSeverity.NORMAL)
-    binarypackagename = ForeignKey(
-        dbName='binarypackagename', foreignKey='BinaryPackageName',
-        notNull=False, default=None)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
-    dateassigned = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    date_assigned = UtcDateTimeCol(notNull=False, default=None)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    date_confirmed = UtcDateTimeCol(notNull=False, default=None)
+    date_inprogress = UtcDateTimeCol(notNull=False, default=None)
+    date_closed = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     # The targetnamecache is a value that is only supposed to be set when a
     # bugtask is created/modified or by the update-bugtask-targetnamecaches
@@ -147,17 +144,26 @@ class BugTask(SQLBase, BugTaskMixin):
         #   -- kiko, 2006-03-21
         if self._SO_val_productID is not None:
             mark_task(self, IUpstreamBugTask)
-            root_target = self.product
         elif self._SO_val_distroreleaseID is not None:
             mark_task(self, IDistroReleaseBugTask)
-            root_target = self.distrorelease.distribution
-        else:
+        elif self._SO_val_distributionID is not None:
             # If nothing else, this is a distro task.
             mark_task(self, IDistroBugTask)
-            root_target = self.distribution
+        else:
+            raise AssertionError, "Task %d is floating" % self.id
 
-        if not root_target.official_malone:
-            mark_task(self, IRemoteBugTask)
+    @property
+    def target_uses_malone(self):
+        """See IBugTask"""
+        if IUpstreamBugTask.providedBy(self):
+            root_target = self.product
+        elif IDistroReleaseBugTask.providedBy(self):
+            root_target = self.distrorelease.distribution
+        elif IDistroBugTask.providedBy(self):
+            root_target = self.distribution
+        else:
+            raise AssertionError, "Task %d is floating" % self.id
+        return bool(root_target.official_malone)
 
     def _SO_setValue(self, name, value, fromPython, toPython):
         # We need to overwrite this method to make sure whenever we change a
@@ -178,14 +184,6 @@ class BugTask(SQLBase, BugTaskMixin):
         # SQLBase.set() is called.
         SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
 
-    def setStatusFromDebbugs(self, status):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        try:
-            self.status = debbugsstatusmap[status]
-        except KeyError:
-            raise ValueError('Unknown debbugs status "%s"' % status)
-        return self.status
-
     def setSeverityFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
         try:
@@ -193,6 +191,90 @@ class BugTask(SQLBase, BugTaskMixin):
         except KeyError:
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.severity
+
+    def transitionToStatus(self, new_status):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        if not new_status:
+            # This is mainly to facilitate tests which, unlike the
+            # normal status form, don't always submit a status when
+            # testing the edit form.
+            return
+
+        if self.status == new_status:
+            # No change in the status, so nothing to do.
+            return
+
+        if new_status == dbschema.BugTaskStatus.UNKNOWN:
+            # Ensure that all status-related dates are cleared,
+            # because it doesn't make sense to have any values set for
+            # date_confirmed, date_closed, etc. when the status
+            # becomes UNKNOWN.
+            self.status = new_status
+
+            self.date_confirmed = None
+            self.date_inprogress = None
+            self.date_closed = None
+
+            return
+
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+
+        # Record the date of the particular kinds of transitions into
+        # certain states.
+        if ((self.status.value < dbschema.BugTaskStatus.CONFIRMED.value) and
+            (new_status.value >= dbschema.BugTaskStatus.CONFIRMED.value)):
+            # Even if the bug task skips the Confirmed status
+            # (e.g. goes directly to Fix Committed), we'll record a
+            # confirmed date at the same time anyway, otherwise we get
+            # a strange gap in our data, and potentially misleading
+            # reports.
+            self.date_confirmed = now
+
+        if ((self.status.value < dbschema.BugTaskStatus.INPROGRESS.value) and
+            (new_status.value >= dbschema.BugTaskStatus.INPROGRESS.value)):
+            # Same idea with In Progress as the comment above about
+            # Confirmed.
+            self.date_inprogress = now
+
+        if ((self.status in UNRESOLVED_BUGTASK_STATUSES) and
+            (new_status in RESOLVED_BUGTASK_STATUSES)):
+            self.date_closed = now
+
+        # Ensure that we don't have dates recorded for state
+        # transitions, if the bugtask has regressed to an earlier
+        # workflow state. We want to ensure that, for example, a
+        # bugtask that went Unconfirmed => Confirmed => Unconfirmed
+        # has a dateconfirmed value of None.
+        if new_status in UNRESOLVED_BUGTASK_STATUSES:
+            self.date_closed = None
+
+        if new_status < dbschema.BugTaskStatus.CONFIRMED:
+            self.date_confirmed = None
+
+        if new_status < dbschema.BugTaskStatus.INPROGRESS:
+            self.date_inprogress = None
+
+        self.status = new_status
+
+    def transitionToAssignee(self, assignee):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        if assignee == self.assignee:
+            # No change to the assignee, so nothing to do.
+            return
+
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+        if self.assignee and not assignee:
+            # The assignee is being cleared, so clear the dateassigned
+            # value.
+            self.date_assigned = None
+        if not self.assignee and assignee:
+            # The task is going from not having an assignee to having
+            # one, so record when this happened
+            self.date_assigned = now
+
+        self.assignee = assignee
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -311,17 +393,7 @@ class BugTaskSet:
         "dateassigned": "BugTask.dateassigned",
         "datecreated": "BugTask.datecreated"}
 
-    def __init__(self):
-        self.title = 'A set of bug tasks'
-
-    def __getitem__(self, task_id):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        return self.get(task_id)
-
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
-        for task in BugTask.select():
-            yield task
+    title = "A set of bug tasks"
 
     def get(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -352,7 +424,6 @@ class BugTaskSet:
             'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
-            'binarypackagename': params.binarypackagename,
             'owner': params.owner,
         }
         # Loop through the standard, "normal" arguments and build the
@@ -388,6 +459,18 @@ class BugTaskSet:
                 # arg_name.
                 clause += "IS NULL"
             extra_clauses.append(clause)
+
+        if params.project:
+            clauseTables.append("Product")
+            extra_clauses.append("BugTask.product = Product.id")
+            if isinstance(params.project, any):
+                extra_clauses.append("Product.project IN (%s)" % ",".join(
+                    [str(proj.id) for proj in params.project.query_values]))
+            elif params.project is NULL:
+                extra_clauses.append("Product.project IS NULL")
+            else:
+                extra_clauses.append("Product.project = %d" %
+                                     params.project.id)
 
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
@@ -474,7 +557,6 @@ class BugTaskSet:
 
     def createTask(self, bug, owner, product=None, distribution=None,
                    distrorelease=None, sourcepackagename=None,
-                   binarypackagename=None,
                    status=IBugTask['status'].default,
                    priority=IBugTask['priority'].default,
                    severity=IBugTask['severity'].default,
@@ -483,19 +565,26 @@ class BugTaskSet:
         if product:
             assert distribution is None, (
                 "Can't pass both distribution and product.")
-            # If a product bug contact has been provided, subscribe that
-            # contact to all public bugs. Otherwise subscribe the
-            # product owner to all public bugs.
+            # Subscribe product bug and security contacts to all
+            # public bugs.
             if not bug.private:
                 if product.bugcontact:
                     bug.subscribe(product.bugcontact)
                 else:
+                    # Make sure that at least someone upstream knows
+                    # about this bug. :)
                     bug.subscribe(product.owner)
+
+                if bug.security_related and product.security_contact:
+                    bug.subscribe(product.security_contact)
         elif distribution:
-            # If a distribution bug contact has been provided, subscribe
-            # that contact to all public bugs.
-            if distribution.bugcontact and not bug.private:
-                bug.subscribe(distribution.bugcontact)
+            # Subscribe bug and security contacts, if provided, to all
+            # public bugs.
+            if not bug.private:
+                if distribution.bugcontact:
+                    bug.subscribe(distribution.bugcontact)
+                if bug.security_related and distribution.security_contact:
+                    bug.subscribe(distribution.security_contact)
 
             # Subscribe package bug contacts to public bugs, if package
             # information was provided.
@@ -515,17 +604,16 @@ class BugTaskSet:
             distribution=distribution,
             distrorelease=distrorelease,
             sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename,
             status=status,
             priority=priority,
             severity=severity,
             assignee=assignee,
             owner=owner,
             milestone=milestone)
-        if IRemoteBugTask.providedBy(bugtask):
+        if not bugtask.target_uses_malone:
             bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
             bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
-            bugtask.status = dbschema.BugTaskStatus.UNKNOWN
+            bugtask.transitionToStatus(dbschema.BugTaskStatus.UNKNOWN)
 
         return bugtask
 
@@ -575,4 +663,8 @@ class BugTaskSet:
                        TeamParticipation.person = %(personid)s AND
                        BugSubscription.person = TeamParticipation.team))
                          """ % sqlvalues(personid=user.id)
+
+    def dangerousGetAllTasks(self):
+        """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
+        return BugTask.select()
 

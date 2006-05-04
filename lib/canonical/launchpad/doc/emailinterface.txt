@@ -80,12 +80,10 @@ bug got submitted correctly:
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.mail import stub
     >>> bugset = getUtility(IBugSet)
+    >>> from canonical.launchpad.database import BugNotification
     >>> def get_latest_added_bug():
-    ...     transaction.commit() # Need to commit for the email to be sent.
-    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    ...     msg = email.message_from_string(raw_message)
-    ...     bug_nr = int(msg['Subject'].split()[1][:-1])
-    ...     return bugset.get(bug_nr)
+    ...     latest_notification = BugNotification.selectFirst(orderBy='-id')
+    ...     return latest_notification.bug
     >>> bug = get_latest_added_bug()
 
     >>> print bug.title
@@ -120,30 +118,23 @@ The owner of the bug was set to the submitter:
     >>> print bug.owner.displayname
     Foo Bar
 
-A notification was sent to dilys, Foo Bar and Sample Person. Sample
-Person got notified since he's the owner of the product:
+A notification was added:
 
-    >>> len(stub.test_emails)
-    3
-    >>> dilys_msg, foo_bar_msg, sample_person_msg = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    >>> dilys_msg['To']
-    'dilys@muse.19inch.net'
-    >>> foo_bar_msg['To']
-    'foo.bar@canonical.com'
-    >>> sample_person_msg['To']
-    'test@canonical.com'
-    >>> print sample_person_msg.get_payload()
-    Public bug reported:
-    ...
-    Affects: firefox (upstream)
-    ...
-    There is a bug in Firefox.
-    ...
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.message.owner.displayname
+    Foo Bar
 
-    >>> stub.test_emails = []
+    >>> bug_notification.message == bug.initial_message
+    True
+
+Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
+subscribed since he's the owner of the product.
+
+    >>> added_bug = bug_notification.bug
+    >>> for subscription in added_bug.subscriptions:
+    ...     print subscription.person.displayname
+    Foo Bar
+    Sample Person
 
 If we would file a bug on Ubuntu instead, we would submit a mail like
 this:
@@ -169,30 +160,26 @@ this:
     >>> print distrotask.sourcepackagename.name
     mozilla-firefox
 
-A notification was sent to dilys, Foo Bar and Sample Person. Foo
-Bar got notified since he's a bug contact for the mozilla package:
+A notification was added:
 
-    >>> len(stub.test_emails)
-    3
-    >>> dilys_msg, foo_bar_msg, sample_person_msg = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.message.owner.displayname
+    Sample Person
+
+    >>> bug_notification.message == bug.initial_message
+    True
+
+Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
+subscribed since he's a bug contact for the mozilla package:
+
+    >>> subscribers = [
+    ...     subscription.person.displayname
+    ...     for subscription in added_bug.subscriptions
     ...     ]
-    >>> dilys_msg['To']
-    'dilys@muse.19inch.net'
-    >>> foo_bar_msg['To']
-    'foo.bar@canonical.com'
-    >>> sample_person_msg['To']
-    'test@canonical.com'
-    >>> print sample_person_msg.get_payload()
-    Public bug reported:
-    ...
-    Affects: mozilla-firefox (Ubuntu)
-    ...
-    There's a bug in Ubuntu.
-    ...
+    >>> print sorted(subscribers)
+    [u'Foo Bar',
+     u'Sample Person']
 
-    >>> stub.test_emails = []
 
 It's possible to file a bug on more than product/package at once:
 
@@ -692,25 +679,12 @@ created:
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
     True
 
-A notification was sent to all the bug's subscribers, and to dilys:
+A notification was added:
 
-    >>> len(stub.test_emails)
-    2
-    >>> dilys_msg, sample_person_msg = [
-    ...     email.message_from_string(raw_message)
-    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    >>> dilys_msg['To']
-    'dilys@muse.19inch.net'
-    >>> sample_person_msg['To']
-    'test@canonical.com'
-    >>> print sample_person_msg.get_payload()
-    Public bug report changed:
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.message.text_contents
+    ** Also affects: Debian
     ...
-    Also affects: Debian
-           Severity: Unknown
-           Priority: Unknown
-             Status: Unknown
 
 
 Submitting the same thing again doesn't do anything, since the task
@@ -871,22 +845,20 @@ a 'status' command to bug seven, the single upstream task will be
 edited:
 
     >>> login('foo.bar@canonical.com')
-    >>> bug_seven = getUtility(IBugSet).get(7)
-    >>> len(bug_seven.bugtasks)
+    >>> bug_eigth = getUtility(IBugSet).get(8)
+    >>> len(bug_eigth.bugtasks)
     1
-    >>> submit_commands(bug_seven, 'status confirmed')
-    >>> evolution_task = bug_seven.bugtasks[0]
-    >>> print evolution_task.status.name
+    >>> submit_commands(bug_eigth, 'status confirmed')
+    >>> mozilla_task = bug_eigth.bugtasks[0]
+    >>> print mozilla_task.status.name
     CONFIRMED
 
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> print msg['Subject']
-    [Bug 7]...
-    >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    ...
-        Status: Unconfirmed => Confirmed
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.bug.id
+    8
+    >>> print bug_notification.message.text_contents
+    ** Changed in: mozilla-firefox (Debian)
+        Status: Fix Released => Confirmed
 
 If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
@@ -904,15 +876,14 @@ The user is a bug contact of the upstream product
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to no one
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    mozilla-firefox (Ubuntu): Unconfirmed, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
 
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> print msg['Subject']
-    [Bug 1]...
-    >>> print msg.get_payload(decode=True)
-    Public bug report changed:
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.bug.id
+    1
+    >>> print bug_notification.message.text_contents
+    ** Changed in: firefox (upstream)
     ...
         Status: Unconfirmed => Confirmed
 
@@ -940,15 +911,13 @@ The user is a package bug contact
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
 
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> print msg['Subject']
-    [Bug 1]...
-    >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    ...
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.bug.id
+    1
+    >>> print bug_notification.message.text_contents
+    ** Changed in: mozilla-firefox (Ubuntu)
         Assignee: (unassigned) => No Privileges Person
     ...
 
@@ -970,15 +939,13 @@ The user is a distribution member
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
 
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-    >>> msg = email.message_from_string(raw_message)
-    >>> print msg['Subject']
-    [Bug 1]...
-    >>> print msg.get_payload(decode=True)
-    Public bug report changed:
-    ...
+    >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
+    >>> print bug_notification.bug.id
+    1
+    >>> print bug_notification.message.text_contents
+    ** Changed in: mozilla-firefox (Ubuntu)
         Assignee: No Privileges Person => Sample Person
     ...
 
@@ -998,7 +965,7 @@ user, telling him that he has to use the 'affects' command.
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> transaction.commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]

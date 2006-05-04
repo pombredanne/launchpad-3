@@ -82,12 +82,13 @@ class IBug(IMessageTarget):
         title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
-        description=_(
-        "Select this option if, for instance, this bug exposes a "
-        "security vulnerability. Before you set this, make sure you "
-        "have subscribed anyone who needs to see this bug."),
+        description=_("Make this bug visible only to its subscribers"),
         default=False)
-
+    security_related = Bool(
+        title=_("Security related"), required=False,
+        description=_(
+        "Select this option if the bug is a security issue"),
+        default=False)
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -136,6 +137,19 @@ class IBug(IMessageTarget):
         addresses.
         """
 
+    def getSubscribersFromDuplicates():
+        """Return the list of IPersons subscribed to this bug from duplicates.
+
+        This list is restricted to only users that are not already subscribed to
+        this bug directly.
+        """
+
+    def addChangeNotification(text, person):
+        """Add a bug change notification."""
+
+    def addCommentNotification(message):
+        """Add a bug comment notification."""
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
@@ -171,12 +185,13 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
-    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
-    title = Attribute("The new bug title or None.")
-    description = Attribute("The new bug description or None.")
+    title = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    description = Attribute("A dict with two keys, 'old' and 'new', or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    security_related = Attribute(
+        "A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
@@ -262,9 +277,9 @@ class IBugSet(Interface):
         given bug tracker and remote bug id."""
 
     def createBug(self, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, datecreated=None,
-        title=None, private=False, owner=None):
+                  binarypackagename=None, product=None, comment=None,
+                  description=None, msg=None, datecreated=None, title=None,
+                  security_related=False, private=False, owner=None):
         """Create a bug and return it.
 
         Things to note when using this factory:
@@ -283,5 +298,8 @@ class IBugSet(Interface):
 
           * if either product or distribution is specified, an appropiate
             bug task will be created
+
+          * binarypackagename, if not None, will be added to the bug's
+            description
         """
 

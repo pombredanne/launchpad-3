@@ -10,7 +10,7 @@
   provide us with the location of the upstream branch so that it can be
   imported into the Bazaar. Please do so
   <a tal:attributes="href
-  string:/products/${context/product/name}/+series/${context/name}/+source">
+  string:/products/${context/product/name}/${context/name}/+source">
     here
   </a>. Once you have provided us with revision control details for this
   upstream branch, we can import that branch into
@@ -25,13 +25,13 @@
   branch:</p>
 
   <table class="listing">
-    <thead>
+    <thead class="lesser">
       <tr>
         <th></th>
         <th>Details</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="lesser">
       <tr>
         <td><b>Revision Control:</b></td>
         <td><b tal:content="context/rcstype/title">CVS</b>
@@ -58,7 +58,7 @@
           </tr>
         </tal:block>
         <tr>
-          <td><b>Bazaar Publishing:</b></td>
+          <td><b>Bazaar Status:</b></td>
           <td tal:content="context/importstatus/title">Publishing</td>
         </tr>
         <tal:block condition="context/branch" replace="structure context/branch/@@+series-reference" />

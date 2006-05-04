@@ -57,10 +57,10 @@ Let's only allow translators from that group to translate.
 
 No Privileges Person isn't allowed to translate into Welsh.
 
-   >>> series = evolution.getSeries('main')
+   >>> series = evolution.getSeries('trunk')
    >>> subset = potemplate_set.getSubset(productseries=series)
    >>> potemplate = subset['evolution-2.2']
-   >>> pofile = potemplate.getOrCreatePOFile('cy')
+   >>> pofile = potemplate.newPOFile('cy')
    >>> pofile.canEditTranslations(no_priv)
    False
 

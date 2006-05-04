@@ -87,7 +87,8 @@ class Build(SQLBase):
     @property
     def was_built(self):
         """See IBuild"""
-        return self.buildstate is not BuildStatus.NEEDSBUILD
+        return self.buildstate not in [BuildStatus.NEEDSBUILD,
+                                       BuildStatus.BUILDING]
 
     @property
     def build_icon(self):
@@ -101,6 +102,7 @@ class Build(SQLBase):
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             # XXX cprov 20060321: proper icon
             BuildStatus.SUPERSEDED: "/@@/topic_icon.gif",
+            BuildStatus.BUILDING: "/@@/progress",
             }
         return icon_map[self.buildstate]
 
@@ -242,7 +244,7 @@ class BuildSet:
             return None
 
         clauseTables = []
-        orderBy=["-datebuilt"]
+        orderBy=["-datebuilt", "-id"]
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
@@ -269,7 +271,7 @@ class BuildSet:
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
         if status == BuildStatus.NEEDSBUILD:
-            orderBy = ["-BuildQueue.lastscore"]
+            orderBy = ["-BuildQueue.lastscore", "-id"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
 

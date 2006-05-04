@@ -27,7 +27,7 @@ from canonical.config import config
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, ILaunchBag, IBugSet)
+    IBranch, IBranchSet, IBugSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepthrough)
@@ -51,6 +51,7 @@ class BranchContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranch
+    facet = 'branches'
     links = ['edit', 'lifecycle', 'subscription', 'administer']
 
     def edit(self):
@@ -185,10 +186,9 @@ class BranchAddView(SQLObjectAddView):
     def create(self, name, owner, author, product, url, title,
                lifecycle_status, summary, home_page):
         """Handle a request to create a new branch for this product."""
-        stripped_url = url.rstrip('/')
         branch = getUtility(IBranchSet).new(
             name=name, owner=owner, author=author, product=product,
-            url=stripped_url, title=title, summary=summary,
+            url=url, title=title, summary=summary,
             lifecycle_status=lifecycle_status, home_page=home_page)
         self._nextURL = canonical_url(branch)
 
@@ -201,8 +201,11 @@ class BranchUrlWidget(TextWidget):
     """Simple text line widget that ignores trailing slashes."""
 
     def _toFieldValue(self, input):
-        value = TextWidget._toFieldValue(self, input)
-        return value.rstrip('/')
+        if input == self._missing:
+            return self.context.missing_value
+        else:
+            value = TextWidget._toFieldValue(self, input)
+            return value.rstrip('/')
 
 
 class BranchPullListing(LaunchpadView):

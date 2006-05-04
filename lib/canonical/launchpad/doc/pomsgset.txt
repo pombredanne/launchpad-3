@@ -32,7 +32,7 @@ We will be working in Catalan (ca).
 We need the right POMsgSet. We'll get the PO File, then, create the needed
 po msgset there.
 
-  >>> upstream_pofile = upstream_evo.getOrCreatePOFile('ca')
+  >>> upstream_pofile = upstream_evo.newPOFile('ca')
   >>> upstream_pomsgset = upstream_pofile.createMessageSetFromText(
   ...     u'evolution addressbook')
 
@@ -94,7 +94,7 @@ And same with the fuzzy flags.
 We use a DummyPOMsgSet when we don't have a POMsgSet for a given POFile and
 POTMsgSet. First we'll get a DummyPOFile:
 
->>> pt_BR_dummypofile = upstream_evo.getPOFileOrDummy('pt_BR')
+>>> pt_BR_dummypofile = upstream_evo.getDummyPOFile('pt_BR')
 
 We get a POMsgSet and verify it's a singular form:
 
@@ -107,10 +107,10 @@ We get a POMsgSet and verify it's a singular form:
 >>> pt_BR_dummypomsgset.active_texts
 [None]
 
-Using another pofile we'll get a POMsgset that's not a
+Using another dummy pofile we'll get a POMsgset that's not a
 singular form: 
 
->>> apa_dummypofile = upstream_evo.getPOFileOrDummy('apa')
+>>> apa_dummypofile = upstream_evo.getDummyPOFile('apa')
 >>> apa_dummypomsgset = apa_dummypofile.getPOMsgSet(u'%d contact')
 
 We don't know anything about pluralforms for this language, so we fall back to
@@ -135,7 +135,7 @@ We can guess the pluralforms for this language thru IPOFile.pluralforms:
 
 Or thru ILanguage.pluralforms:
 
->>> ru_dummypofile = upstream_evo.getPOFileOrDummy('ru')
+>>> ru_dummypofile = upstream_evo.getDummyPOFile('ru')
 >>> ru_dummypomsgset = ru_dummypofile.getPOMsgSet(u'%d contact')
 
 >>> print ru_dummypomsgset.pofile.language.pluralforms

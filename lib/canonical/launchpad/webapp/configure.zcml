@@ -4,7 +4,10 @@
     i18n_domain="canonical.launchpad">
 
     <include file="servers.zcml" />
+    <!-- Included via override-includes, as we are overriding a default
+         Z3 component
     <include file="errorlog.zcml" />
+    -->
     <include file="bug-5133.zcml" />
 
     <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
@@ -195,42 +198,42 @@
 
     <subscriber
         for="canonical.launchpad.interfaces.IAfterTraverseEvent"
-        factory="canonical.launchpad.webapp.authentication.handle"
+        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        factory="canonical.launchpad.webapp.authentication.handle"
+        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
-        factory="canonical.launchpad.webapp.authentication.handle"
+        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        factory="canonical.launchpad.webapp.authentication.handle"
+        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
-        factory="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
+        handler="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
         />
 
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        factory="canonical.launchpad.webapp.launchbag.set_developer_in_launchbag_before_traversal"
+        handler="canonical.launchpad.webapp.launchbag.set_developer_in_launchbag_before_traversal"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        factory="canonical.launchpad.webapp.launchbag.reset_login_in_launchbag_on_logout"
+        handler="canonical.launchpad.webapp.launchbag.reset_login_in_launchbag_on_logout"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        factory="canonical.launchpad.webapp.launchbag.reset_developer_in_launchbag_on_logout"
+        handler="canonical.launchpad.webapp.launchbag.reset_developer_in_launchbag_on_logout"
         />
 
     <utility
@@ -266,7 +269,6 @@
         class="canonical.launchpad.webapp.changelog.ChangeLog"
         permission="zope.Public"
         />
-
 
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad_favicon.png" />
@@ -324,6 +326,23 @@
             interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
             />
     </content>
+
+    <!-- Launchpad publication machinery. We have customized publication
+    and requests that need to be hooked up.
+    -->
+    <utility
+        factory="canonical.launchpad.webapp.servers.LaunchpadBrowserRequestFactory"
+        provides="zope.app.publication.interfaces.IBrowserRequestFactory"
+        permission="zope.Public"
+        />
+
+    <publisher
+        name="BROWSER"
+        factory="canonical.launchpad.webapp.servers.LaunchpadBrowserFactory"
+        methods="GET POST HEAD"
+        mimetypes="*"
+        priority="15"
+        />
 
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter

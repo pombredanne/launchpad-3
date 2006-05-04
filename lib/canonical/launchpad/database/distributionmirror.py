@@ -25,15 +25,18 @@ from canonical.archivepublisher.publishing import pocketsuffix
 from canonical.archivepublisher.pool import Poolifier
 from canonical.lp.dbschema import (
     MirrorSpeed, MirrorContent, MirrorPulseType, MirrorStatus,
-    PackagePublishingPocket, EnumCol, PackagePublishingStatus)
+    PackagePublishingPocket, EnumCol, PackagePublishingStatus,
+    SourcePackageFileType, BinaryPackageFileType)
 from canonical.launchpad.interfaces import (
     IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
     IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL,
     IDistroRelease, IDistroArchRelease)
+from canonical.launchpad.database.files import (
+    BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.helpers import (
-    getBinaryPackageExtension, urlappend, get_email_template)
+from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.mail import simple_sendmail, format_address
 
 
@@ -102,7 +105,8 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         self.enabled = False
         template = get_email_template('notify-mirror-owner.txt')
-        fromaddress = "Launchpad Mirror Prober <noreply@launchpad.net>"
+        fromaddress = format_address(
+            "Launchpad Mirror Prober", config.noreply_from_address)
 
         replacements = {'distro': self.distribution.title,
                         'mirror_name': self.name}
@@ -305,9 +309,11 @@ class _MirrorReleaseMixIn:
                 # This should not happen when running on production because
                 # the publishing records are correctly filled. But that's not
                 # true when it comes to our sampledata.
-                config_options = config.distributionmirrorprober
-                if config_options.warn_about_no_published_uploads:
-                    warnings.warn(self._no_published_uploads_msg)
+                # XXX: This will actually happen in production, and when it
+                # happens it's probably not a good idea to return an empty
+                # dictionary, as this will in fact make this mirror's status
+                # be UNKNOWN when it's actually UPTODATE.
+                # -- Guilherme Salgado, 2006-04-27
                 return {}
 
             url = self._getPackageReleaseURLFromPublishingRecord(
@@ -386,13 +392,9 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         bpr = publishing_record.binarypackagerelease
         base_url = self.distribution_mirror.http_base_url
         path = Poolifier().poolify(bpr.sourcepackagename, self.component.name)
-        name = '%s_%s_' % (bpr.name, bpr.version)
-        if bpr.architecturespecific:
-            name += bpr.build.distroarchrelease.architecturetag
-        else:
-            name += 'all'
-        name += getBinaryPackageExtension(bpr.binpackageformat)
-        full_path = 'pool/%s/%s' % (path, name)
+        file = BinaryPackageFile.selectOneBy(
+            binarypackagereleaseID=bpr.id, filetype=BinaryPackageFileType.DEB)
+        full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
         return urlappend(base_url, full_path)
 
 
@@ -445,9 +447,9 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
         base_url = self.distribution_mirror.http_base_url
         sourcename = spr.name
         path = Poolifier().poolify(sourcename, self.component.name)
-        version = spr.version
-        filename = "%s_%s.dsc" % (sourcename, version)
-        full_path = 'pool/%s/%s' % (path, filename)
+        file = SourcePackageReleaseFile.selectOneBy(
+            sourcepackagereleaseID=spr.id, filetype=SourcePackageFileType.DSC)
+        full_path = 'pool/%s/%s' % (path, file.libraryfile.filename)
         return urlappend(base_url, full_path)
 
 

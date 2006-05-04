@@ -15,6 +15,9 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Summary, Title 
 from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 from canonical.launchpad.interfaces.validation import valid_webref
 from zope.component import getUtility
 from zope.schema import Bool, Choice, Int, Text, TextLine
@@ -33,7 +36,7 @@ class ProjectNameField(ContentNameField):
         return getUtility(IProjectSet).getByName(name)
 
 
-class IProject(IHasOwner):
+class IProject(IHasOwner, IBugTarget, IHasSpecifications):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -80,6 +83,18 @@ class IProject(IHasOwner):
         title=_('Date Created'),
         description=_("""The date this project was created in Launchpad."""))
 
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "This is a project-wide appointment, think carefully here! "
+            "This person or team will be able to set feature goals and "
+            "approve bug targeting and backporting for ANY series in "
+            "ANY product in this project. You can also appoint drivers "
+            "at the level of a specific product or series. So you may "
+            "just want to leave this space blank, and instead let the "
+            "individual products and series have drivers."),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     homepageurl = TextLine(
         title=_('Homepage URL'),
         required=False,
@@ -114,7 +129,7 @@ class IProject(IHasOwner):
 
     translationgroup = Choice(
         title = _("Translation group"),
-        description = _("The translation group for this product. This group "
+        description = _("The translation group for this project. This group "
             "is made up of a set of translators for all the languages "
             "approved by the group manager. These translators then have "
             "permission to edit the groups translation files, based on the "
@@ -179,8 +194,7 @@ class IProjectSet(Interface):
     def get(projectid):
         """Get a project by its id.
 
-        If the project can't be found a zope.exceptions.NotFoundError will be
-        raised.
+        If the project can't be found a NotFoundError will be raised.
         """
 
     def getByName(name, default=None, ignore_inactive=False):
@@ -190,7 +204,7 @@ class IProjectSet(Interface):
         Return the default value if there is no such project.
         """
 
-    def new(name, title, displayname, summary, description, owner, url):
+    def new(name, displayname, title, homepageurl, summary, description, owner):
         """Create and return a project with the given arguments."""
 
     def count_all():

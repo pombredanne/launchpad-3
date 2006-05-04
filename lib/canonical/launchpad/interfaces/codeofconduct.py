@@ -15,11 +15,9 @@ __all__ = [
     'ICodeOfConductConf',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, Text, Bool, Choice
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ICodeOfConduct(Interface):
     """Pristine Code of Conduct content."""
@@ -45,11 +43,7 @@ class ISignedCodeOfConduct(Interface):
         )
         )
 
-    signedcode = Text(title=_("Signed Code"),
-                      description=_("""OpenPGP-signed Code of Conduct.
-                      It should contain a clearsigned copy of current
-                      Code of Conduct version (use: `gpg --clearsign`).""")
-                      )
+    signedcode = Text(title=_("Signed Code"))
 
     signingkey = Choice(title=_('Signing OpenPGP Key'),
                         description=_("""OpenPGP key ID used to sign the

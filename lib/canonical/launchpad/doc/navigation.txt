@@ -298,6 +298,7 @@ The zcml processor `browser:navigation` processes navigation classes.
     ...       class="canonical.launchpad.ftests.ThingSetView"
     ...       attribute="__call__"
     ...       permission="zope.Public"
+    ...       layer="zope.publisher.interfaces.browser.IBrowserRequest"
     ...       />
     ... </configure>
     ... """)

@@ -34,11 +34,12 @@ from canonical.config import config
 from canonical.lp import isZopeless
 from canonical.launchpad.helpers import is_ascii_only
 
-# email package by default ends up encoding UTF8 messages using base64,
+# email package by default ends up encoding UTF-8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
 # our own custom charset definition to force quoted printable.
-Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
-
+del Charset.CHARSETS['utf-8']
+Charset.add_charset('utf-8', Charset.SHORTEST, Charset.QP, 'utf-8')
+Charset.add_alias('utf8', 'utf-8')
 
 def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     """Validate various bits of the email.
@@ -71,6 +72,8 @@ def format_address(name, address):
         'Name <foo@bar.com>'
         >>> format_address('', 'foo@bar.com')
         'foo@bar.com'
+        >>> format_address(None, u'foo@bar.com')
+        'foo@bar.com'
 
     It handles unicode and characters that need quoting as well.
 
@@ -81,7 +84,7 @@ def format_address(name, address):
         '"Foo \\[Baz\\] Bar" <foo.bar@canonical.com>'
     """
     if not name:
-        return address
+        return str(address)
     name = str(Header(name))
     return str(formataddr((name, address)))
 
@@ -112,7 +115,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     do_paranoid_email_content_validation(
         from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
 
-    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+    msg = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
     # The header_body_values may be a list or tuple of values, so we will add a
     # header once for each value provided for that header. (X-Launchpad-Bug,
     # for example, may often be set more than once for a bugmail.)
@@ -137,7 +140,7 @@ def simple_sendmail_from_person(person, to_addrs, subject, body, headers={}):
     return simple_sendmail(from_addr, to_addrs, subject, body, headers=headers)
 
 
-def sendmail(message):
+def sendmail(message, to_addrs=None):
     """Send an email.Message.Message
 
     If you just need to send dumb ASCII or Unicode, simple_sendmail
@@ -148,6 +151,9 @@ def sendmail(message):
     Message-Id:, Date:, and Reply-To: headers will be set if they are
     not already. Errors-To: and Return-Path: headers will always be set.
     The more we look valid, the less we look like spam.
+
+    If to_addrs is None, the message will be sent to all the addresses
+    specified in the To: and CC: headers.
 
     Uses zope.app.mail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
@@ -161,9 +167,10 @@ def sendmail(message):
             'No Subject: header'
 
     from_addr = message['from']
-    to_addrs = message['to'].split(',')
-    if message['cc']:
-        to_addrs = to_addrs + message['cc'].split(',')
+    if to_addrs is None:
+        to_addrs = message['to'].split(',')
+        if message['cc']:
+            to_addrs = to_addrs + message['cc'].split(',')
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:
@@ -176,6 +183,11 @@ def sendmail(message):
     # Add a Reply-To: header if it isn't already there
     if 'reply-to' not in message:
         message['Reply-To'] = message['from']
+
+    # Add a Sender: header to show that we were the one sending the
+    # email.
+    if "Sender" not in message:
+        message["Sender"] = config.bounce_address
 
     # Add an Errors-To: header for bounce handling
     del message['Errors-To']

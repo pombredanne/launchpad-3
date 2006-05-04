@@ -137,16 +137,17 @@ class LaunchpadBrowserPublication(
         #t.join(con._dm)
 
     def beforeTraversal(self, request):
+        # Tell our custom database adapter that the request has started.
+        da.set_request_started()
+
         newInteraction(request)
         transaction.begin()
 
         self.clearSQLOSCache()
         getUtility(IOpenLaunchBag).clear()
 
-        da.set_request_started()
-
         # Set the default layer.
-        adapters = zapi.getService(zapi.servicenames.Adapters)
+        adapters = zapi.getGlobalSiteManager().adapters
         layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
@@ -209,7 +210,7 @@ class LaunchpadBrowserPublication(
         #           of our customisations?
         #        - Andrew Bennetts, 2005-03-08
         if request.method == 'HEAD':
-            request.response.setBody('')
+            request.response.setResult('')
 
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication

@@ -4,18 +4,20 @@
 
 __metaclass__ = type
 
+
 from xml.sax.saxutils import escape
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
     IDisplayWidget, IInputWidget, InputErrors, ConversionError)
 from zope.schema.interfaces import ValidationError
 from zope.app.form import Widget
 
-from canonical.launchpad.interfaces import ILaunchBag, IRemoteBugTask
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.exception import WidgetInputError
@@ -28,7 +30,7 @@ class BugTaskAssigneeWidget(Widget):
     __call__ = ViewPageTemplateFile(
         "../launchpad/templates/bugtask-assignee-widget.pt")
 
-    def __init__(self, context, request):
+    def __init__(self, context, vocabulary, request):
         Widget.__init__(self, context, request)
 
         # This is a radio button widget so, since at least one radio
@@ -41,7 +43,7 @@ class BugTaskAssigneeWidget(Widget):
 
         self.assignee_chooser_widget = SinglePopupWidget(
             context, context.vocabulary, request)
-        self.assignee_chooser_widget.onKeyPress = "selectAssignTo(this, event)"
+        self.assignee_chooser_widget.onKeyPress = "selectWidget('assign_to', event)"
 
         # Set some values that will be used as values for the input
         # widgets.
@@ -51,26 +53,34 @@ class BugTaskAssigneeWidget(Widget):
         self.assign_to = "assign_to"
 
     def validate(self):
-        """See zope.app.form.interfaces.IInputWidget."""
+        """
+        This method used to be part of zope.app.form.interfaces.IInputWidget
+        in Zope 3.0, but is no longer part of the interface in Zope 3.2
+        """
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
         if self.request.form.get(self.name + ".option") == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
-                    self.name, self.label, ValidationError("Missing value for assignee"))
-
-            try:
+                        self.name, self.label,
+                        ValidationError("Missing value for assignee")
+                        )
+            if not self.assignee_chooser_widget.hasValidInput():
+                raise WidgetInputError(
+                        self.name, self.label,
+                        ValidationError("Assignee not found")
+                        )
+            #try:
                 # A ConversionError is expected if the user provides
                 # an assignee value that doesn't exist in the
                 # assignee_chooser_widget's vocabulary.
-                self.assignee_chooser_widget.validate()
-            except ConversionError:
+            #except ConversionError:
                 # Turn the ConversionError into a WidgetInputError.
-                raise WidgetInputError(
-                    self.assignee_chooser_widget.name,
-                    self.assignee_chooser_widget.label,
-                    ValidationError("Assignee not found"))
+            #    raise WidgetInputError(
+            #        self.assignee_chooser_widget.name,
+            #        self.assignee_chooser_widget.label,
+            #        ValidationError("Assignee not found"))
 
     def hasInput(self):
         """See zope.app.form.interfaces.IInputWidget."""
@@ -111,11 +121,12 @@ class BugTaskAssigneeWidget(Widget):
 
     def applyChanges(self, content):
         """See zope.app.form.interfaces.IInputWidget."""
-        field = self.context
-        value = self.getInputValue()
+        assignee_field = self.context
+        bugtask = assignee_field.context
+        new_assignee = self.getInputValue()
 
-        if field.query(content, self) != value:
-            field.set(content, value)
+        if bugtask.assignee != new_assignee:
+            bugtask.transitionToAssignee(new_assignee)
             return True
         else:
             return False
@@ -200,10 +211,13 @@ class AssigneeDisplayWidget(BrowserWidget):
 
     implements(IDisplayWidget)
 
+    def __init__(self, context, vocabulary, request):
+        super(AssigneeDisplayWidget, self).__init__(context, request)
+
     def __call__(self):
         assignee_field = self.context
         bugtask = assignee_field.context
-        if self._renderedValueSet(): 
+        if self._renderedValueSet():
             assignee = self._data
         else:
             assignee = assignee_field.get(bugtask)
@@ -214,16 +228,19 @@ class AssigneeDisplayWidget(BrowserWidget):
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.browsername)))
         else:
-            if IRemoteBugTask.providedBy(bugtask):
-                return renderElement('i', contents='unknown')
-            else:
+            if bugtask.target_uses_malone:
                 return renderElement('i', contents='not assigned')
+            else:
+                return renderElement('i', contents='unknown')
 
 
 class DBItemDisplayWidget(BrowserWidget):
     """A widget for displaying a bugtask dbitem."""
 
     implements(IDisplayWidget)
+
+    def __init__(self, context, vocabulary, request):
+        super(DBItemDisplayWidget, self).__init__(context, request)
 
     def __call__(self):
         dbitem_field = self.context
@@ -238,3 +255,14 @@ class DBItemDisplayWidget(BrowserWidget):
                 cssClass="%s%s" % (dbitem_field.__name__, dbitem.title))
         else:
             return renderElement('span', contents='&mdash;')
+
+
+class NewLineToSpacesWidget(TextWidget):
+    """A widget that replaces new line characters with spaces."""
+
+    def _toFieldValue(self, input):
+        value = TextWidget._toFieldValue(self, input)
+        if value is not self.context.missing_value:
+            lines = value.splitlines()
+            value = ' '.join(lines)
+        return value

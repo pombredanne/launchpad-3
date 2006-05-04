@@ -1,17 +1,18 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="malone">
-
-<body>
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>About Malone</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-stats" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
-
-    <h1>About Malone</h1>
 
         <p>Malone is a collaborative bug tracker. It is unique, in that it
         understands that open source code is worked on by upstream
@@ -36,6 +37,7 @@
         you will see the bug status upstream. You can of course also see the
         status elsewhere, especially if "elsewhere" has fixed this bug.</p>
 
+        <tal:no-we-do-not condition="nothing">
         <p>Malone also introduces a new concept in bug tracking, which is
         "infestation". Bug infestation is a way of tracking the state of a
         bug in a specific release of the upstream code, or distribution packages.
@@ -44,6 +46,7 @@
         which fixes the bug, then that information will be highlighted for
         everyone. This allows a fix developed in one of the distributions to
         propagate quickly upstream, and to the other distributions.</p>
+        </tal:no-we-do-not>
 
     <h2>Start using Malone</h2>
 

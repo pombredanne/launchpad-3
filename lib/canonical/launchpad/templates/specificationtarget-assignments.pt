@@ -7,14 +7,15 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Context title goes here</h3>
+  <h1>Specification assignments</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
-
-  <h1>Specification assignments</h1>
 
   <p class="informational message" tal:condition="not: view/specs">
     No specifications to display.
@@ -35,7 +36,7 @@
     <tbody class="lesser">
       <tr tal:repeat="spec view/specs">
         <td>
-          <span style="display: none" tal:content="spec/priority/value" />
+          <span class="sortkey" tal:content="spec/priority/sortkey" />
           <span tal:content="spec/priority/title"
                 tal:attributes="
                 class string:specpriority${spec/priority/name}">High</span>
@@ -43,16 +44,18 @@
         <td><a tal:content="spec/name/fmt:shorten/35"
                tal:attributes="
                  href spec/fmt:url;
-                 title spec/title">foo-bar-baz</a></td>
+                 title spec/title">foo-bar-baz</a>
+            <img src="/@@/info" alt="Informational"
+                 tal:condition="spec/informational" />
+        </td>
         <td>
-          <span style="display: none" tal:content="spec/status/value" />
+          <span class="sortkey" tal:content="spec/status/sortkey" />
           <span tal:content="spec/status/title"
                 tal:attributes="
                 class string:specstatus${spec/status/name}">Approved</span>
         </td>
         <td>
-          <span style="display: none"
-                tal:content="spec/delivery/value" />
+          <span class="sortkey" tal:content="spec/delivery/sortkey" />
           <span tal:content="spec/delivery/title"
                 tal:attributes="
                 class string:specdelivery${spec/delivery/name}">Slow
@@ -67,9 +70,19 @@
         <td><a tal:condition="spec/approver"
                tal:content="spec/approver/name"
                tal:attributes="href spec/approver/fmt:url">Approver Foo</a></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </body>
+      </tr>
+    </tbody>
+  </table>
+
+  <p tal:condition="view/specs" class="discreet">
+    This listing shows the assignment of work for
+    specifications currently associated with 
+    <span tal:replace="context/displayname">Mozilla</span>.
+    The drafter is responsible for getting the specification correctly
+    written up and approved, the approver is usually the person who would
+    sign off on the spec.
+  </p>
+
+</div>
+</body>
 </html>

@@ -64,7 +64,7 @@ class Publisher(object):
     the processing of each DistroRelease and DistroArchRelease in question
     """
 
-    def __init__(self, logger, config, diskpool, distribution):
+    def __init__(self, logger, config, diskpool, distribution, library=None):
         """Initialise a publisher. Publishers need the pool root dir
         and a DiskPool object.
         """
@@ -74,7 +74,10 @@ class Publisher(object):
             raise ValueError("Root %s is not a directory or does "
                              "not exist" % self._root)
         self._diskpool = diskpool
-        self._library = LibrarianClient()
+        if library is None:
+            self._library = LibrarianClient()
+        else:
+            self._library = library
         self._logger = logger
         self._pathfor = diskpool.pathFor
         self.distro = distribution

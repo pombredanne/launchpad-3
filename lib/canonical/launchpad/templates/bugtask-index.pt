@@ -1,21 +1,28 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="" src="/@@/bug" />
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
+      </div>
+      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-tickets" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-search" />
-    <div tal:condition="context/bug/specifications"
-         tal:replace="structure context/@@+portlet-specs" />
+    <div tal:replace="structure context/@@+portlet-specs" />
     <div tal:replace="structure context/@@+portlet-attachments" />
     <div tal:replace="structure context/@@+portlet-cve" />
     <div tal:replace="structure context/@@+portlet-reference" />
@@ -44,9 +51,12 @@
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
 
-  <p class="error message" tal:condition="not:view/isReportedInContext">
-
-        <form name="alsooccursin" method="POST">
+      <form
+        tal:condition="not:view/isReportedInContext"
+        class="error message"
+        name="alsooccursin"
+        method="POST"
+      >
 
     This bug is not recorded as needing to be fixed in the
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
@@ -71,8 +81,6 @@
     </tal:notloggedin>
 
         </form>
-
-  </p>
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
@@ -153,9 +161,22 @@
     <fieldset class="collapsible collapsed">
       <legend>Add comment to this bug</legend>
           <b>Subject:</b>
-          <input name="subject" type="text" size="50"
-                 tal:attributes="value context/bug/followup_subject" /><br />
-          <b>Comment:</b> <textarea name="comment" rows="10"></textarea>
+          <div>
+            <input name="subject" type="text" size="50"
+                   tal:attributes="value context/bug/followup_subject" />
+          </div>
+          <b>Comment:</b>
+          <div>
+            <textarea name="comment" rows="10"></textarea>
+          </div>
+          <div tal:condition="python:not context.bug.isSubscribed(view.user)">
+            <input type="checkbox" name="subscribe" id="subscribe"
+                   value="Subscribe" checked />
+            <label for="subscribe" style="font-weight: normal">
+              Subscribe me to this bug report
+            </label>
+          </div>
+          <br />
           <input type="submit" name="save" value="Add Comment" />
     </fieldset>
   </tal:logged-in>

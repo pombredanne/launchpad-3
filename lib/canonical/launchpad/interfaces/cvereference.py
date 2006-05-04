@@ -12,9 +12,7 @@ __all__ = ['ICveReference']
 
 from zope.interface import Interface
 from zope.schema import Int, TextLine, Text
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ICveReference(Interface):
     """A CVE Reference."""

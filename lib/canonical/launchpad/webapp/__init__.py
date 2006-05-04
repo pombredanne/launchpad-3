@@ -17,6 +17,8 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse']
 
 import re
+import urlparse
+
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.generalform import (
@@ -57,6 +59,23 @@ def smartquote(str):
     return str
 
 
+def urlappend(baseurl, path):
+    """Append the given path to baseurl.
+
+    The path must not start with a slash, but a slash is added to baseurl
+    (before appending the path), in case it doesn't end with a slash.
+
+    >>> urlappend('http://foo.bar', 'spam/eggs')
+    'http://foo.bar/spam/eggs'
+    >>> urlappend('http://localhost:11375/foo', 'bar/baz')
+    'http://localhost:11375/foo/bar/baz'
+    """
+    assert not path.startswith('/')
+    if not baseurl.endswith('/'):
+        baseurl += '/'
+    return urlparse.urljoin(baseurl, path)
+
+
 class GetitemNavigation(Navigation):
     """Base class for navigation where fall-back traversal uses context[name].
     """
@@ -72,7 +91,7 @@ class StandardLaunchpadFacets(FacetMenu):
     #   usedfor = IWhatever
 
     links = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-             'translations', 'calendar']
+             'translations', 'branches', 'calendar']
 
     enable_only = ['overview', 'bugs', 'bounties', 'specifications',
                    'translations', 'calendar']
@@ -105,13 +124,13 @@ class StandardLaunchpadFacets(FacetMenu):
     def specifications(self):
         target = '+specs'
         text = 'Specifications'
-        summary = 'New Feature Specifications'
+        summary = 'Feature Specifications and Plans'
         return Link(target, text, summary)
 
     def bounties(self):
         target = '+bounties'
         text = 'Bounties'
-        summary = 'Bounties related to %s' % self.context.title
+        summary = 'View related bounty offers'
         return Link(target, text, summary)
 
     def calendar(self):
@@ -120,4 +139,11 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Calendar'
         return Link(target, text, enabled=False)
 
+    def branches(self):
+        # this is disabled by default, because relatively few objects have
+        # branch views
+        target = '+branches'
+        text = 'Branches'
+        summary = 'View related branches of code'
+        return Link(target, text, summary=summary)
 

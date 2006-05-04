@@ -11,6 +11,7 @@ __all__ = [
 __metaclass__ = type
 
 import datetime
+import sys
 
 from zope.component import getUtility
 
@@ -110,7 +111,7 @@ def import_bug(debian_bug, logger):
     try:
         email_txt = debian_bug.comments[0]
     except IndexError:
-        loggerr.error('No initial mail for debian #%d' % debian_bug.id)
+        logger.error('No initial mail for debian #%d' % debian_bug.id)
         return False
     except debbugs.LogParseFailed, e:
         logger.warning(e)
@@ -156,8 +157,8 @@ def import_bug(debian_bug, logger):
     # can remove that
     if title.startswith(pkgname+':'):
         title = title[len(pkgname)+2:].strip()
-    malone_bug = bugset.createBug(distribution=debian,
-        sourcepackagename=srcpkg, binarypackagename=binpkg,
+    malone_bug = bugset.createBug(
+        distribution=debian, sourcepackagename=srcpkg,
         title=title, msg=msg, owner=msg.owner,
         datecreated=msg.datecreated)
     # create a debwatch for this bug

@@ -15,7 +15,7 @@ import urllib
 
 from zope.interface import implements
 
-from zope.app.errorservice.interfaces import IErrorReportingService
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
@@ -154,8 +154,8 @@ class ErrorReport:
                    username, url, duration, req_vars, statements)
 
 
-class ErrorReportingService:
-    implements(IErrorReportingService)
+class ErrorReportingUtility:
+    implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['Unauthorized'])
     copy_to_zlog = False
@@ -249,7 +249,7 @@ class ErrorReportingService:
         return oops, filename
 
     def raising(self, info, request=None, now=None):
-        """See IErrorReportingService.raising()"""
+        """See IErrorReportingUtility.raising()"""
         if now is not None:
             now = now.astimezone(UTC)
         else:
@@ -345,7 +345,7 @@ class ErrorReportingService:
                     '%s (%s)' % (url, oopsid))
 
 
-globalErrorService = ErrorReportingService()
+globalErrorUtility = ErrorReportingUtility()
 
 
 class ErrorReportRequest:
@@ -362,6 +362,6 @@ def end_request(event):
     # if no OOPS has been generated at the end of the request, but
     # the soft timeout has expired, log an OOPS.
     if event.request.oopsid is None and soft_timeout_expired():
-        globalErrorService.raising(
+        globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)

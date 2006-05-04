@@ -21,6 +21,7 @@ from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase
@@ -58,21 +59,18 @@ class BugWatch(SQLBase):
     def url(self):
         """See canonical.launchpad.interfaces.IBugWatch."""
         url_formats = {
-            # XXX 20050712 kiko: slash-suffixing the bugtracker baseurl
-            # protects us from the bugtracker baseurl not ending in
-            # slashes -- should we instead ensure when it is entered?
-            # Filed bug 1434.
-            BugTrackerType.BUGZILLA: '%s/show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:     '%s/ticket/%s',
-            BugTrackerType.DEBBUGS:  '%s/cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP:  '%s/issue%s'
+            BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
+            BugTrackerType.TRAC:     'ticket/%s',
+            BugTrackerType.DEBBUGS:  'cgi-bin/bugreport.cgi?bug=%s',
+            BugTrackerType.ROUNDUP:  'issue%s'
         }
         bt = self.bugtracker.bugtrackertype
         if bt == BugTrackerType.SOURCEFORGE:
             return self._sf_url()
         elif not url_formats.has_key(bt):
             raise AssertionError('Unknown bug tracker type %s' % bt)
-        return url_formats[bt] % (self.bugtracker.baseurl, self.remotebug)
+        return urlappend(self.bugtracker.baseurl,
+                         url_formats[bt] % self.remotebug)
 
     def _sf_url(self):
         # XXX: validate that the bugtracker URL has atid and group_id in
@@ -90,8 +88,8 @@ class BugWatch(SQLBase):
         params = cgi.parse_qs(query)
         params['func'] = "detail"
         params['aid'] = self.remotebug
-        param_string = urllib.urlencode(params, doseq=True)
-        return urlparse.urlunsplit((method, base, path, param_string, frag))
+        query = urllib.urlencode(params, doseq=True)
+        return urlparse.urlunsplit((method, base, path, query, frag))
 
     @property
     def needscheck(self):
@@ -103,11 +101,11 @@ class BugWatch(SQLBase):
         self.remotestatus = remote_status
         self.lastchanged = UTC_NOW
         for linked_bugtask in self.bugtasks:
-            linked_bugtask.status = malone_status
+            linked_bugtask.transitionToStatus(malone_status)
             # We don't yet support updating the following values.
             linked_bugtask.priority = BugTaskPriority.UNKNOWN
             linked_bugtask.severity = BugTaskSeverity.UNKNOWN
-            linked_bugtask.assignee = None
+            linked_bugtask.transitionToAssignee(None)
 
 
 class BugWatchSet(BugSetBase):

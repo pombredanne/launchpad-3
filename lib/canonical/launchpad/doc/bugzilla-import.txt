@@ -147,8 +147,6 @@ function will be used:
   ...             print '    Distro:', task.distribution.name
   ...         if task.sourcepackagename:
   ...             print '    Source package:', task.sourcepackagename.name
-  ...         if task.binarypackagename:
-  ...             print '    Binary package:', task.binarypackagename.name
   ...         if task.assignee:
   ...             print '    Assignee:', task.assignee.displayname
   ...         if task.priority:
@@ -195,7 +193,6 @@ Now we import bug #1 and check the results:
       Status: UNCONFIRMED
       Distro: ubuntu
       Source package: mozilla-firefox
-      Binary package: mozilla-firefox
       Assignee: Sample Person
       Priority: MEDIUM
       Severity: NORMAL
@@ -335,7 +332,6 @@ Next we import a fixed bug:
       Status: FIXRELEASED
       Distro: ubuntu
       Source package: mozilla-firefox
-      Binary package: mozilla-firefox
       Assignee: Sample Person
       Priority: HIGH
       Severity: CRITICAL
@@ -366,7 +362,7 @@ and attach a watch to the upstream bug tracker:
       Status: UNCONFIRMED
       Product: evolution
       Severity: NORMAL
-      Watch: http://bugzilla.gnome.org//show_bug.cgi?id=273041
+      Watch: http://bugzilla.gnome.org/show_bug.cgi?id=273041
   Task: evolution (Ubuntu)
       Status: UNCONFIRMED
       Distro: ubuntu
@@ -399,7 +395,8 @@ Bugzilla severities are mapped to the equivalent Launchpad values:
 
   >>> bug = bugzilla.Bug(bz.backend, 1)
   >>> class FakeBugTask:
-  ...     pass
+  ...     def transitionToStatus(self, status):
+  ...         self.status = status
   >>> bugtask = FakeBugTask()
   >>> for severity in ['blocker', 'critical', 'major', 'normal',
   ...                  'minor', 'trivial', 'enhancement']:
@@ -502,9 +499,6 @@ then the bug is filed directly against the distribution.
   ...     spn = target.get('sourcepackagename')
   ...     if spn:
   ...         print 'Source package:', spn.name
-  ...     bpn = target.get('sourcepackagename')
-  ...     if bpn:
-  ...         print 'Binary package:', bpn.name
   ...     product = target.get('product')
   ...     if product:
   ...         print 'Product:', product.name
@@ -512,12 +506,10 @@ then the bug is filed directly against the distribution.
   >>> showMapping('Ubuntu', 'mozilla-firefox')
   Distribution: ubuntu
   Source package: mozilla-firefox
-  Binary package: mozilla-firefox
 
   >>> showMapping('Ubuntu', 'netapplet')
   Distribution: ubuntu
   Source package: netapplet
-  Binary package: netapplet
 
   >>> showMapping('Ubuntu', 'unknown-package-name')
   WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown-package-name": 'Unknown package: unknown-package-name'

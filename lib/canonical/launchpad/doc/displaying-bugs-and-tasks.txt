@@ -17,7 +17,7 @@ Let's use a few examples to demonstrate:
   XXX: Brad Bollenbach, 2005-08-30: removeSecurityProxy usage in this
   test is a workaround for the following bug:
 
-    https://launchpad.net/malone/bugs/1971
+    https://launchpad.net/bugs/1971
 
   >>> from zope.security.proxy import removeSecurityProxy
   >>> from zope.component import getUtility
@@ -65,39 +65,39 @@ Let's see some examples of how this works:
   >>> ORIGINAL_STATUS = high_priority_task.status
   >>> ORIGINAL_ASSIGNEE = high_priority_task.assignee
 
-  >>> high_priority_task.assignee = None
+  >>> high_priority_task.transitionToAssignee(None)
   >>> high_priority_task.statusdisplayhtml
   'confirmed (unassigned)'
 
-  >>> high_priority_task.assignee = foobar
-  >>> high_priority_task.status = BugTaskStatus.UNCONFIRMED
+  >>> high_priority_task.transitionToAssignee(foobar)
+  >>> high_priority_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
   >>> high_priority_task.statusdisplayhtml
   u'unconfirmed, assigned to <img src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
-  >>> high_priority_task.status = BugTaskStatus.CONFIRMED
+  >>> high_priority_task.transitionToStatus(BugTaskStatus.CONFIRMED)
   >>> high_priority_task.statusdisplayhtml
   u'confirmed, assigned to <img src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
-  >>> high_priority_task.status = BugTaskStatus.REJECTED
+  >>> high_priority_task.transitionToStatus(BugTaskStatus.REJECTED)
   >>> high_priority_task.statusdisplayhtml
   u'rejected by <img src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
-  >>> high_priority_task.assignee = None
+  >>> high_priority_task.transitionToAssignee(None)
   >>> high_priority_task.statusdisplayhtml
   'rejected (unassigned)'
 
-  >>> high_priority_task.status = BugTaskStatus.FIXRELEASED
+  >>> high_priority_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
   >>> high_priority_task.statusdisplayhtml
   'fix released (unassigned)'
 
-  >>> high_priority_task.assignee = foobar
+  >>> high_priority_task.transitionToAssignee(foobar)
   >>> high_priority_task.statusdisplayhtml
   u'fix released, assigned to <img src="/@@/user.gif" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
 
 Lastly, some cleanup:
 
-  >>> high_priority_task.status = ORIGINAL_STATUS
-  >>> high_priority_task.assignee = ORIGINAL_ASSIGNEE
+  >>> high_priority_task.transitionToStatus(ORIGINAL_STATUS)
+  >>> high_priority_task.transitionToAssignee(ORIGINAL_ASSIGNEE)
 
 Status Elsewhere
 ----------------
@@ -128,9 +128,9 @@ Fixed, and see how the statuselsewhere value is affected:
 
   >>> related_task = wontfix_priority_task.related_tasks[0]
   >>> ORIGINAL_STATUS = related_task.status
-  >>> related_task.status = BugTaskStatus.FIXRELEASED
+  >>> related_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
 
   >>> wontfix_priority_task.statuselsewhere
   'fixed in 1 of 3 places'
 
-  >>> related_task.status = ORIGINAL_STATUS
+  >>> related_task.transitionToStatus(ORIGINAL_STATUS)

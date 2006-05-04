@@ -8,7 +8,6 @@ __all__ = ['BinaryPackageView']
 
 from apt_pkg import ParseDepends
 
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
@@ -16,7 +15,8 @@ from zope.app.form.interfaces import IInputWidget
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugTaskSearch, BugTaskSearchParams, IBugSet,
-    UNRESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, NotFoundError
+    )
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.browser.packagerelationship import PackageRelationship
 

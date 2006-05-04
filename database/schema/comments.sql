@@ -3,11 +3,17 @@
   table.
 */
 
+/* Branch */
+
+COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
+
 /* Bug */
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
+COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
 
 /* BugBranch */
@@ -31,8 +37,11 @@ COMMENT ON COLUMN BugTask.priority IS 'The importance of fixing this bug.';
 COMMENT ON COLUMN BugTask.severity IS 'The impact of this bug.';
 COMMENT ON COLUMN BugTask.binarypackagename IS 'The name of the binary package built from the source package. This column may only contain a value if this bug task is linked to a sourcepackage (not a product)';
 COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
-COMMENT ON COLUMN BugTask.dateassigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
+COMMENT ON COLUMN BugTask.date_assigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
 COMMENT ON COLUMN BugTask.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it''s the date the bug was assigned to this product, which could have come later.';
+COMMENT ON COLUMN BugTask.date_confirmed IS 'The date when this bug transitioned from an unconfirmed status to a confirmed one. If the state regresses to a one that logically occurs before Confirmed, e.g., Unconfirmed, this date is cleared.';
+COMMENT ON COLUMN BugTask.date_inprogress IS 'The date on which this bug transitioned from not being in progress to a state >= In Progress. If the status moves back to a pre-In Progress state, this date is cleared';
+COMMENT ON COLUMN BugTask.date_closed IS 'The date when this bug transitioned to a resolved state, e.g., Rejected, Fix Released, etc. If the state changes back to a pre-closed state, this date is cleared';
 COMMENT ON COLUMN BugTask.milestone IS 'A way to mark a bug for grouping purposes, e.g. to say it needs to be fixed by version 1.2';
 COMMENT ON COLUMN BugTask.statusexplanation IS 'A place to store bug task specific information as free text';
 COMMENT ON COLUMN BugTask.bugwatch IS 'This column allows us to link a bug
@@ -47,6 +56,16 @@ the remote bug watch.';
 COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related content for bugs.';
 COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
 COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
+
+
+-- BugNotification
+
+COMMENT ON TABLE BugNotification IS 'The text representation of changes to a bug, which are used to send email notifications to bug changes.';
+COMMENT ON COLUMN BugNotification.bug IS 'The bug that was changed.';
+COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textual representation of the change.';
+COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
+COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
+
 
 /* BugPackageInfestation */
 
@@ -105,14 +124,6 @@ COMMENT ON TABLE CveReference IS 'A reference in the CVE system that shows what 
 COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This is a text string, like XF or BUGTRAQ or MSKB. Each string indicates a different kind of reference. The list of known types is documented on the CVE web site. At some future date we might turn this into an enum rather than a text, but for the moment we prefer to keep it fluid and just suck in what CVE gives us. This means that CVE can add new source types without us having to update our code.';
 COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on the web, if it was present in the CVE database.';
 COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
-
-
-/* CVERef OBSOLETE */
-
-COMMENT ON TABLE CVERefObsolete IS 'OBSOLETE: THIS TABLE IS PARKED AND WILL BE DELETED IN FAVOUR OF THE NEW CVE TABLE. This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
-COMMENT ON COLUMN CVERefObsolete.cveref IS 'This is the actual CVE number assigned to this specific problem.';
-COMMENT ON COLUMN CVERefObsolete.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
-COMMENT ON COLUMN CVERefObsolete.owner IS 'This refers to the person who created the entry.';
 
 
 -- DevelopmentManifest
@@ -182,7 +193,8 @@ COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
-
+COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
+COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
 
 /* ProductLabel */
 
@@ -193,7 +205,7 @@ COMMENT ON TABLE ProductLabel IS 'The Product label table. We have not yet clear
 
 COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific \'upstream\' software release, like Apache 2.0.49 or Evolution 1.5.4.';
 COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as \'1.2.4\' or \'2.0.38\' or \'7.4.3\'.';
-COMMENT ON COLUMN ProductRelease.title IS 'This is the GSV Name of this release, like \'The Warty Warthog Release\' or \'All your base-0 are belong to us\'. Many upstream projects are assigning fun names to their releases - these go in this field.';
+--COMMENT ON COLUMN ProductRelease.codename IS 'This is the GSV Name of this release, like \'that, and a pair of testicles\' or \'All your base-0 are belong to us\'. Many upstream projects are assigning fun names to their releases - these go in this field.';
 COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
 COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
 
@@ -202,6 +214,7 @@ COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Seri
 COMMENT ON TABLE ProductSeries IS 'A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as "2_0_STABLE". A few conventional Series names are "head" for releases of the HEAD branch, "1.0" for releases with version numbers like "1.0.0" and "1.0.1".';
 COMMENT ON COLUMN ProductSeries.name IS 'The name of the ProductSeries is like a unix name, it should not contain any spaces and should start with a letter or number. Good examples are "2.0", "3.0", "head" and "development".';
 COMMENT ON COLUMN ProductSeries.summary IS 'A summary of this Product Series. A good example would include the date the series was initiated and whether this is the current recommended series for people to use. The summary is usually displayed at the top of the page, in bold, just beneath the title and above the description, if there is a description field.';
+COMMENT ON COLUMN ProductSeries.driver IS 'This is a person or team who can approve spes and bugs for implementation or fixing in this specific series. Note that the product drivers and project drivers can also do this for any series in the product or project, so use this only for the specific team responsible for this specific series.';
 COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
 gives the state of our efforts to import the upstream code from its revision
 control system and publish that in the baz revision control system. The
@@ -274,6 +287,7 @@ NULL and datestarted is NOT NULL, then there is a sync in progress.';
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
 COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
+COMMENT ON COLUMN Project.driver IS 'This person or team has the ability to approve specs as goals for any series in any product in the project. Similarly, this person or team can approve bugs as targets for fixing in any series, or backporting of fixes to any series.';
 COMMENT ON COLUMN Project.summary IS 'A brief summary of this project. This
 will be displayed in bold text just above the description and below the
 title. It should be a single paragraph of not more than 80 words.';
@@ -507,9 +521,11 @@ COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
+COMMENT ON COLUMN Distribution.driver IS 'The team or person responsible for approving goals for each release in the distribution. This should usually be a very small team because the Distribution driver can approve items for backporting to past releases as well as the current release under development. Each distrorelease has its own driver too, so you can have the small superset in the Distribution driver, and then specific teams per distrorelease for backporting, for example, or for the current release management team on the current development focus release.';
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically subscribed to every bug targeted to this distribution.';
+COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
 
@@ -790,6 +806,7 @@ COMMENT ON COLUMN Specification.distribution IS 'The distribution for which this
 COMMENT ON COLUMN Specification.distrorelease IS 'If this is not NULL, then it means that the release managers have targeted this feature to be released in the given distrorelease. It is not necessary to target a distrorelease, but this is a useful way of know which specifications are, for example, BreezyGoals.';
 COMMENT ON COLUMN Specification.productseries IS 'This is an indicator that the specification is planned, or targeted, for implementation in a given product series. It is not necessary to target a spec to a series, but it is a useful way of showing which specs are planned to implement for a given series.';
 COMMENT ON COLUMN Specification.milestone IS 'This is an indicator that the feature defined in this specification is expected to be delivered for a given milestone. Note that milestones are not necessarily releases, they are a way of identifying a point in time and grouping bugs and features around that.';
+COMMENT ON COLUMN Specification.informational IS 'An indicator as to whether or not the spec is purely informational, or is actually supposed to be implemented. High level overview specs, for example, are often marked "informational" and will be considered implemented once the spec is approved.';
 COMMENT ON COLUMN Specification.status IS 'An enum called SpecificationStatus that shows what the current status (braindump, draft, implemented etc) the spec is currently in.';
 COMMENT ON COLUMN Specification.priority IS 'An enum that gives the implementation priority (low, medium, high, emergency) of the feature defined in this specification.';
 COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itself can be found. This is usually a wiki page somewhere.';
@@ -878,6 +895,7 @@ COMMENT ON COLUMN DistroRelease.releasestatus IS 'The current release status of 
 COMMENT ON COLUMN DistroRelease.datereleased IS 'The date on which this distrorelease was released. (obviously only valid for released distributions)';
 COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which this distribution is based. This is related to the inheritance stuff.';
 COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelease.';
+COMMENT ON COLUMN DistroRelease.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
 COMMENT ON COLUMN DistroRelease.changeslist IS 'The email address (name name) of the changes announcement list for this distrorelease. If NULL, no announcement mail will be sent.';
 
 
@@ -902,6 +920,7 @@ COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this libr
 COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file\'s contents';
+COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file\'s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 
 -- LibraryFileAlias
@@ -950,11 +969,14 @@ COMMENT ON COLUMN LoginToken.created IS 'The timestamp that this request was mad
 COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.TokenType.';
 COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
 COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
+COMMENT ON COLUMN LoginToken.date_consumed IS 'The date and time when this token was consumed. It\'s NULL if it hasn\'t been consumed yet.';
 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
 COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
+COMMENT ON COLUMN Milestone.distrorelease IS 'The distrorelease for which this is a milestone. A milestone on a distrorelease is ALWAYS also a milestone for the same distribution. This is because milestones started out on products/distributions but are moving to being on series/distroreleases.';
+COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroreleases.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
 COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
 

@@ -131,9 +131,9 @@ class QueueAction:
         # if not found defaults to 'ubuntu'
         distroset = getUtility(IDistributionSet)
         try:
-            self.distribution = distroset.getByName(self.distribution_name)
+            self.distribution = distroset[self.distribution_name]
         except NotFoundError, info:
-            self.distribution = distroset.getByName('ubuntu')
+            self.distribution = distroset['ubuntu']
 
         if self.distrorelease_name:
             # defaults to distro.currentrelease if passed distrorelease is
@@ -278,6 +278,7 @@ class QueueAction:
         print "   Subject: %s" % message['Subject']
         print "   Sender: %s" % message['From']
         print "   Recipients: %s" % message['To']
+        print "   Bcc: %s" % message['Bcc']
         print "   Body:"
         for line in message.get_payload().split("\n"):
             print line
@@ -328,7 +329,7 @@ class QueueAction:
         set of permitted recipients for the current distrorelease.
         """
         full_set = set()
-        recipient_addresses = [self.default_recipient]
+        recipient_addresses = []
         from_address = self.default_sender
 
         temp_fd, temp_name = tempfile.mkstemp()
@@ -515,6 +516,7 @@ class QueueActionReject(QueueAction):
                         "CHANGES": queue_item.changesfilename,
                         "SUMMARY": summary,
                         "CHANGESFILE": changescontent,
+                        "DEFAULT_RECIPIENT": self.default_recipient,
                         }
 
                     # append an email describing this action.
@@ -573,6 +575,7 @@ class QueueActionAccept(QueueAction):
                         "CHANGESFILE": changescontent,
                         "SUMMARY": summary,
                         "ANNOUNCE": ", ".join(recipients),
+                        "DEFAULT_RECIPIENT": self.default_recipient
                         }
 
                     # append an email describing this action.

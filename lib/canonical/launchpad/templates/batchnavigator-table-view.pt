@@ -1,6 +1,20 @@
 <div>
-  <small tal:content="structure context/@@+navigation-links" />
+  <tal:no-results condition="not: context/batch">
+    <tal:search-performed condition="request/search|nothing">
+      <p>No results for search 
+        <strong tal:content="request/field.searchtext|nothing" /></p>
+    </tal:search-performed>
+
+    <tal:no-search-performed condition="not: request/search|nothing">
+      <p>There's no open bugs currently.</p>
+    </tal:no-search-performed>
+  </tal:no-results>
+
+  <tal:results condition="context/batch">
+    <small tal:content="structure context/@@+navigation-links" />
+  </tal:results>
 </div>
+<tal:results condition="context/batch">
   <table class="listing sortable" id="buglisting">
     <thead>
       <tr>
@@ -11,6 +25,9 @@
         </th>
         <th tal:condition="context/show_column/packagename|nothing">
           Package
+        </th>
+        <th tal:condition="context/show_column/productname|nothing">
+          Product
         </th>
         <th tal:condition="context/show_column/importance|nothing">Importance</th>
         <th tal:condition="context/show_column/status|nothing">Status</th>
@@ -34,6 +51,9 @@
         <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
             tal:condition="context/show_column/packagename|nothing"
             nowrap>mozilla-firefox (Ubuntu)</td>
+        <td tal:content="structure bugtask/product/name|string:&mdash;"
+            tal:condition="context/show_column/productname|nothing"
+            nowrap>firefox</td>
         <td tal:content="bugtask/severity/title"
             tal:condition="context/show_column/importance|nothing">Critical</td>
         <td tal:content="bugtask/status/title"
@@ -44,3 +64,4 @@
 <div>
   <small tal:content="structure context/@@+navigation-links" />
 </div>
+</tal:results>

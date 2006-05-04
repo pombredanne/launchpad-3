@@ -110,9 +110,9 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'editbugcontact', 'reassign', 'addrelease', 'builds',
-             'officialmirrors', 'allmirrors', 'newmirror', 'launchpad_usage']
+    links = ['edit', 'driver', 'search', 'allpkgs', 'members',
+             'reassign', 'addrelease', 'builds', 'officialmirrors',
+             'allmirrors', 'newmirror', 'launchpad_usage']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -120,13 +120,14 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def editbugcontact(self):
-        text = 'Change Bug Contact'
-        return Link('+editbugcontact', text, icon='edit')
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals for all releases'
+        return Link('+driver', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change Registrant'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):
@@ -150,11 +151,6 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def milestone_add(self):
-        text = 'Add Milestone'
-        return Link('+addmilestone', text, icon='add')
-
     def search(self):
         text = 'Search Packages'
         return Link('+search', text, icon='search')
@@ -165,7 +161,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+addrelease', text, icon='add')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Builds'
         return Link('+builds', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -178,7 +174,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['new', 'cve_list']
+    links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
         text = 'CVE List'
@@ -187,6 +183,16 @@ class DistributionBugsMenu(ApplicationMenu):
     def new(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def bugcontact(self):
+        text = 'Change Bug Contact'
+        return Link('+bugcontact', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def securitycontact(self):
+        text = 'Change Security Contact'
+        return Link('+securitycontact', text, icon='edit')
 
 
 class DistributionBountiesMenu(ApplicationMenu):
@@ -208,7 +214,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'new']
+    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
         text = 'List All'
@@ -218,9 +224,15 @@ class DistributionSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         return Link('+roadmap', text, icon='info')
 
-    def table(self):
+    def assignments(self):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
+
+    def doc(self):
+        text = 'Documentation'
+        summary = 'List all complete informational specifications'
+        return Link('+documentation', text, summary,
+            icon='info')
 
     def new(self):
         text = 'New Specification'

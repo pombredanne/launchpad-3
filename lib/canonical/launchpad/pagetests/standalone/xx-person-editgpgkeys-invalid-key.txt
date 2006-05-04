@@ -115,17 +115,13 @@ Try to validate the revoked OpenPGP key:
   ...
 
 
-Each login token is removed after the failed validations:
+Each login token is marked consumed after the failed validations:
 
   >>> login(ANONYMOUS)
-  >>> tokenset[revoked_key_token]
-  Traceback (most recent call last):
-    ...
-  NotFoundError: ...
-  >>> tokenset[expired_key_token]
-  Traceback (most recent call last):
-    ...
-  NotFoundError: ...
+  >>> tokenset[revoked_key_token].date_consumed is not None
+  True
+  >>> tokenset[expired_key_token].date_consumed is not None
+  True
   >>> logout()
 
 

@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'Breadcrumbs',
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
@@ -10,18 +11,23 @@ __all__ = [
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
     'FOAFApplicationNavigation',
-    'MaloneApplicationNavigation'
+    'MaloneApplicationNavigation',
+    'SoftTimeoutView',
     ]
 
 import cgi
 import urllib
 import os.path
+import time
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 import canonical.launchpad.layers
+from canonical.config import config
+from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadRoot, IRosettaApplication,
     IMaloneApplication, IProductSet, IShipItApplication, IPersonSet,
@@ -34,7 +40,7 @@ from canonical.launchpad.interfaces import (
     IMilestone, IDistribution, IDistroRelease, IDistroArchRelease,
     IDistributionSourcePackage, ISourcePackage,
     IDistroArchReleaseBinaryPackage, IDistroReleaseBinaryPackage,
-    IPerson, IProject, ISprint)
+    IPerson, IProject, ISprint, ILaunchpadCelebrities)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -79,9 +85,9 @@ class MaloneApplicationNavigation(Navigation):
         return getUtility(IProductSet)
 
     def traverse(self, name):
-        if name.isdigit():
-            # Make /bugs/$bug.id and /malone/$bug.id Just Work
-            return getUtility(IBugSet).get(name)
+        # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
+        # /malone/$bug.id Just Work
+        return getUtility(IBugSet).getByNameOrID(name)
 
 
 class MenuBox(LaunchpadView):
@@ -112,6 +118,36 @@ class MenuBox(LaunchpadView):
 class Breadcrumbs(LaunchpadView):
     """Page fragment to display the breadcrumbs text."""
 
+    sitemaptext = ("""
+    <ul id="launchPad" style="display: none">
+          <li id="p1">
+          <a href="/products">
+          Products
+          </a>
+          </li>
+          <li>
+          <a href="/distros">
+          Distributions
+          </a>
+          </li>
+          <li>
+          <a href="/people">
+          People
+          </a>
+          </li>
+          <li>
+          <a href="/projects">
+          Projects
+          </a>
+          </li>
+          <li>
+          <a href="/sprints">
+          Meetings
+          </a>
+          </li>
+    </ul>
+       """)
+
     def render(self):
         """Render the breadcrumbs text.
 
@@ -119,141 +155,52 @@ class Breadcrumbs(LaunchpadView):
         For each breadcrumb, breadcrumb.text is cgi escaped.  The last
         breadcrumb is made <strong>.
         """
-        breadcrumbs = self.request.breadcrumbs
-        if not breadcrumbs:
-            return ''
-        sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
-        crumbhtml = '<a href="%s">%s</a>'
-        all_but_last = [
-            crumbhtml % (breadcrumb.url, cgi.escape(breadcrumb.text))
-            for breadcrumb in breadcrumbs[:-1]]
-        lastcrumb = breadcrumbs[-1]
-        last_htmltext = crumbhtml % (lastcrumb.url, cgi.escape(lastcrumb.text))
-        last_htmltext = '<strong>%s</strong>' % last_htmltext
-        return sep.join(all_but_last + [last_htmltext])
+        crumbs = list(self.request.breadcrumbs)
+        if crumbs:
+            # Discard the first breadcrumb, as we know it will be the
+            # Launchpad one anyway.
+            firstcrumb = crumbs.pop(0)
+            assert firstcrumb.text == 'Launchpad'
 
+        L = []
+        firsturl = '/'
+        firsttext = 'Launchpad'
 
-class SiteMap(LaunchpadView):
-    """Page fragment to display the site map."""
-
-    _pillars = [
-        # (name, title, interface provided)
-        ('product', 'Products',      IProductSet),
-        ('distro',  'Distributions', IDistributionSet),
-        ('person',  'People',        IPersonSet),
-        ('project', 'Projects',      IProjectSet),
-        ('sprint',  'Meetings',      ISprintSet),
-        ]
-
-    def product_subpillar_links(self):
-        """Subpillars for the 'Products' pillar."""
-        product, dummy = self.request.getNearest(IProduct)
-        if product is None:
-            product_url = None
+        if not crumbs:
+            L.append(
+                '<li class="last">'
+                '<a href="%s">'
+                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '</a>'
+                '%s'
+                '</li>'
+                % (firsturl,
+                   cgi.escape(firsttext),
+                   self.sitemaptext))
         else:
-            product_url = canonical_url(product)
+            L.append(
+                '<li>'
+                '<a href="%s">'
+                '<img src="/@@/launchpad.png" alt="" /> %s'
+                '</a>'
+                '%s'
+                '</li>'
+                % (firsturl,
+                   cgi.escape(firsttext),
+                   self.sitemaptext))
 
-        dummy, selected_iface = self.request.getNearest(
-            IProductSeries, IMilestone)
+            lastcrumb = crumbs.pop()
 
-        # Release Series
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Release Series',
-            enabled=False, # no +series page
-            selected=selected_iface == IProductSeries
-            ))
+            for crumb in crumbs:
+                L.append('<li><a href="%s">%s</a></li>'
+                         % (crumb.url, cgi.escape(crumb.text)))
 
-        # Branches
-        self.subpillar_links.append(dict(
-            target='%s/+branches' % product_url,
-            text='Branches',
-            enabled=product is not None,
-            selected=False # should be True if +code is being viewed
-            ))
-
-        # Milestones
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Milestones',
-            enabled=False,
-            selected=selected_iface == IMilestone
-            ))
-
-    def distro_subpillar_links(self):
-        """Subpillars for the 'Distributions' pillar."""
-        distro, dummy = self.request.getNearest(IDistribution)
-        if distro is None:
-            distro_url = None
-        else:
-            distro_url = canonical_url(distro)
-
-        dummy, selected_iface = self.request.getNearest(
-            IDistroRelease, IDistroArchRelease,
-            IDistributionSourcePackage, ISourcePackage,
-            IDistroArchReleaseBinaryPackage,
-            IDistroReleaseBinaryPackage)
-
-        # Releases
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Releases',
-            enabled=False, # no specific page for distro releases
-            selected=selected_iface == IDistroRelease
-            ))
-
-        # Ports
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Ports',
-            enabled=False, # no specific page for ports
-            selected=selected_iface == IDistroArchRelease
-            ))
-
-        # Source Packages
-        self.subpillar_links.append(dict(
-            target='%s/+search' % distro_url,
-            text='Source Packages',
-            enabled=distro is not None, 
-            selected=selected_iface in [IDistributionSourcePackage,
-                                        ISourcePackage]
-            ))
-
-        # Binary Packages
-        self.subpillar_links.append(dict(
-            target=None,
-            text='Binary Packages',
-            enabled=False, # no specific page for binpkgs
-            selected=selected_iface in [IDistroArchReleaseBinaryPackage,
-                                        IDistroReleaseBinaryPackage]
-            ))
-
-    def initialize(self):
-        # get the current pillar
-        pillar_ifaces = [provided_iface
-                        for name, title, provided_iface in self._pillars]
-        obj, selected_iface = self.request.getNearest(*pillar_ifaces)
-        for name, title, provided_iface in self._pillars:
-            if provided_iface == selected_iface:
-                current_pillar = name
-                break
-        else:
-            current_pillar = None
-
-        self.pillar_links = []
-        for name, title, provided_iface in self._pillars:
-            self.pillar_links.append(dict(
-                target=canonical_url(getUtility(provided_iface)),
-                text=title,
-                enabled=True,
-                selected=name == current_pillar
-                ))
-
-        # call a function to create subpillar links
-        self.subpillar_links = []
-        function = getattr(self, '%s_subpillar_links' % current_pillar, None)
-        if function is not None:
-            function()
+            L.append(
+                '<li class="last">'
+                '<a href="%s">%s</a>'
+                '</li>'
+                % (lastcrumb.url, cgi.escape(lastcrumb.text)))
+        return u'\n'.join(L)
 
 
 class MaintenanceMessage:
@@ -309,7 +256,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'branches', 'calendar']
 
     def overview(self):
         target = ''
@@ -342,6 +289,12 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = 'bounties'
         text = 'Bounties'
         summary = 'The Launchpad Universal Bounty Tracker'
+        return Link(target, text, summary)
+
+    def branches(self):
+        target = 'bazaar'
+        text = 'Branches'
+        summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
     def calendar(self):
@@ -516,3 +469,30 @@ class FOAFApplicationNavigation(Navigation):
     def people(self):
         # DEPRECATED
         return getUtility(IPersonSet)
+
+
+class SoftTimeoutView(LaunchpadView):
+
+    def __call__(self):
+        """Generate a soft timeout by sleeping enough time."""
+        start_time = time.time()
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (self.user is None or
+            not self.user.inTeam(celebrities.launchpad_developers)):
+            raise Unauthorized
+
+        self.request.response.setHeader('content-type', 'text/plain')
+        soft_timeout = intOrZero(config.launchpad.soft_request_timeout)
+        if soft_timeout == 0:
+            return 'No soft timeout threshold is set.'
+
+        time.sleep(soft_timeout/1000.0)
+        time_to_generate_page = (time.time() - start_time) * 1000
+        # In case we didn't sleep enogh time, sleep a while longer to
+        # pass the soft timeout threshold.
+        while time_to_generate_page < soft_timeout:
+            time.sleep(0.1)
+            time_to_generate_page = (time.time() - start_time) * 1000
+        return (
+            'Soft timeout threshold is set to %s ms. This page took'
+            ' %s ms to render.' % (soft_timeout, time_to_generate_page))

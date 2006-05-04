@@ -77,6 +77,11 @@ thead th, tr.thead th {
 
 /* === Global Launchpad design: === */
 
+.debug {
+  background: none;
+  color: #f09;
+}
+
 body {
   background-color: #fcfcfc;
   color: black;
@@ -90,7 +95,7 @@ body {
 
 :visited {
   background: none;
-  color: #8888bb;
+  color: #66a;
 }
 :link, .hierarchy :visited, .footer :visited,
 .facets :visited, #pillars :visited, #subpillars :visited, .portlet :visited {
@@ -108,7 +113,6 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 100%;
   font-weight: normal;
   margin: 0;
-  padding-top: 0.5em;
   text-align: left;
 }
 h1 :link, h2 :link, h3 :link, h4 :link, h5 :link, h6 :link,
@@ -118,17 +122,17 @@ h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
 h1 {
   font-size: 1.6em;
   margin-bottom: 0.5em;
+  padding-top: 0;
 }
 h2 {
   font-size: 1.25em;
   margin: 0.5em 0;
 }
-h2.lpcontext {
-  font-size: 1.5em;
-  margin-top: 0;
-  padding-top: 0;
+h3 {
+  font-size: 1.1em;
+  margin-bottom: 0.5em;
 }
-h3, h4, h5, h6 {
+h4, h5, h6 {
   font-size: 1em;
   margin-bottom: 0;
 }
@@ -140,12 +144,18 @@ label {
   font-weight: bold;
 }
 pre {
-    border: 1px dashed #8cacbb;
-    color: Black;
-    background-color: #dee7ec;
-    overflow: auto;
+  color: black;
+  background-color: #dee7ec;
+  padding: 0.5em;
 }
-table {
+.userLog { 
+  font-family: "Lucida Grande","trebuchet ms",verdana,sans-serif;
+  font: 11px tahoma,verdana,sans-serif;
+  position: absolute;
+  right: 10px;
+  top: 5px;
+}
+div.body table {
   margin-left: auto;
   margin-right: auto;
   border-collapse: collapse;
@@ -164,7 +174,7 @@ th.icon.right, td.icon.right {
   padding-left: 0;
 }
 table.listing {
-  font-size: 85%;
+  font-size: smaller;
   margin: 1em 0;
 }
 table.listing, table.listing>tbody {
@@ -238,8 +248,16 @@ ul {
   list-style-image: url(/@@/bullet.gif);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
+ul.menu {
+  font-size: smaller;
+}
 ol {
   margin: 0.5em 0 0 1.5em;
+}
+
+/* Used to indicate a value to be used to sort cells in a row */
+.sortkey, .revsortkey {
+    display: none;
 }
 
 .portlet {
@@ -249,7 +267,7 @@ ol {
   padding: 0;
   background-color: #f4f5f8; /* changed by sabdfl, 2005-10-22 */
 }
-.portlet h4, .portlet h5, .portlet h6 {
+.portlet h4 {
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   font-weight: normal;
@@ -259,18 +277,14 @@ ol {
   display: block;
   font-size: 1em;
 }
-.portlet h5 { 
-  padding: 0em 1em 0em 1em;
-  display: inline;
-  font-size: 1em;
-  white-space: nowrap;
-  position: relative;
-  top: -1px;
+.portlet h5, .portlet h6 {
+  color: black;
 }
-.portlet h6 { 
-  padding: 0em 0.3em 0em 1em;
-  display: block;
-  font-size: 1em;
+.portlet h5 {
+  font-weight: bold;
+}
+.portlet h6 {
+  font-variant: italic;
 }
 .portletBody {
   position: relative;
@@ -287,7 +301,6 @@ textarea {
   color: black;
   background-color: white;
   font-family: sans-serif;
-  font-family: caption;
   width: 100%;
 }
 .fieldRequired {
@@ -323,6 +336,9 @@ input[type="radio"] {
 .header td, .footer {
   font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   padding: 0.25em 1em;
+}
+.header td {
+  padding-bottom: 0;
 }
 .header {
   font-size: 0.875em;
@@ -565,7 +581,7 @@ ins {
     margin-left: 1em;
 }
 .listingBar img {
-	vertical-align: middle;
+  vertical-align: middle;
 }
 
 /*
@@ -674,7 +690,7 @@ tr.highlight {
 .priorityLow     { color: Black; }
 .priorityWontfix { color: Gray; }
 
-/* Spec status and priority */
+/* Spec definition, delivery and priority */
 
 .specstatusIMPLEMENTED     { color: Green; }
 .specstatusINFORMATIONAL   { color: Green; }
@@ -687,7 +703,7 @@ tr.highlight {
 .specstatusOBSOLETE        { color: Gray; }
 
 .specpriorityNOTFORUS      { color: Gray; }
-.specpriorityPROPOSED      { color: Gray; }
+.specpriorityUNDEFINED     { color: Gray; }
 .specpriorityLOW           { color: Black; }
 .specpriorityMEDIUM        { color: Orange; }
 .specpriorityHIGH          { color: Red; }
@@ -704,6 +720,20 @@ tr.highlight {
 .specdeliveryNEEDSREVIEW        {color: Purple; }
 .specdeliveryAWAITINGDEPLOYMENT {color: Red; }
 .specdeliveryIMPLEMENTED        {color: Green; }
+
+.branchstatusMATURE             {color: DarkGreen;}
+.branchstatusDEVELOPMENT        {color: DarkRed;}
+.branchstatusEXPERIMENTAL       {color: #930;}
+.branchstatusMERGED             {color: Gray;}
+.branchstatusABANDONED          {color: Gray;}
+.branchstatusNEW                {color: Black;}
+
+
+/* Ticket status */
+
+.ticketstatusOPEN            { color: Black; }
+.ticketstatusANSWERED        { color: Green; }
+.ticketstatusREJECTED        { color: Red; }
 
 /* Board-like comment CSS */
 
@@ -735,7 +765,7 @@ tr.highlight {
   font-size: 80%;
   border: 1px solid #364970;
   border-style: none none solid none;
-  background-color: #d7d9da;
+  background-color: #eee;
   padding: 0.25em 12px;
 }
 
@@ -825,9 +855,6 @@ ul.locked>li, li.locked {
 ul.mail>li, li.mail {
   list-style-image: url(/@@/mail_icon.gif);
 }
-ul.menu>li, li.menu {
-  list-style-image: url(/@@/favorite_icon.gif);
-}
 ul.milestone>li, li.milestone {
   list-style-image: url(/@@/target);
 }
@@ -913,8 +940,12 @@ ul.search>li, li.search {
 .lesser {
   font-size: smaller;
 }
+.greater {
+  /* For use in the ~20% of listing tables that should have normal-sized text */
+  font-size: larger;
+}
 
-/* sabdfl 22/10/2005 indented and moreindented useful for listings */
+/* indented and moreindented useful for listings */
 .indented {
   margin-left: 1em;
 }
@@ -948,16 +979,16 @@ input[type="image"] {
 
 
 td p:first-child, td ol:first-child, td blockquote:first-child {
-	margin-top: 0;
+  margin-top: 0;
 }
 th {
-	text-align: right;
+  text-align: right;
 }
 thead th {
-	text-align: center;
+  text-align: center;
 }
 tr {
-	vertical-align: top;
+  vertical-align: top;
 }
 
 .results {
@@ -973,25 +1004,25 @@ tr {
 }
 
 .apps {
-	clear: right;
-	float: right;
-	margin-top: 0.5em;
+  clear: right;
+  float: right;
+  margin-top: 0.5em;
 }
 .navigation li {
-	display: inline;
-	padding: 0.25em 0.5em;
+  display: inline;
+  padding: 0.25em 0.5em;
 }
 .navigation li:before {
-	content: '\2022';
-	margin-right: 0.25em;
+  content: '\2022';
+  margin-right: 0.25em;
 }
 
 #main {
-	border-top: 2pt solid black;
-	clear: both;
-	margin: 0;
-	padding-top: 1em;
-	width: 100%;
+  border-top: 2pt solid black;
+  clear: both;
+  margin: 0;
+  padding-top: 1em;
+  width: 100%;
 }
 
 /* from richard braine for the series source forms */
@@ -1156,7 +1187,7 @@ dl.faq ol {
 }
 .error {background-color: #f0cccc; color: black;}
 .error.message, .error .message {
-  background-image: url(/@@/stop);
+  background-image: url(/@@/error);
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {

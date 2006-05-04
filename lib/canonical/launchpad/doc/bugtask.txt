@@ -2,10 +2,10 @@ Introduction
 ============
 
 Bugs are problems in software. When a bug gets assigned to a specific
-upstream or distro/sourcepackagename/binarypackagename, a bug /task/ is
-created. In essence, a bug task is a bug that needs to be fixed in a specific
-place. Where a bug has things like a title, comments and subscribers, it's
-the bug task that tracks priority, severity, assignee, etc.
+upstream or distro/sourcepackagename, a bug /task/ is created. In
+essence, a bug task is a bug that needs to be fixed in a specific
+place. Where a bug has things like a title, comments and subscribers,
+it's the bug task that tracks priority, severity, assignee, etc.
 
 Working with Bug Tasks in Launchpad
 ===================================
@@ -156,6 +156,20 @@ For upstream:
     >>> print bugtask_ids
     [2, 13, 14, 15]
 
+By project:
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    ...                                         BugTaskStatus.CONFIRMED),
+    ...                              orderby="id", user=None)
+    >>> bugtasks = mozilla_project.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+    >>> bugtask_ids = [bt.id for bt in bugtasks]
+    >>> print bugtask_ids
+    [2, 13, 14, 15]
+
 For a distribution:
 
     >>> debian = distroset.get(3)
@@ -188,15 +202,15 @@ For a person:
      u'evolution (Ubuntu)',
      u'evolution (upstream)',
      u'linux-source-2.6.15 (Ubuntu)',
-     u'mozilla-firefox (debian)',
-     u'mozilla-firefox (ubuntu)',
+     u'mozilla-firefox (Debian)',
+     u'mozilla-firefox (Ubuntu)',
      u'thunderbird (Ubuntu)']
 
 It's also possible to search bugs that a person is subscribed to:
 
-    >>> params = BugTaskSearchParams(user=None, subscriber=foobar)
+    >>> params = BugTaskSearchParams(user=None, subscriber=foobar, orderby="id")
     >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
-    [7, 9, 9, 10]
+    [7, 7, 9, 9, 10]
 
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
@@ -207,6 +221,11 @@ To provide null-matching search criteria, use canonical.launchpad.searchbuilder.
     2
     >>> print [bugtask.bug.id for bugtask in bugtasks]
     [4, 6]
+
+    >>> params = BugTaskSearchParams(sourcepackagename=NULL, user=None)
+    >>> bugtasks = ubuntu.searchTasks(params)
+    >>> print sorted([bugtask.bug.id for bugtask in bugtasks])
+    [1, 2]
 
 There's also support for searching tasks based on a string of text, e.g.:
 
@@ -274,12 +293,6 @@ Let's get all bugs on either main or universe:
     >>> sorted([bugtask.bug.id for bugtask in main_or_universe_tasks])
     [1, 10, 11L]
 
-It's also possible to iterate over all the bug tasks:
-
-    >>> bugtasks = [bugtask for bugtasks in bugtaskset]
-    >>> len(bugtasks)
-    24
-
 Bug Task Targets
 ----------------
 
@@ -337,7 +350,7 @@ task. It concatenates the display names of the distribution,
 
     >>> bugtask = bugtaskset.get(17)
     >>> bugtask.targetname
-    u'mozilla-firefox (ubuntu)'
+    u'mozilla-firefox (Ubuntu)'
 
 distro release, or product;
 
@@ -359,7 +372,6 @@ test it in isolation.
     ...     distribution = None
     ...     distrorelease = None
     ...     sourcepackagename = None
-    ...     binarypackagename = None
     ...     product = None
     ...
     ...     # This next line is a hack to take a copy of the method and
@@ -402,15 +414,8 @@ Distribution and sourcepackagename.
     >>> bugtask._calculate_targetname()
     '[spn.name] ([distribution.displayname])'
 
-Distribution and sourcepackagename and binarypackagename.
-
-    >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] [bpn.name] ([distribution.displayname])'
-
 Reset the state of our bugtask.
 
-    >>> bugtask.binarypackagename = None
     >>> bugtask.sourcepackagename = None
     >>> bugtask.distribution = None
 
@@ -427,12 +432,6 @@ Distrorelease and sourcepackagename.
     >>> bugtask._calculate_targetname()
     '[spn.name] ([distrorelease.fullreleasename])'
 
-Distrorelease, sourcepackagename and binarypackagename.
-
-    >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask._calculate_targetname()
-    '[spn.name] [bpn.name] ([distrorelease.fullreleasename])'
-
 Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
 
@@ -446,15 +445,15 @@ To edit an upstream task, you must be logged in. Anonymous users
 cannot edit upstream tasks.
 
     >>> login(ANONYMOUS)
-    >>> upstream_task.status = STATUS_CONFIRMED
+    >>> upstream_task.transitionToStatus(STATUS_CONFIRMED)
     Traceback (most recent call last):
       ...
-    Unauthorized: ('status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
 Let's login and try again.
 
     >>> login('jeff.waugh@ubuntulinux.com')
-    >>> upstream_task.status = STATUS_FIXRELEASED
+    >>> upstream_task.transitionToStatus(STATUS_FIXRELEASED)
 
 Distro and Distro Release Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -463,15 +462,15 @@ Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
 
     >>> login(ANONYMOUS)
-    >>> distro_task.status = STATUS_FIXRELEASED
+    >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
     Traceback (most recent call last):
       ...
-    Unauthorized: ('status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
-    >>> distro_release_task.assignee = sample_person
+    >>> distro_release_task.transitionToAssignee(sample_person)
     Traceback (most recent call last):
       ...
-    Unauthorized: ('assignee', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToAssignee', 'launchpad.Edit')
 
 But once authenticated:
 
@@ -479,8 +478,8 @@ But once authenticated:
 
 We can edit the task:
 
-    >>> distro_task.status = STATUS_FIXRELEASED
-    >>> distro_release_task.assignee = sample_person
+    >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
+    >>> distro_release_task.transitionToAssignee(sample_person)
 
 Null Bug Tasks
 --------------
@@ -523,8 +522,6 @@ like these, use the NullBugTask object.
     >>> null_bugtask.severity is None
     True
     >>> null_bugtask.assignee is None
-    True
-    >>> null_bugtask.binarypackagename is None
     True
     >>> null_bugtask.bugwatch is None
     True
@@ -595,7 +592,8 @@ entitled _Privacy and Team Awareness_):
 
     >>> old_state = capture_state(
     ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
-    ...     "description", "private", "name", "duplicateof")
+    ...     "description", "private", "name", "duplicateof",
+    ...     "security_related")
     >>> bug_upstream_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, old_state,
@@ -613,12 +611,13 @@ properties of the bugtask.
     >>> bug_upstream_firefox_no_svg_support.status
     Traceback (most recent call last):
       ...
-    Unauthorized: ('status', 'launchpad.View')
+    Unauthorized: (..., 'status', 'launchpad.View')
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXCOMMITTED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.FIXCOMMITTED)
     Traceback (most recent call last):
       ...
-    Unauthorized: ('status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
 The private bugs will be invisible to No Privileges Person in the search
 results:
@@ -654,7 +653,8 @@ And note that he can access and set the bugtask attributes:
     >>> bug_upstream_firefox_no_svg_support.status.title
     'Unconfirmed'
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.UNCONFIRMED)
 
 Privacy and Team Awareness
 --------------------------
@@ -733,8 +733,10 @@ As will attribute access:
 
 And attribute setting:
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXRELEASED
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED)
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.UNCONFIRMED)
 
 Sorting Bug Tasks
 -----------------
@@ -756,9 +758,9 @@ Let's just make sure that the tasks on bug_one sort correctly.
     firefox (upstream)
     Ubuntu
     evolution (Ubuntu)
-    mozilla-firefox (ubuntu)
+    mozilla-firefox (Ubuntu)
     Ubuntu Warty
-    mozilla-firefox (debian)
+    mozilla-firefox (Debian)
 
 BugTask Adaptation
 ------------------
@@ -826,50 +828,39 @@ Remote BugTasks
 ---------------
 
 If a bug tasks's target isn't using Malone officially, we say that it's
-a remote bug tasks. Such bug tasks provide IRemoteBugTask, which allows the
-status, piroity and severity to have an UNKNOWN value.
+a remote bug tasks. Such bug tasks allow the status, priority and
+severity to have an UNKNOWN value.
 
-    >>> from canonical.launchpad.interfaces import IRemoteBugTask
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> evolution_task = bug_one.bugtasks[0]
     >>> evolution_task.target.name
     u'evolution'
-    >>> evolution_task.target.official_malone
+    >>> evolution_task.target_uses_malone
     True
-    >>> IRemoteBugTask.providedBy(evolution_task)
-    False
 
     >>> thunderbird_task = bug_one.bugtasks[2]
     >>> thunderbird_task.target.name
     u'thunderbird-ng'
-    >>> thunderbird_task.target.official_malone
+    >>> thunderbird_task.target_uses_malone
     False
-    >>> IRemoteBugTask.providedBy(thunderbird_task)
-    True
 
     >>> ubuntu_task = bug_one.bugtasks[3]
     >>> ubuntu_task.target.name
     u'ubuntu'
-    >>> ubuntu_task.target.official_malone
+    >>> ubuntu_task.target_uses_malone
     True
-    >>> IRemoteBugTask.providedBy(ubuntu_task)
-    False
 
     >>> ubuntu_mozilla_task = bug_one.bugtasks[5]
     >>> ubuntu_mozilla_task.targetname
     u'mozilla-firefox (Ubuntu)'
-    >>> ubuntu_mozilla_task.target.distribution.official_malone
+    >>> ubuntu_mozilla_task.target_uses_malone
     True
-    >>> IRemoteBugTask.providedBy(ubuntu_mozilla_task)
-    False
 
     >>> debian_mozilla_task = bug_one.bugtasks[7]
     >>> debian_mozilla_task.targetname
     u'mozilla-firefox (Debian)'
-    >>> debian_mozilla_task.target.distribution.official_malone
+    >>> debian_mozilla_task.target_uses_malone
     False
-    >>> IRemoteBugTask.providedBy(debian_mozilla_task)
-    True
 
 Handling IntegrityError and ProgrammingError
 --------------------------------------------

@@ -11,17 +11,16 @@ __all__ = [
 
 from zope.schema import Choice, Int, TextLine, Bool
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
-
-_ = MessageIDFactory('launchpad')
+    IHasOwner, IBugTarget, ISpecificationTarget, IHasSecurityContact,
+    ITicketTarget)
+from canonical.launchpad import _
 
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
-    ITicketTarget):
+                    IHasSecurityContact, ITicketTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -50,7 +49,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_("The distro's domain name."), required=True)
     translationgroup = Choice(
         title = _("Translation group"),
-        description = _("The translation group for this product. This group "
+        description = _("The translation group for this distribution. This group "
             "is made up of a set of translators for all the languages "
             "approved by the group manager. These translators then have "
             "permission to edit the groups translation files, based on the "
@@ -76,6 +75,21 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         description=_(
             "The person or team who will receive all bugmail for this "
             "distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
+    security_contact = Choice(
+        title=_("Security Contact"),
+        description=_(
+            "The person or team who handles security-related issues "
+            "for this distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted for any release in this "
+            "distribution. Note that you can also specify a driver "
+            "on each release who's permissions will be limited to that "
+            "specific release."),
         required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),
@@ -248,7 +262,7 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given distributionid."""
 
     def getByName(distroname):
-        """Return the IDistribution with the given name."""
+        """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
             members, owner):

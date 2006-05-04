@@ -5,7 +5,7 @@ import unittest, warnings, sys, psycopg
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg
 from canonical.ftests.pgsql import PgTestCase, PgTestSetup
-from canonical.functional import FunctionalTestSetup
+from canonical.functional import FunctionalTestSetup, ZopelessLayer
 from threading import Thread
 from zope.testing.doctest import DocTestSuite
 
@@ -24,6 +24,7 @@ class MoreBeer(SQLBase):
 
 class TestInitZopeless(PgTestCase):
     dbname = 'ftest_tmp'
+    layer = ZopelessLayer
     
     def test_initZopelessTwice(self):
         # Hook the warnings module, so we can verify that we get the expected
@@ -54,6 +55,7 @@ class TestInitZopeless(PgTestCase):
         
 
 class TestZopeless(unittest.TestCase):
+    layer = ZopelessLayer
 
     def setUp(self):
         PgTestSetup().setUp()
@@ -205,7 +207,9 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestZopeless))
     suite.addTest(unittest.makeSuite(TestInitZopeless))
-    suite.addTest(DocTestSuite()) # Doctests
+    doctests = DocTestSuite()
+    doctests.layer = ZopelessLayer
+    suite.addTests(doctests)
     return suite
 
 if __name__ == '__main__':

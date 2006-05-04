@@ -1,5 +1,7 @@
 # Copyright 2004-2006 Canonical Ltd. All rights reserved.
 
+__metaclass__ = type
+
 __all__ = [
     'validate_url',
     'valid_http_url',
@@ -24,7 +26,6 @@ from textwrap import dedent
 from StringIO import StringIO
 
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import WidgetsError
 
@@ -37,6 +38,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 from canonical.lp.dbschema import MirrorPulseType
+from canonical.launchpad.interfaces import NotFoundError
 
 #XXX matsubara 2006-03-15: The validations functions that deals with URLs
 # should be in validators/ and we should have them as separete constraints in

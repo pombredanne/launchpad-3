@@ -34,7 +34,7 @@
         class="canonical.launchpad.browser.TranslationGroupView"
         permission="zope.Public">
         <browser:page
-            template="../templates/translationgroup.pt"
+            template="../templates/translationgroup-index.pt"
             name="+index"
             lp:url="/rosetta/groups/$TranslationGroup.name/+index" />
         <!-- TranslationGroup portlets -->
@@ -73,7 +73,7 @@
         permission="launchpad.Edit"
         content_factory="canonical.launchpad.database.Translator"
         class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/translationgroup-appoint.pt"
         lp:url="/rosetta/groups/$TranslationGroup.name/+appoint">
         <browser:widget
             field="translationgroup"
@@ -116,7 +116,7 @@
         facet="translations"
         permission="zope.Public">
         <browser:page
-            template="../templates/translationgroups.pt"
+            template="../templates/translationgroups-index.pt"
             name="+index"
             lp:url="/rosetta/groups/+index" />
     </browser:pages>

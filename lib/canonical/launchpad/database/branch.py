@@ -5,7 +5,6 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 import os.path
 import re
-from urlparse import urljoin
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -19,16 +18,15 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.interfaces import (IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.revision import Revision, RevisionNumber
+from canonical.launchpad.database.revision import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
@@ -41,6 +39,7 @@ class Branch(SQLBase):
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
+    mirror_status_message = StringCol(default=None)
     started_at = ForeignKey(
         dbName='started_at', foreignKey='RevisionNumber', default=None)
 
@@ -93,33 +92,62 @@ class Branch(SQLBase):
 
     @property
     def related_bugs(self):
+        """See IBranch."""
         return [bug_branch.bug for bug_branch in self.bug_branches]
 
     @property
+    def warehouse_url(self):
+        """See IBranch."""
+        root = config.supermirror.warehouse_root_url
+        return "%s%08x" % (root, self.id)
+
+    @property
     def product_name(self):
+        """See IBranch."""
         if self.product is None:
             return '+junk'
         return self.product.name
 
     @property
     def unique_name(self):
+        """See IBranch."""
         return u'~%s/%s/%s' % (self.owner.name, self.product_name, self.name)
 
     @property
     def displayname(self):
+        """See IBranch."""
         if self.title:
             return self.title
         else:
             return self.unique_name
 
+    @property
+    def sort_key(self):
+        """See IBranch."""
+        if self.product is None:
+            product = None
+        else:
+            product = self.product.name
+        if self.author is None:
+            author = None
+        else:
+            author = self.author.browsername
+        status = self.lifecycle_status.sortkey
+        name = self.name
+        owner = self.owner.name
+        return (product, status, author, name, owner)
+
     def revision_count(self):
+        """See IBranch."""
         return RevisionNumber.selectBy(branchID=self.id).count()
 
     def latest_revisions(self, quantity=10):
+        """See IBranch."""
         return RevisionNumber.selectBy(
             branchID=self.id, orderBy='-sequence').limit(quantity)
 
     def revisions_since(self, timestamp):
+        """See IBranch."""
         return RevisionNumber.select(
             'Revision.id=RevisionNumber.revision AND '
             'RevisionNumber.branch = %d AND '
@@ -158,6 +186,7 @@ class Branch(SQLBase):
 
     @property
     def pull_url(self):
+        """See IBranch."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         if self.url is not None:
             # This is a pull branch, hosted externally.
@@ -166,7 +195,7 @@ class Branch(SQLBase):
             # This is an import branch, imported into bzr from another RCS
             # system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
-            return urljoin(prefix, '%08x' % (self.id,))
+            return urlappend(prefix, '%08x' % (self.id,))
         else:
             # This is a push branch, hosted on the supermirror (pushed there by
             # users via SFTP).
@@ -186,16 +215,22 @@ class BranchSet:
             raise NotFoundError(branch_id)
         return branch
 
+    def __iter__(self):
+        """See IBranchSet."""
+        return iter(Branch.select())
+
+    @property
+    def all(self):
+        branches = Branch.select()
+        branches.prejoin(['author', 'product'])
+        return branches
+
     def get(self, branch_id, default=None):
         """See IBranchSet."""
         try:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
             return default
-
-    def __iter__(self):
-        """See IBranchSet."""
-        return iter(Branch.select())
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
@@ -224,8 +259,6 @@ class BranchSet:
     def getByUniqueName(self, unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name."""
         # import locally to avoid circular imports
-        from canonical.launchpad.database.person import Person
-        from canonical.launchpad.database.product import Product
         match = re.match('^~([^/]+)/([^/]+)/([^/]+)$', unique_name)
         if match is None:
             return default

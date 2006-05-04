@@ -15,7 +15,8 @@ from sqlobject.sqlbuilder import AND, IN, NOT
 
 from canonical.launchpad.interfaces import ISprint, ISprintSet
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, sqlvalues, flush_database_updates)
 from canonical.database.constants import DEFAULT 
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -24,7 +25,8 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
 from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationStatus)
+    SprintSpecificationStatus, SpecificationStatus, SpecificationFilter,
+    SpecificationSort)
 
 
 class Sprint(SQLBase):
@@ -36,7 +38,7 @@ class Sprint(SQLBase):
 
     # db field names
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    name = StringCol(notNull=True)
+    name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     home_page = StringCol(notNull=False, default=None)
@@ -46,46 +48,124 @@ class Sprint(SQLBase):
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
 
+    # attributes
+
+    # we want to use this with templates that can assume a displayname,
+    # because in many ways a sprint behaves just like a project or a
+    # product - it has specs
+    @property
+    def displayname(self):
+        return self.title
+
     # useful joins
     attendees = RelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',
         intermediateTable='SprintAttendance', orderBy='name')
 
-    # IHasSpecifications (with twist)
-    def specifications(self, quantity=None):
+    def spec_filter_clause(self, filter=None):
+        """Figure out the appropriate query for specifications on a sprint.
+
+        We separate out the query generation from the normal
+        specifications() method because we want to reuse this query in the
+        specificationLinks() method.
+        """
+
+        # eliminate mutables
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a sprint is to show everything approved
+            filter = [SpecificationFilter.ACCEPTED]
+
+        # figure out what set of specifications we are interested in. for
+        # sprint, we need to be able to filter on the basis of:
+        #
+        #  - completeness.
+        #  - acceptance for sprint agenda.
+        #  - informational.
+        #
+        base = """SprintSpecification.sprint = %d AND
+                  SprintSpecification.specification = Specification.id
+                  """ % self.id
+        query = base
+
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
-        # XXX: 20051221 jamesh
-        # the Specification.status check is duplicates the logic of
-        # spec.is_incomplete().  We do this so we can return an
-        # SelectResults object like other
-        # IHasSpecifications.specifications() methods.
-        return Specification.select(AND(
-            Specification.q.id == SprintSpecification.q.specificationID,
-            NOT(IN(Specification.q.status, [
-                SpecificationStatus.INFORMATIONAL,
-                SpecificationStatus.OBSOLETE,
-                SpecificationStatus.SUPERSEDED,
-            ])),
-            SprintSpecification.q.status == SprintSpecificationStatus.CONFIRMED,
-            SprintSpecification.q.sprintID == self.id),
-            clauseTables=['SprintSpecification'],
-            orderBy=['-priority', 'status', 'name', 'id'],
-            limit=quantity)
+
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # look for specs that have a particular SprintSpecification
+        # status (proposed, accepted or declined)
+        if SpecificationFilter.ACCEPTED in filter:
+            query += ' AND SprintSpecification.status = %d' % (
+                SprintSpecificationStatus.ACCEPTED.value)
+        elif SpecificationFilter.PROPOSED in filter:
+            query += ' AND SprintSpecification.status = %d' % (
+                SprintSpecificationStatus.PROPOSED.value)
+        elif SpecificationFilter.DECLINED in filter:
+            query += ' AND SprintSpecification.status = %d' % (
+                SprintSpecificationStatus.DECLINED.value)
+        
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        return query
 
     @property
-    def attendances(self):
-        ret = SprintAttendance.selectBy(sprintID=self.id)
-        return sorted(ret, key=lambda a: a.attendee.name)
+    def has_any_specifications(self):
+        """See IHasSpecifications."""
+        return self.all_specifications.count()
 
-    def specificationLinks(self, status=None):
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        query = self.spec_filter_clause(filter=filter)
+
+        # import here to avoid circular deps
+        from canonical.launchpad.database.specification import Specification
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity,
+            clauseTables=['SprintSpecification'])
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
+
+    def specificationLinks(self, sort=None, quantity=None, filter=None):
         """See ISprint."""
-        query = 'sprint=%s' % sqlvalues(self.id)
-        if status is not None:
-            query += ' AND status=%s' % sqlvalues(status)
-        sprintspecs = SprintSpecification.select(query)
-        return sorted(sprintspecs, key=lambda a: a.specification.priority,
-            reverse=True)
+        
+        query = self.spec_filter_clause(filter=filter)
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
+        results = SprintSpecification.select(query,
+            clauseTables=['Specification'], orderBy=order, limit=quantity)
+        results.prejoin(['specification'])
+        return results
 
     def getSpecificationLink(self, speclink_id):
         """See ISprint.
@@ -98,6 +178,34 @@ class Sprint(SQLBase):
         speclink = SprintSpecification.get(speclink_id)
         assert (speclink.sprint.id == self.id)
         return speclink
+
+    def acceptSpecificationLinks(self, idlist):
+        """See ISprintSpecification."""
+        for sprintspec in idlist:
+            speclink = self.getSpecificationLink(sprintspec)
+            speclink.status = SprintSpecificationStatus.ACCEPTED
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
+
+    def declineSpecificationLinks(self, idlist):
+        """See ISprintSpecification."""
+        for sprintspec in idlist:
+            speclink = self.getSpecificationLink(sprintspec)
+            speclink.status = SprintSpecificationStatus.DECLINED
+
+        # we need to flush all the changes we have made to disk, then try
+        # the query again to see if we have any specs remaining in this
+        # queue
+        flush_database_updates()
+
+        return self.specifications(
+                        filter=[SpecificationFilter.PROPOSED]).count()
 
     # attendance
     def attend(self, person, time_starts, time_ends):
@@ -118,6 +226,12 @@ class Sprint(SQLBase):
             if attendance.attendee.id == person.id:
                 attendance.destroySelf()
                 return
+
+    @property
+    def attendances(self):
+        ret = SprintAttendance.selectBy(sprintID=self.id)
+        ret.prejoin(['attendee'])
+        return sorted(ret, key=lambda a: a.attendee.name)
 
     # linking to specifications
     def linkSpecification(self, spec):

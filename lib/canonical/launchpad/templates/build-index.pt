@@ -1,9 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1 tal:content="context/title">PPC build of Foopy 1.1 in Fooix 2006</h1>
+    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -15,8 +18,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-  <h1>Build summary</h1>
 
       <table>
         <tbody>
@@ -68,7 +69,20 @@
           <tr>
             <th>Build machine:</th>
             <td tal:condition="not:context/builder">
-              <i>unknown</i>
+              <tal:has_build_queue condition="context/buildqueue_record">
+                <tal:builder define="builder context/buildqueue_record/builder">
+                 <tal:has_builder condition="builder">
+                   <a tal:content="builder/title"
+                      tal:attributes="href builder/fmt:url">BUILDER</a>
+                 </tal:has_builder>
+                 <tal:has_no_builder condition="not: builder">
+                   <i>unknown</i>
+                 </tal:has_no_builder>
+                </tal:builder>
+              </tal:has_build_queue>
+              <tal:does_not_have_build_queue condition="not: context/buildqueue_record">
+                <i>unknown</i>
+              </tal:does_not_have_build_queue>
             </td>
             <td tal:condition="context/builder">
 	    <a tal:content="context/builder/title"

@@ -12,11 +12,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 from zope.schema import Choice, TextLine, Text, Bool
 
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import name_validator
@@ -75,9 +73,8 @@ class IBuilder(IHasOwner):
                    )
 
     manual = Bool(title=_('Manual Mode'), required=False,
-                   description=_('Whether not the builder is MANUAL MODE. '
-                                 'Auto Build System does not dispach jobs '
-                                 'automatically for slaves in that state')
+                   description=_('The auto-build system does not dispatch jobs '
+                                 'automatically for slaves in manual mode.')
                    )
 
     builderok = Bool(title=_('Builder State OK'), required=False,

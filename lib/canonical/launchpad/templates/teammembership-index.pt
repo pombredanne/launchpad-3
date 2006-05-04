@@ -23,7 +23,11 @@
       <th>Comment:</th>
       <td><textarea cols="40" name="comment" 
                     tal:content="request/comment|context/reviewercomment|nothing">
-          </textarea></td>
+                </textarea>
+          <div class="formHelp">This comment will be sent together with the
+            notification of this change to all team administrators and this
+            member.</div>
+      </td>
     </tr>
   </metal:macro>
   <metal:macro define-macro="expiry-radios">
@@ -89,7 +93,7 @@
 
           <tr>
             <th>Subscription expires:</th>
-            <td tal:condition="view/canChangeExpirationDate">
+            <td tal:condition="view/canChangeExpirationDate" style="white-space: nowrap">
               <metal:radios use-macro="template/macros/expiry-radios" />
               <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
             </td>

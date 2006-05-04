@@ -51,20 +51,10 @@
               tal:content="view/sourcepackagename_widget/label"
             >Source package name</label>
           </td>
-          <td>
-            <label
-              tal:attributes="for view/binarypackagename_widget/name"
-              tal:content="view/binarypackagename_widget/label"
-            >Binary package name</label>
-          </td>
         </tr>
         <tr>
           <td
             tal:content="structure view/sourcepackagename_widget"
-            style="white-space: nowrap;"
-          />
-          <td
-            tal:content="structure view/binarypackagename_widget"
             style="white-space: nowrap;"
           />
         </tr>

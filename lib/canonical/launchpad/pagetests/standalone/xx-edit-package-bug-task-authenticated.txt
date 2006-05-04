@@ -17,16 +17,11 @@ Any authenticated user can edit a source package bug task.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1316
   ... Content-Type: multipart/form-data; boundary=---------------------------89019536856698512711194452
-  ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
   ... 
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
   ... mozilla-firefox
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.binarypackagename"
-  ... 
-  ... 
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.status"
   ... 
@@ -58,7 +53,7 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Change
+  ... Save Changes
   ... -----------------------------89019536856698512711194452--
   ... """)
   HTTP/1.1 303 See Other
@@ -79,16 +74,11 @@ Any authenticated user can edit a source package bug task.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1346
   ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
-  ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
   ... 
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
   ... mozilla-firefox
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.binarypackagename"
-  ... 
-  ... 
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.status"
   ... 
@@ -120,13 +110,13 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Change
+  ... Save Changes
   ... -----------------------------16131040782095479517127443199--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: 0
   ...
-  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1
+  Location: http://.../distros/ubuntu/+source/mozilla-firefox/+bug/1...
+  <BLANKLINE>
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1

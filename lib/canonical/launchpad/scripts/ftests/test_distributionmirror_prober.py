@@ -12,7 +12,6 @@ from unittest import TestCase, TestLoader
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase as TwistedTestCase
 from twisted.web import server
 
 from sqlobject import SQLObjectNotFound
@@ -24,11 +23,13 @@ from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, ProberTimeout, MirrorProberCallbacks,
     BadResponseCode)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
+from canonical.functional import ZopelessLayer
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -99,6 +100,7 @@ class TestDistributionMirrorProber(TwistedTestCase):
 
 
 class TestDistributionMirrorProberCallbacks(TestCase):
+    layer = ZopelessLayer
 
     def setUp(self):
         LaunchpadTestSetup().setUp()

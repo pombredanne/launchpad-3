@@ -33,29 +33,29 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <allow attributes="id bug bugID target" />
+        <allow attributes="id bug bugID target date_assigned datecreated
+                           date_confirmed date_inprogress date_closed" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
                         distrorelease milestone status statusexplanation
-                        priority severity assignee binarypackagename
-                        bugwatch dateassigned datecreated age owner
-                        targetname title related_tasks statusdisplayhtml
-                        statuselsewhere asEmailHeaderValue
-                        bugtask_branches" />
+                        priority severity assignee bugwatch age owner targetname
+                        title related_tasks statusdisplayhtml statuselsewhere
+                        asEmailHeaderValue
+                        target_uses_malone bugtask_branches" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setSeverityFromDebbugs
-                        updateTargetNameCache" />
+                        updateTargetNameCache transitionToStatus
+                        transitionToAssignee" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
-                            distrorelease milestone status statusexplanation
-                            priority severity assignee binarypackagename
-                            bugwatch dateassigned datecreated age owner
-                            targetname title related_tasks statusdisplayhtml
-                            statuselsewhere setStatusFromDebbugs
-                            setSeverityFromDebbugs" />
+                            distrorelease milestone statusexplanation
+                            priority severity bugwatch datecreated
+                            age owner targetname title related_tasks
+                            statusdisplayhtml statuselsewhere
+                            setStatusFromDebbugs setSeverityFromDebbugs" />
     </content>
 
     <browser:defaultView
@@ -158,7 +158,6 @@
         for="canonical.launchpad.interfaces.IBugTask"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        label="Edit bug description"
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
         fields="title description name"
@@ -174,10 +173,10 @@
         for="canonical.launchpad.interfaces.IBugTask"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        label="Set bug visibility"
+        label="Bug visibility and security"
         permission="launchpad.Edit"
         template="../templates/bug-secrecy.pt"
-        fields="private"
+        fields="private security_related"
         lp:url="malone/bugs/$Bug.id/+secrecy">
     </browser:editform>
 
@@ -233,7 +232,6 @@
         schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugAttachmentAddView"
-        label="Add an attachment"
         fields="filecontent patch title comment"
         keyword_arguments="patch filecontent title comment"
         permission="launchpad.AnyPerson"
@@ -264,7 +262,6 @@
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugExtRefAddView"
-        label="Add Web link"
         fields="url title"
         arguments=""
         keyword_arguments="url title"
@@ -282,7 +279,6 @@
         schema="canonical.launchpad.interfaces.IBugWatch"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugWatchAddView"
-        label="Add watch"
         fields="bugtracker remotebug"
         arguments=""
         keyword_arguments="bugtracker remotebug"
@@ -360,8 +356,8 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status priority severity assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
@@ -380,8 +376,8 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status priority severity assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt"
@@ -412,8 +408,8 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status priority severity assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
@@ -432,8 +428,8 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename milestone status priority severity assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt"
@@ -489,7 +485,6 @@
       for="canonical.launchpad.interfaces.IBugTask"
       schema="canonical.launchpad.interfaces.IBugSubscription"
       class="canonical.launchpad.browser.BugSubscriptionAddView"
-      label="Subscribe someone else to the bug report"
       fields="person"
       keyword_arguments="person"
       permission="launchpad.AnyPerson"
