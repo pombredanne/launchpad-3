@@ -5,17 +5,16 @@
 __metaclass__ = type
 
 from difflib import unified_diff
-import itertools
 import re
-import sets
 import textwrap
 
+from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
-    IUpstreamBugTask)
+    IUpstreamBugTask, ITeamMembershipSet)
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -124,24 +123,33 @@ def update_bug_contact_subscriptions(modified_bugtask, event):
     if bugtask_after_modification.bug.private:
         return
 
+    is_upstream_task = IUpstreamBugTask.providedBy(modified_bugtask)
+    is_distro_task = IDistroBugTask.providedBy(modified_bugtask)
+    is_distrorelease_task = IDistroReleaseBugTask.providedBy(modified_bugtask)
+
     # Calculate the list of new bug contacts, if any.
     new_bugcontacts = []
-    if IUpstreamBugTask.providedBy(modified_bugtask):
+    if is_upstream_task:
         if (bugtask_before_modification.product !=
             bugtask_after_modification.product):
             if bugtask_after_modification.product.bugcontact:
                 new_bugcontacts.append(
                     bugtask_after_modification.product.bugcontact)
-    elif (IDistroBugTask.providedBy(modified_bugtask) or
-          IDistroReleaseBugTask.providedBy(modified_bugtask)):
+    elif is_distro_task or is_distrorelease_task:
         if bugtask_after_modification.sourcepackagename is None:
             # No new bug contacts to be subscribed.
             return
-        if (bugtask_before_modification.sourcepackagename !=
-            bugtask_after_modification.sourcepackagename):
-            new_sourcepackage = (
-                bugtask_after_modification.distribution.getSourcePackage(
-                bugtask_after_modification.sourcepackagename.name))
+
+        old_sp_name = bugtask_before_modification.sourcepackagename
+        new_sp_name = bugtask_after_modification.sourcepackagename
+        if old_sp_name != new_sp_name:
+            if is_distro_task:
+                distribution = bugtask_after_modification.distribution
+            else:
+                distribution = (
+                    bugtask_after_modification.distrorelease.distribution)
+            new_sourcepackage = (distribution.getSourcePackage(new_sp_name))
+
             for package_bug_contact in new_sourcepackage.bugcontacts:
                 new_bugcontacts.append(package_bug_contact.bugcontact)
 
@@ -408,8 +416,8 @@ def get_bug_edit_notification_texts(bug_delta):
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("binarypackagename", "name"), ("severity", "title"),
-                ("priority", "title"), ("bugwatch", "title")):
+                ("severity", "title"), ("priority", "title"),
+                ("bugwatch", "title")):
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -587,8 +595,7 @@ def add_bug_duplicate_notification(duplicate_bug, user):
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
 
-    Appends people CC'd on the dup target as well, if this bug is a
-    duplicate.
+    This also includes global subscribers, like the IRC bot.
     """
     subscriptions = []
     if not bug.private:
@@ -651,10 +658,6 @@ def get_task_delta(old_task, new_task):
             changes["sourcepackagename"] = {}
             changes["sourcepackagename"]["old"] = old_task.sourcepackagename
             changes["sourcepackagename"]["new"] = new_task.sourcepackagename
-        if old_task.binarypackagename != new_task.binarypackagename:
-            changes["binarypackagename"] = {}
-            changes["binarypackagename"]["old"] = old_task.binarypackagename
-            changes["binarypackagename"]["new"] = new_task.binarypackagename
     else:
         raise TypeError(
             "Can't calculate delta on bug tasks of incompatible types: "
@@ -888,21 +891,18 @@ def notify_join_request(event):
 
     user = event.user
     team = event.team
-    to_addrs = sets.Set()
-    for person in itertools.chain(team.administrators, [team.teamowner]):
-        to_addrs.update(contactEmailAddresses(person))
-
-    if to_addrs:
-        url = '%s/+member/%s' % (canonical_url(team), user.name)
-        replacements = {'browsername': user.browsername,
-                        'name': user.name,
-                        'teamname': team.browsername,
-                        'url': url}
-        template = get_email_template('pending-membership-approval.txt')
-        msg = template % replacements
-        fromaddress = "Launchpad <noreply@ubuntu.com>"
-        subject = "Launchpad: New member awaiting approval."
-        simple_sendmail(fromaddress, to_addrs, subject, msg)
+    tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
+    assert tm is not None
+    to_addrs = team.getTeamAdminsEmailAddresses()
+    replacements = {'browsername': user.browsername,
+                    'name': user.name,
+                    'teamname': team.browsername,
+                    'url': canonical_url(tm)}
+    msg = get_email_template('pending-membership-approval.txt') % replacements
+    subject = "Launchpad: New %s member awaiting approval." % team.name
+    from_addr = config.noreply_from_address
+    headers = {"Reply-To": user.preferredemail.email}
+    simple_sendmail(from_addr, to_addrs, subject, msg, headers=headers)
 
 
 def send_ticket_notification(ticket_event, subject, body):

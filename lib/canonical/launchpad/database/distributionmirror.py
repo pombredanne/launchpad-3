@@ -105,7 +105,8 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         self.enabled = False
         template = get_email_template('notify-mirror-owner.txt')
-        fromaddress = "Launchpad Mirror Prober <noreply@launchpad.net>"
+        fromaddress = format_address(
+            "Launchpad Mirror Prober", config.noreply_from_address)
 
         replacements = {'distro': self.distribution.title,
                         'mirror_name': self.name}
@@ -308,9 +309,11 @@ class _MirrorReleaseMixIn:
                 # This should not happen when running on production because
                 # the publishing records are correctly filled. But that's not
                 # true when it comes to our sampledata.
-                config_options = config.distributionmirrorprober
-                if config_options.warn_about_no_published_uploads:
-                    warnings.warn(self._no_published_uploads_msg)
+                # XXX: This will actually happen in production, and when it
+                # happens it's probably not a good idea to return an empty
+                # dictionary, as this will in fact make this mirror's status
+                # be UNKNOWN when it's actually UPTODATE.
+                # -- Guilherme Salgado, 2006-04-27
                 return {}
 
             url = self._getPackageReleaseURLFromPublishingRecord(

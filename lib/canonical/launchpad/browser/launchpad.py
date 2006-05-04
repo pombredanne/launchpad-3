@@ -10,36 +10,35 @@ __all__ = [
     'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
-    'FOAFApplicationNavigation',
-    'MaloneApplicationNavigation'
+    'MaloneApplicationNavigation',
+    'SoftTimeoutView',
     ]
 
 import cgi
 import urllib
 import os.path
+import time
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 import canonical.launchpad.layers
+from canonical.config import config
+from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadRoot, IRosettaApplication,
     IMaloneApplication, IProductSet, IShipItApplication, IPersonSet,
     IDistributionSet, ISourcePackageNameSet, IBinaryPackageNameSet,
     IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
-    IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
-    IRegistryApplication, IRosettaApplication, ISpecificationSet,
-    ISprintSet, ITicketSet, IFOAFApplication, IBuilderSet, IBountySet,
-    IBugSet, IBugTrackerSet, ICveSet, IProduct, IProductSeries,
-    IMilestone, IDistribution, IDistroRelease, IDistroArchRelease,
-    IDistributionSourcePackage, ISourcePackage,
-    IDistroArchReleaseBinaryPackage, IDistroReleaseBinaryPackage,
-    IPerson, IProject, ISprint)
+    IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
+    ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
+    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto, canonical_url)
+    stepto)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -251,7 +250,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'branches', 'calendar']
 
     def overview(self):
         target = ''
@@ -284,6 +283,12 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = 'bounties'
         text = 'Bounties'
         summary = 'The Launchpad Universal Bounty Tracker'
+        return Link(target, text, summary)
+
+    def branches(self):
+        target = 'bazaar'
+        text = 'Branches'
+        summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
     def calendar(self):
@@ -428,7 +433,6 @@ class LaunchpadRootNavigation(Navigation):
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
         'support': ITicketSet,
-        'foaf': IFOAFApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
         }
@@ -445,16 +449,28 @@ class LaunchpadRootNavigation(Navigation):
         return MergedCalendar()
 
 
-class FOAFApplicationNavigation(Navigation):
+class SoftTimeoutView(LaunchpadView):
 
-    usedfor = IFOAFApplication
+    def __call__(self):
+        """Generate a soft timeout by sleeping enough time."""
+        start_time = time.time()
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (self.user is None or
+            not self.user.inTeam(celebrities.launchpad_developers)):
+            raise Unauthorized
 
-    @stepto('projects')
-    def projects(self):
-        # DEPRECATED
-        return getUtility(IProjectSet)
+        self.request.response.setHeader('content-type', 'text/plain')
+        soft_timeout = intOrZero(config.launchpad.soft_request_timeout)
+        if soft_timeout == 0:
+            return 'No soft timeout threshold is set.'
 
-    @stepto('people')
-    def people(self):
-        # DEPRECATED
-        return getUtility(IPersonSet)
+        time.sleep(soft_timeout/1000.0)
+        time_to_generate_page = (time.time() - start_time) * 1000
+        # In case we didn't sleep enogh time, sleep a while longer to
+        # pass the soft timeout threshold.
+        while time_to_generate_page < soft_timeout:
+            time.sleep(0.1)
+            time_to_generate_page = (time.time() - start_time) * 1000
+        return (
+            'Soft timeout threshold is set to %s ms. This page took'
+            ' %s ms to render.' % (soft_timeout, time_to_generate_page))

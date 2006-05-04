@@ -137,6 +137,13 @@ class IBug(IMessageTarget):
         addresses.
         """
 
+    def getSubscribersFromDuplicates():
+        """Return the list of IPersons subscribed to this bug from duplicates.
+
+        This list is restricted to only users that are not already subscribed to
+        this bug directly.
+        """
+
     def addChangeNotification(text, person):
         """Add a bug change notification."""
 
@@ -270,9 +277,9 @@ class IBugSet(Interface):
         given bug tracker and remote bug id."""
 
     def createBug(self, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, datecreated=None,
-        title=None, security_related=False, private=False, owner=None):
+                  binarypackagename=None, product=None, comment=None,
+                  description=None, msg=None, datecreated=None, title=None,
+                  security_related=False, private=False, owner=None):
         """Create a bug and return it.
 
         Things to note when using this factory:
@@ -291,5 +298,8 @@ class IBugSet(Interface):
 
           * if either product or distribution is specified, an appropiate
             bug task will be created
+
+          * binarypackagename, if not None, will be added to the bug's
+            description
         """
 
