@@ -2,9 +2,9 @@ from zope.schema import Password, Text, TextLine, Field
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField
 from zope.interface import implements
 
-import canonical.encoding
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces.validation import valid_password
 
 
 # Field Interfaces
@@ -73,7 +73,7 @@ class PasswordField(Password):
     implements(IPasswordField)
 
     def _validate(self, value):
-        if not canonical.encoding.is_basic_http_safe_ascii(value):
+        if not valid_password(value):
             raise LaunchpadValidationError(_(
                 "The password provided contains non-ASCII characters."))
 

@@ -3,14 +3,12 @@
 
 __metaclass__ = type
 import re
-import base64
 import codecs
 import unicodedata
-from warnings import warn
 from htmlentitydefs import codepoint2name
 from cStringIO import StringIO
 
-__all__ = ['guess', 'ascii_smash', 'is_basic_http_safe_ascii']
+__all__ = ['guess', 'ascii_smash']
 
 _boms = [
     (codecs.BOM_UTF16_BE, 'utf_16_be'),
@@ -374,44 +372,3 @@ def ascii_char_smash(char):
     return ""
 
 
-def is_basic_http_safe_ascii(str_or_unicode):
-    """Return True if the argument is basic http safe ascii otherwise return
-    False.
-
-    Accept string or unicode object and check if it's valid for use
-    in HTTP Basic authentication.
-
-    str object that contains only ascii characters
-    >>> is_basic_http_safe_ascii("All ascii string")
-    True
-
-    str object that contains some non-ascii character (value > 127)
-    >>> is_basic_http_safe_ascii("String with some no-ascii" + chr(195))
-    True
-
-    unicode object that contains only ascii characters
-    >>> is_basic_http_safe_ascii(u"Unicode with all ascii")
-    True
-
-    unicode with some 127 > value >= 255 character
-    >>> is_basic_http_safe_ascii(u"Unicode" + unichr(200))
-    False
-
-    unicode with some value > 255 character
-    >>> is_basic_http_safe_ascii(u"Unicode" + unichr(300))
-    False
-
-    empty str object
-    >>> is_basic_http_safe_ascii("")
-    True
-
-    empty unicode object
-    >>> is_basic_http_safe_ascii(u"")
-    True 
-
-    """
-    try:
-        base64.encodestring(str_or_unicode)
-    except UnicodeEncodeError:
-        return False
-    return True

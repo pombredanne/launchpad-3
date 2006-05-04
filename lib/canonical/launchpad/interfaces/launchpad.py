@@ -216,8 +216,8 @@ class IPasswordEncryptor(Interface):
     def encrypt(plaintext):
         """Return the encrypted value of plaintext.
 
-        The 'plaintext' must contain only the subset of ascii characters
-        valid in basic HTTP authentication.
+        The 'plaintext' must be unicode and contain only the subset of ascii 
+        characters valid in basic HTTP authentication.
         """
 
     def validate(plaintext, encrypted):

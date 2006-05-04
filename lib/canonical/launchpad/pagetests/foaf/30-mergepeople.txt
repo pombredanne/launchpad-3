@@ -307,7 +307,6 @@
   >>> token = re.sub(r'.*token/', '', link)
   >>> token_base_path = '/token/%s' % token
 
-  XXX 2006-04-27 matsubara: Why is this commented out?
 
   ##>>> new_transaction()
   ##>>> from canonical.launchpad.database import LoginTokenSet
