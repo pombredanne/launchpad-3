@@ -265,12 +265,12 @@ class XMLRPCPublicationRequestFactory:
         LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
         self._xmlrpc = LaunchpadXMLRPCPublication(db)
 
-    def __call__(self, input_stream, env, output_steam=None):
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
         if method in ['POST']:
-            request = LaunchpadXMLRPCRequest(input_stream, output_steam, env)
+            request = LaunchpadXMLRPCRequest(input_stream, env)
             request.setPublication(self._xmlrpc)
         else:
             raise NotImplementedError()
