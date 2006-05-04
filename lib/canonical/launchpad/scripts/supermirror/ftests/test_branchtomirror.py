@@ -1,12 +1,18 @@
+import httplib
 import os
 import shutil
-import sys
+import socket
 import tempfile
 import unittest
+import urllib2
 
 import bzrlib.branch
+import bzrlib.errors
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.weave import Weave
+from bzrlib.errors import (
+    BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
+    NotBranchError)
 
 import transaction
 from canonical.launchpad import database
@@ -80,12 +86,12 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         TestCaseInTempDir.TEST_ROOT = None
 
     def testMissingSourceWhines(self):
-        non_existant_branch = "/nonsensedir"
+        non_existant_branch = "nonsensedir"
         client = BranchStatusClient()
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1)
         mybranch = BranchToMirror(
-            non_existant_branch, "/anothernonsensedir", client, 1)
+            non_existant_branch, "anothernonsensedir", client, 1)
         mybranch.mirror()
         transaction.abort()
         branch = database.Branch.get(1)
@@ -122,6 +128,94 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
                 "Bug 39884 appears to be fixed. Close and remove this assert"
                 )
 
+
+
+class TestErrorHandling(unittest.TestCase):
+
+    def setUp(self):
+        self.errors = []
+        client = BranchStatusClient()
+        self.branch = BranchToMirror('foo', 'bar', client, 1)
+        # Stub out everything that we don't need to test
+        client.startMirroring = lambda branch_id: None
+        self.branch._mirrorFailed = lambda err, m=None: self.errors.append(err)
+        self.branch._openSourceBranch = lambda: None
+        self.branch._openDestBranch = lambda: None
+        self.branch._pullSourceToDest = lambda: None
+
+    def _runMirrorAndCheckError(self, expected_error):
+        self.branch.mirror()
+        self.assertEqual(len(self.errors), 1)
+        error = str(self.errors[0])
+        if not error.startswith(expected_error):
+            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
+
+    def testHTTPError(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise urllib2.HTTPError(
+                'http://something', httplib.UNAUTHORIZED, 
+                'Authorization Required', 'some headers',
+                open(tempfile.mkstemp()[1]))
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'Private branch; required authentication'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testSocketErrorHandling(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise socket.error('foo')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'A socket error occurred:'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testUnsupportedFormatErrorHandling(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'The supermirror does not support branches'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testUnknownFormatError(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise UnknownFormatError('Some junk')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'Unknown branch format:'
+        self._runMirrorAndCheckError(expected_msg)
+
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise UnknownFormatError(
+                'Loads of junk\n with two or more\n newlines.')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'Not a branch'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testParamikoNotPresent(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise ParamikoNotPresent('No module named paramiko')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'The supermirror does not support mirroring branches'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testNotBranchError(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise NotBranchError('/foo/baz/')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'Not a branch:'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testBzrErrorHandling(self):
+        self.errors = []
+        def stubOpenSourceBranch():
+            raise BzrError('A generig bzr error')
+        self.branch._openSourceBranch = stubOpenSourceBranch
+        expected_msg = 'A generig bzr error'
+        self._runMirrorAndCheckError(expected_msg)
 
 
 def test_suite():

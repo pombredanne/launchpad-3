@@ -119,8 +119,11 @@ class SFTPTestCase(BzrTestCase):
 
         os.environ['HOME'] = self.realHome
         self.authserver.tearDown()
-        LaunchpadZopelessTestSetup().tearDown()
+        # XXX spiv 2006-04-27: We need to do bzrlib's tear down first, because
+        # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
+        # handlers, causing it to blow up.  See bug #41697.
         super(SFTPTestCase, self).tearDown()
+        LaunchpadZopelessTestSetup().tearDown()
         sftp._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
         reset_logging()
