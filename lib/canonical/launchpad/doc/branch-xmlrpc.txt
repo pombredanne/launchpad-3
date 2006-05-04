@@ -78,19 +78,28 @@ well:
 
 If we give a product name that doesn't exist, we get an error:
 
+    >>> new_branch_url = 'http://foo.com/new_branch'
     >>> branchset_api.register_branch(
-    ...      other_branch_url, 'branch_name', 'branch_title',
+    ...      new_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'test@canonical.com', 'non-existing')
     <Fault 10: 'No such product: non-existing.'>
 
 If we get an email address which isn't registered in Launchpad:
 
+    >>> getUtility(IBranchSet).getByUrl(other_branch_url) is not None
+    True
     >>> branchset_api.register_branch(
-    ...      other_branch_url, 'branch_name', 'branch_title',
+    ...      new_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'non-existing@canonical.com', 'evolution')
     <Fault 20: 'No such email is registered in Launchpad:
      non-existing@canonical.com.'>
 
+If we try to register a branch which is already registered in Launchpad:
+
+    >>> branchset_api.register_branch(
+    ...      other_branch_url, 'branch_name', 'branch_title',
+    ...      'branch description', 'test@canonical.com', 'evolution')
+    <Fault 30: 'http://foo.com/other_branch is already registered.'>
 
 link_branch_to_bug(branch_url, bug_id, whiteboard)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

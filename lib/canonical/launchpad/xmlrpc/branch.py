@@ -44,6 +44,11 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         else:
             product = None
 
+        existing_branch = getUtility(IBranchSet).getByUrl(branch_url)
+        if existing_branch is not None:
+            return xmlrpclib.Fault(
+                30, "%s is already registered." % branch_url)
+
         if not branch_description:
             # We want it to be None in the database, not ''.
             branch_description = None
