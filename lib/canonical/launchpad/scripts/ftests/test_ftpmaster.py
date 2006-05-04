@@ -347,6 +347,32 @@ class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
         self.assertEqual(0, len(checker.source_binaries))
         self.log.read()
 
+    def test_initialize_unknown_suite(self):
+        """ArchiveCruftChecker should raise on an unknown suite."""
+        checker = ArchiveCruftChecker(
+            self.log, distribution_name='ubuntu', suite='misarable',
+            archive_path=self.archive_path)
+        self.assertRaises(
+            ArchiveCruftCheckerError, checker.initialize)
+        self.log.read()
+
+    def test_initialize_unknown_distribution(self):
+        """ArchiveCruftChecker should raise on an unknown distribution."""
+        checker = ArchiveCruftChecker(
+            self.log, distribution_name='foobuntu', suite='breezy-autotest',
+            archive_path=self.archive_path)
+        self.assertRaises(
+            ArchiveCruftCheckerError, checker.initialize)
+        self.log.read()
+
+    def test_initialize_no_distro_in_archive(self):
+        """ArchiveCruftChecker should raise on the absence of distribution."""
+        checker = ArchiveCruftChecker(
+            self.log, distribution_name='ubuntu', suite='breezy-autotest',
+            archive_path=self.archive_path)
+        self.assertRaises(
+            ArchiveCruftCheckerError, checker.initialize)
+        self.log.read()
 
 
 def test_suite():
