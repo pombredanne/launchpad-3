@@ -141,7 +141,7 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None,
-        potemplate=None):
+        potemplate=None, pofile=None):
         """Return a new or updated entry of the import queue.
 
         :arg path: is the path, with the filename, of the file imported.
@@ -154,6 +154,7 @@ class ITranslationImportQueue(Interface):
         :arg distrorelease: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
+        :arg pofile: is the link of this import with an IPOFile.
 
         sourcepackagename + distrorelease and productseries are exclusive, we
         must have only one combination of them.
