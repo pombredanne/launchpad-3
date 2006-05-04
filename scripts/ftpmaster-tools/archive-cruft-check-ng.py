@@ -12,7 +12,7 @@ import sys
 
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.ftpmaster(
+from canonical.launchpad.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftChecker)
 from canonical.lp import initZopeless
 from contrib.glock import GlobalLock
@@ -29,7 +29,7 @@ def main():
     parser.add_option("-n", "--no-action", dest="action",
                       default=True, action="store_false",
                       help="don't do anything")
-    parser.add_option("-s", "--suite", dest="distrorelease",
+    parser.add_option("-s", "--suite", dest="suite",
                       help="only act on SUITE")
 
     (Options, args) = parser.parse_args()
@@ -44,8 +44,15 @@ def main():
     ztm = initZopeless(dbuser="lucille")
     execute_zcml_for_scripts()
 
+
+    if len(args) > 0:
+        archive_path = args[0]
+    else:
+        archive_path = None
+
     checker = ArchiveCruftChecker(Log, distribution_name=Options.distro,
-                                  suite=Options.suite)
+                                  suite=Options.suite,
+                                  archive_path=archive_path)
 
     try:
         checker.initialize()

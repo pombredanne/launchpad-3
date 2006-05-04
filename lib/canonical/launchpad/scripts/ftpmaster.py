@@ -277,15 +277,18 @@ class ArchiveCruftChecker:
         """ """
         # apt_pkg.ParseTagFile needs a real file handle and
         # can't handle a GzipFile instance...
+        if not os.path.exists(filename):
+            raise ArchiveCruftCheckerError(
+                "File does not exists:%s" % filename)
         temp_filename = secureTempFilename()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
         if (result != 0):
             raise ArchiveCruftCheckerError(
-                "Gunzip invocation failed!\n%s\n" % (output))
+                "Gunzip invocation failed!\n%s" % output)
         return temp_filename
 
-    def buildSources(self):
+    def processSources(self):
         """ """
         self.logger.debug("Considering Sources:")
         for component in self.components:
@@ -313,16 +316,16 @@ class ArchiveCruftChecker:
             sources.close()
             os.unlink(sources_filename)
 
-    def buildNBS(self):
-        """ """
+    def findNBS(self):
+        """Find out the group of 'not build from source' """
         # Checks based on the Packages files
-        self.logger.debug("Finding NBS:")
+        self.logger.debug("Finding not build from source (NBS):")
         for component in self.components_and_di:
             for architecture in self.architectures:
                 self.buildArchNBS(self, component, architecture)
 
 
-    def buildArchNBS(self, component, architecture):
+    def findArchNBS(self, component, architecture):
         """ """
         # XXX de-hardcode me harder
         filename = os.path.join(
@@ -363,15 +366,15 @@ class ArchiveCruftChecker:
         packages.close()
         os.unlink(packages_filename)
 
-    def buildASBA(self):
-        """ """
-        self.logger.debug("Finding ASBA:")
+    def findASBA(self):
+        """Find out the group or 'all superseded by any'."""
+        self.logger.debug("Finding all superseded by any (ASBA):")
         for component in self.components_and_di:
             for architecture in self.architectures:
-                self.buildArchASBA(component, architecture)
+                self.findArchASBA(component, architecture)
 
 
-    def buildArchASBA(self, component, architecture):
+    def findArchASBA(self, component, architecture):
         """ """
         filename = os.path.join(
             self.dist_archive,
@@ -475,11 +478,16 @@ class ArchiveCruftChecker:
 
     def initialize(self):
         """ """
-        try:
-            self.distro = getUtility(IDistributionSet)[self.distribution_name]
-        except NotFoundError:
-            raise ArchiveCruftCheckerError(
-                "Invalid distribution: '%s'" % self.distribution_name)
+
+        if self.distribution_name is None:
+            self.distro = getUtility(IDistributionSet)['ubuntu']
+        else:
+            try:
+                self.distro = getUtility(IDistributionSet)[
+                    self.distribution_name]
+            except NotFoundError:
+                raise ArchiveCruftCheckerError(
+                    "Invalid distribution: '%s'" % self.distribution_name)
 
         if not self.suite:
             self.distrorelease = self.distro.currentrelease
@@ -497,9 +505,9 @@ class ArchiveCruftChecker:
                 "Invalid archive path: '%s'" % self.archive_path)
 
         apt_pkg.init()
-        self.buildSources()
-        self.buildNBS()
-        self.buildASBA()
+        self.processSources()
+        self.findNBS()
+        self.findASBA()
         self.refineNBS()
         self.outputNBS()
 
