@@ -23,10 +23,10 @@
           <p>ShipIt lets you request Ubuntu 5.10 (Breezy Badger) CDs that will
           be posted to you free of charge.</p>
 
-          <p><strong>Unfortunately, we are currently not taking any requests for our
-          next release. So, if you would like to request Ubuntu 6.06 
-          (Dapper Drake) CDs, please check back with us again at the beginning
-          of May 2006.<strong></p>
+          <p><strong>Unfortunately, we are currently not taking any requests
+          for our next release. So, if you would like to request Ubuntu 6.06 
+          (Dapper Drake) CDs, please check back with us again around mid-May
+          2006.<strong></p>
 
           <p
             tal:condition="view/announcement|nothing"
