@@ -207,8 +207,9 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assigned_to
 
 
-#XXX: This should be tested.
 class BugTaskBugWatchWidget(RadioWidget):
+    """A widget for linking a bug watch to a bug task."""
+
     _messageNoValue = "None, the status of the bug is updated manually."
     _joinButtonToMessageTemplate = (
         u'<label style="font-weight: normal">%s&nbsp;%s</label>')
