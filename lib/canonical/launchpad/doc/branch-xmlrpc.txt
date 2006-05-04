@@ -99,7 +99,7 @@ If we try to register a branch which is already registered in Launchpad:
     >>> branchset_api.register_branch(
     ...      other_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'test@canonical.com', 'evolution')
-    <Fault 30: 'http://foo.com/other_branch is already registered.'>
+    <Fault 50: 'http://foo.com/other_branch is already registered.'>
 
 link_branch_to_bug(branch_url, bug_id, whiteboard)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
