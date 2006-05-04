@@ -71,21 +71,6 @@ class IShipItCountry(Interface):
                      vocabulary='CountryName')
 
 
-# XXX: This is crack. It's has exactly the same attributes as RequestedCDs
-class IntermediateShippingRequest:
-    """XXX """
-
-    # XXX: Do I need quantityapprovedXXX attributes here too?
-    def __init__(self, flavour, quantityx86, quantityamd64, quantityppc):
-        self.flavour = flavour
-        self.setQuantities(quantityx86, quantityamd64, quantityppc)
-
-    def setQuantities(self, quantityx86, quantityamd64, quantityppc):
-        self.quantityx86 = quantityx86
-        self.quantityamd64 = quantityamd64
-        self.quantityppc = quantityppc
-
-
 class IShippingRequest(Interface):
     """A shipping request."""
 
@@ -183,10 +168,6 @@ class IShippingRequest(Interface):
     totalapprovedCDs = Attribute(
         _('Total number of approved CDs in this request.'))
 
-    # XXX: Might be possible to get rid of this
-    def isStandardRequest():
-        """Return True if this is one of the Standard requests."""
-
     def isDenied():
         """Return True if this request was denied.
         
@@ -224,6 +205,19 @@ class IShippingRequest(Interface):
                      }
         """
 
+    def setApprovedQuantities(quantities):
+        """Set the approved quantities using the given values.
+
+        :quantities: must be a dictionary mapping flavours to architectures
+                     and quantities, i.e.
+                     {ShipItFlavour.UBUNTU:
+                        {ShipItArchitecture.X86: quantity1,
+                         ShipItArchitecture.PPC: quantity2}
+                     }
+
+        This method can be used only on approved requests.
+        """
+
     def highlightColour():
         """Return the colour to highlight this request if it's high priority.
 
@@ -236,7 +230,6 @@ class IShippingRequest(Interface):
     def isApproved():
         """Return True if this request was approved."""
 
-    # XXX: Might be possible to get rid of this
     def deny():
         """Deny this request."""
 
@@ -244,19 +237,6 @@ class IShippingRequest(Interface):
         """Mark this request as waiting for approval.
 
         This method should be used only on approved requests.
-        """
-
-    def setApprovedQuantities(quantities):
-        """Set the approved quantities using the given values.
-
-        :quantities: must be a dictionary mapping flavours to architectures
-                     and quantities, i.e.
-                     {ShipItFlavour.UBUNTU:
-                        {ShipItArchitecture.X86: quantity1,
-                         ShipItArchitecture.PPC: quantity2}
-                     }
-
-        This method can be used only on approved requests.
         """
 
     def approve(whoapproved=None):
