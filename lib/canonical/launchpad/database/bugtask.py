@@ -266,7 +266,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if assignee:
             assignee_html = (
-                '<img src="/@@/user.gif" /> '
+                '<img alt="" src="/@@/user.gif" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))

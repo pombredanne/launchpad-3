@@ -325,10 +325,14 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
 
         if not importance_title:
             return '<img alt="" src="/@@/bug" />'
-        elif importance_title == "untriaged":
-            return '<img alt="(untriaged)" title="Untriaged" src="/@@/bug-untriaged" />'
+        elif importance_title == "untriaged" or importance_title == "wishlist":
+            return '<img alt="(%s)" title="%s" src="/@@/bug-%s" />' \
+                % (importance_title, importance_title.capitalize(),
+                importance_title)
         else:
-            return '<img alt="(%s)" title="%s importance" src="/@@/bug-%s" />' % (importance_title, importance_title, importance_title)
+            return '<img alt="(%s)" title="%s importance" src="/@@/bug-%s" />' \
+                % (importance_title, importance_title.capitalize(),
+                importance_title)
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):
