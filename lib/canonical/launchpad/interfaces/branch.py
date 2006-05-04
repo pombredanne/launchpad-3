@@ -244,3 +244,4 @@ class IBranchSet(Interface):
 
     def get_supermirror_pull_queue():
         """Get a list of branches the supermirror should pull now."""
+

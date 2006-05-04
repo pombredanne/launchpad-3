@@ -13,14 +13,10 @@ register_branch(branch_url, branch_name, branch_title,
 Let's register a branch using register_branch(). First we make sure that
 there is no branch with the URL we are going to register.
 
-XXX: Branch URLs should be unique. David has a patch that will make
-     branch URLs unique, and add some other constraints.
-     -- Bjorn Tillenius, 2006-03-22
-
-    >>> from canonical.launchpad.database import Branch
+    >>> from canonical.launchpad.interfaces import IBranchSet
     >>> branch_url = 'http://foo.com/branch'
-    >>> Branch.selectBy(url=branch_url).count()
-    0
+    >>> getUtility(IBranchSet).getByUrl(branch_url) is None
+    True
 
 The only thing that we have to supply is the branch url The rest is
 optional, so we pass '' for the rest of the parameters. We use the
@@ -34,9 +30,7 @@ as Foo Bar.
 
 Now we can see that a branch got registered:
 
-    >>> Branch.selectBy(url=branch_url).count()
-    1
-    >>> new_branch = Branch.selectOneBy(url=branch_url)
+    >>> new_branch = getUtility(IBranchSet).getByUrl(branch_url)
 
 The author and owner got set to the authenticated person; Foo Bar.
 
@@ -68,10 +62,8 @@ well:
     ...      other_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'test@canonical.com', 'evolution')
     u'http://localhost:8086/people/name16/+branch/evolution/branch_name'
-    >>> Branch.selectBy(url=other_branch_url).count()
-    1
 
-    >>> new_branch = Branch.selectOneBy(url=other_branch_url)
+    >>> new_branch = getUtility(IBranchSet).getByUrl(other_branch_url)
     >>> print new_branch.owner.displayname
     Foo Bar
     >>> print new_branch.author.displayname
@@ -108,7 +100,7 @@ the branch we registered with bug 1. If the link is successful, the bug
 URL is returned.
 
     >>> branchset_api.link_branch_to_bug(other_branch_url, '1', '')
-    u'http://localhost:8086/malone/bugs/1'
+    u'http://localhost:8086/bugs/1'
 
 Let's take a look to see that the branch actually got linked to the bug:
 
@@ -124,7 +116,7 @@ We can set the whiteboard:
 
     >>> branchset_api.link_branch_to_bug(
     ...     branch_url, 1, "i'm working on it today.")
-    u'http://localhost:8086/malone/bugs/1'
+    u'http://localhost:8086/bugs/1'
     >>> for bug_branch in bug_one.bug_branches:
     ...     print "%s %s %s" % (
     ...         bug_branch.branch.url, bug_branch.status.title,
