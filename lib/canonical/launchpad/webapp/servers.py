@@ -265,7 +265,7 @@ class XMLRPCPublicationRequestFactory:
         LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
         self._xmlrpc = LaunchpadXMLRPCPublication(db)
 
-    def __call__(self, input_stream, output_steam, env):
+    def __call__(self, input_stream, env, output_steam=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
