@@ -126,7 +126,6 @@ class ResetPasswordView(BaseLoginTokenView, GeneralFormView):
 
     def validate(self, form_values):
         """Validate the email address."""
-
         email = form_values.get("email").strip()
         # All operations with email addresses must be case-insensitive. We
         # enforce that in EmailAddressSet, but here we only do a comparison,
@@ -512,7 +511,6 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
 
     def validate(self, form_values):
         """Verify if the email address is not used."""
-
         if getUtility(IEmailAddressSet).getByEmail(self.context.email):
             self.top_of_page_errors.append(_(
                 'The email address %s is already registered.'

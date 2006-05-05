@@ -208,11 +208,7 @@ class IPasswordEncryptor(Interface):
     """An interface representing a password encryption scheme."""
 
     def encrypt(plaintext):
-        """Return the encrypted value of plaintext.
-
-        The 'plaintext' must be unicode and contain only the subset of ascii 
-        characters valid in basic HTTP authentication.
-        """
+        """Return the encrypted value of plaintext."""
 
     def validate(plaintext, encrypted):
         """Return a true value if the encrypted value of 'plaintext' is

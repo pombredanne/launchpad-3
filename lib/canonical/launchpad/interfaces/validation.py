@@ -349,7 +349,7 @@ def valid_password(password):
     False
 
     password that contains ASCII control characters (0 >= value >= 31)
-    >>> valid_password(u"password with control chars" + chr(20)
+    >>> valid_password(u"password with control chars" + chr(20))
     False
 
     empty password.

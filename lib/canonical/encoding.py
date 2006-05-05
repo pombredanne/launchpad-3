@@ -371,4 +371,3 @@ def ascii_char_smash(char):
     # Something we can"t represent. Return empty string.
     return ""
 
-
