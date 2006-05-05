@@ -192,7 +192,7 @@ class TestBzrSync(unittest.TestCase):
         self.commitRevision()
         merge_rev_id = self.bzr_branch.last_revision()
         self.commitRevision()
-        self.commitRevision(pending_merges=[merge_rev_id])
+        self.commitRevision(extra_parents=[merge_rev_id])
         self.syncAndCount(new_revisions=3, new_numbers=3, new_parents=3)
 
         # now do a sync with a the shorter history.
