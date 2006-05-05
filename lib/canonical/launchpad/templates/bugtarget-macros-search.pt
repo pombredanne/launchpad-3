@@ -1,7 +1,6 @@
 <metal:block metal:define-macro="simple-search-form">
 <form method="GET" name="search" action="">
-  <input type="text" name="field.searchtext" size="20"
-         tal:attributes="value python:request.form.get('field.searchtext', '')" />
+  <span tal:content="structure view/searchtext_widget" />
   <input type="submit" name="search" value="Search" />
   <span tal:content="structure view/status_widget/hidden" />
   <span tal:content="structure view/severity_widget/hidden" />
@@ -26,7 +25,7 @@
   <div metal:define-slot="extra-search-widgets">
   </div>
 </form>
-<script>
+<script type="text/javascript">
   <!--
       document.forms["search"].elements['field.searchtext'].focus();
     -->
