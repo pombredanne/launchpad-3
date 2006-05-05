@@ -18,10 +18,12 @@ there is no branch with the URL we are going to register.
     >>> getUtility(IBranchSet).getByUrl(branch_url) is None
     True
 
-The only thing that we have to supply is the branch url The rest is
-optional, so we pass '' for the rest of the parameters. We use the
-currently authenticated user as the owner of the branch, so let's log in
-as Foo Bar.
+The only thing that we have to supply is the branch url. The rest is
+optional, so we pass '' for the rest of the parameters. The reason we
+pass '' is that XMLRPC doesn't allow optional parameters, and None is an
+extension to XMLRPC which we don't want to rely on. We use the currently
+authenticated user as the owner of the branch, so let's log in as Foo
+Bar.
 
     >>> login('foo.bar@canonical.com')
     >>> branchset_api.register_branch(
@@ -72,7 +74,7 @@ well:
     >>> print new_branch.name
     branch_name
     >>> print new_branch.title
-    branch_name
+    branch_title
     >>> print new_branch.product.displayname
     Evolution
 
@@ -84,7 +86,7 @@ If we give a product name that doesn't exist, we get an error:
     ...      'branch description', 'test@canonical.com', 'non-existing')
     <Fault 10: 'No such product: non-existing'>
 
-If we get an email address which isn't registered in Launchpad:
+If we give an email address which isn't registered in Launchpad:
 
     >>> getUtility(IBranchSet).getByUrl(other_branch_url) is not None
     True
@@ -116,10 +118,10 @@ Let's take a look to see that the branch actually got linked to the bug:
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bug_branch in bug_one.bug_branches:
-    ...     print "%s %s %s" % (
+    ...     print "%s, %s, %s" % (
     ...         bug_branch.branch.url, bug_branch.status.title,
     ...         bug_branch.whiteboard)
-    http://foo.com/other_branch Fix In Progress None
+    http://foo.com/other_branch, Fix In Progress, None
 
 We can set the whiteboard:
 
@@ -127,11 +129,11 @@ We can set the whiteboard:
     ...     branch_url, 1, "i'm working on it today.")
     u'http://localhost:8086/bugs/1'
     >>> for bug_branch in bug_one.bug_branches:
-    ...     print "%s %s %s" % (
+    ...     print "%s, %s, %s" % (
     ...         bug_branch.branch.url, bug_branch.status.title,
     ...         bug_branch.whiteboard)
-    http://foo.com/other_branch Fix In Progress None
-    http://foo.com/branch Fix In Progress i'm working on it today.
+    http://foo.com/other_branch, Fix In Progress, None
+    http://foo.com/branch, Fix In Progress, i'm working on it today.
 
 We get an error if we try to specify a non-existant branch or bug:
 

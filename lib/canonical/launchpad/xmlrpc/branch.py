@@ -5,9 +5,10 @@
 __metaclass__ = type
 __all__ = ['IBranchSetAPI', 'BranchSetAPI']
 
+import xmlrpclib
+
 from zope.component import getUtility
 from zope.interface import Interface, implements
-import xmlrpclib
 
 from canonical.launchpad.interfaces import (
     IBranchSet, IBugSet, ILaunchBag, IProductSet, IPersonSet, NotFoundError)
@@ -36,7 +37,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         """See IBranchSetAPI."""
         owner = getUtility(ILaunchBag).user
         assert owner is not None, (
-            "Anonymous registration of branches is not supported.")
+            "register_branch shouldn't be accessible to unauthenicated"
+            " requests.")
         if product_name:
             product = getUtility(IProductSet).getByName(product_name)
             if product is None:
@@ -67,7 +69,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
         branch = getUtility(IBranchSet).new(
             name=branch_name, owner=owner, product=product, url=branch_url,
-            title=branch_name, summary=branch_description, author=author)
+            title=branch_title, summary=branch_description, author=author)
 
         return canonical_url(branch)
 

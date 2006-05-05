@@ -267,6 +267,8 @@ class XMLRPCPublicationRequestFactory:
 
     def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        assert output_stream is None, 'output_stream is deprecated in Z3.2'
+
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
         if method in ['POST']:
