@@ -19,7 +19,7 @@ from zope.component import getUtility
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.errors import NoSuchRevision
 
-from sqlobject import AND
+from sqlobject import AND, SQLObjectNotFound
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.helpers import shortlist
@@ -55,7 +55,7 @@ class BzrSync:
     def syncHistory(self):
         """Import all revisions in the branch's revision-history."""
         # Keep track if something was actually loaded in the database.
-        didsomething = False
+        did_something = False
 
         self.logger.info(
             "synchronizing ancestry for branch: %s", self.bzr_branch.base)
@@ -71,27 +71,15 @@ class BzrSync:
                 revision = self.bzr_branch.repository.get_revision(revision_id)
             except NoSuchRevision:
                 continue
-            didsomething |= self.syncRevision(revision)
+            if self.syncRevision(revision):
+                did_something = True
 
-        self.logger.info(
-            "synchronizing revision numbers for branch: %s",
-            self.bzr_branch.base)
-
+        
         # now synchronise the RevisionNumber objects
-        for (index, revision_id) in enumerate(self.bzr_history):
-            # sequence numbers start from 1
-            sequence = index + 1
-            didsomething |= self.syncRevisionNumber(sequence, revision_id)
+        if self.syncRevisionNumbers():
+            did_something = True
 
-        # finally truncate any further revision numbers (if they exist):
-        self.trans_manager.begin()
-        if self.truncateHistory():
-            self.trans_manager.commit()
-            didsomething = True
-        else:
-            self.trans_manager.abort()
-
-        return didsomething
+        return did_something
 
     def syncRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
@@ -102,16 +90,19 @@ class BzrSync:
         revision_id = bzr_revision.revision_id
         self.logger.debug("synchronizing revision: %s", revision_id)
 
-        # If didsomething is True, new information was found and
+        # If did_something is True, new information was found and
         # loaded into the database.
-        didsomething = False
+        did_something = False
 
         self.trans_manager.begin()
 
-        db_revision = Revision.selectOneBy(revision_id=revision_id)
+        try:
+            db_revision = Revision.byRevisionID(revision_id)
+        except SQLObjectNotFound:
+            db_revision = None
         if db_revision is not None:
             # Verify that the revision in the database matches the
-            # revision from the branch.  Currently we just, check that
+            # revision from the branch.  Currently we just check that
             # the parent revision list matches.
             db_parents = shortlist(RevisionParent.selectBy(
                 revisionID=db_revision.id, orderBy='sequence'))
@@ -147,8 +138,9 @@ class BzrSync:
             if bzr_revision.timezone:
                 timestamp += bzr_revision.timezone
             revision_date = datetime.fromtimestamp(timestamp, tz=UTC)
-            db_author = RevisionAuthor.selectOneBy(name=bzr_revision.committer)
-            if not db_author:
+            try:
+                db_author = RevisionAuthor.byName(bzr_revision.committer)
+            except SQLObjectNotFound:
                 db_author = RevisionAuthor(name=bzr_revision.committer)
             db_revision = Revision(revision_id=revision_id,
                                    log_body=bzr_revision.message,
@@ -162,14 +154,40 @@ class BzrSync:
                 seen_parents.add(parent_id)
                 RevisionParent(revision=db_revision.id, sequence=sequence,
                                parent_id=parent_id)
-            didsomething = True
+            did_something = True
             
-        if didsomething:
+        if did_something:
             self.trans_manager.commit()
         else:
             self.trans_manager.abort()
 
-        return didsomething
+        return did_something
+
+    def syncRevisionNumbers(self):
+        """Synchronise the revision numbers for the branch."""
+        self.logger.info(
+            "synchronizing revision numbers for branch: %s",
+            self.bzr_branch.base)
+
+        did_something = False
+        self.trans_manager.begin()
+        # now synchronise the RevisionNumber objects
+        for (index, revision_id) in enumerate(self.bzr_history):
+            # sequence numbers start from 1
+            sequence = index + 1
+            if self.syncRevisionNumber(sequence, revision_id):
+                did_something = True
+
+        # finally truncate any further revision numbers (if they exist):
+        if self.truncateHistory():
+            did_something = True
+
+        if did_something:
+            self.trans_manager.commit()
+        else:
+            self.trans_manager.abort()
+
+        return did_something
 
     def syncRevisionNumber(self, sequence, revision_id):
         """Import the revision number with the given sequence and revision_id
@@ -179,13 +197,11 @@ class BzrSync:
         :param revision_id: GUID of the revision
         :type revision_id: str
         """
-        didsomething = False
+        did_something = False
 
         self.trans_manager.begin()
 
-        db_revision = Revision.selectOneBy(revision_id=revision_id)
-        assert db_revision is not None, (
-            "revision %s has not been imported" % revision_id)
+        db_revision = Revision.byRevisionID(revision_id)
         db_revno = RevisionNumber.selectOneBy(
             sequence=sequence, branchID=self.db_branch.id)
 
@@ -193,7 +209,8 @@ class BzrSync:
         # truncate the database history from this point on.  The
         # replacement revision numbers will be created in their place.
         if db_revno is not None and db_revno.revision != db_revision:
-            didsomething |= self.truncateHistory(sequence)
+            if self.truncateHistory(sequence):
+                did_something = True
             db_revno = None
 
         if db_revno is None:
@@ -201,21 +218,21 @@ class BzrSync:
                 sequence=sequence,
                 revision=db_revision.id,
                 branch=self.db_branch.id)
-            didsomething = True
+            did_something = True
 
-        if didsomething:
+        if did_something:
             self.trans_manager.commit()
         else:
             self.trans_manager.abort()
 
-        return didsomething
+        return did_something
 
     def truncateHistory(self, from_rev=None):
         """Remove excess RevisionNumber rows.
 
-        :param fromrev: truncate from this revision on (defaults to
+        :param from_rev: truncate from this revision on (defaults to
             truncating revisions past the current revision number).
-        :type fromrev:  int or None
+        :type from_rev:  int or None
 
         If the revision history for the branch has changed, some of
         the RevisionNumber objects will no longer be valid.  These
@@ -231,12 +248,12 @@ class BzrSync:
         revnos = RevisionNumber.select(AND(
             RevisionNumber.q.branchID == self.db_branch.id,
             RevisionNumber.q.sequence >= from_rev))
-        didsomething = False
+        did_something = False
         for revno in revnos:
             revno.destroySelf()
-            didsomething = True
+            did_something = True
 
-        return didsomething
+        return did_something
 
 
 def main(branch_id):

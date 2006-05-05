@@ -117,7 +117,7 @@ class TestBzrSync(unittest.TestCase):
             new_parents=new_parents, new_authors=new_authors)
 
     def commitRevision(self, message=None, committer=None,
-                       pending_merges=[]):
+                       extra_parents=None):
         file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
         file.write(str(time.time()+random.random()))
         file.close()
@@ -129,7 +129,8 @@ class TestBzrSync(unittest.TestCase):
             message = self.LOG
         if committer is None:
             committer = self.AUTHOR
-        working_tree.add_pending_merge(*pending_merges)
+        if extra_parents is not None:
+            working_tree.add_pending_merge(*extra_parents)
         working_tree.commit(message, committer=committer)
 
     def uncommitRevision(self):
@@ -209,7 +210,7 @@ class TestBzrSync(unittest.TestCase):
             new_parents=0, new_authors=0)
 
     def test_revision_modified(self):
-        # test that modifications to the parents list get caught.
+        # test that modifications to the list of parents get caught.
         class FakeRevision:
             revision_id = ['rev42']
             parent_ids = ['rev1', 'rev2']
