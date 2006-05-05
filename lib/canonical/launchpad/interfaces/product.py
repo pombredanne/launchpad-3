@@ -262,6 +262,9 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget,
     releaseroot = Text(title=_("The URL of the root directory for the product "
         "used when the series doesn't supply one."))
 
+    def getLatestBranches(quantity=5):
+        """Latest <quantity> branches registered for this product."""
+
     def getPackage(distrorelease):
         """Return a package in that distrorelease for this product."""
 

@@ -180,7 +180,7 @@
                 lang pomsgset_view/pofile/language/dashedcode;
                 dir pomsgset_view/pofile/language/abbreviated_text_dir;
                 ">
-<tal:content replace="structure python:pomsgset_view.getTranslation(index)" /></textarea>
+<tal:content replace="python:pomsgset_view.getTranslation(index)" /></textarea>
           </tal:with-content>
           <tal:without-content condition="python:not pomsgset_view.getTranslation(index)">
             <tal:comment tal:replace="nothing">

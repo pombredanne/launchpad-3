@@ -13,6 +13,7 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-series" />
+  <div tal:replace="structure context/@@+portlet-latestbranches" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
