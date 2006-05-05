@@ -160,6 +160,8 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
 
     implements(ILaunchpadBrowserApplicationRequest)
 
+    retry_max_count = 5    # How many times we're willing to retry
+
     def __init__(self, body_instream, environ, response=None):
         super(LaunchpadBrowserRequest, self).__init__(
             body_instream, environ, response)
