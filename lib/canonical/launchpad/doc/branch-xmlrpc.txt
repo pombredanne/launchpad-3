@@ -82,7 +82,7 @@ If we give a product name that doesn't exist, we get an error:
     >>> branchset_api.register_branch(
     ...      new_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'test@canonical.com', 'non-existing')
-    <Fault 10: 'No such product: non-existing.'>
+    <Fault 10: 'No such product: non-existing'>
 
 If we get an email address which isn't registered in Launchpad:
 
@@ -92,7 +92,7 @@ If we get an email address which isn't registered in Launchpad:
     ...      new_branch_url, 'branch_name', 'branch_title',
     ...      'branch description', 'non-existing@canonical.com', 'evolution')
     <Fault 20: 'No such email is registered in Launchpad:
-     non-existing@canonical.com.'>
+     non-existing@canonical.com'>
 
 If we try to register a branch which is already registered in Launchpad:
 
