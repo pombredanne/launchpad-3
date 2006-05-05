@@ -9,7 +9,6 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchRelease',
 
 from datetime import datetime, timedelta
 import pytz
-import warnings
 
 from zope.interface import implements
 
@@ -297,13 +296,15 @@ class _MirrorReleaseMixIn:
         query = (base_query + " AND datepublished > %s" 
                  % sqlvalues(oldest_status_time))
         recent_upload = publishing_class.selectFirst(
-            query, orderBy='-datepublished')
+            query, orderBy='-datepublished',
+            clauseTables=self._base_query_clause_tables)
         if not recent_upload:
             # No recent uploads, so we only need the URL of the last package
             # uploaded here. If that URL is accessible, we know the mirror is
             # up-to-date. Otherwise we mark it as UNKNOWN.
             latest_upload = publishing_class.selectFirst(
-                base_query, orderBy='-datepublished')
+                base_query, orderBy='-datepublished',
+                clauseTables=self._base_query_clause_tables)
 
             if latest_upload is None:
                 # This should not happen when running on production because
@@ -330,7 +331,8 @@ class _MirrorReleaseMixIn:
             query = (base_query + " AND datepublished BETWEEN %s AND %s"
                      % sqlvalues(start, end))
             upload = publishing_class.selectFirst(
-                query, orderBy='-datepublished')
+                query, orderBy='-datepublished',
+                clauseTables=self._base_query_clause_tables)
 
             if upload is None:
                 # No uploads that would allow us to know the mirror was in
@@ -350,6 +352,7 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
     _table = 'MirrorDistroArchRelease'
     _defaultOrder = 'id'
     _publishing_class = SecureBinaryPackagePublishingHistory
+    _base_query_clause_tables = ('BinaryPackageFile',)
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
@@ -379,11 +382,17 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         distroarchrelease, pocket and component of this mirror.
         """
         return """
-            pocket = %s AND component = %s AND distroarchrelease = %s
-            AND status = %s
+            SecureBinaryPackagePublishingHistory.pocket = %s 
+            AND SecureBinaryPackagePublishingHistory.component = %s 
+            AND SecureBinaryPackagePublishingHistory.distroarchrelease = %s
+            AND SecureBinaryPackagePublishingHistory.status = %s
+            AND SecureBinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackageFile.binarypackagerelease
+            AND BinaryPackageFile.filetype = %s
             """ % sqlvalues(self.pocket, self.component.id, 
                             self.distro_arch_release.id,
-                            PackagePublishingStatus.PUBLISHED)
+                            PackagePublishingStatus.PUBLISHED,
+                            BinaryPackageFileType.DEB)
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
         """Given a SecureBinaryPackagePublishingHistory, return the URL on 
@@ -405,6 +414,7 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
     _table = 'MirrorDistroReleaseSource'
     _defaultOrder = 'id'
     _publishing_class = SecureSourcePackagePublishingHistory
+    _base_query_clause_tables = ()
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
@@ -433,8 +443,10 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
         pocket and component of this mirror.
         """
         return """
-            pocket = %s AND component = %s AND distrorelease = %s
-            AND status = %s
+            SecureSourcePackagePublishingHistory.pocket = %s 
+            AND SecureSourcePackagePublishingHistory.component = %s 
+            AND SecureSourcePackagePublishingHistory.distrorelease = %s
+            AND SecureSourcePackagePublishingHistory.status = %s
             """ % sqlvalues(self.pocket, self.component.id, 
                             self.distro_release.id,
                             PackagePublishingStatus.PUBLISHED)

@@ -529,6 +529,7 @@ ALTER TABLE binarypackagefile DISABLE TRIGGER ALL;
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (12, 40, 1, 1);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (16, 42, 1, 4);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (15, 44, 3, 3);
 
 
 ALTER TABLE binarypackagefile ENABLE TRIGGER ALL;
@@ -2861,6 +2862,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (40, 40, 'mozilla-firefox_0.9_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (42, 42, 'linux-2.6.12_2.6.12.20_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (43, 43, 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (44, 44, 'pmount_0.1-1_all.udeb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2910,6 +2912,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (40, '2005-10-30 18:00:27.899028', NULL, 3, '5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', false, NULL);
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (42, '2005-10-30 18:00:27.899028', NULL, 3, 'a45ed906e4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (43, '2005-10-30 18:00:27.899028', NULL, 3, '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (44, '2005-10-30 18:00:27.899028', NULL, 3, 'b45ed906e4f5afdbc95d0dd47f3c5bc275da8a33', false, NULL);
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -8729,10 +8732,11 @@ INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, dist
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (13, 15, 1, 3, 3, 3, 40, '2006-01-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (14, 15, 7, 3, 3, 3, 40, '2006-01-26 00:00:00', NULL, '2006-01-28 00:00:00', NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (15, 12, 7, 2, 3, 3, 40, '2006-01-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (16, 15, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-24 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (16, 15, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-24 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (17, 16, 1, 2, 1, 1, 10, '2005-07-06 00:00:00', '2005-08-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (18, 17, 1, 7, 1, 1, 10, '2005-08-07 00:00:00', '2005-08-22 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (19, 18, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (20, 15, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', '2005-06-20 00:01:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 ALTER TABLE securebinarypackagepublishinghistory ENABLE TRIGGER ALL;
