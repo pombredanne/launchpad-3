@@ -15,7 +15,11 @@ import xmlrpclib
 
 
 class LaunchpadFault(xmlrpclib.Fault):
-    """Base class for a Launchpad XMLRPC fault."""
+    """Base class for a Launchpad XMLRPC fault.
+
+    Subclasses should define a unique error_code and a msg_template,
+    which will be interpolated with the given keyword arguments.
+    """
 
     error_code = None
     msg_template = None
