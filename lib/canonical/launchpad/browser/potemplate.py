@@ -272,18 +272,19 @@ class POTemplateEditView(SQLObjectEditView):
     def __init__(self, context, request):
         # Restrict the info we show to the user depending on the
         # permissions he has.
+        self.old_description = context.description
         self.prepareForm()
 
         SQLObjectEditView.__init__(self, context, request)
 
     def prepareForm(self):
         """Removed the widgets the user is not allowed to change."""
-        user = getUtility(ILaunchBag).user
-        if user is not None:
+        self.user = getUtility(ILaunchBag).user
+        if self.user is not None:
             # We do this check because this method can be called before we
             # know which user is getting this view (when we show them the
             # login form).
-            if not helpers.check_permission('launchpad.Admin', user):
+            if not helpers.check_permission('launchpad.Admin', self.user):
                 # The user is just a maintainer, we show only the fields
                 # 'name', 'description' and 'owner'.
                 self.fieldNames = ['name', 'description', 'owner']
@@ -295,6 +296,8 @@ class POTemplateEditView(SQLObjectEditView):
                 "Updated on ${date_time}",
                 mapping={'date_time': formatter.format(datetime.utcnow())}
                 )
+        if self.old_description != self.context.description:
+            self.user.assignKarma('translationtemplatedescriptionchanged')
 
 
 class POTemplateAdminView(POTemplateEditView):

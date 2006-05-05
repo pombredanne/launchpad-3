@@ -141,7 +141,6 @@
     <include file="bugtask-events.zcml" />
     <include file="bugactivity-subscriptions.zcml" />
     <include file="product-events.zcml" />
-    <include file="translation-events.zcml" />
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />
