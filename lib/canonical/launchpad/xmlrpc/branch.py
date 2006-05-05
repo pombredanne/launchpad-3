@@ -9,9 +9,10 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 import xmlrpclib
 
-from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.interfaces import (
     IBranchSet, IBugSet, ILaunchBag, IProductSet, IPersonSet, NotFoundError)
+from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
+from canonical.launchpad.xmlrpc import faults
 from canonical.lp.dbschema import BugBranchStatus
 
 
@@ -39,15 +40,13 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if product_name:
             product = getUtility(IProductSet).getByName(product_name)
             if product is None:
-                return xmlrpclib.Fault(
-                    10, "No such product: %s." % product_name)
+                return faults.NoSuchProduct(product_name)
         else:
             product = None
 
         existing_branch = getUtility(IBranchSet).getByUrl(branch_url)
         if existing_branch is not None:
-            return xmlrpclib.Fault(
-                50, "%s is already registered." % branch_url)
+            return faults.BranchAlreadyRegistered(branch_url)
 
         if not branch_description:
             # We want it to be None in the database, not ''.
@@ -64,9 +63,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         else:
             author = owner
         if author is None:
-            return xmlrpclib.Fault(
-                20, "No such email is registered in Launchpad: %s." % 
-                    author_email)
+            return faults.NoSuchPerson(author_email)
 
         branch = getUtility(IBranchSet).new(
             name=branch_name, owner=owner, product=product, url=branch_url,
@@ -78,11 +75,11 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         """See IBranchSetAPI."""
         branch = getUtility(IBranchSet).getByUrl(url=branch_url)
         if branch is None:
-            return xmlrpclib.Fault(30, 'No such branch: %s' % branch_url)
+            return faults.NoSuchBranch(branch_url)
         try:
             bug = getUtility(IBugSet).get(bug_id)
         except NotFoundError:
-            return xmlrpclib.Fault(40, 'No such bug: %s' % bug_id)
+            return faults.NoSuchBug(bug_id)
         if not whiteboard:
             whiteboard = None
 
