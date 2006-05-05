@@ -50,15 +50,14 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
 
+        # We want it to be None in the database, not ''.
         if not branch_description:
-            # We want it to be None in the database, not ''.
             branch_description = None
+        if not branch_title:
+            branch_title = None
 
-        # The branch and title are optional.
         if not branch_name:
             branch_name = branch_url.split('/')[-1]
-        if not branch_title:
-            branch_title = branch_name
 
         if author_email:
             author = getUtility(IPersonSet).getByEmail(author_email)

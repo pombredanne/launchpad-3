@@ -41,16 +41,17 @@ The author and owner got set to the authenticated person; Foo Bar.
     >>> print new_branch.owner.displayname
     Foo Bar
 
-The name and title got set to the last component of the URL:
+The name got set to the last component of the URL since it wasn't
+specified:
 
     >>> print new_branch.name
     branch
-    >>> print new_branch.title
-    branch
 
-Since we didn't specify product and description, they are None:
+Since we didn't specify product, title or description, they are None:
 
     >>> new_branch.product is None
+    True
+    >>> new_branch.title is None
     True
     >>> new_branch.summary is None
     True
