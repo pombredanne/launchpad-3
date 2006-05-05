@@ -6,16 +6,18 @@ __metaclass__ = type
 
 __all__ = ["FileBugView"]
 
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.app.form.utility import setUpWidgets
 from zope.component import getUtility
+from zope.event import notify
 
-from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IProduct, NotFoundError)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.generalform import GeneralFormView
 
-class FileBugView(SQLObjectAddView):
+class FileBugView(GeneralFormView):
     """Browser view for filebug forms.
 
     This class handles bugs filed on an IBugTarget, and the 'generic'
@@ -24,8 +26,34 @@ class FileBugView(SQLObjectAddView):
 
     notification = "Thank you for your bug report."
 
-    def create(self, title=None, comment=None, private=False,
-               packagename=None, distribution=None, security_related=False):
+    def __init__(self, context, request):
+        GeneralFormView.__init__(self, context, request)
+
+        self.packagename_error = ""
+
+    def validate_from_request(self):
+        """Make sure the package name, if provided, exists in the distro."""
+        self.packagename_error = ""
+        form = self.request.form
+        if form.get("packagename_option") == "choose":
+            packagename = str(form.get("field.packagename"))
+            if packagename:
+                try:
+                    self.context.getPackageNames(packagename)
+                except NotFoundError:
+                    self.packagename_error = (
+                        '"%s" does not exist in %s. Please choose a different '
+                        'package. If you\'re unsure, please select '
+                        '"I don\'t know"' % (
+                            packagename, self.context.displayname))
+            else:
+                self.packagename_error = "Please enter a package name"
+
+        if self.packagename_error:
+            raise WidgetsError(self.packagename_error)
+
+    def process(self, title=None, comment=None, private=False,
+                packagename=None, distribution=None, security_related=False):
         """Add a bug to this IBugTarget."""
         current_user = getUtility(ILaunchBag).user
         context = self.context
@@ -74,15 +102,11 @@ class FileBugView(SQLObjectAddView):
                 title=title, comment=comment, private=private,
                 security_related=security_related, owner=current_user)
 
-        self.addedBug = bug
-        return self.addedBug
+            notify(SQLObjectCreatedEvent(bug))
 
-    def nextURL(self):
         # Give the user some feedback on the bug just opened.
         self.request.response.addNotification(self.notification)
-
-        task = self.addedBug.bugtasks[0]
-        return canonical_url(task)
+        self._nextURL = canonical_url(bug.bugtasks[0])
 
     def _setUpWidgets(self):
         # Customize the onKeyPress event of the package name chooser,
