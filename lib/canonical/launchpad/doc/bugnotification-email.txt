@@ -53,14 +53,13 @@ Let's take a look at what the notification email looks like:
     >>> print body
     Public bug reported:
     <BLANKLINE>
-    Affects: firefox (upstream)
+    Malone pages that use more complex layouts with portlets and fancy CSS
+    are sometimes not getting properly reflowed after rendering.
+    <BLANKLINE>
+    ** Affects: firefox (upstream)
            Severity: Normal
            Priority: Medium
              Status: Unconfirmed
-    <BLANKLINE>
-    Description:
-    Malone pages that use more complex layouts with portlets and fancy CSS are
-    sometimes not getting properly reflowed after rendering.
 
 
 Editing a bug
