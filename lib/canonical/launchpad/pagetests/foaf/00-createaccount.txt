@@ -123,17 +123,16 @@
   ... 
   ... foo
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------17483551342125833225531652773--
   ... """ % path)
   HTTP/1.1 200 Ok
   ...
-          <p class="error message">An error occurred.</p>
+  ...Please fix the problems below and try again...
   <BLANKLINE>
-  <BLANKLINE>
-          <p class="error message">The email address foobarino@baz.com.br is already registered.</p>
+   ...The email address foobarino@baz.com.br is already registered...
   ...
 
 
@@ -206,9 +205,9 @@
   ... foo
   ... 
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------17483551342125833225531652773--
   ... """ % path)
   HTTP/1.1 200 Ok
@@ -234,9 +233,9 @@
   ... Content-Disposition: form-data; name="field.password_dupe"
   ... 
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------17483551342125833225531652773--
   ... """ % path)
   HTTP/1.1 200 Ok
@@ -260,9 +259,9 @@
   ... Content-Disposition: form-data; name="field.password_dupe"
   ... 
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------17483551342125833225531652773--
   ... """ % path)
   HTTP/1.1 200 Ok
@@ -271,7 +270,44 @@
   ...
 
 
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Content-Type: multipart/form-data; boundary=---------------------------17483551342125833225531652773
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.givenname"
+  ... 
+  ... foo
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.familyname"
+  ... 
+  ... baz
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... foobar
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.password"
+  ... 
+  ... tésté
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.password_dupe"
+  ... 
+  ... tésté
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------17483551342125833225531652773--
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  ...
+  ...The password provided contains non-ASCII characters...
+  ...
+
+
   Fill in the information correctly to create the new account and submit it.
+  We also tick the hide email address checkbox.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -282,6 +318,14 @@
   ... 
   ... foobar
   ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.hide_email_addresses.used"
+  ... 
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.hide_email_addresses"
+  ... 
+  ... on
+  ... -----------------------------17483551342125833225531652773
   ... Content-Disposition: form-data; name="field.password"
   ... 
   ... f
@@ -290,9 +334,9 @@
   ... 
   ... f
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------17483551342125833225531652773--
   ... """ % path)
   HTTP/1.1 303 See Other
@@ -301,16 +345,22 @@
   ...
 
 
-  New account was created with name 'foo'.
+  New account was created with name 'foo' and the hide email addresses option is
+  turned on.
 
   >>> print http(r"""
-  ... GET /people/foo HTTP/1.1
+  ... GET /people/foo/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...foobar...
+  ...name="field.displayname" size="20" type="text" value="foobar"...
+  ...
+  ...Hide my email addresses from other Launchpad users...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+   ...name="field.hide_email_addresses" type="checkbox" value="on"...
   ...
 
 
@@ -362,6 +412,14 @@ redirection_url in the form post below.
   ... 
   ... foobar
   ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.hide_email_addresses.used"
+  ... 
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.hide_email_addresses"
+  ... 
+  ... on
+  ... -----------------------------17483551342125833225531652773
   ... Content-Disposition: form-data; name="field.password"
   ... 
   ... f
@@ -370,9 +428,9 @@ redirection_url in the form post below.
   ... 
   ... f
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------17483551342125833225531652773--
   ... """ % path)
   HTTP/1.1 303 See Other
