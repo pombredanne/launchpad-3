@@ -201,21 +201,13 @@ be logged in.
     >>> login("test@canonical.com")
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-
-
-
-
     >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> open_bugtask = getUtility(IBugTaskSet).get(18)
     >>> open_bugtask.status.name
     'UNCONFIRMED'
     >>> open_bugtask.bug.id
     3
-
-
-
-
-    >>> open_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
+    >>> open_bugtask.transitionToStatus(BugTaskStatus.REJECTED)
     >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.
