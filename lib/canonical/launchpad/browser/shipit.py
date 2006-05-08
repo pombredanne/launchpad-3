@@ -204,8 +204,6 @@ The comment left by the user:
         """Return all standard ShipIt Requests."""
         return getUtility(IStandardShipItRequestSet).getByFlavour(self.flavour)
 
-    # XXX: This is overly complex and should probably be moved into database
-    # code. -- Guilherme Salgado, 2006-04-28
     @cachedproperty
     def current_order_standard_id(self):
         """The current order's StandardShipItRequest id, or None in case
@@ -218,18 +216,15 @@ The comment left by the user:
         if quantities is None:
             return None
 
-        try:
-            x86_quantity = quantities[ShipItArchitecture.X86].quantity
-        except KeyError:
-            x86_quantity = 0
-        try:
-            amd64_quantity = quantities[ShipItArchitecture.AMD64].quantity
-        except KeyError:
-            amd64_quantity = 0
-        try:
-            ppc_quantity = quantities[ShipItArchitecture.PPC].quantity
-        except KeyError:
-            ppc_quantity = 0
+        x86_cds = quantities[ShipItArchitecture.X86]
+        amd64_cds = quantities[ShipItArchitecture.AMD64]
+        ppc_cds = quantities[ShipItArchitecture.PPC]
+
+        # Any of {x86,amd64,ppc}_cds can be None here, so we use a default
+        # value for getattr to make things easier.
+        x86_quantity = getattr(x86_cds, 'quantity', 0)
+        amd64_quantity = getattr(amd64_cds, 'quantity', 0)
+        ppc_quantity = getattr(ppc_cds, 'quantity', 0)
 
         standard = getUtility(IStandardShipItRequestSet).getByNumbersOfCDs(
             self.flavour, x86_quantity, amd64_quantity, ppc_quantity)
@@ -271,20 +266,20 @@ The comment left by the user:
         need_notification = False
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
-                self.user, kw['recipientdisplayname'], kw['country'],
-                kw['city'], kw['addressline1'], kw['phone'],
-                kw['addressline2'], kw['province'], kw['postcode'],
-                kw['organization'], kw['reason'])
+                self.user, kw.get('recipientdisplayname'), kw.get('country'),
+                kw.get('city'), kw.get('addressline1'), kw.get('phone'),
+                kw.get('addressline2'), kw.get('province'), kw.get('postcode'),
+                kw.get('organization'), kw.get('reason'))
             if self.user.shippedShipItRequestsOfCurrentRelease():
                 need_notification = True
         else:
-            if current_order.reason is None and kw['reason'] is not None:
+            if current_order.reason is None and kw.get('reason') is not None:
                 # The user entered something in the 'reason' entry for the
                 # first time. We need to mark this order as pending approval
                 # and send an email to the shipit admins.
                 need_notification = True
             for name in self.fieldNames:
-                setattr(current_order, name, kw[name])
+                setattr(current_order, name, kw.get(name))
 
         current_order.setQuantitiesBasedOnStandardRequest(request_type)
         if need_notification:
@@ -464,12 +459,11 @@ class ShippingRequestAdminMixinView:
                 field_name = self.quantity_fields_mapping[flavour][arch]
                 if field_name is None:
                     continue
-                try:
-                    requested_cds = requested[flavour][arch]
-                except KeyError:
-                    value = 0
-                else:
+                requested_cds = requested[flavour][arch]
+                if requested_cds is not None:
                     value = getattr(requested_cds, self.quantity_attrname)
+                else:
+                    value = 0
                 initial[field_name] = value
         return initial
 
@@ -548,12 +542,11 @@ class ShippingRequestApproveOrDenyView(
             total = 0
             flavour_quantities = []
             for arch in self.ordered_architectures:
-                try:
-                    requested_cds = quantities[flavour][arch]
-                except KeyError:
-                    quantity = 0
-                else:
+                requested_cds = quantities[flavour][arch]
+                if requested_cds is not None:
                     quantity = requested_cds.quantity
+                else:
+                    quantity = 0
                 total += quantity
                 flavour_quantities.append(quantity)
             if total > 0:

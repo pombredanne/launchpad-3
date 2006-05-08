@@ -136,11 +136,9 @@ class ShippingRequest(SQLBase):
             requested_arches = {}
             for arch in ShipItArchitecture.items:
                 cds = self._getRequestedCDsByFlavourAndArch(flavour, arch)
-                if cds is not None:
-                    requested_arches[arch] = cds
+                requested_arches[arch] = cds
 
-            if requested_arches:
-                requested_cds[flavour] = requested_arches
+            requested_cds[flavour] = requested_arches
 
         return requested_cds
 

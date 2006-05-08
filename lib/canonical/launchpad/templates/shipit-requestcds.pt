@@ -115,15 +115,17 @@
       </div>
 
       <br />
+      <label>
+      <input type="checkbox" name="extracds" value="yes"
+             onClick="javascript: updateWidgets()"
+             tal:attributes="checked view/current_order/reason|nothing"/>
+        I would like to apply for additional CDs
+      </label>
       <div>
-        <label tal:attributes="for view/reason_widget/name"
-               tal:content="view/reason_widget/label">
-          Label
-        </label>
+        <div tal:content="structure view/reason_widget" />
         (<span class="formHelp" tal:condition="view/reason_widget/hint"
            tal:content="view/reason_widget/hint">Some help text
         </span>)
-        <div tal:content="structure view/reason_widget" />
       </div>
     </div>
 
@@ -162,6 +164,15 @@
   </td>
   </tr>
   </table>  
+
+  <script type="text/javascript">
+    function updateWidgets() {
+      var form = document.forms['shipit'];
+      state = (form.extracds.checked == false);
+      document.getElementById("field.reason").disabled = state;
+    }
+  updateWidgets();
+  //</script>
 
 </div>
 
