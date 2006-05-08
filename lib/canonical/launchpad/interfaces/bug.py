@@ -158,7 +158,7 @@ class IBug(IMessageTarget):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, status):
+    def addBranch(branch, whiteboard=None):
         """Associate a branch with this bug.
 
         Returns an IBugBranch.
