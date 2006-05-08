@@ -77,7 +77,8 @@
      inkscape:window-width="375"
      inkscape:window-height="367"
      inkscape:window-x="133"
-     inkscape:window-y="25" />
+     inkscape:window-y="25"
+     showborder="true" />
   <metadata
      id="metadata4">
     <rdf:RDF>
@@ -102,22 +103,22 @@
        sodipodi:rx="3.0221176"
        sodipodi:ry="2.8542223"
        d="M 13.683477 5.1412549 A 3.0221176 2.8542223 0 1 1  7.6392422,5.1412549 A 3.0221176 2.8542223 0 1 1  13.683477 5.1412549 z"
-       transform="matrix(0.581891,0,0,0.705294,0.867294,-0.44965)" />
+       transform="matrix(0.581891,0,0,0.705294,-0.143949,-0.405897)" />
     <path
-       style="fill:#cc0000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 14,2 L 14,8 L 13,8 L 13,5 L 8,10 L 6,8 L 11,3 L 8,3 L 8,2 L 14,2 z "
+       style="fill:#1b5ddd;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 14,2 L 14,8 L 13,8 L 12,6 L 8,10 L 6,8 L 10,4 L 8,3 L 8,2 L 14,2 z "
        id="path2190"
        sodipodi:nodetypes="cccccccccc" />
     <path
        sodipodi:type="arc"
-       style="fill:url(#radialGradient2310);fill-opacity:1;fill-rule:nonzero;stroke:#999999;stroke-width:0.94570214;stroke-linejoin:round;marker-mid:none;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;stroke-linecap:round"
+       style="fill:url(#radialGradient2310);fill-opacity:1;fill-rule:nonzero;stroke:#999999;stroke-width:0.94570214;stroke-linecap:round;stroke-linejoin:round;marker-mid:none;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1"
        id="path1062"
        sodipodi:cx="10.703333"
        sodipodi:cy="14.081686"
        sodipodi:rx="6.5898952"
        sodipodi:ry="6.170157"
        d="M 17.293228 14.081686 A 6.5898952 6.170157 0 1 1  4.1134377,14.081686 A 6.5898952 6.170157 0 1 1  17.293228 14.081686 z"
-       transform="matrix(0.570522,0,-4.116679e-3,0.688598,1.024195,-0.285508)" />
+       transform="matrix(0.570522,0,-4.116679e-3,0.688598,1.295247e-2,-0.241755)" />
     <path
        sodipodi:type="arc"
        style="color:#000000;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#999999;stroke-width:0.78125;stroke-linecap:round;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:block"
@@ -130,7 +131,7 @@
        sodipodi:start="0"
        sodipodi:end="1.5662853"
        sodipodi:open="true"
-       transform="matrix(-0.8,0,0,-0.8,4.323745,26.6875)" />
+       transform="matrix(-0.8,0,0,-0.8,3.312502,26.73125)" />
     <path
        sodipodi:type="arc"
        style="color:#000000;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#999999;stroke-width:0.78125;stroke-linecap:round;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:block"
@@ -143,7 +144,7 @@
        sodipodi:start="0"
        sodipodi:end="1.5662853"
        sodipodi:open="true"
-       transform="matrix(0.8,0,0,-0.8,9.812465,26.6875)" />
+       transform="matrix(0.8,0,0,-0.8,8.801222,26.73125)" />
     <path
        sodipodi:type="arc"
        style="color:#000000;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#999999;stroke-width:0.85471779;stroke-linecap:round;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:block"
@@ -156,7 +157,7 @@
        sodipodi:start="0"
        sodipodi:end="1.5662853"
        sodipodi:open="true"
-       transform="matrix(0.764744,-0.196234,-0.234876,-0.638926,13.41251,18.44268)" />
+       transform="matrix(0.764744,-0.196234,-0.234876,-0.638926,12.40127,18.48643)" />
     <path
        sodipodi:type="arc"
        style="color:#000000;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#999999;stroke-width:0.78125;stroke-linecap:round;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:block"
@@ -169,7 +170,7 @@
        sodipodi:start="0"
        sodipodi:end="1.5662853"
        sodipodi:open="true"
-       transform="matrix(0.8,0,0,-0.8,9.812465,23.89591)" />
+       transform="matrix(0.8,0,0,-0.8,8.801222,23.93966)" />
     <path
        sodipodi:type="arc"
        style="color:#000000;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#999999;stroke-width:0.85471797;stroke-linecap:round;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:block"
@@ -182,7 +183,7 @@
        sodipodi:start="0"
        sodipodi:end="1.5662853"
        sodipodi:open="true"
-       transform="matrix(-0.764744,-0.196234,0.234876,-0.638926,0.734975,18.44268)" />
+       transform="matrix(-0.764744,-0.196234,0.234876,-0.638926,-0.276268,18.48643)" />
     <path
        sodipodi:type="arc"
        style="color:#000000;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#999999;stroke-width:0.78125;stroke-linecap:round;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:block"
@@ -195,9 +196,9 @@
        sodipodi:start="0"
        sodipodi:end="1.5662853"
        sodipodi:open="true"
-       transform="matrix(-0.8,0,0,-0.8,4.335023,23.9375)" />
+       transform="matrix(-0.8,0,0,-0.8,3.32378,23.98125)" />
     <path
-       style="fill:#cc0000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#1b5ddd;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:0;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="M 6,8 L 8,10 L 4,14 L 2,12 L 6,8 z "
        id="path2192"
        sodipodi:nodetypes="ccccc" />
