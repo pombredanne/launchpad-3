@@ -534,13 +534,12 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     Public bug reported:
     <BLANKLINE>
-    Affects: Ubuntu
+    a description of the bug.
+    <BLANKLINE>
+    ** Affects: Ubuntu
            Severity: Normal
            Priority: (none set)
              Status: Unconfirmed
-    <BLANKLINE>
-    Description:
-    a description of the bug.
     <BLANKLINE>
     --
     new bug
