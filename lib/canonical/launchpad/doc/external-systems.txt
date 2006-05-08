@@ -229,7 +229,7 @@ And the linked bugtasks got updated:
     ...     bugtasks += list(bug_watch.bugtasks)
     >>> for bugtask in sorted(bugtasks, key=lambda bugtask: bugtask.id):
     ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
-    ...     print bugtask.severity.title
+    ...     print bugtask.importance.title
     1 mozilla-firefox (Debian) Unconfirmed Unknown
     3 mozilla-firefox (Debian) Unconfirmed Unknown
     7 evolution (Debian) Fix Released Unknown
@@ -240,7 +240,7 @@ The retrieval of the remote status is done by _getRemoteStatus().
     'open important'
 
 Sometimes the severity field is missing in the bug summary. That will
-cause severity to be set to normal, which is the default in debbugs.
+cause importance to be set to normal, which is the debbugs default severity.
 
     >>> import email
     >>> summary = email.message_from_file(

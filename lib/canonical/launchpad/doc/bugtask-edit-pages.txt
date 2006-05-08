@@ -68,7 +68,8 @@ to show that the milestone value is cleared.
     ...     'FORM_SUBMIT': 'Save Changes',
     ...     'field.product': 'ubuntu',
     ...     'field.status': bug_one_in_firefox.status.title,
-    ...     'field.importance': bug_one_in_firefox.importance.title,
+    ...     'field.importance': bug_one_in_firefox.importance.title
+    ... }
 
     >>> request = LaunchpadTestRequest(form=form_values)
 

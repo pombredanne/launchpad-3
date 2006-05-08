@@ -438,7 +438,7 @@ If the bug has been resolved, the resolution will affect the status:
   ...     bug.resolution = resolution
   ...     bugtask.statusexplanation = ''
   ...     bug.mapStatus(bugtask)
-  ...     print '%-10s  %-8s  %s' % (resolution, bugtask.status.name)
+  ...     print '%-10s  %s' % (resolution, bugtask.status.name)
   FIXED       FIXRELEASED
   INVALID     REJECTED
   WONTFIX     REJECTED

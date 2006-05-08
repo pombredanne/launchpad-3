@@ -76,12 +76,12 @@ in a span with the appropriate css class:
 
 If the value is None, a dash is displayed:
 
-    >>> ubuntu_thunderbird = bug_nine.bugtasks[1]
-    >>> ubuntu_thunderbird.importance is None
+    >>> test_task = bug_nine.bugtasks[1]
+    >>> test_task.assignee == None
     True
-    >>> importance_field = IBugTask['importance'].bind(ubuntu_thunderbird)
-    >>> importance_widget = DBItemDisplayWidget(importance_field, None, None)
-    >>> print importance_widget()
+    >>> assignee_field = IBugTask['assignee'].bind(test_task)
+    >>> assignee_widget = DBItemDisplayWidget(assignee_field, None, None)
+    >>> print assignee_widget()
     <span>&mdash;</span>
 
 We can set a specific value to be displayed using setRenderedValue():
