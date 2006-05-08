@@ -180,7 +180,7 @@ class EditEmailCommand(EmailCommand):
         edited = False
         for attr_name, attr_value in args.items():
             if getattr(context, attr_name) != attr_value:
-                setattr(context, attr_name, attr_value)
+                self.setAttributeValue(context, attr_name, attr_value)
                 edited = True
         if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
             edited_fields.update(args.keys())
@@ -188,6 +188,10 @@ class EditEmailCommand(EmailCommand):
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
+
+    def setAttributeValue(self, context, attr_name, attr_value):
+        """See IEmailCommand."""
+        setattr(context, attr_name, attr_value)
 
 
 class PrivateEmailCommand(EditEmailCommand):
@@ -403,6 +407,10 @@ class AssigneeEmailCommand(EditEmailCommand):
 
         return {self.name: person_term.value}
 
+    def setAttributeValue(self, context, attr_name, attr_value):
+        """See EmailCommand."""
+        context.transitionToAssignee(attr_value)
+
 
 class DBSchemaEditEmailCommand(EditEmailCommand):
     """Helper class for edit DBSchema attributes.
@@ -447,6 +455,10 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
 class StatusEmailCommand(DBSchemaEditEmailCommand):
     """Changes a bug task's status."""
     dbschema = BugTaskStatus
+
+    def setAttributeValue(self, context, attr_name, attr_value):
+        """See EmailCommand."""
+        context.transitionToStatus(attr_value)
 
 
 class ImportanceEmailCommand(DBSchemaEditEmailCommand):

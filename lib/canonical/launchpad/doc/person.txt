@@ -31,14 +31,32 @@ Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
 You can create a new person using the createPersonAndEmail method of
-IPersonSet. All you need for that is a valid email address.
->>> p, email = personset.createPersonAndEmail('randomuser@randomhost.com')
+IPersonSet. All you need for that is a valid email address. You can also 
+hide the user email addresses.
+>>> p, email = personset.createPersonAndEmail(
+...     'randomuser@randomhost.com', hide_email_addresses=True)
 >>> p.teamowner is None
 True
 >>> email.status == EmailAddressStatus.NEW
 True
 >>> p.is_valid_person # Not valid because no preferred email address
 False
+>>> p.hide_email_addresses
+True
+
+In case of failure of creating a new person or email the method returns 
+(None, None). Let's demonstrate this trying to create a person with 
+an invalid email.
+>>> p2, invalid_email = personset.createPersonAndEmail(
+...     'test#canonical.com')
+>>> p2, invalid_email
+(None, None)
+
+And now with the same name of a existing account
+>>> p3, invalid_email = personset.createPersonAndEmail(
+...     'randomemail@randomhost.com', name='name12')
+>>> p3, invalid_email
+(None, None)
 
 >>> vcs_imports = personset.getByName('vcs-imports')
 >>> vcs_imports.teamowner is None
@@ -190,18 +208,24 @@ True
 
 Branches whose owner is being merged are uniquified by appending '-N' where N
 is a unique integer. We create "peoplemerge" and "peoplemerge-1" branches owned
-by empty, and a "peoplemerge" branch owned by 'Sample Person' to test that
-branch name uniquifying works.
+by empty, and a "peoplemerge" and "peoplemerge-1" branches owned by 'Sample
+Person' to test that branch name uniquifying works.
 
-Branches with greater IDs will get greater numerical suffixes, so we create
-"peoplemerge" first, and it will be renamed "peoplemerge-1". The extant
-"peoplemerge-1" branch will be renamed "peoplemerge-2".
+Branches with smaller IDs will be processed first, so we create "peoplemerge"
+first, and it will be renamed "peoplemerge-2". The extant "peoplemerge-1"
+branch will be renamed "peoplemerge-1-1". The "peoplemerge-0" branch will not
+be renamed since it will not conflict.
+
+That is not a particularly sensible way of renaming branches, but it is simple
+to implement, and it be should extremely rare for the case to occur.
 
 >>> from canonical.launchpad.interfaces import IProductSet, IBranchSet
 >>> branchset = getUtility(IBranchSet)
 >>> peoplemerge = branchset.new('peoplemerge', sample, None, None)
->>> peoplemerge1 = branchset.new('peoplemerge', empty, None, None)
->>> peoplemerge2 = branchset.new('peoplemerge-2', empty, None, None)
+>>> peoplemerge1 = branchset.new('peoplemerge-1', sample, None, None)
+>>> peoplemerge0 = branchset.new('peoplemerge-0', empty, None, None)
+>>> peoplemerge2 = branchset.new('peoplemerge', empty, None, None)
+>>> peoplemerge11 = branchset.new('peoplemerge-1', empty, None, None)
 
 >>> personset.merge(empty, sample)
 
@@ -217,9 +241,13 @@ Check that the branches have been renamed properly.
 
 >>> sample.getBranch(None, 'peoplemerge') == peoplemerge
 True
->>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge1
+>>> sample.getBranch(None, 'peoplemerge-0') == peoplemerge0
 True
->>> sample.getBranch(None, 'peoplemerge-2-2') == peoplemerge2
+>>> sample.getBranch(None, 'peoplemerge-1') == peoplemerge1
+True
+>>> sample.getBranch(None, 'peoplemerge-2') == peoplemerge2
+True
+>>> sample.getBranch(None, 'peoplemerge-1-1') == peoplemerge11
 True
 
 Note that we don't bother migrating karma - it will just be reset next

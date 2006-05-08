@@ -86,6 +86,7 @@ It was not rejected.
 
   >>> success, msgs = upload.do_accept()
   DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Creating a New queue entry
   DEBUG: Setting it to ACCEPTED
 

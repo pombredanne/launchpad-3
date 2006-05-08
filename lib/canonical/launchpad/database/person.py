@@ -1056,7 +1056,8 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(self, email, name=None, displayname=None,
-                             password=None, passwordEncrypted=False):
+                             password=None, passwordEncrypted=False,
+                             hide_email_addresses=False):
         """See IPersonSet."""
         if name is None:
             try:
@@ -1071,19 +1072,23 @@ class PersonSet:
             password = getUtility(IPasswordEncryptor).encrypt(password)
 
         displayname = displayname or name.capitalize()
-        person = self._newPerson(name, displayname, password=password)
+        person = self._newPerson(name, displayname, hide_email_addresses,
+                                 password=password)
 
         email = getUtility(IEmailAddressSet).new(email, person.id)
         return person, email
 
-    def _newPerson(self, name, displayname, password=None):
+    def _newPerson(self, name, displayname, hide_email_addresses,
+                   password=None):
         """Create a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
         assert self.getByName(name, ignore_merged=False) is None
-        person = Person(name=name, displayname=displayname, password=password)
+        person = Person(name=name, displayname=displayname,
+                        hide_email_addresses=hide_email_addresses,
+                        password=password)
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
                     person.displayname, wikinameset.exists)
@@ -1339,15 +1344,18 @@ class PersonSet:
         cur.execute('''
             SELECT product, name FROM Branch WHERE owner = %(to_id)d
             ''' % vars())
-        possible_conflicts = list(tuple(r) for r in cur.fetchall())
+        possible_conflicts = set(tuple(r) for r in cur.fetchall())
         cur.execute('''
             SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
+            ORDER BY id
             ''' % vars())
         for id, product, name in list(cur.fetchall()):
             new_name = name
+            suffix = 1
             while (product, new_name) in possible_conflicts:
-                new_name = '%s-2' % new_name
-            possible_conflicts.append((product, new_name))
+                new_name = '%s-%d' % (name, suffix)
+                suffix += 1
+            possible_conflicts.add((product, new_name))
             new_name = new_name.encode('US-ASCII')
             name = name.encode('US-ASCII')
             cur.execute('''
@@ -1356,7 +1364,7 @@ class PersonSet:
                     AND (%(product)s IS NULL OR product = %(product)s)
                 ''', vars())
         skip.append(('branch','owner'))
-        
+
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331

@@ -239,19 +239,19 @@ class Bug:
         to the bug task's status explanation.
         """
         if self.bug_status == 'ASSIGNED':
-            bugtask.status = BugTaskStatus.CONFIRMED
+            bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
         elif self.bug_status == 'NEEDINFO':
-            bugtask.status = BugTaskStatus.NEEDSINFO
+            bugtask.transitionToStatus(BugTaskStatus.NEEDSINFO)
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.status = BugTaskStatus.FIXCOMMITTED
+            bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.status = BugTaskStatus.FIXRELEASED
+                bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
             else:
-                bugtask.status = BugTaskStatus.REJECTED
+                bugtask.transitionToStatus(BugTaskStatus.REJECTED)
         else:
-            bugtask.status = BugTaskStatus.UNCONFIRMED
+            bugtask.transitionToStatus(BugTaskStatus.UNCONFIRMED)
 
         # add the status to the notes section, to account for any lost
         # information
@@ -478,7 +478,7 @@ class Bugzilla:
         # translate bugzilla status and severity to LP equivalents
         task = lp_bug.bugtasks[0]
         task.datecreated = bug.creation_ts
-        task.assignee = self.person(bug.assigned_to)
+        task.transitionToAssignee(self.person(bug.assigned_to))
         task.statusexplanation = bug.status_whiteboard
         bug.mapSeverity(task)
         bug.mapStatus(task)

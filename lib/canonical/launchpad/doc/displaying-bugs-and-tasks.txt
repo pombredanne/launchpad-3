@@ -80,39 +80,39 @@ Let's see some examples of how this works:
   >>> ORIGINAL_STATUS = test_task.status
   >>> ORIGINAL_ASSIGNEE = test_task.assignee
 
-  >>> test_task.assignee = None
+  >>> test_task.transitionToAssignee(None)
   >>> test_task.statusdisplayhtml
   'confirmed (unassigned)'
 
-  >>> test_task.assignee = foobar
-  >>> test_task.status = BugTaskStatus.UNCONFIRMED
+  >>> test_task.transitionToAssignee(foobar)
+  >>> test_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
   >>> test_task.statusdisplayhtml
   u'unconfirmed, assigned to <img alt="" src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
-  >>> test_task.status = BugTaskStatus.CONFIRMED
+  >>> test_task.transitionToStatus(BugTaskStatus.CONFIRMED)
   >>> test_task.statusdisplayhtml
   u'confirmed, assigned to <img alt="" src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
-  >>> test_task.status = BugTaskStatus.REJECTED
+  >>> test_task.transitionToStatus(BugTaskStatus.REJECTED)
   >>> test_task.statusdisplayhtml
   u'rejected by <img alt="" src="/@@/user.gif" /> <a href=".../people/name16/+assignedbugs">Foo Bar</a>'
 
-  >>> test_task.assignee = None
+  >>> test_task.transitionToAssignee(None)
   >>> test_task.statusdisplayhtml
   'rejected (unassigned)'
 
-  >>> test_task.status = BugTaskStatus.FIXRELEASED
+  >>> test_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
   >>> test_task.statusdisplayhtml
   'fix released (unassigned)'
 
-  >>> test_task.assignee = foobar
+  >>> test_task.transitionToAssignee(foobar)
   >>> test_task.statusdisplayhtml
   u'fix released, assigned to <img alt="" src="/@@/user.gif" /> <a href="/people/name16/+assignedbugs">Foo Bar</a>'
 
 Lastly, some cleanup:
 
-  >>> test_task.status = ORIGINAL_STATUS
-  >>> test_task.assignee = ORIGINAL_ASSIGNEE
+  >>> test_task.transitionToStatus(ORIGINAL_STATUS)
+  >>> test_task.transitionToAssignee(ORIGINAL_ASSIGNEE)
 
 Status Elsewhere
 ----------------
@@ -143,9 +143,9 @@ statuselsewhere value is affected:
 
   >>> related_task = bugtaskset.get(2).related_tasks[0]
   >>> ORIGINAL_STATUS = related_task.status
-  >>> related_task.status = BugTaskStatus.FIXRELEASED
+  >>> related_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
 
   >>> bugtaskset.get(2).statuselsewhere
   'fixed in 1 of 3 places'
 
-  >>> related_task.status = ORIGINAL_STATUS
+  >>> related_task.transitionToStatus(ORIGINAL_STATUS)

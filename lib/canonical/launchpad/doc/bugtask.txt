@@ -439,15 +439,15 @@ To edit an upstream task, you must be logged in. Anonymous users
 cannot edit upstream tasks.
 
     >>> login(ANONYMOUS)
-    >>> upstream_task.status = STATUS_CONFIRMED
+    >>> upstream_task.transitionToStatus(STATUS_CONFIRMED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
 Let's login and try again.
 
     >>> login('jeff.waugh@ubuntulinux.com')
-    >>> upstream_task.status = STATUS_FIXRELEASED
+    >>> upstream_task.transitionToStatus(STATUS_FIXRELEASED)
 
 Distro and Distro Release Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -456,15 +456,15 @@ Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
 
     >>> login(ANONYMOUS)
-    >>> distro_task.status = STATUS_FIXRELEASED
+    >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
-    >>> distro_release_task.assignee = sample_person
+    >>> distro_release_task.transitionToAssignee(sample_person)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'assignee', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToAssignee', 'launchpad.Edit')
 
 But once authenticated:
 
@@ -472,8 +472,8 @@ But once authenticated:
 
 We can edit the task:
 
-    >>> distro_task.status = STATUS_FIXRELEASED
-    >>> distro_release_task.assignee = sample_person
+    >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
+    >>> distro_release_task.transitionToAssignee(sample_person)
 
 Null Bug Tasks
 --------------
@@ -605,10 +605,11 @@ properties of the bugtask.
       ...
     Unauthorized: (..., 'status', 'launchpad.View')
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXCOMMITTED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.FIXCOMMITTED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
 The private bugs will be invisible to No Privileges Person in the search
 results:
@@ -644,7 +645,8 @@ And note that he can access and set the bugtask attributes:
     >>> bug_upstream_firefox_no_svg_support.status.title
     'Unconfirmed'
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.UNCONFIRMED)
 
 Privacy and Team Awareness
 --------------------------
@@ -723,8 +725,10 @@ As will attribute access:
 
 And attribute setting:
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXRELEASED
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED)
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.UNCONFIRMED)
 
 Sorting Bug Tasks
 -----------------

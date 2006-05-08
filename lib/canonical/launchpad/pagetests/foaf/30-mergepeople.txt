@@ -170,16 +170,14 @@
   ...
 
 
-  The user types his password and then proves that he is the owner of that
-  e-mail address, but the merge wasn't finished because the duplicate account still
-  have a registered email adresses.
+  User confirms the merge request submitting the form, but the merge wasn't finished because the duplicate account still have a registered email adresses.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... password=test""" % path)
+  ... VALIDATE=Confirm""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/people/no-priv
@@ -225,7 +223,7 @@
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... password=test""" % path)
+  ... VALIDATE=Confirm""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/people/no-priv
@@ -308,6 +306,7 @@
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
   >>> token_base_path = '/token/%s' % token
+
 
   ##>>> new_transaction()
   ##>>> from canonical.launchpad.database import LoginTokenSet

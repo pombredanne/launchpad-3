@@ -262,12 +262,14 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def potemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id)
+        result.prejoin(['potemplatename'])
         result = list(result)
         return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
+        result.prejoin(['potemplatename'])
         result = list(result)
         return sorted(result, key=lambda x: x.potemplatename.name)
 

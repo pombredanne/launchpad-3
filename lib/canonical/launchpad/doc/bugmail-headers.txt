@@ -64,7 +64,7 @@ doesn't have a "preferred email" set in Launchpad.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> scott = getUtility(IPersonSet).getByName('keybuk')
-    >>> debian_firefox_bugtask.assignee = scott
+    >>> debian_firefox_bugtask.transitionToAssignee(scott)
     >>> debian_firefox_bugtask.asEmailHeaderValue()
     u'distribution=debian; sourcepackage=None; component=None;
       status=Confirmed; assignee=keybuk;'

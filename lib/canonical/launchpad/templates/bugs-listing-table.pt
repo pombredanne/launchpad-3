@@ -11,11 +11,11 @@
   </tal:no-results>
 
   <tal:results condition="context/batch">
-    <small tal:content="structure context/@@+navigation-links" />
+    <div class="lesser" tal:content="structure context/@@+navigation-links" />
   </tal:results>
 </div>
 <tal:results condition="context/batch">
-  <table class="listing sortable" id="buglisting">
+  <table class="listing" id="buglisting">
     <thead>
       <tr>
         <th colspan="3">Summary</th>
@@ -50,10 +50,10 @@
         </td>
         <td tal:content="bugtask/targetname"
             tal:condition="context/show_column/targetname|nothing"
-            nowrap>mozilla-firefox (Ubuntu)</td>
+        >mozilla-firefox (Ubuntu)</td>
         <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
             tal:condition="context/show_column/packagename|nothing"
-            nowrap>mozilla-firefox (Ubuntu)</td>
+        >mozilla-firefox (Ubuntu)</td>
         <td tal:content="structure bugtask/product/name|string:&mdash;"
             tal:condition="context/show_column/productname|nothing"
         >firefox</td>
@@ -64,7 +64,5 @@
       </tr>
     </tbody>
   </table>
-<div>
-  <small tal:content="structure context/@@+navigation-links" />
-</div>
+  <div class="lesser" tal:content="structure context/@@+navigation-links" />
 </tal:results>

@@ -171,9 +171,9 @@
           </div>
           <div tal:condition="python:not context.bug.isSubscribed(view.user)">
             <input type="checkbox" name="subscribe" id="subscribe"
-                   value="Subscribe" checked />
+                   value="Subscribe" />
             <label for="subscribe" style="font-weight: normal">
-              Subscribe me to this bug report
+              E-mail me about changes to this bug report
             </label>
           </div>
           <br />

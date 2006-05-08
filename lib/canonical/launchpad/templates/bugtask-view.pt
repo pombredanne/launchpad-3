@@ -77,7 +77,7 @@
                   Importance
                 </label>
               </td>
-              <td tal:condition="context/milestone">
+              <td tal:condition="python:context.milestone and view.milestone_widget">
                 <label tal:attributes="for view/milestone_widget/name"
                        tal:content="view/milestone_widget/label">
                   Target
@@ -87,7 +87,7 @@
             <tr>
               <td tal:content="structure view/status_widget" />
               <td tal:content="structure view/importance_widget" />
-              <td tal:condition="context/milestone"
+              <td tal:condition="python:context.milestone and view.milestone_widget"
                   tal:content="context/milestone/name">
               </td>
             </tr>
