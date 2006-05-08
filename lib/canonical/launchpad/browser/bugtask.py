@@ -945,11 +945,7 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""
-        return "Bugs in %s: Advanced Search" % self.context.displayname
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs in %s" % self.context.displayname
+        return "Bugs in %s: Advanced search" % self.context.displayname
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
