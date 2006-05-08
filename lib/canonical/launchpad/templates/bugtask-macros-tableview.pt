@@ -329,7 +329,14 @@
                   </tr>
                   <tr>
                     <td>
-                      <input type="radio" name="assignee_option" value="any" id="any" checked> <label for="any">Anybody</label><br />
+
+                    <input
+                      type="radio"
+                      name="assignee_option"
+                      value="any"
+                      id="any"
+                    checked><label for="any">Doesn&#8217;t matter</label><br />
+
                       <input type="radio" name="assignee_option" value="none" id="none"><label for="none"> Nobody</label><br />
                         <div class="field">
                           <div tal:attributes="class python:view.assignee_error and 'error' or ''">
