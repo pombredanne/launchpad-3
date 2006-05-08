@@ -58,8 +58,9 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
         tree = createbranch(srcbranchdir)
         to_mirror.mirror()
-        mirrored_tree = bzrlib.workingtree.WorkingTree.open(to_mirror.dest)
-        self.assertEqual(tree.last_revision(), mirrored_tree.last_revision())
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(tree.last_revision(),
+                         mirrored_branch.last_revision())
 
 
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):

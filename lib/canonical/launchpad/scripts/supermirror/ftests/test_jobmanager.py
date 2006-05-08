@@ -98,10 +98,16 @@ class TestJobManagerInLaunchpad(LaunchpadFunctionalTestCase):
     def _getBranchDir(self, branchname):
         return os.path.join(self.testdir, branchname)
 
-    def assertMirrored(self, branch):
-        source_tree = bzrlib.workingtree.WorkingTree.open(branch.source)
-        dest_tree = bzrlib.workingtree.WorkingTree.open(branch.dest)
-        self.assertEqual(source_tree.last_revision(), dest_tree.last_revision())
+    def assertMirrored(self, branch_to_mirror):
+        """Assert that branch_to_mirror's source and destinations have the same
+        revisions.
+        
+        :param branch_to_mirror: a BranchToMirror instance.
+        """
+        source_branch = bzrlib.branch.Branch.open(branch_to_mirror.source)
+        dest_branch = bzrlib.branch.Branch.open(branch_to_mirror.dest)
+        self.assertEqual(source_branch.last_revision(),
+                         dest_branch.last_revision())
 
     def testJobRunner(self):
         manager = jobmanager.JobManager()
