@@ -54,6 +54,22 @@
           />
   </browser:editform>
 
+  <browser:generalform
+      name="+changepassword"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonChangePasswordView"
+      schema="canonical.launchpad.interfaces.IPersonChangePassword"
+      label="Change your password"
+      fields="currentpassword password"
+      keyword_arguments="password"
+      permission="launchpad.Edit"
+      template="../templates/person-changepassword.pt">
+      <browser:widget
+          field="password"
+          class="canonical.widgets.PasswordChangeWidget"
+          />
+  </browser:generalform>
+
   <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.IPerson"
@@ -274,10 +290,6 @@
           name="+codesofconduct"
           template="../templates/person-codesofconduct.pt"
           lp:url="/people/$Person.name/+codesofconduct" />
-      <browser:page
-          name="+changepassword"
-          template="../templates/person-changepassword.pt"
-          lp:url="/people/$person.id/+changepassword" />
       <browser:page
           name="+editwikinames"
           template="../templates/person-editwikinames.pt"
