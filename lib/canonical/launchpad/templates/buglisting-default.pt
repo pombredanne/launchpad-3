@@ -4,6 +4,20 @@
       i18n:domain="malone"
 >
   <body>
+    <metal:heading fill-slot="pageheading">
+      <h1
+        tal:condition="view/getAdvancedSearchPageHeading"
+        tal:content="view/getAdvancedSearchPageHeading"
+      >Bugs in Fooix: Advanced search</h1>
+      <h1 tal:condition="not: view/getAdvancedSearchPageHeading">
+        Bugs in
+        <tal:software replace="context/displayname">Fooix</tal:software>
+      </h1>
+    </metal:heading>
+  
+    <div metal:fill-slot="head_epilogue">
+      <style type="text/css">label {font-weight: normal;}</style>
+    </div>
 
   <metal:leftportlets fill-slot="portlets_one">
     <tal:do_not_show_portlets_advanced_form
@@ -19,8 +33,6 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
-      <h1>Bugs in <span tal:replace="context/displayname" /></h1>
 
       <tal:do_not_show_advanced_form 
         condition="not: view/shouldShowAdvancedForm">

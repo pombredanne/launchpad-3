@@ -112,7 +112,6 @@ h1, h2, h3, h4, h5, h6 {
   color: #708a96;
   font-size: 100%;
   font-weight: normal;
-  margin: 0;
   text-align: left;
 }
 h1 :link, h2 :link, h3 :link, h4 :link, h5 :link, h6 :link,
@@ -121,7 +120,7 @@ h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
 }
 h1 {
   font-size: 1.6em;
-  margin-bottom: 0.5em;
+  margin: 0 0 0.5em;
   padding-top: 0;
 }
 h2 {
