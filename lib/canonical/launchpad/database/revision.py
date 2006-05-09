@@ -27,7 +27,8 @@ class Revision(SQLBase):
 
     revision_author = ForeignKey(
         dbName='revision_author', foreignKey='RevisionAuthor', notNull=True)
-    revision_id = StringCol(notNull=True)
+    revision_id = StringCol(notNull=True, alternateID=True,
+                            alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
 
     @property
@@ -47,7 +48,7 @@ class RevisionAuthor(SQLBase):
 
     _table = 'RevisionAuthor'
 
-    name = StringCol(notNull=True)
+    name = StringCol(notNull=True, alternateID=True)
 
 
 class RevisionParent(SQLBase):
