@@ -363,7 +363,10 @@ well:
     ...     'This is a long comment, which is longer than 72 characters.'
     ...     ' This should result in the lined being wrapped, so that it'
     ...     " won't be displayed as a single long line. Let's add another"
-    ...     ' sentence just to make it longer.',
+    ...     ' sentence just to make it longer.'
+    ...     '\r\n\r\n'
+    ...     "Let's add another paragraph to the comment as well, separating"
+    ...     " it with dos-style line endings.",
     ...     foo_bar, datecreated=now - timedelta(minutes=6))
     >>> for minutes_ago in reversed(range(10)):
     ...     if minutes_ago == 6:
@@ -435,6 +438,9 @@ well:
     displayed as a single long line. Let's add another sentence just to
     make it longer.
     <BLANKLINE>
+    Let's add another paragraph to the comment as well, separating it
+    with dos-style line endings.
+    <BLANKLINE>
     ** Visibility changed to: Public.
     <BLANKLINE>
     --
@@ -456,6 +462,9 @@ a trailing space.
     ['This is a long comment, which is longer than 72 characters. This should',
      "result in the lined being wrapped, so that it won't be displayed as a",
      "single long line. Let's add another sentence just to make it longer.",
+     '',
+     "Let's add another paragraph to the comment as well, separating it",
+     'with dos-style line endings.',
      '',
      '** Visibility changed to: Public.',
      '',
