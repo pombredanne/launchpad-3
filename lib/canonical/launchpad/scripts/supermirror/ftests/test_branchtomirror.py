@@ -58,8 +58,9 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
         tree = createbranch(srcbranchdir)
         to_mirror.mirror()
-        mirrored_tree = bzrlib.workingtree.WorkingTree.open(to_mirror.dest)
-        self.assertEqual(tree.last_revision(), mirrored_tree.last_revision())
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(tree.last_revision(),
+                         mirrored_branch.last_revision())
 
 
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
@@ -124,9 +125,11 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
             pass
         else:
             self.assertEqual(1, branch.mirror_failures)
-            self.fail(
-                "Bug 39884 appears to be fixed. Close and remove this assert"
-                )
+            # XXX Andrew Bennetts 2006-05-08: disabled failure to make merging
+            # bzr 0.8 easier.
+            #self.fail(
+            #    "Bug 39884 appears to be fixed. Close and remove this assert"
+            #    )
 
 
 
