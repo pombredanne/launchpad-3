@@ -16,7 +16,7 @@ from zope.schema import Object, Choice, Int, TextLine, Text, Bytes, Bool
 
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces import IHasBug
+from canonical.launchpad.interfaces.launchpad import IHasBug
 
 from canonical.launchpad.fields import Title
 from canonical.launchpad.validators.bugattachment import (

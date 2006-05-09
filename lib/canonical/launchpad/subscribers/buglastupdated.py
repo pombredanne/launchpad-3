@@ -5,7 +5,9 @@
 __metaclass__ = type
 
 import datetime
+
 import pytz
+
 from canonical.launchpad.interfaces import IBug, IHasBug
 
 def update_bug_date_last_updated(object, event):
@@ -17,8 +19,8 @@ def update_bug_date_last_updated(object, event):
     else:
         raise AssertionError(
             "Unable to retrieve current bug to update 'date last updated'. "
-            "Event handler expects object implementing IBug or IHasBug. Got: %s" %
-            repr(object))
+            "Event handler expects object implementing IBug or IHasBug. "
+            "Got: %s" % repr(object))
 
     UTC = pytz.timezone('UTC')
     now = datetime.datetime.now(UTC)

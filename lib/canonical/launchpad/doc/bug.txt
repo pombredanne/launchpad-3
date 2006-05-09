@@ -125,11 +125,10 @@ Now we can mark bug #6 private:
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IOpenLaunchBag, IBug)
+    ...     IPersonSet, IBug)
     >>> from canonical.launchpad.helpers import Snapshot
 
     >>> new_values = {"private" : True}
-    >>> getUtility(IOpenLaunchBag).add(firefox_crashes)
     >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
     ...     firefox_crashes, new_values)
 
@@ -198,7 +197,6 @@ And again, let's fake setting the bug private:
 
     >>> old_state = Snapshot(blackhole_trash_folder, providing=IBug)
     >>> blackhole_trash_folder.private = True
-    >>> getUtility(IOpenLaunchBag).add(blackhole_trash_folder)
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,
     ...     ["id", "title", "private"])
@@ -368,8 +366,10 @@ Date Last Updated
 
 Malone tracks the last time a change was made to a
 bug. IBug.date_last_updated stores the date when anything is changed or
-added to a bug, with the exception of subscribing/unsubscribing. Let's
-look at an example of each.
+added to a bug, i.e., an IBug or IBugTask is added or changed, or an
+IHasBug object is added or changed. The sole exception to this is
+subscribing/unsubscribing (which create/delete IBugSubscription
+objects.) Let's look at an example of each.
 
 When a bug is created, its date_last_updated is set right away, to
 ensure that new bugs sort appropriately.
@@ -378,8 +378,6 @@ ensure that new bugs sort appropriately.
   ...     title="a test firefox bug",
   ...     comment="a description of the bug",
   ...     owner=current_user())
-
-  >>> getUtility(IOpenLaunchBag).add(firefox_bug)
 
   >>> firefox_bug.datecreated == firefox_bug.date_last_updated
   True
@@ -398,8 +396,6 @@ Adding a comment.
 
 Changing the bug summary.
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
-
   >>> from canonical.launchpad.interfaces import IBug
 
   >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
@@ -409,6 +405,8 @@ Changing the bug summary.
   >>> bug_summary_changed = SQLObjectModifiedEvent(
   ...     firefox_bug, bug_before_modification, ["title"])
 
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
   >>> notify(bug_summary_changed)
 
   >>> firefox_bug.date_last_updated > current_date_last_updated
@@ -416,14 +414,14 @@ Changing the bug summary.
 
 Changing the description.
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
-
   >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
   >>> firefox_bug.description = "a new description"
 
   >>> bug_description_changed = SQLObjectModifiedEvent(
   ...     firefox_bug, bug_before_modification, ["description"])
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> notify(bug_description_changed)
 
@@ -437,7 +435,8 @@ Modifying a bugtask will update IBug.date_last_updated.
 
   >>> firefox_task = firefox_bug.bugtasks[0]
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
+  >>> print firefox_task.targetname
+  firefox (upstream)
 
   >>> print firefox_task.severity.title
   Normal
@@ -454,6 +453,8 @@ Modifying a bugtask will update IBug.date_last_updated.
   ...     firefox_task, bugtask_before_modification,
   ...     ["status", "severity"])
 
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
   >>> notify(bugtask_modified)
 
   >>> firefox_bug.date_last_updated > current_date_last_updated
@@ -468,10 +469,10 @@ Adding a new task.
   >>> print thunderbird.name
   thunderbird
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
-
   >>> thunderbird_task = getUtility(IBugTaskSet).createTask(
   ...     bug=firefox_bug, owner=foobar, product=thunderbird)
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> notify(SQLObjectCreatedEvent(thunderbird_task))
 
@@ -481,7 +482,6 @@ Adding a new task.
 Changing bug visibility.
 
   >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
-  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> firefox_bug.private
   False
@@ -489,6 +489,8 @@ Changing bug visibility.
 
   >>> bug_visibility_changed = SQLObjectModifiedEvent(
   ...     firefox_bug, bug_before_modification, ["private"])
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> notify(bug_visibility_changed)
 
@@ -498,7 +500,6 @@ Changing bug visibility.
 Changing bug security.
 
   >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
-  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> firefox_bug.security_related
   False
@@ -506,6 +507,8 @@ Changing bug security.
 
   >>> bug_security_changed = SQLObjectModifiedEvent(
   ...     firefox_bug, bug_before_modification, ["security_related"])
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> notify(bug_security_changed)
 
@@ -515,7 +518,6 @@ Changing bug security.
 Marking as duplicate.
 
   >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
-  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> print firefox_bug.duplicateof
   None
@@ -524,19 +526,19 @@ Marking as duplicate.
   >>> bug_duplicateof_changed = SQLObjectModifiedEvent(
   ...     firefox_bug, bug_before_modification, ["duplicateof"])
 
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
   >>> notify(bug_duplicateof_changed)
 
   >>> firefox_bug.date_last_updated > current_date_last_updated
   True
 
-Adding at attachment.
+Adding an attachment.
 
   >>> from StringIO import StringIO
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> from canonical.launchpad.interfaces import (
   ...     IBugAttachmentSet, IMessageSet, IBugMessageSet, ILibraryFileAliasSet)
-
-  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> firefox_bug.attachments.count()
   0
@@ -558,6 +560,8 @@ Adding at attachment.
   ...     bug=firefox_bug, filealias=filealias, title='Some info.',
   ...     message=message)
 
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
   >>> notify(SQLObjectCreatedEvent(attachment))
 
   >>> firefox_bug.attachments.count()
@@ -570,13 +574,14 @@ Adding a branch.
 
   >>> from canonical.launchpad.interfaces import IBranchSet
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
-
   >>> firefox_bug.bug_branches.count()
   0
 
   >>> branch_one = getUtility(IBranchSet).get(1)
   >>> bug_branch = firefox_bug.addBranch(branch_one)
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
   >>> notify(SQLObjectCreatedEvent(bug_branch))
 
   >>> firefox_bug.bug_branches.count()
@@ -588,13 +593,14 @@ Linking to a CVE.
 
   >>> from canonical.launchpad.interfaces import ICveSet
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
-
   >>> firefox_bug.cve_links.count()
   0
 
   >>> cveref = getUtility(ICveSet)["1999-8979"]
   >>> bug_cveref = firefox_bug.linkCVE(cveref)
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
   >>> notify(SQLObjectCreatedEvent(bug_cveref))
 
   >>> firefox_bug.cve_links.count()
@@ -604,8 +610,6 @@ Linking to a CVE.
   True
 
 Linking to an external bug tracker.
-
-  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> from canonical.launchpad.interfaces import (
   ...     IBugWatchSet, IBugTrackerSet)
@@ -618,6 +622,8 @@ Linking to an external bug tracker.
   ...     bug=firefox_bug, owner=current_user(), bugtracker=mozilla_bugtracker,
   ...     remotebug='1234')
 
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
   >>> notify(SQLObjectCreatedEvent(bugwatch))
 
   >>> firefox_bug.watches.count()
@@ -629,12 +635,12 @@ Linking to an external bug tracker.
 Subscribing and unsubscribing does *not* trigger an update of
 IBug.date_last_updated.
 
-  >>> current_date_last_updated = firefox_bug.date_last_updated
-
   >>> firefox_bug.isSubscribed(ubuntu_team)
   False
 
   >>> subscription = firefox_bug.subscribe(ubuntu_team)
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
 
   >>> notify(SQLObjectCreatedEvent(subscription))
 
