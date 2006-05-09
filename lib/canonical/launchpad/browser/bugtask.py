@@ -595,12 +595,18 @@ class BugTaskEditView(GeneralFormView):
             bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
-            #XXX: Reset the bug task's status information. The right
-            #     thing would be to convert the bug watch's status to a
-            #     Malone status, but it's not trivial to do at the
-            #     moment. I will fix this later.
-            #     -- Bjorn Tillenius, 2006-03-01
-            if bugtask.bugwatch is not None:
+            if bugtask.bugwatch is None:
+                # Reset the status and severity to the default values,
+                # since Unknown isn't selectable in the UI.
+                bugtask.transitionToStatus(IBugTask['status'].default)
+                bugtask.priority = IBugTask['priority'].default
+                bugtask.severity = IBugTask['severity'].default
+            else:
+                #XXX: Reset the bug task's status information. The right
+                #     thing would be to convert the bug watch's status to a
+                #     Malone status, but it's not trivial to do at the
+                #     moment. I will fix this later.
+                #     -- Bjorn Tillenius, 2006-03-01
                 bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
                 bugtask.priority = BugTaskPriority.UNKNOWN
                 bugtask.severity = BugTaskSeverity.UNKNOWN
