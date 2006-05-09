@@ -1,5 +1,5 @@
 <metal:block metal:define-macro="simple-search-form">
-<form method="GET" name="search" action="">
+<form method="get" name="search" action="">
   <span tal:content="structure view/searchtext_widget" />
   <input type="submit" name="search" value="Search" />
   <span tal:content="structure view/status_widget/hidden" />
