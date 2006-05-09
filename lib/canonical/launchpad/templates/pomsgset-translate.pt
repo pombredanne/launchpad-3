@@ -40,8 +40,7 @@
 
         <!-- Display settings. -->
         <form method="POST" style="text-align: right;" action="+translate">
-          <!-- the hidden elements -->
-          <label>Alt:</label>
+          <label>Make suggestions from:</label>
           <tal:comment replace="nothing">
             Suggestions from this alternative language will be displayed as
             well as suggestions from the translation language. In the case

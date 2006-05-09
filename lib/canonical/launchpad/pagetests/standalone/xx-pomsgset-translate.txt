@@ -4,136 +4,165 @@ render just one message with all available information for it.
 When we are on the first message, we should be 100% sure that the 'First' and
 'Previous' links are hidden and 'Next' and 'Last' are the right ones.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> browser.open('http://localhost/')
+
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open(
+  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/1/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'
+  >>> print browser.contents
+  <!DOCTYPE...
   ...Item...1...of...22...
-                    </div>
-  <BLANKLINE>
-                    <!-- Paging doodads. -->
-                    <div style="width: 50%; float: right; text-align: right;">
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-                      <!-- Offset of next page, if not at end. -->
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate">Next</a>
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate">Last</a>
+
+  >>> browser.getLink('First')
+  Traceback (most recent call last):
   ...
+  LinkNotFoundError
 
-But when we choose the next entry, all links should appear.
+  >>> browser.getLink('Prev')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> next = browser.getLink('Next')
+  >>> next
+  <Link text='Next' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'>
+  >>> browser.getLink('Last')
+  <Link text='Last' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+
+
+when we choose the next entry, all links should appear.
+
+  >>> next.click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'
+  >>> print browser.contents
+  <!DOCTYPE...
   ...Item...2...of...22...
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate">First</a>
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate">Previous</a>
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate">Next</a>
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate">Last</a>
-  ...
 
-Let's test the ones at the end of the form.
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Item...21...of...22...
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate">First</a>
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate">Previous</a>
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate">Next</a>
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate">Last</a>
-  ...
+  >>> browser.getLink('First')
+  <Link text='First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  >>> browser.getLink('Previous')
+  <Link text='Previous' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  >>> browser.getLink('Next')
+  <Link text='Next' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate'>
+  >>> last = browser.getLink('Last')
+  >>> last
+  <Link text='Last' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
 
 And the last one.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> last.click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'
+  >>> print browser.contents
+  <!DOCTYPE...
   ...Item...22...of...22...
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate">First</a>
-  ...<a href="http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate">Previous</a>
-  <BLANKLINE>
-                      </span>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-                      <!-- Offset of next page, if not at end. -->
-  <BLANKLINE>
-                    </div>
+
+  >>> browser.getLink('First')
+  <Link text='First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  >>> prev = browser.getLink('Previous')
+  >>> prev
+  <Link text='Previous' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'>
+
+  >>> browser.getLink('Next')
+  Traceback (most recent call last):
   ...
+  LinkNotFoundError
+
+  >>> browser.getLink('Last')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+Let's test the ones at the end of the form.
+
+  >>> prev.click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Item...21...of...22...
+
+  >>> browser.getLink('First')
+  <Link text='First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
+  >>> browser.getLink('Previous')
+  <Link text='Previous' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate'>
+  >>> browser.getLink('Next')
+  <Link text='Next' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+  >>> browser.getLink('Last')
+  <Link text='Last' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'>
+
+Now, we are going to check a message submission.
+
+  >>> browser.open(
+  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/13/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Item...13...of...22...
 
 Check that the message #13 is without translation.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...name="msgset_142_es_translation_0"
-  tabindex="1" />
-  ...
+  >>> browser.getControl(name='msgset_142_es_translation_0').value
+  ''
 
-We are going to submit now one entry with a bad translation to be sure we
-detect them and notify the user.
+Let's submit an invalid value for this message #13.
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 86
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... msgset_142=&msgset_142_es_translation_0=foo+%25i&submit_translations=Save+%26+Continue""")
-  HTTP/1.1 200 Ok
-  ...There is an error in the translation you provided. Please, correct it before continuing...
+  >>> browser.getControl(name='msgset_142_es_translation_0').value = 'foo %i'
+  >>> browser.getControl(name='submit_translations').click()
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
+  >>> print browser.contents
+  <!DOCTYPE...
   ...Item...13...of...22...
-  ...Error in Translation:...
-  ...format specifications in 'msgid' and 'msgstr' for argument 1 are not the same...
-  ...msgset_142_es_translation_0...
-  ...value="foo %i"...
+  >>> 'There is an error in the translation you provided' in browser.contents
+  True
+  >>> "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same" in browser.contents
+  True
+  >>> browser.getControl(name='msgset_142_es_translation_0').value == 'foo %i'
+  True
 
 And now a good submit.
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 86
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... msgset_142=&msgset_142_es_translation_0=foo+%25s&submit_translations=Save+%26+Continue""")
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate
-  <BLANKLINE>
+  >>> browser.getControl(name='msgset_142_es_translation_0').value = 'foo %s'
+  >>> browser.getControl(name='submit_translations').click()
+
+We moved to the next message, that means this submission worked.
+
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
 
 Now, it has the submitted value.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...name="msgset_142_es_translation_0"...
-  ...value="foo %s"...
+  >>> browser.open(
+  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/13/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Item...13...of...22...
+
+Check that the message #13 has the new value we submitted.
+
+  >>> browser.getControl(name='msgset_142_es_translation_0').value
+  'foo %s'
 
 Finally, check that we get more than one suggestion for textareas in this form.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
+  >>> browser.open(
+  ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/es/14/+translate')
+  >>> browser.url
+  'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
+  >>> print browser.contents
+  <!DOCTYPE...
   ...Item...14...of...22...
   ...textarea...
   ...name="msgset_143_es_translation_0"...

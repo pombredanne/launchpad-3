@@ -526,7 +526,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return
 
         dispatch_table = {
-            'pofile_translation_filter': self._filter_translations,
+            'select_alternate_language': self._do_redirect,
+            'pofile_translation_filter': self._do_redirect,
             'submit_translations': self._store_translations
             }
         dispatch_to = [(key, method)
@@ -540,8 +541,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         key, method = dispatch_to[0]
         method()
 
-    def _filter_translations(self):
-        """Handle a form submission to filter translations."""
+    def _do_redirect(self):
+        """Handle a form submission that only changes form arguments."""
         # We need to redirect to the new URL based on the new given arguments.
         self.redirecting = True
         self.request.response.redirect(self.createURL())

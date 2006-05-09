@@ -38,14 +38,16 @@
 
       <tal:havepluralforms condition="not: view/lacks_plural_form_information">
 
-        <!-- Display settings. -->
+        <!-- Alternative suggestions. -->
         <form method="POST" style="text-align: right;" action="+translate">
           <!-- the hidden elements -->
           <input type="hidden" name="offset" value=""
                  tal:attributes="value view/offset" />
           <input type="hidden" name="count" value=""
                  tal:attributes="value view/count" />
-          <label>Alt:</label>
+          <input type="hidden" name="show" value=""
+                 tal:attributes="value view/show" />
+          <label>Make suggestions from:</label>
           <tal:comment replace="nothing">
             Suggestions from this alternative language will be displayed as
             well as suggestions from the translation language. In the case
@@ -55,7 +57,17 @@
           </tal:comment>
 
           <tal:block replace="structure view/lang_selector" />
-
+          <input
+            type="submit" name='select_alternate_language' value="Change" />
+        </form>
+        <form method="POST" style="text-align: right;" action="+translate">
+          <!-- the hidden elements -->
+          <input type="hidden" name="offset" value=""
+                 tal:attributes="value view/offset" />
+          <input type="hidden" name="count" value=""
+                 tal:attributes="value view/count" />
+          <input type="hidden" name="alt" value=""
+                 tal:attributes="value view/second_lang_code" />
           <label>Show:</label>
 
           <tal:comment tal:replace="nothing">
@@ -98,7 +110,7 @@
             </option>
           </select>
           <input
-            type="submit" name='pofile_translation_filter' value="Change" />
+            type="submit" name='pofile_translation_filter' value="Filter" />
         </form>
 
         <!-- The translation form. -->

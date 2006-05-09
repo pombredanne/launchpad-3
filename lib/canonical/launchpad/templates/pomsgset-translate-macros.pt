@@ -29,7 +29,7 @@
           </tal:submission>
         </tal:block>
         <tal:block condition="pomsgset_view/is_multi_line">
-          <tal:all-or-one condition="python:maxentries is not None">
+          <tal:maxentries condition="maxentries">
             <tal:define define="submission python:submissions[0]">
               <div
                 tal:define="submissionlang submission/pomsgset/pofile/language"
@@ -51,8 +51,8 @@
                 </tal:block>
               </div>
             </tal:define>
-          </tal:all-or-one>
-          <tal:all-or-one condition="python:maxentries is None">
+          </tal:maxentries>
+          <tal:maxentries condition="not:maxentries">
             <tal:submission repeat="submission submissions">
               <div
                 tal:define="submissionlang submission/pomsgset/pofile/language"
@@ -69,7 +69,7 @@
                    tal:attributes="href submission/person/fmt:url" >Foo Bar</a>
               </div>
             </tal:submission>
-          </tal:all-or-one>
+          </tal:maxentries>
         </tal:block>
       </td>
     </tr>

@@ -275,14 +275,15 @@ class POMsgSetView(LaunchpadView):
 
     @property
     def next_URL(self):
-        """Return the URL to get next self.count number of message sets."""
+        """Return the URL to get next message set."""
         number_msgsets = len(self.context.potmsgset.potemplate)
         current_msgset = self.context.potmsgset.sequence
-        assert (current_msgset + 1 <= number_msgsets), (
-            'Only have %d messages, requested %d' % (
-                number_msgsets, current_msgset + 1))
-
-        return self.createURL(sequence=current_msgset + 1)
+        if current_msgset + 1 <= number_msgsets:
+            return self.createURL(sequence=current_msgset + 1)
+        else:
+            # We are in the last message, the next virtual message is the
+            # first one.
+            return self.createURL(sequence=1)
 
     @property
     def tab_index(self):
@@ -571,8 +572,15 @@ class POMsgSetView(LaunchpadView):
 
         if self.form_posted_translations is None:
             # There are not translations interesting for us.
-            self.redirecting = True
-            self.request.response.redirect(self.next_URL)
+            if not 'offset' in self.form:
+                # XXX CarlosPerelloMarin 20060509: We should stop doing this
+                # check when bug #41858 is fixed and we know exactly from
+                # where are we being used.
+                # We are in a the single message view, we should jump to te
+                # next message.
+                self.redirecting = True
+                self.request.response.redirect(self.next_URL)
+            return
 
         has_translations = False
         for form_posted_translation_key in self.form_posted_translations.keys():
@@ -610,24 +618,34 @@ class POMsgSetView(LaunchpadView):
             # user.
             self.error = str(e)
 
-        if self.error is None:
-            self.redirecting = True
-            self.request.response.redirect(self.next_URL)
-        else:
-            # Notify the errors.
-            self.request.response.addErrorNotification(
-                "There is an error in the translation you provided."
-                " Please, correct it before continuing.")
+        if not 'offset' in self.form:
+            # XXX CarlosPerelloMarin 20060509: We should stop doing this
+            # check when bug #41858 is fixed and we know exactly from
+            # where are we being used.
+            if self.error is None:
+                # We are in a the single message view, we should jump to the
+                # next message.
+                self.redirecting = True
+                self.request.response.redirect(self.next_URL)
+            else:
+                # Notify the errors.
+                self.request.response.addErrorNotification(
+                    "There is an error in the translation you provided."
+                    " Please, correct it before continuing.")
 
         # update the statistis for this po file
         self.context.pofile.updateStatistics()
 
     def _select_alternate_language(self):
         """Handle a form submission to filter translations."""
-        # We need to redirect to the new URL based on the new given arguments.
-        self.redirecting = True
-        self.request.response.redirect(
-            self.createURL(sequence=self.context.potmsgset.sequence))
+        if not 'offset' in self.form:
+            # XXX CarlosPerelloMarin 20060509: We should stop doing this
+            # check when bug #41858 is fixed and we know exactly from
+            # where are we being used.
+            # We need to redirect to the new URL based on the new given arguments.
+            self.redirecting = True
+            self.request.response.redirect(
+                self.createURL(sequence=self.context.potmsgset.sequence))
 
     def render(self):
         if self.redirecting:

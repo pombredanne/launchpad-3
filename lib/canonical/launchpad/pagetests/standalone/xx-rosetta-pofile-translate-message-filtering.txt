@@ -66,7 +66,7 @@ If we select only untranslated strings, the URL reflects it:
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
-  ... offset=0&count=10&alt=&show=untranslated&pofile_translation_filter=Change""")
+  ... offset=0&count=10&show=untranslated&pofile_translation_filter=Filter""")
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
@@ -81,7 +81,7 @@ And same thing if we select an alternative language to get suggestions from it.
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
-  ... offset=0&count=10&alt=af&show=need_review&pofile_translation_filter=Change""")
+  ... offset=0&count=10&alt=af&show=need_review&pofile_translation_filter=Filter""")
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
@@ -97,7 +97,7 @@ we get doesn't have those arguments
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
-  ... offset=0&count=10&alt=&show=all&pofile_translation_filter=Change""")
+  ... offset=0&count=10&alt=&show=all&pofile_translation_filter=Filter""")
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
