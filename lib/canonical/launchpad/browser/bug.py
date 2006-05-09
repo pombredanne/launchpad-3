@@ -251,6 +251,7 @@ class BugAlsoReportInView(GeneralFormView):
     process_status = None
     saved_process_form = GeneralFormView.process_form
     show_confirmation = False
+    _nextURL = None
 
     def __init__(self, context, request):
         """Override GeneralFormView.__init__() not to set up widgets."""
@@ -316,7 +317,7 @@ class BugAlsoReportInView(GeneralFormView):
         elif 'product' in self.fieldNames:
             target = self.product_widget.getInputValue()
         else:
-            return AssertionError(
+            raise AssertionError(
                 'Either a product or distribution widget should be present'
                 ' in the form.')
         return target.displayname
@@ -382,20 +383,26 @@ class BugAlsoReportInView(GeneralFormView):
         elif distribution is not None:
             target = distribution
         else:
-            raise UnexpectedFormData(
-                'Neither product nor distribution was provided')
+            raise AssertionError(
+                'validate() should ensure that a product or distribution'
+                ' is present')
 
         if not target.official_malone and not link_to_bugwatch:
             if 'CANCEL' in self.request.form:
-                self._nextURL = None
+                # The user chose not to add an unlinked bugtask, let
+                # him edit the information before processing it.
                 return
             elif 'FORM_SUBMIT' in self.request.form:
                 # The user hasn't confirmed that he really wants to add an
                 # unlinked task.
-                self._nextURL = None
                 self.show_confirmation = True
                 self.index = self.confirmation_page
                 return
+            else:
+                # The user confirmed adding the unlinked bugtask.
+                assert 'CONFIRM' in self.request.form, (
+                    'process() should be called only if CANCEL, CONFIRM,'
+                    ' or FORM_SUBMIT is submitted.')
 
         taskadded = getUtility(IBugTaskSet).createTask(
             self.context.bug,
