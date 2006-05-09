@@ -77,7 +77,7 @@ in a span with the appropriate css class:
 If the value is None, a dash is displayed:
 
     >>> test_task = bug_nine.bugtasks[1]
-    >>> test_task.assignee == None
+    >>> test_task.assignee is None
     True
     >>> assignee_field = IBugTask['assignee'].bind(test_task)
     >>> assignee_widget = DBItemDisplayWidget(assignee_field, None, None)

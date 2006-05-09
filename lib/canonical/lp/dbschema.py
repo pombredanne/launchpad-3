@@ -40,7 +40,6 @@ __all__ = (
 'BugTrackerType',
 'BugExternalReferenceType',
 'BugInfestationStatus',
-'BugTaskPriority',
 'BugRelationship',
 'BugTaskImportance',
 'BuildStatus',
@@ -2522,49 +2521,12 @@ class BugTaskStatus(DBSchema):
         """)
 
 
-class BugTaskPriority(DBSchema):
-    """Bug Task Priority
-
-    This field is no longer used, but is left in case we want to resurrect it later.
-    """
-
-    UNKNOWN = Item(999, """
-        Unknown
-
-        The priority of this bug task is unknown.
-        """)
-
-    HIGH = Item(40, """
-        High
-
-        This is a high priority task for the maintainer.
-        """)
-
-    MEDIUM = Item(30, """
-        Medium
-
-        This is a medium priority task for the maintainer.
-        """)
-
-    LOW = Item(20, """
-        Low
-
-        This is a low priority task for the maintainer.
-        """)
-
-    WONTFIX = Item(10, """
-        Wontfix
-
-        The maintainer does not intend to fix this task.
-        """)
-
-
 class BugTaskImportance(DBSchema):
     """Bug Task Importance
 
-    Importance is an indication of the
-    extent to which the bug impairs the stability and security of
-    the distribution or upstream in which it was reported.
+    Importance is used by developers and their managers to indicate how
+    important fixing a bug is. Importance is typically a combination of the
+    harm caused by the bug, and how often it is encountered.
     """
 
     UNKNOWN = Item(999, """

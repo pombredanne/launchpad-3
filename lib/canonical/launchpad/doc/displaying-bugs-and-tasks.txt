@@ -8,9 +8,8 @@ display bug and bug task information.
 Displaying an Icon with fmt:icon
 --------------------------------
 
-fmt:icon is a TALES adapter that renders an icon for a bugimage, with appropriate <img> elementtag containing
-the appropriate icon for a bugtask. The icon is dependent on the importance of
-the IBugTask object.
+fmt:icon is a TALES adapter that renders an icon for a bugtask.
+The icon is dependent on the importance of the IBugTask object.
 
 Let's use a few examples to demonstrate:
 

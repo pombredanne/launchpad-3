@@ -44,8 +44,8 @@ class BugTargetBase:
     def critical_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         critical_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, importance=BugTaskImportance.CRITICAL,
-            omit_dupes=True)
+            user=getUtility(ILaunchBag).user,
+            importance=BugTaskImportance.CRITICAL, omit_dupes=True)
 
         return self.searchTasks(critical_tasks_query)
 

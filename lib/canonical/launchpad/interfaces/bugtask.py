@@ -175,7 +175,7 @@ class IBugTask(IHasDateCreated, IHasBug):
 
         For an upstream task, this value might look like:
 
-          product=firefox; status=New; assignee=None;
+          product=firefox; status=New; importance=Critical; assignee=None;
 
         See doc/bugmail-headers.txt for a complete explanation and more
         examples.
@@ -478,7 +478,7 @@ class IBugTaskSet(Interface):
         returned. If you want closed tasks too, just pass
         showclosed=True.
 
-        If minimportance is not None, return only the bug tasks with importance 
+        If minimportance is not None, return only the bug tasks with importance
         greater than minimportance.
 
         If you want the results ordered, you have to explicitly specify an
