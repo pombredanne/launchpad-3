@@ -1,7 +1,7 @@
 The Bug Watch Widget
 ====================
 
-There's a custom widget used to link a bug watch to a bug watch. It's a
+There's a custom widget used to link a bug watch to a bug task. It's a
 simple RadioWidget with some modifications.
 
 First we need to bind a BugWatch field to a bug task. Let's bind it to
