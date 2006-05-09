@@ -351,8 +351,8 @@ class BugAlsoReportInView(GeneralFormView):
                 'Neither product nor distribution was provided')
         if link_to_bugwatch and target.official_malone:
             errors.append(LaunchpadValidationError(
-                "%s uses Malone as its bug tracker, therefor it can't be"
-                " linked to a remote bug watch.",
+                "%s uses Malone as its bug tracker, and it can't at the"
+                " same time be linked to a remote bug.",
                 target.displayname))
         elif link_to_bugwatch and remotebug is None:
             errors.append(LaunchpadValidationError(
