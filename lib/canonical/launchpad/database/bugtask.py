@@ -339,9 +339,10 @@ class BugTask(SQLBase, BugTaskMixin):
                  'componentname': component})
 
         header_value += ((
-            ' status=%(status)s; '
+            ' status=%(status)s; importance=%(importance)s; '
             'assignee=%(assignee)s;') %
             {'status': self.status.title,
+             'importance': self.importance.title,
              'assignee': assignee_value})
 
         return header_value
