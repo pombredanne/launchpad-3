@@ -588,35 +588,20 @@ class POMsgSetView(LaunchpadView):
                 has_translations = True
                 break
 
-        if has_translations and not self.form_posted_needsreview:
-            # The submit has translations to validate and are not set as
-            # needs review.
-
-            msgids_text = [pomsgid.msgid
-                           for pomsgid in self.potmsgset.getPOMsgIDs()]
-
-            # Validate the translation we got from the translation form
-            # to know if gettext is happy with the input.
+        if has_translations:
             try:
-                helpers.validate_translation(msgids_text,
-                                             self.form_posted_translations,
-                                             self.potmsgset.flags())
+                self.context.updateTranslationSet(
+                    person=self.user,
+                    new_translations=self.form_posted_translations,
+                    fuzzy=self.form_posted_needsreview,
+                    published=False)
+
+                # update the statistis for this po file
+                self.context.pofile.updateStatistics()
             except gettextpo.error, e:
                 # Save the error message gettext gave us to show it to the
-                # user and jump to the next entry so this messageSet is
-                # not stored into the database.
+                # user.
                 self.error = str(e)
-
-        try:
-            self.context.updateTranslationSet(
-                person=self.user,
-                new_translations=self.form_posted_translations,
-                fuzzy=self.form_posted_needsreview,
-                published=False)
-        except gettextpo.error, e:
-            # Save the error message gettext gave us to show it to the
-            # user.
-            self.error = str(e)
 
         if not 'offset' in self.form:
             # XXX CarlosPerelloMarin 20060509: We should stop doing this
@@ -632,9 +617,6 @@ class POMsgSetView(LaunchpadView):
                 self.request.response.addErrorNotification(
                     "There is an error in the translation you provided."
                     " Please, correct it before continuing.")
-
-        # update the statistis for this po file
-        self.context.pofile.updateStatistics()
 
     def _select_alternate_language(self):
         """Handle a form submission to filter translations."""
