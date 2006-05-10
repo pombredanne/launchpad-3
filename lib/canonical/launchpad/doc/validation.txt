@@ -17,7 +17,7 @@ bugtasks are unique per bug.
 
 We aren't allowed to add a distrotask with the same sourcepackage
 
-    >>> valid_distrotask(bug_two, debian, mozilla_firefox)
+    >>> valid_distrotask(bug_two, debian, mozilla_firefox, on_create=True)
     Traceback (most recent call last):
       ...
     WidgetsError: LaunchpadValidationError: ...
@@ -30,7 +30,7 @@ We also can't add a task on just the distribution, because it doesn't
 make sense to have tasks open on just the distribution and also packages
 in that distribution on the same bug.
 
-    >>> valid_distrotask(bug_two, debian, None)
+    >>> valid_distrotask(bug_two, debian, None, on_create=True)
     Traceback (most recent call last):
       ...
     WidgetsError: LaunchpadValidationError: ...
