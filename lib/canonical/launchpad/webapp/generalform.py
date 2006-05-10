@@ -104,7 +104,7 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         """
         pass
 
-    def validate_from_request(self):
+    def validateFromRequest(self):
         """Validate the data, using self.request directly.
 
         Override this method if you want to do validation *before* Zope 3 widget
@@ -154,7 +154,7 @@ class GeneralFormView(LaunchpadView, NoRenderingOnRedirect):
         # Validate data before Zope 3 validation is done (i.e. in the
         # getWidgetsData call below.)
         try:
-            self.validate_from_request()
+            self.validateFromRequest()
         except WidgetsError, errors:
             self.errors = errors
             self._abortAndSetStatus()

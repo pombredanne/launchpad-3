@@ -3,7 +3,8 @@ package name that doesn't exist in the distribution.
 
 (XXX, Brad Bollenbach, 2006-05-05: This extra browser.open call
 works around a bug where an exception will be raised if this extra
-.open is removed! BjornT's looking into it.)
+.open is removed! BjornT's looking into it. See
+http://launchpad.net/bugs/44064.)
 
     >>> browser.open("http://localhost:9000/products/firefox/+bug/4")
 

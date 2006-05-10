@@ -30,12 +30,10 @@ class FileBugView(GeneralFormView):
 
     notification = "Thank you for your bug report."
 
-    def __init__(self, context, request):
-        GeneralFormView.__init__(self, context, request)
-
+    def initialize(self):
         self.packagename_error = ""
 
-    def validate_from_request(self):
+    def validateFromRequest(self):
         """Make sure the package name, if provided, exists in the distro."""
         self.packagename_error = ""
         form = self.request.form
