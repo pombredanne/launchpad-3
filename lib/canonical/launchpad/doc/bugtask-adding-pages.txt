@@ -24,7 +24,7 @@ the view.template().
     >>> def get_and_setup_view(context, name, request):
     ...     view = getView(context, name, request)
     ...     view.index = lambda: ''
-    ...     view.confirmation_page = lambda: ''
+    ...     view.confirmation_page = lambda: 'CONFIRMATION PAGE'
     ...     view()
     ...     return view
     >>> add_task_view = get_and_setup_view(
@@ -81,7 +81,8 @@ offical bug tracker.
     >>> evolution_task.target.official_malone
     True
 
-If we try to add a task for ALSA, which doesn't use Malone, it won't go as smoothly as above.
+If we try to add a task for ALSA, which doesn't use Malone, it won't go
+as smoothly as above.
 
     >>> add_task_view.show_confirmation
     False
@@ -104,6 +105,8 @@ As you can see no ALSA was added to the bug. In order to add such a task, the us
     True
     >>> add_task_view.nextURL() is None
     True
+    >>> add_task_view()
+    'CONFIRMATION PAGE'
 
 If the user chooses "No", he will be returned to the add page, and no
 task was added to the bug.
