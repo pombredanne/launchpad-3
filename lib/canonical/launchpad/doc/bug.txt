@@ -570,6 +570,26 @@ Adding an attachment.
   >>> firefox_bug.date_last_updated > current_date_last_updated
   True
 
+Editing an attachment.
+
+  >>> from canonical.launchpad.interfaces import IBugAttachment
+
+  >>> attachment_before_modification = Snapshot(
+  ...     attachment, providing=IBugAttachment)
+
+  >>> attachment.title = "a new title"
+
+  >>> attachment_changed = SQLObjectModifiedEvent(
+  ...     attachment, attachment_before_modification,
+  ...     ["title"])
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> notify(attachment_changed)
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
 Adding a branch.
 
   >>> from canonical.launchpad.interfaces import IBranchSet
@@ -586,6 +606,29 @@ Adding a branch.
 
   >>> firefox_bug.bug_branches.count()
   1
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
+Editing a branch.
+
+  >>> from canonical.launchpad.interfaces import IBugBranch
+  >>> from canonical.lp.dbschema import BugBranchStatus
+
+  >>> branch_before_modification = Snapshot(
+  ...     bug_branch, providing=IBugBranch)
+
+  >>> print bug_branch.status.title
+  Fix In Progress
+
+  >>> bug_branch.status = BugBranchStatus.BESTFIX
+
+  >>> bug_branch_changed = SQLObjectModifiedEvent(
+  ...     bug_branch, branch_before_modification, ["status"])
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> notify(bug_branch_changed)
+
   >>> firefox_bug.date_last_updated > current_date_last_updated
   True
 
@@ -628,6 +671,28 @@ Linking to an external bug tracker.
 
   >>> firefox_bug.watches.count()
   1
+
+  >>> firefox_bug.date_last_updated > current_date_last_updated
+  True
+
+Editing the external bug watch.
+
+  >>> from canonical.launchpad.interfaces import IBugWatch
+
+  >>> bugwatch_before_modification = Snapshot(
+  ...     bugwatch, providing=IBugWatch)
+
+  >>> print bugwatch.remotebug
+  1234
+
+  >>> bugwatch.remotebug = '5678'
+
+  >>> bugwatch_changed = SQLObjectModifiedEvent(
+  ...     bugwatch, bugwatch_before_modification, ["remotebug"])
+
+  >>> current_date_last_updated = firefox_bug.date_last_updated
+
+  >>> notify(bugwatch_changed)
 
   >>> firefox_bug.date_last_updated > current_date_last_updated
   True
