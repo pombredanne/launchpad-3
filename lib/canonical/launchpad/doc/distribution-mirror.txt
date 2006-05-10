@@ -27,6 +27,16 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> new_mirror.isOfficial()
     False
 
+You cannot create a new mirror on a distribution that does not have the full
+functionality of Launchpad enabled:
+
+    >>> kubuntu = distroset.get(5)
+    >>> kubuntu.name
+    u'kubuntu'
+    >>> poor_mirror = kubuntu.newMirror(owner, name, speed, country, content,
+    ...                               pulse_type, http_base_url=http_base_url)
+    >>> print poor_mirror
+    None
 
 The contents of a distribution mirror are represented by its associated
 MirrorDistroArchReleases and MirrorDistroReleaseSources. This data is updated
