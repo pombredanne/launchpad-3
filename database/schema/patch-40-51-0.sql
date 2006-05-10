@@ -8,8 +8,8 @@ ALTER TABLE RevisionNumber ADD CONSTRAINT revisionnumber_branch_sequence_unique
     UNIQUE (branch, sequence);
 
 -- A revision may appear at most once in the history of a branch.
-ALTER TABLE RevisionNumber ADD CONSTRAINT revisionnumber_branch_revision_unique
-    UNIQUE (branch, revision);
+ALTER TABLE RevisionNumber ADD CONSTRAINT revisionnumber_revision_branch_unique
+    UNIQUE (revision, branch);
 
 -- FIXME: get a real database patch number
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 41, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 51, 0);
