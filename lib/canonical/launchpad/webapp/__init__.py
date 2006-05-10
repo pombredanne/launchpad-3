@@ -12,12 +12,12 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'StandardLaunchpadFacets', 'enabled_with_permission',
            'LaunchpadView', 'LaunchpadXMLRPCView',
            'Navigation', 'stepthrough', 'redirection',
-           'stepto', 'GetitemNavigation', 'smartquote',
+           'stepto', 'GetitemNavigation', 'smartquote', 'urlparse',
            'GeneralFormView', 'GeneralFormViewFactory',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse']
 
 import re
-import urlparse
+from  urlparse import urljoin, urlparse as original_urlparse
 
 from zope.component import getUtility
 
@@ -73,7 +73,38 @@ def urlappend(baseurl, path):
     assert not path.startswith('/')
     if not baseurl.endswith('/'):
         baseurl += '/'
-    return urlparse.urljoin(baseurl, path)
+    return urljoin(baseurl, path)
+
+
+def urlparse(url, scheme='', allow_fragments=True):
+    """Convert url to a str object and call the original urlparse function.
+
+    The url parameter should contain ASCII characters only. This
+    function ensures that the original urlparse is called always with a
+    str object, and never unicode.
+
+        >>> urlparse(u'http://foo.com/bar')
+        ('http', 'foo.com', '/bar', '', '', '')
+
+        >>> urlparse('http://foo.com/bar')
+        ('http', 'foo.com', '/bar', '', '', '')
+
+        >>> original_urlparse('http://foo.com/bar')
+        ('http', 'foo.com', '/bar', '', '', '')
+
+    This is needed since external libraries might expect that the original
+    urlparse returns a str object if it is given a str object. However,
+    that might not be the case, since urlparse has a cache, and treats
+    unicode and str as equal.
+
+        >>> original_urlparse(u'http://foo.com/')
+        (u'http', u'foo.com', u'/', '', '', '')
+        >>> original_urlparse('http://foo.com/')
+        (u'http', u'foo.com', u'/', '', '', '')
+
+    """
+    return original_urlparse(
+        url.encode('ascii'), scheme=scheme, allow_fragments=allow_fragments)
 
 
 class GetitemNavigation(Navigation):
