@@ -53,28 +53,15 @@
         </small>
       </strong>
       <div tal:define="batch_navigator view/search">
-        <form method="GET" name="search" action="">
-          <tal:widget content="structure view/distribution_widget/hidden" />
-          <tal:widget content="structure view/sourcepackagename_widget/hidden" />
-          <input type="text" name="field.searchtext" size="20"
-                 tal:attributes="value python:request.form.get('field.searchtext', '')" />
-          <input type="submit" name="search" value="Search" />
-          <a href="#"
-             tal:attributes="href view/getBugContactPackageAdvancedSearchURL">
-            <small>Advanced</small>
-          </a>
-          <div style="margin-top: 5px">
-            <small>
-              Sort by:
-              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-            </small>
+        <div tal:define="advanced_search_url view/getBugContactPackageAdvancedSearchURL">
+          <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form">
+            <div metal:fill-slot="extra-search-widgets">
+              <tal:widget content="structure view/distribution_widget/hidden" />
+              <tal:widget content="structure view/sourcepackagename_widget/hidden" />
+            </div>
           </div>
-        </form>
-        <script>
-          <!--
-              document.forms["search"].elements['field.searchtext'].focus();
-            -->
-        </script>
+        </div>
+        <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>
       </tal:do_not_show_advanced_form>
