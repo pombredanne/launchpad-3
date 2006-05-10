@@ -261,7 +261,7 @@ skip that upload.
     >>> bpf = BinaryPackageFile.selectOneBy(
     ...     binarypackagereleaseID=upload.binarypackagerelease.id)
     >>> upload.binarypackagerelease.version, bpf.filetype.title
-    (u'0.1-1', 'UDEB Format')
+    (u'3.14156', 'UDEB Format')
 
     >>> when = datetime(2005, 6, 22, tzinfo=utc)
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=when)
