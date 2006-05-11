@@ -1,0 +1,35 @@
+<metal:mirrors-table define-macro="mirrors-table">
+  <tal:comment replace="nothing">
+  This macro expects the following variables defined:
+      :mirrors: A list of IDistributionMirrors to be listed
+  </tal:comment>
+
+  <table tal:attributes="id table_id|nothing" class="listing sortable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Speed</th>
+      <th>Official?</th>
+      <th>Access Methods</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr tal:repeat="mirror mirrors">
+      <td><a tal:attributes="href mirror/fmt:url"
+             tal:content="mirror/title"></a>
+      </td>
+      <td tal:content="mirror/speed/title" />
+      <td tal:condition="mirror/isOfficial">Yes</td>
+      <td tal:condition="not: mirror/isOfficial">No</td>
+      <td>
+        <a tal:condition="mirror/http_base_url"
+          tal:attributes="href mirror/http_base_url">http</a>
+        <a tal:condition="mirror/ftp_base_url"
+          tal:attributes="href mirror/ftp_base_url">ftp</a>
+        <a tal:condition="mirror/rsync_base_url"
+          tal:attributes="href mirror/rsync_base_url">rsync</a>
+      </td>
+    </tr>
+  </tbody>
+  </table>
+</metal:mirrors-table>

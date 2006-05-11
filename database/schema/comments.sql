@@ -1272,8 +1272,14 @@ COMMENT ON COLUMN MirrorDistroArchRelease.pocket IS 'The PackagePublishingPocket
 -- MirrorDistroReleaseSource
 COMMENT ON TABLE MirrorDistroReleaseSource IS 'The mirror of a given Distro Release';
 COMMENT ON COLUMN MirrorDistroReleaseSource.distribution_mirror IS 'The distribution mirror.';
-COMMENT ON COLUMN MirrorDistroReleaseSource.distro_release IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorDistroReleaseSource.distrorelease IS 'The Distribution Release.';
 COMMENT ON COLUMN MirrorDistroReleaseSource.status IS 'The status of the mirror, that is, how up-to-date it is.';
+
+-- MirrorCDImageDistroRelease
+COMMENT ON TABLE MirrorCDImageDistroRelease IS 'The mirror of a given CD/DVD image.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.distrorelease IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorCDImageDistroRelease.flavour IS 'The Distribution Release Flavour.';
 
 -- MirrorProbeRecord
 COMMENT ON TABLE MirrorProbeRecord IS 'Records stored when a mirror is probed.';

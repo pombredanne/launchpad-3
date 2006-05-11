@@ -22,6 +22,12 @@
         path_expression="string:+mirror/${name}"
         attribute_to_parent="distribution" />
 
+    <browser:page
+        for="*"
+        name="+distributionmirror-macros"
+        permission="zope.Public"
+        template="../templates/distributionmirror-macros.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionMirror"
         permission="zope.Public">
@@ -104,6 +110,14 @@
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+    </content>
+
+    <!-- MirrorCDImageDistroRelease -->
+    <content class="canonical.launchpad.database.MirrorCDImageDistroRelease">
+        <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
     </content>
 
     <!-- MirrorProbeRecord -->

@@ -12,7 +12,9 @@ __all__ = [
     'DistributionEditView',
     'DistributionSetView',
     'DistributionSetAddView',
-    'DistributionBugContactEditView'
+    'DistributionBugContactEditView',
+    'DistributionArchiveMirrorsView',
+    'DistributionReleaseMirrorsView',
     ]
 
 from zope.component import getUtility
@@ -111,8 +113,8 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['edit', 'driver', 'search', 'allpkgs', 'members',
-             'reassign', 'addrelease', 'builds', 'officialmirrors',
-             'allmirrors', 'newmirror', 'launchpad_usage']
+             'reassign', 'addrelease', 'builds', 'release_mirrors',
+             'archive_mirrors', 'newmirror', 'launchpad_usage']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -134,13 +136,13 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Register a New Mirror'
         return Link('+newmirror', text, icon='add')
 
-    def officialmirrors(self):
-        text = 'List Official Mirrors'
-        return Link('+officialmirrors', text, icon='info')
+    def release_mirrors(self):
+        text = 'Show CD Mirrors'
+        return Link('+cdmirrors', text, icon='info')
 
-    def allmirrors(self):
-        text = 'List All Mirrors'
-        return Link('+allmirrors', text, icon='info')
+    def archive_mirrors(self):
+        text = 'Show Archive Mirrors'
+        return Link('+archivemirrors', text, icon='info')
 
     def allpkgs(self):
         text = 'List All Packages'
@@ -392,3 +394,32 @@ class DistributionBugContactEditView(SQLObjectEditView):
                 "contact again whenever you want to.")
 
         self.request.response.redirect(canonical_url(distribution))
+
+
+class DistributionMirrorsView(LaunchpadView):
+
+    def _groupMirrorsByCountry(self, mirrors):
+        """Given a list of mirrors, create a dictionary mapping country names
+        to a list of mirrors on that country and return this dictionary.
+        """
+        mirrors_by_country = {}
+        for mirror in mirrors:
+            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
+            mirrors.append(mirror)
+        return mirrors_by_country
+
+
+class DistributionArchiveMirrorsView(DistributionMirrorsView):
+
+    mirror_content = 'Archive'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.archive_mirrors)
+
+
+class DistributionReleaseMirrorsView(DistributionMirrorsView):
+
+    mirror_content = 'CD'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.release_mirrors)

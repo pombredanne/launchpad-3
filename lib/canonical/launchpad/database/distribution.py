@@ -47,7 +47,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus,
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter)
 
 from canonical.launchpad.interfaces import (
@@ -111,14 +111,18 @@ class Distribution(SQLBase, BugTargetBase):
         return cache.prejoin(['sourcepackagename'])
 
     @property
-    def enabled_official_mirrors(self):
+    def archive_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
         return DistributionMirror.selectBy(
-            distributionID=self.id, official_approved=True,
-            official_candidate=True, enabled=True)
+            distributionID=self.id, content=MirrorContent.ARCHIVE,
+            official_approved=True, official_candidate=True, enabled=True)
 
     @property
-    def enabled_mirrors(self):
-        return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
+    def release_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        return DistributionMirror.selectBy(
+            distributionID=self.id, content=MirrorContent.RELEASE,
+            official_approved=True, official_candidate=True, enabled=True)
 
     @cachedproperty
     def releases(self):

@@ -278,11 +278,9 @@ distribution_members = ContextTitle('%s distribution members')
 distribution_memberteam = ContextTitle(
     smartquote("Change %s's distribution team"))
 
+distribution_mirrors = ContextTitle("Mirrors of %s")
+
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
-
-distribution_officialmirrors = ContextTitle("Official mirrors of %s")
-
-distribution_allmirrors = ContextTitle("All mirrors of %s")
 
 distribution_translations = ContextDisplayName('Translating %s')
 

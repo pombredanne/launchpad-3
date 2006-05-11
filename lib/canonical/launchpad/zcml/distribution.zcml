@@ -44,17 +44,21 @@
             lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
-        permission="zope.Public">
-        <browser:page
-            name="+officialmirrors"
-            template="../templates/distribution-officialmirrors.pt" />
-        <browser:page
-            name="+allmirrors"
-            template="../templates/distribution-allmirrors.pt" />
-    </browser:pages>
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsView"
+        permission="zope.Public"
+        name="+archivemirrors"
+        template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
+        permission="zope.Public"
+        name="+cdmirrors"
+        template="../templates/distribution-mirrors.pt" />
 
     <browser:generalform
         name="+newmirror"

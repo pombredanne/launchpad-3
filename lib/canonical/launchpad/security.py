@@ -57,21 +57,21 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class AdminDistributionMirrorByMirrorAdmins(AuthorizationBase):
+class AdminDistributionMirrorByDistroOwner(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        return user.inTeam(getUtility(ILaunchpadCelebrities).mirror_admin)
+        return user.inTeam(self.obj.distribution.owner)
 
 
-class EditDistributionMirrorByOwnerOrMirrorAdmins(AuthorizationBase):
+class EditDistributionMirrorByOwnerOrDistroOwner(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        mirror_admins = getUtility(ILaunchpadCelebrities).mirror_admin
-        return user.inTeam(self.obj.owner) or user.inTeam(mirror_admins)
+        distro_owner = self.obj.distribution.owner
+        return user.inTeam(self.obj.owner) or user.inTeam(distro_owner)
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):

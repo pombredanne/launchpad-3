@@ -13,7 +13,6 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.content_types import guess_content_type
 from zope.event import notify
 
-from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu, 
@@ -36,18 +35,9 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['edit', 'admin']
 
-    def initialize(self):
-        if (self.context.content != MirrorContent.ARCHIVE
-            and 'upload_file_list' not in self.links):
-            self.links.append('upload_file_list')
-
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
-
-    def upload_file_list(self):
-        text = 'Upload File List'
-        return Link('+uploadfilelist', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
