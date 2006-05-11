@@ -42,7 +42,8 @@ Of course we can't edit the severity or assignee either.
     ...
     LookupError: name 'field.assignee'
 
-If we remove the bug watch, we'll be able to edit the status.
+If we remove the bug watch, we'll be able to edit the status, which has
+been reset to Unconfirmed.
 
     >>> bugwatch_control.displayValue = []
     >>> submit_button = browser.getControl(name='FORM_SUBMIT')
@@ -53,7 +54,7 @@ If we remove the bug watch, we'll be able to edit the status.
     ...     '+bug/1/+editstatus')
     >>> status_control = browser.getControl(name='field.status')
     >>> status_control.displayValue
-    ['Confirmed']
+    ['Unconfirmed']
 
     >>> browser.getControl(name='field.severity') is not None
     True
