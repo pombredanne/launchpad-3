@@ -367,6 +367,13 @@ class BugSet:
         assert comment is None or msg is None, (
             "Expected either a comment or a msg, but got both")
 
+        # Store binary package name in the description, because
+        # storing it as a separate field was a maintenance burden to
+        # developers.
+        if binarypackagename:
+            comment = "Binary package hint: %s\n\n%s" % (
+                binarypackagename.name, comment)
+
         # Create the bug comment if one was given.
         if comment:
             rfc822msgid = make_msgid('malonedeb')
@@ -381,13 +388,6 @@ class BugSet:
 
         if not datecreated:
             datecreated = UTC_NOW
-
-        # Store binary package name in the description, because
-        # storing it as a separate field was a maintenance burden to
-        # developers.
-        if binarypackagename:
-            description = "Binary package hint: %s\n\n%s" % (
-                binarypackagename.name, description)
 
         bug = Bug(
             title=title, description=description, private=private,
