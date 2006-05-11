@@ -137,6 +137,13 @@ class IBug(IMessageTarget):
         addresses.
         """
 
+    def getSubscribersFromDuplicates():
+        """Return the list of IPersons subscribed to this bug from duplicates.
+
+        This list is restricted to only users that are not already subscribed to
+        this bug directly.
+        """
+
     def addChangeNotification(text, person):
         """Add a bug change notification."""
 
@@ -151,7 +158,7 @@ class IBug(IMessageTarget):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, status):
+    def addBranch(branch, whiteboard=None):
         """Associate a branch with this bug.
 
         Returns an IBugBranch.

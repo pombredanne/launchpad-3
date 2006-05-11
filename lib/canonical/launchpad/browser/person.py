@@ -8,6 +8,7 @@ __all__ = [
     'PersonSetNavigation',
     'PeopleContextMenu',
     'PersonFacets',
+    'PersonBranchesMenu',
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
@@ -20,6 +21,7 @@ __all__ = [
     'FOAFSearchView',
     'PersonSpecWorkLoadView',
     'PersonSpecFeedbackView',
+    'PersonChangePasswordView',
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
@@ -50,7 +52,7 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
-        IInputWidget, ConversionError, WidgetInputError)
+        IInputWidget, ConversionError, WidgetInputError, WidgetsError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
@@ -204,7 +206,7 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'branches', 'translations', 'calendar']
 
     def overview(self):
         text = 'Overview'
@@ -238,6 +240,12 @@ class PersonFacets(StandardLaunchpadFacets):
             )
         return Link('+bounties', text, summary)
 
+    def branches(self):
+        text = 'Branches'
+        summary = ('Bazaar Branches and revisions registered and authored '
+                   'by %s' % self.context.browsername)
+        return Link('+branches', text, summary)
+
     def translations(self):
         target = '+translations'
         text = 'Translations'
@@ -254,6 +262,32 @@ class PersonFacets(StandardLaunchpadFacets):
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link('+calendar', text, summary, enabled=enabled)
+
+
+class PersonBranchesMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'branches'
+
+    links = ['authored', 'registered', 'subscribed', 'addbranch']
+
+    def authored(self):
+        text = 'Branches Authored'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Branches Registered'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Branches Subscribed'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def addbranch(self):
+        text = 'Register Branch'
+        return Link('+addbranch', text, icon='add')
+
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -294,7 +328,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'roadmap',]
+             'workload', 'roadmap']
 
     def registrant(self):
         text = 'Registrant'
@@ -384,8 +418,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
              'editwikinames', 'editircnicknames', 'editjabberids',
              'editpassword', 'edithackergotchi', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages',
-             'branches', 'authored', 'registered', 'subscribed', 'addbranch']
+             'codesofconduct', 'administer', 'common_packages',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -466,28 +499,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
-
-    def branches(self):
-        text = 'Bzr Branches'
-        summary = 'Branches and revisions by %s' % self.context.browsername
-        return Link('+branches', text, summary)
-
-    def authored(self):
-        text = 'Branches Authored'
-        return Link('+authoredbranches', text, icon='branch')
-
-    def registered(self):
-        text = 'Branches Registered'
-        return Link('+registeredbranches', text, icon='branch')
-
-    def subscribed(self):
-        text = 'Branches Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
-
-    def addbranch(self):
-        text = 'Register Branch'
-        return Link('+addbranch', text, icon='add')
-
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -1470,7 +1481,7 @@ class PersonView(LaunchpadView):
             tokentype = LoginTokenType.VALIDATEGPG
         else:
             tokentype = LoginTokenType.VALIDATESIGNONLYGPG
-        
+
         token = logintokenset.new(self.context, login,
                                   preferredemail,
                                   tokentype,
@@ -1479,27 +1490,25 @@ class PersonView(LaunchpadView):
         appurl = self.request.getApplicationURL()
         token.sendGPGValidationRequest(appurl, key)
 
-    def processPasswordChangeForm(self):
-        if self.request.method != 'POST':
-            return
 
-        form = self.request.form
-        currentpassword = form.get('currentpassword')
+class PersonChangePasswordView(GeneralFormView):
+
+    def initialize(self):
+        self.top_of_page_errors = []
+        self._nextURL = canonical_url(self.context)
+
+    def validate(self, form_values):
+        currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            self.message = (
-                "The provided password doesn't match your current password.")
-            return
+            self.top_of_page_errors.append(_(
+                "The provided password doesn't match your current password."))
+            raise WidgetsError(self.top_of_page_errors)
 
-        newpassword = form.get('newpassword')
-        newpassword2 = form.get('newpassword2')
-        if not (newpassword or newpassword2):
-            self.message = "Your new password cannot be empty"
-        elif newpassword != newpassword2:
-            self.message = "Passwords did not match"
-        else:
-            self.context.password = encryptor.encrypt(newpassword)
-            self.message = "Password changed successfully"
+    def process(self, password):
+        self.context.password = password
+        self.request.response.addInfoNotification(_(
+            "Password changed successfully"))
 
 
 class PersonEditView(SQLObjectEditView):

@@ -1,0 +1,39 @@
+
+DistroReleaseLanguage
+=====================
+
+This is a special class which encapsulates the information associated with a
+particular language and distrorelease.
+
+First we need to know which distroreleaselanguage we are working with. We
+will work with french in Hoary first.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistroReleaseSet, IDistributionSet, ILanguageSet)
+    >>> distroreleaseset = getUtility(IDistroReleaseSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> hoary = distroreleaseset.queryByName(ubuntu, "hoary")
+    >>> hoary.name
+    u'hoary'
+    >>> french = getUtility(ILanguageSet)['fr']
+    >>> hoary_french = hoary.getDistroReleaseLanguage(french)
+
+Now lets get the list of real pofiles. By this we mean the ones where there
+is actually a translation or two:
+
+    >>> for po in hoary_french.pofiles: print po.potemplate.name
+    pmount
+    pkgconf-mozilla
+
+Now lets include the dummies:
+
+    >>> for po in hoary_french.po_files_or_dummies: print po.potemplate.name
+    evolution-2.2
+    pkgconf-mozilla
+    pmount
+
+Note that the sorting is by template name, and there is an evolution-2.2
+dummy po file.
+
+

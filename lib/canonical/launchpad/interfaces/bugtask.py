@@ -50,6 +50,7 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 
+
 class IBugTask(IHasDateCreated, IHasBug):
     """A bug needing fixing in a particular product or package."""
 
@@ -91,12 +92,23 @@ class IBugTask(IHasDateCreated, IHasBug):
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
         "the status of this bug task in Malone."))
-    dateassigned = Datetime(
+    date_assigned = Datetime(
         title=_("Date Assigned"),
         description=_("The date on which this task was assigned to someone."))
     datecreated = Datetime(
         title=_("Date Created"),
         description=_("The date on which this task was created."))
+    date_confirmed = Datetime(
+        title=_("Date Confirmed"),
+        description=_("The date on which this task was marked Confirmed."))
+    date_inprogress = Datetime(
+        title=_("Date In Progress"),
+        description=_("The date on which this task was marked In Progress."))
+    date_closed = Datetime(
+        title=_("Date Closed"),
+        description=_(
+            "The date on which this task was marked either Fix Committed or "
+            "Fix Released."))
     age = Datetime(
         title=_("Age"),
         description=_(
@@ -123,6 +135,22 @@ class IBugTask(IHasDateCreated, IHasBug):
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
         the Malone severity values, and returns the relevant Malone
         severity.
+        """
+
+    def transitionToStatus(new_status):
+        """Perform a workflow transition to the new_status.
+
+        For certain statuses, e.g. Confirmed, other actions will
+        happen, like recording the date when the task enters this
+        status.
+        """
+
+    def transitionToAssignee(assignee):
+        """Perform a workflow transition to the given assignee.
+
+        When the bugtask assignee is changed from None to an IPerson
+        object, the dateassigned is set on the task. If the assignee
+        value is set to None, dateassigned is also set to None.
         """
 
     def updateTargetNameCache():
@@ -204,6 +232,7 @@ class IBugTaskSearch(Interface):
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
+
 
 class IPersonBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a person."""

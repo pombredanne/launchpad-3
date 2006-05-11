@@ -15,7 +15,7 @@
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <implements interface="canonical.launchpad.interfaces.IBug" />
-        <allow attributes="id private bugtasks subscriptions" />
+        <allow attributes="id private bugtasks subscriptions getSubscribersFromDuplicates syncUpdate" />
         <require
             permission="launchpad.View"
             attributes="datecreated name title description ownerID
