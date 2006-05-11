@@ -17,7 +17,8 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse']
 
 import re
-from  urlparse import urljoin, urlparse as original_urlparse
+from  urlparse import (
+    urljoin, urlparse as original_urlparse, urlsplit as original_urlsplit)
 
 from zope.component import getUtility
 
@@ -105,6 +106,27 @@ def urlparse(url, scheme='', allow_fragments=True):
 
     """
     return original_urlparse(
+        url.encode('ascii'), scheme=scheme, allow_fragments=allow_fragments)
+
+
+def urlsplit(url, scheme='', allow_fragments=True):
+    """Convert url to a str object and call the original urlsplit function.
+
+    The url parameter should contain ASCII characters only. This
+    function ensures that the original urlsplit is called always with a
+    str object, and never unicode.
+
+        >>> urlsplit(u'http://foo.com/baz')
+        ('http', 'foo.com', '/baz', '', '')
+
+        >>> urlsplit('http://foo.com/baz')
+        ('http', 'foo.com', '/baz', '', '')
+
+        >>> original_urlsplit('http://foo.com/baz')
+        ('http', 'foo.com', '/baz', '', '')
+
+    """
+    return original_urlsplit(
         url.encode('ascii'), scheme=scheme, allow_fragments=allow_fragments)
 
 
