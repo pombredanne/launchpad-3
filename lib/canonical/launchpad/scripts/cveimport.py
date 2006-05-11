@@ -84,7 +84,7 @@ def update_one_cve(cve_node, log):
     # get the description
     description = getText(cve_node.getElementsByTagName('desc')[0].childNodes)
     if not description:
-        log.error('No description for CVE-%s' % sequence)
+        log.debug('No description for CVE-%s' % sequence)
     if status == 'CAN':
         new_status = CveStatus.CANDIDATE
     elif status == 'CVE':

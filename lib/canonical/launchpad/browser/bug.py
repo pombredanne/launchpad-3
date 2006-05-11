@@ -318,7 +318,9 @@ class BugAlsoReportInView(GeneralFormView):
         if product:
             valid_upstreamtask(self.context.bug, product)
         if distribution:
-            valid_distrotask(self.context.bug, distribution, sourcepackagename)
+            valid_distrotask(
+                self.context.bug, distribution, sourcepackagename,
+                on_create=True)
         if bugtracker is not None and remotebug is None:
             errors.append(LaunchpadValidationError(
                 "Please specify the remote bug number in the remote "
