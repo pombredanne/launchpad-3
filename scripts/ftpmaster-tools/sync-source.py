@@ -941,7 +941,16 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
             if not filename.endswith("orig.tar.gz"):
                 dak_utils.fubar("%s (from %s) is in the DB but isn't an orig.tar.gz.  Help?" % (filename, pkg))
             if len(spfp_l) != 1:
-                dak_utils.fubar("%s (from %s) returns multiple IDs for orig.tar.gz.  Help?" % (filename, pkg))
+                # check if multiple library file alias point to the same
+                # content, this case is harmless, although nasty.
+                library_content_set = set(
+                    [spfp.libraryfilealias.content.id for spfp in spfp_l])
+                # Only dismiss if the contents diverge.
+                if len(library_content_set) > 1:
+                    dak_utils.fubar(
+                        "%s (from %s) returns multiple IDs for orig.tar.gz."
+                        "Help?" % (filename, pkg))
+
             spfp = spfp_l[0]
             have_orig_tar_gz = filename
             print "  - <%s: already in distro - downloading from librarian>" % (filename)
