@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Text, TextLine, Bytes
+from zope.schema import Bool, Choice, Text, TextLine, Bytes, Datetime
 
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -156,6 +156,10 @@ class IPOTemplate(IRosettaStats):
     translationtarget = Attribute("The object for which this template is "
         "a translation. This will either be a SourcePackage or a Product "
         "Series.")
+
+    date_last_update = Datetime(
+            title=_('Date for last update'),
+            required=True)
 
     def __len__():
         """Return the number of Current IPOTMsgSets in this template."""
@@ -345,6 +349,12 @@ class IPOTemplateSubset(Interface):
         Return None if there is no such IPOTemplate.
         """
 
+    def getAllOrderByDateLastUpdated():
+        """Return an iterator over all POTemplate for this subset.
+
+        The iterator will give entries sorted by modification.
+        """
+
 
 class IPOTemplateSet(Interface):
     """A set of PO templates."""
@@ -354,6 +364,9 @@ class IPOTemplateSet(Interface):
 
     def getAllByName(name):
         """Return a list with all PO templates with the given name."""
+
+    def getAllOrderByDateLastUpdated():
+        """Return an iterator over all POTemplate sorted by modification."""
 
     def getSubset(distrorelease=None, sourcepackagename=None,
                   productseries=None):
@@ -365,7 +378,7 @@ class IPOTemplateSet(Interface):
         """Return a POTemplateSubset based on the origin sourcepackagename.
         """
 
-    def getPOTemplateByPathAndOrigin(self, path, productseries=None,
+    def getPOTemplateByPathAndOrigin(path, productseries=None,
         distrorelease=None, sourcepackagename=None):
         """Return an IPOTemplate that is stored at 'path' in source code and
            came from the given arguments.

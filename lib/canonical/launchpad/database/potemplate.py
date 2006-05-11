@@ -93,6 +93,8 @@ class POTemplate(SQLBase, RosettaStats):
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
+    date_last_update = UtcDateTimeCol(dbName='date_last_update',
+        default=DEFAULT)
 
     # joins
     pofiles = SQLMultipleJoin('POFile', joinColumn='potemplate')
@@ -698,6 +700,20 @@ class POTemplateSubset:
 
         return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
+    def getAllOrderByDateLastUpdated(self):
+        """See IPOTemplateSet."""
+        query = []
+        if self.productseries is not None:
+            query.append('productseries = %s' % sqlvalues(self.productseries))
+        if self.distrorelease is not None:
+            query.append('distrorelease = %s' % sqlvalues(self.distrorelease))
+        if self.sourcepackagename is not None:
+            query.append('sourcepackagename = %s' % sqlvalues(
+                self.sourcepackagename))
+
+        return POTemplate.select(
+            ' AND '.join(query), orderBy=['-date_last_update'])
+
 
 class POTemplateSet:
     implements(IPOTemplateSet)
@@ -722,6 +738,10 @@ class POTemplateSet:
             'POTemplate.potemplatename = POTemplateName.id AND'
             ' POTemplateName.name = %s' % sqlvalues(name),
             clauseTables=['POTemplateName']))
+
+    def getAllOrderByDateLastUpdated(self):
+        """See IPOTemplateSet."""
+        return POTemplate.select(orderBy=['-date_last_update'])
 
     def getSubset(self, distrorelease=None, sourcepackagename=None,
                   productseries=None):

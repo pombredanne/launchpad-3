@@ -9,14 +9,10 @@
 <facet facet="translations">
 
     <content class="canonical.launchpad.database.POTemplate">
+        <allow interface="canonical.launchpad.interfaces.IPOTemplate" />
         <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IPOTemplate"
-            set_attributes="potemplatename description header iscurrent
-                            owner productseries distrorelease
-                            sourcepackagename sourcepackageversion
-                            binarypackagename languagepack path"
-            />
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IPOTemplate" />
     </content>
 
     <browser:navigation
