@@ -4,6 +4,7 @@ __metaclass__ = type
 
 import gettextpo
 from email.Utils import parseaddr
+from zope.app import datetimeutils
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
@@ -14,7 +15,6 @@ from canonical.launchpad.helpers import TranslationConstants
 
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
-    pass
 
 
 def getLastTranslator(parser):
@@ -108,6 +108,14 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
         if parser.header is not None:
             # Update the header
             potemplate.header = parser.header.msgstr
+            pot_creation_date = parser.header['POT-Creation-Date']
+            try:
+                potemplate.last_update_date = datetimeutils.parseDatetimetz(
+                    pot_creation_date)
+            except (datetimeutils.SyntaxError, datetimeutils.DateError,
+                    datetimeutils.DateTimeError, ValueError):
+                # invalid date format, leave the old value.
+                pass
     else:
         raise TypeError(
             'Bad argument %s, an IPOTemplate or IPOFile was expected.' %
