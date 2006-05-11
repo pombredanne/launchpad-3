@@ -14,7 +14,7 @@ We pass a string with leading and trailing whitespaces to the widget
   ...     form={'field.remotebug':'    123456    '})
   >>> widget = StrippedTextWidget(field, request)
 
-And check that the leading and whitespaces were correctly stripped.
+And check that the leading and trailing whitespaces were correctly stripped.
 
   >>> widget.getInputValue()
   u'123456'

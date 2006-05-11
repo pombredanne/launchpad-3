@@ -1,7 +1,8 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 from zope.app.form.browser.textwidgets import TextWidget
-#XXX matsubara 2006-05-10: move our NewLineToSpacesWidget to this module
+#XXX matsubara 2006-05-10: Should I move our NewLineToSpacesWidget to 
+# this module?
 
 
 class StrippedTextWidget(TextWidget):

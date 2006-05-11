@@ -41,9 +41,9 @@ And now we try to add the same upstream again.
 
 We get a nice error message.
 
-  >>> error_msg = """
-  ...   A fix for this bug has already been requested for Mozilla Firefox"""
-  >>> error_msg.strip() in browser.contents
+  >>> error_msg = (
+  ...   'A fix for this bug has already been requested for Mozilla Firefox')
+  >>> error_msg in browser.contents
   True
 
 We can add another upstream to the bug.
@@ -62,7 +62,7 @@ enters in action.
   >>> browser.getControl(name='field.product').value = 'firefox'
   >>> browser.getControl('Save Changes').click()
 
-  >>> error_msg = """
-  ...   A fix for this bug has already been requested for Mozilla Firefox"""
-  >>> error_msg.strip() in browser.contents
+  >>> error_msg = (
+  ...   'A fix for this bug has already been requested for Mozilla Firefox')
+  >>> error_msg in browser.contents
   True
