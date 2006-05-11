@@ -81,8 +81,12 @@ Build record has no history and is NEEDSBUILD:
   >>> resetable_build.buildstate.value is 0
   True
 
+  >>> resetable_build.buildqueue_record is not None
+  True
+
 Restore Build(9) to previous state to avoid mess with other tests.
 
+  >>> resetable_build.buildqueue_record.destroySelf()
   >>> resetable_build.buildstate = BuildStatus.FAILEDTOBUILD
   >>> resetable_build.datebuilt = datebuilt
   >>> resetable_build.builder = builder

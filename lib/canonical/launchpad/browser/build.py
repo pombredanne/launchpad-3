@@ -47,11 +47,10 @@ class BuildOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
-        """Only enabled for build records that are not resetable."""
+        """Only enabled for pending build records."""
         text = 'Rescore Build'
-        enabled = not self.context.can_be_reset
         return Link('+rescore', text, icon='edit',
-                    enabled=enabled)
+                    enabled=self.context.can_be_rescored)
 
 
 class BuildView(LaunchpadView):
@@ -60,9 +59,9 @@ class BuildView(LaunchpadView):
 
     def reset_build(self):
         """Check user confirmation and perform the build record reset."""
-        # dismiss if builder can't be reset and return a user warn.
         if not self.context.can_be_reset:
-            return '<p>Build Record is already reset.</p>'
+            self.error = 'Build can not be reset'
+            return
 
         # retrieve user confirmation
         action = self.request.form.get('RESET', None)
@@ -72,27 +71,30 @@ class BuildView(LaunchpadView):
 
         # invoke context method to reset the build record
         self.context.reset()
-        return '<p>Build Record reset.</p>'
+        return 'Build Record reset'
 
     def rescore_build(self):
         """Check user confirmation and perform the build record rescore."""
-        # dismiss if builder can't be reset and return a user warn.
-        if self.context.can_be_reset:
-            return '<p>Build Record is already processed.</p>'
-
-        if not self.context.buildqueue_record:
-            self.context.createBuildQueueEntry()
+        if not self.context.can_be_rescored:
+            self.error = 'Build can not be rescored'
+            return
 
         # retrieve user score
         self.score = self.request.form.get('SCORE', '')
         action = self.request.form.get('RESCORE', '')
 
         if not action:
-            return None
+            return
+
+        try:
+            score = int(self.score)
+        except ValueError:
+            self.error = 'priority must be an integer not "%s"' % self.score
+            return
 
         # invoke context method to rescore the build record
-        self.context.buildqueue_record.manualScore(int(self.score))
-        return '<p>Build Record rescored to %s.</p>' % self.score
+        self.context.buildqueue_record.manualScore(score)
+        return 'Build Record rescored to %s' % self.score
 
 
 class BuildRecordsView(LaunchpadView):
@@ -133,8 +135,11 @@ class BuildRecordsView(LaunchpadView):
         # request context build records according the selected state
         builds = self.context.getBuildRecords(state_map[self.state],
                                               name=self.text)
-        self.batchnav = BatchNavigator(builds, self.request)
-
+        # XXX cprov 20060512: we need a smaller number of items than
+        # the deafult (75) since we can't afford the extra queries to
+        # each row that retrieves the respective BuildQueue item via
+        # reversed key (not even pre-join can help us) [bug #43802]
+        self.batchnav = BatchNavigator(builds, self.request, size=20)
 
     def showBuilderInfo(self):
         """Control the presentation of builder information.
