@@ -24,22 +24,19 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError,
     IHasBuildRecords, IBuildSet
     )
 from canonical.launchpad.webapp import urlappend
 
-# timeout in seconds to be used in the socket with the builders
-# 10 minutes is enough for even large transfers within our network
-# and reasonably short for detect network/system failures at time
-BUILDER_SOCKET_TIMEOUT = 600.0
 
 class TimeoutTransport(xmlrpclib.Transport):
     """XMLRPC Transport to setup a socket with defined timeout"""
     def make_connection(self, host):
         conn = xmlrpclib.Transport.make_connection(self, host)
-        conn._conn.sock.settimeout(BUILDER_SOCKET_TIMEOUT)
+        conn._conn.sock.settimeout(config.builddmaster.socket_timeout)
         return conn
 
 
