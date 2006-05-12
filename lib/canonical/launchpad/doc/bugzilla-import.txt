@@ -397,10 +397,10 @@ Bugzilla severities are mapped to the equivalent Launchpad importance values:
   ...     print '%-11s  %s' % (severity, bugtask.importance.name)
   blocker      CRITICAL
   critical     CRITICAL
-  major        MAJOR
+  major        HIGH
   normal       MEDIUM
-  minor        MINOR
-  trivial      MINOR
+  minor        LOW
+  trivial      LOW
   enhancement  WISHLIST
 
 

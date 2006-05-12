@@ -31,7 +31,7 @@ button:
   ... -----------------------------19759086281403130373932339922
   ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Minor
+  ... Low
   ... -----------------------------19759086281403130373932339922
   ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
@@ -104,7 +104,7 @@ But, you can also assign the task to another person, of course:
   ... -----------------------------19759086281403130373932339922
   ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Minor
+  ... Low
   ... -----------------------------19759086281403130373932339922
   ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
@@ -177,7 +177,7 @@ Lastly, the widget also allows you to simply assign the task to nobody
   ... -----------------------------19759086281403130373932339922
   ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Minor
+  ... Low
   ... -----------------------------19759086281403130373932339922
   ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 

@@ -36,8 +36,8 @@ The simple search form returns only open bugtasks.
     >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...  for bugtask in open_bugtasks]
     [(3, 'UNCONFIRMED', 'MEDIUM'),
-     (1, 'CONFIRMED', 'MINOR'),
-     (2, 'CONFIRMED', 'MINOR')]
+     (1, 'CONFIRMED', 'LOW'),
+     (2, 'CONFIRMED', 'LOW')]
 
 And the advanced form allows us to query for specific bug statuses.
 

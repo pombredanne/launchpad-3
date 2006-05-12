@@ -34,11 +34,11 @@ from canonical.launchpad.interfaces import (
 
 debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNTRIAGED,
                       'wishlist':  dbschema.BugTaskImportance.WISHLIST,
-                      'minor':     dbschema.BugTaskImportance.MINOR,
+                      'minor':     dbschema.BugTaskImportance.LOW,
                       'normal':    dbschema.BugTaskImportance.MEDIUM,
-                      'important': dbschema.BugTaskImportance.MAJOR,
-                      'serious':   dbschema.BugTaskImportance.MAJOR,
-                      'grave':     dbschema.BugTaskImportance.MAJOR,
+                      'important': dbschema.BugTaskImportance.HIGH,
+                      'serious':   dbschema.BugTaskImportance.HIGH,
+                      'grave':     dbschema.BugTaskImportance.HIGH,
                       'critical':  dbschema.BugTaskImportance.CRITICAL}
 
 def bugtask_sort_key(bugtask):

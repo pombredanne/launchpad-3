@@ -673,9 +673,9 @@ tr.highlight {
 .statusRejected    { color: Gray; }
 
 .importanceCritical  { color: Red; }
-.importanceMajor     { color: #ff6600; }
+.importanceHigh      { color: #ff6600; }
 .importanceMedium    { color: Green; }
-.importanceMinor     { color: Black; }
+.importanceLow       { color: Black; }
 .importanceWishlist  { color: Blue; }
 .importanceUntriaged { color: #999; }
 

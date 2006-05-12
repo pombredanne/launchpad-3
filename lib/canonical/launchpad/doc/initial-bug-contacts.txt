@@ -194,7 +194,7 @@ importance, etc.
     interactive and dynamic SVG drawings.
     <BLANKLINE>
     ** Affects: firefox (upstream)
-         Importance: Minor
+         Importance: Low
            Assignee: Mark Shuttleworth
              Status: Unconfirmed
     <BLANKLINE>
@@ -203,7 +203,7 @@ importance, etc.
              Status: Unconfirmed
     <BLANKLINE>
     ** Affects: mozilla-firefox (Debian)
-         Importance: Minor
+         Importance: Low
              Status: Confirmed
     <BLANKLINE>
     --

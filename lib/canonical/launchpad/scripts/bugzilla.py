@@ -221,10 +221,10 @@ class Bug:
         bugtask.importance = {
             'blocker': BugTaskImportance.CRITICAL,
             'critical': BugTaskImportance.CRITICAL,
-            'major': BugTaskImportance.MAJOR,
+            'major': BugTaskImportance.HIGH,
             'normal': BugTaskImportance.MEDIUM,
-            'minor': BugTaskImportance.MINOR,
-            'trivial': BugTaskImportance.MINOR,
+            'minor': BugTaskImportance.LOW,
+            'trivial': BugTaskImportance.LOW,
             'enhancement': BugTaskImportance.WISHLIST
             }.get(self.bug_severity, BugTaskImportance.UNKNOWN)
 

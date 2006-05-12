@@ -34,17 +34,17 @@ Let's use a few examples to demonstrate:
   >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
   '<img alt="(critical)" title="Critical importance" src="/@@/bug-critical" />'
 
-  >>> test_task.importance = BugTaskImportance.MAJOR
+  >>> test_task.importance = BugTaskImportance.HIGH
   >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(major)" title="Major importance" src="/@@/bug-major" />'
+  '<img alt="(high)" title="High importance" src="/@@/bug-high" />'
 
   >>> test_task.importance = BugTaskImportance.MEDIUM
   >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
   '<img alt="(medium)" title="Medium importance" src="/@@/bug-medium" />'
 
-  >>> test_task.importance = BugTaskImportance.MINOR
+  >>> test_task.importance = BugTaskImportance.LOW
   >>> test_tales("bugtask/fmt:icon", bugtask=test_task)
-  '<img alt="(minor)" title="Minor importance" src="/@@/bug-minor" />'
+  '<img alt="(low)" title="Low importance" src="/@@/bug-low" />'
 
   >>> test_task.importance = BugTaskImportance.WISHLIST
   >>> test_tales("bugtask/fmt:icon", bugtask=test_task)

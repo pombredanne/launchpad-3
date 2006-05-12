@@ -2543,8 +2543,8 @@ class BugTaskImportance(DBSchema):
         security.
         """)
 
-    MAJOR = Item(40, """
-        Major
+    HIGH = Item(40, """
+        High
 
         This bug needs urgent attention from the maintainer or
         upstream. It affects local system security or data integrity.
@@ -2557,8 +2557,8 @@ class BugTaskImportance(DBSchema):
         off until other major or critical bugs have been fixed.
         """)
 
-    MINOR = Item(20, """
-        Minor
+    LOW = Item(20, """
+        Low
 
         This bug does not warrant an upload just to fix it, but
         should if possible be fixed when next the maintainer does an

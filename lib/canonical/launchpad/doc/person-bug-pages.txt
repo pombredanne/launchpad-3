@@ -127,8 +127,8 @@ with any importance.
     >>> subscribed_bugtasks = list(subscribed_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...         for bugtask in subscribed_bugtasks])
-    [(1, 'CONFIRMED', 'MINOR'),
-     (1, 'UNCONFIRMED', 'MINOR'),
+    [(1, 'CONFIRMED', 'LOW'),
+     (1, 'UNCONFIRMED', 'LOW'),
      (4, 'UNCONFIRMED', 'MEDIUM'),
      (9, 'CONFIRMED', 'MEDIUM')]
 
@@ -173,8 +173,8 @@ No search criteria (ordered by importance):
     >>> [(bugtask.bug.id, bugtask.importance.name)
     ...  for bugtask in bugtask_batch_navigator.batch]
     [(3, 'MEDIUM'),
-     (1, 'MINOR'),
-     (2, 'MINOR')]
+     (1, 'LOW'),
+     (2, 'LOW')]
 
 Simple keyword searching:
 
@@ -209,8 +209,8 @@ Searching for all open bugs on Debian mozilla-firefox:
     >>> [(bugtask.bug.id, bugtask.importance.name)
     ...  for bugtask in bugtask_batch_navigator.batch]
     [(3, 'MEDIUM'),
-     (1, 'MINOR'),
-     (2, 'MINOR')]
+     (1, 'LOW'),
+     (2, 'LOW')]
 
 There are helper methods to calculate links to the Open, Critical,
 Unassigned, and In Progress bug lists.

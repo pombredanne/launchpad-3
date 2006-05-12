@@ -143,9 +143,9 @@ Change a bug task's importance:
     ...         'bugtaskimportancechanged', event, 1)
     UNTRIAGED True
     WISHLIST True
-    MINOR True
+    LOW True
     MEDIUM True
-    MAJOR True
+    HIGH True
     CRITICAL True
     UNKNOWN True
 

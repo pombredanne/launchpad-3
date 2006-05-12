@@ -795,11 +795,11 @@ Invalid importance:
         importance foo
     ...
     The 'importance' command expects any of the following arguments:
-    untriaged, wishlist, minor, medium, major, critical
+    untriaged, wishlist, low, medium, high, critical
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance untriaged
+        importance low
     ...
 
 Trying to use the obsolete "severity" or "priority" commands:
