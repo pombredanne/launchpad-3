@@ -70,6 +70,9 @@ class TeamMembership(SQLBase):
         deactivated = TeamMembershipStatus.DEACTIVATED
         proposed = TeamMembershipStatus.PROPOSED
 
+        # Flush the cache used by the Person.inTeam method
+        self.person._inTeam_cache = {}
+
         # Make sure the transition from the current status to the given status
         # is allowed. All allowed transitions are in the TeamMembership spec.
         if self.status in [admin, approved]:

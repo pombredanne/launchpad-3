@@ -41,22 +41,7 @@
     <tal:do_not_show_advanced_form
       condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">
-        <form method="GET" name="search" action="">
-          <span tal:content="structure view/searchtext_widget" />
-          <input type="submit" name="search" value="Search" />
-          <a href="?advanced=1"><small>Advanced</small></a>
-          <div style="margin-top: 5px">
-            <small>
-              Sort by:
-              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-            </small>
-          </div>
-        </form>
-        <script>
-          <!--
-              document.forms["search"].elements['field.searchtext'].focus();
-            -->
-        </script>
+        <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
         <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>

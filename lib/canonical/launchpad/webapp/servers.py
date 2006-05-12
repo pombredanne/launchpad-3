@@ -160,6 +160,8 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
 
     implements(ILaunchpadBrowserApplicationRequest)
 
+    retry_max_count = 5    # How many times we're willing to retry
+
     def __init__(self, body_instream, environ, response=None):
         super(LaunchpadBrowserRequest, self).__init__(
             body_instream, environ, response)
@@ -265,12 +267,14 @@ class XMLRPCPublicationRequestFactory:
         LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
         self._xmlrpc = LaunchpadXMLRPCPublication(db)
 
-    def __call__(self, input_stream, output_steam, env):
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        assert output_stream is None, 'output_stream is deprecated in Z3.2'
+
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
         if method in ['POST']:
-            request = LaunchpadXMLRPCRequest(input_stream, output_steam, env)
+            request = LaunchpadXMLRPCRequest(input_stream, env)
             request.setPublication(self._xmlrpc)
         else:
             raise NotImplementedError()

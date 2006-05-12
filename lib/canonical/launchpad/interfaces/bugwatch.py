@@ -11,9 +11,11 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
-from canonical.launchpad import _
 
-class IBugWatch(Interface):
+from canonical.launchpad import _
+from canonical.launchpad.interfaces import IHasBug
+
+class IBugWatch(IHasBug):
     """A bug on a remote system."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
