@@ -67,7 +67,7 @@
     <tr>
       <th>sorted by:</th>
       <td>
-        <select name="orderby" tal:define="orderby python: request.get('orderby')">
+        <select name="orderby" tal:define="orderby request/orderby|nothing">
           <option value="daterequested" 
             tal:attributes="selected python: orderby == 'daterequested'">
             oldest first</option>
@@ -113,8 +113,8 @@
         </thead>
         <tbody>
           <tal:block repeat="shipitrequest currentBatch">
-            <tr tal:attributes="
-              style string:background-color: ${shipitrequest/highlightColour}">
+            <tr tal:define="bg python: shipitrequest.highpriority and '#ff6666' or None"
+                tal:attributes="style string: background-color:${bg}">
               <td><a tal:attributes="href shipitrequest/fmt:url"
                      tal:content="shipitrequest/id">id</a></td>
               <td>
@@ -126,9 +126,9 @@
               <td tal:content="shipitrequest/daterequested/fmt:date" />
               <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" 
-                  tal:content="shipitrequest/totalCDs" />
+                  tal:content="shipitrequest/getTotalCDs" />
               <td style="text-align: right" 
-                  tal:content="shipitrequest/totalapprovedCDs" />
+                  tal:content="shipitrequest/getTotalApprovedCDs" />
               <td>
                 <tal:block condition="not: shipitrequest/cancelled">
                   <tal:block condition="shipitrequest/isApproved">

@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
     ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
     IShipmentSet, ShippingRequestPriority, IShipItReport, IShipItReportSet,
-    CURRENT_SHIPIT_DISTRO_RELEASE, MAX_SHIPPINGRUN_SIZE, ILibraryFileAliasSet)
+    ShipItConstants, SOFT_MAX_SHIPPINGRUN_SIZE, ILibraryFileAliasSet)
 from canonical.launchpad.database.country import Country
 
 
@@ -99,16 +99,14 @@ class ShippingRequest(SQLBase):
         else:
             return ShippingService.SPRING
 
-    @property
-    def totalapprovedCDs(self):
+    def getTotalApprovedCDs(self):
         """See IShippingRequest"""
         total = 0
         for requested_cds in self.getAllRequestedCDs():
             total += requested_cds.quantityapproved
         return total
 
-    @property
-    def totalCDs(self):
+    def getTotalCDs(self):
         """See IShippingRequest"""
         total = 0
         for requested_cds in self.getAllRequestedCDs():
@@ -171,15 +169,8 @@ class ShippingRequest(SQLBase):
                     requested_cds = RequestedCDs(
                         request=self, flavour=flavour, architecture=arch)
                 if not only_approved:
-                    setattr(requested_cds, 'quantity', quantity)
-                setattr(requested_cds, 'quantityapproved', quantity)
-
-    def highlightColour(self):
-        """See IShippingRequest"""
-        if self.highpriority:
-            return "#ff6666"
-        else:
-            return None
+                    requested_cds.quantity = quantity
+                requested_cds.quantityapproved = quantity
 
     def isAwaitingApproval(self):
         """See IShippingRequest"""
@@ -276,7 +267,7 @@ class ShippingRequestSet:
             return None
 
     def search(self, status=ShippingRequestStatus.ALL, flavour=None, 
-               recipient_text=None, omit_cancelled=True, 
+               recipient_text=None, include_cancelled=False, 
                orderBy=ShippingRequest.sortingColumns):
         """See IShippingRequestSet"""
         queries = []
@@ -303,7 +294,7 @@ class ShippingRequestSet:
                 """ % (quote(recipient_text), quote(recipient_text),
                        quote_like(recipient_text)))
 
-        if omit_cancelled:
+        if not include_cancelled:
             queries.append("ShippingRequest.cancelled IS FALSE")
 
         if status == ShippingRequestStatus.APPROVED:
@@ -317,8 +308,9 @@ class ShippingRequestSet:
             pass
 
         query = " AND ".join(queries)
-        # See https://launchpad.net/products/launchpad/+bug/3096 for an
-        # explanation of why I'm doing this.
+        # We can't pass an empty string to SQLObject.select(), and it's
+        # already reported as https://launchpad.net/bugs/3096. That's why
+        # I do this "1 = 1" hack.
         if not query:
             query = "1 = 1"
         return ShippingRequest.select(
@@ -328,16 +320,16 @@ class ShippingRequestSet:
         """See IShippingRequestSet"""
         request_ids = [
             request.id for request in self.getUnshippedRequests(priority)]
-        # The MAX_SHIPPINGRUN_SIZE is not a hard limit, and it doesn't make 
-        # sense to split a shippingrun into two just because there's 10 
+        # The SOFT_MAX_SHIPPINGRUN_SIZE is not a hard limit, and it doesn't
+        # make sense to split a shippingrun into two just because there's 10 
         # requests more than the limit, so we only split them if there's at
-        # least 50% more requests than MAX_SHIPPINGRUN_SIZE.
+        # least 50% more requests than SOFT_MAX_SHIPPINGRUN_SIZE.
         file_counter = 1
         while len(request_ids):
             ztm.begin()
-            if len(request_ids) > MAX_SHIPPINGRUN_SIZE * 1.5:
-                request_ids_subset = request_ids[:MAX_SHIPPINGRUN_SIZE]
-                request_ids[:MAX_SHIPPINGRUN_SIZE] = []
+            if len(request_ids) > SOFT_MAX_SHIPPINGRUN_SIZE * 1.5:
+                request_ids_subset = request_ids[:SOFT_MAX_SHIPPINGRUN_SIZE]
+                request_ids[:SOFT_MAX_SHIPPINGRUN_SIZE] = []
             else:
                 request_ids_subset = request_ids[:]
                 request_ids = []
@@ -515,7 +507,7 @@ class ShippingRequestSet:
         requests_base_query = """
             SELECT COUNT(*) 
             FROM ShippingRequest 
-            WHERE ShippingRequest.cancelled is false
+            WHERE ShippingRequest.cancelled IS FALSE
             """
 
         sum_base_query = """
@@ -564,8 +556,7 @@ class ShippingRequestSet:
         sum_dict = {}
         for flavour_id, arch_id, sum in results:
             flavour = ShipItFlavour.items[flavour_id]
-            if sum_dict.get(flavour) is None:
-                sum_dict[flavour] = {}
+            sum_dict.setdefault(flavour, {})
             arch = ShipItArchitecture.items[arch_id]
             sum_dict[flavour].update({arch: sum})
         return sum_dict
@@ -611,7 +602,7 @@ class RequestedCDs(SQLBase):
 
     distrorelease = EnumCol(
         schema=ShipItDistroRelease, notNull=True,
-        default=CURRENT_SHIPIT_DISTRO_RELEASE)
+        default=ShipItConstants.current_distrorelease)
     architecture = EnumCol(schema=ShipItArchitecture, notNull=True)
     flavour = EnumCol(schema=ShipItFlavour, notNull=True)
 
@@ -836,9 +827,8 @@ class ShippingRun(SQLBase):
             # extra_fields.
             for flavour in [ubuntu, kubuntu, edubuntu]:
                 for arch in [x86, amd64, ppc]:
-                    try:
-                        requested_cds = all_requested_cds[flavour][arch]
-                    except KeyError:
+                    requested_cds = all_requested_cds[flavour][arch]
+                    if requested_cds is None:
                         quantityapproved = 0
                     else:
                         quantityapproved = requested_cds.quantityapproved
@@ -849,7 +839,7 @@ class ShippingRun(SQLBase):
             # XXX: 'display' is some magic number that's used by the shipping
             # company. Need to figure out what's it for and use a better name.
             # -- Guilherme Salgado, 2005-10-04
-            if request.totalapprovedCDs >= 100:
+            if request.getTotalApprovedCDs() >= 100:
                 display = 1
             else:
                 display = 0

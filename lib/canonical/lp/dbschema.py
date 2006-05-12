@@ -3299,9 +3299,9 @@ class ShipItDistroRelease(DBSchema):
         """)
 
     DAPPER = Item(2, """
-        Dapper Drake
+        6.06 LTS (Dapper Drake)
 
-        The Dapper Drake release.
+        The Dapper Drake lont-term-support release.
         """)
 
 

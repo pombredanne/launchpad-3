@@ -24,12 +24,13 @@ This is the only page that normal users have access to. Here they can make new
 requests, change/cancel existing ones and see the previous one that were
 shipped already.
 
-When a new version of Ubuntu is released, we usually rollout a new shipit
-code, but we need to keep it closed until everything is ready. It's a good
-thing to do this through the web UI, so we don't depend on a new rollout to
-open it. To achieve this we rely on the predefined quantities of CDs that
-people can choose when making a request. That is, if there's no predefined
-quantities, shipit is considered closed, otherwise it's considered open.
+When making a new request, users have to chose the number of CDs from a set of
+predefined options. These options are stored on the StandardShipItRequest
+table, and if we don't have a single option in the database, it doesn't make
+sense to allow people to use shipit to make new requests, so we'll say that
+shipit is closed, in case we don't find any StandardShipItRequest. This can
+also be overused to close shipit through the web UI, by simply removing all
+StandardShipItRequests.
 
     >>> from canonical.launchpad.ftests import login
     >>> login('test@canonical.com')
@@ -50,7 +51,7 @@ quantities, shipit is considered closed, otherwise it's considered open.
     True
 
 
-/shipit/requests/XX
+/shipit/requests/$request.id
 -----------------
 
 This is the page where shipit admins go to approve, deny or change an existing
@@ -75,11 +76,11 @@ And this is the order we use when generating the widgets matrix.
     >>> matrix = review_request_view.widgetsMatrixWithFlavours()
     >>> for row in matrix:
     ...     newrow = []
-    ...     for cel in row:
-    ...         if isinstance(cel, basestring) or cel is None:
-    ...             newrow.append(cel)
+    ...     for cell in row:
+    ...         if isinstance(cell, basestring) or cell is None:
+    ...             newrow.append(cell)
     ...         else:
-    ...             newrow.append(cel.label)
+    ...             newrow.append(cell.label)
     ...     print newrow
     ['Ubuntu', u'PC', u'64-bit PC', u'Mac']
     ['Kubuntu', u'PC', u'64-bit PC', None]

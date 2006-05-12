@@ -19,8 +19,7 @@ from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, SHIPIT_EDUBUNTU_URL,
-    SHIPIT_KUBUNTU_URL, SHIPIT_UBUNTU_URL)
+    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -110,9 +109,9 @@ class LoginOrRegister:
     email = None
 
     registered_origins = {
-        'shipit-ubuntu': SHIPIT_UBUNTU_URL,
-        'shipit-edubuntu': SHIPIT_EDUBUNTU_URL,
-        'shipit-kubuntu': SHIPIT_KUBUNTU_URL,
+        'shipit-ubuntu': ShipItConstants.ubuntu_url,
+        'shipit-edubuntu': ShipItConstants.edubuntu_url,
+        'shipit-kubuntu': ShipItConstants.kubuntu_url,
         'ubuntuwiki': UBUNTU_WIKI_URL}
 
     def process_form(self):

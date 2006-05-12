@@ -32,7 +32,7 @@
 
       <tal:block define="widgets_matrix view/widgetsMatrixWithFlavours">
         <metal:quantity_widgets
-            use-macro="context/@@shipit_macros/quantity_widgets" />
+            use-macro="context/@@+shipit-macros/quantity_widgets" />
       </tal:block>
 
       <br />
@@ -45,7 +45,7 @@
       <h2>Shipping Details</h2>
 
       <metal:shipping_details
-        use-macro="context/@@shipit_macros/shipping_details" />
+        use-macro="context/@@+shipit-macros/shipping_details" />
 
       <br />
       <div style="text-align: right;">

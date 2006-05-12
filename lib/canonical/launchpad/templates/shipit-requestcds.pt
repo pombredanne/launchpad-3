@@ -49,7 +49,7 @@
                       define="user view/user">
       <h1>Shipped/Cancelled requests</h1>
 
-      <metal:pastrequests use-macro="context/@@shipit-macros/previous_requests" />
+      <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
     </tal:pastrequests>
 
     <h1>How many CDs would you like?</h1> 
@@ -132,7 +132,7 @@
     <h2>Shipping address</h2>
 
     <metal:shipping_details
-      use-macro="context/@@shipit_macros/shipping_details" />
+      use-macro="context/@@+shipit-macros/shipping_details" />
 
     <div style="text-align: right">
       <tal:current_request condition="view/current_order">
@@ -157,7 +157,7 @@
                       define="user view/user">
       <h2>Shipped/Cancelled requests</h2>
 
-      <metal:pastrequests use-macro="context/@@shipit-macros/previous_requests" />
+      <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
     </tal:pastrequests>
   </tal:shipit-is-closed>
 

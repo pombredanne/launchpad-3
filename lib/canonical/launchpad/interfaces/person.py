@@ -373,7 +373,8 @@ class IPerson(IHasSpecifications):
         """Return all requests made by this person that were sent to the
         shipping company already.
 
-        This only includes requests for CDs of CURRENT_SHIPIT_DISTRO_RELEASE.
+        This only includes requests for CDs of 
+        ShipItConstants.current_distrorelease.
         """
 
     def currentShipItRequest():

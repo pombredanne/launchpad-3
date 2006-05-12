@@ -11,6 +11,7 @@
                  StandardShipItRequestSetNavigation"
         />
  
+    <!-- This is only used on shipit. That's why it's here. -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.launchpad.interfaces.shipit.IEmptyDefaultChoice
@@ -31,7 +32,7 @@
     <browser:page
         for="*"
         permission="zope.Public"
-        name="shipit_macros"
+        name="+shipit-macros"
         template="../templates/shipit-macros.pt"
         layer="canonical.launchpad.layers.ShipItLayer" />
 

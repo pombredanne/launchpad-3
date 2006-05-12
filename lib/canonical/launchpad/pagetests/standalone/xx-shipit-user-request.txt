@@ -114,3 +114,26 @@
 
   >>> Person.byName('name16').currentShipItRequest() is None
   True
+
+
+  And if we make a new request, leaving a comment asking for more CDs, it
+  won't be automatically approved.
+
+  >>> print http(r"""
+  ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/myrequest HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... ordertype=1&field.reason=I+Want+100+More+CDs&field.recipientdisplayname=Foo+Bar&field.organization=&field.addressline1=street&field.addressline2=&field.city=city&field.province=state&field.postcode=42423&field.country=226&field.country-empty-marker=1&field.phone=453523452&FORM_SUBMIT=Request+CDs""")
+  HTTP/1.1 200 Ok
+  ...
+  ...Request accepted. Please note that requests usually take from 4 to 6...
+  ...weeks to deliver, depending on the country of shipping...
+  ...
+
+  >>> Person.byName('name16').currentShipItRequest().approved is None
+  True
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['info@shipit.ubuntu.com']
+

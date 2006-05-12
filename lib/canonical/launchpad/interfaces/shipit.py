@@ -4,10 +4,9 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
            'ShippingRequestStatus', 'IShipment', 'IShippingRun',
            'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
-           'SHIPIT_UBUNTU_URL', 'SHIPIT_EDUBUNTU_URL', 'SHIPIT_KUBUNTU_URL',
            'ShippingRequestPriority', 'IShipItReport', 'IShipItReportSet',
-           'CURRENT_SHIPIT_DISTRO_RELEASE', 'IShippingRequestAdmin',
-           'IShippingRequestEdit', 'MAX_SHIPPINGRUN_SIZE']
+           'IShippingRequestAdmin', 'IShippingRequestEdit',
+           'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants']
 
 from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -17,27 +16,36 @@ from zope.app.form.browser.itemswidgets import DropdownWidget
 from canonical.lp.dbschema import ShipItDistroRelease
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
-    valid_shipit_recipientdisplayname, valid_shipit_phone, valid_shipit_city,
-    valid_shipit_addressline1, valid_shipit_addressline2,
-    valid_shipit_organization, valid_shipit_province)
+    validate_shipit_recipientdisplayname, validate_shipit_phone,
+    validate_shipit_city, validate_shipit_addressline1,
+    validate_shipit_addressline2, validate_shipit_organization,
+    validate_shipit_province)
 
 from canonical.launchpad import _
 
-SHIPIT_UBUNTU_URL = 'https://shipit.ubuntu.com'
-SHIPIT_KUBUNTU_URL = 'https://shipit.kubuntu.com'
-SHIPIT_EDUBUNTU_URL = 'https://shipit.edubuntu.com'
-CURRENT_SHIPIT_DISTRO_RELEASE = ShipItDistroRelease.DAPPER
-
 # The maximum number of requests in a single shipping run
-MAX_SHIPPINGRUN_SIZE = 10000
+SOFT_MAX_SHIPPINGRUN_SIZE = 10000
 
 
-def _valid_positive_int(value):
+def _validate_positive_int(value):
+    """Return True if the given value is a positive integer.
+
+    If it's not a positive integer, then raise a LaunchpadValidationError.
+    You must not pass non-unicode type objects to this function.
+    """
+    assert isinstance(value, int)
     if value < 0:
         raise LaunchpadValidationError(_(
             "Quantities must be greater than or equal 0."))
     else:
         return True
+
+
+class ShipItConstants:
+    ubuntu_url = 'https://shipit.ubuntu.com'
+    kubuntu_url = 'https://shipit.kubuntu.com'
+    edubuntu_url = 'https://shipit.edubuntu.com'
+    current_distrorelease = ShipItDistroRelease.DAPPER
 
 
 class IEmptyDefaultChoice(IChoice):
@@ -81,8 +89,6 @@ class IShippingRequest(Interface):
     daterequested = Datetime(
         title=_('Date of Request'), required=True, readonly=True)
 
-    shockandawe = Int(title=_('Shock And Awe'), required=False, readonly=True)
-
     approved = Bool(
         title=_('Is This Request Approved?'), required=False, readonly=False)
 
@@ -109,31 +115,31 @@ class IShippingRequest(Interface):
 
     recipientdisplayname = TextLine(
             title=_('Name'), required=True, readonly=False,
-            constraint=valid_shipit_recipientdisplayname,
+            constraint=validate_shipit_recipientdisplayname,
             description=_("The name of the person who's going to receive "
                           "this order.")
             )
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
-            constraint=valid_shipit_addressline1,
+            constraint=validate_shipit_addressline1,
             description=_('The address to where the CDs will be shipped '
                           '(Line 1)')
             )
     addressline2 = TextLine(
             title=_(''), required=False, readonly=False,
-            constraint=valid_shipit_addressline2,
+            constraint=validate_shipit_addressline2,
             description=_('The address to where the CDs will be shipped '
                           '(Line 2)')
             )
     city = TextLine(
             title=_('City/Town/etc'), required=True, readonly=False,
-            constraint=valid_shipit_city,
+            constraint=validate_shipit_city,
             description=_('The City/Town/Village/etc to where the CDs will be '
                           'shipped.')
             )
     province = TextLine(
             title=_('State/Province'), required=False, readonly=False,
-            constraint=valid_shipit_province,
+            constraint=validate_shipit_province,
             description=_('The State/Province/etc to where the CDs will be '
                           'shipped.')
             )
@@ -148,12 +154,12 @@ class IShippingRequest(Interface):
             )
     phone = TextLine(
             title=_('Phone'), required=True, readonly=False,
-            constraint=valid_shipit_phone,
+            constraint=validate_shipit_phone,
             description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
             )
     organization = TextLine(
             title=_('Organization'), required=False, readonly=False,
-            constraint=valid_shipit_organization,
+            constraint=validate_shipit_organization,
             description=_('The Organization requesting the CDs')
             )
 
@@ -164,9 +170,12 @@ class IShippingRequest(Interface):
         _("The iso3166code2 code of this request's country. Can't be None."))
     shippingservice = Attribute(
         _("The shipping service used to ship this request. Can't be None."))
-    totalCDs = Attribute(_('Total number of CDs in this request.'))
-    totalapprovedCDs = Attribute(
-        _('Total number of approved CDs in this request.'))
+
+    def getTotalCDs():
+        """Return the total number of CDs in this request."""
+
+    def getTotalApprovedCDs():
+        """Return the total number of approved CDs in this request."""
 
     def isDenied():
         """Return True if this request was denied.
@@ -215,13 +224,7 @@ class IShippingRequest(Interface):
                          ShipItArchitecture.PPC: quantity2}
                      }
 
-        This method can be used only on approved requests.
-        """
-
-    def highlightColour():
-        """Return the colour to highlight this request if it's high priority.
-
-        Return None otherwise.
+        You must not set approved quantities on a non-approved request.
         """
 
     def isAwaitingApproval():
@@ -273,19 +276,21 @@ class IShippingRequestSet(Interface):
 
     def new(recipient, recipientdisplayname, country, city, addressline1,
             phone, addressline2=None, province=None, postcode=None,
-            organization=None, reason=None, shockandawe=None):
+            organization=None, reason=None):
         """Create and return a new ShippingRequest.
 
-        This method can't be used if recipient already has a
+        You must not create a new request for a recipient that already has a 
         currentShipItRequest. Refer to IPerson.currentShipItRequest() for more
         information about what is a current request.
         """
 
     def exportRequestsToFiles(priority, ztm):
-        """Group all approved, unshipped and non-cancelled requests into
-        one or more ShippingRuns with at most MAX_SHIPPINGRUN_SIZE requests 
-        each and for each ShippingRun export it into a CSV file and upload it
-        to the Librarian.
+        """Export all approved, unshipped and non-cancelled into CSV files.
+
+        Group approved, unshipped and non-cancelled requests into one or more
+        ShippingRuns with at most SOFT_MAX_SHIPPINGRUN_SIZE requests each 
+        and for each ShippingRun export it into a CSV file and upload it to 
+        the Librarian.
         """
 
     def getOldestPending():
@@ -306,18 +311,8 @@ class IShippingRequestSet(Interface):
         Return the default value if there's no ShippingRequest with this id.
         """
 
-    def getRequestsByType(request_type, standard_type=None,
-                          status=ShippingRequestStatus.ALL,
-                          omit_cancelled=True):
-        """Return all requests of the given type with the given status.
-        
-        :request_type: Either 'custom' or 'standard'
-        If request_type is 'standard', then standard_type can be any of the
-        StandardShipItRequests or None.
-        """
-
     def search(status=ShippingRequestStatus.ALL, flavour=None,
-               recipient_text=None, omit_cancelled=True):
+               recipient_text=None, include_cancelled=True):
         """Search for requests that match the given arguments."""
 
     def generateShipmentSizeBasedReport():
@@ -346,11 +341,11 @@ class IRequestedCDs(Interface):
     quantity = Int(
         title=_('The number of CDs'), required=True, readonly=False,
         description=_('Number of requested CDs for this architecture.'),
-        constraint=_valid_positive_int)
+        constraint=_validate_positive_int)
     quantityapproved = Int(
         title=_('Quantity Approved'), required=False, readonly=False,
         description=_('Number of approved CDs for this architecture.'),
-        constraint=_valid_positive_int)
+        constraint=_validate_positive_int)
     description = Attribute(_('A text description of this IRequestedCDs.'))
 
 
@@ -364,17 +359,17 @@ class IStandardShipItRequest(Interface):
     quantityx86 = Int(
         title=_('PC CDs'), required=True, readonly=False,
         description=_('Number of PC CDs in this request.'),
-        constraint=_valid_positive_int)
+        constraint=_validate_positive_int)
 
     quantityppc = Int(
         title=_('Mac CDs'), required=True, readonly=False,
         description=_('Number of Mac CDs in this request.'),
-        constraint=_valid_positive_int)
+        constraint=_validate_positive_int)
 
     quantityamd64 = Int(
         title=_('64-bit PC CDs'), required=True, readonly=False,
         description=_('Number of 64-bit PC CDs in this request.'),
-        constraint=_valid_positive_int)
+        constraint=_validate_positive_int)
 
     isdefault = Bool(
         title=_('Is this the default option?'),
@@ -522,31 +517,31 @@ class IShipItReportSet(Interface):
 
 
 class IShippingRequestAdmin(Interface):
-    """An interface used to render and validate the page for shipit admins to
+    """A schema used to render and validate the page for shipit admins to
     create/change ShippingRequests.
     """
 
     ubuntu_quantityx86 = Int(
         title=_('PC'), description=_('Quantity of Ubuntu PC CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
     ubuntu_quantityppc = Int(
         title=_('Mac'), description=_('Quantity of Ubuntu Mac CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
     ubuntu_quantityamd64 = Int(
         title=_('64-bit PC'), description=_('Quantity of Ubuntu 64-bit PC CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
 
     kubuntu_quantityx86 = Int(
         title=_('PC'), description=_('Quantity of Kubuntu PC CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
     kubuntu_quantityamd64 = Int(
         title=_('64-bit PC'),
         description=_('Quantity of Kubuntu 64-bit PC CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
 
     edubuntu_quantityx86 = Int(
         title=_('PC'), description=_('Quantity of Edubuntu PC CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
 
     highpriority = IShippingRequest.get('highpriority')
     recipientdisplayname = IShippingRequest.get('recipientdisplayname')
@@ -561,31 +556,31 @@ class IShippingRequestAdmin(Interface):
 
 
 class IShippingRequestEdit(Interface):
-    """An interface used to render and validate the page for shipit admins to
+    """A schema used to render and validate the page for shipit admins to
     approve/deny ShippingRequests.
     """
 
     ubuntu_quantityx86approved = Int(
         title=_('PC'), description=_('Quantity of Ubuntu X86 Approved CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
     ubuntu_quantityppcapproved = Int(
         title=_('Mac'), description=_('Quantity of Ubuntu PPC Approved CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
     ubuntu_quantityamd64approved = Int(
         title=_('64-bit PC'), 
         description=_('Quantity of Ubuntu AMD64 Approved CDs'), required=False, 
-        readonly=False, constraint=_valid_positive_int)
+        readonly=False, constraint=_validate_positive_int)
 
     kubuntu_quantityx86approved = Int(
         title=_('PC'), description=_('Quantity of Kubuntu X86 Approved CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
     kubuntu_quantityamd64approved = Int(
         title=_('64-bit PC'),
         description=_('Quantity of Kubuntu AMD64 Approved CDs'), required=False,
-        readonly=False, constraint=_valid_positive_int)
+        readonly=False, constraint=_validate_positive_int)
 
     edubuntu_quantityx86approved = Int(
         title=_('PC'), description=_('Quantity of Edubuntu X86 Approved CDs'),
-        required=False, readonly=False, constraint=_valid_positive_int)
+        required=False, readonly=False, constraint=_validate_positive_int)
 
     highpriority = IShippingRequest.get('highpriority')

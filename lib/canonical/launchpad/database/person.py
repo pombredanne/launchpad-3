@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
     KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
-    CURRENT_SHIPIT_DISTRO_RELEASE)
+    ShipItConstants)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -451,7 +451,7 @@ class Person(SQLBase):
             AND ShippingRequest.id = RequestedCDs.request
             AND RequestedCDs.distrorelease = %s
             AND ShippingRequest.id IN (SELECT request FROM Shipment)
-            ''' % sqlvalues(self.id, CURRENT_SHIPIT_DISTRO_RELEASE)
+            ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
         return ShippingRequest.select(
             query, clauseTables=['RequestedCDs'], distinct=True)
 

@@ -22,7 +22,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import ShipItFlavour, ShipItArchitecture
-from canonical.launchpad.helpers import intOrZero
+from canonical.launchpad.helpers import intOrZero, get_email_template
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -135,24 +135,6 @@ def _get_flavour_from_layer(request):
 class ShipItRequestView(GeneralFormView):
     """The view for people to create/edit ShipIt requests."""
 
-    mail_template = """
-%(recipientname)s, logged in with the email address
-%(recipientemail)s, made a new request in ShipIt but the request
-was not automatically approved. This is either because the user wanted
-additional CDs or because (s)he already has a request sent to the shipping
-company.
-
-%(recipientname)s already has %(shipped_requests)d requests sent to the shipping
-company already.
-
-This request can be seen at:
-%(requesturl)s
-
-The comment left by the user:
-
-    %(reason)s
-"""
-    
     from_email_addresses = {
         ShipItFlavour.UBUNTU: config.shipit.shipit_ubuntu_from_email,
         ShipItFlavour.EDUBUNTU: config.shipit.shipit_edubuntu_from_email,
@@ -206,13 +188,17 @@ The comment left by the user:
 
     @cachedproperty
     def current_order_standard_id(self):
-        """The current order's StandardShipItRequest id, or None in case
-        there's no current order or the current order doesn't contain any CDs
-        of self.flavour."""
+        """The current order's StandardShipItRequest id, or None.
+        
+        If there's no current order or the current order doesn't contain any
+        CDs of self.flavour, None will be returned.
+        """
         if self.current_order is None:
             return None
 
         quantities = self.current_order.getQuantitiesByFlavour(self.flavour)
+        # self.current_order may contain no requested CDs for self.flavour,
+        # and then quantities will be None.
         if quantities is None:
             return None
 
@@ -242,7 +228,7 @@ The comment left by the user:
         """Overwrite GeneralFormView's process_form() method because we want
         to be able to have a 'Cancel' button in a different <form> element.
         """
-        if self.request.form.get('cancel') is not None:
+        if 'cancel' in self.request.form:
             self.current_order.cancel(self.user)
             self.process_status = 'Request Cancelled'
         else:
@@ -264,16 +250,17 @@ The comment left by the user:
             request_type_id)
         current_order = self.current_order
         need_notification = False
+        reason = kw.get('reason')
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
                 self.user, kw.get('recipientdisplayname'), kw.get('country'),
                 kw.get('city'), kw.get('addressline1'), kw.get('phone'),
                 kw.get('addressline2'), kw.get('province'), kw.get('postcode'),
-                kw.get('organization'), kw.get('reason'))
-            if self.user.shippedShipItRequestsOfCurrentRelease():
+                kw.get('organization'), reason)
+            if self.user.shippedShipItRequestsOfCurrentRelease() or reason:
                 need_notification = True
         else:
-            if current_order.reason is None and kw.get('reason') is not None:
+            if current_order.reason is None and reason is not None:
                 # The user entered something in the 'reason' entry for the
                 # first time. We need to mark this order as pending approval
                 # and send an email to the shipit admins.
@@ -323,7 +310,7 @@ The comment left by the user:
                         'requesturl': canonical_url(order),
                         'shipped_requests': shipped_requests.count(),
                         'reason': order.reason}
-        message = self.mail_template % replacements
+        message = get_email_template('shipit-custom-request.txt') % replacements
         shipit_admins = config.shipit.shipit_admins_email
         simple_sendmail(
             self.from_email_address, shipit_admins, subject, message, headers)
@@ -412,6 +399,12 @@ class StandardShipItRequestAddView(AddView):
 
 
 class ShippingRequestAdminMixinView:
+    """Basic functionality for administering a ShippingRequest.
+
+    Any class that inherits from this one should also inherit from
+    GeneralFormView, or another class that stores the widgets as instance
+    attributes, named like fieldname_widget.
+    """
 
     # The name of the RequestedCDs' attribute from where we get the number we
     # use as initial value to our quantity widgets.
@@ -490,10 +483,15 @@ class ShippingRequestApproveOrDenyView(
         }
 
     def process(self, *args, **kw):
-        context = self.context
-        action = self.request.form.get('FORM_SUBMIT')
+        """Process the submitted form.
 
-        if 'Deny' not in action:
+        Depending on the button used to submit the form, this method will
+        Approve, Deny or Change the approved quantities of this shipit request.
+        """
+        context = self.context
+        form = self.request.form
+
+        if 'DENY' not in form:
             quantities = {}
             for flavour in self.quantity_fields_mapping:
                 quantities[flavour] = {}
@@ -504,21 +502,27 @@ class ShippingRequestApproveOrDenyView(
                         continue
                     quantities[flavour][arch] = kw[field_name]
 
-        if action == 'Approve':
+        if 'APPROVE' in form:
             context.approve(whoapproved=getUtility(ILaunchBag).user)
             context.highpriority = kw['highpriority']
             context.setApprovedQuantities(quantities)
             self._nextURL = self._makeNextURL(previous_action='approved')
-        elif action == 'Change Approved Totals':
+        elif 'CHANGE' in form:
             context.highpriority = kw['highpriority']
             context.setApprovedQuantities(quantities)
             self._nextURL = self._makeNextURL(previous_action='changed')
-        elif action == 'Deny':
+        elif 'DENY' in form:
             context.deny()
             self._nextURL = self._makeNextURL(previous_action='denied')
         else:
             # Nothing to do.
             pass
+
+    def submitted(self):
+        # Overwrite GeneralFormView.submitted() because we have several
+        # buttons on this page.
+        form = self.request.form
+        return 'APPROVE' in form or 'CHANGE' in form or 'DENY' in form
 
     def _makeNextURL(self, previous_action):
         # Need to flush all updates so that getOldestPending() can see the

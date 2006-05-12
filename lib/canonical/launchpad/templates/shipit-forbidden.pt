@@ -9,7 +9,7 @@
       <h1>Not allowed here</h1>
     </metal:heading>
     <div metal:fill-slot="body">
-      <span metal:use-macro="context/@@+launchpad_forbidden_macros/body" />
+      <span metal:use-macro="context/@@+forbidden-page-macros/body" />
     </div>
   </body>
 </html>

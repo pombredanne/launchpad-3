@@ -22,22 +22,22 @@
       </thead>
     </tr>
     <tr tal:repeat="row widgets_matrix">
-      <tal:block repeat="cel row">
+      <tal:block repeat="cell row">
       <tal:comment replace="nothing">
         We need to save the widget with this nocall: here because if we
         don't do that, our dear zope will turn it into a string for us.
       </tal:comment>
-      <tal:save-widget define="widget nocall:cel">
+      <tal:save-widget define="widget nocall:cell">
 
-        <tal:is-header condition="repeat/cel/start">
-          <th tal:content="cel" />
+        <tal:is-header condition="repeat/cell/start">
+          <th tal:content="cell" />
         </tal:is-header>
-        <tal:is-not-header condition="not: repeat/cel/start">
+        <tal:is-not-header condition="not: repeat/cell/start">
           <td style="text-align: center">
-            <tal:block condition="cel">
-              <span metal:use-macro="context/@@shipit_macros/display_raw_widget" />
+            <tal:block condition="cell">
+              <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
             </tal:block>
-            <span tal:condition="not: cel">n/a</span>
+            <span tal:condition="not: cell">n/a</span>
           </td>
         </tal:is-not-header>
 
@@ -57,7 +57,7 @@
 
   <th tal:content="widget/label">Label:</th>
   <td>
-    <span metal:use-macro="context/@@shipit_macros/display_raw_widget" />
+    <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
   </td>
 </metal:display_widget>
 
@@ -96,47 +96,47 @@
   <table>
     <tr>
       <tal:block tal:define="widget nocall:view/recipientdisplayname_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
       <tal:block tal:define="widget nocall:view/organization_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
       <tal:block tal:define="widget nocall:view/addressline1_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
       <tal:block tal:define="widget nocall:view/addressline2_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
       <tal:block tal:define="widget nocall:view/city_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
       <tal:block tal:define="widget nocall:view/province_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
       <tal:block tal:define="widget nocall:view/postcode_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
       <tal:block tal:define="widget nocall:view/country_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
     <tr>
       <tal:block tal:define="widget nocall:view/phone_widget">
-        <span metal:use-macro="context/@@shipit_macros/display_widget" />
+        <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
   </table>
@@ -151,13 +151,13 @@
 
   <ul>
     <li tal:repeat="pastorder user/pastShipItRequests">
-      <span tal:replace="pastorder/totalCDs" /> CDs requested in
+      <span tal:replace="pastorder/getTotalCDs" /> CDs requested in
       <span tal:replace="pastorder/daterequested/fmt:date" />.
       <span tal:condition="pastorder/cancelled">This request was
         cancelled, so no CDs were shipped.</span>
       <tal:notcancelled tal:condition="not: pastorder/cancelled">
         <tal:shipped condition="pastorder/shipment">
-          <span tal:replace="pastorder/totalapprovedCDs" />
+          <span tal:replace="pastorder/getTotalApprovedCDs" />
           CDs approved and sent to the shipping company in
           <span tal:replace="pastorder/shipment/shippingrun/datecreated/fmt:date" />.
           <strong>Please note requests usually take from 4 to 6 weeks to
