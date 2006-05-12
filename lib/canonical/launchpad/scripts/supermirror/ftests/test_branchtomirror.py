@@ -9,6 +9,9 @@ import urllib2
 import bzrlib.branch
 import bzrlib.errors
 from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests.repository_implementations.test_repository import (
+            TestCaseWithRepository)
+from bzrlib.transport import get_transport
 from bzrlib.weave import Weave
 from bzrlib.errors import (
     BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
@@ -63,18 +66,20 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
                          mirrored_branch.last_revision())
 
 
-class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
+class TestBranchToMirror_SourceProblems(TestCaseWithRepository):
     layer = FunctionalLayer
 
     def setUp(self):
+        #TestCaseInTempDir.setUp(self)
+        super(TestBranchToMirror_SourceProblems, self).setUp()
         LaunchpadFunctionalTestSetup().setUp()
-        TestCaseInTempDir.setUp(self)
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
 
     def tearDown(self):
         self.authserver.tearDown()
-        TestCaseInTempDir.tearDown(self)
+        #TestCaseInTempDir.tearDown(self)
+        super(TestBranchToMirror_SourceProblems, self).tearDown()
         LaunchpadFunctionalTestSetup().tearDown()
         test_root = TestCaseInTempDir.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
@@ -85,6 +90,43 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         # bzr test runner normally does this cleanup, but here we have to do
         # that ourselves.
         TestCaseInTempDir.TEST_ROOT = None
+
+
+    #def testMirrorWeaveAsWeave(self):
+    #    xxx
+
+    def testMirrorKnitAsKnit(self):
+        # Create a local branch in knit format with one revision to use as the
+        # mirror source.
+        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self._testMirrorFormat()
+
+    def testMirrorWeaveAsKnit(self):
+        # Create a local branch in knit format with one revision to use as the
+        # mirror source.
+        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self._testMirrorFormat()
+
+    def _testMirrorFormat(self):
+        os.mkdir('src-branch')
+        tree = self.make_branch_and_tree('src-branch')
+        self.local_branch = tree.branch
+        self.build_tree(['foo'], transport=get_transport('./src-branch'))
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+        
+        # Mirror src-branch to dest-branch
+        client = BranchStatusClient()
+        to_mirror = BranchToMirror('src-branch', 'dest-branch', client, 1)
+        to_mirror.mirror()
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        self.assertEqual(tree.last_revision(),
+                         mirrored_branch.last_revision())
+        self.assertEqual(
+            bzrlib.repository.RepositoryFormatKnit1().get_format_string(),
+            mirrored_branch.repository._format.get_format_string())
 
     def testMissingSourceWhines(self):
         non_existant_branch = "nonsensedir"
