@@ -59,6 +59,9 @@ class MailWrapper:
         # We don't care about trailing whitespace.
         text = text.rstrip()
 
+        # Normalize dos-style line endings to unix-style.
+        text = text.replace('\r\n', '\n')
+
         for paragraph in text.split('\n\n'):
             lines = paragraph.split('\n')
 

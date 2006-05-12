@@ -34,30 +34,19 @@
 
   <div metal:fill-slot="main">
 
-      <tal:do_not_show_advanced_form 
+      <tal:do_not_show_advanced_form
         condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">
-        <form method="get" name="search" action="">
-          <input type="text" name="field.searchtext"
-                 tal:attributes="value python:request.form.get('field.searchtext', '')" />
-          <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-          <input type="submit" name="search" value="Search" />
-          <small><a href="?advanced=1">Advanced</a></small>
-        </form>
-        <script type="text/javascript">
-          <!--
-              document.forms["search"].elements['field.searchtext'].focus();
-            -->
-        </script>
+        <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
         <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>
       </tal:do_not_show_advanced_form>
 
-      <tal:show_advanced condition="view/shouldShowAdvancedForm">
+      <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
         <metal:advanced_form
           use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
-      </tal:show_advanced>
+      </tal:show_advanced_form>
     <div class="visualClear">&nbsp;</div>
   </div>
 
