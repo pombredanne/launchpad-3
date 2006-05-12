@@ -128,7 +128,7 @@ and '__getitem__', they are different and in 'Published' state:
   >>> current_pubrec = current_release.current_publishing_record
   >>> (current_pubrec.id, current_pubrec.status.title,
   ...  current_pubrec.distroarchrelease.architecturetag)
-  (20, 'Published', u'i386')
+  (21, 'Published', u'i386')
 
   >>> old_pubrec = old_release.current_publishing_record
   >>> (old_pubrec.id , old_pubrec.status.title,

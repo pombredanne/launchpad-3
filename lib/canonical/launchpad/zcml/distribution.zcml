@@ -35,7 +35,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        class="canonical.launchpad.browser.BugTargetBugListingView"
         facet="bugs"
         permission="zope.Public">
         <browser:page

@@ -17,7 +17,6 @@
 
   <tal:block condition="view/dupe">
     <tal:block tal:condition="not: view/formProcessed">
-      <h1>Merge accounts</h1>
 
       <p>
         The account <code tal:content="view/dupe/name">foo</code>,

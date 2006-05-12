@@ -912,7 +912,7 @@ class TeamMembershipStatus(DBSchema):
         Proposed
 
         You are a proposed member of this team. To become an active member your
-        subscription has to bo approved by one of the team's administrators.
+        subscription has to be approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
