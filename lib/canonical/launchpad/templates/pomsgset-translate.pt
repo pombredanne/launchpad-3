@@ -36,24 +36,24 @@
         Template: <tal:template replace="context/pofile/title" />
       </div>
 
-      <tal:havepluralforms condition="not: view/lacks_plural_form_information">
+      <tal:havepluralforms condition="view/has_plural_form_information">
 
-        <!-- Display settings. -->
-        <form method="POST" style="text-align: right;" action="+translate">
-          <label>Make suggestions from:</label>
-          <tal:comment replace="nothing">
-            Suggestions from this alternative language will be displayed as
-            well as suggestions from the translation language. In the case
-            where two languages are very similar it will often be useful to
-            show the second language as a source of suggestions when
-            translating into the first.
-          </tal:comment>
-
-          <tal:block replace="structure view/lang_selector" />
-
-          <input
-            type="submit" name='select_alternate_language' value="Change" />
-        </form>
+        <!-- Alternative suggestions. -->
+        <div metal:define-macro="editform">
+          <form method="POST" action="+translate">
+            <tal:comment replace="nothing">
+              Suggestions from this alternative language will be displayed as
+              well as suggestions from the translation language. In the case
+              where two languages are very similar it will often be useful to
+              show the second language as a source of suggestions when
+              translating into the first.
+            </tal:comment>
+            <label>Make suggestions from:</label>
+            <tal:language-widget content="structure view/alternative_language_widget" />
+            <input
+              type="submit" name='select_alternate_language' value="Change" />
+          </form>
+        </div>
 
         <!-- The translation form. -->
         <form method="post" action="+translate">
@@ -125,7 +125,7 @@
                          name="submit_translations"
                          value="Save &amp; Continue"
                          style="text-align: right;"
-                         tal:attributes="tabindex view/tab_index" />
+                         tal:attributes="tabindex view/generateNextTabIndex" />
                 </th>
               </tr>
             </tfoot>

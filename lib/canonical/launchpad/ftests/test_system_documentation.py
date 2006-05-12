@@ -206,8 +206,8 @@ special = {
             'launchpad/doc/translationimportqueue.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
-    'pofile.txt': FunctionalDocFileSuite(
-            'launchpad/doc/pofile.txt',
+    'pofile-pages.txt': FunctionalDocFileSuite(
+            'launchpad/doc/pofile-pages.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             )
     }

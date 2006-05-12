@@ -404,7 +404,7 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'englishname'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.displayname)
+        return SimpleTerm(obj, obj.code, obj.displayname)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):

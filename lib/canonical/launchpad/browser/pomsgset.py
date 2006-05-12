@@ -10,6 +10,10 @@ __all__ = [
 import re
 import gettextpo
 import urllib
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.utility import setUpWidgets
+from zope.app.form.browser import SelectWidget
+from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -17,10 +21,16 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
-    ILanguageSet)
+    ILanguageSet, IPOFileAlternativeLanguage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
+
+class CustomSelectWidget(SelectWidget):
+
+    def _div(self, cssClass, contents, **kw):
+        """Render the select widget without the div tag."""
+        return contents
 
 class POMsgSetFacets(StandardLaunchpadFacets):
     usedfor = IPOMsgSet
@@ -119,6 +129,21 @@ class POMsgSetView(LaunchpadView):
 
         # Whether this page is redirecting or not.
         self.redirecting = False
+
+        # Exctract the given alternative language code.
+        self.alt = self.form.get('alt', '')
+
+        initial_value = {}
+        if self.alt:
+            initial_value['alternative_language'] = getUtility(
+                ILanguage)[self.alt]
+
+        # Initialize the widget to list languages.
+        self.alternative_language_widget = CustomWidgetFactory(
+            CustomSelectWidget)
+        setUpWidgets(
+            self, IPOFileAlternativeLanguage, IInputWidget,
+            names=['alternative_language'], initial=initial_value)
 
         # Handle any form submission.
         self.process_form()
@@ -220,25 +245,24 @@ class POMsgSetView(LaunchpadView):
             return self.context.isfuzzy
 
     @property
-    def lacks_plural_form_information(self):
+    def has_plural_form_information(self):
         """Return whether we know the plural forms for this language."""
         if self.context.pofile.potemplate.hasPluralMessage():
-            # If there are no plural forms, we don't mind if we have or not
-            # the plural form information.
-            return self.context.pofile.language.pluralforms is None
+            return self.context.pofile.language.pluralforms is not None
         else:
-            return False
+            # If there are no plural forms, we could assume that we have
+            # the plural form information for this language.
+            return True
 
-    @property
+    @cachedproperty
     def second_lang_code(self):
-        second_lang_code = self.form.get('alt', '')
-        if (second_lang_code == '' and
+        if (self.alt == '' and
             self.context.pofile.language.alt_suggestion_language is not None):
             return self.context.pofile.language.alt_suggestion_language.code
-        elif second_lang_code == '':
+        elif self.alt == '':
             return None
         else:
-            return second_lang_code
+            return self.alt
 
     @property
     def is_at_beginning(self):
@@ -285,8 +309,7 @@ class POMsgSetView(LaunchpadView):
             # first one.
             return self.createURL(sequence=1)
 
-    @property
-    def tab_index(self):
+    def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""
         self._table_index_value += 1
         return self._table_index_value
@@ -620,6 +643,12 @@ class POMsgSetView(LaunchpadView):
 
     def _select_alternate_language(self):
         """Handle a form submission to filter translations."""
+        selected_second_lang = self.alternative_language_widget.getInputValue()
+        if selected_second_lang is None:
+            self.alt = ''
+        else:
+            self.alt = selected_second_lang.code
+
         if not 'offset' in self.form:
             # XXX CarlosPerelloMarin 20060509: We should stop doing this
             # check when bug #41858 is fixed and we know exactly from

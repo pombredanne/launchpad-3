@@ -18,18 +18,30 @@ __all__ = [
 import urllib
 import re
 
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.utility import setUpWidgets
+from zope.app.form.browser import SelectWidget
+from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
+from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
     ITranslationImportQueue, UnexpectedFormData, NotFoundError,
+    IPOFileAlternativeLanguage
     )
 from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
     LaunchpadView, Navigation)
+
+class CustomSelectWidget(SelectWidget):
+
+    def _div(self, cssClass, contents, **kw):
+        """Render the select widget without the div tag."""
+        return contents
 
 class POFileNavigation(Navigation):
 
@@ -279,6 +291,21 @@ class POFileTranslateView(POFileView):
         # Initialize the message offset.
         self._initialize_offset_option()
 
+        # Exctract the given alternative language code.
+        self.alt = self.form.get('alt', '')
+
+        initial_value = {}
+        if self.alt:
+            initial_value['alternative_language'] = getUtility(
+                ILanguage)[self.alt]
+
+        # Initialize the widget to list languages.
+        self.alternative_language_widget = CustomWidgetFactory(
+            CustomSelectWidget)
+        setUpWidgets(
+            self, IPOFileAlternativeLanguage, IInputWidget,
+            names=['alternative_language'], initial=initial_value)
+
         if not self.context.canEditTranslations(self.user):
             # The user is not an official translator, we should show a
             # warning.
@@ -288,7 +315,7 @@ class POFileTranslateView(POFileView):
                 " stored and reviewed for acceptance later by the designated"
                 " translators.")
 
-        if self.lacks_plural_form_information:
+        if not self.has_plural_form_information:
             # Cannot translate this IPOFile without the plural form
             # information. Show the info to add it to our system.
             self.request.response.addErrorNotification("""
@@ -360,25 +387,24 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             self.offset = max(self.shown_count - self.count, 0)
 
     @property
-    def lacks_plural_form_information(self):
+    def has_plural_form_information(self):
         """Return whether we know the plural forms for this language."""
         if self.context.potemplate.hasPluralMessage():
             # If there are no plural forms, we don't mind if we have or not
             # the plural form information.
-            return self.context.language.pluralforms is None
+            return self.context.language.pluralforms is not None
         else:
             return False
 
-    @property
+    @cachedproperty
     def second_lang_code(self):
-        second_lang_code = self.form.get('alt', '')
-        if (second_lang_code == '' and
+        if (self.alt == '' and
             self.context.language.alt_suggestion_language is not None):
             return self.context.language.alt_suggestion_language.code
-        elif second_lang_code == '':
+        elif self.alt == '':
             return None
         else:
-            return second_lang_code
+            return self.alt
 
     @property
     def second_lang_pofile(self):
@@ -509,12 +535,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return pomsgset_views
 
     @property
-    def tab_index(self):
-        """Return the tab index value to navigate the form."""
-        self._table_index_value += 1
-        return self._table_index_value
-
-    @property
     def completeness(self):
         return '%.0f%%' % self.context.translatedPercentage()
 
@@ -526,7 +546,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             return
 
         dispatch_table = {
-            'select_alternate_language': self._do_redirect,
+            'select_alternate_language': self._select_alternate_language,
             'pofile_translation_filter': self._do_redirect,
             'submit_translations': self._store_translations
             }
@@ -546,6 +566,17 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # We need to redirect to the new URL based on the new given arguments.
         self.redirecting = True
         self.request.response.redirect(self.createURL())
+
+    def _select_alternate_language(self):
+        """Handle a form submission to choose other language suggestions."""
+        selected_second_lang = self.alternative_language_widget.getInputValue()
+        if selected_second_lang is None:
+            self.alt = ''
+        else:
+            self.alt = selected_second_lang.code
+
+        # Now, do the redirect to the new URL
+        self._do_redirect()
 
     def _store_translations(self):
         """Handle a form submission to store new translations."""
@@ -589,8 +620,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             # Get the next set of message sets. If there was no error, we want
             # to increase the offset by count first.
             self.offset = self.next_offset
-            self.redirecting = True
-            self.request.response.redirect(self.createURL())
+            self._do_redirect()
         else:
             # Notify the errors.
             self.request.response.addErrorNotification(
@@ -601,21 +631,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         # update the statistis for this po file
         self.context.updateStatistics()
 
-    def lang_selector(self):
-        second_lang_code = self.second_lang_code
-        langset = getUtility(ILanguageSet)
-        html = ('<select name="alt" title="Make suggestions from...">\n'
-                '<option value=""')
-        if self.second_lang_pofile is None:
-            html += ' selected="yes"'
-        html += '></option>\n'
-        for lang in langset.common_languages:
-            html += '<option value="' + lang.code + '"'
-            if second_lang_code == lang.code:
-                html += ' selected="yes"'
-            html += '>' + lang.englishname + '</option>\n'
-        html += '</select>\n'
-        return html
+    def generateNextTabIndex(self):
+        """Return the tab index value to navigate the form."""
+        self._table_index_value += 1
+        return self._table_index_value
 
     def createURL(self, offset=None):
         """Build the current URL based on the status of the form and the given

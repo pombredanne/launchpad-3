@@ -1,0 +1,511 @@
+POFile View
+===========
+
+On this section, we are going to test the view class for an IPOFile.
+
+First, we need some imports.
+
+    >>> from StringIO import StringIO
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import FileUpload
+    >>> from canonical.launchpad.interfaces import (
+    ...     ITranslationImportQueue, IPOTemplateSet, IDistributionSet,
+    ...     ISourcePackageNameSet)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+All the tests will be submitted as comming from the Foo Bar person.
+
+    >>> login('foo.bar@canonical.com')
+
+Now it's time to test the initialisation of the view class.
+
+    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+    >>> sourcepackagename = sourcepackagenameset['evolution']
+    >>> distributionset = getUtility(IDistributionSet)
+    >>> distribution = distributionset['ubuntu']
+    >>> release = distribution['hoary']
+    >>> potemplateset = getUtility(IPOTemplateSet)
+    >>> potemplatesubset = potemplateset.getSubset(
+    ...     distrorelease=release, sourcepackagename=sourcepackagename)
+    >>> potemplate = potemplatesubset['evolution-2.2']
+    >>> pofile_es = potemplate.getPOFileByLang('es')
+    >>> request = LaunchpadTestRequest()
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+Check to know the plural forms that this IPOFile has.
+
+    >>> pofile_es.language.pluralforms
+    2
+
+And thus, the view class should know that it doesn't lacks the plural forms
+information.
+
+    >>> pofile_view.has_plural_form_information
+    True
+
+As the request didn't get any argument, we should get the default values
+for the offset, the count of messages to show and the kind of messages to show.
+
+    >>> pofile_view.offset
+    0
+    >>> pofile_view.count
+    10
+    >>> pofile_view.show
+    'all'
+
+This time, we are going to see what happens if we get an IPOFile without
+the plural form information.
+
+    >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
+    >>> request = LaunchpadTestRequest()
+    >>> pofile_view = getView(pofile_tlh, '+translate', request)
+    >>> pofile_view.initialize()
+
+Here we can see that it's lacking that information.
+
+    >>> pofile_tlh.language.pluralforms is None
+    True
+
+And the view class detects it correctly.
+
+    >>> pofile_view.has_plural_form_information
+    False
+
+Now, let's check that the view class handles correctly the offset and count
+arguments when the request sets them.
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'offset': '7',
+    ...     'count': '8'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+As we can see, the view updates those attributes correctly.
+
+    >>> pofile_view.offset
+    7
+    >>> pofile_view.count
+    8
+
+And, what happens if we get broken values for the offset and count arguments?
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'offset': 'foo',
+    ...     'count': 'bar'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+As we wanted, the given values are ignored and the view class uses the default
+ones.
+
+    >>> pofile_view.offset
+    0
+    >>> pofile_view.count
+    10
+
+What about the argument to filter messagesets?
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'show': 'translated'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+Yeah, it detects it correctly and stores the attribute as it should be.
+
+    >>> pofile_view.show
+    'translated'
+
+It's time to test the navigation.
+
+    >>> request = LaunchpadTestRequest()
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+By default, we are at the beginning.
+
+    >>> pofile_view.is_at_beginning
+    True
+
+And in this case, we have more messages than the ones rendered per page.
+
+    >>> pofile_view.count < len(pofile_view.context.potemplate)
+    True
+
+And thus, we cannot be at the end.
+
+    >>> pofile_view.is_at_end
+    False
+
+We move to the next 10 mesages.
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'offset': '10'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+Now, we are not at the beginning.
+
+    >>> pofile_view.is_at_beginning
+    False
+
+And as we have more than 20 messages with this IPOFile.
+
+    >>> len(pofile_view.context.potemplate) > 20
+    True
+
+We are neither at the end.
+
+    >>> pofile_view.is_at_end
+    False
+
+And finally, moving to the next 10 entries.
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'offset': '30'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+We continue far from the beginning.
+
+    >>> pofile_view.is_at_beginning
+    False
+
+But this time, we reached the end.
+
+    >>> pofile_view.is_at_end
+    True
+
+Let's move to the navigation URLS testing.
+
+We get a request without any argument.
+
+    >>> request = LaunchpadTestRequest()
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+We get a clean URL without default values.
+
+    >>> pofile_view.createURL()
+    'http://127.0.0.1'
+
+That URL is exactly the same as the one pointing to the beginning of the
+translation form.
+
+    >>> pofile_view.beginning_URL
+    'http://127.0.0.1'
+
+And as we have 22 messages:
+
+    >>> len(pofile_view.context.potemplate)
+    22
+
+and a count of 10 messages per page:
+
+    >>> pofile_view.count
+    10
+
+The end URL has an offset of 20
+
+    >>> pofile_view.end_URL
+    'http://127.0.0.1?offset=20'
+
+Now, let's see what happens when we request a concrete offset.
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'offset': '10'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+The beginning URL does not change.
+
+    >>> pofile_view.beginning_URL
+    'http://127.0.0.1'
+
+The previous one is exactly the same as the beginning.
+
+    >>> pofile_view.previous_URL
+    'http://127.0.0.1'
+
+The next one increases the offset in 10 entries.
+
+    >>> pofile_view.next_URL
+    'http://127.0.0.1?offset=20'
+
+And as we saw before, we only have three pages to see all messages so
+the next page is also the ending one.
+
+    >>> pofile_view.end_URL
+    'http://127.0.0.1?offset=20'
+
+Let's complicate it a bit more changing the count of messages per page and
+requesting an offset out of range.
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'offset': '42',
+    ...     'count': '43'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+If the offset is too high, it should drop to accomodate the count.
+
+    >>> pofile_view.createURL()
+    'http://127.0.0.1?count=43'
+
+also, the count is higer than the number of entries so the end URL is the same
+as the base one.
+
+    >>> pofile_view.end_URL
+    'http://127.0.0.1?count=43'
+
+Now, we are going to check the show parameter.
+
+If we request the default value ('all'), the URL should not show that
+parameter.
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'show': 'all'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+And we don't show it.
+
+    >>> pofile_view.createURL()
+    'http://127.0.0.1'
+
+Let's try with another option that is not the default one...
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'show': 'translated'})
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+This time, we get it.
+
+    >>> pofile_view.createURL()
+    'http://127.0.0.1?show=translated'
+
+It's time to test that we get the right message sets from the submitted form.
+
+    >>> request = LaunchpadTestRequest()
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+We get the first entry.
+
+    >>> for pomsgset_view in pofile_view.pomsgset_views:
+    ...     if pomsgset_view.potmsgset.id == 130:
+    ...         break
+
+The id for this message set is the one we expected.
+
+    >>> pomsgset_view.potmsgset.id
+    130
+
+And as it's the first entry, its sequence number is also the right one.
+
+    >>> pomsgset_view.sequence
+    1
+
+Test that the associated msgid is the one we want.
+
+    >>> pomsgset_view.msgid
+    u'evolution addressbook'
+
+How many lines does it have.
+
+    >>> pomsgset_view.max_lines_count
+    1
+
+And as it has only one line, it's not a multi line message set.
+
+    >>> pomsgset_view.is_multi_line
+    False
+
+It does not have a plural msgid.
+
+    >>> pomsgset_view.msgid_plural is None
+    True
+
+And thus, it only has one translation.
+
+    >>> pomsgset_view.translation_range
+    [0]
+
+Which is the one we wanted.
+
+    >>> pomsgset_view.getTranslation(0)
+    u'libreta de direcciones de Evolution'
+
+Now, we are going to test the tab index generator to be sure the TAB key
+will work as expected when navigating over the translation form.
+
+    >>> request = LaunchpadTestRequest()
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+First time we call it, first position.
+
+    >>> pofile_view.generateNextTabIndex()
+    1
+
+Next time we call it, it's increased.
+
+    >>> pofile_view.generateNextTabIndex()
+    2
+
+It's time to check the submission of translations and the IPOFile statistics
+update.
+
+But first, let's see current values.
+
+    >>> pofile_es.updateStatistics()
+    (7, 1, 0)
+    >>> pofile_es.currentCount()
+    7
+    >>> pofile_es.updatesCount()
+    1
+    >>> pofile_es.rosettaCount()
+    0
+
+Now we do the submit
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'count': '10',
+    ...     'offset': '10',
+    ...     'alt': '',
+    ...     'msgset_130': None,
+    ...     'msgset_130_es_translation_0': 'Foo',
+    ...     'msgset_138': None,
+    ...     'msgset_138_es_translation_0': 'Bar',
+    ...     'submit_translations': 'Save &amp; Continue'})
+    >>> request.method = 'POST'
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+And check again.
+
+    >>> pofile_es.currentCount()
+    7
+    >>> pofile_es.updatesCount()
+    2
+    >>> pofile_es.rosettaCount()
+    1
+
+Now, we are going to check the alternative language submission.
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'count': '10',
+    ...     'offset': '10',
+    ...     'field.alternative_language': 'French',
+    ...     'select_alternate_language': 'Change'})
+    >>> request.method = 'POST'
+    >>> pofile_view = getView(pofile_es, '+translate', request)
+    >>> pofile_view.initialize()
+
+    >>> pofile_view.second_lang_code
+    'fr'
+
+Let's check that the upload form sets the right fields.
+
+To be sure that we are using the right entry from the import queue,
+we check that it's empty atm.
+
+    >>> translationimportqueue = getUtility(ITranslationImportQueue)
+    >>> len(translationimportqueue) == 0
+    True
+
+The FileUpload class needs a class with the attributes: filename, file and
+headers.
+
+    >>> class FileUploadArgument:
+    ...     filename='po/es.po'
+    ...     file=StringIO('foos')
+    ...     headers=''
+
+Now, we do the upload.
+
+    >>> request = LaunchpadTestRequest(form={
+    ...     'file': FileUpload(FileUploadArgument()),
+    ...     'upload_type': 'upstream',
+    ...     'pofile_upload': 'Upload'})
+    >>> request.method = 'POST'
+    >>> pofile_view = getView(pofile_es, '+upload', request)
+    >>> pofile_view.initialize()
+
+As we can see, we have now one entry in our queue.
+
+    >>> len(translationimportqueue) == 1
+    True
+
+Get it and check that some attributes are set as they should.
+
+    >>> entry = translationimportqueue.get(1)
+    >>> entry.pofile == pofile_es
+    True
+
+And for the path, we are going to use the one we already have for the
+given POFile instead of the one given with the submit.
+
+    >>> entry.path == pofile_es.path
+    True
+    >>> pofile_es.path
+    u'es.po'
+
+Let's check the traversal code.
+
+    >>> from zope.security.proxy import isinstance
+    >>> from canonical.launchpad.browser.pofile import POFileNavigation
+    >>> from canonical.launchpad.database import POMsgSet, DummyPOMsgSet
+
+First, what happens if we get any method that is not supported?
+
+    >>> request = LaunchpadTestRequest()
+    >>> request.method = 'PUT'
+    >>> navigation = POFileNavigation(pofile_es, request)
+    >>> navigation.traverse('1')
+    Traceback (most recent call last):
+    ...
+    AssertionError: We only know about GET, HEAD, and POST
+
+The traversal value should be an integer.
+
+    >>> request.method = 'GET'
+    >>> navigation.traverse('foo')
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: 'foo' is not a valid sequence number.
+
+Also, pomsgset sequence numbers are always >= 1.
+
+    >>> navigation.traverse('0')
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: '0' is not a valid sequence number.
+
+The given sequence number, we also need that is part of the available ones,
+if we use a high one, we should detect it.
+
+    >>> navigation.traverse('30')
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: '30' is not a valid sequence number.
+
+But if we have a right sequence number, we will get a valid pomsgset.
+
+    >>> isinstance(navigation.traverse('1'), POMsgSet)
+    True
+
+Now, we are going to select a POMsgSet that doesn't exist yet in our database.
+
+    >>> isinstance(navigation.traverse('22'), DummyPOMsgSet)
+    True
+
+But if we do a POST, instead of getting a DummyPOMsgSet object, we will get a
+POMsgSet.
+
+    >>> request.method = 'POST'
+    >>> isinstance(navigation.traverse('22'), POMsgSet)
+    True
+
+And that's all, folks!
