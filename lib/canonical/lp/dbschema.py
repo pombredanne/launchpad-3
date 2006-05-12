@@ -2998,45 +2998,69 @@ class MirrorSpeed(DBSchema):
     """The speed of a given mirror."""
 
     S128K = Item(1, """
-        128Kb per second
+        128 Kbps
 
         The upstream link of this mirror can make up to 128Kb per second.
         """)
 
     S256K = Item(2, """
-        256Kb per second
+        256 Kbps
 
         The upstream link of this mirror can make up to 256Kb per second.
         """)
 
     S512K = Item(3, """
-        512Kb per second
+        512 Kbps
 
         The upstream link of this mirror can make up to 512Kb per second.
         """)
 
     S1M = Item(4, """
-        1Mb per second
+        1 Mbps
 
         The upstream link of this mirror can make up to 1Mb per second.
         """)
 
     S2M = Item(5, """
-        2Mb per second
+        2 Mbps
 
         The upstream link of this mirror can make up to 2Mb per second.
         """)
 
     S10M = Item(6, """
-        10Mb per second
+        10 Mbps
 
         The upstream link of this mirror can make up to 10Mb per second.
         """)
 
     S100M = Item(7, """
-        100Mb per second
+        100 Mbps
 
         The upstream link of this mirror can make up to 100Mb per second.
+        """)
+
+    S1G = Item(8, """
+        1 Gbps
+
+        The upstream link of this mirror can make up to 1 gigabit per second.
+        """)
+
+    S2G = Item(9, """
+        2 Gbps
+
+        The upstream link of this mirror can make up to 2 gigabit per second.
+        """)
+
+    S4G = Item(10, """
+        4 Gbps
+
+        The upstream link of this mirror can make up to 4 gigabit per second.
+        """)
+
+    S10G = Item(11, """
+        10 Gbps
+
+        The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
 
