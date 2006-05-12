@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces import NotFoundError
 
 #XXX matsubara 2006-03-15: The validations functions that deals with URLs
 # should be in validators/ and we should have them as separete constraints in
-# trusted.sql.  
+# trusted.sql.
 # https://launchpad.net/products/launchpad/+bug/35077
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
@@ -158,12 +158,12 @@ def non_duplicate_bug(value):
             Bug %i is already a duplicate of bug %i. You can only
             duplicate to bugs that are not duplicates themselves.
             """% (dup_target.id, dup_target.duplicateof.id))))
-    elif current_bug_has_dup_refs: 
+    elif current_bug_has_dup_refs:
         raise LaunchpadValidationError(_(dedent("""
             There are other bugs already marked as duplicates of Bug %i.
             These bugs should be changed to be duplicates of another bug
             if you are certain you would like to perform this change."""
-            % current_bug.id))) 
+            % current_bug.id)))
     else:
         return True
 
@@ -229,7 +229,7 @@ def valid_emblem(emblem):
 def valid_hackergotchi(hackergotchi):
     return _valid_image(hackergotchi, 54000, (150,150))
 
-# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform, 
+# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform,
 # because editing an already registered e-mail would fail if this constraint
 # is used.
 def valid_unregistered_email(email):
@@ -267,7 +267,7 @@ def validate_distribution_mirror_schema(form_values):
                   values suplied by the user.
     """
     errors = []
-    if (form_values['pulse_type'] == MirrorPulseType.PULL 
+    if (form_values['pulse_type'] == MirrorPulseType.PULL
         and not form_values['pulse_source']):
         errors.append(LaunchpadValidationError(_(
             "You have choosen 'Pull' as the pulse type but have not "
@@ -283,38 +283,54 @@ def validate_distribution_mirror_schema(form_values):
         raise WidgetsError(errors)
 
 
-def valid_distrotask(bug, distribution, sourcepackagename=None):
+def valid_distrotask(bug, distribution, sourcepackagename=None,
+                     on_create=False):
     """Check if a distribution bugtask already exists for a given bug.
-    
-    If it exists, WidgetsError will be raised.
+
+    :on_create: A boolean set to True if the task is being added, otherwise
+    False.
+
+    If validation fails, a WidgetsError will be raised.
     """
     from canonical.launchpad.helpers import shortlist
-    errors = []
-    if sourcepackagename is not None:
-        msg = LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for %s (%s)' %
-            (sourcepackagename.name, distribution.displayname)))
+
+    distribution_tasks_for_bug = distribution.searchTasks(
+        BugTaskSearchParams(user=getUtility(ILaunchBag).user, bug=bug))
+    distribution_tasks_for_bug = shortlist(
+        distribution_tasks_for_bug, longest_expected=5)
+
+    if sourcepackagename:
+        # Ensure this distribution/sourcepackage task is unique, and that there
+        # isn't already a generic task open on the distribution for this bug,
+        # because if there were, that task should be reassigned to the
+        # sourcepackage, rather than a new task opened.
+        for task in distribution_tasks_for_bug:
+            if task.sourcepackagename is None and on_create:
+                raise WidgetsError([
+                    LaunchpadValidationError(_(
+                        'This bug is already open on %s with no package '
+                        'specified. You should fill in a package name for the '
+                        'existing bug.') % (distribution.displayname))
+                    ])
+            elif task.sourcepackagename == sourcepackagename:
+                raise WidgetsError([
+                    LaunchpadValidationError(_(
+                        'This bug has already been reported on %s (%s).') % (
+                        sourcepackagename.name, distribution.name))
+                    ])
     else:
-        msg = LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for %s' % 
-            distribution.displayname))
-        sourcepackagename = NULL
-    user = getUtility(ILaunchBag).user
-    params = BugTaskSearchParams(
-        user, bug=bug, sourcepackagename=sourcepackagename)
-    bugtasks = shortlist(distribution.searchTasks(params), longest_expected=1)
-    if bugtasks: 
-        # We have to raise WidgetsError if a bugtask is found, the only case we
-        # should skip it is when we're removing a sourcepackagename from a
-        # existing bugtask
-        assert len(bugtasks) == 1
-        if bugtasks[0].sourcepackagename is not None and (
-            sourcepackagename is None):
-            return
-        errors.append(msg)
-            
-    if errors:
-        raise WidgetsError(errors)
+        # Prevent having a task on only the distribution if there's at least one
+        # task already on the distribution, whether or not that task also has a
+        # source package.
+        if distribution_tasks_for_bug:
+            if on_create:
+                raise WidgetsError([
+                    LaunchpadValidationError(_(
+                        'This bug is already open on %s or packages in %s. '
+                        'Please specify an affected package in which the bug '
+                        'has not yet been reported.') % (
+                        distribution.displayname, distribution.displayname))
+                    ])
 
 
 def valid_upstreamtask(bug, product):
@@ -327,7 +343,7 @@ def valid_upstreamtask(bug, product):
     params = BugTaskSearchParams(user, bug=bug)
     if product.searchTasks(params):
         errors.append(LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for %s' % 
+            'A fix for this bug has already been requested for %s' %
             product.displayname)))
 
     if errors:

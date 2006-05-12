@@ -1,10 +1,11 @@
-Let's add a task to bug 1.
+In the bug page, you could request a fix for an upstream or
+distribution.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> browser.open('http://localhost/products/firefox/+bug/1')
+    >>> browser.open("http://localhost/products/firefox/+bug/6")
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.url
-    'http://localhost/products/firefox/+bug/1/+distrotask'
+    'http://localhost/products/firefox/+bug/6/+distrotask'
 
 On this page we can add distribution task. We start by adding an Ubuntu
 task. Since Ubuntu uses Malone as its bug tracker, the task gets added
@@ -13,9 +14,9 @@ and we return to the newly created task's page.
     >>> browser.getControl('Distribution').value = ['ubuntu']
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/distros/ubuntu/+bug/1'
+    'http://localhost/distros/ubuntu/+bug/6'
 
-Now we test if the ubuntu distribution is on the request list.
+The ubuntu task is in the task list.
 
     >>> print browser.contents
     <...
@@ -26,20 +27,65 @@ It should not be possible to add the same distrotask again.
 
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.url
-    'http://localhost/distros/ubuntu/+bug/1/+distrotask'
-
+    'http://localhost/distros/ubuntu/+bug/6/+distrotask'
     >>> browser.getControl('Distribution').value = ['ubuntu']
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/distros/ubuntu/+bug/1/+distrotask'
+    'http://localhost/distros/ubuntu/+bug/6/+distrotask'
     >>> print browser.contents
     <...
     ...Please fix the problems below and try again...
     ...
-    ...A fix for this bug has already been requested for Ubuntu...
+    ...This bug is already open on Ubuntu...
     ...
 
-Now let's add a Debian task as well. Since Debian doesn't use Malone,
+You also can't add another task on a distro source package, when there's
+already a distro task open. (Instead, you should target the existing
+distro task to an appropriate source package.)
+
+    >>> browser.open(
+    ...     "http://localhost/distros/ubuntu/+bug/6/+distrotask")
+    >>> browser.getControl("Distribution").value = ["ubuntu"]
+    >>> browser.getControl("Source Package Name").value = "mozilla-firefox"
+    >>> browser.getControl("Continue").click()
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...
+    ...Please fix the problems below and try again...
+    ...
+    ...This bug is already open on Ubuntu with no package specified...
+    ...
+
+Let's assign the existing Ubuntu task to mozilla-firefox, then add
+another task on Ubuntu evolution.
+
+    >>> browser.open(
+    ...     "http://localhost/distros/ubuntu/+bug/6/+editstatus")
+    >>> browser.getControl("Package").value = "mozilla-firefox"
+    >>> browser.getControl("Save Changes").click()
+
+    >>> browser.open(
+    ...     "http://localhost/distros/ubuntu/+source/mozilla-firefox"
+    ...     "/+bug/6/+distrotask")
+    >>> browser.getControl("Distribution").value = ["ubuntu"]
+    >>> browser.getControl("Source Package Name").value = "evolution"
+    >>> browser.getControl("Continue").click()
+
+It's not possible to change the Ubuntu mozilla-firefox task to be on
+Ubuntu evolution, because there already is an evolution task open.
+
+    >>> browser.open(
+    ...     "http://localhost/distros/ubuntu/+source/mozilla-firefox/+bug/6/"
+    ...     "+editstatus")
+    >>> browser.getControl("Package").value = "evolution"
+    >>> browser.getControl("Save Changes").click()
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...
+    ...This bug has already been reported on evolution (ubuntu)...
+    ...
+
+Now let's add a Debian task to bug 1. Since Debian doesn't use Malone,
 we add a bug watch as well.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
@@ -49,6 +95,7 @@ we add a bug watch as well.
     'http://localhost/products/firefox/+bug/1/+distrotask'
     >>> browser.getControl(name='field.distribution').value
     ['debian']
+    >>> browser.getControl("Source Package Name").value = "alsa-utils"
     >>> browser.getControl(name='field.link_to_bugwatch').value = True
 
 If we submit the form without specifying a remote bug, we get an error.
@@ -67,7 +114,7 @@ redirected to its page.
     >>> browser.getControl(name='field.remotebug').value = '123'
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/distros/debian/+bug/1'
+    'http://localhost/distros/debian/+source/alsa-utils/+bug/1'
 
 If we try to add an Ubuntu task together with a bug watch we get an
 error, because Ubuntu uses Malone as its bug tracker
@@ -78,7 +125,7 @@ error, because Ubuntu uses Malone as its bug tracker
     >>> browser.getControl(name='field.link_to_bugwatch').value = True
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    'http://localhost/distros/debian/+bug/1/+distrotask'
+    'http://localhost/distros/debian/+source/alsa-utils/+bug/1/+distrotask'
     >>> print browser.contents
     <...
     ...Ubuntu uses Malone as its bug tracker...
@@ -105,7 +152,7 @@ It's not possible to change a bugtask to a existing one.
     <...
     ...Please fix them and try again...
     ...
-    ...A fix for this bug has already been requested for thunderbird (Ubuntu)...
+    ...This bug has already been reported on thunderbird (ubuntu)...
 
     >>> browser.getControl('Package').value = 'pmount'
     >>> browser.getControl('Save Changes').click()
