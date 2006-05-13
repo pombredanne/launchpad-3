@@ -5,15 +5,18 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
 
-  <div metal:fill-slot="main">
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_generalform/generalform" />
 
-  </div>
+</div>
 
 </body>
 </html>
