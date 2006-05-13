@@ -77,6 +77,20 @@ True
 >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
 True
 
+The inTeam method is cached to avoid unnecessary database lookups - this
+was a cause of a number of timeouts
+
+>>> from zope.security.proxy import removeSecurityProxy
+>>> naked_lifeless = removeSecurityProxy(lifeless)
+>>> naked_lifeless._inTeam_cache[vcs_imports.id]
+True
+>>> naked_lifeless._inTeam_cache[vcs_imports.id] = False
+>>> lifeless.inTeam(vcs_imports)
+False
+>>> naked_lifeless._inTeam_cache[vcs_imports.id] = True
+>>> lifeless.inTeam(vcs_imports)
+True
+
 If a Person is not a Team then the Person object will not provide the
 ITeam interface.
 

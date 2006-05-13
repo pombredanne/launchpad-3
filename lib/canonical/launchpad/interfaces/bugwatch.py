@@ -14,8 +14,9 @@ from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.interfaces import IHasBug
 
-class IBugWatch(Interface):
+class IBugWatch(IHasBug):
     """A bug on a remote system."""
 
     id = Int(title=_('ID'), required=True, readonly=True)

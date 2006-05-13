@@ -60,18 +60,13 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.BugTaskSearchListingView"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
     facet="bugs"
     permission="zope.Public">
     <browser:page
       name="+portlet-bugtasklist-releasebugs"
       template="../templates/bugtask-portlet-releasebugs.pt"
       lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
-      />
-    <browser:page
-      name="+portlet-aboutcve"
-      template="../templates/distribution-portlet-aboutcve.pt"
-      lp:url="/distros/$DistroRelease.name/+portlet-aboutcve"
       />
   </browser:pages>
 
@@ -131,6 +126,11 @@
       name="+queue-list"
       template="../templates/queue-list.pt"
       lp:url="/distros/$distribution/$distrorelease/+queue-list"
+      />
+    <browser:page
+      name="+portlet-aboutcve"
+      template="../templates/distribution-portlet-aboutcve.pt"
+      lp:url="/distros/$DistroRelease.name/+portlet-aboutcve"
       />
     <browser:page
       name="+portlet-details"

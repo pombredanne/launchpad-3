@@ -6,7 +6,7 @@
     </tal:search-performed>
 
     <tal:no-search-performed condition="not: request/search|nothing">
-      <p>There's no open bugs currently.</p>
+      <p>There are currently no open bugs.</p>
     </tal:no-search-performed>
   </tal:no-results>
 
