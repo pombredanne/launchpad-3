@@ -99,8 +99,9 @@
         src="/@@/info_icon.gif"
         title="This is a note to translators"
         />
-      <code>[tab]</code> represents a tab character. Please enter it as
-      <code>[tab]</code> in your translation too.
+      <code>[tab]</code> represents a tab character.
+      Please write it exactly the same way, <code>[tab]</code>, in your
+      translation.
     </td>
   </tr>
   <tr class="discreet secondary" tal:condition="pomsgset_view/source_comment">
