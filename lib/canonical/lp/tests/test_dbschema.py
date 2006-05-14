@@ -164,9 +164,9 @@ def test_decorator():
     ...
     UNTRIAGED
     WISHLIST
-    MINOR
+    LOW
     MEDIUM
-    MAJOR
+    HIGH
     CRITICAL
     UNKNOWN
 

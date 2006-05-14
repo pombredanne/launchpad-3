@@ -240,7 +240,8 @@ The retrieval of the remote status is done by _getRemoteStatus().
     'open important'
 
 Sometimes the severity field is missing in the bug summary. That will
-cause importance to be set to normal, which is the debbugs default severity.
+cause importance to be set to medium, equivalent to the default normal severity
+in debbugs.
 
     >>> import email
     >>> summary = email.message_from_file(

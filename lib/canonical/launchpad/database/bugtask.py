@@ -618,7 +618,8 @@ class BugTaskSet:
             filters.append('BugTask.status < %s' % sqlvalues(committed))
 
         if minimportance is not None:
-            filters.append('BugTask.importance >= %s' % sqlvalues(minimportance))
+            filters.append(
+                'BugTask.importance >= %s' % sqlvalues(minimportance))
 
         privacy_filter = self._getPrivacyFilter(user)
         if privacy_filter:

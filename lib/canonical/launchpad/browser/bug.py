@@ -37,7 +37,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
-from canonical.lp.dbschema import (BugTaskImportance, BugTaskStatus)
+from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 class BugSetNavigation(Navigation):
 

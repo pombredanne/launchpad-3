@@ -14,7 +14,7 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
-from canonical.lp.dbschema import (BugTrackerType, BugTaskImportance)
+from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
 
 from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW

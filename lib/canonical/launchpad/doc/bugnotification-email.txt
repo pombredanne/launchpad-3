@@ -389,7 +389,7 @@ We can also add a bugwatch while adding a new bugtask.
     ...     print "-----------------------------"
     ** Also affects: firefox (upstream) via
        https://bugzilla.mozilla.org/show_bug.cgi?id=42
-       Importance: Major
+       Importance: High
            Status: Unconfirmed
     -----------------------------
 

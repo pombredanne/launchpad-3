@@ -58,15 +58,23 @@ from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.lp.dbschema import (BugTaskImportance, BugTaskStatus)
+from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, DBItemDisplayWidget, NewLineToSpacesWidget)
 
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
-    if request.get("orderby"):
-        return request.get("orderby").split(",")
+    order_by_string = request.get("orderby", '')
+    order_by = order_by_string.split(',')
+    # Remove old order_by values that people might have in bookmarks.
+    for old_order_by_column in ['priority', 'severity']:
+        if old_order_by_column in order_by:
+            order_by.remove(old_order_by_column)
+        if '-' + old_order_by_column in order_by:
+            order_by.remove('-' + old_order_by_column)
+    if order_by:
+        return order_by
     else:
         # No sort ordering specified, so use a reasonable default.
         return ["-importance"]
@@ -738,9 +746,9 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'importance': [dbschema.BugTaskImportance.CRITICAL,
-    ...                   dbschema.BugTaskImportance.MAJOR]}, IBugTaskSearch)
+    ...                   dbschema.BugTaskImportance.HIGH]}, IBugTaskSearch)
     >>> [importance.name for importance in initial['importance']]
-    ['CRITICAL', 'MAJOR']
+    ['CRITICAL', 'HIGH']
 
     >>> getInitialValuesFromSearchParams(
     ...     {'assignee': NULL}, IBugTaskSearch)

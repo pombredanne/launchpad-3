@@ -127,13 +127,6 @@ class IBugTask(IHasDateCreated, IHasBug):
         "A human-readable representation of the status of this IBugTask's bug "
         "in the other contexts in which it's reported.")
 
-    def setStatusFromDebbugs(status):
-        """Set the Malone BugTask status on the basis of a debbugs status.
-        This maps from the debbugs status values ('done', 'open',
-        'forwarded') to the Malone status values, and returns the relevant
-        Malone status.
-        """
-
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
