@@ -23,12 +23,12 @@
 
 <div metal:fill-slot="main">
 
-  <p>Choose a template name to begin translating.</p>
+  <p>Choose a template name to begin translating. Templates that are
+  considered more important for translation are listed first.</p>
 
   <table class="listing sortable" width="100%" id="translationstatuses">
     <thead>
       <tr>
-        <th>Priority</th>
         <th>Template Name</th>
         <th>Length</th>
         <th>Status</th>
@@ -38,7 +38,6 @@
     </thead>
     <tbody>
       <tr tal:repeat="pf context/po_files_or_dummies">
-        <td tal:content="pf/potemplate/priority">87</td>
         <td>
           <a tal:attributes="href string:${pf/fmt:url}/+translate"
              tal:content="pf/potemplate/potemplatename/name">
