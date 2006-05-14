@@ -1,0 +1,42 @@
+When filing a distribution bug, an error is raised if you enter a
+package name that doesn't exist in the distribution.
+
+(XXX, Brad Bollenbach, 2006-05-05: This extra browser.open call
+works around a bug where an exception will be raised if this extra
+.open is removed! BjornT's looking into it. See
+http://launchpad.net/bugs/44064.)
+
+    >>> from canonical.launchpad.helpers import nasty_testbrowser_workaround
+
+    >>> nasty_testbrowser_workaround(browser)
+
+    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser.open("http://localhost:9000/distros/ubuntu/+filebug")
+
+    >>> browser.getControl(name="field.title").value = "test"
+    >>> browser.getControl(name="field.comment").value = "test"
+    >>> browser.getControl(name="packagename_option").value = ["choose"]
+    >>> browser.getControl(name="field.packagename").value = "foobar"
+
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> '"foobar" does not exist in Ubuntu' in browser.contents
+    True
+
+An error is also raised if you choose the radio button to enter a
+package name, but don't specify a package.
+
+(XXX: Same hack as above.)
+
+    >>> browser.open("http://localhost:9000/products/firefox/+bug/4")
+
+    >>> browser.open("http://localhost:9000/distros/ubuntu/+filebug")
+
+    >>> browser.getControl(name="field.title").value = "test"
+    >>> browser.getControl(name="field.comment").value = "test"
+    >>> browser.getControl(name="packagename_option").value = ["choose"]
+
+    >>> browser.getControl("Submit Bug Report").click()
+
+    >>> 'Please enter a package name' in browser.contents
+    True

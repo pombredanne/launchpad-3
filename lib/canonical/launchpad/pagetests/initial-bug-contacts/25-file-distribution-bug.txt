@@ -2,7 +2,13 @@ Filing a public bug on a distribution source package subscribes the bug
 reporter, the distribution contact (if there is one) and all the package
 bug contacts (if there are any.)
 
-Let's demonstrate
+    >>> from canonical.launchpad.helpers import nasty_testbrowser_workaround
+
+    >>> nasty_testbrowser_workaround(browser)
+
+    >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
+    >>> browser.open(
+    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+filebug")
 
   >>> print http(r"""
   ... POST /distros/ubuntu/+source/mozilla-firefox/+filebug HTTP/1.1

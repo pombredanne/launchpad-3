@@ -80,7 +80,7 @@
     class="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageBugContactsView"
     template="../templates/distributionsourcepackage-manage-bugcontacts.pt" />
 
-  <browser:addform
+  <browser:generalform
     name="+filebug"
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     facet="bugs"
@@ -99,7 +99,6 @@
       field="comment"
       class="zope.app.form.browser.TextAreaWidget"
       width="62" />
-  </browser:addform>
-
+  </browser:generalform>
 
 </configure>
