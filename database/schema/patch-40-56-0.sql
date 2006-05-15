@@ -7,7 +7,9 @@ CREATE TABLE MirrorCDImageDistroRelease (
     id SERIAL PRIMARY KEY,
     distribution_mirror integer NOT NULL REFERENCES DistributionMirror(id),
     distrorelease       integer NOT NULL REFERENCES DistroRelease(id),
-    flavour             text NOT NULL
+    flavour             text NOT NULL,
+    CONSTRAINT mirrorcdimagedistrorelease__unq UNIQUE (
+        distrorelease, flavour, distribution_mirror)
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 80, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 56, 0);
