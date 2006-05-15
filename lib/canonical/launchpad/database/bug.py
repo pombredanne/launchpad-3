@@ -286,13 +286,13 @@ class BugSet:
             bug = Bug.selectOneBy(name=bugid)
             if bug is None:
                 raise NotFoundError(
-                    "Unable to locate bug with ID %s" % str(bugid))
+                    "Unable to locate bug with ID %s" % bugid)
         else:
             try:
                 bug = self.get(bugid)
             except ValueError:
                 raise NotFoundError(
-                    "Unable to locate bug with nickname %s" % str(bugid))
+                    "Unable to locate bug with nickname %s" % bugid)
         return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
