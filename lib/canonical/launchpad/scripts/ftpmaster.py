@@ -24,38 +24,15 @@ from canonical.launchpad.database import (
     DistroArchReleaseBinaryPackage, DistroReleaseSourcePackageRelease)
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    NotFoundError)
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
-
-# XXX cprov 20060502: backporting code from dak, we do not expose it via
-# imports of this module.
-
+# XXX cprov 20060502: Redefining same regexp code from dak_utils,
+# we do not expose it via imports of this module. As soon as we
+# finish the redesign/cleanup of all scripts, all those expressions
+# will be defined here and dak_utils won't be necessary anymore.
 re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
-
-def secureTempFilename(directory=None, dotprefix=None, perms=0700):
-    """Return a secure and unique filename by pre-creating it.
-    If 'directory' is non-null, it will be the directory the file
-    is pre-created in.
-    If 'dotprefix' is non-null, the filename will be prefixed with a '.'.
-    """
-    if directory:
-        old_tempdir = tempfile.tempdir;
-        tempfile.tempdir = directory;
-
-    filename = tempfile.mktemp();
-
-    if dotprefix:
-        filename = "%s/.%s" % (os.path.dirname(filename),
-                               os.path.basename(filename));
-    fd = os.open(filename, os.O_RDWR|os.O_CREAT|os.O_EXCL, perms);
-    os.close(fd);
-
-    if directory:
-        tempfile.tempdir = old_tempdir;
-
-    return filename;
 
 
 class ArchiveOverriderError(Exception):
@@ -234,23 +211,41 @@ class ArchiveCruftChecker:
     infrastructure variables. It will raise ArchiveCruftCheckerError if
     something goes wrong.
     """
-    source_versions = {}
-    source_binaries = {}
-    nbs = {}
-    asba = {}
-    bin_pkgs = {}
-    arch_any = {}
-    dubious_nbs = {}
-    real_nbs = {}
-    nbs_to_remove = []
 
+    # XXX cprov 20060515: the default archive path should come
+    # from the IDistrorelease.lucilleconfig. But since it's still
+    # not optimal and we have real plans to migrate it from DB
+    # text field to default XML config or a more suitable/reliable
+    # method it's better to not add more obsolete code to handle it.
     def __init__(self, logger, distribution_name='ubuntu', suite=None,
                  archive_path='/srv/launchpad.net/ubuntu-archive'):
-        """ """
+        """Store passed arguments.
+
+        Also Initialize empty variables for storing preliminar results.
+        """
         self.distribution_name = distribution_name
         self.suite = suite
         self.archive_path = archive_path
         self.logger = logger
+        # initialize a group of variables to store temporary results
+        # available versions of published sources
+        source_versions = {}
+        # available binaries produced by published sources
+        source_binaries = {}
+        # 'Not Build From Source' binaries
+        nbs = {}
+        # 'All superseded by Any' binaries
+        asba = {}
+        # published binary package names
+        bin_pkgs = {}
+        # Architecture specific binary packages
+        arch_any = {}
+        # proposed NBS (before clean up)
+        dubious_nbs = {}
+        # NBS after clean up
+        real_nbs = {}
+        # definitive NBS organized for clean up
+        nbs_to_remove = []
 
     @property
     def architectures(self):
@@ -273,39 +268,58 @@ class ArchiveCruftChecker:
         return os.path.join(self.archive_path, self.distro.name,
                             'dists', self.distrorelease.name)
 
-    def gunzipedContent(self, filename):
-        """ """
-        # apt_pkg.ParseTagFile needs a real file handle and
-        # can't handle a GzipFile instance...
+    def gunzipTagFileContent(self, filename):
+        """Gunzip the contents of passed filename.
+
+        Check filename presence, if not present in the filesystem,
+        raises ArchiveCruftCheckerError. Use an tempfile.mkstemp()
+        to store the uncompressed content. Invoke system available
+        gunzip`, raises ArchiveCruftCheckError if it fails.
+
+        Return a tuple containing:
+         * temp_filename: a pre-created temporary filename
+         * temp_fd: the respective fd oppened for read
+         * parsed_contents: contents parsed by apt_pkg.ParseTagFile()
+
+         The caller must close the returned fd and delete the
+         temporary file.
+        """
         if not os.path.exists(filename):
             raise ArchiveCruftCheckerError(
                 "File does not exists:%s" % filename)
-        temp_filename = secureTempFilename()
+        temp_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
-        if (result != 0):
+        if result != 0:
             raise ArchiveCruftCheckerError(
                 "Gunzip invocation failed!\n%s" % output)
-        return temp_filename
+
+        temp_contents = open(temp_filename)
+        # XXX cprov 20060515: maybe we need some sort of data integrity
+        # check at this point.
+        parsed_contents = apt_pkg.ParseTagFile(temp_contents)
+
+        return (temp_filename, temp_fd, parsed_contents)
 
     def processSources(self):
-        """ """
+        """Process archive sources index.
+
+        Build source_binaries, source_versions and bin_pkgs lists.
+        """
         self.logger.debug("Considering Sources:")
         for component in self.components:
             filename = os.path.join(
                 self.dist_archive, "%s/source/Sources.gz" % component)
 
             self.logger.debug("Processing %s" % filename)
-            sources_filename = self.gunzipedContent(filename)
-            sources = open(sources_filename)
+            sources_filename, sources_fd, parsed_sources = (
+                self.gunzipTagFileContent(filename))
 
-            Sources = apt_pkg.ParseTagFile(sources)
-
-            while Sources.Step():
-                source = Sources.Section.Find("Package")
-                source_version = Sources.Section.Find("Version")
-                architecture = Sources.Section.Find("Architecture")
-                binaries = Sources.Section.Find("Binary")
+            while parsed_sources.Step():
+                source = parsed_sources.Section.Find("Package")
+                source_version = parsed_sources.Section.Find("Version")
+                architecture = parsed_sources.Section.Find("Architecture")
+                binaries = parsed_sources.Section.Find("Binary")
                 for binary in [item.strip() for item in binaries.split(',')]:
                     self.bin_pkgs.setdefault(binary, [])
                     self.bin_pkgs[binary].append(source)
@@ -313,36 +327,37 @@ class ArchiveCruftChecker:
                 self.source_binaries[source] = binaries
                 self.source_versions[source] = source_version
 
-            sources.close()
+            sources_fd.close()
             os.unlink(sources_filename)
 
-    def findNBS(self):
-        """Find out the group of 'not build from source' """
+    def buildNBS(self):
+        """Build the group of 'not build from source' binaries"""
         # Checks based on the Packages files
-        self.logger.debug("Finding not build from source (NBS):")
+        self.logger.debug("building not build from source (NBS):")
         for component in self.components_and_di:
             for architecture in self.architectures:
                 self.buildArchNBS(self, component, architecture)
 
 
-    def findArchNBS(self, component, architecture):
-        """ """
-        # XXX de-hardcode me harder
+    def buildArchNBS(self, component, architecture):
+        """Build NBS per architecture.
+
+        Store results in self.nbs, also build architecture specific
+        binaries group (stored in self.arch_any)
+        """
         filename = os.path.join(
             self.dist_archive,
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
         self.logger.debug("Processing %s" % filename)
-        packages_filename = self.gunzipedContent(filename)
-        packages = open(packages_filename)
+        packages_filename, packages_fd, parsed_packages = (
+            self.gunzipTagFileContent(filename))
 
-        Packages = apt_pkg.ParseTagFile(packages)
-
-        while Packages.Step():
-            package = Packages.Section.Find('Package')
-            source = Packages.Section.Find('Source', "")
-            version = Packages.Section.Find('Version')
-            architecture = Packages.Section.Find('Architecture')
+        while parsed_packages.Step():
+            package = parsed_packages.Section.Find('Package')
+            source = parsed_packages.Section.Find('Source', "")
+            version = parsed_packages.Section.Find('Version')
+            architecture = parsed_packages.Section.Find('Architecture')
 
             if source == "":
                 source = package
@@ -363,33 +378,35 @@ class ArchiveCruftChecker:
             if apt_pkg.VersionCompare(version, self.arch_any[package]) < 1:
                 self.arch_any[package] = version
 
-        packages.close()
+        packages_fd.close()
         os.unlink(packages_filename)
 
-    def findASBA(self):
-        """Find out the group or 'all superseded by any'."""
-        self.logger.debug("Finding all superseded by any (ASBA):")
+    def buildASBA(self):
+        """Build the group of 'all superseded by any' binaries."""
+        self.logger.debug("Build superseded by any (ASBA):")
         for component in self.components_and_di:
             for architecture in self.architectures:
-                self.findArchASBA(component, architecture)
+                self.buildArchASBA(component, architecture)
 
 
-    def findArchASBA(self, component, architecture):
-        """ """
+    def buildArchASBA(self, component, architecture):
+        """Build ASBA per architecture.
+
+        Store the result in self.asba, require self.arch_any to be built
+        previously.
+        """
         filename = os.path.join(
             self.dist_archive,
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
-        packages_filename = self.gunzipedContent(filename)
-        packages = open(packages_filename)
+        packages_filename, packages_fd, parsed_packages = (
+            self.gunzipContent(filename))
 
-        Packages = apt_pkg.ParseTagFile(packages)
-
-        while Packages.Step():
-            package = Packages.Section.Find('Package')
-            source = Packages.Section.Find('Source', "")
-            version = Packages.Section.Find('Version')
-            architecture = Packages.Section.Find('Architecture')
+        while parsed_packages.Step():
+            package = parsed_packages.Section.Find('Package')
+            source = parsed_packages.Section.Find('Source', "")
+            version = parsed_packages.Section.Find('Version')
+            architecture = parsed_packages.Section.Find('Architecture')
 
             if source == "":
                 source = package
@@ -408,13 +425,14 @@ class ArchiveCruftChecker:
                     self.asba[source][package].setdefault(version, {})
                     self.asba[source][package][version][architecture] = ""
 
-        packages.close()
+        packages_fd.close()
         os.unlink(packages_filename)
 
     def addNBS(self, nbs_d, source, version, package):
-        """ """
-        # Ensure the package is still in the suite (someone may have
-        # already removed it).
+        """Add a new entry in given organized nbs_d list
+
+        Ensure the package is still published in the suite before add.
+        """
         bpr = getUtility(IBinaryPackageReleaseSet)
         result = bpr.getByNameInDistroRelease(
             self.distrorelease.id, package)
@@ -427,8 +445,12 @@ class ArchiveCruftChecker:
         nbs_d[source][version][package] = ""
 
     def refineNBS(self):
-        # Distinguish dubious (version numbers match) and 'real'
-        # NBS (they don't)
+        """ Distinguish dubious from real NBS.
+
+        They are 'dubious' if the version numbers match and 'real'
+        if the versions don't match.
+        It stores results in self.dubious_nbs and self.real_nbs.
+        """
         for source in self.nbs.keys():
             for package in self.nbs[source].keys():
                 versions = self.nbs[source][package].keys()
@@ -444,7 +466,11 @@ class ArchiveCruftChecker:
                     self.addNBS(self.real_nbs, source, latest_version, package)
 
     def outputNBS(self):
-        """ """
+        """Properly display built NBS entries.
+
+        Also organize the 'real' NBSs for removal in self.nbs_to_remove
+        attribute.
+        """
         output = "Not Built from Source\n"
         output += "---------------------\n\n"
 
@@ -477,10 +503,18 @@ class ArchiveCruftChecker:
             self.logger.debug("No NBS found")
 
     def initialize(self):
-        """ """
+        """Initialise and build required lists of obsolete entries in archive.
 
+        Check integrity of passed parameters and store organised data.
+        The result list is the self.nbs_to_remove which should contain
+        obsolete packages not currently able to be built from again.
+        Another preliminary lists can be inspected in order to have better
+        idea of what was computed.
+        If anything goes wrong mid-process, it raises ArchiveCruftCheckError,
+        otherwise a list of packages to be removes is printed.
+        """
         if self.distribution_name is None:
-            self.distro = getUtility(IDistributionSet)['ubuntu']
+            self.distro = getUtility(ILaunchpadCelebrities).ubuntu
         else:
             try:
                 self.distro = getUtility(IDistributionSet)[
@@ -506,13 +540,19 @@ class ArchiveCruftChecker:
 
         apt_pkg.init()
         self.processSources()
-        self.findNBS()
-        self.findASBA()
+        self.buildNBS()
+        self.buildASBA()
         self.refineNBS()
         self.outputNBS()
 
     def doRemovals(self):
-        """ """
+        """Perform the removal of the obsolete packages found.
+
+        It iterates over the previously build list (self.nbs_to_remove)
+        and mark them as 'superseded' in the archive DB model. They will
+        get removed later by the archive sanity check run each cycle
+        of the cron.daily.
+        """
         for package in self.nbs_to_remove:
 
             for distroarchrelease in self.distrorelease.architectures:

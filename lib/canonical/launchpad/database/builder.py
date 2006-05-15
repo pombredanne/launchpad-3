@@ -34,6 +34,7 @@ from canonical.launchpad.webapp import urlappend
 
 class TimeoutTransport(xmlrpclib.Transport):
     """XMLRPC Transport to setup a socket with defined timeout"""
+
     def make_connection(self, host):
         conn = xmlrpclib.Transport.make_connection(self, host)
         conn._conn.sock.settimeout(config.builddmaster.socket_timeout)

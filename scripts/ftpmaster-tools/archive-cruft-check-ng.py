@@ -13,7 +13,7 @@ import sys
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import (
-    ArchiveCruftChecker, ArchiveCruftChecker)
+    ArchiveCruftChecker, ArchiveCruftCheckerError)
 from canonical.lp import initZopeless
 from contrib.glock import GlobalLock
 
@@ -32,15 +32,15 @@ def main():
     parser.add_option("-s", "--suite", dest="suite",
                       help="only act on SUITE")
 
-    (Options, args) = parser.parse_args()
+    (options, args) = parser.parse_args()
 
-    Log = logger(Options, "archive-cruft-check")
+    log = logger(options, "archive-cruft-check")
 
-    Log.debug("Acquiring lock")
-    Lock = GlobalLock('/var/lock/launchpad-archive-cruft-check.lock')
-    Lock.acquire(blocking=True)
+    log.debug("Acquiring lock")
+    lock = GlobalLock('/var/lock/launchpad-archive-cruft-check.lock')
+    lock.acquire(blocking=True)
 
-    Log.debug("Initialising connection.")
+    log.debug("Initialising connection.")
     ztm = initZopeless(dbuser="lucille")
     execute_zcml_for_scripts()
 
@@ -50,21 +50,21 @@ def main():
     else:
         archive_path = None
 
-    checker = ArchiveCruftChecker(Log, distribution_name=Options.distro,
-                                  suite=Options.suite,
+    checker = ArchiveCruftChecker(log, distribution_name=options.distro,
+                                  suite=options.suite,
                                   archive_path=archive_path)
 
     try:
         checker.initialize()
-    except ArchiveCruftChecker, info:
-        Log.error(info)
+    except ArchiveCruftCheckerError, info:
+        log.error(info)
         return 1
 
-    if checker.nbs_to_remove and Options.action:
+    if checker.nbs_to_remove and options.action:
         checker.doRemovals()
         ztm.commit()
 
-    Lock.release()
+    lock.release()
     return 0
 
 
