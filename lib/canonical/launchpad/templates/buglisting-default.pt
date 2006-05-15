@@ -6,10 +6,10 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <h1
-        tal:condition="view/getAdvancedSearchPageHeading"
+        tal:condition="view/shouldShowAdvancedForm"
         tal:content="view/getAdvancedSearchPageHeading"
       >Bugs in Fooix: Advanced search</h1>
-      <h1 tal:condition="not: view/getAdvancedSearchPageHeading">
+      <h1 tal:condition="not: view/shouldShowAdvancedForm">
         Bugs in
         <tal:software replace="context/displayname">Fooix</tal:software>
       </h1>
