@@ -17,7 +17,7 @@ from zope.app.form.interfaces import (
     IDisplayWidget, IInputWidget, InputErrors, ConversionError,
     WidgetInputError)
 from zope.schema.interfaces import ValidationError
-from zope.app.form import Widget
+from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag
@@ -213,6 +213,10 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def __init__(self, field, vocabulary, request):
         RadioWidget.__init__(self, field, vocabulary, request)
+        select_js = "selectWidget('%s.%s', event)" % (
+            self.name, self._new_bugwatch_value)
+        self.remotebug_widget = CustomWidgetFactory(
+            TextWidget, extra='onKeyPress="%s"' % select_js)
         for field_name in ['bugtracker', 'remotebug']:
             setUpWidget(
                 self, field_name, IBugWatch[field_name], IInputWidget,
@@ -298,10 +302,12 @@ class BugTaskBugWatchWidget(RadioWidget):
         if value == self._new_bugwatch_value:
             option_input = renderElement(
                 'input', value=self._new_bugwatch_value, checked='checked',
+                id="%s.%s" % (self.name, self._new_bugwatch_value),
                 name=self.name, cssClass=self.cssClass, type='radio')
         else:
             option_input = renderElement(
                 'input', value=self._new_bugwatch_value,
+                id="%s.%s" % (self.name, self._new_bugwatch_value),
                 name=self.name, cssClass=self.cssClass, type='radio')
         option_text = (
             'New:&nbsp;Bug Tracker&nbsp;%s&nbsp;Remote Bug&nbsp;%s' % (
