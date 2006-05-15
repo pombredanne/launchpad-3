@@ -6,10 +6,10 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <h1
-        tal:condition="view/getAdvancedSearchPageHeading"
+        tal:condition="view/shouldShowAdvancedForm"
         tal:content="view/getAdvancedSearchPageHeading"
       >Bugs in Fooix: Advanced search</h1>
-      <h1 tal:condition="not: view/getAdvancedSearchPageHeading">
+      <h1 tal:condition="not: view/shouldShowAdvancedForm">
         Bugs in
         <tal:software replace="context/displayname">Fooix</tal:software>
       </h1>
@@ -38,10 +38,10 @@
         condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">
         <form method="get" name="search" action="">
-          <input type="text" name="field.searchtext" size="20"
+          <input type="text" name="field.searchtext"
                  tal:attributes="value python:request.form.get('field.searchtext', '')" />
           <input type="submit" name="search" value="Search" />
-          <a href="?advanced=1"><small>Advanced</small></a>
+          <a href="?advanced=1"><small>Advanced search</small></a>
           <div style="margin-top: 5px">
             <small>
               Sort by:
