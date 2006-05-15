@@ -29,7 +29,7 @@
     tal:define="errors view/errors|nothing"
     tal:condition="errors"
     tal:repeat="error errors"
-    tal:content="error"
+    tal:content="error/doc"
     class="error message"
   >Individual error.</p>
       
