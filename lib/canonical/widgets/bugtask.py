@@ -14,14 +14,15 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    IDisplayWidget, IInputWidget, InputErrors, ConversionError)
+    IDisplayWidget, IInputWidget, InputErrors, ConversionError,
+    WidgetInputError)
 from zope.schema.interfaces import ValidationError
 from zope.app.form import Widget
+from zope.app.form.utility import setUpWidget
 
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import IBugWatch, ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.popup import SinglePopupWidget
-from canonical.widgets.exception import WidgetInputError
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -210,14 +211,48 @@ class BugTaskAssigneeWidget(Widget):
 class BugTaskBugWatchWidget(RadioWidget):
     """A widget for linking a bug watch to a bug task."""
 
+    def __init__(self, field, vocabulary, request):
+        RadioWidget.__init__(self, field, vocabulary, request)
+        for field_name in ['bugtracker', 'remotebug']:
+            setUpWidget(
+                self, field_name, IBugWatch[field_name], IInputWidget,
+                context=field.context)
+
     _messageNoValue = "None, the status of the bug is updated manually."
     _joinButtonToMessageTemplate = (
         u'<label style="font-weight: normal">%s&nbsp;%s</label>')
+    _new_bugwatch_value = 'NEW'
 
-    #XXX: This method is copied from RadioWidget.renderItems() and
-    #     modified to  actualy work. RadioWidget.renderItems() should be
-    #     fixed upstream so that this method won't be necessary.
-    #     http://www.zope.org/Collectors/Zope3-dev/592 
+    def _toFieldValue(self, form_value):
+        if form_value == self._new_bugwatch_value:
+            bugtracker = self.bugtracker_widget.getInputValue()
+            try:
+                remotebug = self.remotebug_widget.getInputValue()
+            except WidgetInputError, error:
+                # Prefix the error with the widget name, since the error
+                # will be display at the top of the page, and not right
+                # next to the widget.
+                raise WidgetInputError(
+                    self.context.__name__, self.label,
+                    'Remote Bug: %s' % error.doc())
+            bugtask = self.context.context
+            return bugtask.bug.addWatch(
+                bugtracker, remotebug, getUtility(ILaunchBag).user)
+        else:
+            return RadioWidget._toFieldValue(self, form_value)
+
+    def _getFormValue(self):
+        if not self._renderedValueSet():
+            return self.request.form.get(self.name, self._missing)
+        else:
+            return self._toFormValue(self._data)
+
+
+    #XXX: This method is moslty copied from RadioWidget.renderItems() and
+    #     modified to actually work. RadioWidget.renderItems() should be
+    #     fixed upstream so that we can override it and only do the last
+    #     part locally, the part after "# Add an option for creating...".
+    #     http://www.zope.org/Collectors/Zope3-dev/592
     #     -- Bjorn Tillenius, 2006-04-26
     def renderItems(self, value):
         """Render the items with with the correct radio button selected."""
@@ -226,6 +261,9 @@ class BugTaskBugWatchWidget(RadioWidget):
         #     -- Bjorn Tillenius, 2006-04-26
         if value == self._missing:
             value = self.context.missing_value
+        elif (isinstance(value, basestring) and
+              value != self._new_bugwatch_value):
+            value = self._toFieldValue(value)
         # check if we want to select first item, the previously selected item
         # or the "no value" item.
         no_value = None
@@ -255,6 +293,22 @@ class BugTaskBugWatchWidget(RadioWidget):
             option = self._joinButtonToMessageTemplate %(
                 option, self.translate(self._messageNoValue))
             items.insert(0, option)
+
+        # Add an option for creating a new bug watch.
+        if value == self._new_bugwatch_value:
+            option_input = renderElement(
+                'input', value=self._new_bugwatch_value, checked='checked',
+                name=self.name, cssClass=self.cssClass, type='radio')
+        else:
+            option_input = renderElement(
+                'input', value=self._new_bugwatch_value,
+                name=self.name, cssClass=self.cssClass, type='radio')
+        option_text = (
+            'New:&nbsp;Bug Tracker&nbsp;%s&nbsp;Remote Bug&nbsp;%s' % (
+                self.bugtracker_widget(), self.remotebug_widget()))
+        option = self._joinButtonToMessageTemplate % (
+            option_input, option_text)
+        items.append(option)
 
         return items
 
