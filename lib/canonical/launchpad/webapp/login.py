@@ -20,6 +20,7 @@ from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.interfaces import (
     ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, SHIPIT_URL)
+from canonical.launchpad.interfaces.validation import valid_password
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -162,6 +163,15 @@ class LoginOrRegister:
         password = self.request.form.get(self.input_password)
         if not email or not password:
             self.login_error = _("Enter your email address and password.")
+            return
+
+        # XXX matsubara 2006-05-08: This class should inherit from
+        # GeneralFormView, that way we could take advantage of Zope's widget
+        # validation, instead of checking manually for password validity.
+        # https://launchpad.net/products/launchpad/+bug/43675
+        if not valid_password(password):
+            self.login_error = _(
+                "The password provided contains non-ASCII characters.")
             return
 
         appurl = self.getApplicationURL()

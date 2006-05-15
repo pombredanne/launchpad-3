@@ -367,6 +367,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("//@@")
 >>> check("/rosetta/@@")
 >>> check("//rosetta/@@")
+>>> check_not_found("/rosetta/groups/testing-translation-team/pt_br")
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")

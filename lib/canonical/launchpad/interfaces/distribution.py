@@ -142,6 +142,11 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "Any bugtasks on this distribution that are for bugs with "
         "CVE references, and are resolved.")
 
+    full_functionality = Attribute(
+        "Whether or not we enable the full functionality of Launchpad for "
+        "this distribution. Currently only Ubuntu and some derivatives "
+        "get the full functionality of LP")
+
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
         appropriately, otherwise use __getitem__"""
