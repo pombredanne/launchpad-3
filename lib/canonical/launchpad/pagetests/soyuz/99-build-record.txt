@@ -115,3 +115,52 @@ Build record inserted by gina that has an unknown build record.
   ...<td>2006-01-27 00:00:00 UTC</td>...
   ...Build machine:...
   ...unknown...
+
+
+Check if buildd-celebrity is working as expected, try to access protected
+pages as cprov (launchpad-buildd-admins member)
+
+Allow Reset:
+
+  >>> print http(r"""
+  ... GET /+builds/+build/12/+reset HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Allow Re-score:
+
+  >>> print http(r"""
+  ... GET /+builds/+build/12/+reset HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Allow new builder:
+
+  >>> print http(r"""
+  ... GET /+builds/+new HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Denied admistration of a builder:
+
+  >>> print http(r"""
+  ... GET /+builds/bob/+admin HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
+Adding new builder still denied for non-members (Edgar, no membership):
+
+  >>> print http(r"""
+  ... GET /+builds/+new HTTP/1.1
+  ... Authorization: Basic ZWRnYXJAbW9udGVwYXJhZGlzby5ocjplZGdhcg==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

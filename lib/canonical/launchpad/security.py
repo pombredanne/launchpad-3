@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication)
+    IBazaarApplication, IBuilderSet, IBuild)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -699,3 +699,20 @@ class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueue
+
+
+class AdminByBuilddAdmin(AuthorizationBase):
+    permission = 'launchpad.Admin'
+
+    def checkAuthenticated(self, user):
+        """Allow only admins and members of buildd_admin team"""
+        lp_admin = getUtility(ILaunchpadCelebrities).admin
+        buildd_admin = getUtility(ILaunchpadCelebrities).buildd_admin
+        return (user.inTeam(buildd_admin) or
+                user.inTeam(lp_admin))
+
+class AdminBuilderSet(AdminByBuilddAdmin):
+    usedfor = IBuilderSet
+
+class AdminBuildRecord(AdminByBuilddAdmin):
+    usedfor = IBuild
