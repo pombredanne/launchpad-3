@@ -4,9 +4,14 @@
 __metaclass__ = type
 
 from unittest import TestCase, TestLoader
+import shutil
+import subprocess
+import os
+import sys
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.functional import ZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
@@ -16,6 +21,24 @@ from canonical.launchpad.scripts.ftpmaster import (
     ArchiveCruftCheckerError)
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
+
+# XXX cprov 20060515: {create, remove}TestArchive functions should be
+# moved to the publisher test domain as soon as we have it.
+def createTestArchive():
+    """Creates a fresh test archive based on sampledata."""
+    script = os.path.join(config.root, "scripts", "publish-distro.py")
+    process = subprocess.Popen([sys.executable, script, "-q",
+                                "-d", 'ubuntutest'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    garbage = process.stderr.read()
+    garbage = process.stdout.read()
+    return process.wait()
+
+def removeTestArchive():
+    """Remove the entire test archive directory from the filesystem."""
+    shutil.rmtree("/var/tmp/archive/")
+
 
 class MockLogger:
     """Local log facility """
@@ -312,19 +335,28 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Priority to: 'EXTRA'\n"
             "ERROR: 'pmount' source isn't published in warty")
 
+
 class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
     layer = ZopelessLayer
     dbuser = 'lucille'
 
     def setUp(self):
-        """Setup the test environment and retrieve useful instances."""
+        """Setup the test environment.
+
+        Retrieve useful instances and create a test archive.
+        """
         LaunchpadZopelessTestCase.setUp(self)
         self.log = MockLogger()
 
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
-        # XXX cprov 20060502: ensure we have soyuz generated archive in place
         self.archive_path = "/var/tmp/archive"
+        createTestArchive()
+
+    def tearDown(self):
+        """Clean up test environment and remove the test archive."""
+        LaunchpadZopelessTestCase.tearDown(self)
+        removeTestArchive()
 
     def test_initialize_success(self):
         """Test ArchiveCruftChecker initialization process.

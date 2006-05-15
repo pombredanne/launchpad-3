@@ -229,23 +229,23 @@ class ArchiveCruftChecker:
         self.logger = logger
         # initialize a group of variables to store temporary results
         # available versions of published sources
-        source_versions = {}
+        self.source_versions = {}
         # available binaries produced by published sources
-        source_binaries = {}
+        self.source_binaries = {}
         # 'Not Build From Source' binaries
-        nbs = {}
+        self.nbs = {}
         # 'All superseded by Any' binaries
-        asba = {}
+        self.asba = {}
         # published binary package names
-        bin_pkgs = {}
+        self.bin_pkgs = {}
         # Architecture specific binary packages
-        arch_any = {}
+        self.arch_any = {}
         # proposed NBS (before clean up)
-        dubious_nbs = {}
+        self.dubious_nbs = {}
         # NBS after clean up
-        real_nbs = {}
+        self.real_nbs = {}
         # definitive NBS organized for clean up
-        nbs_to_remove = []
+        self.nbs_to_remove = []
 
     @property
     def architectures(self):
@@ -287,17 +287,17 @@ class ArchiveCruftChecker:
         if not os.path.exists(filename):
             raise ArchiveCruftCheckerError(
                 "File does not exists:%s" % filename)
-        temp_fd, temp_filename = tempfile.mkstemp()
+        unused_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
         if result != 0:
             raise ArchiveCruftCheckerError(
                 "Gunzip invocation failed!\n%s" % output)
 
-        temp_contents = open(temp_filename)
+        temp_fd = open(temp_filename)
         # XXX cprov 20060515: maybe we need some sort of data integrity
         # check at this point.
-        parsed_contents = apt_pkg.ParseTagFile(temp_contents)
+        parsed_contents = apt_pkg.ParseTagFile(temp_fd)
 
         return (temp_filename, temp_fd, parsed_contents)
 
@@ -478,10 +478,11 @@ class ArchiveCruftChecker:
         nbs_keys.sort()
 
         for source in nbs_keys:
+            proposed_bin = self.source_binaries.get(
+                source, "(source does not exist)")
+            porposed_version = self.source_versions.get(source, "??")
             output += (" * %s_%s builds: %s\n"
-                       % (source, self.source_versions.get(source, "??"),
-                          self.source_binaries.get(source,
-                                                   "(source does not exist)")))
+                       % (source, porposed_version, proposed_bin))
             output += "      but no longer builds:\n"
             versions = self.real_nbs[source].keys()
             versions.sort(apt_pkg.VersionCompare)

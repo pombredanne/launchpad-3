@@ -10,7 +10,7 @@ from StringIO import StringIO
 
 from canonical.librarian.client import LibrarianClient
 from canonical.archivepublisher.pool import (
-    AlreadyInPool, NotInPool, PoolFileOverwrite)
+    AlreadyInPool, NotInPool, PoolFileOverwriteError)
 from canonical.database.constants import nowUTC
 
 from md5 import md5
