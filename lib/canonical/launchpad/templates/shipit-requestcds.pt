@@ -52,12 +52,12 @@
       <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
     </tal:pastrequests>
 
-    <h1>How many CDs would you like?</h1> 
+    <h1>Request CDs</h1> 
 
     <tal:edubuntu condition="view/is_edubuntu">
       <p>Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
-        The <strong>PC</strong> Edition will run on almost all PCs. This 
-        includes most machines with Intel/AMD/etc type processors and computers
+        The <strong>PC</strong> Edition will run on almost all PCs; this 
+        includes most machines with Intel-compatible processors and computers
         that can also run Microsoft Windows.
       </p>
     </tal:edubuntu>
