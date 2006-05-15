@@ -11,6 +11,22 @@
       <link rel="shortcut icon" href="/@@/kubuntu-favicon.png" />
 
       <style type="text/css" media="screen"> @import url(/@@/kubuntu-masthead2.css);</style>
+
+      <style type="text/css">
+        <!-- 
+        h1 {
+            margin-top: 1em;
+        }
+        #body {
+            margin: 1em;
+        }
+        #search {
+            top: 10px;
+            right: 10px;
+        }
+        -->
+      </style>
+
     </metal:extra-head>
   </head>
 
