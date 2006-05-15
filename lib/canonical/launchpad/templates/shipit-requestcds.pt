@@ -137,11 +137,13 @@
     <div style="text-align: right">
       <tal:current_request condition="view/current_order">
         <input type="submit" value="Change Request" name="FORM_SUBMIT"
+               onClick="javascript: disableSubmitButton()"
                class="formControls"/>
       </tal:current_request>
 
       <tal:no_current_request condition="not: view/current_order">
         <input type="submit" value="Request CDs" name="FORM_SUBMIT"
+               onClick="javascript: disableSubmitButton()"
                class="formControls"/>
       </tal:no_current_request>
     </div>
@@ -166,6 +168,10 @@
   </table>  
 
   <script type="text/javascript">
+    function disableSubmitButton() {
+      var form = document.forms['shipit'];
+      form.FORM_SUBMIT.disabled = true;
+    }
     function updateWidgets() {
       var form = document.forms['shipit'];
       state = (form.extracds.checked == false);

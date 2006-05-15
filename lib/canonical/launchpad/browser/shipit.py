@@ -259,6 +259,9 @@ class ShipItRequestView(GeneralFormView):
                 kw.get('organization'), reason)
             if self.user.shippedShipItRequestsOfCurrentRelease() or reason:
                 need_notification = True
+            msg = ('Request accepted. Please note that requests usually take '
+                   'from 4 to 6 weeks to deliver, depending on the country of '
+                   'shipping.')
         else:
             if current_order.reason is None and reason is not None:
                 # The user entered something in the 'reason' entry for the
@@ -267,6 +270,7 @@ class ShipItRequestView(GeneralFormView):
                 need_notification = True
             for name in self.fieldNames:
                 setattr(current_order, name, kw.get(name))
+            msg = 'Request changed successfully.'
 
         current_order.setQuantitiesBasedOnStandardRequest(request_type)
         if need_notification:
@@ -278,9 +282,7 @@ class ShipItRequestView(GeneralFormView):
         else:
             # Nothing to do
             pass
-        return (
-            'Request accepted. Please note that requests usually take from '
-            '4 to 6 weeks to deliver, depending on the country of shipping.')
+        return msg
 
     def validate(self, data):
         errors = []
