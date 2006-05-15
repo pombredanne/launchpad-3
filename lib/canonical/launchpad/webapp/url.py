@@ -46,12 +46,6 @@ def urlparse(url, scheme='', allow_fragments=True):
     that might not be the case, since urlparse has a cache, and treats
     unicode and str as equal. (http://sourceforge.net/tracker/index.php?
     func=detail&aid=1313119&group_id=5470&atid=105470)
-
-        >>> original_urlparse(u'http://foo.com/')
-        (u'http', u'foo.com', u'/', '', '', '')
-        >>> original_urlparse('http://foo.com/')
-        (u'http', u'foo.com', u'/', '', '', '')
-
     """
     return original_urlparse(
         url.encode('ascii'), scheme=scheme, allow_fragments=allow_fragments)

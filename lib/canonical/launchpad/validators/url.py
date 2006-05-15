@@ -19,6 +19,10 @@ def valid_absolute_url(name):
     >>> valid_absolute_url('whatever://example.com/blah')
     False
     """
+    # Have to import urlparse locally since imports from helpers.py
+    # causes this module to be imported, and we can't import stuff from
+    # webapp at that point, since webapp imports stuff from helpers.py
+    # as well.
     from canonical.launchpad.webapp.url import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(name)
     if scheme == 'sftp':
