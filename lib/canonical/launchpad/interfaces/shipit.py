@@ -389,8 +389,7 @@ class IStandardShipItRequest(Interface):
 class IStandardShipItRequestSet(Interface):
     """The set of all standard ShipIt requests."""
 
-    def new(flavour, quantityx86, quantityamd64, quantityppc, description,
-            isdefault):
+    def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault):
         """Create and return a new StandardShipItRequest."""
 
     def getAll():

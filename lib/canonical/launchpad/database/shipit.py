@@ -661,12 +661,11 @@ class StandardShipItRequestSet:
 
     implements(IStandardShipItRequestSet)
 
-    def new(self, flavour, quantityx86, quantityamd64, quantityppc, description,
-            isdefault):
+    def new(self, flavour, quantityx86, quantityamd64, quantityppc, isdefault):
         """See IStandardShipItRequestSet"""
         return StandardShipItRequest(flavour=flavour, quantityx86=quantityx86,
                 quantityppc=quantityppc, quantityamd64=quantityamd64,
-                description=description, isdefault=isdefault)
+                isdefault=isdefault)
 
     def getAll(self):
         """See IStandardShipItRequestSet"""
