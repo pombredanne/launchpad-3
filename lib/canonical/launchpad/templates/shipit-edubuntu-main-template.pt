@@ -72,7 +72,7 @@
 
   <body>
 
-    <img metal:fill-slot="header-logo" src="@@/edubuntu-headerlogo.png" />
+    <img metal:fill-slot="header-logo" src="/@@/edubuntu-headerlogo.png" />
 
     <div metal:fill-slot="footer" class="footer" class="inside" 
          style="background: url(/@@/edubuntu-header.png) bottom left repeat-x #fff;">
