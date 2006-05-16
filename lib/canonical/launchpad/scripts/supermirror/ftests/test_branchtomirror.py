@@ -66,20 +66,18 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
                          mirrored_branch.last_revision())
 
 
-class TestBranchToMirror_SourceProblems(TestCaseWithRepository):
+class TestBranchToMirrorFormats(TestCaseWithRepository):
     layer = FunctionalLayer
 
     def setUp(self):
-        #TestCaseInTempDir.setUp(self)
-        super(TestBranchToMirror_SourceProblems, self).setUp()
+        super(TestBranchToMirrorFormats, self).setUp()
         LaunchpadFunctionalTestSetup().setUp()
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
 
     def tearDown(self):
         self.authserver.tearDown()
-        #TestCaseInTempDir.tearDown(self)
-        super(TestBranchToMirror_SourceProblems, self).tearDown()
+        super(TestBranchToMirrorFormats, self).tearDown()
         LaunchpadFunctionalTestSetup().tearDown()
         test_root = TestCaseInTempDir.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
@@ -125,6 +123,30 @@ class TestBranchToMirror_SourceProblems(TestCaseWithRepository):
         self.assertEqual(
             bzrlib.repository.RepositoryFormatKnit1().get_format_string(),
             mirrored_branch.repository._format.get_format_string())
+
+
+class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
+    layer = FunctionalLayer
+
+    def setUp(self):
+        TestCaseInTempDir.setUp(self)
+        LaunchpadFunctionalTestSetup().setUp()
+        self.authserver = AuthserverTacTestSetup()
+        self.authserver.setUp()
+
+    def tearDown(self):
+        self.authserver.tearDown()
+        TestCaseInTempDir.tearDown(self)
+        LaunchpadFunctionalTestSetup().tearDown()
+        test_root = TestCaseInTempDir.TEST_ROOT
+        if test_root is not None and os.path.exists(test_root):
+            shutil.rmtree(test_root)
+        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
+        # to create a new root when the next test is run.
+        # The TestCaseInTempDir is part of bzr's test infrastructure and the
+        # bzr test runner normally does this cleanup, but here we have to do
+        # that ourselves.
+        TestCaseInTempDir.TEST_ROOT = None
 
     def testUnopenableSourceDoesNotCreateMirror(self):
         non_existant_branch = "nonsensedir"
