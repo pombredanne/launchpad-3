@@ -4,7 +4,6 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.validation import valid_password
 
 
 # Field Interfaces
@@ -27,6 +26,9 @@ class IBugField(IField):
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
+
+class IStrippedTextLine(ITextLine):
+    """A field with leading and trailing whitespaces stripped."""
 
 
 # Title
@@ -63,16 +65,16 @@ class BugField(Field):
     implements(IBugField)
 
 
-class StrippingTextLine(TextLine):
-
-    def fromUnicode(self, str):
-        return TextLine.fromUnicode(self, str.strip())
+class StrippedTextLine(TextLine):
+    implements(IStrippedTextLine)
 
 
 class PasswordField(Password):
     implements(IPasswordField)
 
     def _validate(self, value):
+        # Local import to avoid circular imports
+        from canonical.launchpad.interfaces.validation import valid_password
         if not valid_password(value):
             raise LaunchpadValidationError(_(
                 "The password provided contains non-ASCII characters."))

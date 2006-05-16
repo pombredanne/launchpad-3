@@ -27,7 +27,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, PasswordField, StrippingTextLine)
+    ContentNameField, PasswordField, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -82,7 +82,7 @@ class IPerson(IHasSpecifications):
                 "letter or number, and containing only letters, "
                 "numbers, dots, hyphens, or plus signs.")
             )
-    displayname = StrippingTextLine(
+    displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
