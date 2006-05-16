@@ -12,9 +12,12 @@ __all__ = [
     'BuildRecordsView',
     ]
 
+from zope.component import getUtility
+
 from canonical.lp.dbschema import BuildStatus
 
-from canonical.launchpad.interfaces import IHasBuildRecords, IBuild
+from canonical.launchpad.interfaces import (
+    IHasBuildRecords, IBuild, IBuildQueueSet)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
@@ -135,11 +138,15 @@ class BuildRecordsView(LaunchpadView):
         # request context build records according the selected state
         builds = self.context.getBuildRecords(state_map[self.state],
                                               name=self.text)
-        # XXX cprov 20060512: we need a smaller number of items than
-        # the deafult (75) since we can't afford the extra queries to
-        # each row that retrieves the respective BuildQueue item via
-        # reversed key (not even pre-join can help us) [bug #43802]
-        self.batchnav = BatchNavigator(builds, self.request, size=20)
+
+        self.batchnav = BatchNavigator(builds, self.request)
+
+        # Pre-populate cache with buildqueue items in question in a
+        # single query, use list() statement to force fetch of the
+        # results.
+        buildqueue_items = list(getUtility(IBuildQueueSet).fetchByBuildIds(
+            [build.id for build in self.batchnav.currentBatch()]))
+
 
     def showBuilderInfo(self):
         """Control the presentation of builder information.

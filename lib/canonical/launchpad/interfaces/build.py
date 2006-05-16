@@ -54,7 +54,7 @@ class IBuild(Interface):
     def reset():
         """Restore the build record to its initial state.
 
-        Build record loose its history, is moved to NEEDSBUILD and a new
+        Build record loses its history, is moved to NEEDSBUILD and a new
         empty BuildQueue entry is created for it.
         """
 

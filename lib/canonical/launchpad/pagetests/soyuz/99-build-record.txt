@@ -76,7 +76,9 @@ Build record in question is already reset.
   ...i386 build of pmount 0.1-1 in ubuntu warty...
   ...Build can not be reset...
 
-Build rescoring feature (fixed bug #44227)
+Build rescoring feature (fixed bug #44227, we create build records
+when reseting a build, so there is not life-cycle for a pending build
+w/o build record anymore.)
 
   >>> print http(r"""
   ... POST /+builds/+build/9/+rescore HTTP/1.1
