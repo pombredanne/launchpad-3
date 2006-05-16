@@ -10,4 +10,31 @@ UPDATE POTemplate SET priority=0 WHERE priority IS NULL;
 ALTER TABLE POTemplate ALTER COLUMN priority SET DEFAULT 0;
 ALTER TABLE POTemplate ALTER COLUMN priority SET NOT NULL;
 
+
+/* Give middle priority to the packages that are not part of language packs */
+UPDATE POTemplate
+SET priority = 50
+FROM sourcepackagefilepublishing, sourcepackagepublishing, distrorelease, sourcepackagename
+WHERE
+    sourcepackagefilepublishing.distribution = distrorelease.distribution AND
+    potemplate.distrorelease = distrorelease.id AND
+    sourcepackagefilepublishing.sourcepackagepublishing = sourcepackagepublishing.id AND
+    sourcepackagefilepublishing.publishingstatus = 2 AND
+    sourcepackagefilepublishing.distroreleasename = distrorelease.name AND
+    sourcepackagefilepublishing.componentname = 'main' AND
+    potemplate.languagepack IS FALSE;
+
+/* Give high priority to the packages that are part of language packs */
+UPDATE POTemplate
+SET priority = 100
+FROM sourcepackagefilepublishing, sourcepackagepublishing, distrorelease, sourcepackagename
+WHERE
+    sourcepackagefilepublishing.distribution = distrorelease.distribution AND
+    potemplate.distrorelease = distrorelease.id AND
+    sourcepackagefilepublishing.sourcepackagepublishing = sourcepackagepublishing.id AND
+    sourcepackagefilepublishing.publishingstatus = 2 AND
+    sourcepackagefilepublishing.distroreleasename = distrorelease.name AND
+    sourcepackagefilepublishing.componentname = 'main' AND
+    potemplate.languagepack IS TRUE;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 71, 0);
