@@ -233,9 +233,16 @@
   ...informational message">The accounts have been merged successfully...
 
 
-  Hack to start a new transaction and clear caches etc.
+  XXX: Hack to start a new transaction and clear caches etc. This should
+  not be necessary, but it currently is.
+    -- kiko, 2006-05-15
 
   >>> def new_transaction():
+  ...     import time
+  ...     time.sleep(1)
+  ...     import gc
+  ...     while gc.collect():
+  ...       pass
   ...     import transaction
   ...     import canonical.database.sqlbase
   ...     transaction.abort()
