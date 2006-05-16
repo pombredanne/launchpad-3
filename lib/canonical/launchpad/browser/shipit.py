@@ -144,7 +144,6 @@ class ShipItRequestView(GeneralFormView):
         GeneralFormView.__init__(self, context, request)
         self.flavour = _get_flavour_from_layer(request)
         self.from_email_address = self.from_email_addresses[self.flavour]
-        print "foo"*40
 
     @property
     def is_edubuntu(self):

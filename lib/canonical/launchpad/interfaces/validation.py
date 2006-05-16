@@ -106,14 +106,14 @@ class ShipItAddressValidator:
         """Check if value contains only ASCII characters and if len(value) is
         smaller or equal self.length.
 
-        >>> ShipItAddressValidator('somefield', 4)('some value')
+        >>> ShipItAddressValidator('somefield', 4)(u'some value')
         Traceback (most recent call last):
         ...
         LaunchpadValidationError: The somefield can't have more than 4 characters. 
-        >>> print ShipItAddressValidator('somefield', 14)('some value')
-        None
+        >>> ShipItAddressValidator('somefield', 14)(u'some value')
+        True
         >>> custom_msg = "some custom message"
-        >>> ShipItAddressValidator('somefield', 4, custom_msg)('some value')
+        >>> ShipItAddressValidator('somefield', 4, custom_msg)(u'some value')
         Traceback (most recent call last):
         ...
         LaunchpadValidationError: some custom message

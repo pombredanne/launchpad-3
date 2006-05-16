@@ -38,7 +38,7 @@ StandardShipItRequests.
     >>> shipit = ShipItApplication()
     >>> myrequest_view = create_view(shipit, 'myrequest')
     >>> html = myrequest_view.render()
-    >>> 'How many CDs would you like?' in html
+    >>> 'Request CDs' in html
     True
     >>> 'ShipIt is currently closed' in html
     False
