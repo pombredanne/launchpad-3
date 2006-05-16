@@ -32,9 +32,8 @@ special cases where one can be "implicitly" subscribed to a bug.
 Implicit vs. Explicit Subscriptions
 -----------------------------------
 
-An explicit subscription means that there's a row in the
-BugSubscription for that subscription. An implicit subscription does not
-have a corresponding row in the BugSubscription table.
+An explicit subscription has a row in the BugSubscription table. An implicit
+subscription does not.
 
 To get the entire list of email addresses that should receive a
 notification email on a bug, call
@@ -72,17 +71,8 @@ IBug.subscribe and IBug.unsubscribe:
 Automatic Subscriptions on Bug Creation
 =======================================
 
-When a new bug is opened, the following people are automatically added as
-explicit Cc subscribers to the bug:
-
-  * The bug reporter
-
-  * The distribution bug contact, if there is one
-
-  * The product bug contact, if there is one
-
-  * The package bug contact(s). There may be zero, one or more package
-    bug contacts.
+When a new bug is opened, only the bug reporter is automatically, explicitly
+subscribed to the bug:
 
 XXX: Brad Bollenbach, 2005-11-25: These bits need real sample data. See
 https://launchpad.net/bugs/5484.
@@ -100,10 +90,20 @@ Let's have a look at an example for a distribution bug:
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, distribution=ubuntu)
 
+Only the bug reporter, Foo Bar, has an explicit subscription.
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
+
+But because Sample Person is the distribution contact for Ubuntu, he
+will be implicitly added to the notification recipients.
+
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
 
-The distro contact will *not* be subscribed to private bugs:
+The distro contact will *not* be subscribed to private bugs, not even
+implicitly:
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
@@ -123,6 +123,15 @@ Another example, this time for an upstream:
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, product=firefox)
 
+Again, only Foo Bar is explicitly subscribed:
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
+
+But the upstream Firefox bug contact, sabdfl, is implicitly added to the
+recipients list.
+
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'mark@hbd.com']
 
@@ -136,6 +145,12 @@ contact will be subscribed:
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'mark@hbd.com', 'test@canonical.com']
 
+But still, only Foo Bar is explicitly subscribed.
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
+
 When an upstream does *not* have a specific bug contact set, the
 product.owner is used instead. So, if Firefox's bugcontact is unset,
 Sample Person, the Firefox "owner" will get subscribed instead:
@@ -145,6 +160,15 @@ Sample Person, the Firefox "owner" will get subscribed instead:
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, product=firefox)
+
+Foo Bar is the only explicit subscriber:
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
+
+But the product owner, Sample Person, is implicitly added to the
+recipient list:
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'test@canonical.com']
