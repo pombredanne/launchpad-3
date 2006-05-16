@@ -91,10 +91,6 @@ class TestBranchToMirror_SourceProblems(TestCaseWithRepository):
         # that ourselves.
         TestCaseInTempDir.TEST_ROOT = None
 
-
-    #def testMirrorWeaveAsWeave(self):
-    #    xxx
-
     def testMirrorKnitAsKnit(self):
         # Create a local branch in knit format with one revision to use as the
         # mirror source.
@@ -124,6 +120,8 @@ class TestBranchToMirror_SourceProblems(TestCaseWithRepository):
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
+
+        # Assert that the mirrored branch is in knit format
         self.assertEqual(
             bzrlib.repository.RepositoryFormatKnit1().get_format_string(),
             mirrored_branch.repository._format.get_format_string())
