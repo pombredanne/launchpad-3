@@ -273,19 +273,35 @@ class BugAlsoReportInView(GeneralFormView):
         """All the fields should be given as keyword arguments."""
         return self.fieldNames
 
+    def initializeAndRender(self):
+        """Process the widgets and render the page."""
+        self._setUpWidgets()
+        # Add some javascript to make the bug watch widgets enabled only
+        # when the checkbox is checked.
+        self.disable_bugwatch_widgets_js = (
+            "<!--\n"
+            "setDisabled(!document.getElementById('%s').checked, '%s', '%s');"
+            "\n-->" % (
+                self.link_to_bugwatch_widget.name,
+                self.bugtracker_widget.name,
+                self.remotebug_widget.name))
+        checkbox_onclick = (
+            "onClick=\"setDisabled(!this.checked, '%s', '%s')\"" % (
+                self.bugtracker_widget.name, self.remotebug_widget.name))
+        self.link_to_bugwatch_widget.extra = checkbox_onclick
+
+        self.saved_process_form()
+        return self.index()
+
     def render_upstreamtask(self):
         self.label = "Request fix in a product"
         self.fieldNames.append('product')
-        self._setUpWidgets()
-        self.saved_process_form()
-        return self.index()
+        return self.initializeAndRender()
 
     def render_distrotask(self):
         self.label = "Request fix in a distribution"
         self.fieldNames.extend(['distribution', 'sourcepackagename'])
-        self._setUpWidgets()
-        self.saved_process_form()
-        return self.index()
+        return self.initializeAndRender()
 
     def getAllWidgets(self):
         """Return all the widgets used by this view."""
