@@ -608,8 +608,16 @@ class RequestedCDs(SQLBase):
 
     @property
     def description(self):
-        return "%d %s CDs for %s" % (
-                self.quantity, self.flavour.title, self.architecture.title)
+        text = "%(quantity)d %(flavour)s "
+        if self.quantity > 1:
+            text += "CDs "
+        else:
+            text += "CD "
+        text += "for %(arch)s"
+        replacements = {
+            'quantity': self.quantity, 'flavour': self.flavour.title,
+            'arch': self.architecture.title}
+        return text % replacements
 
 
 class StandardShipItRequest(SQLBase):
@@ -627,27 +635,33 @@ class StandardShipItRequest(SQLBase):
     @property
     def description_without_flavour(self):
         """See IStandardShipItRequest"""
-        description = "%d CDs" % self.totalCDs
+        if self.totalCDs > 1:
+            description = "%d CDs" % self.totalCDs
+        else:
+            description = "%d CD" % self.totalCDs
         return "%s (%s)" % (description, self._detailed_description())
 
     @property
     def description(self):
         """See IStandardShipItRequest"""
-        description = "%d %s CDs" % (self.totalCDs, self.flavour.title)
+        if self.totalCDs > 1:
+            description = "%d %s CDs" % (self.totalCDs, self.flavour.title)
+        else:
+            description = "%d %s CD" % (self.totalCDs, self.flavour.title)
         return "%s (%s)" % (description, self._detailed_description())
 
     def _detailed_description(self):
         detailed = []
+        text = '%d %s Edition'
         if self.quantityx86:
-            detailed.append('%d for %s' % 
-                            (self.quantityx86, ShipItArchitecture.X86.title))
+            detailed.append(
+                text % (self.quantityx86, ShipItArchitecture.X86.title))
         if self.quantityamd64:
-            detailed.append('%d for %s' % 
-                            (self.quantityamd64, 
-                             ShipItArchitecture.AMD64.title))
+            detailed.append(
+                text % (self.quantityamd64, ShipItArchitecture.AMD64.title))
         if self.quantityppc:
-            detailed.append('%d for %s' % 
-                            (self.quantityppc, ShipItArchitecture.PPC.title))
+            detailed.append(
+                text % (self.quantityppc, ShipItArchitecture.PPC.title))
         return ", ".join(detailed)
 
     @property

@@ -26,7 +26,7 @@
     </div>
 
     <tal:current_request condition="view/current_order">
-      <h2>Current Request Details</h2>
+      <h1>Current Request Details</h1>
       <ul>
         <tal:block repeat="requested_cds view/current_order/getAllRequestedCDs">
           <li tal:condition="requested_cds/quantity">
@@ -56,9 +56,9 @@
 
     <tal:edubuntu condition="view/is_edubuntu">
       <p>Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
-        The <strong>PC</strong> Edition will run on almost all PCs; this 
-        includes most machines with Intel-compatible processors and computers
-        that can also run Microsoft Windows.
+        The <strong>PC</strong> Edition will run on almost all PCs.
+        This includes Intel x86-based systems like Intel Pentium and AMD
+        Athlon.
       </p>
     </tal:edubuntu>
 
@@ -66,15 +66,14 @@
       <p>
         <span tal:replace="view/flavour/title" /> CDs are made specifically
         for various types of computers. The available architectures for 
-        <span tal:replace="view/flavour/title" /> can be described as follows:
+        <span tal:replace="view/flavour/title" /> are:
       </p>
 
       <ul>
         <li>
           The <strong>PC</strong> Edition will run on almost all PCs.
-          This includes most machines with Intel/AMD/etc type processors
-          and computers that can also run Microsoft Windows. Choose this
-          if you are unsure.
+          This includes Intel x86-based systems like Intel Pentium and AMD
+          Athlon. Choose this if you are unsure.
         </li>
 
         <li>
@@ -113,23 +112,19 @@
           <span tal:content="request_type/description" />
         </label>
       </div>
-
-      <br />
-      <label>
-      <input type="checkbox" name="extracds" value="yes"
-             onClick="javascript: updateWidgets()"
-             tal:attributes="checked view/current_order/reason|nothing"/>
-        I would like to apply for additional CDs
-      </label>
-      <div>
-        <div tal:content="structure view/reason_widget" />
-        (<span class="formHelp" tal:condition="view/reason_widget/hint"
-           tal:content="view/reason_widget/hint">Some help text
-        </span>)
-      </div>
     </div>
 
-    <h2>Shipping address</h2>
+    <h3>Shipping address</h3>
+
+    <div class="informational message">
+      Please note that CDs for <span tal:replace="view/flavour/title" />
+      6.06 LTS will begin shipping in early June. Once shipping starts, it
+      can take up to 6 weeks for you to receive delivery.
+    </div>
+
+    <p><strong>Double check your address below before submitting your
+      request.</strong>
+    </p>
 
     <metal:shipping_details
       use-macro="context/@@+shipit-macros/shipping_details" />

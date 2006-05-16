@@ -183,8 +183,10 @@ class ShipItRequestView(GeneralFormView):
         return field_values
 
     def standardShipItRequests(self):
-        """Return all standard ShipIt Requests."""
-        return getUtility(IStandardShipItRequestSet).getByFlavour(self.flavour)
+        """Return all standard ShipIt Requests sorted by quantity of CDs."""
+        requests = getUtility(IStandardShipItRequestSet).getByFlavour(
+            self.flavour)
+        return sorted(requests, key=lambda request: request.totalCDs)
 
     @cachedproperty
     def current_order_standard_id(self):

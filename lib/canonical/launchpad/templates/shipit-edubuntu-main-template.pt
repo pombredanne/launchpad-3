@@ -20,7 +20,7 @@
         }
         textarea, input[type=text], input[type=password] {
             border: solid 1px black;
-            margin: 2px;
+            margin: 3px;
         }
         select {
             border: none;
@@ -57,12 +57,8 @@
         #search a:visited {
             color: white;
         }
-        h1 {
-            margin-top: 1em;
-        }
-        h2 {
-            margin: 1.0em 0 0.5em 0;
-            color: none;
+        h1, h2 {
+            margin: 1em 0 0.5em 0;
         }
         -->
       </style>
