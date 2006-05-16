@@ -64,9 +64,25 @@ from canonical.widgets.bugtask import (
 
 
 def get_sortorder_from_request(request):
-    """Get the sortorder from the request."""
+    """Get the sortorder from the request.
+    
+    >>> from zope.publisher.browser import TestRequest
+    >>> get_sortorder_from_request(TestRequest(form={}))
+    ['-importance']
+    >>> get_sortorder_from_request(TestRequest(form={'orderby': '-status'}))
+    ['-status']
+    >>> get_sortorder_from_request(
+    ...     TestRequest(form={'orderby': 'status,-severity,importance'}))
+    ['status', 'importance']
+    >>> get_sortorder_from_request(
+    ...     TestRequest(form={'orderby': 'priority,-severity'}))
+    ['-importance']
+    """
     order_by_string = request.get("orderby", '')
-    order_by = order_by_string.split(',')
+    if order_by_string:
+        order_by = order_by_string.split(',')
+    else:
+        order_by = []
     # Remove old order_by values that people might have in bookmarks.
     for old_order_by_column in ['priority', 'severity']:
         if old_order_by_column in order_by:
