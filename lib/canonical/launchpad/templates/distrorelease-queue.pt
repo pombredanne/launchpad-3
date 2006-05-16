@@ -64,7 +64,7 @@
           tal:condition="batch"
           replace="structure view/batchnav/@@+navigation-links" />
 
-     <form name="queue_items_action" action="" method="GET">
+     <form name="queue_items_action" action="" method="POST">
      <table class="listing sortable" tal:condition="batch"
             id="distroreleasequeue">
        <thead>

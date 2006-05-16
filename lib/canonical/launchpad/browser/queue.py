@@ -114,7 +114,8 @@ class QueueItemsView(LaunchpadView):
         """
         # XXX cprov 20060411: those checks should not be performed here
         # dismiss actions for non-admins.
-        if not check_permission('launchpad.Admin', self.context):
+        if (self.request.method != "POST" or
+            not check_permission('launchpad.Admin', self.context)):
             return
 
         accept = self.request.form.get('Accept', '')
