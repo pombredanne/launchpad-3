@@ -199,6 +199,7 @@ one.)
 
 >>> check_redirect("/products/firefox/+bug")
 >>> check("/products/firefox/+bug/1", auth=True)
+>>> check_not_found("/products/firefox/+bug/é")
 >>> check("/products/firefox/+bug/1/+edit", auth=True)
 >>> check("/products/firefox/+bug/1/+secrecy", auth=True)
 >>> check("/products/firefox/+bug/1/+duplicate", auth=True)
