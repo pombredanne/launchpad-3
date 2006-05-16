@@ -126,6 +126,15 @@ class TestBranchToMirror_SourceProblems(TestCaseWithRepository):
             bzrlib.repository.RepositoryFormatKnit1().get_format_string(),
             mirrored_branch.repository._format.get_format_string())
 
+    def testUnopenableSourceDoesNotCreateMirror(self):
+        non_existant_branch = "nonsensedir"
+        dest_dir = "dest-dir"
+        client = BranchStatusClient()
+        mybranch = BranchToMirror(
+            non_existant_branch, dest_dir, client, 1)
+        mybranch.mirror()
+        self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
+
     def testMissingSourceWhines(self):
         non_existant_branch = "nonsensedir"
         client = BranchStatusClient()
