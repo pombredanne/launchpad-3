@@ -908,11 +908,3 @@ def capture_state(obj, *fields):
         setattr(state, field, getattr(obj, field))
 
     return state
-
-
-def nasty_testbrowser_workaround(browser):
-    """Workaround a nasty bug in testbrowser.
-
-    See https://launchpad.net/bugs/44064
-    """
-    browser.open("http://localhost:9000/products/firefox/+bug/4")

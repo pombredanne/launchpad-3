@@ -1,10 +1,6 @@
 Foo Bar files a *private* bug on Ubuntu Linux. He gets redirected to
 the bug page.
 
-    >>> from canonical.launchpad.helpers import nasty_testbrowser_workaround
-
-    >>> nasty_testbrowser_workaround(browser)
-
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
     >>> browser.open("http://localhost:9000/distros/ubuntu/+filebug")
 
