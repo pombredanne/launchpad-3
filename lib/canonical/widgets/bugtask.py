@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 
+import os
 from xml.sax.saxutils import escape
 
 from zope.component import getUtility
@@ -223,8 +224,6 @@ class BugTaskBugWatchWidget(RadioWidget):
                 context=field.context)
 
     _messageNoValue = "None, the status of the bug is updated manually."
-    _joinButtonToMessageTemplate = (
-        u'<label style="font-weight: normal">%s&nbsp;%s</label>')
     _new_bugwatch_value = 'NEW'
 
     def _toFieldValue(self, form_value):
@@ -251,8 +250,26 @@ class BugTaskBugWatchWidget(RadioWidget):
         else:
             return self._toFormValue(self._data)
 
+    def _div(self, cssClass, contents, **kw):
+        if contents:
+            return renderElement('table',
+                                 cellspacing="0",
+                                 cssClass=cssClass,
+                                 contents="\n%s\n" % contents,
+                                 **kw)
+        return ""
 
-    #XXX: This method is moslty copied from RadioWidget.renderItems() and
+    def _joinButtonToMessage(self, option_tag, label, input_id):
+        here = os.path.dirname(__file__)
+        template_path = os.path.join(
+            here, 'templates', 'bugtask-bugwatch-widget.pt')
+        row_template = open(template_path).read()
+        return row_template % {
+            'input_tag': option_tag,
+            'input_id': input_id,
+            'input_label': label}
+
+    #XXX: This method is mostly copied from RadioWidget.renderItems() and
     #     modified to actually work. RadioWidget.renderItems() should be
     #     fixed upstream so that we can override it and only do the last
     #     part locally, the part after "# Add an option for creating...".
@@ -287,36 +304,57 @@ class BugTaskBugWatchWidget(RadioWidget):
         items = self.renderItemsWithValues(values)
         if not self.context.required:
             kwargs = {
+                'index': None,
+                'text': self.translate(self._messageNoValue),
                 'value': '',
                 'name': self.name,
-                'cssClass': self.cssClass,
-                'type': 'radio'}
+                'cssClass': self.cssClass}
             if no_value:
-                kwargs['checked']=no_value
-            option = renderElement('input', **kwargs)
-            option = self._joinButtonToMessageTemplate %(
-                option, self.translate(self._messageNoValue))
+                option = self.renderSelectedItem(**kwargs)
+            else:
+                option = self.renderItem(**kwargs)
             items.insert(0, option)
 
         # Add an option for creating a new bug watch.
-        if value == self._new_bugwatch_value:
-            option_input = renderElement(
-                'input', value=self._new_bugwatch_value, checked='checked',
-                id="%s.%s" % (self.name, self._new_bugwatch_value),
-                name=self.name, cssClass=self.cssClass, type='radio')
-        else:
-            option_input = renderElement(
-                'input', value=self._new_bugwatch_value,
-                id="%s.%s" % (self.name, self._new_bugwatch_value),
-                name=self.name, cssClass=self.cssClass, type='radio')
         option_text = (
-            'New:&nbsp;Bug Tracker&nbsp;%s&nbsp;Remote Bug&nbsp;%s' % (
+            '<div>%s</div><div>Remote Bug #%s</div>' % (
                 self.bugtracker_widget(), self.remotebug_widget()))
-        option = self._joinButtonToMessageTemplate % (
-            option_input, option_text)
+        if value == self._new_bugwatch_value:
+            option = self.renderSelectedItem(
+                self._new_bugwatch_value, option_text,
+                self._new_bugwatch_value, self.name, self.cssClass)
+        else:
+            option = self.renderItem(
+                self._new_bugwatch_value, option_text,
+                self._new_bugwatch_value, self.name, self.cssClass)
         items.append(option)
 
         return items
+
+    def renderItem(self, index, text, value, name, cssClass):
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             type='radio')
+        return self._joinButtonToMessage(elem, text, input_id=id)
+
+    def renderSelectedItem(self, index, text, value, name, cssClass):
+        id = '%s.%s' % (name, index)
+        elem = renderElement(u'input',
+                             value=value,
+                             name=name,
+                             id=id,
+                             cssClass=cssClass,
+                             checked="checked",
+                             type='radio')
+        return self._joinButtonToMessage(elem, text, input_id=id)
+
+    def renderValue(self, value):
+        rendered_items = self.renderItems(value)
+        return "\n".join(rendered_items)
 
 
 class AssigneeDisplayWidget(BrowserWidget):

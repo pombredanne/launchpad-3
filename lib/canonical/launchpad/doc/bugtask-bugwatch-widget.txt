@@ -32,31 +32,27 @@ the one representing the value passed to the method as selected. It
 also renders an option for creating a new bug watch. Let's
 define a helper function to make it easier to see what's going on.
 
-    >>> import re
-    >>> checked = 'checked="checked"'
-    >>> label_re = '<label.*?>.*?%s.*?&nbsp;(.*)</label>'
-    >>> selected_label = re.compile(label_re % checked)
-    >>> unselected_label = re.compile(label_re % '', re.DOTALL)
+    >>> from BeautifulSoup import BeautifulSoup
     >>> def print_item(item):
-    ...     selected_match = selected_label.match(item)
-    ...     unselected_match = unselected_label.match(item)
-    ...     if selected_match:
-    ...         print 'SELECTED: %s' % selected_match.groups(1)
+    ...     soup = BeautifulSoup(item)
+    ...     input_td, label_td = soup('td')
+    ...     if input_td.input.get('checked'):
+    ...         selected = 'SELECTED'
     ...     else:
-    ...         if not unselected_match: import pdb; pdb.set_trace()
-    ...         print 'NOT SELECTED: %s' % unselected_match.groups(1)
+    ...         selected = 'NOT SELECTED'
+    ...     print "%s: %s" % (selected, label_td.label)
 
 Now if we pass None to renderItems(), the first radio button will be
 selected.
 
     >>> for item in bugwatch_widget.renderItems(None):
     ...     print_item(item)
-    SELECTED: None, the status of the bug is updated manually.
-    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#123543</a>
-    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#2000</a>
-    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#42</a>
-    NOT SELECTED: Debian Bug tracker <a...>#304014</a>
-    NOT SELECTED: New...<select...name="field.bugtracker"...
+    SELECTED: <label...> None, the status of the bug is updated manually...
+    NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#123543</a>...
+    NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#2000</a>...
+    NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#42</a>...
+    NOT SELECTED: <label...> Debian Bug tracker <a...>#304014</a>...
+    NOT SELECTED: <label...> <select...name="field.bugtracker"...
         <input...name="field.remotebug...>
 
 If we pass a bug watch to renderItems(), the corresponding radio button
@@ -68,12 +64,12 @@ will be selected.
 
     >>> for item in bugwatch_widget.renderItems(mozilla_bugwatch):
     ...     print_item(item)
-    NOT SELECTED: None, the status of the bug is updated manually.
-    SELECTED: The Mozilla.org Bug Tracker <a...>#123543</a>
-    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#2000</a>
-    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#42</a>
-    NOT SELECTED: Debian Bug tracker <a...>#304014</a>
-    NOT SELECTED: New...<select...name="field.bugtracker"...
+    NOT SELECTED: <label...> None, the status of the bug is updated manually...
+    SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#123543</a>...
+    NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#2000</a>...
+    NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#42</a>...
+    NOT SELECTED: <label...> Debian Bug tracker <a...>#304014</a>...
+    NOT SELECTED: <label...> <select...name="field.bugtracker"...
         <input...name="field.remotebug...>
 
 If we pass _new_bugwatch_value to renderItems(), the corresponding radio
@@ -82,15 +78,12 @@ button will be selected.
     >>> new_bugwatch_value = bugwatch_widget._new_bugwatch_value
     >>> for item in bugwatch_widget.renderItems(new_bugwatch_value):
     ...     print_item(item)
-    NOT SELECTED: None, the status of the bug is updated manually.
-    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#123543</a>
-    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#2000</a>
-    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#42</a>
-    NOT SELECTED: Debian Bug tracker <a...>#304014</a>
-    ...
-
-    XXX: The following should be as the last line in the previous test.
-    NOT SELECTED: New...<select...name="field.bugtracker"...
+    NOT SELECTED: <label...> None, the status of the bug is updated manually...
+    NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#123543</a>...
+    NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#2000</a>...
+    NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#42</a>...
+    NOT SELECTED: <label...> Debian Bug tracker <a...>#304014</a>...
+    SELECTED: <label...> <select...name="field.bugtracker"...
         <input...name="field.remotebug...>
 
 Now let's use the widget to actually create a new bug watch. First let's take a look at which bug watches are currently associated with the bug.
