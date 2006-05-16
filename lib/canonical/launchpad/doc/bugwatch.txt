@@ -123,5 +123,5 @@ The URLifier for these bug watches deals with SF.net's horrible URLs.
     ...     bug=bug_one, owner=sample_person, bugtracker=gtb,
     ...     remotebug='1337833')
     >>> bugwatch.url
-    u'http://sourceforge.net/tracker/?aid=1337833&group_id=136955&atid=737291&func=detail'
+    'http://sourceforge.net/tracker/?aid=1337833&group_id=136955&atid=737291&func=detail'
 
