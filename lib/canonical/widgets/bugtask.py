@@ -251,13 +251,8 @@ class BugTaskBugWatchWidget(RadioWidget):
             return self._toFormValue(self._data)
 
     def _div(self, cssClass, contents, **kw):
-        if contents:
-            return renderElement('table',
-                                 cellspacing="0",
-                                 cssClass=cssClass,
-                                 contents="\n%s\n" % contents,
-                                 **kw)
-        return ""
+        """Don't render a div tag."""
+        return contents
 
     def _joinButtonToMessage(self, option_tag, label, input_id):
         here = os.path.dirname(__file__)
@@ -354,7 +349,9 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def renderValue(self, value):
         rendered_items = self.renderItems(value)
-        return "\n".join(rendered_items)
+        return renderElement(
+            'table', cssClass=self.cssClass,
+            contents='\n'.join(rendered_items))
 
 
 class AssigneeDisplayWidget(BrowserWidget):
