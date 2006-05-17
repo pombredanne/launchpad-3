@@ -226,6 +226,30 @@ class ShipItRequestView(GeneralFormView):
     def current_order(self):
         return self.user.currentShipItRequest()
 
+    @property
+    def selected_standardrequest(self):
+        """Return the id of the standardrequest radio button that should be
+        selected.
+
+        If the submitted form contains a 'ordertype' variable, that's the one
+        that should be requested. If not, we check if the current shipit 
+        request is a standard one, and if so, return the standard request id
+        of this shipit request. Lastly, if none of the above exists, we return
+        the standard request whose isdefault attribute is True.
+        """
+        ordertype = self.request.form.get('ordertype')
+        if ordertype:
+            try:
+                return int(ordertype)
+            except ValueError:
+                raise UnexpectedFormData(
+                    'Expected an id but got "%s"' % ordertype)
+        if self.current_order_standard_id:
+            return self.current_order_standard_id
+        for standardrequest in self.standardShipItRequests():
+            if standardrequest.isdefault:
+                return standardrequest.id
+
     def process_form(self):
         """Overwrite GeneralFormView's process_form() method because we want
         to be able to have a 'Cancel' button in a different <form> element.
