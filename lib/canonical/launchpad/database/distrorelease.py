@@ -262,15 +262,13 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def potemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id)
-        result.prejoin(['potemplatename'])
-        result = list(result)
+        result = list(result.prejoin(['potemplatename']))
         return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
-        result.prejoin(['potemplatename'])
-        result = list(result)
+        result = list(result.prejoin(['potemplatename']))
         return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
@@ -366,16 +364,14 @@ class DistroRelease(SQLBase, BugTargetBase):
         elif SpecificationFilter.DECLINED in filter:
             query += ' AND Specification.goalstatus = %d' % (
                 SpecificationGoalStatus.DECLINED.value)
-        
+
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
-
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

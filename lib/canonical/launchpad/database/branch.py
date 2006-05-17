@@ -222,8 +222,7 @@ class BranchSet:
     @property
     def all(self):
         branches = Branch.select()
-        branches.prejoin(['author', 'product'])
-        return branches
+        return branches.prejoin(['author', 'product'])
 
     def get(self, branch_id, default=None):
         """See IBranchSet."""

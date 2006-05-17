@@ -354,7 +354,7 @@ class Person(SQLBase):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -367,7 +367,7 @@ class Person(SQLBase):
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
         return results.prejoin(['assignee', 'approver', 'drafter'])
