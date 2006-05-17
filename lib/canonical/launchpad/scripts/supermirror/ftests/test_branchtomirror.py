@@ -90,22 +90,22 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         TestCaseInTempDir.TEST_ROOT = None
 
     def testMirrorKnitAsKnit(self):
-        # Create a local branch in knit format with one revision to use as the
-        # mirror source.
+        # Create a source branch in knit format, and check that the mirror is in
+        # knit format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
         self._testMirrorFormat()
 
     def testMirrorMetaweaveAsMetaweave(self):
-        # Create a local branch in metaweave format with one revision to use as
-        # the mirror source.
+        # Create a source branch in metaweave format, and check that the mirror
+        # is in metaweave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repository.RepositoryFormat7()
         self._testMirrorFormat()
 
     def testMirrorWeaveAsWeave(self):
-        # Create a local branch in weave format with one revision to use as the
-        # mirror source.
+        # Create a source branch in weave format, and check that the mirror is
+        # in weave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirFormat6()
         self.repository_format = bzrlib.repository.RepositoryFormat6()
         self._testMirrorFormat()
