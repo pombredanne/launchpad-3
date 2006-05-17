@@ -9,8 +9,8 @@ Check to be sure that an unpriviledged user cannot reach this page
   ...
   Unauthorized:...
 
-XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object due the
-error we forced before. See bug #45226 for more information.
+XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object to reset the headers.
+See bug #45226 for more information.
 
   >>> from zope.testbrowser import Browser
   >>> browser = Browser()
@@ -24,6 +24,13 @@ page.
   >>> print browser.url
   http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
 
+XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object to reset the headers.
+See bug #45226 for more information.
+
+  >>> from zope.testbrowser import Browser
+  >>> browser = Browser()
+  >>> browser.handleErrors = False
+
 And also, Sample Person, the owner of the product where this potemplate is,
 should be able to edit it.
 
@@ -34,39 +41,52 @@ should be able to edit it.
 
 We should be sure that the edit form get only the non admin fields.
 
-  >>> 'field.potemplatename' in browser.contents
-  True
-  >>> 'field.description' in browser.contents
-  True
-  >>> 'field.header' in browser.contents
-  False
-  >>> 'field.iscurrent' in browser.contents
-  False
-  >>> 'field.owner' in browser.contents
-  False
-  >>> 'field.productseries' in browser.contents
-  False
-  >>> 'field.distrorelease' in browser.contents
-  False
-  >>> 'field.sourcepackagename' in browser.contents
-  False
-  >>> 'field.sourcepackageversion' in browser.contents
-  False
-  >>> 'field.binarypackagename' in browser.contents
-  False
-  >>> 'field.languagepack' in browser.contents
-  False
-  >>> 'field.path' in browser.contents
-  False
-
-And that we are able to POST it.
-
-This is the old value.
-
+  >>> browser.getControl(name='field.potemplatename').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
   >>> browser.getControl(name='field.description').value
   'Template for evolution in hoary'
+  >>> browser.getControl(name='field.header').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
+  >>> browser.getControl(name='field.iscurrent').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
+  >>> browser.getControl(name='field.owner').value
+  'rosetta@launchpad.net'
+  >>> browser.getControl(name='field.productseries').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
+  >>> browser.getControl(name='field.distrorelease').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
+  >>> browser.getControl(name='field.sourcepackagename').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
+  >>> browser.getControl(name='field.sourcepackageversion').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
+  >>> browser.getControl(name='field.binarypackagename').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
+  >>> browser.getControl(name='field.languagepack').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
+  >>> browser.getControl(name='field.path').value
+  Traceback (most recent call last):
+  ...
+  LookupError:...
 
-We set it.
+And that we are able to POST it.
 
   >>> browser.getControl(name='field.description').value = u'foo'
   >>> browser.getControl(name='UPDATE_SUBMIT').click()
@@ -75,8 +95,5 @@ We set it.
 
 And the changed value is stored.
 
-  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
-  >>> print browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
   >>> browser.getControl(name='field.description').value
   'foo'

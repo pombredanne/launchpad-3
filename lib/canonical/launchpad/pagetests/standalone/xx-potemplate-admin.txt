@@ -9,8 +9,8 @@ Check to be sure that an unpriviledged user cannot reach this page
   ...
   Unauthorized:...
 
-XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object due the
-error we forced before. See bug #45226 for more information.
+XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object to reset the headers.
+See bug #45226 for more information.
 
   >>> from zope.testbrowser import Browser
   >>> browser = Browser()
@@ -27,30 +27,47 @@ page.
 Now, we should be sure that the admin form gets all required fields to allow
 a Rosetta Expert to administrate it.
 
-  >>> 'field.potemplatename' in browser.contents
+  >>> browser.getControl(name='field.potemplatename').value
+  'evolution-2.2'
+  >>> browser.getControl(name='field.description').value
+  'Template for evolution in hoary'
+  >>> print browser.getControl(name='field.header').value
+  Project-Id-Version: PACKAGE VERSION
+  Report-Msgid-Bugs-To:
+  POT-Creation-Date: 2005-08-25 14:56+0200
+  PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+  Last-Translator: FULL NAME <EMAIL@ADDRESS>
+  Language-Team: LANGUAGE <LL@li.org>
+  MIME-Version: 1.0
+  Content-Type: text/plain; charset=CHARSET
+  Content-Transfer-Encoding: 8bit
+  Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
+  <BLANKLINE>
+  >>> browser.getControl(name='field.iscurrent').value
   True
-  >>> 'field.description' in browser.contents
-  True
-  >>> 'field.header' in browser.contents
-  True
-  >>> 'field.iscurrent' in browser.contents
-  True
-  >>> 'field.owner' in browser.contents
-  True
-  >>> 'field.productseries' in browser.contents
-  True
-  >>> 'field.distrorelease' in browser.contents
-  True
-  >>> 'field.sourcepackagename' in browser.contents
-  True
-  >>> 'field.sourcepackageversion' in browser.contents
-  True
-  >>> 'field.binarypackagename' in browser.contents
-  True
-  >>> 'field.languagepack' in browser.contents
-  True
-  >>> 'field.path' in browser.contents
-  True
+  >>> browser.getControl(name='field.owner').value
+  'rosetta@launchpad.net'
+  >>> browser.getControl(name='field.productseries').value
+  'evolution/trunk'
+  >>> browser.getControl(name='field.distrorelease').value
+  ['']
+  >>> browser.getControl(name='field.sourcepackagename').value
+  ''
+  >>> browser.getControl(name='field.sourcepackageversion').value
+  ''
+  >>> browser.getControl(name='field.binarypackagename').value
+  ''
+  >>> browser.getControl(name='field.languagepack').value
+  False
+  >>> browser.getControl(name='field.path').value
+  'po/evolution-2.2.pot'
+
+XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object to reset the headers.
+See bug #45226 for more information.
+
+  >>> from zope.testbrowser import Browser
+  >>> browser = Browser()
+  >>> browser.handleErrors = False
 
 Check to be sure that an admin can reach the POTemplate admin page.
 
@@ -62,50 +79,49 @@ Check to be sure that an admin can reach the POTemplate admin page.
 Now, we should be sure that the admin form gets all required fields to allow
 an admin to administrate it.
 
-  >>> 'field.potemplatename' in browser.contents
+  >>> browser.getControl(name='field.potemplatename').value
+  'evolution-2.2'
+  >>> browser.getControl(name='field.description').value
+  'Template for evolution in hoary'
+  >>> print browser.getControl(name='field.header').value
+  Project-Id-Version: PACKAGE VERSION
+  Report-Msgid-Bugs-To:
+  POT-Creation-Date: 2005-08-25 14:56+0200
+  PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+  Last-Translator: FULL NAME <EMAIL@ADDRESS>
+  Language-Team: LANGUAGE <LL@li.org>
+  MIME-Version: 1.0
+  Content-Type: text/plain; charset=CHARSET
+  Content-Transfer-Encoding: 8bit
+  Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
+  <BLANKLINE>
+  >>> browser.getControl(name='field.iscurrent').value
   True
-  >>> 'field.description' in browser.contents
-  True
-  >>> 'field.header' in browser.contents
-  True
-  >>> 'field.iscurrent' in browser.contents
-  True
-  >>> 'field.owner' in browser.contents
-  True
-  >>> 'field.productseries' in browser.contents
-  True
-  >>> 'field.distrorelease' in browser.contents
-  True
-  >>> 'field.sourcepackagename' in browser.contents
-  True
-  >>> 'field.sourcepackageversion' in browser.contents
-  True
-  >>> 'field.binarypackagename' in browser.contents
-  True
-  >>> 'field.languagepack' in browser.contents
-  True
-  >>> 'field.path' in browser.contents
-  True
-
-And that we are able to POST it.
-
-The system has this template as not belonging to a language pack.
-
+  >>> browser.getControl(name='field.owner').value
+  'rosetta@launchpad.net'
+  >>> browser.getControl(name='field.productseries').value
+  'evolution/trunk'
+  >>> browser.getControl(name='field.distrorelease').value
+  ['']
+  >>> browser.getControl(name='field.sourcepackagename').value
+  ''
+  >>> browser.getControl(name='field.sourcepackageversion').value
+  ''
+  >>> browser.getControl(name='field.binarypackagename').value
+  ''
   >>> browser.getControl(name='field.languagepack').value
   False
+  >>> browser.getControl(name='field.path').value
+  'po/evolution-2.2.pot'
 
-And we set it.
+And that we are able to POST it.
 
   >>> browser.getControl(name='field.languagepack').value = True
   >>> browser.getControl(name='UPDATE_SUBMIT').click()
   >>> print browser.url
   http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin
 
-And the changed value is stored.
+Let's check if the changed value is stored.
 
-  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin')
-  >>> print browser.url
-  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+admin
   >>> browser.getControl(name='field.languagepack').value
   True
-
