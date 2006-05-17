@@ -64,8 +64,7 @@ Check if the non-admin are denied to see UNAPPROVED queue:
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
-  ...Sorry, you do not have permission to view this queue, we have
-  ...excluded any packages from this listing.
+  ...Sorry, you do not have permission to view this queue, we have excluded any packages from this listing...
   ...
 
 Check admin access to UNAPPROVED queue:
@@ -174,10 +173,7 @@ Check if the results were already filtered:
   ...mozilla-firefox (i386)...
 
 
-Non-admin attempts to act on queue items have no effect. it tries to
-accept 'pmount' but it continues in NEW and no message is rendered:
-
-XXX cprov 20060517: no warning message is odd
+Non-admin attempts to act on queue items fails:
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
@@ -187,5 +183,4 @@ XXX cprov 20060517: no warning message is odd
   ... QUEUE_ID=2&Accept=Accept""")
   HTTP/1.1 200 Ok
   Content-Length: ...
-  ...pmount (i386)...
-  ...mozilla-firefox (i386)...
+  ...You do not have permission to act on queue items...

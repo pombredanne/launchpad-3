@@ -49,8 +49,6 @@ class QueueItemsView(LaunchpadView):
         self.show_rejected = False
         self.show_done = False
 
-        self.have_queue_permission = True
-
         if self.state_txt == 'unapproved':
             self.state = DistroReleaseQueueStatus.UNAPPROVED
             self.show_unapproved = True
@@ -74,8 +72,9 @@ class QueueItemsView(LaunchpadView):
         # security!
         if (self.state == DistroReleaseQueueStatus.UNAPPROVED and
             not check_permission('launchpad.Admin', self.context)):
-            self.batchnav = BatchNavigator([], self.request, size=QUEUE_SIZE)
-            self.have_queue_permission = False
+            self.error = (
+                "Sorry, you do not have permission to view this queue, "
+                "we have excluded any packages from this listing.")
             return
 
         # request context queue items according the selected state
@@ -89,18 +88,16 @@ class QueueItemsView(LaunchpadView):
 
         Returns a list of labelled actions or an empty list.
         """
-        # deny actions for non-admin
-        if not check_permission('launchpad.Admin', self.context):
-            return []
-
         # states that support actions
         mutable_states = [
             DistroReleaseQueueStatus.NEW,
             DistroReleaseQueueStatus.UNAPPROVED,
             ]
 
-        # return actions only for supported states
-        if self.state in mutable_states:
+        # return actions only for supported states and require
+        # admin permission
+        if (self.state in mutable_states and
+            check_permission('launchpad.Admin', self.context)):
             return ['Accept', 'Reject']
 
         # no actions for unsupported states
@@ -112,10 +109,11 @@ class QueueItemsView(LaunchpadView):
         Returns a message describing the action executed or None if nothing
         was done.
         """
-        # XXX cprov 20060411: those checks should not be performed here
-        # dismiss actions for non-admins.
-        if (self.request.method != "POST" or
-            not check_permission('launchpad.Admin', self.context)):
+        if self.request.method != "POST":
+            return
+
+        if not check_permission('launchpad.Admin', self.context):
+            self.error = 'You do not have permission to act on queue items.'
             return
 
         accept = self.request.form.get('Accept', '')

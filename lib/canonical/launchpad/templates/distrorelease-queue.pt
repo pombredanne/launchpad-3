@@ -11,12 +11,14 @@
   <div tal:replace="structure context/distribution/@@+portlet-details" />
 </metal:leftportlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="message view/performQueueAction;
+                 setup view/setupQueueList;
+                 error view/error|nothing">
 
   <h1>Upload and build queue</h1>
 
-  <p class="portalMessage"
-     tal:define="message view/performQueueAction"
+  <p class="informational message"
      tal:condition="message"
      tal:content="structure message">
      This call to view/performQueueAction actually parses the form and does
@@ -24,9 +26,16 @@
      rejected), and shows the status of those actions here.
   </p>
 
-  <div class="queue_list" tal:condition="not: view/setupQueueList">
+  <p class="error message"
+      tal:condition="error"
+      tal:content="error"
+  />
 
-    <tal:batch define="batch view/batchnav/currentBatch">
+
+  <div class="queue_list" tal:condition="not: error">
+
+    <tal:batch define="batch view/batchnav/currentBatch|nothing">
+
     <form name="queue_items_state" action="" method="GET">
 
       Show:
@@ -146,12 +155,6 @@
 
      </form>
 
-     <p class="portalError"
-        tal:condition="not: view/have_queue_permission">
-        Sorry, you do not have permission to view this queue, we have
-        excluded any packages from this listing.
-     </p>
-
      <div class="portalMessage" tal:condition="not: batch">
        The <span tal:replace="view/state/title" /> queue
        is empty.
@@ -161,8 +164,8 @@
           tal:condition="batch"
           replace="structure view/batchnav/@@+navigation-links" />
 
-  </tal:batch>
-</div>
+     </tal:batch>
+  </div>
 
 </div>
 
