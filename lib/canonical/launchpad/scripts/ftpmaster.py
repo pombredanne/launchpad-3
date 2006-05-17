@@ -276,13 +276,11 @@ class ArchiveCruftChecker:
         to store the uncompressed content. Invoke system available
         gunzip`, raises ArchiveCruftCheckError if it fails.
 
-        Return a tuple containing:
-         * temp_filename: a pre-created temporary filename
-         * temp_fd: the respective fd oppened for read
-         * parsed_contents: contents parsed by apt_pkg.ParseTagFile()
+        This method closes the file descriptor used and remove the
+        temporary file from the filesystem, no extra caller action
+        is required.
 
-         The caller must close the returned fd and delete the
-         temporary file.
+        Return the contents parsed by apt_pkg.ParseTagFile()
         """
         if not os.path.exists(filename):
             raise ArchiveCruftCheckerError(
@@ -296,10 +294,15 @@ class ArchiveCruftChecker:
 
         temp_fd = open(temp_filename)
         # XXX cprov 20060515: maybe we need some sort of data integrity
-        # check at this point.
+        # check at this point, and maybe keep the uncrompressed file
+        # for debug purposes, let's see how it behaves in real conditions.
         parsed_contents = apt_pkg.ParseTagFile(temp_fd)
+        # close fd and remove temporary file used to store uncompressed
+        # tag file content from the filesystem.
+        temp_fd.close()
+        os.unlink(temp_filename)
 
-        return (temp_filename, temp_fd, parsed_contents)
+        return parsed_contents
 
     def processSources(self):
         """Process archive sources index.
@@ -312,8 +315,7 @@ class ArchiveCruftChecker:
                 self.dist_archive, "%s/source/Sources.gz" % component)
 
             self.logger.debug("Processing %s" % filename)
-            sources_filename, sources_fd, parsed_sources = (
-                self.gunzipTagFileContent(filename))
+            parsed_sources = self.gunzipTagFileContent(filename)
 
             while parsed_sources.Step():
                 source = parsed_sources.Section.Find("Package")
@@ -326,9 +328,6 @@ class ArchiveCruftChecker:
 
                 self.source_binaries[source] = binaries
                 self.source_versions[source] = source_version
-
-            sources_fd.close()
-            os.unlink(sources_filename)
 
     def buildNBS(self):
         """Build the group of 'not build from source' binaries"""
@@ -350,8 +349,7 @@ class ArchiveCruftChecker:
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
         self.logger.debug("Processing %s" % filename)
-        packages_filename, packages_fd, parsed_packages = (
-            self.gunzipTagFileContent(filename))
+        parsed_packages = self.gunzipTagFileContent(filename)
 
         while parsed_packages.Step():
             package = parsed_packages.Section.Find('Package')
@@ -378,9 +376,6 @@ class ArchiveCruftChecker:
             if apt_pkg.VersionCompare(version, self.arch_any[package]) < 1:
                 self.arch_any[package] = version
 
-        packages_fd.close()
-        os.unlink(packages_filename)
-
     def buildASBA(self):
         """Build the group of 'all superseded by any' binaries."""
         self.logger.debug("Build superseded by any (ASBA):")
@@ -399,8 +394,7 @@ class ArchiveCruftChecker:
             self.dist_archive,
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
-        packages_filename, packages_fd, parsed_packages = (
-            self.gunzipContent(filename))
+        parsed_packages = self.gunzipContent(filename)
 
         while parsed_packages.Step():
             package = parsed_packages.Section.Find('Package')
@@ -424,9 +418,6 @@ class ArchiveCruftChecker:
                     self.asba[source].setdefault(package, {})
                     self.asba[source][package].setdefault(version, {})
                     self.asba[source][package][version][architecture] = ""
-
-        packages_fd.close()
-        os.unlink(packages_filename)
 
     def addNBS(self, nbs_d, source, version, package):
         """Add a new entry in given organized nbs_d list
