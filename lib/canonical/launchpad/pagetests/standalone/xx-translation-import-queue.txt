@@ -2,11 +2,11 @@ Check to be sure that upstream projects can use Rosetta to submit their
 initial template uploads.
 
   >>> print http(r"""
-  ... GET /products/firefox/+series/1.0/+translations-upload HTTP/1.1
+  ... GET /products/firefox/1.0/+translations-upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...Here you can upload either a single file...
+  ...Upload either a single file...
 
 Time to do the upload...
 
@@ -14,28 +14,29 @@ Time to do the upload...
   >>> import os.path
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/standalone/test.tar.gz')
-  >>> tarball = open(test_file_name)
+  ...     'pagetests/standalone/xx-translation-import-queue.tar.gz')
+  >>> tarball = open(test_file_name, "rb")
   >>> print http(r"""
-  ... POST /products/firefox/+series/1.0/+translations-upload HTTP/1.1
+  ... POST /products/firefox/1.0/+translations-upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 522
   ... Content-Type: multipart/form-data; boundary=---------------------------1318994232199907263719102121
-  ... Referer: http://localhost:9000/products/firefox/+series/1.0/+translations-upload
+  ... Referer: http://localhost:9000/products/firefox/1.0/+translations-upload
   ... 
   ... -----------------------------1318994232199907263719102121
   ... Content-Disposition: form-data; name="file"; filename="test.tar.gz"
   ... Content-Type: application/x-gzip
+  ... 
   ... %s
   ... -----------------------------1318994232199907263719102121
   ... Content-Disposition: form-data; name="translations_upload"
   ... 
   ... Request Upload
   ... -----------------------------1318994232199907263719102121--
-  ... """ % tarball.read())
+  ... """ % tarball.read(), handle_errors=False)
   HTTP/1.1 200 Ok
+  ...Upload new translation resources...
   ...Thank you for your upload. 1 files from the tarball will be reviewed...
-  ...Upload new translation resources for Mozilla Firefox Series...
 
 We check now that the upload is available from the translation import queue page
 and the status is static as we are not logged in.
@@ -163,7 +164,7 @@ Is time to associate this import to the right IPOFile.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/rosetta/imports
+  Location: http://.../rosetta/imports
   ...
 
 And we get that entry approved and with a place where it will be imported
@@ -176,7 +177,7 @@ And we get that entry approved and with a place where it will be imported
   ...Mozilla Firefox Series...
   ...Approved...
   ...Carlos Perelló Marín...
-  ...Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox Mozilla Firefox...
+  ...Spanish (es) translation of pkgconf-mozilla in Mozilla Firefox 1.0...
 
 Check the removal feature. For that, the user carlos is going to attach a new
 entry
@@ -218,7 +219,7 @@ POST, if we get this POST is because it was created by hand or not using our for
   ... status-2=DELETED&handle_queue=Change%20Status""")
   HTTP/1.1 500 Internal Server Error
   ...
-  raise UnexpectedFormData...
+  ...UnexpectedFormData...
   ...
 
 But Jordi, a Rosetta expert, will be allowed to remove it.
@@ -309,7 +310,7 @@ to remove their own imports. For this test, the No Priviledges Person will do
 the import.
 
   >>> print http(r"""
-  ... POST /products/a52dec/+series/main/+translations-upload HTTP/1.1
+  ... POST /products/a52dec/trunk/+translations-upload HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 362
   ... Content-Type: multipart/form-data; boundary=---------------------------13161753624926250560039312
@@ -346,6 +347,8 @@ remove it.
   Location: http://localhost:9000/rosetta/imports/+index
   Set-Cookie: launchpad=...
 
+The entry appears now deleted.
+
   >>> print http(r"""
   ... GET /rosetta/imports/+index HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -356,3 +359,30 @@ remove it.
   ...status-3...
   ...selected="yes" value="DELETED"...
   ...No Privileges Person...
+
+Let's check tar.bz2 uploads. They work ;-)
+
+  >>> test_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/standalone/xx-translation-import-queue.tar.bz2')
+  >>> tarball = open(test_file_name)
+  >>> print http(r"""
+  ... POST /products/evolution/trunk/+translations-upload HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 514
+  ... Content-Type: multipart/form-data; boundary=---------------------------1779376820857032061648075468
+  ... 
+  ... -----------------------------1779376820857032061648075468
+  ... Content-Disposition: form-data; name="file"; filename="temp.tar.bz2"
+  ... Content-Type: application/x-bzip
+  ... 
+  ... %s
+  ... -----------------------------1779376820857032061648075468
+  ... Content-Disposition: form-data; name="translations_upload"
+  ... 
+  ... Request Upload
+  ... -----------------------------1779376820857032061648075468--
+  ... """ % tarball.read())
+  HTTP/1.1 200 Ok
+  ...
+  ...Thank you for your upload. 2 files from the tarball will be reviewed...

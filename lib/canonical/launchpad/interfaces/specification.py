@@ -17,7 +17,7 @@ from zope.component import getUtility
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Summary, Title 
+from canonical.launchpad.fields import ContentNameField, Summary, Title
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
@@ -84,7 +84,7 @@ class ISpecification(IHasOwner):
             "feature and get approval for the implementation plan."))
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
-        default=SpecificationPriority.PROPOSED, required=True)
+        default=SpecificationPriority.UNDEFINED, required=True)
     assignee = Choice(title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
@@ -121,6 +121,7 @@ class ISpecification(IHasOwner):
         default=SpecificationGoalStatus.PROPOSED, description=_(
             "Whether or not the drivers have accepted this feature as "
             "a goal for the targeted release or series."))
+
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_(
             "Any notes on the status of this spec you would like to make. "
@@ -148,8 +149,13 @@ class ISpecification(IHasOwner):
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
         "which supersedes this one. Note that selecting a specification "
-        "here and pressing Continue will mark this specification as "
-        "superseded."))
+        "here and pressing Continue will change the specification "
+        "status to Superseded."))
+    informational = Bool(title=_('Is Informational'),
+        required=False, default=False, description=_('Check this box if '
+        'this specification is purely documentation or overview and does '
+        'not actually involve any implementation.'))
+    
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')
@@ -179,7 +185,9 @@ class ISpecification(IHasOwner):
         'which is still incomplete.')
 
     has_release_goal = Attribute('Is true if this specification has been '
-        'targetted to a specific distro release or product series.')
+        'proposed as a goal for a specific distro release or product '
+        'series and the drivers of that release/series have accepted '
+        'the goal.')
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of
@@ -193,6 +201,9 @@ class ISpecification(IHasOwner):
         """Return the requests for feedback for a given person on this
         specification.
         """
+
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that receive notifications."""
 
     # event-related methods
     def getDelta(old_spec, user):

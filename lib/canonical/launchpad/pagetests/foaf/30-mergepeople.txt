@@ -1,6 +1,11 @@
   'foo' is a dupe account for 'no-priv'. Let's merge them, and keep only
   'no-priv'.
 
+  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  fixed.
+  >>> from canonical.launchpad.mail import stub
+  >>> stub.test_emails[:] = []
+
   First we have to go to the +requestmerge page.
 
   >>> print http(r"""
@@ -59,7 +64,7 @@
   ...
 
 
-  Then we find the dupe account and request the merge.
+  Then we find the duplicate account and request the merge.
 
   >>> print http(r"""
   ... POST /people/+requestmerge HTTP/1.1
@@ -88,7 +93,7 @@
   >>> from canonical.launchpad.database import PersonSet
   >>> dupe = PersonSet().getByName('foo')
 
-  This is the page which displays all email addresses owned by the dupe
+  This is the page which displays all email addresses owned by the duplicate
   account. Here the user choses the ones which he want to claim.
 
   >>> print http(r"""
@@ -108,7 +113,6 @@
   >>> email1 = EmailAddressSet().getByEmail('foo@baz.com')
   >>> email2 = EmailAddressSet().getByEmail('bar.foo@canonical.com')
 
-  >>> from canonical.launchpad.mail import stub
   >>> assert not stub.test_emails
 
   >>> print http(r"""
@@ -149,7 +153,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/token/.../+accountmerge
-  ...
+  <BLANKLINE>
 
 
   Now the user goes to the page we sent a link via email to validate the first
@@ -166,21 +170,19 @@
   ...
 
 
-  The user types his password and then proves that he is the owner of that
-  email address, but the merge wasn't finished because the dupe account still
-  have a registered email adresses.
+  User confirms the merge request submitting the form, but the merge wasn't finished because the duplicate account still have a registered email adresses.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... password=test""" % path)
+  ... VALIDATE=Confirm""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/people/no-priv
   ...
-  ...info-notification">The email address...
+  ...informational message">The e-mail address...
   ...
 
   >>> msg = email.message_from_string(raw_msg2)
@@ -197,7 +199,7 @@
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/token/.../+accountmerge
-  ...
+  <BLANKLINE>
 
 
   Now the user proves that he's the owner of the second email address of the
@@ -214,24 +216,31 @@
   ...
 
 
-  And now the merge is concluded with success.
+  And now the merge is completed successfully.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... password=test""" % path)
+  ... VALIDATE=Confirm""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/people/no-priv
   ...
-  ...info-notification">The merge you requested was concluded with success...
+  ...informational message">The accounts have been merged successfully...
 
 
-  Hack to start a new transaction and clear caches etc.
+  XXX: Hack to start a new transaction and clear caches etc. This should
+  not be necessary, but it currently is.
+    -- kiko, 2006-05-15
 
   >>> def new_transaction():
+  ...     import time
+  ...     time.sleep(1)
+  ...     import gc
+  ...     while gc.collect():
+  ...       pass
   ...     import transaction
   ...     import canonical.database.sqlbase
   ...     transaction.abort()
@@ -305,6 +314,7 @@
   >>> token = re.sub(r'.*token/', '', link)
   >>> token_base_path = '/token/%s' % token
 
+
   ##>>> new_transaction()
   ##>>> from canonical.launchpad.database import LoginTokenSet
   ##>>> tokenobj = LoginTokenSet()[token]
@@ -334,7 +344,7 @@
   ##...
   ##Location: http://localhost:9000/people/no-priv
   ##...
-  ##...<div class="info-notification">The merge you requested was concluded with success. Now, everything that was owned by the duplicated account should be owned by your user account.</div>...
+  ##...<div class="informational message">The accounts have been merged successfully. Everything that belonged to the duplicated account should now belong to your own account.</div>...
   ##...
 
 

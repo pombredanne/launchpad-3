@@ -15,14 +15,15 @@ import urllib
 
 from zope.interface import implements
 
-from zope.app.errorservice.interfaces import IErrorReportingService
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportRequest)
 from canonical.launchpad.webapp.adapter import (
-    RequestExpired, get_request_statements, soft_timeout_expired)
+    RequestExpired, get_request_statements, get_request_duration,
+    soft_timeout_expired)
 
 UTC = pytz.timezone('UTC')
 
@@ -76,7 +77,7 @@ class ErrorReport:
     implements(IErrorReport)
 
     def __init__(self, id, type, value, time, tb_text, username,
-                 url, req_vars, db_statements):
+                 url, duration, req_vars, db_statements):
         self.id = id
         self.type = type
         self.value = value
@@ -84,6 +85,7 @@ class ErrorReport:
         self.tb_text = tb_text
         self.username = username
         self.url = url
+        self.duration = duration
         self.req_vars = []
         # hide passwords that might be present in the request variables
         for (name, value) in req_vars:
@@ -102,7 +104,9 @@ class ErrorReport:
         fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
         fp.write('Date: %s\n' % self.time.isoformat())
         fp.write('User: %s\n' % _normalise_whitespace(self.username))
-        fp.write('URL: %s\n\n' % _normalise_whitespace(self.url))
+        fp.write('URL: %s\n' % _normalise_whitespace(self.url))
+        fp.write('Duration: %s\n' % self.duration)
+        fp.write('\n')
         safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
@@ -123,6 +127,7 @@ class ErrorReport:
         date = msg.getheader('date')
         username = msg.getheader('user')
         url = msg.getheader('url')
+        duration = int(msg.getheader('duration', '-1'))
 
         req_vars = []
         lines = msg.fp.readlines()
@@ -146,11 +151,11 @@ class ErrorReport:
         tb_text = ''.join(lines[linenum+1:])
 
         return cls(id, exc_type, exc_value, date, tb_text,
-                   username, url, req_vars, statements)
+                   username, url, duration, req_vars, statements)
 
 
-class ErrorReportingService:
-    implements(IErrorReportingService)
+class ErrorReportingUtility:
+    implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['Unauthorized'])
     copy_to_zlog = False
@@ -244,7 +249,7 @@ class ErrorReportingService:
         return oops, filename
 
     def raising(self, info, request=None, now=None):
-        """See IErrorReportingService.raising()"""
+        """See IErrorReportingUtility.raising()"""
         if now is not None:
             now = now.astimezone(UTC)
         else:
@@ -301,6 +306,8 @@ class ErrorReportingService:
 
             strurl = _safestr(url)
 
+            duration = get_request_duration()
+
             statements = sorted((start, end, _safestr(statement))
                                 for (start, end, statement)
                                     in get_request_statements())
@@ -308,7 +315,8 @@ class ErrorReportingService:
             oopsid, filename = self.newOopsId(now)
 
             entry = ErrorReport(oopsid, strtype, strv, now, tb_text,
-                                username, strurl, req_vars, statements)
+                                username, strurl, duration,
+                                req_vars, statements)
             entry.write(open(filename, 'wb'))
 
             if request:
@@ -337,7 +345,7 @@ class ErrorReportingService:
                     '%s (%s)' % (url, oopsid))
 
 
-globalErrorService = ErrorReportingService()
+globalErrorUtility = ErrorReportingUtility()
 
 
 class ErrorReportRequest:
@@ -354,6 +362,6 @@ def end_request(event):
     # if no OOPS has been generated at the end of the request, but
     # the soft timeout has expired, log an OOPS.
     if event.request.oopsid is None and soft_timeout_expired():
-        globalErrorService.raising(
+        globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)

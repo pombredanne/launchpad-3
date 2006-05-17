@@ -190,12 +190,18 @@ class DistroReleaseSourcePackageRelease:
     @property
     def current_published(self):
         """See IDistroArchReleaseSourcePackage."""
-
         # Retrieve current publishing info
-        current = self.publishing_history.selectFirstBy(
-            status = PackagePublishingStatus.PUBLISHED)
+        current = SourcePackagePublishingHistory.selectFirst("""
+        distrorelease = %s AND
+        sourcepackagerelease = %s AND
+        status = %s
+        """ % sqlvalues(self.distrorelease.id,
+                        self.sourcepackagerelease.id,
+                        PackagePublishingStatus.PUBLISHED),
+            orderBy='-datecreated')
+
         if current is None:
-            raise NotFoundError("Source package %s not published in %s/%s"
+            raise NotFoundError("Source package %s not published in %s"
                                 % (self.sourcepackagename.name,
                                    self.distrorelease.name))
 
@@ -205,9 +211,10 @@ class DistroReleaseSourcePackageRelease:
         """See IDistroReleaseSourcePackageRelease."""
 
         # Check we have been asked to do something
-        if new_component is None and new_section is None:
+        if (new_component is None and
+            new_section is None):
             raise AssertionError("changeOverride must be passed either a"
-                                 " new component or new section.")
+                                 " new component or new section")
 
         # Retrieve current publishing info
         current = self.current_published
@@ -225,18 +232,20 @@ class DistroReleaseSourcePackageRelease:
         SecureSourcePackagePublishingHistory(
             distrorelease=current.distrorelease,
             sourcepackagerelease=current.sourcepackagerelease,
-            component=new_component,
-            section=new_section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            pocket=current.pocket,
             embargo=False,
+            pocket=current.pocket,
+            component=new_component,
+            section=new_section,
         )
 
     def supersede(self):
         """See IDistroReleaseSourcePackageRelease."""
-
+        # Retrieve current publishing info
         current = self.current_published
         current = SecureSourcePackagePublishingHistory.get(current.id)
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW
+
+        return current

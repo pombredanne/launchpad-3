@@ -15,7 +15,7 @@
 """
 import unittest
 
-from canonical.launchpad.webapp.z3batching import _Batch
+from canonical.launchpad.webapp.z3batching.batch import _Batch
 from canonical.launchpad.webapp.z3batching.interfaces import IBatch
 
 class BatchTest(unittest.TestCase):
@@ -52,7 +52,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(batch[2], 'six')
         batch = _Batch(self.getData(), 9, 3)
         self.assertRaises(IndexError, batch.__getitem__, 3)
-        
+
     def test__iter__(self):
         batch = _Batch(self.getData(), 0, 3)
         self.assertEqual(list(iter(batch)), ['one', 'two', 'three'])
@@ -89,6 +89,8 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(list(iter(prevprev)), ['four', 'five', 'six'])
         prev = _Batch(self.getData(), 0, 3).prevBatch()
         self.assertEqual(prev, None)
+        prev = _Batch(self.getData(), 2, 3).prevBatch()
+        self.assertEqual(list(iter(prev)), ['one', 'two', 'three'])
         last = _Batch(self.getData(), 99, 3).prevBatch()
         self.assertEqual(list(iter(last)), ['ten'])
 
@@ -104,7 +106,10 @@ class BatchTest(unittest.TestCase):
         batch = _Batch(self.getData(), 9, 3)
         self.assertEqual(batch.first(), 'ten')
         self.assertEqual(batch.last(), 'ten')
-        
+        batch = _Batch(self.getData(), 99, 3)
+        self.assertRaises(IndexError, batch.first)
+        self.assertRaises(IndexError, batch.last)
+
     def test_total(self):
         batch = _Batch(self.getData(), 0, 3)
         self.assertEqual(batch.total(), 10)
@@ -112,7 +117,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(batch.total(), 10)
         batch = _Batch(self.getData(), 99, 3)
         self.assertEqual(batch.total(), 10)
-    
+
     def test_startNumber(self):
         batch = _Batch(self.getData(), 0, 3)
         self.assertEqual(batch.startNumber(), 1)
@@ -128,7 +133,7 @@ class BatchTest(unittest.TestCase):
         self.assertEqual(batch.endNumber(), 10)
         batch = _Batch(self.getData(), 99, 3)
         self.assertEqual(batch.endNumber(), 100)
-        
+
 
 def test_suite():
     return unittest.TestSuite((

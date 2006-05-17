@@ -15,9 +15,9 @@ from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 
+from canonical.launchpad import _
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
@@ -37,18 +37,34 @@ class POTemplateNavigation(Navigation):
     usedfor = IPOTemplate
 
     def traverse(self, name):
+        """Return the IPOFile associated with the given name."""
+
+        assert self.request.method in ['GET', 'HEAD', 'POST'], (
+            'We only know about GET, HEAD, and POST')
+
         user = getUtility(ILaunchBag).user
         if self.request.method in ['GET', 'HEAD']:
             # If it's just a query, get a real IPOFile or use a fake one so we
             # don't create new IPOFiles just because someone is browsing the
             # web.
-            return self.context.getPOFileOrDummy(name, owner=user)
-        elif self.request.method == 'POST':
-            # If it's a post, get a real IPOFile or create a new one so we can
-            # store the posted data.
-            return self.context.getOrCreatePOFile(name, owner=user)
+            pofile = self.context.getPOFileByLang(name)
+            if pofile is None:
+                # There isn't such IPOFile, we return a dummy one to prevent
+                # object creation with GET or HEAD methods.
+                pofile = self.context.getDummyPOFile(name, requester=user)
+            return pofile
         else:
-            raise AssertionError('We only know about GET, HEAD, and POST')
+            # It's a POST.
+            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
+            # POST we got, a Log out action will be also a POST and we should
+            # not create an IPOFile in that case. See bug #40275 for more
+            # information.
+            pofile = self.context.getPOFileByLang(name)
+            if pofile is None:
+                # The user is going to write something that needs an IPOFile
+                # but we don't have such object, we need to create it.
+                pofile = self.context.newPOFile(name, requester=user)
+            return pofile
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
@@ -114,10 +130,29 @@ class POTemplateView(LaunchpadView):
 
     def initialize(self):
         """Get the requested languages and submit the form."""
-        self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
-
         self.submitForm()
+
+    @property
+    def request_languages(self):
+        # if this is accessed multiple times in a same request, consider
+        # changing this to a cachedproperty
+        return helpers.request_languages(self.request)
+
+    def requestPoFiles(self):
+        """Yield a POFile or DummyPOFile for each of the languages in the
+        request, which includes country languages from the request IP,
+        browser preferences, and/or personal Launchpad language prefs.
+        """
+        pofiles = []
+        for language in sorted(self.request_languages,
+            key=lambda x: x.englishname):
+            pofile = self.context.getPOFileByLang(language.code)
+            if pofile is None:
+                pofileset = getUtility(IPOFileSet)
+                pofile = pofileset.getDummy(self.context, language)
+            pofiles.append(pofile)
+        return pofiles
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -136,15 +171,10 @@ class POTemplateView(LaunchpadView):
         Where the template has no POFile for that language, we use
         a DummyPOFile.
         """
-        # Languages the template has been translated into.
-        translated_languages = set(self.context.languages())
-        # The user's languages.
-        prefered_languages = set(self.request_languages)
-        # Merge the sets, convert them to a list, and sort them.
-        languages = sorted(translated_languages | prefered_languages,
-                           key=lambda x: x.englishname)
-
-        for language in languages:
+        # Union the languages the template has been translated into with
+        # The user's selected languages.
+        languages = set(self.context.languages()) | set(self.request_languages)
+        for language in sorted(languages, key=lambda x: x.englishname):
             pofile = self.context.getPOFileByLang(language.code)
             if pofile is None:
                 pofileset = getUtility(IPOFileSet)
@@ -261,10 +291,10 @@ class POTemplateEditView(SQLObjectEditView):
     def changed(self):
         formatter = self.request.locale.dates.getFormatter(
             'dateTime', 'medium')
-        status = _("Updated on ${date_time}")
-        status.mapping = {'date_time': formatter.format(
-            datetime.utcnow())}
-        self.update_status = status
+        self.update_status = _(
+                "Updated on ${date_time}",
+                mapping={'date_time': formatter.format(datetime.utcnow())}
+                )
 
 
 class POTemplateAdminView(POTemplateEditView):

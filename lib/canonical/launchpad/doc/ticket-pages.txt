@@ -17,6 +17,7 @@ We can subscribe to a ticket:
     >>> request = TestRequest(form={'subscribe': 'Subscribe'})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+index', request)
+    >>> index.initialize()
     >>> getUtility(ILaunchBag).user in [
     ...     subscription.person for subscription in ticket_three.subscriptions]
     True
@@ -29,6 +30,7 @@ As well as unsubscribe:
     >>> request = TestRequest(form={'subscribe': 'Unsubscribe'})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+index', request)
+    >>> index.initialize()
     >>> getUtility(ILaunchBag).user in [
     ...     subscription.person for subscription in ticket_three.subscriptions]
     False
@@ -51,6 +53,7 @@ sent:
     >>> request = TestRequest(form={'reopen': ''})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+index', request)
+    >>> index.initialize()
     >>> for notice in index.notices:
     ...     print notice
     You have reopened this request.
@@ -78,6 +81,7 @@ As well as if we reject it:
     >>> request = TestRequest(form={'reject': ''})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+index', request)
+    >>> index.initialize()
     >>> for notice in index.notices:
     ...     print notice
     You have rejected this request.
@@ -103,9 +107,10 @@ If we create a bug, a "Linked to bug" notification is sent:
     >>> request = TestRequest(form={'makebug': ''})
     >>> request.method = 'POST'
     >>> index = getView(ticket_three, '+index', request)
+    >>> index.initialize()
     >>> for notice in index.notices:
     ...     print notice
-    Thank you! Bug #10 created.
+    Thank you! Bug #11 created.
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
@@ -118,7 +123,7 @@ If we create a bug, a "Linked to bug" notification is sent:
     >>> print notifications[0].get_payload(decode=True)
     Support request #3...
     ...
-        Linked to bug: #10
+        Linked to bug: #11
     ...
 
     >>> stub.test_emails = []

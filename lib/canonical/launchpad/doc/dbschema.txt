@@ -29,6 +29,19 @@ working comparisons::
     >>> sabdfl_proxied == sabdfl_proxied
     True
 
+A dbschema Item can also be given to sqlobject's select() method, or any 
+of its variants.
+
+    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> proxied_policy = sabdfl_proxied.subscriptionpolicy
+    >>> type(proxied_policy)
+    <type 'zope.security._proxy._Proxy'>
+    >>> Person.select(Person.q.subscriptionpolicy==proxied_policy).count()
+    59
+    >>> person = Person.select(Person.q.subscriptionpolicy==proxied_policy)[0]
+    >>> person.subscriptionpolicy.name
+    'MODERATED'
+
 XXX: stevea: 20051018: Rewrite this test to use security proxies directly
 XXX: bug 3315
 DB schema objects should be comparable correctly when proxied...

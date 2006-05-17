@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import unittest
 import tempfile
-from cStringIO import StringIO
 import os
 import shutil
 import gc
@@ -28,30 +27,9 @@ from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import sqlvalues
-
-
-class AuthserverTacTestSetup(TacTestSetup):
-    root = '/tmp/authserver-test'
-    
-    def setUpRoot(self):
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
-
-    @property
-    def tacfile(self):
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/authserver.tac'
-            ))
-
-    @property
-    def pidfile(self):
-        return os.path.join(self.root, 'authserver.pid')
-
-    @property
-    def logfile(self):
-        return os.path.join(self.root, 'authserver.log')
+from canonical.authserver.ftests.harness import AuthserverTacTestSetup
+from canonical.testing import reset_logging
+from canonical.functional import ZopelessLayer
 
 
 class SFTPSetup(TacTestSetup):
@@ -62,7 +40,7 @@ class SFTPSetup(TacTestSetup):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
         os.makedirs(self.root, 0700)
-        shutil.copytree(sibpath(__file__, 'keys'), 
+        shutil.copytree(sibpath(__file__, 'keys'),
                         os.path.join(self.root, 'keys'))
 
     @property
@@ -73,16 +51,11 @@ class SFTPSetup(TacTestSetup):
             ))
 
 
-
-class AcceptanceTests(BzrTestCase):
-    """ 
-    These are the agreed acceptance tests for the Supermirror SFTP system's
-    initial implementation of bzr support, converted from the English at
-    https://wiki.launchpad.canonical.com/SupermirrorTaskList
-    """
+class SFTPTestCase(BzrTestCase):
+    layer = ZopelessLayer
 
     def setUp(self):
-        super(AcceptanceTests, self).setUp()
+        super(SFTPTestCase, self).setUp()
 
         # insert SSH keys for testuser -- and insert testuser!
         LaunchpadZopelessTestSetup().setUp()
@@ -100,20 +73,14 @@ class AcceptanceTests(BzrTestCase):
             """)
         connection.commit()
 
-        # Create a local branch with one revision
-        self.local_branch = ScratchDir(files=['foo']).open_branch()
-        wt = self.local_branch.bzrdir.open_workingtree()
-        wt.add('foo')
-        wt.commit('Added foo')
-
         # Point $HOME at a test ssh config and key.
         self.userHome = os.path.abspath(tempfile.mkdtemp())
         os.makedirs(os.path.join(self.userHome, '.ssh'))
         shutil.copyfile(
-            sibpath(__file__, 'id_dsa'), 
+            sibpath(__file__, 'id_dsa'),
             os.path.join(self.userHome, '.ssh', 'id_dsa'))
         shutil.copyfile(
-            sibpath(__file__, 'id_dsa.pub'), 
+            sibpath(__file__, 'id_dsa.pub'),
             os.path.join(self.userHome, '.ssh', 'id_dsa.pub'))
         os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa'), 0600)
         self.realHome = os.environ['HOME']
@@ -152,10 +119,32 @@ class AcceptanceTests(BzrTestCase):
 
         os.environ['HOME'] = self.realHome
         self.authserver.tearDown()
+        # XXX spiv 2006-04-27: We need to do bzrlib's tear down first, because
+        # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
+        # handlers, causing it to blow up.  See bug #41697.
+        super(SFTPTestCase, self).tearDown()
         LaunchpadZopelessTestSetup().tearDown()
-        super(AcceptanceTests, self).tearDown()
         sftp._ssh_vendor = self.realSshVendor
         shutil.rmtree(self.userHome)
+        reset_logging()
+
+
+class AcceptanceTests(SFTPTestCase):
+    """ 
+    These are the agreed acceptance tests for the Supermirror SFTP system's
+    initial implementation of bzr support, converted from the English at
+    https://wiki.launchpad.canonical.com/SupermirrorTaskList
+    """
+    layer = ZopelessLayer
+
+    def setUp(self):
+        super(AcceptanceTests, self).setUp()
+
+        # Create a local branch with one revision
+        self.local_branch = ScratchDir(files=['foo']).open_branch()
+        wt = self.local_branch.bzrdir.open_workingtree()
+        wt.add('foo')
+        wt.commit('Added foo')
 
     def test_1_bzr_sftp(self):
         """
@@ -184,7 +173,7 @@ class AcceptanceTests(BzrTestCase):
         finally:
             os.chdir(old_dir)
 
-    def test_2_namespace_restrictions(self):        
+    def test_2_namespace_restrictions(self):
         """
         The namespace restrictions described in
         SupermirrorFilesystemHierarchy should be enforced. So operations
@@ -258,6 +247,7 @@ class AcceptanceTests(BzrTestCase):
         branch = database.Branch.get(branch_id)
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
+        getattr(sftp, '_connected_hosts', {}).clear()
         self.assertRaises(
             NotBranchError,
             bzrlib.branch.Branch.open,

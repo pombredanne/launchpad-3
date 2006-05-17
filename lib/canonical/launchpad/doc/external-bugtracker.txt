@@ -28,24 +28,27 @@ been updated in the last 23 hours.
 
     >>> print bug_watches[1].remotebug, bug_watches[1].bug.id
     123543 1
-    >>> bug_watches[1].lastchecked = now
-
-    >>> print bug_watches[2].remotebug, bug_watches[2].bug.id
-    42 1
-    >>> bug_watches[2].lastchecked = now - timedelta(hours=12)
+    >>> bug_watches[1].lastchecked = now - timedelta(hours=12)
 
 Note that bugtracker.watches may produce multiple watches for the same
 remote bug.
 
+    >>> print bug_watches[2].remotebug, bug_watches[2].bug.id
+    42 1
+    >>> bug_watches[2].lastchecked = now - timedelta(hours=36)
+
     >>> print bug_watches[3].remotebug, bug_watches[3].bug.id
     42 2
-    >>> bug_watches[3].lastchecked = now - timedelta(hours=36)
+    >>> bug_watches[3].lastchecked = now - timedelta(days=1)
+
+The watches needing updating should the ones with old statuses, 2000 and 42:
 
     >>> flush_database_updates()
     >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate(23):
     ...     print bug_watch.remotebug, bug_watch.bug.id
     2000 1
     42 2
+    42 1
 
 
 Top Bug Trackers
@@ -55,6 +58,8 @@ The Malone front page shows a list of the top Malone bug trackers, as
 ordered by the number of bugs being monitored by Malone in each of
 them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
 
-    >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=3)
-    >>> [(tracker.name, tracker.watches.count()) for tracker in top_trackers]
-    [(u'mozilla.org', 4), (u'gnome-bugzilla', 1), (u'debbugs', 0)]
+    >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=4)
+    >>> sorted([(tracker.watches.count(), tracker.name)
+    ...         for tracker in top_trackers])
+    [(1, u'gnome-bugzilla'), (1, u'ubuntu-bugzilla'),
+     (4, u'debbugs'), (4, u'mozilla.org')]

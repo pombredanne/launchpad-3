@@ -1,25 +1,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+      i18n:domain="launchpad"
+>
   <body>
-
-    <tal:dummy>
-      This page uses the launchpad-addform.pt METAL.
-    </tal:dummy>
 
   <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+    <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
-        <h1 metal:fill-slot="heading">Complete your registration</h1>
-        <div class="portalError" metal:fill-slot="extra_top" 
-             tal:repeat="top_of_page_error view/top_of_page_errors" 
-             tal:content="structure top_of_page_error">
-        </div>
+      <h1 tal:condition="view/label"
+          tal:content="view/label"
+          metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
-  </div>
+    </div>
 
   </div>
   </body>

@@ -9,7 +9,9 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.database import (
+# Importing from canonical.launchpad.database will cause a circular import
+# because we import from this file into database/distributionmirror.py
+from canonical.launchpad.database.publishing import (
      BinaryPackagePublishing, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)
 
@@ -263,7 +265,16 @@ class Dominator(object):
                         srcpkg_release.sourcepackagename.name,
                         srcpkg_release.version,
                         considered_binaries.count()))
-                    continue
+                    # However we can still remove *this* record if there's
+                    # at least one other PUBLISHED for the spr
+                    if SecureSourcePackagePublishingHistory.selectBy(
+                        distroreleaseID=pub_record.distrorelease.id,
+                        pocket=pub_record.pocket,
+                        status=PackagePublishingStatus.PUBLISHED,
+                        sourcepackagereleaseID=srcpkg_release.id).count() == 0:
+                        # Zero PUBLISHED for this spr, so nothing to take over
+                        # for us, so leave it for consideration next time.
+                        continue
 
                 # Okay, so there's no unremoved binaries, let's go for it...
                 self.debug(

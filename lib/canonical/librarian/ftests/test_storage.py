@@ -127,8 +127,8 @@ class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
         fileid2, aliasid2 = newfile2.store()
 
         # Create rows in the database for these files.
-        content1 = LibraryFileContent(filesize=0, sha1='foo', id=6661)
-        content2 = LibraryFileContent(filesize=0, sha1='foo', id=6662)
+        content1 = LibraryFileContent(filesize=0, sha1='foo', md5='xx', id=6661)
+        content2 = LibraryFileContent(filesize=0, sha1='foo', md5='xx', id=6662)
         self.txn.commit()
 
         # And no errors should have been raised!

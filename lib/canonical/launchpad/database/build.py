@@ -87,7 +87,8 @@ class Build(SQLBase):
     @property
     def was_built(self):
         """See IBuild"""
-        return self.buildstate is not BuildStatus.NEEDSBUILD
+        return self.buildstate not in [BuildStatus.NEEDSBUILD,
+                                       BuildStatus.BUILDING]
 
     @property
     def build_icon(self):
@@ -101,6 +102,7 @@ class Build(SQLBase):
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             # XXX cprov 20060321: proper icon
             BuildStatus.SUPERSEDED: "/@@/topic_icon.gif",
+            BuildStatus.BUILDING: "/@@/progress",
             }
         return icon_map[self.buildstate]
 
@@ -130,6 +132,11 @@ class Build(SQLBase):
                                    BuildStatus.CHROOTWAIT,
                                    BuildStatus.SUPERSEDED]
 
+    @property
+    def can_be_rescored(self):
+        """See IBuild."""
+        return self.buildstate is BuildStatus.NEEDSBUILD
+
     def reset(self):
         """See IBuild."""
         self.buildstate = BuildStatus.NEEDSBUILD
@@ -138,6 +145,7 @@ class Build(SQLBase):
         self.builder = None
         self.buildlog = None
         self.dependencies = None
+        self.createBuildQueueEntry()
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -242,7 +250,7 @@ class BuildSet:
             return None
 
         clauseTables = []
-        orderBy=["-datebuilt"]
+        orderBy=["-datebuilt", "-id"]
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
@@ -269,7 +277,7 @@ class BuildSet:
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
         if status == BuildStatus.NEEDSBUILD:
-            orderBy = ["-BuildQueue.lastscore"]
+            orderBy = ["-BuildQueue.lastscore", "-id"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
 

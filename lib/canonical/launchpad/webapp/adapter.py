@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 
+import os
+import sys
 import threading
+import traceback
 import time
 import warnings
 
@@ -26,9 +29,23 @@ __all__ = [
     'set_request_started',
     'clear_request_started',
     'get_request_statements',
+    'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
+
+def _get_dirty_commit_flags():
+    """Return the current dirty commit status"""
+    from canonical.ftests.pgsql import ConnectionWrapper
+    return (ConnectionWrapper.committed, ConnectionWrapper.dirty)
+
+def _reset_dirty_commit_flags(previous_committed, previous_dirty):
+    """Set the dirty commit status to False unless previous is True"""
+    from canonical.ftests.pgsql import ConnectionWrapper
+    if not previous_committed:
+        ConnectionWrapper.committed = False
+    if not previous_dirty:
+        ConnectionWrapper.dirty = False
 
 
 class SessionDatabaseAdapter(PsycopgAdapter):
@@ -44,6 +61,12 @@ class SessionDatabaseAdapter(PsycopgAdapter):
         PsycopgAdapter.__init__(
                 self, 'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % vars()
                 )
+
+    def connect(self):
+        if not self.isConnected():
+            flags = _get_dirty_commit_flags()
+            super(SessionDatabaseAdapter, self).connect()
+            _reset_dirty_commit_flags(*flags)
 
 
 class LaunchpadDatabaseAdapter(PsycopgAdapter):
@@ -80,6 +103,7 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
             config.dbname
             ))
 
+        flags = _get_dirty_commit_flags()
         connection = PsycopgAdapter._connection_factory(self)
 
         if config.launchpad.db_statement_timeout is not None:
@@ -88,6 +112,7 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
                            config.launchpad.db_statement_timeout)
             connection.commit()
 
+        _reset_dirty_commit_flags(*flags)
         return ConnectionWrapper(connection)
 
     def readonly(self):
@@ -145,6 +170,19 @@ def get_request_statements():
     return getattr(_local, 'request_statements', [])
 
 
+def get_request_duration(now=None):
+    """Get the duration of the current request in seconds.
+
+    """
+    starttime = getattr(_local, 'request_start_time', None)
+    if starttime is None:
+        return -1
+
+    if now is None:
+        now = time.time()
+    return now - starttime
+
+
 def _log_statement(starttime, endtime, statement):
     """Log that a database statement was executed."""
     request_starttime = getattr(_local, 'request_start_time', None)
@@ -184,8 +222,8 @@ class RequestExpired(RuntimeError):
     implements(IRequestExpired)
 
 
-class RequestQueryTimedOut(RequestExpired):
-    """A query that was part of a request timed out."""
+class RequestStatementTimedOut(RequestExpired):
+    """A statement that was part of a request timed out."""
 
 
 class ConnectionWrapper:
@@ -236,6 +274,13 @@ class CursorWrapper:
             raise RequestExpired(statement)
         try:
             starttime = time.time()
+            if os.environ.get("LP_DEBUG_SQL_EXTRA"):
+                sys.stderr.write("-" * 70 + "\n")
+                traceback.print_stack()
+                sys.stderr.write("." * 70 + "\n")
+            if (os.environ.get("LP_DEBUG_SQL_EXTRA") or 
+                os.environ.get("LP_DEBUG_SQL")):
+                sys.stderr.write(statement + "\n")
             try:
                 return self._cur.execute(statement, *args, **kwargs)
             finally:
@@ -243,9 +288,11 @@ class CursorWrapper:
         except psycopg.ProgrammingError, error:
             if len(error.args):
                 errorstr = error.args[0]
-                if errorstr.startswith(
-                    'ERROR:  canceling query due to user request'):
-                    raise RequestQueryTimedOut(statement, errorstr)
+                if (errorstr.startswith(
+                    'ERROR:  canceling query due to user request') or
+                    errorstr.startswith(
+                    'ERROR:  canceling statement due to statement timeout')):
+                    raise RequestStatementTimedOut(statement)
             raise
 
     def __getattr__(self, attr):

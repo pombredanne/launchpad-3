@@ -60,6 +60,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
         description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
+    driver = Choice(
+        title=_("Driver"),
+        description=_(
+            "The person or team responsible for decisions about features "
+            "and bugs that will be targeted to this release of the "
+            "distribution."),
+        required=False, vocabulary='ValidPersonOrTeam')
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
@@ -75,6 +82,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     nominatedarchindep = Attribute(
         "Distroarchrelease designed to build architeture independent "
         "packages whithin this distrorelease context.")
+    milestones = Attribute(
+        'The milestones associated with this distrorelease.')
+    drivers = Attribute(
+        'A list of the people or teams who are drivers for this release. '
+        'This list is made up of any drivers or owners from this '
+        'DistroRelease, and the Distribution to which it belong.')
     messagecount = Attribute("The total number of translatable items in "
         "this distribution release.")
     distroreleaselanguages = Attribute("The set of dr-languages in this "
@@ -139,7 +152,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
 
         The name given may be an IBinaryPackageName or a string.
         """
-        
+
     def getSourcePackageRelease(sourcepackagerelease):
         """Return a IDistroReleaseSourcePackageRelease
 
@@ -256,23 +269,8 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationGoal):
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
 
-    def getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED):
-        """Get the queue items for this distrorelease that are in the given
-        queue state. If status is not supplied, default to the ACCEPTED items
-        in the queue.
-        """
-
-    def getFancyQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
-                            name=None, version=None, exact_match=False):
-        """Get the union of build and source queue items for this distrorelease
-
-        Returns build and source queue items in a given state, matching
-        a give name and version terms. If 'status' is not supplied,
-        default to the ACCEPTED items in the queue. if 'name' and 'version'
-        are supplied return only items which the sourcepackage name and
-        binarypackage name match (SQL LIKE). 'name' doesn't require 'version'.
-        Use 'exact_match' argument for precise results.
-        """
+    def newMilestone(name, dateexpected=None):
+        """Create a new milestone for this DistroRelease."""
 
     def initialiseFromParent():
         """Copy in all of the parent distrorelease's configuration. This

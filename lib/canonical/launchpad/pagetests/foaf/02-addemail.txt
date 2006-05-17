@@ -1,5 +1,10 @@
 'foo' adds two new email addresses in launchpad and confirms them.
 
+  Workaround while https://launchpad.net/products/launchpad/+bug/39016 is not
+  fixed.
+  >>> from canonical.launchpad.mail import stub
+  >>> stub.test_emails[:] = []
+
 The First One
 =============
 
@@ -19,7 +24,6 @@ The First One
   ...An email message was sent to...
   ...
 
-  >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> assert not stub.test_emails
 
@@ -66,11 +70,9 @@ The First One
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...<h1>You're being redirected</h1>
-  ...
+  Location: http://localhost:9000/token/.../+validateemail
+  <BLANKLINE>
 
 
   >>> path = '%s/+validateemail' % base_path
@@ -97,7 +99,7 @@ The First One
   ...
   Location: http://localhost:9000/people/foo
   ...
-  ...info-notification">Email address successfully confirmed...
+  ...informational message">Email address successfully confirmed...
   ...
 
 
@@ -158,7 +160,6 @@ The Second One
   Get the token we'll have to use to finish the registration process.
 
   >>> import email, re
-  >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> assert not stub.test_emails
   >>> msg = email.message_from_string(raw_msg)
@@ -180,8 +181,8 @@ The Second One
   ... """ % base_path)
   HTTP/1.1 303 See Other
   ...
-  Location: .../+validateemail
-  ...
+  Location: http://localhost:9000/token/.../+validateemail
+  <BLANKLINE>
 
 
   >>> path = '%s/+validateemail' % base_path
@@ -209,5 +210,5 @@ The Second One
   ...
   Location: http://localhost:9000/people/foo
   ...
-  ...info-notification">Email address successfully confirmed...
+  ...informational message">Email address successfully confirmed...
   ...

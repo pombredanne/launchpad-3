@@ -34,6 +34,7 @@ __all__ = (
 'BranchRelationships',
 'BranchLifecycleStatus',
 'BranchReviewStatus',
+'BugBranchStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -738,6 +739,38 @@ class GPGKeyAlgorithm(DBSchema):
         ElGamal, compromised""")
 
 
+class BugBranchStatus(DBSchema):
+    """The status of a bugfix branch."""
+
+    ABANDONED = Item(10, """
+        Abandoned Attempt
+
+        A fix for this bug is no longer being worked on in this
+        branch.
+        """)
+
+    INPROGRESS = Item(20, """
+        Fix In Progress
+
+        Development to fix this bug is currently going on in this
+        branch.
+        """)
+
+    FIXAVAILABLE = Item(30, """
+        Fix Available
+
+        This branch contains a potentially useful fix for this bug.
+        """)
+
+    BESTFIX = Item(40, """
+        Best Fix Available
+
+        This branch contains a fix agreed upon by the community as
+        being the best available branch from which to merge to fix
+        this bug.
+        """)
+
+
 class BranchRelationships(DBSchema):
     """Branch relationships.
 
@@ -880,7 +913,7 @@ class TeamMembershipStatus(DBSchema):
         Proposed
 
         You are a proposed member of this team. To become an active member your
-        subscription has to bo approved by one of the team's administrators.
+        subscription has to be approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
@@ -1230,7 +1263,7 @@ class SpecificationDelivery(DBSchema):
         """)
 
     AWAITINGDEPLOYMENT = Item(85, """
-        Awaiting Deployment
+        Deployment
 
         The work contemplated in this specification has been done, and can
         be deployed in the production environment, but the system
@@ -1265,8 +1298,8 @@ class SpecificationPriority(DBSchema):
         to be accepted by the mainline developers.
         """)
 
-    PROPOSED = Item(5, """
-        Proposed
+    UNDEFINED = Item(5, """
+        Undefined
 
         This feature has recently been proposed and has not yet been
         evaluated and prioritised by the project leaders.
@@ -1294,9 +1327,9 @@ class SpecificationPriority(DBSchema):
     HIGH = Item(70, """
         High
 
-        This specification is strongly desired for the next major release,
-        and we have every reason to believe that it can be delivered in that
-        timeframe.
+        This specification is strongly desired by the project leaders.
+        The feature will definitely get review time and contributions would
+        be most effective if directed at a feature with this priority.
         """)
 
     ESSENTIAL = Item(90, """
@@ -1305,6 +1338,111 @@ class SpecificationPriority(DBSchema):
         The specification is essential for the next release, and should be
         the focus of current development. Use this state only for the most
         important of all features.
+        """)
+
+
+class SpecificationFilter(DBSchema):
+    """An indicator of the kinds of specifications that should be returned
+    for a listing of specifications.
+
+    This is used by browser classes that are generating a list of
+    specifications for a person, or product, or project, to indicate what
+    kinds of specs they want returned. The different filters can be OR'ed so
+    that multiple pieces of information can be used for the filter.
+    """
+    ALL = Item(0, """
+        All
+
+        This indicates that the list should simply include ALL
+        specifications for the underlying object (person, product etc).
+        """)
+
+    COMPLETE = Item(5, """
+        Complete
+
+        This indicates that the list should include only the complete
+        specifications for this object.
+        """)
+
+    INCOMPLETE = Item(10, """
+        Incomplete
+        
+        This indicates that the list should include the incomplete items
+        only. The rules for determining if a specification is incomplete are
+        complex, depending on whether or not the spec is informational.
+        """)
+
+    INFORMATIONAL = Item(20, """
+        Informational
+
+        This indicates that the list should include only the informational
+        specifications.
+        """)
+
+    PROPOSED = Item(30, """
+        Proposed
+
+        This indicates that the list should include specifications that have
+        been proposed as goals for the underlying objects, but not yet
+        accepted or declined.
+        """)
+
+    DECLINED = Item(40, """
+        Declined
+
+        This indicates that the list should include specifications that were
+        declined as goals for the underlying productseries or distrorelease.
+        """)
+
+    ACCEPTED = Item(50, """
+        Accepted
+
+        This indicates that the list should include specifications that were
+        accepted as goals for the underlying productseries or distrorelease.
+        """)
+
+    CREATOR = Item(60, """
+        Creator
+
+        This indicates that the list should include specifications that the
+        person registered in Launchpad.
+        """)
+
+    ASSIGNEE = Item(70, """
+        Assignee
+
+        This indicates that the list should include specifications that the
+        person has been assigned to implement.
+        """)
+
+    APPROVER = Item(80, """
+        Approver
+
+        This indicates that the list should include specifications that the
+        person is supposed to review and approve.
+        """)
+
+    DRAFTER = Item(90, """
+        Drafter
+
+        This indicates that the list should include specifications that the
+        person is supposed to draft. The drafter is usually only needed
+        during spec sprints when there's a bottleneck on guys who are
+        assignees for many specs.
+        """)
+
+    SUBSCRIBER = Item(100, """
+        Subscriber
+
+        This indicates that the list should include all the specifications
+        to which the person has subscribed.
+        """)
+
+    FEEDBACK = Item(110, """
+        Feedback
+
+        This indicates that the list should include all the specifications
+        which the person has been asked to provide specific feedback on.
         """)
 
 
@@ -1331,7 +1469,8 @@ class SpecificationSort(DBSchema):
         Priority
 
         This indicates a preferred sort order of priority (highest first)
-        followed by status.
+        followed by status. This is the default sort order when retrieving
+        specifications from the system.
         """)
 
 
@@ -1362,7 +1501,7 @@ class SpecificationStatus(DBSchema):
         """)
 
     PENDINGREVIEW = Item(20, """
-        Pending Review
+        Review
 
         This spec has been put in a reviewers queue. The reviewer will
         assess the clarity and comprehensiveness of the spec, and decide
@@ -1385,14 +1524,6 @@ class SpecificationStatus(DBSchema):
         The specification is a thought, or collection of thoughts, with
         no attention yet given to implementation strategy, dependencies or
         presentation/UI issues.
-        """)
-
-    INFORMATIONAL = Item(55, """
-        Informational
-
-        This specification does not need to be implemented. It is an
-        overview, or documentation spec, that describes high level behaviour
-        and links to actual specifications for implementation.
         """)
 
     SUPERSEDED = Item(60, """
@@ -1445,32 +1576,32 @@ class SpecificationGoalStatus(DBSchema):
 
 
 class SprintSpecificationStatus(DBSchema):
-    """The current approval status of the spec on this sprints agenda.
+    """The current approval status of the spec on this sprint's agenda.
     
     This enum allows us to know whether or not the meeting admin team has
     agreed to discuss an item.
     """
 
-    CONFIRMED = Item(10, """
-        confirmed
+    ACCEPTED = Item(10, """
+        Accepted
 
         The meeting organisers have confirmed this topic for the meeting
         agenda.
         """)
 
-    DEFERRED = Item(20, """
-        deferred
+    DECLINED = Item(20, """
+        Declined
 
-        This spec has been deferred from the meeting agenda 
+        This spec has been declined from the meeting agenda 
         because of a lack of available resources, or uncertainty over
         the specific requirements or outcome desired.
         """)
 
-    SUBMITTED = Item(30, """
-        submitted
+    PROPOSED = Item(30, """
+        Proposed
 
         This spec has been submitted for consideration by the meeting
-        organisers. It has not yet been approved or declined for the meeting
+        organisers. It has not yet been accepted or declined for the 
         agenda.
         """)
 
@@ -2237,7 +2368,7 @@ class BranchLifecycleStatus(DBSchema):
 
         This branch has just been created, and we know nothing else about
         it.
-        """)
+        """, sortkey=60)
 
     EXPERIMENTAL = Item(10, """
         Experimental
@@ -2245,7 +2376,7 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains code that is considered experimental. It is
         still under active development and should not be merged into
         production infrastructure.
-        """)
+        """, sortkey=30)
 
     DEVELOPMENT = Item(30, """
         Development
@@ -2253,7 +2384,7 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains substantial work that is shaping up nicely, but
         is not yet ready for merging or production use. The work is
         incomplete, or untested.
-        """)
+        """, sortkey=20)
 
     MATURE = Item(50, """
         Mature
@@ -2262,21 +2393,21 @@ class BranchLifecycleStatus(DBSchema):
         completely addresses the issues it is supposed to, that it is tested,
         and that it has been found to be stable enough for the developer to
         recommend it to others for inclusion in their work.
-        """)
+        """, sortkey=10)
 
     MERGED = Item(70, """
         Merged
 
         This code has successfully been merged into its target branch(es),
         and no further development is anticipated on the branch.
-        """)
+        """, sortkey=40)
 
     ABANDONED = Item(80, """
         Abandoned
 
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
-        """)
+        """, sortkey=50)
 
 
 class BranchReviewStatus(DBSchema):
@@ -2384,6 +2515,12 @@ class BugTaskStatus(DBSchema):
         affected software.
         """)
 
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The status of this bug task is unknown.
+        """)
+
 
 class BugTaskPriority(DBSchema):
     """Bug Task Priority
@@ -2393,6 +2530,12 @@ class BugTaskPriority(DBSchema):
     maintainer's desire to fix the task. This schema documents the
     priorities Malone allows.
     """
+
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The priority of this bug task is unknown.
+        """)
 
     HIGH = Item(40, """
         High
@@ -2426,6 +2569,12 @@ class BugTaskSeverity(DBSchema):
     extent to which the bug impairs the stability and security of
     the distribution or upstream in which it was reported.
     """
+
+    UNKNOWN = Item(999, """
+        Unknown
+
+        The severity of this bug task is unknown.
+        """)
 
     CRITICAL = Item(50, """
         Critical
@@ -2794,12 +2943,19 @@ class BuildStatus(DBSchema):
         """)
 
     SUPERSEDED = Item(5, """
-        Build for superseded Source.
+        Build for superseded Source
 
         Build record represents a build which never got to happen because the
         source package release for the build was superseded before the job
         was scheduled to be run on a builder. Builds which reach this state
         will rarely if ever be reset to any other state.
+        """)
+
+    BUILDING = Item(6, """
+        Currently building
+
+        Build record represents a build which is being build by one of the
+        available builders.
         """)
 
 
@@ -2863,45 +3019,69 @@ class MirrorSpeed(DBSchema):
     """The speed of a given mirror."""
 
     S128K = Item(1, """
-        128Kb per second
+        128 Kbps
 
         The upstream link of this mirror can make up to 128Kb per second.
         """)
 
     S256K = Item(2, """
-        256Kb per second
+        256 Kbps
 
         The upstream link of this mirror can make up to 256Kb per second.
         """)
 
     S512K = Item(3, """
-        512Kb per second
+        512 Kbps
 
         The upstream link of this mirror can make up to 512Kb per second.
         """)
 
     S1M = Item(4, """
-        1Mb per second
+        1 Mbps
 
         The upstream link of this mirror can make up to 1Mb per second.
         """)
 
     S2M = Item(5, """
-        2Mb per second
+        2 Mbps
 
         The upstream link of this mirror can make up to 2Mb per second.
         """)
 
     S10M = Item(6, """
-        10Mb per second
+        10 Mbps
 
         The upstream link of this mirror can make up to 10Mb per second.
         """)
 
     S100M = Item(7, """
-        100Mb per second
+        100 Mbps
 
         The upstream link of this mirror can make up to 100Mb per second.
+        """)
+
+    S1G = Item(8, """
+        1 Gbps
+
+        The upstream link of this mirror can make up to 1 gigabit per second.
+        """)
+
+    S2G = Item(9, """
+        2 Gbps
+
+        The upstream link of this mirror can make up to 2 gigabit per second.
+        """)
+
+    S4G = Item(10, """
+        4 Gbps
+
+        The upstream link of this mirror can make up to 4 gigabit per second.
+        """)
+
+    S10G = Item(11, """
+        10 Gbps
+
+        The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
 
@@ -3098,24 +3278,36 @@ class ShipItFlavour(DBSchema):
         The Ubuntu flavour.
         """)
 
+    KUBUNTU = Item(2, """
+        Kubuntu
+
+        The Kubuntu flavour.
+        """)
+
+    EDUBUNTU = Item(3, """
+        Edubuntu
+
+        The Edubuntu flavour.
+        """)
+
 
 class ShipItArchitecture(DBSchema):
     """The Distro Architecture, used only to link with ShippingRequest."""
 
     X86 = Item(1, """
-        Intel/X86
+        PC
 
-        x86 processors.
+        Intel/X86 processors.
         """)
 
     AMD64 = Item(2, """
-        AMD64
+        64-bit PC
 
         AMD64 or EM64T based processors.
         """)
 
     PPC = Item(3, """
-        PowerPC
+        Mac
 
         PowerPC processors.
         """)
@@ -3128,6 +3320,12 @@ class ShipItDistroRelease(DBSchema):
         Breezy Badger
 
         The Breezy Badger release.
+        """)
+
+    DAPPER = Item(2, """
+        6.06 LTS (Dapper Drake)
+
+        The Dapper Drake lont-term-support release.
         """)
 
 

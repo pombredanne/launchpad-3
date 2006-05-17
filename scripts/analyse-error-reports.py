@@ -16,6 +16,7 @@ import cgi
 import optparse
 
 COUNT = 15
+EXC_COUNT = 50
 
 # This pattern is intended to match the majority of search engines I
 # built up this list by checking what was accessing
@@ -182,7 +183,7 @@ class ErrorSummary:
         elif etype in ['SoftRequestTimeout']:
             self.addOops(self.softtimeout, etype, evalue, url, oopsid,
                          local_referer, is_bot)
-        elif etype in ['NotFound', 'NotFoundError']:
+        elif etype in ['NotFound']:
             self.addOops(self.notfound, etype, evalue, url, oopsid,
                          local_referer, is_bot)
         else:
@@ -195,17 +196,19 @@ class ErrorSummary:
             if os.path.isfile(path):
                 self.processOops(path)
 
-    def printTable(self, fp, source, title):
-        if COUNT >= 0:
-            fp.write('=== Top %d %s ===\n\n' % (COUNT, title))
-        else:
-            fp.write('=== All %s ===\n\n' % title)
-
+    def printTable(self, fp, source, title, count=0):
         errors = sorted(source.itervalues(),
                         key=lambda data: data.count,
                         reverse=True)
 
-        for data in errors[:COUNT]:
+        total = len(errors)
+        if count >= 0 and total > count:
+            fp.write('=== Top %d %s (total of %s unique items) ===\n\n' % (count, title, total))
+            errors = errors[:count]
+        else:
+            fp.write('=== All %s ===\n\n' % title)
+
+        for data in errors:
             fp.write('%4d %s: %s\n' % (data.count, data.etype, data.evalue))
             fp.write('    %d%% from search bots, %d%% referred from '
                      'local sites\n' 
@@ -222,7 +225,7 @@ class ErrorSummary:
                 fp.write('    [%s other URLs]\n' % (len(urls) - 3))
             fp.write('\n')
         fp.write('\n')
-            
+
     def printReport(self, fp):
         period = self.end - self.start
         days = period.days + period.seconds / 86400.0
@@ -230,23 +233,23 @@ class ErrorSummary:
         fp.write("=== Statistics ===\n\n")
         fp.write(" * Log starts: %s\n" % self.start)
         fp.write(" * Analyzed period: %.2f days\n" % days)
-        fp.write(" * Total exceptions: %d\n" % self.exc_count)
-        fp.write(" * Average exceptions per day: %.2f\n\n" %
+        fp.write(" * Total OOPSes: %d\n" % self.exc_count)
+        fp.write(" * Average OOPSes per day: %.2f\n\n" %
                  (self.exc_count / days))
 
         fp.write(' * %d Exceptions\n'
                  % sum(data.count for data in self.exceptions.itervalues()))
-        fp.write(' * %d Time Out Pages\n'
+        fp.write(' * %d Time Outs\n'
                  % sum(data.count for data in self.expired.itervalues()))
         fp.write(' * %d Soft Time Outs\n'
                  % sum(data.count for data in self.softtimeout.itervalues()))
-        fp.write(' * %d Not Found Errors\n\n'
+        fp.write(' * %d Pages Not Found\n\n'
                  % sum(data.count for data in self.notfound.itervalues()))
 
-        self.printTable(fp, self.exceptions, 'Exceptions')
-        self.printTable(fp, self.expired, 'Time Out Pages')
-        self.printTable(fp, self.softtimeout, 'Soft Time Outs')
-        self.printTable(fp, self.notfound, 'Not Found Errors')
+        self.printTable(fp, self.exceptions, 'Exceptions', count=EXC_COUNT)
+        self.printTable(fp, self.expired, 'Time Out Pages', count=COUNT)
+        self.printTable(fp, self.softtimeout, 'Soft Time Outs', count=COUNT)
+        self.printTable(fp, self.notfound, 'Pages Not Found', count=COUNT)
 
     def printHtmlTable(self, fp, source, title):
         fp.write('<h2>All %s</h2>\n' % title)
@@ -279,7 +282,7 @@ class ErrorSummary:
             if len(urls) > 5:
                 fp.write('<li>[%d more]</li>\n' % (len(urls) - 5))
             fp.write('</ul>\n\n')
-            
+
     def printHtmlReport(self, fp):
         fp.write('<html>\n'
                  '<head>\n'
@@ -288,7 +291,7 @@ class ErrorSummary:
                  '</head>\n'
                  '<body>\n'
                  '<h1>Oops Report Summary</h1>\n\n')
-        
+
         period = self.end - self.start
         days = period.days + period.seconds / 86400.0
 
@@ -303,11 +306,11 @@ class ErrorSummary:
         fp.write('<ul>\n')
         fp.write('<li><a href="#exceptions">%d Exceptions</a></li>\n'
                  % sum(data.count for data in self.exceptions.itervalues()))
-        fp.write('<li><a href="#timeouts">%d Time Out Pages</a></li>\n'
+        fp.write('<li><a href="#timeouts">%d Time Outs</a></li>\n'
                  % sum(data.count for data in self.expired.itervalues()))
         fp.write('<li><a href="#soft-timeouts">%d Soft Time Outs</a></li>\n'
                  % sum(data.count for data in self.softtimeout.itervalues()))
-        fp.write('<li><a href="#not-found">%d Not Found Errors</a></li>\n'
+        fp.write('<li><a href="#not-found">%d Pages Not Found</a></li>\n'
                  % sum(data.count for data in self.notfound.itervalues()))
         fp.write('</ul>\n\n')
 
@@ -318,7 +321,7 @@ class ErrorSummary:
         fp.write('<a name="soft-timeouts"></a>')
         self.printHtmlTable(fp, self.softtimeout, 'Soft Time Outs')
         fp.write('<a name="not-found"></a>')
-        self.printHtmlTable(fp, self.notfound, 'Not Found Errors')
+        self.printHtmlTable(fp, self.notfound, 'Pages Not Found')
 
         fp.write('</body>\n')
         fp.write('</html>\n')

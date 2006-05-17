@@ -15,17 +15,19 @@ __all__ = [
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
+    'IPersonChangePassword',
     'EmailAddressAlreadyTaken'
     ]
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, Bytes, Bool)
+    Choice, Datetime, Int, Text, TextLine, Bytes, Bool)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, StrippingTextLine 
+from canonical.launchpad.fields import (
+    ContentNameField, PasswordField, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -52,6 +54,20 @@ class PersonNameField(ContentNameField):
         return getUtility(IPersonSet).getByName(name, ignore_merged=False)
 
 
+class IPersonChangePassword(Interface):
+    """The schema used by Person +changepassword form."""
+
+    currentpassword = PasswordField(
+            title=_('Current password'), required=True, readonly=False,
+            description=_("The password you use to log into Launchpad.")
+            )
+
+    password = PasswordField(
+            title=_('New Password'), required=True, readonly=False,
+            description=_("Enter the same password in each field.")
+            )
+
+
 class IPerson(IHasSpecifications):
     """A Person."""
 
@@ -66,26 +82,15 @@ class IPerson(IHasSpecifications):
                 "letter or number, and containing only letters, "
                 "numbers, dots, hyphens, or plus signs.")
             )
-    displayname = StrippingTextLine(
+    displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
             "here.")
             )
-    givenname = TextLine(
-            title=_('Given Name'), required=False, readonly=False,
-            description=_("Your first name or given name, such as "
-                "Mark, or Richard, or Joanna.")
-            )
-    familyname = TextLine(
-            title=_('Family Name'), required=False, readonly=False,
-            description=_("Your family name, the name "
-                "you acquire from your parents.")
-            )
-    password = Password(
+    password = PasswordField(
             title=_('Password'), required=True, readonly=False,
-            description=_("The password you will use to access "
-                "Launchpad services. ")
+            description=_("Enter the same password in each field.")
             )
     karma = Int(
             title=_('Karma'), readonly=False,
@@ -169,7 +174,10 @@ class IPerson(IHasSpecifications):
     # Properties of the Person object.
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
-    is_ubuntero = Attribute("Ubuntero Flag")
+    is_valid_person = Bool(
+            title=_("This is an active user and not a team."), readonly=True
+            )
+    is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
@@ -361,9 +369,12 @@ class IPerson(IHasSpecifications):
         changed.
         """
 
-    def shippedShipItRequests():
-        """Return all requests placed by this person that were sent to the
+    def shippedShipItRequestsOfCurrentRelease():
+        """Return all requests made by this person that were sent to the
         shipping company already.
+
+        This only includes requests for CDs of 
+        ShipItConstants.current_distrorelease.
         """
 
     def currentShipItRequest():
@@ -471,6 +482,11 @@ class IPerson(IHasSpecifications):
         date, reviewer and reviewercomment.
         """
 
+    def getTeamAdminsEmailAddresses():
+        """Return a set containing the email addresses of all administrators
+        of this team.
+        """
+
     def getSubTeams():
         """Return all subteams of this team.
 
@@ -537,8 +553,9 @@ class IPersonSet(Interface):
     def topPeople():
         """Return the top 5 people by Karma score in the Launchpad."""
 
-    def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
-            familyname=None, password=None, passwordEncrypted=False):
+    def createPersonAndEmail(email, name=None, displayname=None,
+            password=None, passwordEncrypted=False,
+            hide_email_addresses=False):
         """Create a new Person and an EmailAddress for that Person.
 
         Return the newly created Person and EmailAddress if everything went
@@ -628,8 +645,8 @@ class IPersonSet(Interface):
         """
 
     def find(text, orderBy=None):
-        """Return all non-merged Persons and Teams whose name, displayname,
-        givenname, familyname or email address match <text>.
+        """Return all non-merged Persons and Teams whose name, displayname or
+        email address match <text>.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -643,7 +660,7 @@ class IPersonSet(Interface):
 
     def findPerson(text="", orderBy=None):
         """Return all non-merged Persons with at least one email address whose
-        name, displayname, givenname, familyname or email address match <text>.
+        name, displayname or email address match <text>.
 
         If text is an empty string, all persons with at least one email
         address will be returned.
@@ -659,8 +676,8 @@ class IPersonSet(Interface):
         """
 
     def findTeam(text, orderBy=None):
-        """Return all Teams whose name, displayname, givenname, familyname or
-        email address match <text>.
+        """Return all Teams whose name, displayname or email address
+        match <text>.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.

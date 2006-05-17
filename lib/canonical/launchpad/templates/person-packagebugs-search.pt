@@ -1,51 +1,77 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="malone"
+>
+  <body>
 
-<body>
+  <div metal:fill-slot="head_epilogue">
+    <style type="text/css">
+        .section-header {
+          padding-left: 3px;
+          color: #828282;
+          border: 1px solid #cfcfcf;
+          background-color: #E0E0E0;
+          text-align: left;
+        }
+
+        .section {
+          padding-top: 4px;
+          border-style: solid;
+          border-color: #cfcfcf;
+          border-width: 0px 1px 0px 1px;
+        }
+
+        label {
+          font-weight: normal;
+        }
+    </style>
+  </div>
+
+    <metal:heading fill-slot="pageheading">    
+      <h1 tal:content="string:${context/displayname}'s bug reports by package">
+        Foo Bar's bug reports by package
+      </h1>
+    </metal:heading>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <tal:do_not_show_portlets_advanced_form
+      condition="not: view/shouldShowAdvancedForm">
+      <div tal:content="structure context/@@+portlet-otherpackages" />
+    </tal:do_not_show_portlets_advanced_form>
+    <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
+      <div tal:replace="structure context/@@+portlet-details" />
+    </tal:show_portlets_advanced>
+  </metal:leftportlets>
+
   <div metal:fill-slot="main">
-    <div style="margin-left: 0; width: 74%; float: left">
-      <h2 class="lpcontext"
-          tal:content="string:${context/displayname}'s package bug reports">
-        Sample Person package bug reports
-      </h2>
+      <tal:do_not_show_advanced_form
+        condition="not: view/shouldShowAdvancedForm">
       <strong>
         <small tal:content="view/current_package/displayname">
           mozilla-firefox (Ubuntu)
         </small>
       </strong>
       <div tal:define="batch_navigator view/search">
-        <form method="GET" name="search" action="">
-          <tal:widget content="structure view/distribution_widget/hidden" />
-          <tal:widget content="structure view/sourcepackagename_widget/hidden" />
-          <input type="text" name="field.searchtext" size="40"
-                 tal:attributes="value python:request.form.get('field.searchtext', '')" />
-          <input type="submit" name="search" value="Search" />
-          <span style="color: #A8A8A8"><small>(Advanced search coming soon)</small></span>
-          <div style="margin-top: 5px">
-            <small>
-              Sort by:
-              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-            </small>
+        <div tal:define="advanced_search_url view/getBugContactPackageAdvancedSearchURL">
+          <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form">
+            <div metal:fill-slot="extra-search-widgets">
+              <tal:widget content="structure view/distribution_widget/hidden" />
+              <tal:widget content="structure view/sourcepackagename_widget/hidden" />
+            </div>
           </div>
-        </form>
-        <script>
-          <!--
-              document.forms["search"].elements['field.searchtext'].focus();
-            -->
-        </script>
+        </div>
         <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>
-    </div>
-    <div id="portal-column-two">
-      <metal:macro use-macro="context/@@main_template/action-menu" />
-      <div tal:content="structure context/@@+portlet-otherpackages" />
-    </div>
+      </tal:do_not_show_advanced_form>
+
+      <tal:show_advanced condition="view/shouldShowAdvancedForm">
+        <metal:advanced_form
+          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+      </tal:show_advanced>
     <div class="visualClear">&nbsp;</div>
+
   </div>
 </body>
 </html>
-</tal:layout>

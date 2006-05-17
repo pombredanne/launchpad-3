@@ -8,15 +8,12 @@ __all__ = [
     'IDevelopmentManifest',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
-
 from zope.interface import Interface, Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad.interfaces import IHasOwner
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class IDevelopmentManifest(IHasOwner):

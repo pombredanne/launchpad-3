@@ -2,83 +2,79 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
+    i18n:domain="launchpad"
+>
 
 <body>
 
-
 <metal:rightportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-packages" />
 </metal:rightportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-source" />
+  <div tal:replace="structure context/@@+portlet-source" />
+  <div tal:replace="structure context/@@+portlet-packages" />
 </metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Foo Series: main</h3>
+  <h1>Ubuntu packaging</h1>
+</metal:heading>
+
 
 <div metal:fill-slot="main">
 
-    <h1>Ubuntu packaging</h1>
-
-    <p class="documentDescription">
-      This page allows you to link this branch of <span
-      tal:replace="context/product/displayname">product</span> with the
-      relevant Ubuntu package.
+    <p>
+      This page is a quick way for you to link the
+      <span tal:replace="context/product/displayname">Firefox</span>
+      "<span tal:replace="context/name">1.0</span>" series to a package in
+      the current development release of Ubuntu. We will use this
+      information to improve the flow of bug fixes and translations
+      from Ubuntu to the
+      <span tal:replace="context/product/displayname">Firefox</span> team.
     </p>
 
-    <p class="portalMessage"
-       tal:condition="not:request/lp:person">
-       Please log in to edit the mapping from this product branch to its
+    <p class="informational message" tal:condition="not:request/lp:person">
+       You must log in to change the mapping from this product branch to its
        Ubuntu package.
     </p>
 
-    <form method="POST"
+      <form method="POST"
           tal:condition="request/lp:person"
           tal:attributes="action request/getURL">
 
-      <fieldset>
-
-        <legend>Package in Ubuntu,
+        <h2>
+          Package in 
           <span tal:replace="view/curr_ubuntu_release/title">
             The Hoary Hedgehog Release
-          </span></legend>
+          </span>
+        </h2>
+
 
         <div class="field">
-
-          <label>Source package</label>
-
-          <span class="fieldRequired">(Required)</span>
+          <div>
+            <label>Source package:</label>
+            <span class="fieldRequired">(Required)</span>
+          </div>
+          <div>
+            <input type="text" name="ubuntupkg" size="30"
+                 value="" tal:attributes="value view/curr_ubuntu_pkgname" />
+          </div>
 
             <div class="formHelp">
-              The name of the SOURCE package in the current release of
-              Ubuntu (Version <span
-              tal:replace="view/curr_ubuntu_release/version">4.10</span>,
-              <span tal:replace="view/curr_ubuntu_release/title">
-                The Hoary Hedgehog Release
-              </span>). it is very important to link exactly the right
-              branch to the relevant Ubuntu package, to ensure that bugs,
-              patches and translations are correctly shared. Please do not
-              link the "HEAD" or "MAIN" or "TRUNK" branch to an Ubuntu
+              Ensure both the series ("<span tal:replace="context/name">
+              1.0</span>") and the Ubuntu package are exactly correct,
+              so that bugs, patches and translations are correctly shared.
+              Don&rsquo;t link "HEAD", "MAIN", or "TRUNK" to an Ubuntu
               package unless you are absolutely certain that the package is
-              actually based on HEAD.
+              really based on the trunk of development.
             </div>
 
-          <input type="text" name="ubuntupkg" size="30"
-                 value="" tal:attributes="value view/curr_ubuntu_pkgname" />
-
-          <input type="submit" name="set_ubuntu_pkg" value="Update">
-
+          <input type="submit" name="set_ubuntu_pkg" value="Update" />
         </div>
-
-      </fieldset>
-
     </form>
 
     <tal:block condition="view/ubuntu_history">
-      <h2>Complete history of Ubuntu packages</h2>
-
-      <p>Below we list all of the known links between Ubuntu and this branch
-      of <span tal:replace="context/product/displayname">mozilla
-      firefox</span>:</p>
+      <h2>History of Ubuntu packages for this branch</h2>
 
       <table class="listing">
         <thead>

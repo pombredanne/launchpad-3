@@ -8,25 +8,16 @@ BranchView is the general class for displaying Branches.
 >>> from zope.publisher.browser import TestRequest
 >>> from canonical.launchpad.interfaces import IBranchSet
 >>> branchset = getUtility(IBranchSet)
->>> gterm = branchset[15]
+>>> gterm_dev = branchset[15]
 >>> pushed = branchset[25]
->>> gterm_view = getView(gterm, '+index', TestRequest())
+>>> gterm_dev_view = getView(gterm_dev, '+index', TestRequest())
 >>> pushed_view = getView(pushed, '+index', TestRequest())
 
 Each branch is associated to an URL on the Supermirror, that includes the name
 of the owner and product of the branch.
 
->>> gterm_view.supermirror_url()
+>>> gterm_dev_view.supermirror_url()
 u'http://bazaar.launchpad.net/~name12/gnome-terminal/main'
-
-A Branch has a display name that is the Branch.title if it's provided, or a
-unique name based on the Supermirror URL for that branch.
-
->>> gterm_view.display_name()
-u'GNOME Terminal Mainline'
->>> assert pushed_view.context.title is None
->>> pushed_view.display_name()
-u'~name12/gnome-terminal/pushed'
 
 The branch view generates an appropriate notice when a branch is missing a
 title or summary.
@@ -48,7 +39,7 @@ True
 >>> view.missing_title_or_summary_text()
 '(this branch has no title)'
 
->>> new = branchset.new('no_title', ddaa, gterm_product, None,
+>>> new = branchset.new('no_summary', ddaa, gterm_product, None,
 ...     title='something', summary=None)
 >>> view = getView(new, '+index', TestRequest())
 >>> view.missing_title_or_summary_text()
@@ -60,14 +51,145 @@ True
 >>> view.missing_title_or_summary_text()
 '(this branch has neither title nor summary)'
 
+== PersonBranchesView ==
+
+PersonBranchesView is the view used to produce the branch table in a person.
+Its distinguishing feature is the branch_role method, which explains why the
+branch appears in the table.
+
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> sampleperson = getUtility(IPersonSet).get(12)
+>>> sampleperson_branches_view = getView(
+...     sampleperson, '+branches', TestRequest())
+
+Roles are dictionaries of two items: 'title', used for display, and 'sortkey',
+used for sorting.
+
+The role can be "Author", if the person is pointed to by the 'author' attribute
+of the branch.
+
+>>> gterm_klingon = branchset[18]
+>>> gterm_klingon.author == sampleperson
+True
+>>> sampleperson_branches_view.branch_role(gterm_klingon)['title']
+'Author'
+
+If the person is not the branch's author, the role is "Registrant" if the
+person is pointed to by the 'owner' attribute of the branch.
+
+>>> gterm_dev.author == sampleperson
+False
+>>> gterm_dev.owner == sampleperson
+True
+>>> sampleperson_branches_view.branch_role(gterm_dev)['title']
+'Registrant'
+
+If the person is neither author nor registrant of a branch, role is
+"Subscriber" if the person is indeed subscribed to the branch.
+
+>>> gterm_launchpad = branchset[24]
+>>> gterm_launchpad.author == sampleperson
+False
+>>> gterm_launchpad.owner == sampleperson
+False
+>>> sampleperson in gterm_launchpad.subscribers
+True
+>>> sampleperson_branches_view.branch_role(gterm_launchpad)['title']
+'Subscriber'
+
+Finally, if the branch is not related to the person at all, role is undefined
+and the branch_role method raises an exception.
+
+>>> firefox_main = branchset[1]
+>>> firefox_main.author == sampleperson
+False
+>>> firefox_main.owner == sampleperson
+False
+>>> sampleperson in firefox_main.subscribers
+False
+>>> try:
+...     sampleperson_branches_view.branch_role(firefox_main)
+... except Exception, exception:
+...     print exception
+Unable determine role of person u'name12' for branch u'~sabdfl/firefox/main'
+
+== Contextual branch views ==
+
+BranchInPersonView and BranchInProductView are used to display branch listing
+items in person and product context. They provide a couple of extra attributes
+and properties to know whether to display links to the person or product
+associated to the branch.
+
+The view used to render list items is chosen using the in_person_context and
+in_product_context methods on BranchTargetView.
+
+>>> gterm_branches_view = getView(
+...     gterm_product, '+branchlisting', TestRequest())
+>>> gterm_branches_view.in_person_context()
+False
+>>> gterm_branches_view.in_product_context()
+True
+
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> sampleperson = getUtility(IPersonSet).get(12)
+>>> sampleperson_branches_view = getView(
+...     sampleperson, '+branchlisting', TestRequest())
+>>> sampleperson_branches_view.in_person_context()
+True
+>>> sampleperson_branches_view.in_product_context()
+False
+
+These methods behave the same in a Team context as in a normal person context.
+
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> ubuntuteam = getUtility(IPersonSet).get(17)
+>>> ubuntuteam_branches_view = getView(ubuntuteam, '+branchlisting', TestRequest())
+>>> ubuntuteam_branches_view.in_person_context()
+True
+>>> ubuntuteam_branches_view.in_product_context()
+False
+
+These methods are used to decide whether to display the
++product-summary-listing or +person-summary listing view to generate branch
+list items.
+
+When viewing a branch listing in product context, we should display the link to
+a corresponding person.
+
+>>> gterm_dev_product_view = getView(gterm_dev, '+product-summary-listing', TestRequest())
+>>> gterm_dev_product_view.show_person_link
+True
+>>> gterm_dev_product_view.show_product_link
+False
+
+And when in a person context, we should link to the branch's product.
+
+>>> gterm_dev_product_view = getView(gterm_dev, '+person-summary-listing', TestRequest())
+>>> gterm_dev_product_view.show_person_link
+False
+>>> gterm_dev_product_view.show_product_link
+True
+
+When in a person context and the branch does not have an associated product, we
+should display none of those links.
+
+>>> junk_dev = branchset[20]
+>>> print junk_dev.product
+None
+>>> junk_dev_person_view = getView(junk_dev, '+person-summary-listing', TestRequest())
+>>> junk_dev_person_view.show_person_link
+False
+>>> junk_dev_person_view.show_product_link
+False
+
 == BranchEditView ==
 
 When a branch has a URL, the user is allowed to modify it. Check that the
 'url' field is present in the edit form.
 
->>> gterm.url is not None
+>>> gterm_dev.url is not None
 True
->>> view = getView(gterm, '+edit', TestRequest())
+>>> view = getView(gterm_dev, '+edit', TestRequest())
 >>> view.fieldNames
 [u'url', u'title', u'summary', u'home_page', u'author', u'whiteboard']
 

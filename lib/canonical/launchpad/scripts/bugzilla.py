@@ -252,22 +252,22 @@ class Bug:
         to the bug task's status explanation.
         """
         if self.bug_status == 'ASSIGNED':
-            bugtask.status = BugTaskStatus.CONFIRMED
+            bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
         elif self.bug_status == 'NEEDINFO':
-            bugtask.status = BugTaskStatus.NEEDSINFO
+            bugtask.transitionToStatus(BugTaskStatus.NEEDSINFO)
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.status = BugTaskStatus.FIXCOMMITTED
+            bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.status = BugTaskStatus.FIXRELEASED
+                bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
             elif self.resolution == 'WONTFIX':
-                bugtask.status = BugTaskStatus.REJECTED
+                bugtask.transitionToStatus(BugTaskStatus.REJECTED)
                 bugtask.priority = BugTaskPriority.WONTFIX
             else:
-                bugtask.status = BugTaskStatus.REJECTED
+                bugtask.transitionToStatus(BugTaskStatus.REJECTED)
         else:
-            bugtask.status = BugTaskStatus.UNCONFIRMED
+            bugtask.transitionToStatus(BugTaskStatus.UNCONFIRMED)
 
         # add the status to the notes section, to account for any lost
         # information
@@ -300,7 +300,6 @@ class Bugzilla:
         self.bugtaskset = getUtility(IBugTaskSet)
         self.bugwatchset = getUtility(IBugWatchSet)
         self.cveset = getUtility(ICveSet)
-        self.milestoneset = getUtility(IMilestoneSet)
         self.extrefset = getUtility(IBugExternalRefSet)
         self.personset = getUtility(IPersonSet)
         self.emailset = getUtility(IEmailAddressSet)
@@ -377,7 +376,6 @@ class Bugzilla:
         return {
             'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
-            'binarypackagename': binpkg
             }
 
     def getLaunchpadMilestone(self, bug):
@@ -396,12 +394,11 @@ class Bugzilla:
         # generate a Launchpad name from the Milestone name:
         name = re.sub(r'[^a-z0-9\+\.\-]', '-', bug.target_milestone.lower())
 
-        for milestone in self.ubuntu.milestones:
-            if milestone.name == name:
-                return milestone
-        else:
-            milestone = self.milestoneset.new(name, distribution=self.ubuntu)
+        milestone = self.ubuntu.getMilestone(name)
+        if milestone is not None:
             return milestone
+        else:
+            return self.ubuntu.currentrelease.newMilestone(name)
 
     def getLaunchpadUpstreamProduct(self, bug):
         """Find the upstream product for the given Bugzilla bug.
@@ -497,7 +494,7 @@ class Bugzilla:
         # translate bugzilla status and severity to LP equivalents
         task = lp_bug.bugtasks[0]
         task.datecreated = bug.creation_ts
-        task.assignee = self.person(bug.assigned_to)
+        task.transitionToAssignee(self.person(bug.assigned_to))
         task.statusexplanation = bug.status_whiteboard
         bug.mapSeverity(task)
         bug.mapPriority(task)
@@ -515,7 +512,6 @@ class Bugzilla:
                     lp_bug,
                     owner=lp_bug.owner,
                     distribution=self.debian,
-                    binarypackagename=target['binarypackagename'],
                     sourcepackagename=target['sourcepackagename'])
                 debtask.datecreated = bug.creation_ts
                 debtask.bugwatch = watch

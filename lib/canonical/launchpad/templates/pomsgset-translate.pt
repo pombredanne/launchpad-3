@@ -32,15 +32,15 @@
         <tal:block
           condition="pomsgset_view/is_multi_line"
           define="submission python:submissions[0]">
-          <pre
+          <div
             tal:define="submissionlang submission/pomsgset/pofile/language"
             tal:attributes="
               lang submissionlang/dashedcode;
               dir submissionlang/abbreviated_text_dir
               "
-            tal:content="submission/potranslation/translation">
-            suggestion
-          </pre>
+            tal:content=
+            "structure submission/potranslation/translation/fmt:text-to-html"
+          >suggestion</div>
           <div class="discreet">
             &mdash;
             <span tal:replace="submission/person/browsername">Foo Bar</span>
@@ -99,8 +99,9 @@
         src="/@@/info_icon.gif"
         title="This is a note to translators"
         />
-      <code>[tab]</code> represents a tab character. Please enter it as
-      <code>[tab]</code> in your translation too.
+      <code>[tab]</code> represents a tab character.
+      Please write it exactly the same way, <code>[tab]</code>, in your
+      translation.
     </td>
   </tr>
   <tr class="discreet secondary" tal:condition="pomsgset_view/source_comment">
@@ -180,7 +181,7 @@
                 lang pomsgset_view/pofile/language/dashedcode;
                 dir pomsgset_view/pofile/language/abbreviated_text_dir;
                 ">
-<tal:content replace="structure python:pomsgset_view.getTranslation(index)" /></textarea>
+<tal:content replace="python:pomsgset_view.getTranslation(index)" /></textarea>
           </tal:with-content>
           <tal:without-content condition="python:not pomsgset_view.getTranslation(index)">
             <tal:comment tal:replace="nothing">

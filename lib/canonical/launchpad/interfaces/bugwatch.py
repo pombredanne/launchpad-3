@@ -9,24 +9,24 @@ __all__ = [
     'IBugWatchSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
+from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.interfaces import IHasBug
 
-class IBugWatch(Interface):
+class IBugWatch(IHasBug):
     """A bug on a remote system."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
     bugtracker = Choice(title=_('Bug System'), required=True,
-        vocabulary='BugTracker', description=_("The bug tracker in which "
-        "the remote bug is found. Choose from the list. You can register "
-        "additional bug trackers from the Malone home page."))
-    remotebug = TextLine(title=_('Remote Bug'), required=True,
+        vocabulary='BugTracker', description=_("You can register "
+        "new bug trackers from the Malone home page."))
+    remotebug = StrippedTextLine(title=_('Remote Bug'), required=True,
         readonly=False, description=_("The bug number of this bug in the "
-        "remote bug system. Please take care to enter it exactly."))
+        "remote bug tracker."))
     remotestatus = TextLine(title=_('Remote Status'))
     lastchanged = Datetime(title=_('Last Changed'))
     lastchecked = Datetime(title=_('Last Checked'))
@@ -52,6 +52,12 @@ class IBugWatch(Interface):
 
     url = Attribute('The URL at which to view the remote bug.')
 
+    def updateStatus(remote_status, malone_status):
+        """Update the status of the bug watch and any linked bug task.
+
+        The lastchanged attribute gets set to the current time.
+        """
+
 
 class IBugWatchSet(Interface):
     """The set of IBugWatch's."""
@@ -68,7 +74,7 @@ class IBugWatchSet(Interface):
     def get(id):
         """Get an IBugWatch by its ID.
 
-        Raise a zope.exceptions.NotFoundError if there is no IBugWatch
+        Raise a NotFoundError if there is no IBugWatch
         matching the given id.
         """
 

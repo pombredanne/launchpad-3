@@ -17,7 +17,7 @@ from zope.component import getUtility
 from canonical.lp import dbschema
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import ContentNameField, StrippedTextLine
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -48,10 +48,12 @@ class IBugTracker(Interface):
         'such as "mozilla-bugs".'))
     title = TextLine(
         title=_('Title'),
-        description=_('A descriptive label for this tracker to show in listings.'))
+        description=_(
+            'A descriptive label for this tracker to show in listings.'))
     summary = Text(
         title=_('Summary'),
-        description=_('A brief introduction or overview of this bug tracker instance.'))
+        description=_(
+            'A brief introduction or overview of this bug tracker instance.'))
     baseurl = TextLine(
         title=_('Base URL'),
         description=_('The top-level URL for the bug tracker. This '
@@ -139,7 +141,7 @@ class IRemoteBug(Interface):
         vocabulary='BugTracker', description=_("The bug tracker in which "
         "the remote bug is found."))
 
-    remotebug = TextLine(title=_('Remote Bug'), required=True,
+    remotebug = StrippedTextLine(title=_('Remote Bug'), required=True,
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug system."))
 

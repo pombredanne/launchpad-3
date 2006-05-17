@@ -81,8 +81,12 @@ Build record has no history and is NEEDSBUILD:
   >>> resetable_build.buildstate.value is 0
   True
 
+  >>> resetable_build.buildqueue_record is not None
+  True
+
 Restore Build(9) to previous state to avoid mess with other tests.
 
+  >>> resetable_build.buildqueue_record.destroySelf()
   >>> resetable_build.buildstate = BuildStatus.FAILEDTOBUILD
   >>> resetable_build.datebuilt = datebuilt
   >>> resetable_build.builder = builder
@@ -204,12 +208,12 @@ collection of builds.
 We can find builds given a source package release and architecture tag.
 
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-  2
+  3
 
 We can find recent and pending builds for a given distrorelease.
 
   >>> hoary.getBuildRecords().count()
-  4
+  5
 
 Or for a given distroarchrelease.
 
@@ -218,16 +222,17 @@ Or for a given distroarchrelease.
   u'The Hoary Hedgehog Release for i386 (x86)'
 
   >>> hoaryi386.getBuildRecords().count()
-  4
+  5
 
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  7
+  10
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
   ...     l.datecreated, l.id, l.buildstate.value
+  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 16, 1)
   (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 7, 1)
   (datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>), 2, 1)
 
@@ -235,7 +240,7 @@ Retrive the current PENDING builds
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
-  2
+  1
 
 Inspect the FAILED builds:
 
@@ -256,24 +261,19 @@ Force immediate update of the values:
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
-Note, by ordering the build by BuildQueue.lastscore, it doesn't notice
-the existence of builds missing buildqueue:
+Note, by ordering the build by BuildQueue.lastscore, it already notice
+the existence of a new pending build, since reset already creates a
+new BuildQueue record:
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
   2
 
-Create the missing BuildQueue correspondent row and tweak lastscore:
+Tweak lastscore:
 
-  >>> failed_bq = failed_build.createBuildQueueEntry()
-  >>> failed_bq.lastscore = 100
+  >>> failed_build.buildqueue_record.lastscore = 100
   >>> flush_database_updates()
 
-Now we can see an extra PENDING build record:
-
-  >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
-  >>> builds.count()
-  3
 
 Note that they are ordered by DESC lastscore, as expected:
 
@@ -281,14 +281,12 @@ Note that they are ordered by DESC lastscore, as expected:
   ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
   (9, 0, 100)
   (11, 0, 10)
-  (8, 0, 1)
 
 Using the optional name argument to filter build results:
 
   >>> builds = ubuntu.getBuildRecords(name='pm')
   >>> builds.count()
-  2
+  3
   >>> [(b.sourcepackagerelease.name, b.distrorelease.name) for b in builds]
-  [(u'pmount', u'warty'), (u'pmount', u'hoary')]
-
+  [(u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
 

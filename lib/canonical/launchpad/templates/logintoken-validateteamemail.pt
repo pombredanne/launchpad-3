@@ -1,20 +1,23 @@
-<tal:do-this-first tal:content="view/processForm" />
-
+<tal:do-this-first content="view/processForm" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
+      i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1>Confirm e-mail address: <code tal:content="context/email"></code></h1>
+    </metal:heading>
 
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-      <h1>Confirm e-mail address: <code tal:content="context/email"></code></h1>
 
-      <div tal:condition="view/errormessage" class="portalMessage"
-           tal:content="structure view/errormessage">
-      </div>
+        <p
+          tal:condition="view/errormessage"
+          tal:content="structure view/errormessage"
+          class="error message"
+        />
 
       <p>You're about to make <code tal:content="context/email" /> the contact
         email address of this team. By doing so, all notifications directed to

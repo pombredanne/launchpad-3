@@ -36,9 +36,12 @@ from canonical.lp.dbschema import EnumCol, BuildStatus
 class BuilderSlave(xmlrpclib.Server):
     """Add in a few useful methods for the XMLRPC slave."""
 
+    # XXX: check the use of urljoin() here; I am not sure we know if
+    # urlbase always ends in a slash, nor if we want the path joined at
+    # the root or at the end of the urlbase. -- kiko, 2006-04-10
     def __init__(self, urlbase, *args, **kwargs):
         """Initialise..."""
-        xmlrpclib.Server.__init__(self, urlparse.urljoin(urlbase,"/rpc/"),
+        xmlrpclib.Server.__init__(self, urlparse.urljoin(urlbase, "/rpc/"),
                                   *args, **kwargs)
         self.urlbase = urlbase
 
@@ -177,6 +180,11 @@ class BuildQueue(SQLBase):
     @property
     def component_name(self):
         """See IBuildQueue"""
+        # check currently published version
+        publishings = self.build.sourcepackagerelease.publishings
+        if publishings.count() > 0:
+            return publishings[0].component.name
+        # if not found return the original component
         return self.build.sourcepackagerelease.component.name
 
     @property
@@ -241,6 +249,15 @@ class BuildQueueSet(object):
     def getActiveBuildJobs(self):
         """See IBuildQueueSet."""
         return BuildQueue.select('buildstart is not null')
+
+    def fetchByBuildIds(self, build_ids):
+        """See IBuildQueueSet."""
+        if len(build_ids) == 0:
+            return []
+
+        return BuildQueue.select(
+            "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
+            prejoins=['builder'])
 
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""

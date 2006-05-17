@@ -32,7 +32,8 @@
     <browser:menus
         module="canonical.launchpad.browser.productseries"
         classes="ProductSeriesFacets ProductSeriesOverviewMenu
-                 ProductSeriesSpecificationsMenu"
+                 ProductSeriesSpecificationsMenu
+                 ProductSeriesTranslationMenu"
         />
 
 
@@ -43,7 +44,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
-        path_expression="string:+series/${name}"
+        path_expression="name"
         attribute_to_parent="product"
         />
 
@@ -58,15 +59,24 @@
         <browser:page
             name="+portlet-source"
             template="../templates/productseries-portlet-source.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-source" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+portlet-source" />
         <browser:page
             name="+portlet-packages"
             template="../templates/productseries-portlet-packages.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-packages" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+portlet-packages" />
         <browser:page
             name="+portlet-releases"
             template="../templates/productseries-portlet-releases.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-releases" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+portlet-releases" />
+        <browser:page
+            name="+portlet-milestones"
+            facet="overview"
+            template="../templates/object-portlet-milestones.pt"
+            lp:url="/products/evolution/2.2/+portlet-milestones" />
+        <browser:page
+            name="+table-releases"
+            template="../templates/productseries-table-releases.pt"
+            lp:url="/$Product.name/$ProductSeries.name/+table-releases" />
     </browser:pages>
 
     <browser:pages
@@ -76,13 +86,13 @@
         <browser:page
             name="+index"
             facet="overview"
-            template="../templates/productseries.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/" />
+            template="../templates/productseries-index.pt"
+            lp:url="/products/$Product.name/$ProductSeries.name/" />
         <browser:page
             name="+translations"
             facet="translations"
             template="../templates/productseries-translations.pt"
-            lp:url="/products/evolution/+series/main/+translations" />
+            lp:url="/products/evolution/main/+translations" />
         <browser:page
             name="+potlist"
             facet="translations"
@@ -91,12 +101,12 @@
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+ubuntupkg" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+ubuntupkg" />
         <browser:page
             name="+hctstatus-core"
             facet="overview"
             template="../templates/productseries-hctstatus-core.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+hctstatus-core" />
+            lp:url="/products/$Product.name/$ProductSeries.name/+hctstatus-core" />
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -119,7 +129,7 @@
         facet="overview"
         permission="zope.Public"
         name="+rdf"
-        lp:url="/products/$Product.name/+series/$ProductSeries.name/+rdf"
+        lp:url="/products/$Product.name/$ProductSeries.name/+rdf"
         attribute="__call__"
         />
 
@@ -127,13 +137,29 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
-        label="Edit release series details"
-        fields="name displayname summary"
+        fields="name summary"
         class="canonical.launchpad.browser.ProductSeriesEditView"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"
-        lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit">
+        lp:url="/products/$Product.name/$ProductSeries.name/+edit">
+        <browser:widget
+           field="summary"
+           class="zope.app.form.browser.TextAreaWidget"
+           height="7"
+           width="62" />
+    </browser:editform>
+
+    <browser:editform
+        name="+driver"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        schema="canonical.launchpad.interfaces.IProductSeries"
+        fields="driver"
+        class="canonical.launchpad.browser.ProductSeriesEditView"
+        facet="overview"
+        permission="launchpad.Edit"
+        template="../templates/object-driver.pt"
+        lp:url="/$Product.name/$Series.name/+driver">
     </browser:editform>
 
     <browser:addform
@@ -141,13 +167,13 @@
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductRelease"
         label="Register a new release"
-        fields="productseries version title summary description owner
+        fields="productseries version codename summary description owner
                 changelog"
         class="canonical.launchpad.browser.ProductReleaseAddView"
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/productrelease-add.pt"
-        lp:url="/product/$Product.name/+series/$ProductSeries.name/+addrelease">
+        lp:url="/product/$Product.name/$ProductSeries.name/+addrelease">
         <browser:widget
             field="productseries"
             class="canonical.widgets.ContextWidget" />
@@ -160,6 +186,19 @@
             class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
+    <browser:addform
+      name="+addmilestone"
+      for="canonical.launchpad.interfaces.IProductSeries"
+      schema="canonical.launchpad.interfaces.IMilestone"
+      class="canonical.launchpad.browser.milestone.MilestoneAddView"
+      facet="overview"
+      fields="name dateexpected"
+      keyword_arguments="name dateexpected"
+      permission="launchpad.Edit"
+      template="../templates/milestone-add.pt"
+      lp:url="/products/$Product.name/$Series.name/+addmilestone">
+    </browser:addform>
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeriesSource"
         class="canonical.launchpad.browser.ProductSeriesView"
@@ -168,7 +207,7 @@
         <browser:page
             name="+source"
             template="../templates/productseries-source.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+source"
+            lp:url="/products/$Product.name/$ProductSeries.name/+source"
             />
     </browser:pages>
 
@@ -180,7 +219,7 @@
         <browser:page
             name="+sourceadmin"
             template="../templates/productseries-sourceadmin.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+sourceadmin"
+            lp:url="/products/$Product.name/$ProductSeries.name/+sourceadmin"
             />
     </browser:pages>
 
@@ -194,32 +233,25 @@
         fields="product name"
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
-        lp:url="/products/$Product.name/+series/$ProductSeries.name/+review">
+        lp:url="/products/$Product.name/$ProductSeries.name/+review">
         <browser:widget
             field="name"
             class="zope.app.form.browser.TextWidget"
             displayWidth="20" />
     </browser:editform>
 
-    <browser:addform
+    <browser:generalform
         name="+addpackage"
         for="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.PackagingAddView"
         schema="canonical.launchpad.interfaces.IPackaging"
         label="Add distribution packaging record"
-        fields="productseries distrorelease sourcepackagename packaging
-                owner"
-        class="canonical.launchpad.browser.PackagingAddView"
+        fields="distrorelease sourcepackagename packaging"
+        keyword_arguments="distrorelease sourcepackagename packaging"
         facet="overview"
         permission="launchpad.Edit"
-        template="../templates/launchpad-addform.pt"
-        lp:url="/product/$Product.name/+series/$ProductSeries.name/+package">
-        <browser:widget
-            field="productseries"
-            class="canonical.widgets.ContextWidget" />
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
-    </browser:addform>
+        template="../templates/productseries-packaging.pt" >
+    </browser:generalform>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -228,9 +260,8 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+translations-upload"
-            facet="translations"
             template="../templates/productseries-translations-upload.pt"
-            lp:url="/products/evolution/+series/main/+translations-upload" />
+            lp:url="/products/evolution/main/+translations-upload" />
     </browser:pages>
 
     <!-- ProductSeriesSourceSet. Note this is only used by -->

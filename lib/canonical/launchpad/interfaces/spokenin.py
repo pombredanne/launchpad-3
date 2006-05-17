@@ -8,8 +8,7 @@ __metaclass__ = type
 
 __all__ = ['ISpokenIn']
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 from zope.interface import Interface
 from zope.schema import Int

@@ -6,6 +6,7 @@ __all__ = [
     'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
     'JabberIDSet', 'IrcID', 'IrcIDSet']
 
+import itertools
 import sets
 from datetime import datetime, timedelta
 import pytz
@@ -17,7 +18,7 @@ from zope.component import getUtility
 
 # SQL imports
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin, 
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
     RelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
@@ -26,15 +27,15 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
-from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.helpers import shortlist, contactEmailAddresses
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    ILaunchpadStatisticSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
+    ShipItConstants)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -59,10 +60,19 @@ from canonical.launchpad.database.branch import Branch
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
-    SpecificationSort)
+    SpecificationSort, SpecificationFilter)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
+
+
+class ValidPersonOrTeamCache(SQLBase):
+    """Flags if a Person or Team is active and usable in Launchpad.
+    
+    This is readonly, as the underlying table is maintained using
+    database triggers.
+    """
+    # Look Ma, no columns! (apart from id)
 
 
 class Person(SQLBase):
@@ -70,13 +80,14 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    sortingColumns = ['displayname', 'familyname', 'givenname', 'name']
+    # XXX: We should be sorting on person_sort_key(displayname,name), but
+    # SQLObject will not let us sort using a stored procedure.
+    # -- StuartBishop 20060323
+    sortingColumns = ['displayname', 'name']
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
     password = StringCol(dbName='password', default=None)
-    givenname = StringCol(dbName='givenname', default=None)
-    familyname = StringCol(dbName='familyname', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
@@ -222,18 +233,12 @@ class Person(SQLBase):
     def browsername(self):
         """Return a name suitable for display on a web page.
 
-        1. If we have a displayname, then browsername is the displayname.
-
-        2. If we have a familyname or givenname, then the browsername
-           is "FAMILYNAME Givenname".
-
-        3. If we have no displayname, no familyname and no givenname,
-           the browsername is self.name.
+        Originally, this was calculated but now we just use displayname.
+        You should continue to use this method, however, as we may want to
+        change again, such as returning '$displayname ($name)'.
 
         >>> class DummyPerson:
         ...     displayname = None
-        ...     familyname = None
-        ...     givenname = None
         ...     name = 'the_name'
         ...     # This next line is some special evil magic to allow us to
         ...     # unit test browsername in isolation.
@@ -246,75 +251,127 @@ class Person(SQLBase):
         >>> person.browsername
         'the_name'
 
-        Check with givenname and name.  Just givenname is used.
-
-        >>> person.givenname = 'the_givenname'
-        >>> person.browsername
-        'the_givenname'
-
-        Check with givenname, familyname and name.  Both givenname and
-        familyname are used.
-
-        >>> person.familyname = 'the_familyname'
-        >>> person.browsername
-        'THE_FAMILYNAME the_givenname'
-
-        Check with givenname, familyname, name and displayname.
-        Only displayname is used.
-
         >>> person.displayname = 'the_displayname'
         >>> person.browsername
         'the_displayname'
-
-        Remove familyname to check with givenname, name and displayname.
-        Only displayname is used.
-
-        >>> person.familyname = None
-        >>> person.browsername
-        'the_displayname'
-
         """
-        if self.displayname:
-            return self.displayname
-        elif self.familyname or self.givenname:
-            # Make a list containing either ['FAMILYNAME'] or
-            # ['FAMILYNAME', 'Givenname'] or ['Givenname'].
-            # Then turn it into a space-separated string.
-            L = []
-            if self.familyname is not None:
-                L.append(self.familyname.upper())
-            if self.givenname is not None:
-                L.append(self.givenname)
-            return ' '.join(L)
-        else:
-            return self.name
+        # Person.displayname is NOT NULL
+        return self.displayname
 
-    def specifications(self, quantity=None, sort=None):
-        query = """
-            Specification.owner = %(my_id)d
-            OR Specification.approver = %(my_id)d
-            OR Specification.assignee = %(my_id)d
-            OR Specification.drafter = %(my_id)d
-            OR Specification.id IN (
-                SELECT SpecificationFeedback.specification
-                FROM SpecificationFeedback
-                WHERE SpecificationFeedback.reviewer = %(my_id)s
-                UNION
-                SELECT SpecificationSubscription.specification
-                FROM SpecificationSubscription
-                WHERE SpecificationSubscription.person = %(my_id)d
-                )
-            """ % {'my_id': self.id}
+    @property
+    def has_any_specifications(self):
+        """See IHasSpecifications."""
+        return self.all_specifications.count()
 
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        # eliminate mutables
+        if not filter:
+            # if no filter was passed (None or []) then we must decide the
+            # default filtering, and for a person we want related incomplete
+            # specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a person 
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # if no roles are given then we want everything
+        linked = False
+        roles = set([
+            SpecificationFilter.CREATOR,
+            SpecificationFilter.ASSIGNEE,
+            SpecificationFilter.DRAFTER,
+            SpecificationFilter.APPROVER,
+            SpecificationFilter.FEEDBACK,
+            SpecificationFilter.SUBSCRIBER])
+        for role in roles:
+            if role in filter:
+                linked = True
+        if not linked:
+            for role in roles:
+                filter.append(role)
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        else:
-            raise AssertionError('Unknown sort %s' % sort)
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
 
-        return shortlist(Specification.select(
-                    query, orderBy=order, limit=quantity))
+        # figure out what set of specifications we are interested in. for
+        # products, we need to be able to filter on the basis of:
+        #
+        #  - role (owner, drafter, approver, subscriber, assignee etc)
+        #  - completeness.
+        #  - informational.
+        #
+
+        # in this case the "base" is quite complicated because it is
+        # determined by the roles so lets do that first
+
+        base = '(1=0'  # we want to start with a FALSE and OR them
+        if SpecificationFilter.CREATOR in filter:
+            base += ' OR Specification.owner = %(my_id)d'
+        if SpecificationFilter.ASSIGNEE in filter:
+            base += ' OR Specification.assignee = %(my_id)d'
+        if SpecificationFilter.DRAFTER in filter:
+            base += ' OR Specification.drafter = %(my_id)d'
+        if SpecificationFilter.APPROVER in filter:
+            base += ' OR Specification.approver = %(my_id)d'
+        if SpecificationFilter.SUBSCRIBER in filter:
+            base += """ OR Specification.id in
+                (SELECT specification FROM SpecificationSubscription
+                 WHERE person = %(my_id)d)"""
+        if SpecificationFilter.FEEDBACK in filter:
+            base += """ OR Specification.id in
+                (SELECT specification FROM SpecificationFeedback
+                 WHERE reviewer = %(my_id)d)"""
+        base += ') '
+        
+        base = base % {'my_id': self.id}
+
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -387,13 +444,16 @@ class Person(SQLBase):
         """See IPerson."""
         return self.teamowner is not None
 
-    def shippedShipItRequests(self):
+    def shippedShipItRequestsOfCurrentRelease(self):
         """See IPerson."""
         query = '''
-            ShippingRequest.recipient = %s AND
-            ShippingRequest.id IN (SELECT request FROM Shipment)
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.select(query)
+            ShippingRequest.recipient = %s
+            AND ShippingRequest.id = RequestedCDs.request
+            AND RequestedCDs.distrorelease = %s
+            AND ShippingRequest.id IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
+        return ShippingRequest.select(
+            query, clauseTables=['RequestedCDs'], distinct=True)
 
     def pastShipItRequests(self):
         """See IPerson."""
@@ -428,8 +488,26 @@ class Person(SQLBase):
         except IndexError:
             return 0
 
+    @property
+    def is_valid_person(self):
+        """See IPerson."""
+        if self.teamowner is not None:
+            return False
+        try:
+            if ValidPersonOrTeamCache.get(self.id) is not None:
+                return True
+        except SQLObjectNotFound:
+            pass
+        return False
+        
     def assignKarma(self, action_name):
         """See IPerson."""
+        # Teams don't get Karma. Inactive accounts don't get Karma.
+        # No warning, as we don't want to place the burden on callsites
+        # to check this.
+        if not self.is_valid_person:
+            return None
+
         try:
             action = KarmaAction.byName(action_name)
         except SQLObjectNotFound:
@@ -442,20 +520,40 @@ class Person(SQLBase):
         return Karma.selectBy(personID=self.id,
             orderBy='-datecreated')[:quantity]
 
+    # XXX: This cache should no longer be needed once CrowdControl lands,
+    # as apparently it will also cache this information.
+    # -- StuartBishop 20060510
+    _inTeam_cache = None
+
     def inTeam(self, team):
         """See IPerson."""
         if team is None:
             return False
+
+        if team.id == self.id: # Short circuit - would return True anyway
+            return True
+
+        if self._inTeam_cache is None: # Initialize cache
+            self._inTeam_cache = {}
+        else:
+            try:
+                return self._inTeam_cache[team.id] # Return from cache
+            except KeyError:
+                pass # Or fall through
+
         tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
         if tp is not None or self.id == team.teamownerID:
-            return True
+            in_team = True
         elif team.teamowner is not None and not team.teamowner.inTeam(team):
             # The owner is not a member but must retain his rights over
             # this team. This person may be a member of the owner, and in this
             # case it'll also have rights over this team.
-            return self.inTeam(team.teamowner)
+            in_team = self.inTeam(team.teamowner)
         else:
-            return False
+            in_team = False
+
+        self._inTeam_cache[team.id] = in_team
+        return in_team
 
     def hasMembershipEntryFor(self, team):
         """See IPerson."""
@@ -471,6 +569,8 @@ class Person(SQLBase):
         """See IPerson."""
         assert not ITeam.providedBy(self)
 
+        self._inTeam_cache = {} # Flush the cache used by the inTeam method
+
         active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
         tm = TeamMembership.selectOneBy(personID=self.id, teamID=team.id)
         if tm is None or tm.status not in active:
@@ -485,6 +585,8 @@ class Person(SQLBase):
         assert not self.isTeam(), (
             "Teams take no actions in Launchpad, thus they can't join() "
             "another team. Instead, you have to addMember() them.")
+
+        self._inTeam_cache = {} # Flush the cache used by the inTeam method
 
         expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
@@ -533,6 +635,14 @@ class Person(SQLBase):
                  'Person.teamowner IS NOT NULL' % self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
+    def getTeamAdminsEmailAddresses(self):
+        """See IPerson."""
+        assert self.teamowner is not None
+        to_addrs = set()
+        for person in itertools.chain(self.administrators, [self.teamowner]):
+            to_addrs.update(contactEmailAddresses(person))
+        return to_addrs
+
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
         """See IPerson."""
@@ -571,10 +681,8 @@ class Person(SQLBase):
             # https://launchpad.net/products/launchpad/+bug/30649 isn't fixed.
             expires = now
 
-        tm.setStatus(status)
+        tm.setStatus(status, reviewer, comment)
         tm.dateexpires = expires
-        tm.reviewer = reviewer
-        tm.reviewercomment = comment
 
         tm.syncUpdate()
 
@@ -837,9 +945,12 @@ class Person(SQLBase):
     @property
     def unvalidatedemails(self):
         """See IPerson."""
-        query = ("requester=%s AND (tokentype=%s OR tokentype=%s)" 
-                 % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
-                             LoginTokenType.VALIDATETEAMEMAIL))
+        query = """
+            requester = %s
+            AND (tokentype=%s OR tokentype=%s)
+            AND date_consumed IS NULL
+            """ % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
+                            LoginTokenType.VALIDATETEAMEMAIL)
         return sets.Set([token.email for token in LoginToken.select(query)])
 
     @property
@@ -972,8 +1083,8 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(self, email, name=None, displayname=None,
-                             givenname=None, familyname=None, password=None,
-                             passwordEncrypted=False):
+                             password=None, passwordEncrypted=False,
+                             hide_email_addresses=False):
         """See IPersonSet."""
         if name is None:
             try:
@@ -988,13 +1099,13 @@ class PersonSet:
             password = getUtility(IPasswordEncryptor).encrypt(password)
 
         displayname = displayname or name.capitalize()
-        person = self._newPerson(name, displayname, givenname=givenname,
-                                 familyname=familyname, password=password)
+        person = self._newPerson(name, displayname, hide_email_addresses,
+                                 password=password)
 
         email = getUtility(IEmailAddressSet).new(email, person.id)
         return person, email
 
-    def _newPerson(self, name, displayname, givenname=None, familyname=None,
+    def _newPerson(self, name, displayname, hide_email_addresses,
                    password=None):
         """Create a new Person with the given attributes.
 
@@ -1002,8 +1113,9 @@ class PersonSet:
         Ubuntu wiki.
         """
         assert self.getByName(name, ignore_merged=False) is None
-        person = Person(name=name, displayname=displayname, givenname=givenname,
-                        familyname=familyname, password=password)
+        person = Person(name=name, displayname=displayname,
+                        hide_email_addresses=hide_email_addresses,
+                        password=password)
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
                     person.displayname, wikinameset.exists)
@@ -1254,6 +1366,32 @@ class PersonSet:
             )
         skip.append(('wikiname', 'person'))
 
+        # Update the Branches that will not conflict, and fudge the names of
+        # ones that *do* conflict
+        cur.execute('''
+            SELECT product, name FROM Branch WHERE owner = %(to_id)d
+            ''' % vars())
+        possible_conflicts = set(tuple(r) for r in cur.fetchall())
+        cur.execute('''
+            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
+            ORDER BY id
+            ''' % vars())
+        for id, product, name in list(cur.fetchall()):
+            new_name = name
+            suffix = 1
+            while (product, new_name) in possible_conflicts:
+                new_name = '%s-%d' % (name, suffix)
+                suffix += 1
+            possible_conflicts.add((product, new_name))
+            new_name = new_name.encode('US-ASCII')
+            name = name.encode('US-ASCII')
+            cur.execute('''
+                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
+                WHERE owner = %(from_id)s AND name = %(name)s
+                    AND (%(product)s IS NULL OR product = %(product)s)
+                ''', vars())
+        skip.append(('branch','owner'))
+
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331
@@ -1272,6 +1410,35 @@ class PersonSet:
             DELETE FROM BountySubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
+
+        # Update only the SupportContacts that will not conflict
+        cur.execute('''
+            UPDATE SupportContact
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND distribution IS NULL
+                AND product NOT IN (
+                    SELECT product
+                    FROM SupportContact
+                    WHERE person = %(to_id)d
+                    )
+            ''' % vars())
+        cur.execute('''
+            UPDATE SupportContact
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+                AND distribution IS NOT NULL
+                AND (distribution, sourcepackagename) NOT IN (
+                    SELECT distribution,sourcepackagename
+                    FROM SupportContact
+                    WHERE person = %(to_id)d
+                    )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM SupportContact WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('supportcontact', 'person'))
 
         # Update only the TicketSubscriptions that will not conflict
         cur.execute('''
@@ -1645,9 +1812,15 @@ class GPGKeySet:
     def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
-            query = ('active=false AND fingerprint NOT IN '
-                     '(SELECT fingerprint from LoginToken WHERE fingerprint '
-                     'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
+            query = """
+                active = false 
+                AND fingerprint NOT IN 
+                    (SELECT fingerprint FROM LoginToken 
+                     WHERE fingerprint IS NOT NULL 
+                           AND requester = %s 
+                           AND date_consumed is NULL
+                    )
+                """ % sqlvalues(ownerid)
         else:
             query = 'active=true'
 

@@ -4,11 +4,8 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.app.session.session import PersistentSessionDataContainer
 from zope.app.session.http import CookieClientIdManager
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-
-from canonical.launchpad.webapp.zodb import zodbconnection
 
 SECONDS = 1
 MINUTES = 60 * SECONDS
@@ -47,19 +44,4 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
     secret = property(_get_secret, _set_secret)
 
-        
-class LaunchpadSessionDataContainer(PersistentSessionDataContainer):
-
-    def __init__(self):
-        self.timeout = 6 * HOURS
-        # If we have a reasonably low resolution, we can more accurately
-        # determine the number of users currently using the system.
-        self.resolution = 10 * MINUTES
-
-    def _getData(self):
-        return zodbconnection.sessiondata
-
-    data = property(_getData, None)
-
 idmanager = LaunchpadCookieClientIdManager()
-datacontainer = LaunchpadSessionDataContainer()

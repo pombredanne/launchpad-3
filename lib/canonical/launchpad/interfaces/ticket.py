@@ -9,8 +9,6 @@ __all__ = [
     'ITicketSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
-
 from zope.interface import Interface, Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine
@@ -18,9 +16,7 @@ from zope.schema import Datetime, Int, Choice, Text, TextLine
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 class ITicket(IHasOwner, IMessageTarget):
     """A single support request, or trouble ticket."""
@@ -121,6 +117,9 @@ class ITicket(IHasOwner, IMessageTarget):
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the ticket."""
+
+    def isSubscribed(person):
+        """Return a boolean indicating whether the person is subscribed."""
 
     def unsubscribe(person):
         """Remove the person's subscription to this ticket."""

@@ -20,14 +20,5 @@
       tal:content="context/owner/browsername">Foo Bar</a> on
       <span tal:replace="context/datecreated/fmt:date">2005-10-05</span>
     </div>
-    <p class="lesser">
-  <span tal:replace="context/summary">
-    Summary Goes Here
-  </span>
-  <span tal:condition="not: context/summary"
-        tal:replace="context/description/fmt:shorten/320">
-    Description Goes Here *if* there is no summary
-  </span>
-    </p>
   </td>
 </tr>

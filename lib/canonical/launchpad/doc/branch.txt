@@ -69,11 +69,11 @@ If it doesn't exist an exception NotFoundError is raised
 >>> personset = getUtility(IPersonSet)
 >>> ddaa = personset.getByName('ddaa')
 
->>> url = 'http://example.com/~ddaa/gterm.dev'
+>>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
 >>> title = "David Allouche's Main GNOME Terminal Branch"
 >>> summary = "Main line of development for David Allouche on GNOME Terminal."
 >>> home_page = "http://example.com/~ddaa/"
->>> gterm_dev = branchset.new('dev', ddaa, gterm_product, url,
+>>> gterm_dev = branchset.new('dev', ddaa, gterm_product, gterm_dev_url,
 ...     title, summary=summary, home_page=home_page)
 >>> gterm_dev.name
 u'dev'
@@ -109,6 +109,42 @@ None
 >>> print repr(junkcode.url)
 None
 
+== Finding a branch by URL ==
+
+It is possible to find a branch by URL. Either using the pull URL:
+
+>>> branchset.getByUrl(gterm_dev_url) == gterm_dev
+True
+
+Or using the Supermirror URL of the same branch:
+
+>>> from canonical.database.sqlbase import flush_database_updates
+>>> flush_database_updates()
+>>> gterm_dev_supermirror = \
+...     u'http://bazaar.launchpad.net/~ddaa/gnome-terminal/dev'
+>>> branchset.getByUrl(gterm_dev_supermirror) == gterm_dev
+True
+>>> junkcode_supermirror = \
+...     u'http://bazaar.launchpad.net/~ddaa/+junk/junkcode'
+>>> branchset.getByUrl(junkcode_supermirror) == junkcode or \
+...     ('failed', branchset.getByUrl(junkcode_supermirror))
+True
+
+The provided URL must not have any trailing slash:
+
+>>> try: branchset.getByUrl(gterm_dev_url + '/')
+... except AssertionError: print 'trailing slash not allowed'
+trailing slash not allowed
+
+If no branch is found for the specified URL, the specified default value is
+returned.
+
+>>> not_there_url = 'http//example.com/not-in-the-sample-data'
+>>> print branchset.getByUrl(not_there_url)
+None
+>>> print branchset.getByUrl(not_there_url, 123)
+123
+
 == Branches and products ==
 
 Branch not associated to a product are called "junk" branch and treated for
@@ -119,6 +155,27 @@ navigation purposes as if they were associated to a magic product named
 '+junk'
 >>> gterm_dev.product_name
 u'gnome-terminal'
+
+== Branch names ==
+
+Branches have a unique name, that is based on the names of the owner, product
+and branch.
+
+>>> pushed = branchset[25]
+>>> pushed.unique_name
+u'~name12/gnome-terminal/pushed'
+>>> junkcode.unique_name
+u'~ddaa/+junk/junkcode'
+
+Branches have a display name that is the Branch.title if it's provided, and the
+unique_name otherwise.
+
+>>> assert gterm_dev.title is not None
+>>> gterm_dev.displayname == gterm_dev.title
+True
+>>> assert pushed.title is None
+>>> pushed.displayname == pushed.unique_name
+True
 
 == Branches registered and authored ==
 
@@ -135,10 +192,11 @@ Branches are associated to an "author" user, which may be different from the
 registrant. You can get the branch authored by a given person. Junk branches
 should generally have at least an author, but that is not enforced.
 
->>> from canonical.database.sqlbase import flush_database_caches
 >>> list(ddaa.authored_branches)
 []
 >>> junkcode.author = ddaa
+
+>>> from canonical.database.sqlbase import flush_database_caches
 >>> flush_database_caches()
 >>> list(ddaa.authored_branches) == [junkcode]
 True
@@ -148,6 +206,53 @@ also the author. That avoids duplicating the same branch in the registered and
 authored branch listings for a person.
 
 >>> list(ddaa.registered_branches) == [gterm_dev]
+True
+
+== Branch sort key ==
+
+Branches have a sort_key attribute which is used through Launchpad to order
+branch listings in a consistent and predictable way.
+
+The sort key is made of:
+
+  * product name (if applicable)
+  * lifecycle status sort key
+  * author's browser name (if applicable)
+  * branch name
+  * owner's nickname
+
+The owner's name is usually not displayed in branch listings, but it is used in
+the sort key to guarantee a predictable sort order. This relies on the fact
+that (owner, product, name) is unique for all branches.
+
+>>> from canonical.lp.dbschema import BranchLifecycleStatus
+>>> gterm_slowness = branchset[19]
+>>> gterm_slowness.sort_key
+(u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
+>>> gterm_slowness.sort_key[1] == BranchLifecycleStatus.MERGED.sortkey
+True
+
+If the product or author of a branch is NULL, the corresponding item in the
+sort key is None.
+
+Let's demonstrate that on a branch with a NULL product.
+
+>>> junk_dev = branchset[20]
+>>> print junk_dev.product
+None
+>>> junk_dev.sort_key
+(None, ..., u'Ubuntu Team', u'junk.dev', u'name12')
+>>> junk_dev.sort_key[1] == BranchLifecycleStatus.EXPERIMENTAL.sortkey
+True
+
+And on a branch with a NULL author.
+
+>>> gterm_24 = branchset[17]
+>>> print gterm_24.author
+None
+>>> gterm_24.sort_key
+(u'gnome-terminal', ..., None, u'2.4', u'name12')
+>>> gterm_24.sort_key[1] == BranchLifecycleStatus.ABANDONED.sortkey
 True
 
 == Branch subscriptions ==

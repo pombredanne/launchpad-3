@@ -9,13 +9,13 @@ the product code facet page.
   ... GET /products/applets/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ..."http://localhost:9000/products/applets/+addbranch"...
+  ..."http://.../products/applets/+addbranch"...
 
   >>> print http(r"""
   ... GET /products/applets/+branches HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ..."http://localhost:9000/products/applets/+addbranch"...
+  ..."http://.../products/applets/+addbranch"...
 
 Let's make sure we can load the branch creation form on a product.
 
@@ -28,13 +28,13 @@ Let's make sure we can load the branch creation form on a product.
 
 Now, post the branch creation form for the product.
 
+The specified URL has a trailing slash. In the next test, we will check that it
+has been stripped.
+
   >>> print http(r"""
   ... POST /products/applets/+addbranch HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1276
   ... Content-Type: multipart/form-data; boundary=---------------------------10133907381973361475472259166
-  ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
-  ... Referer: http://localhost:9000/products/applets/+addbranch
   ... 
   ... -----------------------------10133907381973361475472259166
   ... Content-Disposition: form-data; name="field.name"
@@ -51,7 +51,7 @@ Now, post the branch creation form for the product.
   ... -----------------------------10133907381973361475472259166
   ... Content-Disposition: form-data; name="field.url"
   ... 
-  ... http://example.com/applets/main
+  ... http://example.com/applets/main/
   ... -----------------------------10133907381973361475472259166
   ... Content-Disposition: form-data; name="field.home_page"
   ... 
@@ -77,7 +77,7 @@ Now, post the branch creation form for the product.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name16/+branch/applets/main
+  Location: http://.../people/name16/+branch/applets/main
 
 Let's make sure we can see the page for the newly created branch.
 This page includes a link to other branches associated with that product,
@@ -90,12 +90,13 @@ and a link to other branches maintained by that person.
   ...
   ...Gnome Panel Applets Mainline...
   ...
+  ...http://example.com/applets/main...
   .../products/applets/+branches"...
   ...Other Gnome Applets...
   ...branches...
   ...
-  .../people/name16/+branches"...
-  ...Other branches by...
+  .../people/name16/+registeredbranches"...
+  ...Other branches registered (and not authored) by...
   ...Foo Bar...
   ...
 
@@ -107,7 +108,7 @@ We can also create a branch from a person's page. First, check that the
   ... GET /people/lifeless/+branches HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ..."http://localhost:9000/people/lifeless/+addbranch"...
+  ..."http://.../people/lifeless/+addbranch"...
 
 When creating a branch from a person, we have the option not to specify an
 associated product.
@@ -119,64 +120,11 @@ associated product.
   HTTP/1.1 200 Ok
   ...
 
+Now let's post the branch creation form for a "junk" branch, that is a
+branch with no associated product.
 
-But first we try to post a invalid Branch URL to test the field validator.
-
-  >>> print http(r"""
-  ... POST /people/lifeless/+addbranch HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1315
-  ... Content-Type: multipart/form-data; boundary=---------------------------16855892469756896411380849908
-  ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
-  ... Referer: http://localhost:9000/people/lifeless/+addbranch
-  ... 
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="field.product"
-  ... 
-  ... 
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... pyresources
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... Resource Management for Unit Tests
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="field.url"
-  ... 
-  ... example.com/~lifeless/pyresources/
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="field.home_page"
-  ... 
-  ... 
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="field.lifecycle_status"
-  ... 
-  ... New
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="field.lifecycle_status-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... A resource management framework for handling unit test fixtures in Python.
-  ... -----------------------------16855892469756896411380849908
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------16855892469756896411380849908--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Not a valid URL. Please enter the full URL...
-  ...
-
-
-
-And now let's post the branch creation form for a "junk" branch, that is a branch with
-no associated product.
+The specified URL has a trailing slash. In the next test, we will check that it
+has been stripped.
 
   >>> print http(r"""
   ... POST /people/lifeless/+addbranch HTTP/1.1
@@ -184,7 +132,6 @@ no associated product.
   ... Content-Length: 1315
   ... Content-Type: multipart/form-data; boundary=---------------------------16855892469756896411380849908
   ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
-  ... Referer: http://localhost:9000/people/lifeless/+addbranch
   ... 
   ... -----------------------------16855892469756896411380849908
   ... Content-Disposition: form-data; name="field.product"
@@ -227,17 +174,19 @@ no associated product.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/people/name16/+branch/+junk/pyresources
+  Location: http://.../people/name16/+branch/+junk/pyresources
 
 Let's make sure we can see the page for the newly created junk branch.
 Because it has no product, it has no link to other product branches.
+
+Also, the branch URL must appear with the trailing slash stripped.
 
   >>> print http(r"""
   ... GET /people/name16/+branch/+junk/pyresources HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...
-  .../people/name16/+branches"...
-  ...Other branches by...
-  ...Foo Bar...
+  ...sftp://example.com/~lifeless/pyresources...
+  <a href=".../people/lifeless/+authoredbranches">
+  Other branches authored by Robert Collins
+  </a>
   ...

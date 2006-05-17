@@ -8,6 +8,7 @@ __all__ = [
     'DistroReleaseNavigation',
     'DistroReleaseFacets',
     'DistroReleaseView',
+    'DistroReleaseEditView',
     'DistroReleaseAddView',
     ]
 
@@ -29,6 +30,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.queue import QueueItemsView
+
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -79,35 +83,46 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['search', 'support', 'packaging', 'edit', 'reassign',
-             'addport', 'admin', 'builds']
+    links = ['edit', 'reassign', 'driver', 'support', 'packaging', 
+             'add_port', 'add_milestone', 'admin', 'builds', 'queue']
 
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def driver(self):
+        text = 'Appoint driver'
+        summary = 'Someone with permission to set goals this release'
+        return Link('+driver', text, summary, icon='edit')
+
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
-        text = 'Change Drivers'
+        text = 'Change Registrant'
         return Link('+reassign', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_milestone(self):
+        text = 'Add Milestone'
+        summary = 'Register a new milestone for this release'
+        return Link('+addmilestone', text, summary, icon='add')
 
     def packaging(self):
         text = 'Upstream Links'
         return Link('+packaging', text, icon='info')
+
+    # A search link isn't needed because the distro release overview
+    # has a search form.
 
     def support(self):
         text = 'Request Support'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
 
-    def search(self):
-        text = 'Search Packages'
-        return Link('+search', text, icon='search')
-
     @enabled_with_permission('launchpad.Admin')
-    def addport(self):
+    def add_port(self):
         text = 'Add Port'
-        return Link('+addport', text, icon='edit')
+        return Link('+addport', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -117,6 +132,10 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'View Builds'
         return Link('+builds', text, icon='info')
+
+    def queue(self):
+        text = 'View Queue'
+        return Link('+queue', text, icon='info')
 
 
 class DistroReleaseBugsMenu(ApplicationMenu):
@@ -144,16 +163,16 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     def listapproved(self):
         text = 'Show Approved'
-        return Link('+specs?show=accepted', text, icon='info')
+        return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
         text = 'Show Proposed'
-        return Link('+specs?show=proposed', text, icon='info')
+        return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
         text = 'Show Declined'
         summary = 'Show the goals which have been declined'
-        return Link('+specs?show=declined', text, icon='info')
+        return Link('+specs?acceptance=declined', text, icon='info')
 
     def setgoals(self):
         text = 'Set Goals'
@@ -171,7 +190,7 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
         return Link('+roadmap', text, icon='info')
 
 
-class DistroReleaseView(BuildRecordsView):
+class DistroReleaseView(BuildRecordsView, QueueItemsView):
 
     def initialize(self):
         # List of languages the user is interested on based on their browser,
@@ -282,6 +301,16 @@ class DistroReleaseView(BuildRecordsView):
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
+
+
+class DistroReleaseEditView(SQLObjectEditView):
+    """View class that lets you edit a DistroRelease object.
+
+    It redirects to the main distrorelease page after a successful edit.
+    """
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class DistroReleaseAddView(AddView):

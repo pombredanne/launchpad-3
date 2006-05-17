@@ -23,6 +23,21 @@ from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
 
+def _get_pluralforms(pomsgset):
+    if pomsgset.potmsgset.getPOMsgIDs().count() > 1:
+        if pomsgset.pofile.language.pluralforms is not None:
+            entries = pomsgset.pofile.language.pluralforms
+        elif pomsgset.pofile.pluralforms is not None:
+            entries = pomsgset.pofile.pluralforms
+        else:
+            # Don't know anything about plural forms for this
+            # language, fallback to the most common case, 2
+            entries = 2
+    else:
+        # It's a singular form
+        entries = 1
+    return entries
+
 class DummyPOMsgSet:
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
     that POFile and POTMsgSet.
@@ -35,10 +50,17 @@ class DummyPOMsgSet:
         self.isfuzzy = False
         self.commenttext = None
 
+    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
+    # tests fail, for more information take a look to bug #41268
+    @property
+    def pluralforms(self):
+        """See IPOMsgSet."""
+        return _get_pluralforms(self)
+
     @property
     def active_texts(self):
         """See IPOMsgSet."""
-        return [None] * self.pofile.pluralforms
+        return [None] * self.pluralforms
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
@@ -85,17 +107,14 @@ class POMsgSet(SQLBase):
 
     selections = SQLMultipleJoin('POSelection', joinColumn='pomsgset',
         orderBy='pluralform')
+    submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
+    # XXX CarlosPerelloMarin 20060425: This should be a cachedproperty, but
+    # tests fail, for more information take a look to bug #41268
     @property
     def pluralforms(self):
         """See IPOMsgSet."""
-        if len(list(self.potmsgset.getPOMsgIDs())) > 1:
-            # this messageset has plurals so return the expected number of
-            # pluralforms for this language
-            return self.pofile.pluralforms
-        else:
-            # this messageset is singular only
-            return 1
+        return _get_pluralforms(self) 
 
     @property
     def published_texts(self):
@@ -240,6 +259,9 @@ class POMsgSet(SQLBase):
                 validation_status=validation_status,
                 force_edition_rights=is_editor)
 
+            # Flush the database cache
+            flush_database_updates()
+
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:
             if published:
@@ -262,8 +284,8 @@ class POMsgSet(SQLBase):
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
 
-        # update the pomsgset statistics
-        self.updateStatistics()
+        # update the pomsgset flags
+        self.updateFlags()
 
     def _makeSubmission(self, person, text, pluralform, published,
             validation_status=TranslationValidationStatus.UNKNOWN,
@@ -451,12 +473,15 @@ class POMsgSet(SQLBase):
         # return the submission we have just made
         return submission
 
-    def updateStatistics(self):
+    def updateFlags(self):
+        """See IPOMsgSet."""
         # make sure we are working with the very latest data
         flush_database_updates()
+
         # we only want to calculate the number of plural forms expected for
         # this pomsgset once
         pluralforms = self.pluralforms
+
         # calculate the number of published plural forms
         published_count = POSelection.select("""
             POSelection.pomsgset = %s AND
@@ -464,9 +489,14 @@ class POMsgSet(SQLBase):
             POSelection.pluralform < %s
             """ % sqlvalues(self.id, pluralforms)).count()
         if published_count == pluralforms:
-            self.publishedcomplete = True
+             self.publishedcomplete = True
         else:
-            self.publishedcomplete = False
+             self.publishedcomplete = False
+
+        if published_count == 0:
+            # If we don't have translations, this entry cannot be fuzzy.
+            self.publishedfuzzy = False
+
         # calculate the number of active plural forms
         active_count = POSelection.select("""
             POSelection.pomsgset = %s AND
@@ -477,7 +507,14 @@ class POMsgSet(SQLBase):
             self.iscomplete = True
         else:
             self.iscomplete = False
+
+        if active_count == 0:
+            # If we don't have translations, this entry cannot be fuzzy.
+            self.isfuzzy = False
+
         flush_database_updates()
+
+        # Let's see if we got updates from Rosetta
         updated = POMsgSet.select("""
             POMsgSet.id = %s AND
             POMsgSet.isfuzzy = FALSE AND
@@ -489,14 +526,17 @@ class POMsgSet(SQLBase):
             ActiveSubmission.id = POSelection.activesubmission AND
             PublishedSubmission.id = POSelection.publishedsubmission AND
             ActiveSubmission.datecreated > PublishedSubmission.datecreated
-            """ % sqlvalues(self.id, self.pluralforms),
+            """ % sqlvalues(self.id, pluralforms),
             clauseTables=['POSelection',
                           'POSubmission AS ActiveSubmission',
                           'POSubmission AS PublishedSubmission']).count()
         if updated:
+            # We found rows that change from what we got from upstream.
             self.isupdated = True
         else:
+            # We have the same information as upstream gave us.
             self.isupdated = False
+
         flush_database_updates()
 
     def getWikiSubmissions(self, pluralform):

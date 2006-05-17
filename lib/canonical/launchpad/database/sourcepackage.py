@@ -21,7 +21,8 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    PackagingType, PackagePublishingPocket, BuildStatus)
+    PackagingType, PackagePublishingPocket, BuildStatus,
+    PackagePublishingStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -33,8 +34,9 @@ from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.supportcontact import SupportContact
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.distributionsourcepackagerelease import \
     DistributionSourcePackageRelease
 from canonical.launchpad.database.distroreleasesourcepackagerelease import \
@@ -326,7 +328,8 @@ class SourcePackage(BugTargetBase):
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
@@ -370,7 +373,7 @@ class SourcePackage(BugTargetBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
@@ -388,6 +391,39 @@ class SourcePackage(BugTargetBase):
         if ticket.sourcepackagename != self.sourcepackagename:
             return None
         return ticket
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return False
+        SupportContact(
+            product=None, person=person.id,
+            sourcepackagename=self.sourcepackagename.id,
+            distribution=self.distribution.id)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
 
     def __eq__(self, other):
         """See canonical.launchpad.interfaces.ISourcePackage."""
@@ -410,9 +446,11 @@ class SourcePackage(BugTargetBase):
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
-        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)]
+        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id,
+                        PackagePublishingStatus.PUBLISHED)]
 
         # exclude gina-generated builds
         # buildstate == FULLYBUILT && datebuilt == null
@@ -431,7 +469,7 @@ class SourcePackage(BugTargetBase):
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
         if status == BuildStatus.NEEDSBUILD:
-            orderBy = "-BuildQueue.lastscore"
+            orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
 

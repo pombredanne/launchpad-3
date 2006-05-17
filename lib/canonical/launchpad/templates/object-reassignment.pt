@@ -2,29 +2,37 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+    i18n:domain="launchpad"
+>
 <body>
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Mozilla Firefox</h3>
+  <h1>Change the <tal:role replace="view/ownerOrMaintainerAttr" /> of 
+        <tal:thing replace="view/contextName" />
+  </h1>
+</metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Change the <span tal:replace="view/ownerOrMaintainerAttr" /> of 
-    <span tal:replace="view/contextName" />
-  </h1>
-
-  <p class="portalMessage" tal:condition="view/errormessage"
-     tal:content="view/errormessage" />
+  <p
+    tal:condition="view/errormessage"
+    class="error message"
+    tal:content="view/errormessage"
+  />
 
   <form action="" method="POST">
 
     <table width="100%">
       <tr>
         <td align="right">
-          Current <span tal:replace="view/ownerOrMaintainerAttr" />:
+          Current:
         </td>
         <td>
           <span tal:replace="view/ownerOrMaintainer/browsername" />
@@ -32,7 +40,7 @@
       <tr>
 
       <tr>
-        <td align="right">Change to:</td>
+        <td align="right">New:</td>
         <td><tal:block content="structure view/owner_widget" /></td>
       </tr>
 
@@ -50,10 +58,11 @@
                    name="existing" />A new team I'm creating here
           </label>
           <br />
-
-          The new team's name must begin with a lower-case letter or number,
-          and contain only letters, numbers, dots, hyphens, or plus signs.
-          <br />
+          <p class="lesser discreet">
+            The new team's name must begin with a lower-case letter or
+            number, and contain only letters, numbers, dots, hyphens, or plus
+            signs.
+          </p>
         </td>
       </tr>
 

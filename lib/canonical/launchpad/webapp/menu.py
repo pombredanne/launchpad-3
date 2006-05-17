@@ -6,7 +6,6 @@ __all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'Link', 'LinkData', 'FacetLink', 'MenuLink', 'Url', 'structured',
            'enabled_with_permission']
 
-import urlparse
 import cgi
 from zope.interface import implements
 from canonical.lp import decorates
@@ -18,6 +17,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator, UserAttributeCache
     )
+from canonical.launchpad.webapp.url import urlparse
 
 
 class structured:
@@ -270,7 +270,7 @@ class Url:
         self.url = url
         if query is not None:
             self.url += '?%s' % query
-        urlparts = iter(urlparse.urlparse(self.url))
+        urlparts = iter(urlparse(self.url))
         self.addressingscheme = urlparts.next()
         self.networklocation = urlparts.next()
         self.path = urlparts.next()

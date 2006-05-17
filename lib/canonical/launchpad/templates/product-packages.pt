@@ -6,19 +6,26 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Product Title</h3>
+  <h1>Distribution packages</h1>
+</metal:heading>
 
 <div metal:fill-slot="main">
 
-  <h1>Distribution packages</h1>
-
-  <p class="documentDescription">This page lists any distribution packages
+  <p>
+    This page lists any distribution packages
     that are known for the different release series of
     <span tal:replace="context/displayname">Foomatic</span>.
   </p>
 
-  <p class="portalMessage" tal:condition="not: context/serieslist">
+  <p class="informational message" tal:condition="not: context/serieslist">
     No product branches registered for 
     <span tal:replace="context/displayname">Foomatic</span>. Please
     <a href="+addseries">register a branch</a> and then you will be able to
@@ -57,11 +64,11 @@
       Add Packaging Hint</a>
     </div>
 
-    <p class="portalMessage" tal:condition="not: series/packagings">
+    <p class="informational message" tal:condition="not: series/packagings">
       No packages are registered for this branch or release series of
       <span tal:replace="context/displayname">Foomatic</span>. If you know
       that this series is in fact in an Ubuntu release, please
-      <a tal:attributes="href string:${series/product/fmt:url}/+addpackage">
+      <a tal:attributes="href string:${series/fmt:url}/+addpackage">
       register it now.</a>
     </p>
 

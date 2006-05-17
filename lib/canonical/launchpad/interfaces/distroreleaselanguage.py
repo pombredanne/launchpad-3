@@ -3,9 +3,7 @@
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
-
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __metaclass__ = type
 
@@ -29,7 +27,12 @@ class IDistroReleaseLanguage(IRosettaStats):
     title = Attribute("The title.")
 
     pofiles = Attribute("The set of pofiles in this distrorelease for this "
-        "language.")
+        "language. This includes only the real pofiles where translations "
+        "exist.")
+
+    po_files_or_dummies = Attribute(
+        "Return a full complement of po files and dummy pofiles, one for "
+        "each PO Template in the release.")
 
     translator_count = Attribute("The number of registered translators "
         "for this language in the distribution.")

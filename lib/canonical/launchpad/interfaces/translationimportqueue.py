@@ -5,8 +5,7 @@ from zope.schema import Bool, Choice, TextLine, Datetime, Field
 
 from canonical.lp.dbschema import RosettaImportStatus
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __metaclass__ = type
 
@@ -112,6 +111,12 @@ class ITranslationImportQueueEntry(Interface):
     def getFileContent():
         """Return the imported file content as a stream."""
 
+    def getTemplatesOnSameDirectory():
+        """Return import queue entries stored on the same directory as self.
+
+        The returned entries will be only .pot entries.
+        """
+
 
 class ITranslationImportQueue(Interface):
     """A set of files to be imported into Rosetta."""
@@ -136,7 +141,7 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None,
-        potemplate=None):
+        potemplate=None, pofile=None):
         """Return a new or updated entry of the import queue.
 
         :arg path: is the path, with the filename, of the file imported.
@@ -149,6 +154,7 @@ class ITranslationImportQueue(Interface):
         :arg distrorelease: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
+        :arg pofile: is the link of this import with an IPOFile.
 
         sourcepackagename + distrorelease and productseries are exclusive, we
         must have only one combination of them.
@@ -201,13 +207,22 @@ class ITranslationImportQueue(Interface):
         filtering purposes.
         """
 
-    def executeAutomaticReviews(ztm):
+    def executeOptimisticApprovals(ztm):
         """Try to move entries from the Needs Review status to Approved one.
 
         :arg ztm: Zope transaction manager object.
 
         This method moves all entries that we know where should they be
         imported from the Needs Review status to the Accepted one.
+        """
+
+    def executeOptimisticBlock():
+        """Try to move entries from the Needs Review status to Blocked one.
+
+        This method moves all .po entries that are on the same directory that
+        a .pot entry that has the status Blocked to that same status.
+
+        Return the number of items blocked.
         """
 
     def cleanUpQueue():

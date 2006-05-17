@@ -43,6 +43,7 @@ Try doing a base language pack export.
     ...     release_name='hoary',
     ...     component='main',
     ...     update=False,
+    ...     force_utf8=True,
     ...     output_file=None,
     ...     email_addresses=['daf@canonical.com'],
     ...     logger=logger)

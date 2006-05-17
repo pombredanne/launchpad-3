@@ -35,6 +35,7 @@
         />
 
     <browser:pages for="canonical.launchpad.interfaces.IBugTracker"
+        class="canonical.launchpad.browser.BugTrackerView"
         permission="zope.Public">
         <browser:page
             name="+index"
@@ -53,7 +54,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTracker"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.BugTrackerView">
+        class="canonical.launchpad.browser.BugTrackerEditView">
         <browser:page name="+oldedit"
             template="../templates/bugtracker-edit.pt"
             lp:url="malone/bugtrackers/$BugTracker.name/+oldedit" />
@@ -63,8 +64,7 @@
       name="+edit"
       for="canonical.launchpad.interfaces.IBugTracker"
       schema="canonical.launchpad.interfaces.IBugTracker"
-      class="canonical.launchpad.browser.BugTrackerView"
-      label="Edit bug tracker details"
+      class="canonical.launchpad.browser.BugTrackerEditView"
       fields="title summary baseurl contactdetails"
       permission="launchpad.AnyPerson"
       template="../templates/bugtracker-edit.pt"
@@ -118,7 +118,6 @@
     <browser:addform
         name="+newbugtracker"
         permission="launchpad.AnyPerson"
-        label="Register an external bug tracker"
         class="canonical.launchpad.browser.bugtracker.BugTrackerAddView"
         for="canonical.launchpad.interfaces.IBugTrackerSet"
         schema="canonical.launchpad.interfaces.IBugTracker"

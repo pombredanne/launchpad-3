@@ -10,8 +10,11 @@
         <allow interface="canonical.launchpad.interfaces.IMilestone" />
         <allow interface="canonical.launchpad.interfaces.IAuthorization" />
         <require
-            permission="launchpad.AnyPerson"
+            permission="launchpad.Edit"
             set_attributes="name dateexpected visible" />
+        <require
+            permission="launchpad.Admin"
+            set_attributes="productseries distrorelease" />
     </content>
 
     <browser:navigation
@@ -52,10 +55,21 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IMilestone"
         fields="name dateexpected visible"
-        label="Edit milestone"
         permission="launchpad.Edit"
         template="../templates/milestone-edit.pt"
         lp:url="/products/$Product.name/+milestone/$Milestone.name/+edit">
+    </browser:editform>
+
+    <browser:editform
+        name="+admin"
+        for="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.MilestoneEditView"
+        facet="overview"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        fields="productseries distrorelease"
+        permission="launchpad.Admin"
+        template="../templates/milestone-edit.pt"
+        lp:url="/products/$Product.name/+milestone/$Milestone.name/+admin">
     </browser:editform>
 
     <!-- IMilestoneSet -->

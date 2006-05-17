@@ -1,20 +1,23 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+      i18n:domain="launchpad"
+>
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
+<metal:heading fill-slot="pageheading">
+  <h3 tal:content="context/title">Ubuntu Linux</h3>
+  <h1>All mirrors</h1>
+</metal:heading>
 
-  <h1>All Mirrors</h1>
+<div metal:fill-slot="main">
 
   <div tal:condition="not: context/enabled_mirrors">
     This distribution has no registered mirrors.

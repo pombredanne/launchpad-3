@@ -181,7 +181,7 @@ class EditEmailCommand(EmailCommand):
         edited = False
         for attr_name, attr_value in args.items():
             if getattr(context, attr_name) != attr_value:
-                setattr(context, attr_name, attr_value)
+                self.setAttributeValue(context, attr_name, attr_value)
                 edited = True
         if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
             edited_fields.update(args.keys())
@@ -189,6 +189,10 @@ class EditEmailCommand(EmailCommand):
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
+
+    def setAttributeValue(self, context, attr_name, attr_value):
+        """See IEmailCommand."""
+        setattr(context, attr_name, attr_value)
 
 
 class PrivateEmailCommand(EditEmailCommand):
@@ -424,6 +428,10 @@ class AssigneeEmailCommand(EditEmailCommand):
 
         return {self.name: person_term.value}
 
+    def setAttributeValue(self, context, attr_name, attr_value):
+        """See EmailCommand."""
+        context.transitionToAssignee(attr_value)
+
 
 class DBSchemaEditEmailCommand(EditEmailCommand):
     """Helper class for edit DBSchema attributes.
@@ -446,9 +454,14 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
         item_name = self.string_args[0]
         dbschema = self.dbschema
         try:
-            return {self.name: dbschema.items[item_name.upper()]}
+            dbitem = dbschema.items[item_name.upper()]
         except KeyError:
-            possible_items = [item.name.lower() for item in dbschema.items]
+            dbitem = None
+
+        if dbitem is None or dbitem.name == 'UNKNOWN':
+            possible_items = [
+                item.name.lower() for item in dbschema.items
+                if item.name != 'UNKNOWN']
             possible_values = ', '.join(possible_items)
             raise EmailProcessingError(
                     get_error_message(
@@ -457,10 +470,16 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
                          arguments=possible_values,
                          example_argument=possible_items[0]))
 
+        return {self.name: dbitem}
+
 
 class StatusEmailCommand(DBSchemaEditEmailCommand):
     """Changes a bug task's status."""
     dbschema = BugTaskStatus
+
+    def setAttributeValue(self, context, attr_name, attr_value):
+        """See EmailCommand."""
+        context.transitionToStatus(attr_value)
 
 
 class SeverityEmailCommand(DBSchemaEditEmailCommand):

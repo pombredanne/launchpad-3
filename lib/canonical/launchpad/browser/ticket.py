@@ -20,36 +20,42 @@ from canonical.launchpad.interfaces import ILaunchBag, ITicket, ITicketSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation)
+    ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
+    LaunchpadView)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.helpers import Snapshot
 
 
-class TicketSetNavigation(GetitemNavigation):
+class TicketSetNavigation(Navigation):
 
     usedfor = ITicketSet
 
 
-class TicketView:
+class TicketView(LaunchpadView):
 
     __used_for__ = ITicket
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.is_owner = False
+    def initialize(self):
         self.notices = []
+        self.is_owner = self.user == self.context.owner
 
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
+        if not self.user or self.request.method != "POST":
+            # No post, nothing to do
+            return
+
+        # XXX: all this crap should be moved to a method; having it here
+        # means that any template using TicketView (including
+        # -listing-detailed, which many other pages do) have to go
+        # through millions of queries.
+        #   -- kiko, 2006-03-17
 
         ticket_unmodified = Snapshot(self.context, providing=ITicket)
         modified_fields = set()
 
+        form = self.request.form
         # establish if a subscription form was posted
-        newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user and request.method == 'POST':
+        newsub = form.get('subscribe', None)
+        if newsub is not None:
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
                 self.notices.append("You have subscribed to this request.")
@@ -60,27 +66,22 @@ class TicketView:
                 modified_fields.add('subscribers')
 
         # establish if the user is trying to reject the ticket
-        reject = request.form.get('reject', None)
-        if reject is not None and self.user and request.method == 'POST':
+        reject = form.get('reject', None)
+        if reject is not None:
             if self.context.reject(self.user):
                 self.notices.append("You have rejected this request.")
                 modified_fields.add('status')
 
         # establish if the user is trying to reopen the ticket
-        reopen = request.form.get('reopen', None)
-        if reopen is not None and self.user and request.method == 'POST':
+        reopen = form.get('reopen', None)
+        if reopen is not None:
             if self.context.reopen(self.user):
                 self.notices.append("You have reopened this request.")
                 modified_fields.add('status')
 
-        # see if this is the creator, or not
-        if self.user == self.context.owner:
-            self.is_owner = True
-
         # see if there has been an attempt to create a bug
-        makebug = request.form.get('makebug', None)
-        if makebug is not None and self.user is not None and \
-            request.method == 'POST':
+        makebug = form.get('makebug', None)
+        if makebug is not None:
             if self.context.bugs:
                 # we can't make a bug when we have linked bugs
                 self.notices.append('You cannot create a bug report from '
@@ -97,26 +98,12 @@ class TicketView:
             notify(SQLObjectModifiedEvent(
                 self.context, ticket_unmodified, list(modified_fields)))
 
-
     @property
     def subscription(self):
         """establish if this user has a subscription"""
         if self.user is None:
             return False
-        return person_has_subscription(self.user, self.context)
-
-
-def person_has_subscription(person, ticket):
-    """Return whether the person has a subscription on the ticket.
-
-    XXX: refactor this into a method on ITicket.
-    Steve Alexander, 2005-09-27
-    """
-    assert person is not None
-    for subscription in ticket.subscriptions:
-        if subscription.person.id == person.id:
-            return True
-    return False
+        return self.context.isSubscribed(self.user)
 
 
 class TicketAddView(SQLObjectAddView):
@@ -196,8 +183,7 @@ class TicketContextMenu(ContextMenu):
                     enabled=bool(self.context.reopenings))
 
     def subscription(self):
-        if (self.user is not None and
-            person_has_subscription(self.user, self.context)):
+        if self.user is not None and self.context.isSubscribed(self.user):
             text = 'Unsubscribe'
             enabled = True
             icon = 'edit'
@@ -240,3 +226,4 @@ class TicketSetContextMenu(ContextMenu):
     def finddistro(self):
         text = 'Find Distribution'
         return Link('/distros', text, icon='search')
+

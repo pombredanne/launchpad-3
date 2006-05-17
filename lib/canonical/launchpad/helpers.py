@@ -40,6 +40,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
+
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
@@ -253,11 +254,8 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     if you popen2() a command, write its standard input, then read its
     standard output, this can deadlock due to the parent process blocking on
     writing to the child, while the child process is simultaneously blocking
-    on writing to its parent. This function avoids that problem by writing and
-    reading incrementally.
-
-    When we make Python 2.4 a requirement, this function can probably be
-    replaced with something using subprocess.Popen.communicate().
+    on writing to its parent. This function avoids that problem by using
+    subprocess.Popen.communicate().
     """
 
     p = subprocess.Popen(
@@ -282,6 +280,10 @@ def contactEmailAddresses(person):
     """
     emails = set()
     if person.preferredemail is not None:
+        # XXX: This str() call can be removed as soon as Andrew lands his
+        # unicode-simple-sendmail branch, because that will make
+        # simple_sendmail handle unicode email addresses.
+        # Guilherme Salgado, 2006-04-20
         emails.add(str(person.preferredemail.email))
         return emails
 
@@ -393,7 +395,6 @@ def count_lines(text):
 
 def request_languages(request):
     '''Turn a request into a list of languages to show.'''
-
     user = getUtility(ILaunchBag).user
     if user is not None and user.languages:
         return user.languages
@@ -405,6 +406,7 @@ def request_languages(request):
         if lang not in languages:
             languages.append(lang)
     return languages
+
 
 class UnrecognisedCFormatString(ValueError):
     """Exception raised when a string containing C format sequences can't be
@@ -773,13 +775,50 @@ def getFileType(fname):
         return SourcePackageFileType.TARBALL
 
 
+BINARYPACKAGE_EXTENSIONS = {
+    BinaryPackageFormat.DEB: '.deb',
+    BinaryPackageFormat.UDEB: '.udeb',
+    BinaryPackageFormat.RPM: '.rpm'}
+
+
+class UnrecognizedBinaryFormat(Exception):
+
+    def __init__(self, fname, *args):
+        Exception.__init__(self, *args)
+        self.fname = fname
+
+    def __str__(self):
+        return '%s is not recognized as a binary file.' % self.fname
+
+
 def getBinaryPackageFormat(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFormat.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFormat.UDEB
-    if fname.endswith(".rpm"):
-        return BinaryPackageFormat.RPM
+    """Return the BinaryPackageFormat for the given filename.
+
+    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
+    'DEB'
+    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
+    'UDEB'
+    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
+    'RPM'
+    """
+    for key, value in BINARYPACKAGE_EXTENSIONS.items():
+        if fname.endswith(value):
+            return key
+
+    raise UnrecognizedBinaryFormat(fname)
+
+
+def getBinaryPackageExtension(format):
+    """Return the file extension for the given BinaryPackageFormat.
+
+    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
+    '.deb'
+    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
+    '.udeb'
+    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
+    '.rpm'
+    """
+    return BINARYPACKAGE_EXTENSIONS[format]
 
 
 def intOrZero(value):
@@ -859,10 +898,15 @@ def is_ascii_only(string):
 
 
 def capture_state(obj, *fields):
+    """Return a snapshot of obj.
+
+    Useful when publishing SQLObjectModifiedEvents in doctests.
+    """
     class State: pass
     state = State()
     for field in fields:
         setattr(state, field, getattr(obj, field))
 
     return state
+
 

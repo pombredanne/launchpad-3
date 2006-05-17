@@ -1,7 +1,7 @@
 Package Bug Contact
 ===================
 
-The package bug contact is zero, one or more people or teams that get
+The package bug contact is zero, one, or more people or teams that get
 explicitly Cc'd to all public bugs filed on a package.
 
 The package bug contacts are obtained from looking at the
@@ -130,19 +130,15 @@ package is already subscribed to the bug:
     >>> import transaction
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.helpers import capture_state
-    >>> from canonical.launchpad.components.bugtask import mark_task
-    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistroBugTask, IDistroReleaseBugTask)
     >>> from canonical.launchpad.mail import stub
 
     >>> ubuntu_pmount.addBugContact(sample_person)
 
-    >>> old_state = capture_state(
-    ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IDistroBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
@@ -175,8 +171,8 @@ priority, etc.
     >>> test_emails.sort(by_to_addrs)
 
     >>> len(test_emails)
-    4
-    >>> from_addr, to_addr, raw_message = test_emails.pop(1)
+    1
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
     >>> print to_addr
@@ -187,10 +183,35 @@ priority, etc.
     '[Bug 1] Firefox does not support SVG'
     >>> print msg.get_payload(decode=True)
     Public bug reported:
-    http://.../malone/bugs/...
-    ...
-    Affects: pmount (Ubuntu)
-    ...
+    <BLANKLINE>
+    Firefox needs to support embedded SVG images, now that the standard has
+    been finalised.
+    <BLANKLINE>
+    The SVG standard 1.0 is complete, and draft implementations for Firefox
+    exist. One of these implementations needs to be integrated with the base
+    install of Firefox. Ideally, the implementation needs to include support
+    for the manipulation of SVG objects from JavaScript to enable
+    interactive and dynamic SVG drawings.
+    <BLANKLINE>
+    ** Affects: firefox (upstream)
+           Severity: Minor
+           Priority: Wontfix
+         Assignee: Mark Shuttleworth
+             Status: Unconfirmed
+    <BLANKLINE>
+    ** Affects: pmount (Ubuntu)
+           Severity: Normal
+           Priority: Medium
+             Status: Unconfirmed
+    <BLANKLINE>
+    ** Affects: mozilla-firefox (Debian)
+           Severity: Minor
+           Priority: High
+             Status: Confirmed
+    <BLANKLINE>
+    --
+    Firefox does not support SVG
+    http://localhost:8086/bugs/1
 
     >>> stub.test_emails = []
 
@@ -216,6 +237,35 @@ Ensure the same people as before are subscribed:
     ...     [subscription.person.displayname for subscription in
     ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
     [u'Foo Bar', u'Sample Person', u'Steve Alexander']
+
+This also works with distrorelease tasks. For example, bug #5 in Ubuntu
+warty current has no subscribers:
+
+    >>> bug_five_in_warty_firefox = getUtility(IBugTaskSet).get(16)
+    >>> print bug_five_in_warty_firefox.distrorelease.name
+    warty
+    >>> list(bug_five_in_warty_firefox.bug.subscriptions)
+    []
+
+Reassigning this task to pmount will subscribe pmount's bug contacts:
+Sample Person and Foo Bar.
+
+    >>> old_state = Snapshot(
+    ...     bug_five_in_warty_firefox, providing=IDistroReleaseBugTask)
+
+    >>> bug_five_in_warty_firefox.sourcepackagename = (
+    ...     ubuntu_pmount.sourcepackagename)
+
+    >>> source_package_changed = SQLObjectModifiedEvent(
+    ...     bug_five_in_warty_firefox, old_state, ["sourcepackagename"])
+
+    >>> notify(source_package_changed)
+    >>> transaction.commit()
+
+    >>> sorted(
+    ...     [subscription.person.displayname for subscription in
+    ...      bug_five_in_warty_firefox.bug.subscriptions])
+    [u'Foo Bar', u'Sample Person']
 
 Bug contacts are not limited to persons; teams are also allowed. Teams
 are a bit different, since they might not have a contact address. Let's
@@ -247,15 +297,6 @@ The Ubuntu Gnome team was subscribed to the bug:
     ...      bug_one_in_ubuntu_firefox.bug.subscriptions])
     [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Gnome Team']
 
-And since the team didn't have a contact address, a notification was
-sent to each member:
-
-    >>> print [
-    ...    to_addrs
-    ...    for from_addr, to_addrs, raw_message in sorted(stub.test_emails)]
-    [['dilys@muse.19inch.net'], ['foo.bar@canonical.com'],
-     ['mark@hbd.com'], ['test@canonical.com']]
-
 If a bug is private, no changes are made to the subscriber list when a
 bug is reassigned to a different package. So, if Mark Shuttleworth
 becomes a bug contact for ubuntu mozilla-firefox:
@@ -269,12 +310,8 @@ and the bug is made private:
 
 and then the bug gets reassigned to mozilla firefox:
 
-    >>> old_state = capture_state(
-    ...     bug_one_in_ubuntu_firefox, "id", "status", "severity",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IDistroBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 
     >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
     ...     ubuntu_firefox.sourcepackagename)
@@ -325,12 +362,8 @@ Bar gets subscribed to the bug in the process:
     ...      bug_two_in_ubuntu.bug.subscriptions])
     [u'Steve Alexander']
 
-    >>> old_state = capture_state(
-    ...     bug_two_in_ubuntu, "id", "status", "severity", "product",
-    ...     "binarypackagename", "sourcepackagename", "priority",
-    ...     "assignee", "bugwatch", "milestone", "distribution")
-
-    >>> mark_task(old_state, IUpstreamBugTask)
+    >>> old_state = Snapshot(
+    ...     bug_two_in_ubuntu, providing=IUpstreamBugTask)
 
     >>> bug_two_in_ubuntu.product = mozilla_firefox
 
@@ -354,8 +387,8 @@ report:
     >>> test_emails.sort(by_to_addrs)
 
     >>> len(test_emails)
-    3
-    >>> from_addr, to_addr, raw_message = test_emails.pop(1)
+    1
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
     >>> print to_addr
@@ -366,7 +399,6 @@ report:
     '[Bug 2] Blackhole Trash folder'
     >>> print msg.get_payload(decode=True)
     Public bug reported:
-    http://.../malone/bugs/...
-    <BLANKLINE>
-    Affects: firefox (upstream)
+    ...
+    ** Affects: firefox (upstream)
     ...

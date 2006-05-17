@@ -8,11 +8,12 @@ __all__ = [
     'IDistroReleaseSourcePackageRelease',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
+from zope.interface import Attribute
 
-from canonical.launchpad.interfaces.sourcepackagerelease import \
+
+from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease
+    )
 
 class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     """This is a SourcePackageRelease-In-A-DistroRelease. It represents a
@@ -51,9 +52,14 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     current_published = Attribute("is last SourcePackagePublishing record "
                                   "that is in PUBLISHED status.")
 
-    def changeOverride(new_component, new_section):
-        """Change the component and/or section of a
-        DistroReleaseSourcePackageRelease."""
+    def changeOverride(new_component=None, new_section=None):
+        """Change the component and/or section.
+
+        It is changed only if the argument is not None.
+        """
 
     def supersede():
-        """Supersede a DistroReleaseSourcePackageRelease."""
+        """Supersede a DistroReleaseSourcePackageRelease.
+
+        Return the modified ISourcePackagePublishingHistory object.
+        """

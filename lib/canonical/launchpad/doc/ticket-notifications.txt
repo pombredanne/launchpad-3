@@ -132,8 +132,8 @@ bug that has been linked to the request:
     Support request #8 on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
-        Linked to bug: #10
-        http://.../malone/bugs/10
+        Linked to bug: #11
+        http://.../bugs/11
     <BLANKLINE>
 
     >>> stub.test_emails = []
@@ -160,8 +160,8 @@ And if we remove the link again, we get:
     Support request #8 on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
-        Removed link to bug: #10
-        http://.../malone/bugs/10
+        Removed link to bug: #11
+        http://.../bugs/11
     <BLANKLINE>
 
     >>> stub.test_emails = []

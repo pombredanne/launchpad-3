@@ -1,19 +1,39 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+      i18n:domain="launchpad"
+>
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/distribution/@@+portlet-details" />
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/distribution/@@+portlet-details" />
+</metal:leftportlets>
 
-  <div metal:fill-slot="main">
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
 
-    <h1><span tal:replace="context/title">TITLE</span>:
-      Distribution Mirror Overview</h1>
+<metal:heading fill-slot="pageheading">
+  <h1>
+    <tal:distro replace="context/distribution/displayname">Ubuntu
+    Linux</tal:distro>
+    mirror "<tal:mirror replace="context/name">foobar</tal:mirror>"
+  </h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+    <tal:comment condition="nothing">
+      XXX: This use of "python:" here is to workaround
+      https://launchpad.net/products/launchpad/+bug/5768
+    </tal:comment>
+    <tal:non-archive-mirror condition="python: context.content.name != 'ARCHIVE'">
+      <div tal:condition="not: context/file_list" class="portalMessage">
+        We cannot check if this mirror is up to date or not because a file
+        list wasn't uploaded yet.
+      </div>
+    </tal:non-archive-mirror>
 
     <div class="highlighted" style="font-size: 80%;"
          tal:condition="context/description">
@@ -24,17 +44,47 @@
 
     <h2>Mirror URLs</h2>
 
-    <p tal:condition="context/http_base_url" 
-       tal:content="context/http_base_url" />
-    <p tal:condition="context/ftp_base_url" 
-       tal:content="context/ftp_base_url" />
-    <p tal:condition="context/rsync_base_url"
-       tal:content="context/rsync_base_url" />
+    <ul class="webref">
+      <li tal:condition="context/http_base_url" >
+        Web: <a tal:content="context/http_base_url"
+                 tal:attributes="href context/http_base_url">http://url/</a>
+      </li>
+      <li tal:condition="context/ftp_base_url" >
+        FTP: <a tal:content="context/ftp_base_url"
+                tal:attributes="href context/ftp_base_url">ftp://url/</a>
+      </li>
+      <li tal:condition="context/rsync_base_url" >
+        Rsync: <a tal:content="context/rsync_base_url"
+                  tal:attributes="href context/rsync_base_url">
+                  rsync://url/</a>
+      </li>
+    </ul>
 
-    <h2>Arch Releases Mirrored</h2>
+    <tal:last-probe define="probe context/last_probe_record">
+      <h2>Last probe</h2>
+
+      <tal:no-last-probe condition="not: probe">
+        <p>This mirror has never been verified.</p>
+      </tal:no-last-probe>
+
+      <tal:has-last-probe condition="probe">
+        <p>This mirror was last probed in 
+          <span tal:replace="probe/date_created/fmt:date" />.
+
+        <tal:is-owner condition="context/required:launchpad.Edit">
+          You can see the 
+          <a tal:attributes="href probe/log_file/url">log file</a> of that
+          probe, in case the statuses are not what you expect.
+        </tal:is-owner>
+
+        </p>
+      </tal:has-last-probe>
+    </tal:last-probe>
+
+    <h2>Architecture releases mirrored</h2>
     <div tal:condition="not: context/arch_releases">
-      This mirror has no registered Arch Releases. You can 
-      <a href="+addarchrelease">register</a> the first one.
+      We have found no releases for any architectures on this mirror.
+      This is normal if we have not yet successfully verified the mirror.
     </div>
 
     <table tal:condition="context/arch_releases" class="listing">
@@ -42,43 +92,48 @@
       <tr>
         <th>Release</th>
         <th>Architecture</th>
+        <th>Component</th>
         <th>Pocket</th>
         <th>Status</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="arch_release context/arch_releases">
-        <td tal:content="arch_release/distro_arch_release/distrorelease/title" />
+        <td tal:content="arch_release/distro_arch_release/distrorelease/name" />
         <td tal:content="arch_release/distro_arch_release/architecturetag" />
+        <td tal:content="arch_release/component/name" />
         <td tal:content="arch_release/pocket/title" />
         <td tal:content="arch_release/status/title" />
       </tr>
     </tbody>
     </table>
 
-    <h2>Source Releases Mirrored</h2>
+    <h2>Source releases mirrored</h2>
     <div tal:condition="not: context/source_releases">
-      This mirror has no registered Source Releases. You can 
-      <a href="+addsourcerelease">register</a> the first one.
+      We have found no source releases on this mirror. This is normal
+      if we have not yet successfully verified the mirror.
     </div>
 
     <table tal:condition="context/source_releases" class="listing">
     <thead>
       <tr>
         <th>Release</th>
+        <th>Component</th>
+        <th>Pocket</th>
         <th>Status</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="source_release context/source_releases">
-        <td tal:content="source_release/distro_release/title" />
+        <td tal:content="source_release/distro_release/name" />
+        <td tal:content="source_release/component/name" />
+        <td tal:content="source_release/pocket/title" />
         <td tal:content="source_release/status/title" />
       </tr>
     </tbody>
     </table>
 
-
-  </div>
+</div>
 
 </body>
 </html>

@@ -3,23 +3,24 @@
 __metaclass__ = type
 
 import unittest
-from zope.testing.doctest import DocTestSuite
-from canonical.functional import FunctionalTestSetup
-
-import transaction
-
 import email
 from email.MIMEText import MIMEText
+import transaction
+from zope.testing.doctest import DocTestSuite
+
+from canonical.functional import FunctionalLayer
 from canonical.launchpad.mail import stub, simple_sendmail
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+
 
 def setUp(junk):
     # Reset the in-memory mail spool
+    LaunchpadFunctionalTestSetup().setUp()
     stub.test_emails[:] = []
-    FunctionalTestSetup().setUp()
 
 def tearDown(junk):
     stub.test_emails[:] = []
-    FunctionalTestSetup().tearDown()
+    LaunchpadFunctionalTestSetup().tearDown()
 
 def test_simple_sendmail():
     r"""
@@ -92,10 +93,22 @@ def test_simple_sendmail():
     >>> message.get_payload() == body
     True
 
+    Character set should be utf-8 as per Bug #39758. utf8 isn't good enough.
+
+    >>> message['Content-Type']
+    'text/plain; charset="utf-8"'
+
+    And we want quoted printable, as it generally makes things readable
+    and for languages it doesn't help, the only downside to base64 is bloat.
+
+    >>> message['Content-Transfer-Encoding']
+    'quoted-printable'
+
     """
 
 def test_suite():
     suite = DocTestSuite(setUp=setUp, tearDown=tearDown)
+    suite.layer = FunctionalLayer
     return suite
 
 if __name__ == '__main__':

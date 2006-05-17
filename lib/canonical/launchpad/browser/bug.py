@@ -14,12 +14,14 @@ __all__ = [
     'BugContextMenu',
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
-    'BugTextView']
+    'BugTextView',
+    'BugURL']
 
 from zope.app.form.interfaces import WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
@@ -27,13 +29,16 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
-    NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask)
+    NotFoundError, UnexpectedFormData, valid_distrotask, valid_upstreamtask,
+    ICanonicalUrlData)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
+from canonical.lp.dbschema import (
+    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 
 
 class BugSetNavigation(Navigation):
@@ -66,8 +71,8 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
-             'addsubscriber', 'addattachment', 'linktocve', 'unlinkcve',
-             'addwatch', 'filebug', 'activitylog', 'backportfix']
+             'addsubscriber', 'addattachment', 'addbranch', 'linktocve',
+             'unlinkcve', 'addwatch', 'filebug', 'activitylog', 'backportfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -79,7 +84,7 @@ class BugContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
-        text = 'Bug Visibility'
+        text = 'Visibility/Security'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):
@@ -88,7 +93,7 @@ class BugContextMenu(ContextMenu):
 
     def subscription(self):
         user = getUtility(ILaunchBag).user
-        
+
         if user is None:
             text = 'Your Subscription'
         elif user is not None and self.context.bug.isSubscribed(user):
@@ -104,6 +109,10 @@ class BugContextMenu(ContextMenu):
     def addattachment(self):
         text = 'Add Attachment'
         return Link('+addattachment', text, icon='add')
+
+    def addbranch(self):
+        text = 'Add Branch'
+        return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
         text = structured(
@@ -186,10 +195,11 @@ class BugView:
         return self.context.isSubscribed(user)
 
     def duplicates(self):
-        """Return a list of dicts with the id and title of this bug dupes.
+        """Return a list of dicts of duplicates.
 
-        If the bug isn't accessible to the user, the title stored in the dict
-        will be 'Private Bug'
+        Each dict contains the title that should be shown and the bug
+        object itself. This allows us to protect private bugs using a
+        title like 'Private Bug'.
         """
         dupes = []
         for bug in self.context.duplicates:
@@ -199,8 +209,25 @@ class BugView:
             except Unauthorized:
                 dupe['title'] = 'Private Bug'
             dupe['id'] = bug.id
+            dupe['url'] = self.getDupeBugLink(bug)
             dupes.append(dupe)
+
         return dupes
+
+    def getDupeBugLink(self, dupe):
+        """Return a URL for a duplicate of this bug.
+
+        The link will be in the current context if the dupe is also
+        reported in this context, otherwise a default /bugs/$bug.id
+        style URL will be returned.
+        """
+        current_task = self.currentBugTask()
+
+        for task in dupe.bugtasks:
+            if task.target == current_task.target:
+                return canonical_url(task)
+
+        return canonical_url(dupe)
 
 
 class BugWithoutContextView:
@@ -291,7 +318,9 @@ class BugAlsoReportInView(GeneralFormView):
         if product:
             valid_upstreamtask(self.context.bug, product)
         if distribution:
-            valid_distrotask(self.context.bug, distribution, sourcepackagename)
+            valid_distrotask(
+                self.context.bug, distribution, sourcepackagename,
+                on_create=True)
         if bugtracker is not None and remotebug is None:
             errors.append(LaunchpadValidationError(
                 "Please specify the remote bug number in the remote "
@@ -315,21 +344,29 @@ class BugAlsoReportInView(GeneralFormView):
             product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
+        if product is not None:
+            target = product
+        elif distribution is not None:
+            target = distribution
+        else:
+            raise UnexpectedFormData(
+                'Neither product nor distribution was provided')
+
         if bugtracker is not None:
             user = getUtility(ILaunchBag).user
             bug_watch = getUtility(IBugWatchSet).createBugWatch(
                 bug=taskadded.bug, owner=user, bugtracker=bugtracker,
                 remotebug=remotebug)
             notify(SQLObjectCreatedEvent(bug_watch))
-            if product is not None:
-                target = product
-            elif distribution is not None:
-                target = distribution
-            else:
-                raise UnexpectedFormData(
-                    'Neither product nor distribution was provided')
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch
+
+        if not target.official_malone:
+            # A remote bug task gets its from a bug watch, so we want
+            # its status to be None when created.
+            taskadded.transitionToStatus(BugTaskStatus.UNKNOWN)
+            taskadded.priority = BugTaskPriority.UNKNOWN
+            taskadded.severity = BugTaskSeverity.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
         self._nextURL = canonical_url(taskadded)
@@ -487,3 +524,15 @@ class BugTextView(LaunchpadView):
             [self.bugtask_text(task) for task in self.context.bugtasks])
         return u'\n'.join(texts)
 
+
+class BugURL:
+    implements(ICanonicalUrlData)
+
+    inside = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def path(self):
+        return u"bugs/%d" % self.context.id

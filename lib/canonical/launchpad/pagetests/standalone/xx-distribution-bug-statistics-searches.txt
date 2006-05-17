@@ -8,19 +8,17 @@ statistics links.
 Viewing critical bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.severity%3Alist=Critical&search=Search&advanced=1 HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.severity%3Alist=Critical&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
-  ...0 results...
+  ...No results for search...
 
 Viewing bugs "assigned to me", as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.assignee=name12&search=Search&advanced=1 HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.assignee=name12&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
   ...1 result...
@@ -28,9 +26,8 @@ Viewing bugs "assigned to me", as Sample Person:
 Viewing untriaged bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&search=Search&advanced=1 HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
   ...1 result...
@@ -38,19 +35,17 @@ Viewing untriaged bugs as Sample Person:
 Viewing unassigned bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&assignee_option=none&search=Search&advanced=1 HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&assignee_option=none&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
   ...2 results...
 
-Viewing all reported bugs as Sample Person:
+Viewing open reported bugs as Sample Person:
 
   >>> print http(r"""
   ... GET /distros/debian/+bugs?search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
-  ...4 results...
+  ...3 results...

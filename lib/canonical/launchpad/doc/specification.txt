@@ -132,7 +132,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     new-spec
 
     >>> print delta.priority['old'].title
-    Proposed
+    Undefined
     >>> print delta.priority['new'].title
     Low
 

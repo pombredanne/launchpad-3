@@ -34,6 +34,14 @@ import os
 import shutil
 import logging
 
+# XXX 2006-05-08 Andrew Bennetts:
+#    Same nasty hack as in test.py in the root directory of launchpad, more or
+#    less.  We need to remove the launchpad root directory from sys.path, so
+#    that zope.testbrowser can "from test import pystone".  Otherwise, it finds
+#    our test.py script instead.
+lp_root = os.path.realpath(os.path.join(__file__, '..', '..', '..'))
+sys.path[:] = [p for p in sys.path if os.path.abspath(p) != lp_root]
+
 class ParameterisableTextTestRunner(unittest.TextTestRunner):
     """I am a TextTestRunner whose result class is 
     parameterisable without further subclassing"""

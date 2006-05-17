@@ -235,3 +235,216 @@
        name
   </td>
 </metal:header>
+
+
+<metal:advanced_search_form define-macro="advanced_search_form">
+
+  <form class="lesser" name="search" method="get" action="">
+    <span tal:condition="view/current_package|nothing">
+      <input type="hidden" name="field.distribution"
+             tal:attributes="value view/current_package/distribution/name" />
+      <input type="hidden" name="field.sourcepackagename"
+             tal:attributes="value view/current_package/sourcepackagename/name" />
+    </span>
+
+      <span tal:content="structure view/searchtext_widget" />
+      <input type="submit" name="search" value="Search" />
+      <a tal:attributes="href view/getSimpleSearchURL">Simple search</a>
+
+            <div style="margin-top: 5px">
+              Sort by:
+              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+            </div>
+
+    <fieldset>
+      <legend>Status and importance</legend>
+      <table>
+        <tr>
+          <td width="40%">
+            <div><label>Status:</label></div>
+              <div tal:repeat="widget_value view/getStatusWidgetValues">
+                <tal:checkbox define="widget_id string:status.${widget_value/title}">
+
+                            <input name="field.status:list"
+                                   type="checkbox"
+                                   tal:attributes="value widget_value/value;
+                                                   checked widget_value/checked;
+                                                   id widget_id">
+                            <label tal:content="widget_value/title"
+                                   tal:attributes="for widget_id">
+                              Unconfirmed
+                            </label>
+
+                </tal:checkbox>
+              </div>
+            </td>
+            <td width="30%">
+              <div><label>Severity:</label></div>
+              <div tal:repeat="widget_value view/getSeverityWidgetValues">
+                <tal:checkbox define="widget_id string:severity.${widget_value/title}">
+
+                            <input name="field.severity:list"
+                                   type="checkbox"
+                                   tal:attributes="value widget_value/value;
+                                                   checked widget_value/checked;
+                                                   id widget_id">
+                            <label tal:content="widget_value/title"
+                                   tal:attributes="for widget_id">Critical</label>
+
+              </tal:checkbox>
+            </div>
+          </td>
+          <td width="30%">
+            <div><label>Priority:</label></div>
+            <div tal:repeat="widget_value view/getPriorityWidgetValues">
+              <tal:checkbox define="widget_id string:priority.${widget_value/title}">
+
+                            <input name="field.priority:list"
+                                   type="checkbox"
+                                   tal:attributes="value widget_value/value;
+                                                   checked widget_value/checked;
+                                                   id widget_id">
+                            <label tal:content="widget_value/title"
+                                   tal:attributes="for widget_id">High</label>
+
+              </tal:checkbox>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </fieldset>
+    <fieldset>
+      <legend>People</legend>
+
+          <table>
+            <tr>
+              <td width="40%" tal:condition="view/shouldShowAssigneeWidget">
+                <table>
+                  <tr>
+
+                  <td><label>Assignee:</label></td>
+
+                  </tr>
+                  <tr>
+                    <td>
+
+                    <input
+                      type="radio"
+                      name="assignee_option"
+                      value="any"
+                      id="any"
+                    checked><label for="any">Doesn&#8217;t matter</label><br />
+
+                      <input type="radio" name="assignee_option" value="none" id="none"><label for="none"> Nobody</label><br />
+                        <div class="field">
+                          <div tal:attributes="class python:view.assignee_error and 'error' or ''">
+                            <span style="white-space: nowrap">
+                              <input type="radio" name="assignee_option" value="choose">
+                              <span tal:content="structure view/assignee_widget" />
+                            </span>
+                              <div tal:condition="view/assignee_error"
+                                   class="message"
+                                   tal:content="view/assignee_error">An error on
+                                   owner widget </div>
+                          </div>
+                        </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td width="40%" tal:condition="view/shouldShowReporterWidget">
+                <table>
+                  <tr>
+                    <td>
+                        <label for="field.owner">Reporter:</label>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="white-space: nowrap">
+                      <div class="field">
+                        <div tal:attributes="class python:view.owner_error
+                                                          and 'error' or
+                                                          ''">
+                        <span tal:content="structure view/owner_widget" />
+                        <div tal:condition="view/owner_error"
+                             class="message"
+                             tal:content="view/owner_error">An error on
+                             owner widget </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td>&nbsp;</td>
+            </tr>
+          </table>
+
+    </fieldset>
+    <fieldset tal:define="show_component_widget view/shouldShowComponentWidget">
+      <legend>Release-specific</legend>
+      <div
+        tal:define="widget_values view/getMilestoneWidgetValues"
+        style="float: left; margin-right: 4em;"
+      >
+        <div><label for="field.milestone">Target milestone:</label></div>
+
+                      <span tal:repeat="widget_value widget_values">
+                        <span tal:define="widget_id string:milestone.${widget_value/title}">
+                        <input name="field.milestone:list"
+                               type="checkbox"
+                               tal:attributes="value widget_value/value;
+                                               checked widget_value/checked;
+                                               id widget_id">
+                          <label tal:content="widget_value/title"
+                                 tal:attributes="for widget_id">
+                            dapper
+                          </label>
+                          <br />
+                        </span>
+                      </span>
+
+        <tal:none condition="not:widget_values">(none)</tal:none>
+      </div>
+      <div
+        tal:condition="show_component_widget"
+        style="float: left;"
+      >
+        <label for="field.component">Component:</label>
+
+                    <span tal:content="structure view/component_widget"
+                          tal:condition="show_component_widget">
+                    </span>
+
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Other</legend>
+ 
+          <table>
+            <tr>
+              <td style="white-space: nowrap">
+                  <span tal:content="structure view/omit_dupes_widget" />
+                  <label for="field.omit_dupes">Omit duplicate bugs</label>
+              </td>
+              <td style="white-space: nowrap">
+                  <span tal:content="structure view/has_patch_widget" />
+                  <label for="field.has_patch">
+                    Show only bugs with patches available
+                  </label>
+              </td>
+            </tr>
+            <tr tal:condition="view/shouldShowNoPackageWidget">
+              <td>
+                  <span tal:content="structure view/has_no_package_widget" />
+                  <label for="field.has_no_package">
+                    Exclude bugs with packages specified
+                  </label>
+              </td>
+            </tr>
+          </table>
+
+    </fieldset>
+    <div><input type="submit" name="search" value="Search" /></div>
+  </form>
+</metal:advanced_search_form>

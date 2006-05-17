@@ -14,9 +14,13 @@
   <div tal:replace="structure context/@@+portlet-sprints" />
 </metal:rightportlets>
 
+<metal:heading fill-slot="pageheading">
+  <h3>Feature tracking in Launchpad</h3>
+  <h1>Welcome to Blueprint</h1>
+</metal:heading>
+
 <div metal:fill-slot="main">
 
-  <h1>Feature tracking in Launchpad</h1>
 
   <p class="documentDescription">
     Launchpad includes a feature tracker for applications and distributions.
@@ -24,19 +28,21 @@
   </p>
 
   <p>
-    The 10 most recently registered specifications in Launchpad:
+    If you want to learn more about Blueprint, take a look at this
+    <img src="/@@/link" />
+    <a href="http://wiki.launchpad.canonical.com/BlueprintDocumentation">
+      Official Blueprint Documentation
+    </a> in the Launchpad wiki. It includes an overview of the system, and
+    will tell you how you can use Blueprint to keep track of your own
+    feature goals. If you have further questions, join us in #launchpad on
+    irc.freenode.net.
   </p>
 
-      <table class="listing">
-        <tbody>
-          <tr tal:repeat="spec context/latest_specs">
-            <td>
-            <span tal:replace="spec/target/title">Spec Target Title</span>:
-            <div tal:replace="structure spec/@@+listing-detailed" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  <h3>Recent specifications</h3>
+
+  <tal:per_recent_spec repeat="spec context/latest_specs">
+    <div tal:replace="structure spec/@@+listing-simple" />
+  </tal:per_recent_spec>
 
   <p>
     Features are tracked per distribution, and per product registered in the

@@ -47,6 +47,7 @@ from canonical.launchpad.interfaces import (
 from canonical.config import config
 from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.mail import format_address
 
 # This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
 # Essentially if you change anything to do with custom formats, grep for
@@ -166,7 +167,7 @@ class NascentUploadedFile:
             cksum, size, section, priority, filename = fileline.strip().split()
         self.fsroot = fsroot
         self.filename = filename
-        self.full_filename = os.path.join(fsroot,filename)
+        self.full_filename = os.path.join(fsroot, filename)
         self._digest = cksum
         self._size = int(size)
         self.component, self.section = split_section(section)
@@ -211,7 +212,7 @@ class NascentUploadedFile:
         """
         if self._values_checked:
             return
-        if not os.path.exists(os.path.join(self.fsroot,self.filename)):
+        if not self.present:
             raise FileNotFound(
                 "File %s as mentioned in the changes file was not found." % (
                 self.filename))
@@ -220,7 +221,7 @@ class NascentUploadedFile:
         # the size of the file as read-in.
         cksum = md5.md5()
         sha_cksum = sha.sha()
-        ckfile = open(os.path.join(self.fsroot, self.filename), "r")
+        ckfile = open(self.full_filename, "r")
         size = 0
         for chunk in filechunks(ckfile):
             cksum.update(chunk)
@@ -309,10 +310,11 @@ class NascentUpload:
         self.sender = "%s <%s>" % (
             config.uploader.default_sender_name,
             config.uploader.default_sender_address)
-        self.recipients = ["%s <%s>" % (
-            config.uploader.default_recipient_name,
-            config.uploader.default_recipient_address)
-                           ]
+        self.default_recipient = (
+            "%s <%s>" % (config.uploader.default_recipient_name,
+                         config.uploader.default_recipient_address))
+        self.recipients = []
+
         self.logger = logger
         self.rejection_message = ""
         self.warnings = ""
@@ -653,7 +655,7 @@ class NascentUpload:
             person = getUtility(IPersonSet).getByEmail(email)
 
         if person is None:
-            raise UploadError("Unable to identify %s <%s> in launchpad" % (
+            raise UploadError("Unable to identify '%s':<%s> in launchpad" % (
                 name, email))
 
         return {
@@ -1308,11 +1310,28 @@ class NascentUpload:
                         target_file.write(chunk)
                     target_file.close()
                     library_file.close()
+
             try:
                 sub_dsc_file.checkValues()
             except UploadError, e:
                 self.reject("Unable to validate %s from %s: %s" % (
                     sub_dsc_file.filename, dsc_file.filename, e))
+
+            # try to check dsc-mentioned file against its copy already
+            # in librarian, if it's new (aka not found in librarian)
+            # dismiss. It prevent us to have scary duplicated filenames
+            # in Librarian and missapplied files in archive, fixes
+            # bug # 38636 and friends.
+            try:
+                library_file = self.distro.getFileByName(
+                    sub_dsc_file.filename, source=True, binary=False)
+                # REJECT the upload if they don't match.
+                if sub_dsc_file.sha_digest != library_file.content.sha1:
+                    self.reject("SHA1 sum of uploaded file does not "
+                                "match extant file in archive")
+            except NotFoundError:
+                # Ignore these as the file does not exist in the distro yet
+                pass
 
         # Since we verified the dsc okay, we can have a go at the source itself
         self.verify_uploaded_source()
@@ -1650,15 +1669,17 @@ class NascentUpload:
                 if candidates:
                     self.logger.debug("%d possible binar{y,ies}"
                                       % len(candidates))
-
-                    self.logger.debug("%d: (binary) exists" % (
+                    self.logger.debug("%s: (binary) exists" % (
                         uploaded_file.package))
                     override = candidates[0]
                     proposed_version = uploaded_file.version
                     archive_version = override.binarypackagerelease.version
-
+                    archtag = uploaded_file.architecture
+                    if archtag == "all":
+                        arch_indep = self.distrorelease.nominatedarchindep
+                        archtag = arch_indep.architecturetag
                     if (override.distroarchrelease ==
-                        self.distrorelease[uploaded_file.archtecture]):
+                        self.distrorelease[archtag]):
                         self._checkVersion(
                             proposed_version, archive_version,
                             filename=uploaded_file.filename)
@@ -1747,43 +1768,44 @@ class NascentUpload:
         """Build self.recipients up to include every address we trust."""
         recipients = []
         self.logger.debug("Building recipients list.")
-        if self.signer:
-            recipients.append(self.signer_address['rfc2047'])
+        maintainer = self.changes_maintainer['person']
+        changer = self.changed_by['person']
 
-            maintainer = self.changes_maintainer['person']
-            maintainer_email = self.changes_maintainer['rfc2047']
-            changer = self.changed_by['person']
-            changer_email = self.changed_by['rfc2047']
+        if self.signer:
+            recipients.append(self.signer_address['person'])
 
             if (maintainer != self.signer and
                 self.is_person_in_keyring(maintainer)):
                 self.logger.debug("Adding maintainer to recipients")
-                recipients.append(maintainer_email)
+                recipients.append(maintainer)
 
             if (changer != self.signer and changer != maintainer
                 and self.is_person_in_keyring(changer)):
                 self.logger.debug("Adding changed-by to recipients")
-                recipients.append(changer_email)
+                recipients.append(changer)
         else:
-            self.logger.debug("Changes file is unsigned, skipping mails")
+            # Only autosync policy allow unsigned changes
+            # We rely on the person running sync-tool about the identity
+            # of the changer.
+            self.logger.debug(
+                "Changes file is unsigned, adding changer as recipient")
+            recipients.append(changer)
 
         recipients = self.policy.filterRecipients(self, recipients)
-        for r in recipients:
+        for person in recipients:
             # We should only actually send mail to people that are
             # registered Launchpad user with preferred email;
             # this is a sanity check to avoid spamming the innocent.
             # Not that we do that sort of thing.
-            try:
-                parsed_address = self.parse_address(r)
-                person = parsed_address['person']
-            except UploadError:
-                person = None
-            if person is not None and person.preferredemail is not None:
-                self.recipients.append(r)
-            else:
+            if person is None:
                 self.logger.debug("Could not find a person for <%s> or that "
                                   "person has no preferred email address set "
                                   "in launchpad" % r)
+            elif person.preferredemail is not None:
+                recipient = format_address(person.displayname,
+                                           person.preferredemail.email)
+                self.logger.debug("Adding recipient: '%s'" % recipient)
+                self.recipients.append(recipient)
 
     def do_reject(self, template=rejection_template):
         """Reject the current upload given the reason provided."""
@@ -1797,7 +1819,7 @@ class NascentUpload:
             }
         self.build_recipients()
         interpolations['RECIPIENT'] = ", ".join(self.recipients)
-
+        interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
         interpolations = self.policy.filterInterpolations(self,
                                                           interpolations)
         outgoing_msg = template % interpolations
@@ -2033,12 +2055,10 @@ class NascentUpload:
             if self.signer:
                 interpolations['MAINTAINERFROM'] = self.changed_by['rfc2047']
 
-            if interpolations['ANNOUNCE'] is None:
-                interpolations['ANNOUNCE'] = 'nowhere'
-
             self.build_recipients()
 
             interpolations['RECIPIENT'] = ", ".join(self.recipients)
+            interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
 
             interpolations = self.policy.filterInterpolations(
                 self, interpolations)

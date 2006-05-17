@@ -18,8 +18,12 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.helpers import shortlist
+
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort)
+    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
+    SpecificationDelivery, SpecificationStatus)
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
@@ -30,11 +34,13 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.supportcontact import SupportContact
+from canonical.launchpad.database.ticket import Ticket, TicketSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
     )
+from canonical.launchpad.helpers import shortlist
 
 
 class Product(SQLBase, BugTargetBase):
@@ -50,12 +56,17 @@ class Product(SQLBase, BugTargetBase):
         foreignKey="Person", dbName="owner", notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+    security_contact = ForeignKey(
+        dbName='security_contact', foreignKey='Person', notNull=False,
+        default=None)
+    driver = ForeignKey(
+        foreignKey="Person", dbName="driver", notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
+    description = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
@@ -118,7 +129,8 @@ class Product(SQLBase, BugTargetBase):
             orderBy=['version']
             )
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product')
+    milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
+        orderBy=['dateexpected', 'name'])
 
     bounties = RelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
@@ -137,6 +149,13 @@ class Product(SQLBase, BugTargetBase):
                               distrorelease=r.distrorelease)
                 for r in ret]
 
+    def getLatestBranches(self, quantity=5):
+        """See IProduct."""
+        # XXX Should use Branch.date_created. See bug 38598.
+        # -- David Allouche 2006-04-11
+        return shortlist(Branch.selectBy(productID=self.id,
+            orderBy='-id').limit(quantity))
+
     def getPackage(self, distrorelease):
         """See IProduct."""
         if isinstance(distrorelease, Distribution):
@@ -154,23 +173,25 @@ class Product(SQLBase, BugTargetBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, security_related=False,
+                  private=False):
         """See IBugTarget."""
         return BugSet().createBug(
             product=self, comment=comment, title=title, owner=owner,
-            private=private)
+            security_related=security_related, private=private)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""
         return Ticket.select("""
-            product = %s
+            Ticket.product = %s
             """ % sqlvalues(self.id),
-            orderBy='-datecreated',
+            orderBy='-Ticket.datecreated',
+            prejoins=['product', 'owner'],
             limit=quantity)
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(
+        return TicketSet().new(
             title=title, description=description, owner=owner, product=self)
 
     def getTicket(self, ticket_num):
@@ -184,6 +205,34 @@ class Product(SQLBase, BugTargetBase):
         if ticket.target != self:
             return None
         return ticket
+
+    def addSupportContact(self, person):
+        """See ITicketTarget."""
+        if person in self.support_contacts:
+            return False
+        SupportContact(
+            product=self.id, person=person.id,
+            sourcepackagename=None, distribution=None)
+        return True
+
+    def removeSupportContact(self, person):
+        """See ITicketTarget."""
+        if person not in self.support_contacts:
+            return False
+        support_contact_entry = SupportContact.selectOneBy(
+            productID=self.id, personID=person.id)
+        support_contact_entry.destroySelf()
+        return True
+
+    @property
+    def support_contacts(self):
+        """See ITicketTarget."""
+        support_contacts = SupportContact.selectBy(productID=self.id)
+
+        return shortlist([
+            support_contact.person for support_contact in support_contacts
+            ],
+            longest_expected=100)
 
     @property
     def translatable_packages(self):
@@ -251,14 +300,78 @@ class Product(SQLBase, BugTargetBase):
         # a better way.
         return max(perms)
 
-    def specifications(self, sort=None, quantity=None):
+    @property
+    def has_any_specifications(self):
         """See IHasSpecifications."""
-        if sort is None or sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
-        elif sort == SpecificationSort.PRIORITY:
+        return self.all_specifications.count()
+
+    @property
+    def all_specifications(self):
+        return self.specifications(filter=[SpecificationFilter.ALL])
+
+    def specifications(self, sort=None, quantity=None, filter=None):
+        """See IHasSpecifications."""
+
+        # eliminate mutables in the case where None or [] was sent
+        if not filter:
+            # filter could be None or [] then we decide the default
+            # which for a product is to show incomplete specs
+            filter = [SpecificationFilter.INCOMPLETE]
+
+        # now look at the filter and fill in the unsaid bits
+
+        # defaults for completeness: if nothing is said about completeness
+        # then we want to show INCOMPLETE
+        completeness = False
+        for option in [
+            SpecificationFilter.COMPLETE,
+            SpecificationFilter.INCOMPLETE]:
+            if option in filter:
+                completeness = True
+        if completeness is False:
+            filter.append(SpecificationFilter.INCOMPLETE)
+        
+        # defaults for acceptance: in this case we have nothing to do
+        # because specs are not accepted/declined against a distro
+
+        # defaults for informationalness: we don't have to do anything
+        # because the default if nothing is said is ANY
+
+        # sort by priority descending, by default
+        if sort is None or sort == SpecificationSort.PRIORITY:
             order = ['-priority', 'status', 'name']
-        return Specification.selectBy(productID=self.id,
-            orderBy=order)[:quantity]
+        elif sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+
+        # figure out what set of specifications we are interested in. for
+        # products, we need to be able to filter on the basis of:
+        #
+        #  - completeness.
+        #  - informational.
+        #
+        base = 'Specification.product = %s' % self.id
+        query = base
+        # look for informational specs
+        if SpecificationFilter.INFORMATIONAL in filter:
+            query += ' AND Specification.informational IS TRUE'
+        
+        # filter based on completion. see the implementation of
+        # Specification.is_complete() for more details
+        completeness =  Specification.completeness_clause
+
+        if SpecificationFilter.COMPLETE in filter:
+            query += ' AND ( %s ) ' % completeness
+        elif SpecificationFilter.INCOMPLETE in filter:
+            query += ' AND NOT ( %s ) ' % completeness
+
+        # ALL is the trump card
+        if SpecificationFilter.ALL in filter:
+            query = base
+        
+        # now do the query, and remember to prejoin to people
+        results = Specification.select(query, orderBy=order, limit=quantity)
+        results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -268,9 +381,9 @@ class Product(SQLBase, BugTargetBase):
         """See IProduct."""
         return ProductSeries.selectOneBy(productID=self.id, name=name)
 
-    def newSeries(self, name, displayname, summary):
-        return ProductSeries(product=self, name=name, displayname=displayname,
-                             summary=summary)
+    def newSeries(self, owner, name, summary):
+        return ProductSeries(product=self, owner=owner, name=name,
+            summary=summary)
 
     def getRelease(self, version):
         return ProductRelease.selectOne("""
@@ -317,12 +430,6 @@ class ProductSet:
     def __init__(self):
         self.title = "Products registered in Launchpad"
 
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.product.IProductSet."""
-        results = Product.selectBy(active=True, orderBy="-Product.datecreated")
-        # The main product listings include owner, so we prejoin it in
-        return iter(results.prejoin(["owner"]))
-
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         item = Product.selectOneBy(name=name, active=True)
@@ -330,20 +437,25 @@ class ProductSet:
             raise NotFoundError(name)
         return item
 
+    def __iter__(self):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        return iter(self._getProducts())
+
     def latest(self, quantity=5):
-        return Product.select(Product.q.active == True, 
-                              orderBy='-datecreated',
-                              limit=quantity)
+        return self._getProducts()[:quantity]
+
+    def _getProducts(self):
+        results = Product.selectBy(active=True, orderBy="-Product.datecreated")
+        # The main product listings include owner, so we prejoin it in
+        return results.prejoin(["owner"])
 
     def get(self, productid):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         try:
-            product = Product.get(productid)
+            return Product.get(productid)
         except SQLObjectNotFound:
             raise NotFoundError("Product with ID %s does not exist" %
                                 str(productid))
-
-        return product
 
     def getByName(self, name, default=None, ignore_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -357,7 +469,7 @@ class ProductSet:
 
 
     def createProduct(self, owner, name, displayname, title, summary,
-                      description, project=None, homepageurl=None,
+                      description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
@@ -381,45 +493,41 @@ class ProductSet:
                bazaar=None,
                show_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        # XXX: soyuz is unused
+        # XXX: the soyuz argument is unused
+        #   -- kiko, 2006-03-22
         clauseTables = sets.Set()
         clauseTables.add('Product')
-        query = '1=1 '
+        queries = ['1=1']
         if text:
-            query += " AND Product.fti @@ ftq(%s) " % sqlvalues(text)
+            queries.append("Product.fti @@ ftq(%s) " % sqlvalues(text))
         if rosetta:
             clauseTables.add('POTemplate')
             clauseTables.add('ProductRelease')
             clauseTables.add('ProductSeries')
+            queries.append("POTemplate.productrelease=ProductRelease.id")
+            queries.append("ProductRelease.productseries=ProductSeries.id")
+            queries.append("ProductSeries.product=product.id")
         if malone:
             clauseTables.add('BugTask')
+            queries.append('BugTask.product=Product.id')
         if bazaar:
             clauseTables.add('ProductSeries')
-            query += ' AND ProductSeries.branch IS NOT NULL \n'
-        if 'POTemplate' in clauseTables:
-            query += """ AND POTemplate.productrelease=ProductRelease.id
-                         AND ProductRelease.productseries=ProductSeries.id
-                         AND ProductSeries.product=product.id """
-        if 'BugTask' in clauseTables:
-            query += ' AND BugTask.product=Product.id \n'
+            queries.append('ProductSeries.branch IS NOT NULL')
         if 'ProductSeries' in clauseTables:
-            query += ' AND ProductSeries.product=Product.id \n'
+            queries.append('ProductSeries.product=Product.id')
         if not show_inactive:
-            query += ' AND Product.active IS TRUE \n'
+            queries.append('Product.active IS TRUE')
+        query = " AND ".join(queries)
         return Product.select(query, distinct=True, clauseTables=clauseTables)
 
     def translatables(self):
         """See IProductSet"""
-        translatable_set = set()
         upstream = Product.select('''
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id
             ''',
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
-        for product in upstream:
-            translatable_set.add(product)
-
         distro = Product.select('''
             Product.id = ProductSeries.product AND
             Packaging.productseries = ProductSeries.id AND
@@ -427,17 +535,13 @@ class ProductSet:
             ''',
             clauseTables=['ProductSeries', 'Packaging', 'POTemplate'],
             distinct=True)
-        for product in distro:
-            translatable_set.add(product)
-        result = list(translatable_set)
-        result.sort(key=lambda x: x.name)
-        return result
+        return upstream.union(distro)
 
     def count_all(self):
         return Product.select().count()
 
     def count_translatable(self):
-        return len(self.translatables())
+        return self.translatables().count()
 
     def count_reviewed(self):
         return Product.selectBy(reviewed=True, active=True).count()

@@ -3,9 +3,10 @@
 import unittest
 import logging
 
-from canonical.functional import FunctionalTestCase
-from canonical.launchpad.ftests import login, ANONYMOUS, keys_for_tests
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.launchpad.ftests import keys_for_tests
+from canonical.launchpad.ftests.harness import (
+        LaunchpadZopelessTestCase, LaunchpadFunctionalTestCase
+        )
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPersonSet, IEmailAddressSet)
 from canonical.lp.dbschema import EmailAddressStatus
@@ -41,16 +42,16 @@ def setupLogger(name='test_keyringtrustanalyser'):
     return logger, handler
 
 
-class TestKeyringTrustAnalyser(FunctionalTestCase):
+class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
     def setUp(self):
-        FunctionalTestCase.setUp(self)
-        login(ANONYMOUS)
+        LaunchpadFunctionalTestCase.setUp(self)
+        self.login()
         self.gpg_handler = getUtility(IGPGHandler)
 
     def tearDown(self):
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
         self.gpg_handler.resetLocalState()
-        FunctionalTestCase.tearDown(self)
+        LaunchpadFunctionalTestCase.tearDown(self)
 
     def _addTrustedKeys(self):
         # Add trusted key with ULTIMATE validity.  This will mark UIDs as
@@ -120,16 +121,8 @@ class TestKeyringTrustAnalyser(FunctionalTestCase):
         self.assertTrue(set(['foo.bar@canonical.com']) in clusters)
 
 
-class TestMergeClusters(FunctionalTestCase):
+class TestMergeClusters(LaunchpadZopelessTestCase):
     """Tests of the mergeClusters() routine."""
-
-    def setUp(self):
-        LaunchpadZopelessTestSetup().setUp()
-        FunctionalTestCase.setUp(self)
-
-    def tearDown(self):
-        FunctionalTestCase.tearDown(self)
-        LaunchpadZopelessTestSetup().tearDown()
 
     def _getEmails(self, person):
         emailset = getUtility(IEmailAddressSet)
@@ -183,7 +176,7 @@ class TestMergeClusters(FunctionalTestCase):
 
         validated_person = personset.getByEmail('test@canonical.com')
         unvalidated_person = personset.getByEmail(
-            'andrew.bennetts@ubuntulinux.com')
+            'christian.reis@ubuntulinux.com')
 
         allemails = self._getEmails(validated_person)
         allemails.update(self._getEmails(unvalidated_person))
@@ -197,7 +190,7 @@ class TestMergeClusters(FunctionalTestCase):
         self.assertEqual(unvalidated_person.merged, None)
 
         mergeClusters([set(['test@canonical.com',
-                            'andrew.bennetts@ubuntulinux.com'])])
+                            'christian.reis@ubuntulinux.com'])])
 
         # unvalidated person has been merged into the validated person
         self.assertEqual(validated_person.merged, None)
@@ -243,8 +236,8 @@ class TestMergeClusters(FunctionalTestCase):
         """
         personset = getUtility(IPersonSet)
 
-        person1 = personset.getByEmail('andrew.bennetts@ubuntulinux.com')
-        person2 = personset.getByEmail('guilherme.salgado@canonical.com')
+        person1 = personset.getByEmail('christian.reis@ubuntulinux.com')
+        person2 = personset.getByEmail('martin.pitt@canonical.com')
 
         allemails = self._getEmails(person1)
         allemails.update(self._getEmails(person2))
@@ -255,8 +248,8 @@ class TestMergeClusters(FunctionalTestCase):
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
 
-        mergeClusters([set(['andrew.bennetts@ubuntulinux.com',
-                            'guilherme.salgado@canonical.com'])])
+        mergeClusters([set(['christian.reis@ubuntulinux.com',
+                            'martin.pitt@canonical.com'])])
 
         # since we don't know which account will be merged, swap
         # person1 and person2 if person1 was merged into person2.
