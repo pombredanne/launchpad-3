@@ -93,22 +93,13 @@
 
     <form name="shipit" action="" method="POST">
 
-    <div style="margin: 0em 5em">
+    <div style="margin: 0em 5em" 
+         tal:define="selected_id view/selected_standardrequest">
       <div tal:repeat="request_type view/standardShipItRequests">
         <label>
-          <tal:current-order-for-this-flavour 
-               condition="view/current_order_standard_id">
-            <input type="radio" name="ordertype"
-              tal:attributes="
-                value request_type/id;
-                checked python:request_type.id == view.current_order_standard_id">
-          </tal:current-order-for-this-flavour>
-          <tal:no-current-order-for-this-flavour 
-               condition="not: view/current_order_standard_id">
-            <input type="radio" name="ordertype"
-                   tal:attributes="value request_type/id;
-                                   checked request_type/isdefault">
-          </tal:no-current-order-for-this-flavour>
+          <input type="radio" name="ordertype"
+            tal:attributes="value request_type/id;
+                            checked python:request_type.id == selected_id">
           <span tal:content="request_type/description" />
         </label>
       </div>
