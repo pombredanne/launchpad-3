@@ -913,7 +913,7 @@ class TeamMembershipStatus(DBSchema):
         Proposed
 
         You are a proposed member of this team. To become an active member your
-        subscription has to bo approved by one of the team's administrators.
+        subscription has to be approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
@@ -3019,45 +3019,69 @@ class MirrorSpeed(DBSchema):
     """The speed of a given mirror."""
 
     S128K = Item(1, """
-        128Kb per second
+        128 Kbps
 
         The upstream link of this mirror can make up to 128Kb per second.
         """)
 
     S256K = Item(2, """
-        256Kb per second
+        256 Kbps
 
         The upstream link of this mirror can make up to 256Kb per second.
         """)
 
     S512K = Item(3, """
-        512Kb per second
+        512 Kbps
 
         The upstream link of this mirror can make up to 512Kb per second.
         """)
 
     S1M = Item(4, """
-        1Mb per second
+        1 Mbps
 
         The upstream link of this mirror can make up to 1Mb per second.
         """)
 
     S2M = Item(5, """
-        2Mb per second
+        2 Mbps
 
         The upstream link of this mirror can make up to 2Mb per second.
         """)
 
     S10M = Item(6, """
-        10Mb per second
+        10 Mbps
 
         The upstream link of this mirror can make up to 10Mb per second.
         """)
 
     S100M = Item(7, """
-        100Mb per second
+        100 Mbps
 
         The upstream link of this mirror can make up to 100Mb per second.
+        """)
+
+    S1G = Item(8, """
+        1 Gbps
+
+        The upstream link of this mirror can make up to 1 gigabit per second.
+        """)
+
+    S2G = Item(9, """
+        2 Gbps
+
+        The upstream link of this mirror can make up to 2 gigabit per second.
+        """)
+
+    S4G = Item(10, """
+        4 Gbps
+
+        The upstream link of this mirror can make up to 4 gigabit per second.
+        """)
+
+    S10G = Item(11, """
+        10 Gbps
+
+        The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
 
@@ -3254,24 +3278,36 @@ class ShipItFlavour(DBSchema):
         The Ubuntu flavour.
         """)
 
+    KUBUNTU = Item(2, """
+        Kubuntu
+
+        The Kubuntu flavour.
+        """)
+
+    EDUBUNTU = Item(3, """
+        Edubuntu
+
+        The Edubuntu flavour.
+        """)
+
 
 class ShipItArchitecture(DBSchema):
     """The Distro Architecture, used only to link with ShippingRequest."""
 
     X86 = Item(1, """
-        Intel/X86
+        PC
 
-        x86 processors.
+        Intel/X86 processors.
         """)
 
     AMD64 = Item(2, """
-        AMD64
+        64-bit PC
 
         AMD64 or EM64T based processors.
         """)
 
     PPC = Item(3, """
-        PowerPC
+        Mac
 
         PowerPC processors.
         """)
@@ -3284,6 +3320,12 @@ class ShipItDistroRelease(DBSchema):
         Breezy Badger
 
         The Breezy Badger release.
+        """)
+
+    DAPPER = Item(2, """
+        6.06 LTS (Dapper Drake)
+
+        The Dapper Drake lont-term-support release.
         """)
 
 

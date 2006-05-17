@@ -1,5 +1,5 @@
-from zope.schema import Text, TextLine, Field
-from zope.schema.interfaces import IText, ITextLine, IField
+from zope.schema import Password, Text, TextLine, Field
+from zope.schema.interfaces import IPassword, IText, ITextLine, IField
 from zope.interface import implements
 
 from canonical.launchpad import _
@@ -22,6 +22,13 @@ class ITimeInterval(ITextLine):
 
 class IBugField(IField):
     """A Field that allows entry of a Bug number or nickname"""
+
+class IPasswordField(IPassword):
+    """A field that ensures we only use http basic authentication safe
+    ascii characters."""
+
+class IStrippedTextLine(ITextLine):
+    """A field with leading and trailing whitespaces stripped."""
 
 
 # Title
@@ -58,32 +65,41 @@ class BugField(Field):
     implements(IBugField)
 
 
-class StrippingTextLine(TextLine):
+class StrippedTextLine(TextLine):
+    implements(IStrippedTextLine)
 
-    def fromUnicode(self, str):
-        return TextLine.fromUnicode(self, str.strip())
+
+class PasswordField(Password):
+    implements(IPasswordField)
+
+    def _validate(self, value):
+        # Local import to avoid circular imports
+        from canonical.launchpad.interfaces.validation import valid_password
+        if not valid_password(value):
+            raise LaunchpadValidationError(_(
+                "The password provided contains non-ASCII characters."))
 
 
 class ContentNameField(TextLine):
     """Base class for fields that are used by unique 'name' attributes."""
- 
+
     errormessage = _("%s is already taken.") 
 
     @property
     def _content_iface(self):
         """Return the content interface. 
-        
+
         Override this in subclasses.
         """
         return None
- 
+
     def _getByName(self, name):
         """Return the content object with the given name.
-        
+
         Override this in subclasses.
         """
         raise NotImplementedError
-      
+
     def _validate(self, name):
         """Raise a LaunchpadValidationError if the name is not available.
 
@@ -96,7 +112,7 @@ class ContentNameField(TextLine):
             name == getattr(self.context, self.__name__)):
             # The name wasn't changed.
             return
-      
+
         contentobj = self._getByName(name)
         if contentobj is not None:
             raise LaunchpadValidationError(self.errormessage % name)

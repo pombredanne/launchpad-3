@@ -45,13 +45,17 @@ class IBuild(Interface):
         "A list of binary packages that resulted from this build, "
         "not limitted and ordered by name.")
 
+    can_be_rescored = Attribute(
+        "Whether or not this build record can be rescored manually.")
+
     can_be_reset = Attribute(
         "Whether or not this build record can be reset.")
 
     def reset():
         """Restore the build record to its initial state.
 
-        Build record loose its history and is moved to NEEDSBUILD.
+        Build record loses its history, is moved to NEEDSBUILD and a new
+        empty BuildQueue entry is created for it.
         """
 
     def __getitem__(name):
