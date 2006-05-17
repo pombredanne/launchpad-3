@@ -10,7 +10,6 @@ UPDATE POTemplate SET priority=0 WHERE priority IS NULL;
 ALTER TABLE POTemplate ALTER COLUMN priority SET DEFAULT 0;
 ALTER TABLE POTemplate ALTER COLUMN priority SET NOT NULL;
 
-
 /* Give middle priority to the packages that are not part of language packs */
 UPDATE POTemplate
 SET priority = 50
@@ -37,4 +36,4 @@ WHERE
     sourcepackagefilepublishing.componentname = 'main' AND
     potemplate.languagepack IS TRUE;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 71, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 54, 0);
