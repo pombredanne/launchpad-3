@@ -270,7 +270,7 @@ class BugTaskBugWatchWidget(RadioWidget):
         """Join the input tag with the label."""
         here = os.path.dirname(__file__)
         template_path = os.path.join(
-            here, 'templates', 'bugtask-bugwatch-widget.pt')
+            here, 'templates', 'bugtask-bugwatch-widget.txt')
         row_template = open(template_path).read()
         return row_template % {
             'input_tag': option_tag,
