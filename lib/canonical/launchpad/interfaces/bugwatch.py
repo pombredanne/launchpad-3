@@ -11,9 +11,12 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
-from canonical.launchpad import _
 
-class IBugWatch(Interface):
+from canonical.launchpad import _
+from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.interfaces import IHasBug
+
+class IBugWatch(IHasBug):
     """A bug on a remote system."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -21,7 +24,7 @@ class IBugWatch(Interface):
     bugtracker = Choice(title=_('Bug System'), required=True,
         vocabulary='BugTracker', description=_("You can register "
         "new bug trackers from the Malone home page."))
-    remotebug = TextLine(title=_('Remote Bug'), required=True,
+    remotebug = StrippedTextLine(title=_('Remote Bug'), required=True,
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug tracker."))
     remotestatus = TextLine(title=_('Remote Status'))

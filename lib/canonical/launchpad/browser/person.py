@@ -1734,8 +1734,9 @@ class PersonEditEmailsView:
             # inserted in the database.
             owner = email.person
             browsername = cgi.escape(owner.browsername)
+            owner_name = urllib.quote(owner.name)
             merge_url = ('%s/+requestmerge?field.dupeaccount=%s'
-                         % (canonical_url(getUtility(IPersonSet)), owner.name))
+                         % (canonical_url(getUtility(IPersonSet)), owner_name))
             self.message = (
                     "The email address '%s' is already registered by "
                     "<a href=\"%s\">%s</a>. If you think that is a "

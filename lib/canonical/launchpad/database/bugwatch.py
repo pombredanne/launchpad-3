@@ -6,7 +6,7 @@ __all__ = ['BugWatch', 'BugWatchSet']
 import re
 import cgi
 import urllib
-import urlparse
+from urlparse import urlunsplit
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -20,7 +20,7 @@ from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase
@@ -82,13 +82,12 @@ class BugWatch(SQLBase):
         #                                &group_id=136955
         #                                &func=detail
         #                                &aid=1337833
-        method, base, path, query, frag = \
-            urlparse.urlsplit(self.bugtracker.baseurl)
+        method, base, path, query, frag = urlsplit(self.bugtracker.baseurl)
         params = cgi.parse_qs(query)
         params['func'] = "detail"
         params['aid'] = self.remotebug
         query = urllib.urlencode(params, doseq=True)
-        return urlparse.urlunsplit((method, base, path, query, frag))
+        return urlunsplit((method, base, path, query, frag))
 
     @property
     def needscheck(self):

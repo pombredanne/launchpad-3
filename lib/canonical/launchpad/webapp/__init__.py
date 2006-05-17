@@ -13,14 +13,15 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'LaunchpadView', 'LaunchpadXMLRPCView',
            'Navigation', 'stepthrough', 'redirection',
            'stepto', 'GetitemNavigation', 'smartquote',
+           'urlappend', 'urlparse', 'urlsplit',
            'GeneralFormView', 'GeneralFormViewFactory',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse']
 
 import re
-import urlparse
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
@@ -57,23 +58,6 @@ def smartquote(str):
     str = re.compile(u'(^| )(")([^" ])').sub(u'\\1\u201c\\3', str)
     str = re.compile(u'([^ "])(")($| )').sub(u'\\1\u201d\\3', str)
     return str
-
-
-def urlappend(baseurl, path):
-    """Append the given path to baseurl.
-
-    The path must not start with a slash, but a slash is added to baseurl
-    (before appending the path), in case it doesn't end with a slash.
-
-    >>> urlappend('http://foo.bar', 'spam/eggs')
-    'http://foo.bar/spam/eggs'
-    >>> urlappend('http://localhost:11375/foo', 'bar/baz')
-    'http://localhost:11375/foo/bar/baz'
-    """
-    assert not path.startswith('/')
-    if not baseurl.endswith('/'):
-        baseurl += '/'
-    return urlparse.urljoin(baseurl, path)
 
 
 class GetitemNavigation(Navigation):
