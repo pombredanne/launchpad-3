@@ -1192,11 +1192,11 @@ COMMENT ON COLUMN RequestedCDs.flavour IS 'The flavour of the distrorelease (e.g
 
 -- StandardShipItRequest
 COMMENT ON TABLE StandardShipItRequest IS 'The Standard ShipIt Requests. This is what we want most of the people to choose, having only a few people placing custom requests.';
+COMMENT ON COLUMN StandardShipItRequest.flavour IS 'The Distribution Flavour';
 COMMENT ON COLUMN StandardShipItRequest.quantityx86 IS 'The quantity of X86 CDs';
 COMMENT ON COLUMN StandardShipItRequest.quantityamd64 IS 'The quantity of AMD64 CDs';
 COMMENT ON COLUMN StandardShipItRequest.quantityppc IS 'The quantity of PowerPC CDs';
 COMMENT ON COLUMN StandardShipItRequest.isdefault IS 'Is this the order that is pre-selected in the options we give for the user?';
-COMMENT ON COLUMN StandardShipItRequest.description IS 'The description of this request. This is what will be presented for the users to choose.';
 
 -- ShockAndAwe
 COMMENT ON TABLE ShockAndAwe IS 'Information about specific Shock And Awe programs.';
