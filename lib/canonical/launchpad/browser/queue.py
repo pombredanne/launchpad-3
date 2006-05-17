@@ -87,20 +87,20 @@ class QueueItemsView(LaunchpadView):
     def availableActions(self):
         """Return the available actions according to the selected queue state.
 
-        Returns a list of labeled actions or an empty list.
+        Returns a list of labelled actions or an empty list.
         """
         # deny actions for non-admin
         if not check_permission('launchpad.Admin', self.context):
             return []
 
         # states that support actions
-        muttable_states = [
+        mutable_states = [
             DistroReleaseQueueStatus.NEW,
             DistroReleaseQueueStatus.UNAPPROVED,
             ]
 
         # return actions only for supported states
-        if self.state in muttable_states:
+        if self.state in mutable_states:
             return ['Accept', 'Reject']
 
         # no actions for unsupported states

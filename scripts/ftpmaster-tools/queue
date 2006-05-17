@@ -223,9 +223,6 @@ class QueueAction:
         binaryful = queue_item.builds.count() > 0
         sourcever = queue_item.sourceversion
         spn = queue_item.displayname
-        # XXX cprov 20060411: due the removal of IDRQ.age method
-        # age parameter must be modeled in place. We need to find
-        # a more elegant solution.
         local_now = datetime.now(pytz.timezone('UTC'))
         age = DurationFormatterAPI(
             local_now - queue_item.datecreated).approximateduration()

@@ -35,10 +35,7 @@
 
         <option tal:attributes="selected view/show_new"
                 value="new">New</option>
-        <tal:admin condition="context/required:launchpad.Admin">
-          <option tal:attributes="selected view/show_unapproved"
-                    value="unapproved">Unapproved</option>
-        </tal:admin>
+
         <option tal:attributes="selected view/show_accepted"
                 value="accepted">Accepted</option>
 
@@ -47,6 +44,12 @@
 
         <option tal:attributes="selected view/show_done"
                 value="done">Done</option>
+
+        <tal:admin condition="context/required:launchpad.Admin">
+          <option tal:attributes="selected view/show_unapproved"
+                    value="unapproved">Unapproved</option>
+        </tal:admin>
+
       </select>
 
       uploads with names like:

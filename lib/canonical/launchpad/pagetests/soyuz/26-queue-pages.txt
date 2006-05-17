@@ -1,6 +1,6 @@
 
 Queue pages were designed to offer the ability to perform
-control and visualisation over the current uploade queue.
+control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroReleases.
 
 
@@ -60,7 +60,7 @@ Check if the item was moved to the correct place, the ACCEPTED queue:
 Reject an item (requires Admin):
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/breezy-autotest/+queue?QUEUE_ID=3&Reject=Reject HTTP/1.1
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... Content-Length: 25
@@ -105,7 +105,7 @@ Check if the results were already filtered:
   ...pmount (i386)...
   ...mozilla-firefox (i386)...
 
-Check if the anonymouns are denied to see UNAPPROVED queue:
+Check if the anonymous are denied to see UNAPPROVED queue:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=unapproved&queue_text= HTTP/1.1
@@ -117,7 +117,11 @@ Check if the anonymouns are denied to see UNAPPROVED queue:
   ...excluded any packages from this listing.
   ...
 
-Check if annonymous actions are refused:
+Check if anonymous actions fails, it tries to accept pmount
+(QUEUE_ID = 1) but this row still being presented in NEW queue:
+
+(considering this POST was maid by-hand since the UI would never allow
+such path.)
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
