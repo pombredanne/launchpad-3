@@ -110,23 +110,48 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         self.repository_format = bzrlib.repository.RepositoryFormat6()
         self._testMirrorFormat()
 
-    def _testMirrorFormat(self):
+    def testSourceFormatChange(self):
+        # Create and mirror a branch in weave format.
+        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self._createSourceBranch()
+        mirrored_branch = self._mirror()
+        
+        # Change the branch to knit format.
+        shutil.rmtree('src-branch')
+        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self._createSourceBranch()
+
+        # Mirror again.  The mirrored branch should now be in knit format.
+        self.assertEqual(
+            self.repository_format.get_format_description(),
+            mirrored_branch.repository._format.get_format_description())
+
+    def _createSourceBranch(self):
         os.mkdir('src-branch')
         tree = self.make_branch_and_tree('src-branch')
         self.local_branch = tree.branch
         self.build_tree(['foo'], transport=get_transport('./src-branch'))
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
-        
+        return tree
+
+    def _mirror(self):
         # Mirror src-branch to dest-branch
         client = BranchStatusClient()
         to_mirror = BranchToMirror('src-branch', 'dest-branch', client, 1)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        return mirrored_branch
+
+    def _testMirrorFormat(self):
+        tree = self._createSourceBranch()
+        
+        mirrored_branch = self._mirror()
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
 
-        # Assert that the mirrored branch is in knit format
+        # Assert that the mirrored branch is in source's format
         self.assertEqual(
             self.repository_format.get_format_description(),
             mirrored_branch.repository._format.get_format_description())
