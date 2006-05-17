@@ -3278,24 +3278,36 @@ class ShipItFlavour(DBSchema):
         The Ubuntu flavour.
         """)
 
+    KUBUNTU = Item(2, """
+        Kubuntu
+
+        The Kubuntu flavour.
+        """)
+
+    EDUBUNTU = Item(3, """
+        Edubuntu
+
+        The Edubuntu flavour.
+        """)
+
 
 class ShipItArchitecture(DBSchema):
     """The Distro Architecture, used only to link with ShippingRequest."""
 
     X86 = Item(1, """
-        Intel/X86
+        PC
 
-        x86 processors.
+        Intel/X86 processors.
         """)
 
     AMD64 = Item(2, """
-        AMD64
+        64-bit PC
 
         AMD64 or EM64T based processors.
         """)
 
     PPC = Item(3, """
-        PowerPC
+        Mac
 
         PowerPC processors.
         """)
@@ -3308,6 +3320,12 @@ class ShipItDistroRelease(DBSchema):
         Breezy Badger
 
         The Breezy Badger release.
+        """)
+
+    DAPPER = Item(2, """
+        6.06 LTS (Dapper Drake)
+
+        The Dapper Drake lont-term-support release.
         """)
 
 

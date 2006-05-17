@@ -174,7 +174,6 @@ class BugTaskNavigation(Navigation):
         if name.isdigit():
             return getUtility(IBugWatchSet)[name]
 
-    redirection('watches', '..')
     redirection('references', '..')
 
 
