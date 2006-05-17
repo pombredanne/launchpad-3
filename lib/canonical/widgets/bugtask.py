@@ -214,6 +214,8 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def __init__(self, field, vocabulary, request):
         RadioWidget.__init__(self, field, vocabulary, request)
+        # Use javascript to select the correct radio button if he enters
+        # a remote bug.
         select_js = "selectWidget('%s.%s', event)" % (
             self.name, self._new_bugwatch_value)
         self.remotebug_widget = CustomWidgetFactory(
@@ -227,6 +229,11 @@ class BugTaskBugWatchWidget(RadioWidget):
     _new_bugwatch_value = 'NEW'
 
     def _toFieldValue(self, form_value):
+        """Convert the textual token to a field value.
+
+        If the form value is _new_bugwatch_value, create a new bug
+        watch, otherwise look up an existing one.
+        """
         if form_value == self._new_bugwatch_value:
             bugtracker = self.bugtracker_widget.getInputValue()
             try:
@@ -245,6 +252,11 @@ class BugTaskBugWatchWidget(RadioWidget):
             return RadioWidget._toFieldValue(self, form_value)
 
     def _getFormValue(self):
+        """Return the form value.
+
+        We have to override this method in this class since the original
+        one uses getInputValue(), which it shouldn't do.
+        """
         if not self._renderedValueSet():
             return self.request.form.get(self.name, self._missing)
         else:
@@ -255,6 +267,7 @@ class BugTaskBugWatchWidget(RadioWidget):
         return contents
 
     def _joinButtonToMessage(self, option_tag, label, input_id):
+        """Join the input tag with the label."""
         here = os.path.dirname(__file__)
         template_path = os.path.join(
             here, 'templates', 'bugtask-bugwatch-widget.pt')
@@ -327,6 +340,12 @@ class BugTaskBugWatchWidget(RadioWidget):
         return items
 
     def renderItem(self, index, text, value, name, cssClass):
+        """Render an item.
+
+        We override this method to use the _joinButtonToMessage method
+        instead of the _joinButtonToMessageTemplate which doesn't have
+        access to the id.
+        """
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -337,6 +356,12 @@ class BugTaskBugWatchWidget(RadioWidget):
         return self._joinButtonToMessage(elem, text, input_id=id)
 
     def renderSelectedItem(self, index, text, value, name, cssClass):
+        """Render a selected item.
+
+        We override this method to use the _joinButtonToMessage method
+        instead of the _joinButtonToMessageTemplate which doesn't have
+        access to the id.
+        """
         id = '%s.%s' % (name, index)
         elem = renderElement(u'input',
                              value=value,
@@ -348,6 +373,11 @@ class BugTaskBugWatchWidget(RadioWidget):
         return self._joinButtonToMessage(elem, text, input_id=id)
 
     def renderValue(self, value):
+        """Render the widget with the selected value.
+
+        The original renderValue separates the items with either
+        '&nbsp;' or '<br />' which isn't suitable for us.
+        """
         rendered_items = self.renderItems(value)
         return renderElement(
             'table', cssClass=self.cssClass,
