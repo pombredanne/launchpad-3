@@ -240,11 +240,7 @@
   ...     canonical.database.sqlbase.flush_database_caches()
   ...     transaction.begin()
 
-  XXX: I've commented out the new_transaction() call to see if it makes
-       the test below pass. With this call not commented out, the team
-       owner sometimes is reported to be 'foo'.
-       -- Bjorn Tillenius, 2006-05-15
-  >>> #new_transaction()
+  >>> new_transaction()
 
   Now we make sure that the team we just created and was owned by 'foo' is now
   owned by 'no-priv'.
