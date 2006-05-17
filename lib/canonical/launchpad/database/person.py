@@ -370,8 +370,7 @@ class Person(SQLBase):
         
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
