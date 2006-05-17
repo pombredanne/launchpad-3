@@ -165,8 +165,8 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     layer = FunctionalLayer
 
     def setUp(self):
-        TestCaseInTempDir.setUp(self)
         LaunchpadFunctionalTestSetup().setUp()
+        TestCaseInTempDir.setUp(self)
         self.authserver = AuthserverTacTestSetup()
         self.authserver.setUp()
 
