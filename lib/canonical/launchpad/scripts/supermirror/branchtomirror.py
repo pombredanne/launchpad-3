@@ -2,6 +2,7 @@
 
 import httplib
 import os
+import shutil
 import socket
 import urllib2
 
@@ -38,19 +39,33 @@ class BranchToMirror:
         try:
             branch = bzrlib.bzrdir.BzrDir.open(self.dest).open_branch()
         except bzrlib.errors.NotBranchError:
-            os.makedirs(self.dest) 
             # XXX Andrew Bennetts 2006-05-17: 
             #    Unfortunately, we cannot use BzrDir.create_branch_convenience,
             #    because it doesn't let us control the branch or repository
             #    format.
             # Make a new branch in the same format as the source branch.
-            bzrdir_format = self._source_branch.bzrdir._format
-            bzrdir = bzrdir_format.initialize(self.dest)
-            repo_format = self._source_branch.repository._format
-            repo = repo_format.initialize(bzrdir)
-            branch_format = self._source_branch._format
-            branch = branch_format.initialize(bzrdir)
+            branch = self._createDestBranch()
+        else:
+            # Check that destination branch is in the same format as the source.
+            # If it isn't, we'll delete it and mirror from scratch.
+            src_repo_format = self._source_branch.repository._format
+            dest_repo_format = branch.repository._format
+            if (src_repo_format.get_format_description() !=
+                dest_repo_format.get_format_description()):
+                    shutil.rmtree(self.dest)
+                    branch = self._createDestBranch()
         self._dest_branch = branch
+
+    def _createDestBranch(self):
+        """Create the branch to pull to."""
+        os.makedirs(self.dest) 
+        bzrdir_format = self._source_branch.bzrdir._format
+        bzrdir = bzrdir_format.initialize(self.dest)
+        repo_format = self._source_branch.repository._format
+        repo = repo_format.initialize(bzrdir)
+        branch_format = self._source_branch._format
+        branch = branch_format.initialize(bzrdir)
+        return branch
 
     def _pullSourceToDest(self):
         """Pull the contents of self._source_branch into self._dest_branch."""

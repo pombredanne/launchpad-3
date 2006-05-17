@@ -115,7 +115,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
         self.repository_format = bzrlib.repository.RepositoryFormat7()
         self._createSourceBranch()
-        mirrored_branch = self._mirror()
+        self._mirror()
         
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
@@ -123,6 +123,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
         self._createSourceBranch()
 
         # Mirror again.  The mirrored branch should now be in knit format.
+        mirrored_branch = self._mirror()
         self.assertEqual(
             self.repository_format.get_format_description(),
             mirrored_branch.repository._format.get_format_description())
