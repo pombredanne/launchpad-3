@@ -55,7 +55,11 @@
         :widget: The widget that's going to be rendered.
   </tal:comment>
 
-  <th tal:content="widget/label">Label:</th>
+  <th>
+    <label tal:attributes="for widget/name" tal:content="widget/label">
+      Label:
+    </label>
+  </th>
   <td>
     <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
   </td>
