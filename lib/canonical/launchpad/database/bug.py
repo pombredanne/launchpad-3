@@ -183,6 +183,9 @@ class Bug(SQLBase):
         for dupe_subscriber in self.getSubscribersFromDuplicates():
             emails.update(contactEmailAddresses(dupe_subscriber))
 
+        # Add bug contacts.
+        
+
         return list(emails)
 
     def addChangeNotification(self, text, person, when=None):

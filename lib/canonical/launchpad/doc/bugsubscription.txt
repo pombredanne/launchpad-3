@@ -200,27 +200,36 @@ contacts:
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 Adding a package bug contact for evolution will mean that that package
-bug contact gets subscribed to all bugmail on bugs filed after the point
-that the bug contact was set.
+bug contact gets implicitly subscribed to all bugs ever opened on that
+package.
 
 So, if the Ubuntu team is added as a bug contact to evolution:
 
     >>> ubuntu_team = personset.get(17)
     >>> evolution.addBugContact(ubuntu_team)
 
-The team will still *not* be a recipient of bugmail from the previous
-bug we created:
+The team will be implicitly subscribed to the previous bug we
+created. (Remember that Sample Person is also implicitly subscribed
+because they are the distro bug contact):
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    ['foo.bar@canonical.com', 'test@canonical.com']
+    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
-But the team will be subscribed to bugmail for future bugs:
+And the Ubuntu team will be implicitly subscribed to future bugs:
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="yet another test bug",
     ...     comment="yet another test description",
     ...     owner=foobar, distribution=ubuntu,
     ...     sourcepackagename=evolution.sourcepackagename)
+
+    >>> [subscription.person.displayname
+    ...  for subscription in new_bug.subscriptions]
+    [u'Foo Bar']
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
