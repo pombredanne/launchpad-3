@@ -598,11 +598,9 @@ Adding a branch.
   0
 
   >>> branch_one = getUtility(IBranchSet).get(1)
-  >>> bug_branch = firefox_bug.addBranch(branch_one)
-
   >>> current_date_last_updated = firefox_bug.date_last_updated
 
-  >>> notify(SQLObjectCreatedEvent(bug_branch))
+  >>> bug_branch = firefox_bug.addBranch(branch_one)
 
   >>> firefox_bug.bug_branches.count()
   1
