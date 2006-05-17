@@ -10,7 +10,6 @@ __all__ = [
     'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
-    'FOAFApplicationNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     ]
@@ -33,18 +32,15 @@ from canonical.launchpad.interfaces import (
     IMaloneApplication, IProductSet, IShipItApplication, IPersonSet,
     IDistributionSet, ISourcePackageNameSet, IBinaryPackageNameSet,
     IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
-    IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
-    IRegistryApplication, IRosettaApplication, ISpecificationSet,
-    ISprintSet, ITicketSet, IFOAFApplication, IBuilderSet, IBountySet,
-    IBugSet, IBugTrackerSet, ICveSet, IProduct, IProductSeries,
-    IMilestone, IDistribution, IDistroRelease, IDistroArchRelease,
-    IDistributionSourcePackage, ISourcePackage,
-    IDistroArchReleaseBinaryPackage, IDistroReleaseBinaryPackage,
-    IPerson, IProject, ISprint, ILaunchpadCelebrities)
+    IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
+    ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
+    ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet)
+from canonical.launchpad.layers import (
+    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto, canonical_url)
+    stepto)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -421,7 +417,6 @@ class LaunchpadRootNavigation(Navigation):
 
     stepto_utilities = {
         'products': IProductSet,
-        'shipit': IShipItApplication,
         'people': IPersonSet,
         'distros': IDistributionSet,
         'sourcepackagenames': ISourcePackageNameSet,
@@ -439,7 +434,6 @@ class LaunchpadRootNavigation(Navigation):
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
         'support': ITicketSet,
-        'foaf': IFOAFApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
         }
@@ -455,20 +449,20 @@ class LaunchpadRootNavigation(Navigation):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
 
+    @stepto('shipit-ubuntu')
+    def shipit_ubuntu(self):
+        setFirstLayer(self.request, ShipItUbuntuLayer)
+        return getUtility(IShipItApplication)
 
-class FOAFApplicationNavigation(Navigation):
+    @stepto('shipit-kubuntu')
+    def shipit_kubuntu(self):
+        setFirstLayer(self.request, ShipItKUbuntuLayer)
+        return getUtility(IShipItApplication)
 
-    usedfor = IFOAFApplication
-
-    @stepto('projects')
-    def projects(self):
-        # DEPRECATED
-        return getUtility(IProjectSet)
-
-    @stepto('people')
-    def people(self):
-        # DEPRECATED
-        return getUtility(IPersonSet)
+    @stepto('shipit-edubuntu')
+    def shipit_edubuntu(self):
+        setFirstLayer(self.request, ShipItEdUbuntuLayer)
+        return getUtility(IShipItApplication)
 
 
 class SoftTimeoutView(LaunchpadView):

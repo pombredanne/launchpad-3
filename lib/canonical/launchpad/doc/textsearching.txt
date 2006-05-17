@@ -376,6 +376,12 @@ or invalid leading operators
     >>> ftq("hi) mom")
     (hi)&mom <=> 'hi' & 'mom'
 
+    >>> ftq("(foo .") # Bug 43245
+    (foo) <=> 'foo'
+
+    >>> ftq("(foo.")
+    (foo) <=> 'foo'
+
 
 Phrase Searching
 ----------------

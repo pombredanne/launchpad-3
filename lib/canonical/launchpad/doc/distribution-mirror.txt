@@ -4,14 +4,14 @@ Distribution Mirrors
 A distribution mirror must always be associated with a single distribution, so
 to create a new mirror you should use the Distribution.newMirror method.
 
-    >>> from datetime import datetime
+    >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, ICountrySet, IDistroReleaseSet,
     ...     IDistroArchReleaseSet, IDistributionMirrorSet)
     >>> from canonical.lp.dbschema import (
     ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     MirrorPulseType)
+    ...     MirrorPulseType, PackagePublishingStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -27,6 +27,16 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> new_mirror.isOfficial()
     False
 
+You cannot create a new mirror on a distribution that does not have the full
+functionality of Launchpad enabled:
+
+    >>> kubuntu = distroset.get(5)
+    >>> kubuntu.name
+    u'kubuntu'
+    >>> poor_mirror = kubuntu.newMirror(owner, name, speed, country, content,
+    ...                               pulse_type, http_base_url=http_base_url)
+    >>> print poor_mirror
+    None
 
 The contents of a distribution mirror are represented by its associated
 MirrorDistroArchReleases and MirrorDistroReleaseSources. This data is updated
@@ -221,9 +231,12 @@ On the warty release, component 'main' and pocket RELEASE , we had two uploads
 between 2005-09-15 and 2005-09-17, so at that time we could've checked if 
 that mirror's last sync was in the last one or two days.
 
-    >>> urls = warty_mirror.getURLsToCheckUpdateness(when=datetime(2005, 9, 17))
+    >>> import pytz
+    >>> utc = pytz.timezone('UTC')
+    >>> when = datetime(2005, 9, 17, tzinfo=utc)
+    >>> urls = warty_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(status.name, url) for (status, url) in urls.items()]
-    [('ONEDAYBEHIND',
+    [('UP',
       u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.9a-4.dsc'),
      ('TWODAYSBEHIND',
       u'http://foo.bar.com/pub/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
@@ -238,16 +251,38 @@ there were no recent uploads there.
 
 
 The same goes for the warty i386 mirror, in which we had one upload on
-2005-06-18 and another on 2005-06-20.
+2005-06-18 and two others on 2005-06-20. One slightly difference in this case
+is that one of the uploads made on 2005-06-20 contains an .udeb package
+instead of a .deb, and we don't check .udeb files on the mirror, so we need to
+skip that upload.
 
-    >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=datetime(2005, 6, 22))
+    >>> from canonical.database.sqlbase import sqlvalues
+    >>> from canonical.launchpad.database import (
+    ...     BinaryPackageFile, SecureBinaryPackagePublishingHistory)
+
+    >>> warty_i386_mirror = removeSecurityProxy(warty_i386_mirror)
+    >>> recent_status, threshold = warty_i386_mirror.status_times[0]
+    >>> start = datetime(2005, 06, 20, tzinfo=utc)
+    >>> end = datetime(2005, 06, 20, tzinfo=utc) + timedelta(hours=0.5)
+    >>> time_interval = (start, end)
+    >>> upload = warty_i386_mirror.getLatestPublishingEntry(
+    ...     time_interval, deb_only=False)
+
+    >>> bpf = BinaryPackageFile.selectOneBy(
+    ...     binarypackagereleaseID=upload.binarypackagerelease.id)
+    >>> upload.binarypackagerelease.version, bpf.filetype.title
+    (u'3.14156', 'UDEB Format')
+
+    >>> when = datetime(2005, 6, 22, tzinfo=utc)
+    >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(status.name, url) for (status, url) in urls.items()]
-    [('TWODAYSBEHIND',
+    [('UP',
       u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_1.9-1_all.deb'),
      ('ONEWEEKBEHIND',
       u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
 
-    >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=datetime(2005, 6, 20))
+    >>> when = datetime(2005, 6, 20, 0, 1, tzinfo=utc)
+    >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(status.name, url) for (status, url) in urls.items()]
     [('UP', 
       u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_1.9-1_all.deb'),

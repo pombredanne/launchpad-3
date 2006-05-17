@@ -7,7 +7,7 @@
     <ul>
       <li class="bounty" tal:repeat="bounty context/bounties">
         <a tal:content="bounty/title"
-           tal:attributes="hover bounty/summary;
+           tal:attributes="title bounty/summary;
                            href bounty/fmt:url">bounty title</a>
       </li>
     </ul>

@@ -20,7 +20,7 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -257,6 +257,15 @@ class BuildQueueSet(object):
     def getActiveBuildJobs(self):
         """See IBuildQueueSet."""
         return BuildQueue.select('buildstart is not null')
+
+    def fetchByBuildIds(self, build_ids):
+        """See IBuildQueueSet."""
+        if len(build_ids) == 0:
+            return []
+
+        return BuildQueue.select(
+            "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
+            prejoins=['builder'])
 
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""

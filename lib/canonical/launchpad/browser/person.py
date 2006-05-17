@@ -21,6 +21,7 @@ __all__ = [
     'FOAFSearchView',
     'PersonSpecWorkLoadView',
     'PersonSpecFeedbackView',
+    'PersonChangePasswordView',
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
@@ -51,7 +52,7 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
-        IInputWidget, ConversionError, WidgetInputError)
+        IInputWidget, ConversionError, WidgetInputError, WidgetsError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
@@ -1480,7 +1481,7 @@ class PersonView(LaunchpadView):
             tokentype = LoginTokenType.VALIDATEGPG
         else:
             tokentype = LoginTokenType.VALIDATESIGNONLYGPG
-        
+
         token = logintokenset.new(self.context, login,
                                   preferredemail,
                                   tokentype,
@@ -1489,27 +1490,25 @@ class PersonView(LaunchpadView):
         appurl = self.request.getApplicationURL()
         token.sendGPGValidationRequest(appurl, key)
 
-    def processPasswordChangeForm(self):
-        if self.request.method != 'POST':
-            return
 
-        form = self.request.form
-        currentpassword = form.get('currentpassword')
+class PersonChangePasswordView(GeneralFormView):
+
+    def initialize(self):
+        self.top_of_page_errors = []
+        self._nextURL = canonical_url(self.context)
+
+    def validate(self, form_values):
+        currentpassword = form_values.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(currentpassword, self.context.password):
-            self.message = (
-                "The provided password doesn't match your current password.")
-            return
+            self.top_of_page_errors.append(_(
+                "The provided password doesn't match your current password."))
+            raise WidgetsError(self.top_of_page_errors)
 
-        newpassword = form.get('newpassword')
-        newpassword2 = form.get('newpassword2')
-        if not (newpassword or newpassword2):
-            self.message = "Your new password cannot be empty"
-        elif newpassword != newpassword2:
-            self.message = "Passwords did not match"
-        else:
-            self.context.password = encryptor.encrypt(newpassword)
-            self.message = "Password changed successfully"
+    def process(self, password):
+        self.context.password = password
+        self.request.response.addInfoNotification(_(
+            "Password changed successfully"))
 
 
 class PersonEditView(SQLObjectEditView):
@@ -1735,8 +1734,9 @@ class PersonEditEmailsView:
             # inserted in the database.
             owner = email.person
             browsername = cgi.escape(owner.browsername)
+            owner_name = urllib.quote(owner.name)
             merge_url = ('%s/+requestmerge?field.dupeaccount=%s'
-                         % (canonical_url(getUtility(IPersonSet)), owner.name))
+                         % (canonical_url(getUtility(IPersonSet)), owner_name))
             self.message = (
                     "The email address '%s' is already registered by "
                     "<a href=\"%s\">%s</a>. If you think that is a "

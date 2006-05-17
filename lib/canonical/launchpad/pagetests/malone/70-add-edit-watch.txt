@@ -34,7 +34,7 @@ the bug to be watched in that system.
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.remotebug"
   ... 
-  ... 101
+  ...     101   
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
@@ -44,13 +44,19 @@ the bug to be watched in that system.
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
+  Location: http://localhost:9000/distros/debian/+source/mozilla-firefox/+bug/2
+  <BLANKLINE> 
 
-  >>> print http(r"""
-  ... GET /distros/debian/+source/mozilla-firefox/+bug/2/watches/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
+And now we check that the remote bug number was stripped of leading and
+trailing whitespaces.
+
+  >>> domain = 'http://localhost:9000'
+  >>> path = '/distros/debian/+source/mozilla-firefox/+bug/2'
+  >>> browser.open(domain + path)
+  >>> browser.getLink('mozilla.org #101')
+  <Link text='mozilla.org #101'
+    url='https://bugzilla.mozilla.org/show_bug.cgi?id=101'>
+
 
   >>> print http(r"""
   ... GET /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1

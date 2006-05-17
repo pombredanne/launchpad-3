@@ -401,7 +401,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None,
-        potemplate=None):
+        potemplate=None, pofile=None):
         """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distrorelease is not None) and
             productseries is not None):
@@ -456,6 +456,10 @@ class TranslationImportQueue:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
 
+            if pofile is not None:
+                # Set always the IPOFile link if we know it.
+                entry.pofile = pofile
+
             if entry.status == RosettaImportStatus.IMPORTED:
                 # The entry was already imported, so we need to update its
                 # dateimported field so it doesn't get preference over old
@@ -478,7 +482,8 @@ class TranslationImportQueue:
             entry = TranslationImportQueueEntry(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distrorelease=distrorelease, productseries=productseries,
-                is_published=is_published, potemplate=potemplate)
+                is_published=is_published, potemplate=potemplate,
+                pofile=pofile)
             return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
