@@ -799,8 +799,12 @@ Invalid importance:
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance low
+        importance untriaged
     ...
+
+XXX mpt 20060516: "importance untriaged" is a silly example, but customizing it
+to a realistic value is difficult (see convertArguments in
+launchpad/mail/commands.py).
 
 Trying to use the obsolete "severity" or "priority" commands:
 
