@@ -8,8 +8,9 @@ __all__ = ['IBugMessage', 'IBugMessageSet']
 
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IHasBug
 
-class IBugMessage(Interface):
+class IBugMessage(IHasBug):
     """A link between a bug and a message."""
 
     bug = Attribute("The bug.")

@@ -788,7 +788,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-class BugTaskSearchListingView(LaunchpadView):
+class BugTaskSearchListingView(GeneralFormView):
     """Base class for bug listings.
 
     Subclasses should define getExtraSearchParams() to filter the
@@ -1044,39 +1044,6 @@ class BugTaskSearchListingView(LaunchpadView):
         return (
             self._upstreamContext() is not None and
             self.user is not None and self.user.inTeam(self.context.owner))
-
-    @property
-    def release_buglistings(self):
-        """Return a buglisting for each release.
-
-        The list is sorted newest release to oldest.
-
-        The count only considers bugs that the user would actually be
-        able to see in a listing.
-        """
-        distribution_context = self._distributionContext()
-        distrorelease_context = self._distroReleaseContext()
-
-        if distrorelease_context:
-            distribution = distrorelease_context.distribution
-        elif distribution_context:
-            distribution = distribution_context
-        else:
-            raise AssertionError, ("release_bug_counts called with "
-                                   "illegal context")
-
-        releases = getUtility(IDistroReleaseSet).search(
-            distribution=distribution, orderBy="-datereleased")
-
-        release_buglistings = []
-        for release in releases:
-            release_buglistings.append(
-                dict(
-                    title=release.displayname,
-                    url=canonical_url(release) + "/+bugs",
-                    count=release.open_bugtasks.count()))
-
-        return release_buglistings
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

@@ -6,11 +6,11 @@ __metaclass__ = type
 
 __all__ = ['IBugCve']
 
-from zope.interface import Interface
 from zope.schema import Int
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IHasBug
 
-class IBugCve(Interface):
+class IBugCve(IHasBug):
     """A link between a bug and a CVE entry."""
 
     bug = Int(title=_('Bug Number'), required=True, readonly=True,

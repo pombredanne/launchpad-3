@@ -361,7 +361,9 @@ class BugAlsoReportInView(GeneralFormView):
             valid_upstreamtask(self.context.bug, product)
         elif distribution:
             target = distribution
-            valid_distrotask(self.context.bug, distribution, sourcepackagename)
+            valid_distrotask(
+                self.context.bug, distribution, sourcepackagename,
+                on_create=True)
         else:
             raise UnexpectedFormData(
                 'Neither product nor distribution was provided')

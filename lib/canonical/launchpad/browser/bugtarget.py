@@ -4,7 +4,10 @@
 
 __metaclass__ = type
 
-__all__ = ["FileBugView"]
+__all__ = [
+    "BugTargetBugListingView",
+    "FileBugView"
+    ]
 
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidgets
@@ -12,7 +15,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistribution, IProduct, NotFoundError)
+    ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
+    IProduct, NotFoundError)
 from canonical.launchpad.webapp import canonical_url
 
 class FileBugView(SQLObjectAddView):
@@ -90,3 +94,39 @@ class FileBugView(SQLObjectAddView):
         setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames)
         if "packagename" in self.fieldNames:
             self.packagename_widget.onKeyPress = "selectWidget('choose', event)"
+
+class BugTargetBugListingView:
+    """Helper methods for rendering bug listings."""
+
+    @property
+    def release_buglistings(self):
+        """Return a buglisting for each release.
+
+        The list is sorted newest release to oldest.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
+        distribution_context = IDistribution(self.context, None)
+        distrorelease_context = IDistroRelease(self.context, None)
+
+        if distrorelease_context:
+            distribution = distrorelease_context.distribution
+        elif distribution_context:
+            distribution = distribution_context
+        else:
+            raise AssertionError, ("release_bug_counts called with "
+                                   "illegal context")
+
+        releases = getUtility(IDistroReleaseSet).search(
+            distribution=distribution, orderBy="-datereleased")
+
+        release_buglistings = []
+        for release in releases:
+            release_buglistings.append(
+                dict(
+                    title=release.displayname,
+                    url=canonical_url(release) + "/+bugs",
+                    count=release.open_bugtasks.count()))
+
+        return release_buglistings
