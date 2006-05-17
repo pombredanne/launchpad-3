@@ -39,11 +39,17 @@ class BranchToMirror:
             branch = bzrlib.bzrdir.BzrDir.open(self.dest).open_branch()
         except bzrlib.errors.NotBranchError:
             os.makedirs(self.dest) 
-            branch = bzrlib.bzrdir.BzrDir.create_branch_convenience(
-                self.dest, force_new_repo=True, force_new_tree=False,
-                #when we update our bzrdir
-                # format=srcbranch.bzrdir._format
-                )
+            # XXX Andrew Bennetts 2006-05-17: 
+            #    Unfortunately, we cannot use BzrDir.create_branch_convenience,
+            #    because it doesn't let us control the branch or repository
+            #    format.
+            # Make a new branch in the same format as the source branch.
+            bzrdir_format = self._source_branch.bzrdir._format
+            bzrdir = bzrdir_format.initialize(self.dest)
+            repo_format = self._source_branch.repository._format
+            repo = repo_format.initialize(bzrdir)
+            branch_format = self._source_branch._format
+            branch = branch_format.initialize(bzrdir)
         self._dest_branch = branch
 
     def _pullSourceToDest(self):
