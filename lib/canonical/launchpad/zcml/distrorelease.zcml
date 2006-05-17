@@ -107,12 +107,6 @@
       lp:url="/distros/$distribution/$distrorelease/+builds"
       />
     <browser:page
-      name="+queue"
-      facet="overview"
-      template="../templates/distrorelease-queue.pt"
-      lp:url="/distros/$distribution/$distrorelease/+queue"
-      />
-    <browser:page
       name="+search"
       facet="overview"
       template="../templates/distrorelease-search.pt"
@@ -150,6 +144,17 @@
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
       lp:url="/distros/$Distro.name/$DRelease.name/+portlet-milestones" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.DistroReleaseView"
+    permission="launchpad.AnyPerson">
+    <browser:page
+      name="+queue"
+      facet="overview"
+      template="../templates/distrorelease-queue.pt"
+      lp:url="/distros/$distribution/$distrorelease/+queue" />
   </browser:pages>
 
   <browser:pages

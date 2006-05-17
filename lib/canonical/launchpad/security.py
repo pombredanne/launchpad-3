@@ -18,7 +18,9 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication)
+    IBazaarApplication, IDistroReleaseQueue)
+
+from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -699,3 +701,34 @@ class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueue
+
+
+class EditDistroReleaseQueue(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroReleaseQueue
+
+    def checkAuthenticated(self, user):
+        """Only allow members of the admin team to edit a queue entry."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        # XXX cprov 20060517: use upload_admins celebrity or
+        # distrorelease driver
+        return user.inTeam(admins)
+
+class ViewDistroReleaseQueue(EditDistroReleaseQueue):
+    permission = 'launchpad.View'
+    usedfor = IDistroReleaseQueue
+
+    def checkAuthenticated(self, user):
+        """Allow only members of the admin team to view unapproved entries.
+
+        Any logged in user can view entries in other state.
+        """
+        if EditDistroReleaseQueue.checkAuthenticated(self, user):
+            return True
+        # deny access to non-admin on unapproved records
+        if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
+            return False
+
+        return True
+
+

@@ -4,10 +4,36 @@ control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroReleases.
 
 
+This page requires logged in users:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+Check if anonymous actions fails:
+
+(considering this POST was maid by-hand since the UI would never allow
+such path.)
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=1&Accept=Accept""")
+  HTTP/1.1 500 Internal Server Error
+  Content-Length: ...
+  <BLANKLINE>
+  Application error.  Unauthenticated user POSTing to page that requires authentication.
+
+(Using Sample Person authorisation for normal actions)
+
 Visualise current queue, by default the NEW queue:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -21,13 +47,37 @@ Visualise current queue, by default the NEW queue:
 Inspect the ACCEPTED queue
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Content-Length: 32
-  ... queue_state=accepted&queue_text=""")
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=accepted&queue_text= HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...The Accepted queue...is empty.
   ...
+
+Check if the non-admin are denied to see UNAPPROVED queue:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=unapproved&queue_text= HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...Sorry, you do not have permission to view this queue, we have
+  ...excluded any packages from this listing.
+  ...
+
+Check admin access to UNAPPROVED queue:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=unapproved&queue_text= HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...netapplet...
 
 
 Accept an item (requires Admin):
@@ -45,17 +95,33 @@ Accept an item (requires Admin):
   ...pmount (i386)...
   ...mozilla-firefox (i386)...
 
-
-Check if the item was moved to the correct place, the ACCEPTED queue:
+XXX cprov 20060517: why does it needs to be performed twice ?
+if we remove this test, the NEW queue will appear as empty.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=accepted&queue_text= HTTP/1.1
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=4&Accept=Accept""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...Accepting Results:<br><br>OK: alsa-utils...
+  ...netapplet...
+  ...pmount (i386)...
+  ...mozilla-firefox (i386)...
+
+
+Check if the item was moved to the correct place, ACCEPTED queue:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=accepted HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...alsa-utils...
-
 
 Reject an item (requires Admin):
 
@@ -76,6 +142,7 @@ Check if the item was moved to the correct place, REJECTED queue:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=rejected&queue_text= HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... """)
   HTTP/1.1 200 Ok
@@ -87,6 +154,7 @@ Use the text filter to inspect the NEW queue:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=new&queue_text=pm HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... """)
   HTTP/1.1 200 Ok
@@ -98,36 +166,25 @@ Check if the results were already filtered:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=new&queue_text= HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...
 
-Check if the anonymous are denied to see UNAPPROVED queue:
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=unapproved&queue_text= HTTP/1.1
-  ... Content-Type: application/x-www-form-urlencoded
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...Sorry, you do not have permission to view this queue, we have
-  ...excluded any packages from this listing.
-  ...
+Non-admin attempts to act on queue items have no effect. it tries to
+accept 'pmount' but it continues in NEW and no message is rendered:
 
-Check if anonymous actions fails, it tries to accept pmount
-(QUEUE_ID = 1) but this row still being presented in NEW queue:
-
-(considering this POST was maid by-hand since the UI would never allow
-such path.)
+XXX cprov 20060517: no warning message is odd
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... Content-Length: 25
-  ... QUEUE_ID=1&Accept=Accept""")
+  ... QUEUE_ID=2&Accept=Accept""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...pmount (i386)...

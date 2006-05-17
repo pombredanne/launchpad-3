@@ -93,6 +93,7 @@
        </thead>
        <tbody class="lesser">
          <tal:batch repeat="queue batch">
+         <tal:allow_view condition="queue/required:launchpad.View">
            <tr>
               <td class="icon left">
                  <input type="checkbox" name="QUEUE_ID"
@@ -124,6 +125,7 @@
                 href queue/changesfile/url">view</a>]
               </td>
            </tr>
+         </tal:allow_view>
          </tal:batch>
        </tbody>
      </table>
