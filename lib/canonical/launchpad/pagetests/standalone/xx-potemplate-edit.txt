@@ -1,0 +1,82 @@
+The POTemplate edit page lets us to edit basic aspect of that object. Only
+product owners, Rosetta Experts or a Launchpad admin are able to use it.
+
+Check to be sure that an unpriviledged user cannot reach this page
+
+  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
+
+XXX: CarlosPerelloMarin 20060517: We need to reset the Browser object due the
+error we forced before. See bug #45226 for more information.
+
+  >>> from zope.testbrowser import Browser
+  >>> browser = Browser()
+  >>> browser.handleErrors = False
+
+Check to be sure that a Rosetta expert (Jordi) can reach the POTemplate edit
+page.
+
+  >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
+  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
+  >>> print browser.url
+  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
+
+And also, Sample Person, the owner of the product where this potemplate is,
+should be able to edit it.
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
+  >>> print browser.url
+  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
+
+We should be sure that the edit form get only the non admin fields.
+
+  >>> 'field.potemplatename' in browser.contents
+  True
+  >>> 'field.description' in browser.contents
+  True
+  >>> 'field.header' in browser.contents
+  False
+  >>> 'field.iscurrent' in browser.contents
+  False
+  >>> 'field.owner' in browser.contents
+  False
+  >>> 'field.productseries' in browser.contents
+  False
+  >>> 'field.distrorelease' in browser.contents
+  False
+  >>> 'field.sourcepackagename' in browser.contents
+  False
+  >>> 'field.sourcepackageversion' in browser.contents
+  False
+  >>> 'field.binarypackagename' in browser.contents
+  False
+  >>> 'field.languagepack' in browser.contents
+  False
+  >>> 'field.path' in browser.contents
+  False
+
+And that we are able to POST it.
+
+This is the old value.
+
+  >>> browser.getControl(name='field.description').value
+  'Template for evolution in hoary'
+
+We set it.
+
+  >>> browser.getControl(name='field.description').value = u'foo'
+  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> print browser.url
+  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
+
+And the changed value is stored.
+
+  >>> browser.open('http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit')
+  >>> print browser.url
+  http://localhost/products/evolution/trunk/+pots/evolution-2.2/+edit
+  >>> browser.getControl(name='field.description').value
+  'foo'
