@@ -42,22 +42,10 @@
 
       <select name="queue_state" size="1">
 
-        <option tal:attributes="selected view/show_new"
-                value="new">New</option>
-
-        <option tal:attributes="selected view/show_accepted"
-                value="accepted">Accepted</option>
-
-        <option tal:attributes="selected view/show_rejected"
-                value="rejected">Rejected</option>
-
-        <option tal:attributes="selected view/show_done"
-                value="done">Done</option>
-
-        <tal:admin condition="context/required:launchpad.Admin">
-          <option tal:attributes="selected view/show_unapproved"
-                    value="unapproved">Unapproved</option>
-        </tal:admin>
+        <option tal:repeat="option view/filtered_options"
+                tal:attributes="selected option/selected;
+                                value option/value"
+                tal:content="option/name" />
 
       </select>
 
@@ -102,7 +90,6 @@
        </thead>
        <tbody class="lesser">
          <tal:batch repeat="queue batch">
-         <tal:allow_view condition="queue/required:launchpad.View">
            <tr>
               <td class="icon left">
                  <input type="checkbox" name="QUEUE_ID"
@@ -134,7 +121,6 @@
                 href queue/changesfile/url">view</a>]
               </td>
            </tr>
-         </tal:allow_view>
          </tal:batch>
        </tbody>
      </table>

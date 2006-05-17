@@ -58,7 +58,7 @@ Inspect the ACCEPTED queue
 Check if the non-admin are denied to see UNAPPROVED queue:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=unapproved&queue_text= HTTP/1.1
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=1 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... """)
@@ -70,7 +70,7 @@ Check if the non-admin are denied to see UNAPPROVED queue:
 Check admin access to UNAPPROVED queue:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=unapproved&queue_text= HTTP/1.1
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... """)
@@ -114,7 +114,7 @@ if we remove this test, the NEW queue will appear as empty.
 Check if the item was moved to the correct place, ACCEPTED queue:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=accepted HTTP/1.1
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=2 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... """)
@@ -140,7 +140,7 @@ Reject an item (requires Admin):
 Check if the item was moved to the correct place, REJECTED queue:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=rejected&queue_text= HTTP/1.1
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=4 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... """)
@@ -152,7 +152,7 @@ Check if the item was moved to the correct place, REJECTED queue:
 Use the text filter to inspect the NEW queue:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=new&queue_text=pm HTTP/1.1
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=0&queue_text=pm HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... """)
@@ -164,7 +164,7 @@ Use the text filter to inspect the NEW queue:
 Check if the results were already filtered:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=new&queue_text= HTTP/1.1
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=0&queue_text= HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

@@ -39,32 +39,38 @@ class QueueItemsView(LaunchpadView):
         """
 
         # recover selected queue state and name filter
-        self.state_txt = self.request.get('queue_state', '')
         self.name_filter = self.request.get('queue_text', '')
 
-        # expose state for page template. the fallback is "new"
-        self.show_new = False
-        self.show_unapproved = False
-        self.show_accepted = False
-        self.show_rejected = False
-        self.show_done = False
+        try:
+            state_value = int(self.request.get('queue_state', ''))
+        except ValueError:
+            state_value = 0
 
-        if self.state_txt == 'unapproved':
-            self.state = DistroReleaseQueueStatus.UNAPPROVED
-            self.show_unapproved = True
-        elif self.state_txt == 'accepted':
-            self.state = DistroReleaseQueueStatus.ACCEPTED
-            self.show_accepted = True
-        elif self.state_txt == 'rejected':
-            self.state = DistroReleaseQueueStatus.REJECTED
-            self.show_rejected = True
-        elif self.state_txt == 'done':
-            self.state = DistroReleaseQueueStatus.DONE
-            self.show_done = True
-        else:
-            # this is the fallback
-            self.state = DistroReleaseQueueStatus.NEW
-            self.show_new = True
+        self.state = DistroReleaseQueueStatus.items[state_value]
+
+        valid_states = [
+            DistroReleaseQueueStatus.NEW,
+            DistroReleaseQueueStatus.ACCEPTED,
+            DistroReleaseQueueStatus.REJECTED,
+            DistroReleaseQueueStatus.DONE,
+            DistroReleaseQueueStatus.UNAPPROVED,
+            ]
+
+        if not check_permission('launchpad.Admin', self.context):
+            valid_states.remove(DistroReleaseQueueStatus.UNAPPROVED)
+
+        self.filtered_options = []
+
+        for state in valid_states:
+
+            if state == self.state:
+                selected = True
+            else:
+                selected = False
+
+            self.filtered_options.append(
+                dict(name=state.title, value=state.value, selected=selected)
+                )
 
         # enforce security again: only someone with launchpad.Admin on the
         # distrorelease should be able to see the unapproved queue
