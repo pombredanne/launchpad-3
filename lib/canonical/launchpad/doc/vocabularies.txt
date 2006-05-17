@@ -153,10 +153,11 @@ o PersonActiveMembership - all the teams the person is an active member of.
     >>> person_active_membership = vocabulary_registry.get(
     ...     foo_bar, 'PersonActiveMembership')
     >>> len(person_active_membership)
-    6
+    7
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
     admins Launchpad Administrators Launchpad Administrators
+    launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
     launchpad Launchpad Developers Launchpad Developers
     name18 Ubuntu Gnome Team Ubuntu Gnome Team
     ubuntu-team Ubuntu Team Ubuntu Team
