@@ -21,32 +21,13 @@
         />
 
         <p>
-          To confirm the OpenPGP key
+          Confirm the OpenPGP key
           <code tal:content="context/fingerprint">12345</code> for
-          <tal:name replace="context/requester/displayname">Foo Bar</tal:name>,
-          please enter your Launchpad password.
+          <tal:name replace="context/requester/displayname">Foo Bar</tal:name>
         </p>
 
-      <form autocomplete="off" name="validate" action="" method="POST">
-        <div class="field">
-
-          <label>Launchpad password:</label>
-          <br>
-          <input type="password" size="30" name="password" />
-          <br>
-
-          <tal:block condition="not: request/lp:person">
-            <label>
-              <input type="checkbox" checked="checked" name="logmein" />
-              Log me in after validating my key
-            </label><br />
-          </tal:block>
-
-          <div class="formControls">
-            <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
-          </div>
-
-        </div>
+      <form name="validate" action="" method="POST">
+        <input type="submit" name="VALIDATE" value="Confirm" />
       </form>
     </div>
 

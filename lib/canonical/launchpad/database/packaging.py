@@ -47,10 +47,21 @@ class PackagingUtil:
     implements(IPackagingUtil)
 
     def createPackaging(self, productseries, sourcepackagename,
-                              distrorelease, packaging, owner):
-        """Create new Packaging entry."""
+                        distrorelease, packaging, owner):
+        """See IPackaging."""
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
                   distrorelease=distrorelease,
                   packaging=packaging,
                   owner=owner)
+
+    def packagingEntryExists(self, productseries, sourcepackagename,
+                             distrorelease):
+        """See IPackaging."""
+        result = Packaging.selectOneBy(
+            productseriesID=productseries.id,
+            sourcepackagenameID=sourcepackagename.id,
+            distroreleaseID=distrorelease.id)
+        if result is None:
+            return False
+        return True

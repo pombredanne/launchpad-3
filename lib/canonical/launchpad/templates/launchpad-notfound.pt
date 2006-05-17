@@ -20,7 +20,7 @@
       <p>
         If this is blocking your work, let us know on the
         <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
-        >launchpad-users mailing list</a>.
+        >launchpad-users mailing list</a> (requires subscription).
         Include the error <abbr>ID</abbr>
         <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
         in your message.

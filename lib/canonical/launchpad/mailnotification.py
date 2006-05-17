@@ -59,6 +59,9 @@ class MailWrapper:
         # We don't care about trailing whitespace.
         text = text.rstrip()
 
+        # Normalize dos-style line endings to unix-style.
+        text = text.replace('\r\n', '\n')
+
         for paragraph in text.split('\n\n'):
             lines = paragraph.split('\n')
 
@@ -244,7 +247,7 @@ def generate_bug_add_email(bug):
     bug_info = ''
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
-        bug_info += u"Affects: %s\n" % bugtask.targetname
+        bug_info += u"** Affects: %s\n" % bugtask.targetname
         bug_info += u"       Severity: %s\n" % bugtask.severity.title
 
         if bugtask.priority:
