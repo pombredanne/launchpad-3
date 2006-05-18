@@ -216,6 +216,7 @@ class BugTaskView(LaunchpadView):
                         team, team.name, 'Unsubscribe %s' % team.displayname))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         person_field = Choice(
+            __name__='subscription',
             vocabulary=subscription_vocabulary, required=True)
         self.subscription_widget = CustomWidgetFactory(RadioWidget)
         setUpWidget(
@@ -246,14 +247,22 @@ class BugTaskView(LaunchpadView):
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
         # establish if a subscription form was posted
-        newsub = self.request.form.get('subscribe', None)
-        if newsub and self.user and self.request.method == 'POST':
-            if newsub == 'Subscribe':
+        if (not self.user or self.request.method != 'POST' or
+            not self.subscription_widget.hasValidInput()):
+            return
+        subscription_person = self.subscription_widget.getInputValue()
+        if subscription_person == self.user:
+            if 'subscribe' in self.request.form:
                 self.context.bug.subscribe(self.user)
                 self.notices.append("You have been subscribed to this bug.")
-            elif newsub == 'Unsubscribe':
+            else:
                 self.context.bug.unsubscribe(self.user)
                 self.notices.append("You have been unsubscribed from this bug.")
+        else:
+            self.context.bug.unsubscribe(subscription_person)
+            self.notices.append(
+                "%s has been unsubscribed from this bug." % cgi.escape(
+                    subscription_person.displayname))
 
     def reportBugInContext(self):
         form = self.request.form

@@ -24,6 +24,7 @@ page.
 
   >>> subscription_widget = browser.getControl(name='field.subscription')
   >>> subscription_widget.options
+  ['name16']
 
   >>> submit = browser.getControl('Continue')
 
@@ -34,9 +35,9 @@ should also show a message, and the link should change to "Unsubscribe".
   >>> submit.click()
 
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1'
+  'http://localhost/products/firefox/+bug/1/'
 
-XXX: check that the user is subscribed.
+XXX: check properly that the user is subscribed.
 
   >>> print browser.contents
   <...
@@ -61,7 +62,7 @@ spectacular fashion.
   >>> submit.click()
 
   >>> browser.url
-  'http://localhost/products/firefox/+bug/1'
+  'http://localhost/products/firefox/+bug/1/'
 
   >>> print browser.contents
   <...
