@@ -703,16 +703,21 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationImportQueue
 
 
-class EditDistroReleaseQueue(AuthorizationBase):
+class EditDistroReleaseQueue(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IDistroReleaseQueue
 
     def checkAuthenticated(self, user):
-        """Only allow members of the admin team to edit a queue entry."""
-        admins = getUtility(ILaunchpadCelebrities).admin
-        # XXX cprov 20060517: use upload_admins celebrity or
-        # distrorelease driver
-        return user.inTeam(admins)
+        """Check user presence in admins or distrorelease drivers teams."""
+        if AdminByAdminsTeam.checkAuthenticated(self, user):
+            return True
+
+        drivers = self.obj.distrorelease.drivers
+        for driver in drivers:
+            if user.inTeam(driver):
+                return True
+
+        return False
 
 
 class ViewDistroReleaseQueue(EditDistroReleaseQueue):

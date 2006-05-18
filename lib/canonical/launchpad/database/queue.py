@@ -112,14 +112,24 @@ class DistroReleaseQueue(SQLBase):
 
     def setNew(self):
         """See IDistroReleaseQueue."""
+        if self.status == DistroReleaseQueueStatus.NEW:
+            raise QueueInconsistentStateError(
+                'Queue item already new')
         self._SO_set_status(DistroReleaseQueueStatus.NEW)
 
     def setUnapproved(self):
         """See IDistroReleaseQueue."""
+        if self.status == DistroReleaseQueueStatus.UNAPROVED:
+            raise QueueInconsistentStateError(
+                'Queue item already unapproved')
         self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
 
     def setAccepted(self):
         """See IDistroReleaseQueue."""
+        if self.status == DistroReleaseQueueStatus.ACCEPTED:
+            raise QueueInconsistentStateError(
+                'Queue item already accepted')
+
         for source in self.sources:
             # if something goes wrong we will raise an exception
             # (QueueSourceAcceptError) before setting any value.
@@ -141,10 +151,16 @@ class DistroReleaseQueue(SQLBase):
 
     def setDone(self):
         """See IDistroReleaseQueue."""
+        if self.status == DistroReleaseQueueStatus.DONE:
+            raise QueueInconsistentStateError(
+                'Queue item already done')
         self._SO_set_status(DistroReleaseQueueStatus.DONE)
 
     def setRejected(self):
         """See IDistroReleaseQueue."""
+        if self.status == DistroReleaseQueueStatus.REJECTED:
+            raise QueueInconsistentStateError(
+                'Queue item already rejected')
         self._SO_set_status(DistroReleaseQueueStatus.REJECTED)
 
     # XXX cprov 20060314: following properties should be redesigned to

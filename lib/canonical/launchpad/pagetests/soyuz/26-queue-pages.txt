@@ -27,9 +27,22 @@ such path.)
   <BLANKLINE>
   Application error.  Unauthenticated user POSTing to page that requires authentication.
 
-(Using Sample Person authorisation for normal actions)
 
-Visualise current queue, by default the NEW queue:
+Non-admin (sample person) attempts to act on queue items fails:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=2&Accept=Accept""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...You do not have permission to act on queue items...
+
+
+Visualise current queue, by default the NEW queue, only requires
+normal user auth:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
@@ -44,10 +57,10 @@ Visualise current queue, by default the NEW queue:
   ...mozilla-firefox (i386)...
 
 
-Inspect the ACCEPTED queue
+Inspect the ACCEPTED queue, only requires normal user auth:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=accepted&queue_text= HTTP/1.1
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=2 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -95,7 +108,10 @@ Accept an item (requires Admin):
   ...mozilla-firefox (i386)...
 
 XXX cprov 20060517: why does it needs to be performed twice ?
-if we remove this test, the NEW queue will appear as empty.
+if we remove this accept retry, the ACCEPTED queue will be empty.
+Considering that the distroreleasequeue state machine would raise when
+trying to accept an accepted row again (see further info in
+distroreleasequeue.txt ~ line 349), it must be an test environment mistake.
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
@@ -106,9 +122,18 @@ if we remove this test, the NEW queue will appear as empty.
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...Accepting Results:<br><br>OK: alsa-utils...
-  ...netapplet...
-  ...pmount (i386)...
-  ...mozilla-firefox (i386)...
+
+Check if repeated action causes a warning message:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=4&Accept=Accept""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...Accepting Results:<br><br>FAILED: alsa-utils (Queue item already accepted)...
 
 
 Check if the item was moved to the correct place, ACCEPTED queue:
@@ -171,16 +196,3 @@ Check if the results were already filtered:
   Content-Length: ...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...
-
-
-Non-admin attempts to act on queue items fails:
-
-  >>> print http(r"""
-  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Content-Length: 25
-  ... QUEUE_ID=2&Accept=Accept""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...You do not have permission to act on queue items...

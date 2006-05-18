@@ -62,12 +62,10 @@ class QueueItemsView(LaunchpadView):
         self.filtered_options = []
 
         for state in valid_states:
-
             if state == self.state:
                 selected = True
             else:
                 selected = False
-
             self.filtered_options.append(
                 dict(name=state.title, value=state.value, selected=selected)
                 )
