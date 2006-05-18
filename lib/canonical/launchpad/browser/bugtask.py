@@ -61,7 +61,8 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.lp.dbschema import (
     BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, DBItemDisplayWidget, NewLineToSpacesWidget)
+    AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
+    NewLineToSpacesWidget)
 
 
 def get_sortorder_from_request(request):
@@ -451,15 +452,24 @@ class BugTaskEditView(GeneralFormView):
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
                 edit_field_names += ['sourcepackagename']
+            if self.context.bugwatch is not None:
+                # If the bugtask is linked to a bug watch, the bugtask
+                # is in read-only mode, since the status is pulled from
+                # the remote bug.
+                self.assignee_widget = CustomWidgetFactory(
+                    AssigneeDisplayWidget)
+                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
+            else:
+                edit_field_names += [
+                    'status', 'priority', 'severity', 'assignee']
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
                 ]
-            self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
-            self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-            self.severity_widget = CustomWidgetFactory(DBItemDisplayWidget)
-            self.priority_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.milestone_widget = None
+            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
         else:
             # Set up the milestone widget as an input widget only if the
             # has launchpad.Edit permissions on the distribution, for
@@ -590,15 +600,22 @@ class BugTaskEditView(GeneralFormView):
             bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
-            #XXX: Reset the bug task's status information. The right
-            #     thing would be to convert the bug watch's status to a
-            #     Malone status, but it's not trivial to do at the
-            #     moment. I will fix this later.
-            #     -- Bjorn Tillenius, 2006-03-01
-            bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
-            bugtask.priority = BugTaskPriority.UNKNOWN
-            bugtask.severity = BugTaskSeverity.UNKNOWN
-            bugtask.transitionToAssignee(None)
+            if bugtask.bugwatch is None:
+                # Reset the status and severity to the default values,
+                # since Unknown isn't selectable in the UI.
+                bugtask.transitionToStatus(IBugTask['status'].default)
+                bugtask.priority = IBugTask['priority'].default
+                bugtask.severity = IBugTask['severity'].default
+            else:
+                #XXX: Reset the bug task's status information. The right
+                #     thing would be to convert the bug watch's status to a
+                #     Malone status, but it's not trivial to do at the
+                #     moment. I will fix this later.
+                #     -- Bjorn Tillenius, 2006-03-01
+                bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
+                bugtask.priority = BugTaskPriority.UNKNOWN
+                bugtask.severity = BugTaskSeverity.UNKNOWN
+                bugtask.transitionToAssignee(None)
 
         if milestone_cleared:
             self.request.response.addWarningNotification(
