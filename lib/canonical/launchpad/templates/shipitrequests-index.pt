@@ -18,9 +18,7 @@
   <table>
     <tbody>
     <tr>
-      <td align="right">
-        <label>Show:</label>
-      </td>
+      <th>Show:</th>
       <td>
         <select name="statusfilter">
           <option value="pending" 
@@ -40,29 +38,26 @@
       </td>
     </tr>
     <tr>
-      <td align="right">
-        <label>for:</label>
-      </td>
+      <th>with:</th>
       <td>
-        <select name="typefilter">
-          <option value="custom" 
-                  tal:attributes="selected python: view.selectedType == 'custom'">
-            Custom quantities</option>
+        <select name="flavourfilter">
           <option value="any" 
-                  tal:attributes="selected python: view.selectedType == 'any'">
-            Any quantities</option>
-          <option value="standard"
-                  tal:attributes="selected python: view.selectedType == 'standard'">
-            All standard quantities</option>
-          <option tal:repeat="request view/standardShipItRequests"
-                  tal:attributes="value request/id;
-                                  selected python: view.selectedType == request.id">
-            <span tal:replace="request/description" /></option>
+            tal:attributes="
+              selected python:view.selectedFlavour == 'any'">
+            Any flavour
+          </option>
+          <option tal:repeat="flavour view/all_flavours"
+                  tal:attributes="
+                    value flavour/name;
+                    selected python: view.selectedFlavour == flavour.name">
+            <span tal:replace="flavour/title">Ubuntu</span>
+          </option>
         </select>
+        CDs
       </td>
     </tr>
     <tr>
-      <td align="right"><label>from:</label></td>
+      <th>from:</th>
       <td>
         <input type="text" size="30" name="recipient_text"
                tal:attributes="value view/recipient_text" />
@@ -70,9 +65,9 @@
       </td>
     </tr>
     <tr>
-      <td align="right"><label>sorted by:</label></td>
+      <th>sorted by:</th>
       <td>
-        <select name="orderby" tal:define="orderby python: request.get('orderby')">
+        <select name="orderby" tal:define="orderby request/orderby|nothing">
           <option value="daterequested" 
             tal:attributes="selected python: orderby == 'daterequested'">
             oldest first</option>
@@ -104,7 +99,7 @@
     </p>
 
     <tal:block condition="bn/currentBatch">
-      <table width="80%" class="listing" id="results" style="border-left: none">
+      <table width="90%" class="listing" id="results" style="border-left: none">
         <thead>
           <tr>
             <th>id</th>
@@ -118,8 +113,8 @@
         </thead>
         <tbody>
           <tal:block repeat="shipitrequest currentBatch">
-            <tr tal:attributes="
-              style string:background-color: ${shipitrequest/highlightColour}">
+            <tr tal:define="bg python: shipitrequest.highpriority and '#ff6666' or None"
+                tal:attributes="style string: background-color:${bg}">
               <td><a tal:attributes="href shipitrequest/fmt:url"
                      tal:content="shipitrequest/id">id</a></td>
               <td>
@@ -131,9 +126,9 @@
               <td tal:content="shipitrequest/daterequested/fmt:date" />
               <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" 
-                  tal:content="shipitrequest/totalCDs" />
+                  tal:content="shipitrequest/getTotalCDs" />
               <td style="text-align: right" 
-                  tal:content="shipitrequest/totalapprovedCDs" />
+                  tal:content="shipitrequest/getTotalApprovedCDs" />
               <td>
                 <tal:block condition="not: shipitrequest/cancelled">
                   <tal:block condition="shipitrequest/isApproved">
@@ -158,7 +153,7 @@
           </tal:block>
         </tbody>
       </table>
-      <table width="80%" class="listing">
+      <table width="90%" class="listing">
         <tbody>
           <tr class="results" style="background: #f7ebd6">
             <td> 

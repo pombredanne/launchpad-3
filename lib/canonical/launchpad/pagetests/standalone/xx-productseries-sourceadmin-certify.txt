@@ -4,42 +4,62 @@ name and without having to review the Product.
 Check the the +sourceadmin form loads and that the import status is the
 expected value.
 
-
->>> print http(r"""
-... GET /products/a52dec/trunk/+sourceadmin HTTP/1.1
-... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-... """)
-HTTP/1.1 200 Ok
-...
-                  <p>The current import status is:
-                    <b>Testing</b>.
-                  </p>
-...
-
+    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://localhost:9000/products/a52dec/trunk/+sourceadmin')
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...The current import status is:...
+    ...Testing...
 
 Set the syncCertified checkbox without setting the Arch name.
 
+    >>> browser.getControl(name='cvsroot').value = (
+    ...     ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52')
+    >>> browser.getControl(name='cvsmodule').value = 'a52dec'
+    >>> browser.getControl(name='cvsbranch').value = 'MAIN'
 
->>> print http(r"""
-... POST /products/a52dec/trunk/+sourceadmin HTTP/1.1
-... Content-Length: 302
-... Content-Type: application/x-www-form-urlencoded
-... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-... 
-... cvsroot=%3Apserver%3Aanonymous%40cvs.sourceforge.net%3A%2Fcvsroot%2Fliba52&cvsmodule=a52dec&cvsbranch=MAIN&svnrepository=&rcstype=cvs&targetarcharchive=&targetarchcategory=&targetarchbranch=&targetarchversion=&syncCertified=on&releaseroot=&releasefileglob=&admin_productseries_source=Update+RCS+Details""")
-HTTP/1.1 303 See Other
-...
-Location: http://.../products/a52dec/trunk
-...
+    >>> browser.getControl(name='syncCertified').value = 'on'
 
+    >>> browser.getControl('Update RCS Details').click()
+
+    >>> browser.url
+    'http://localhost:9000/products/a52dec/trunk'
 
 Check that that import status was indeed updated.
 
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...Bazaar Status...
+    ...Processing...
 
->>> print http(r"""
-... GET /products/a52dec/trunk HTTP/1.1
-... """)
-HTTP/1.1 200 Ok
-...Bazaar Status...
-...Processing...
+Check that thunderbird productseries doesn't have vcs information recorded.
 
+    >>> browser.open('http://localhost:9000/products/thunderbird/trunk/')
+    >>> 'No revision control details recorded for trunk' in browser.contents
+    True
+
+Since it doesn't have any vcs information recorded, it should not have an 
+Import Status.
+
+    >>> browser.open(
+    ...     'http://localhost:9000/products/thunderbird/trunk/+sourceadmin')
+    >>> 'The current import status is:' in browser.contents
+    False
+
+And we can add some vcs details
+
+    >>> browser.getControl(name='svnrepository').value = 'svn://thunderbird'
+    >>> browser.getControl(name='rcstype').value = ['svn']
+    >>> browser.getControl('Update RCS Details').click()
+
+    >>> browser.url
+    'http://localhost:9000/products/thunderbird/trunk'
+
+And now the Import Status is enabled.
+
+    >>> browser.open(
+    ...     'http://localhost:9000/products/thunderbird/trunk/+sourceadmin')
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...The current import status is...
+    ...Testing...

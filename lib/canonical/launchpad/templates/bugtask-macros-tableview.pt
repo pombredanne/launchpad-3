@@ -246,8 +246,7 @@
       <input type="hidden" name="field.sourcepackagename"
              tal:attributes="value view/current_package/sourcepackagename/name" />
     </span>
-    <fieldset>
-      <legend>Summary and description</legend>
+
       <span tal:content="structure view/searchtext_widget" />
       <input type="submit" name="search" value="Search" />
       <a tal:attributes="href view/getSimpleSearchURL">Simple search</a>
@@ -257,7 +256,6 @@
               <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
             </div>
 
-    </fieldset>
     <fieldset>
       <legend>Status and importance</legend>
       <table>

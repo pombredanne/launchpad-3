@@ -691,15 +691,21 @@ productseries_new = ContextDisplayName('Register a new %s release series')
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
+shipit_adminrequest = 'ShipIt admin request'
+
 shipit_index = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
+
+shipit_forbidden = 'Forbidden'
 
 shipit_myrequest = "Your ShipIt order"
 
 shipit_oops = 'Error: Oops'
 
 shipit_reports = 'ShipIt reports'
+
+shipit_requestcds = 'Your ShipIt Request'
 
 shipitrequests_index = 'ShipIt requests'
 
