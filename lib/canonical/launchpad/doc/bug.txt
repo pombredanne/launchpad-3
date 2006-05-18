@@ -430,7 +430,7 @@ Changing the description.
 
 Modifying a bugtask will update IBug.date_last_updated.
 
-  >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
+  >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
   >>> from canonical.launchpad.interfaces import IUpstreamBugTask
 
   >>> firefox_task = firefox_bug.bugtasks[0]
@@ -438,20 +438,20 @@ Modifying a bugtask will update IBug.date_last_updated.
   >>> print firefox_task.targetname
   firefox (upstream)
 
-  >>> print firefox_task.severity.title
-  Normal
+  >>> print firefox_task.importance.title
+  Untriaged
   >>> print firefox_task.status.title
   Unconfirmed
 
   >>> bugtask_before_modification = Snapshot(
   ...     firefox_task, providing=IUpstreamBugTask)
 
-  >>> firefox_task.severity = BugTaskSeverity.CRITICAL
+  >>> firefox_task.importance = BugTaskImportance.CRITICAL
   >>> firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
 
   >>> bugtask_modified = SQLObjectModifiedEvent(
   ...     firefox_task, bugtask_before_modification,
-  ...     ["status", "severity"])
+  ...     ["status", "importance"])
 
   >>> current_date_last_updated = firefox_bug.date_last_updated
 
