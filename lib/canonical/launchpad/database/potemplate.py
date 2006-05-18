@@ -93,7 +93,7 @@ class POTemplate(SQLBase, RosettaStats):
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
-    date_last_update = UtcDateTimeCol(dbName='date_last_update',
+    date_last_updated = UtcDateTimeCol(dbName='date_last_updated',
         default=DEFAULT)
 
     # joins
@@ -712,7 +712,7 @@ class POTemplateSubset:
                 self.sourcepackagename))
 
         return POTemplate.select(
-            ' AND '.join(query), orderBy=['-date_last_update'])
+            ' AND '.join(query), orderBy=['-date_last_updated'])
 
 
 class POTemplateSet:
@@ -741,7 +741,7 @@ class POTemplateSet:
 
     def getAllOrderByDateLastUpdated(self):
         """See IPOTemplateSet."""
-        return POTemplate.select(orderBy=['-date_last_update'])
+        return POTemplate.select(orderBy=['-date_last_updated'])
 
     def getSubset(self, distrorelease=None, sourcepackagename=None,
                   productseries=None):

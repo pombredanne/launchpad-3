@@ -110,7 +110,7 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
             potemplate.header = parser.header.msgstr
             pot_creation_date = parser.header['POT-Creation-Date']
             try:
-                potemplate.last_update_date = datetimeutils.parseDatetimetz(
+                potemplate.date_last_updated = datetimeutils.parseDatetimetz(
                     pot_creation_date)
             except (datetimeutils.SyntaxError, datetimeutils.DateError,
                     datetimeutils.DateTimeError, ValueError):

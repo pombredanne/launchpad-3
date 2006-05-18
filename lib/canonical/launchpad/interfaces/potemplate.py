@@ -157,7 +157,7 @@ class IPOTemplate(IRosettaStats):
         "a translation. This will either be a SourcePackage or a Product "
         "Series.")
 
-    date_last_update = Datetime(
+    date_last_updated = Datetime(
             title=_('Date for last update'),
             required=True)
 
