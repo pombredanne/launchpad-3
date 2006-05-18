@@ -12,14 +12,14 @@
       <allow interface="canonical.launchpad.interfaces.IPOTemplate" />
         <require
             permission="launchpad.Edit"
-            set_attributes="potemplatename priority description header
-                            iscurrent"
+            set_attributes="owner priority description"
             />
         <require
             permission="launchpad.Admin"
-            set_attributes="owner productseries distrorelease
+            set_attributes="potemplatename productseries distrorelease
                             sourcepackagename sourcepackageversion
-                            binarypackagename languagepack path"
+                            binarypackagename languagepack path header
+                            iscurrent from_sourcepackagename"
             />
     </content>
 
@@ -80,7 +80,7 @@
         label="Change PO template information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="potemplatename priority description" 
+        fields="name description priority owner"
         />
 
     <browser:editform
@@ -90,9 +90,6 @@
         label="Administer PO template"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
-        fields="name potemplatename description header iscurrent owner
-                productseries distrorelease sourcepackagename
-                sourcepackageversion binarypackagename languagepack path"
         />
 
     <browser:page
