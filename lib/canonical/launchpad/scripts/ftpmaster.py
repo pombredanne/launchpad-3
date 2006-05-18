@@ -332,7 +332,7 @@ class ArchiveCruftChecker:
     def buildNBS(self):
         """Build the group of 'not build from source' binaries"""
         # Checks based on the Packages files
-        self.logger.debug("building not build from source (NBS):")
+        self.logger.debug("Building not build from source list (NBS):")
         for component in self.components_and_di:
             for architecture in self.architectures:
                 self.buildArchNBS(self, component, architecture)
@@ -378,7 +378,7 @@ class ArchiveCruftChecker:
 
     def buildASBA(self):
         """Build the group of 'all superseded by any' binaries."""
-        self.logger.debug("Build superseded by any (ASBA):")
+        self.logger.debug("Building all superseded by any list (ASBA):")
         for component in self.components_and_di:
             for architecture in self.architectures:
                 self.buildArchASBA(component, architecture)

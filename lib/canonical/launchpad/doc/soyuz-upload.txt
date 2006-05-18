@@ -601,8 +601,8 @@ Defining path to the script:
   DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source/Sources.gz
   DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/multiverse/source/Sources.gz
   DEBUG   Processing /var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source/Sources.gz
-  DEBUG   Finding not build from source (NBS):
-  DEBUG   Finding all superseded by any (ASBA):
+  DEBUG   Building not build from source list (NBS):
+  DEBUG   Building all superseded by any list (ASBA):
   DEBUG   No NBS found
   <BLANKLINE>
 
