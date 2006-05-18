@@ -121,24 +121,13 @@
         <td nowrap tal:content="structure view/assignee_widget" colspan="2" />
       </tr>
     </table>
-    <table tal:condition="view/bugwatch_widget">
+    <table tal:condition="not:context/target_uses_malone">
       <tr>
         <td>
           <label
             tal:attributes="for view/bugwatch_widget/name"
             style="white-space: nowrap"
-          >
-            <a
-              href="#"
-              tal:condition="context/bugwatch"
-              tal:attributes="href context/bugwatch/url"
-              tal:content="view/bugwatch_widget/label"
-            >Remote Watch</a>
-            <span
-              tal:condition="not: context/bugwatch"
-              tal:content="view/bugwatch_widget/label"
-            />
-          </label>
+          >Remote Watch</label>
         </td>
       </tr>
       <tr>

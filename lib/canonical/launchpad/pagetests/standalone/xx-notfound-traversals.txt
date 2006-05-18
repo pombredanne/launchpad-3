@@ -207,7 +207,6 @@ one.)
 >>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
 >>> check("/products/firefox/+bug/1/+addattachment", auth=True)
 >>> check("/products/firefox/+bug/1/+addurl", auth=True)
->>> check("/products/firefox/+bug/1/+addwatch", auth=True)
 >>> check("/products/firefox/+bug/1/+activity", auth=True)
 
 Viewing a bug in the context of an upstream where the bug has not yet
