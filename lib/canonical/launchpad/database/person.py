@@ -314,9 +314,9 @@ class Person(SQLBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
