@@ -2,8 +2,8 @@
 #
 # arch-tag: d20d2ded-7987-4383-b5b8-4d8cd0c857ba
 
-__all__ = ['Poolifier', 'AlreadyInPool', 'NotInPool', 'DiskPoolEntry',
-           'DiskPool', 'POOL_DEBIAN']
+__all__ = ['Poolifier', 'AlreadyInPool', 'PoolFileOverwriteError',
+           'NotInPool', 'DiskPoolEntry', 'DiskPool', 'POOL_DEBIAN']
 
 POOL_DEBIAN = object()
 
@@ -125,6 +125,16 @@ class AlreadyInPool:
     """Raised when an attempt is made to add a file already in the pool."""
 
 
+class PoolFileOverwriteError(Exception):
+    """Raised when an attempt is made to overwrite a file in the pool.
+
+    This exception indicates there is a serious corruption in our system which
+    causes the publisher to attempt to replace a file in the poll.
+    It should cause the system to skip the publication record for this time
+    and will require human intervention in order to get it properly in the
+    archive.
+    """
+
 class NotInPool:
     """Raised when an attempt is made to remove a non-existent file."""
 
@@ -214,7 +224,11 @@ class DiskPool:
                 relative_symlink(sourcepath, targetpath)
                 self.files[leafname].comps.add(component)
                 self.components[component][leafname] = True
-            raise AlreadyInPool()
+                raise AlreadyInPool()
+            # we already have the same filename in the same leaf
+            # This is a overwrite, which isn't allowed
+            raise PoolFileOverwriteError()
+
         self.debug("Making new file in %s for %s/%s" %
                    (component, sourcename, leafname))
                    
