@@ -99,7 +99,12 @@ class BugContextMenu(ContextMenu):
         elif user is not None and self.context.bug.isSubscribed(user):
             text = 'Unsubscribe'
         else:
-            text = 'Subscribe'
+            for team in user.teams_participated_in:
+                if self.context.bug.isSubscribed(team):
+                    text = 'Subscribe/Unsubscribe'
+                    break
+            else:
+                text = 'Subscribe'
         return Link('+subscribe', text, icon='add')
 
     def addsubscriber(self):
