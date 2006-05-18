@@ -44,7 +44,7 @@
         schema="canonical.launchpad.interfaces.IDistributionMirror"
         facet="overview"
         permission="launchpad.Edit"
-        label="Edit Distribution Mirror"
+        label="Change mirror details"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
         fields="name displayname description http_base_url ftp_base_url
                 rsync_base_url speed country content pulse_type pulse_source

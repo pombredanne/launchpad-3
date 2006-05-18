@@ -3,17 +3,26 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div class="shipitPortlet"
-       tal:content="structure context/@@+portlet-navigation" />
-</metal:rightportlets>
-
 <body>
 
-  <div metal:fill-slot="main">
+  <div metal:fill-slot="body">
+
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
 
     <div metal:use-macro="context/@@launchpad_editform/editform" />
-    
+
+  </td>
+  <td
+    width="20%"
+    style="vertical-align: top;"
+    tal:content="structure context/@@+portlet-navigation"
+  />
+  </tr>
+  </table>  
+
   </div>
 
   </body>

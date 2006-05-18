@@ -353,6 +353,18 @@
             required="no" default="/srv/bugs-mirror.debian.org/" />
     </sectiontype>
 
+    <sectiontype name="shipit">
+        <description>
+            Shipit-specific configuration options.
+        </description>
+        <key name="shipit_admins_email" datatype="string" required="yes" />
+        <key name="shipit_ubuntu_from_email" datatype="string" required="yes" />
+        <key name="shipit_edubuntu_from_email" datatype="string" 
+             required="yes" />
+        <key name="shipit_kubuntu_from_email" datatype="string" 
+             required="yes" />
+    </sectiontype>
+
     <sectiontype name="rosettaadmin">
         <description>
             Configuration for Rosetta admin tools
@@ -606,6 +618,12 @@
                 BuilddMaster Datatbase user.
             </description>
         </key>
+        <key name="socket_timeout" datatype="integer" default="600">
+            <description>
+                The time in seconds that the builddmaster will wait for a
+                reply from buildd slave.
+            </description>
+        </key>
         <key name="uploader" datatype="string" required="yes">
             <description>
                 This is the command invoked by the buildd master when it wants
@@ -681,6 +699,7 @@
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
         <section name="*" type="malone" attribute="malone" />
+        <section name="*" type="shipit" attribute="shipit" />
         <section name="*" type="rosetta" attribute="rosetta" />
         <section name="*" type="librarian" attribute="librarian" />
         <section name="*" type="zopeless" attribute="zopeless" />

@@ -171,7 +171,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
-        permission="launchpad.Edit"
+        permission="launchpad.Admin"
         facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView">
         <browser:page

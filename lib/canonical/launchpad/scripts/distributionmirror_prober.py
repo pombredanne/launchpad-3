@@ -90,7 +90,7 @@ class ProberFactory(protocol.ClientFactory):
     def setURL(self, url):
         self.url = url
         proxy = os.getenv('http_proxy')
-        if proxy is not None:
+        if proxy:
             scheme, host, port, path = self._parse(proxy)
             path = url
         else:

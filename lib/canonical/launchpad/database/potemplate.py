@@ -70,7 +70,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     productseries = ForeignKey(foreignKey='ProductSeries',
         dbName='productseries', notNull=False, default=None)
-    priority = IntCol(dbName='priority', notNull=False, default=None)
+    priority = IntCol(dbName='priority', notNull=True, default=DEFAULT)
     potemplatename = ForeignKey(foreignKey='POTemplateName',
         dbName='potemplatename', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)

@@ -14,7 +14,7 @@
   <span tal:content="structure view/has_no_package_widget/hidden" />
   <a href="#"
      tal:attributes="href advanced_search_url|string:?advanced=1">
-    <small>Advanced</small>
+    <small>Advanced search</small>
   </a>
   <div style="margin-top: 5px">
     <small>

@@ -286,15 +286,22 @@ class SourcePackageRelease(SQLBase):
 
         tables = ['binarypackagerelease', 'binarypackagepublishing']
 
-        builds = Build.select(query, clauseTables=tables)
+        # We are using selectFirst() to eliminate the multiple results of
+        # the same build record originated by the multiple binary join paths
+        # ( a build which produces multiple binaries). The use of:
+        #  select(..., distinct=True)
+        # would be clearer, however the SelectResult returned would require
+        # nasty code.
+        build = Build.selectFirst(query, clauseTables=tables, orderBy="id")
 
-        if builds.count() == 0:
-            builds = Build.selectBy(distroarchreleaseID=distroarchrelease.id,
-                                    sourcepackagereleaseID=self.id)
-            if builds.count() == 0:
-                return None
+        if build is None:
+            # follow the architecture independent path, there is only one
+            # build for all architectures.
+            build = Build.selectOneBy(
+                distroarchreleaseID=distroarchrelease.id,
+                sourcepackagereleaseID=self.id)
 
-        return shortlist(builds)[0]
+        return build
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""

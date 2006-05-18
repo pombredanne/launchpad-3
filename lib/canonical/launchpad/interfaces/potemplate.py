@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Text, TextLine, Bytes, Datetime
+from zope.schema import Bool, Choice, Text, TextLine, Bytes, Datetime, Int
 
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -119,7 +119,16 @@ class IPOTemplate(IRosettaStats):
         title=_("Path of the template in the source tree, including filename."),
         required=False)
 
-    priority = Attribute("The template priority.")
+    priority = Int(
+        title=_('Priority'),
+        required=True,
+        default=0,
+        description=_(
+            'A number that describes how important this template is. Often '
+            'there are multiple templates, and you can use this as a way '
+            'of indicating which are more important and should be '
+            'translated first. Pick any number - higher priority '
+            'templates will generally be listed first.'))
 
     copyright = Attribute("The copyright information for this template.")
 
