@@ -107,22 +107,6 @@ Accept an item (requires Admin):
   ...pmount (i386)...
   ...mozilla-firefox (i386)...
 
-XXX cprov 20060517: why does it needs to be performed twice ?
-if we remove this accept retry, the ACCEPTED queue will be empty.
-Considering that the distroreleasequeue state machine would raise when
-trying to accept an accepted row again (see further info in
-distroreleasequeue.txt ~ line 349), it must be an test environment mistake.
-
-  >>> print http(r"""
-  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Content-Length: 25
-  ... QUEUE_ID=4&Accept=Accept""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...Accepting Results:<br><br>OK: alsa-utils...
-
 Check if repeated action causes a warning message:
 
   >>> print http(r"""
