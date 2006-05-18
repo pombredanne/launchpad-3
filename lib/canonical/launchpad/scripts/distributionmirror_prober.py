@@ -2,17 +2,16 @@
 
 import httplib
 import logging
+import os
 import urlparse
 
 from twisted.internet import defer, protocol, reactor
 from twisted.web.http import HTTPClient
 from twisted.python.failure import Failure
 
+from canonical.config import config
 from canonical.launchpad.interfaces import IDistroArchRelease, IDistroRelease
 from canonical.lp.dbschema import MirrorStatus
-
-
-PROBER_TIMEOUT = 5
 
 
 class ProberProtocol(HTTPClient):
@@ -58,7 +57,7 @@ class ProberFactory(protocol.ClientFactory):
 
     protocol = ProberProtocol
 
-    def __init__(self, url, timeout=PROBER_TIMEOUT):
+    def __init__(self, url, timeout=config.distributionmirrorprober.timeout):
         self.deferred = defer.Deferred()
         self.setTimeout(timeout)
         self.setURL(url.encode('ascii'))
@@ -84,9 +83,18 @@ class ProberFactory(protocol.ClientFactory):
             port = int(port)
         return scheme, host, port, path
 
+    def probe(self):
+        reactor.connectTCP(self.host, self.port, self)
+        return self.deferred
+
     def setURL(self, url):
         self.url = url
-        scheme, host, port, path = self._parse(url)
+        proxy = os.getenv('http_proxy')
+        if proxy:
+            scheme, host, port, path = self._parse(proxy)
+            path = url
+        else:
+            scheme, host, port, path = self._parse(url)
         if scheme and host:
             self.scheme = scheme
             self.host = host
@@ -144,8 +152,10 @@ class MirrorProberCallbacks(object):
         is propagated.
         """
         self.deleteMethod(self.release, self.pocket, self.component)
-        msg = ('Deleted %s with url %s because of %s.\n'
-               % (self.mirror_class_name, self.url, failure.getErrorMessage()))
+        msg = ('Deleted %s of %s with url %s because of %s.\n'
+               % (self.mirror_class_name,
+                  self._getReleasePocketAndComponentDescription(), self.url,
+                  failure.getErrorMessage()))
         self.log_file.write(msg)
         failure.trap(ProberTimeout, BadResponseCode)
 
@@ -153,8 +163,10 @@ class MirrorProberCallbacks(object):
         """Make sure we have a mirror for self.release, self.pocket and 
         self.component.
         """
-        msg = ('Ensuring %s with url %s exists in the database.\n'
-               % (self.mirror_class_name, self.url))
+        msg = ('Ensuring %s of %s with url %s exists in the database.\n'
+               % (self.mirror_class_name,
+                  self._getReleasePocketAndComponentDescription(),
+                  self.url))
         mirror = self.ensureMethod(
             self.release, self.pocket, self.component)
 
@@ -196,13 +208,34 @@ class MirrorProberCallbacks(object):
         recent date than the current one.
         """
         if status < arch_or_source_mirror.status:
-            msg = ('Found that %s exists. Updating the mirror status to %s.\n'
-                   % (url, status.title))
+            msg = ('Found that %s exists. Updating %s of %s status to %s.\n'
+                   % (url, self.mirror_class_name,
+                      self._getReleasePocketAndComponentDescription(), 
+                      status.title))
             self.log_file.write(msg)
             arch_or_source_mirror.status = status
 
+    def _getReleasePocketAndComponentDescription(self):
+        """Return a string containing the name of the release, pocket and
+        component.
+
+        This is meant to be used in the logs, to help us identify if this is a
+        MirrorDistroReleaseSource or a MirrorDistroArchRelease.
+        """
+        if IDistroArchRelease.providedBy(self.release):
+            text = ("Distro Release %s, Architecture %s" %
+                    (self.release.distrorelease.title,
+                     self.release.architecturetag))
+        else:
+            text = "Distro Release %s" % self.release.title
+        text += (", Component %s and Pocket %s" % 
+                 (self.component.name, self.pocket.title))
+        return text
+
     def logError(self, failure, url):
-        msg = "%s on %s\n" % (failure.getErrorMessage(), url)
+        msg = ("%s on %s of %s\n" 
+               % (failure.getErrorMessage(), url,
+                  self._getReleasePocketAndComponentDescription()))
         if failure.check(ProberTimeout, BadResponseCode) is not None:
             self.log_file.write(msg)
         else:

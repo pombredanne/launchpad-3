@@ -18,9 +18,12 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.helpers import shortlist
+
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationDelivery, SpecificationStatus)
+from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
@@ -145,6 +148,13 @@ class Product(SQLBase, BugTargetBase):
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
                 for r in ret]
+
+    def getLatestBranches(self, quantity=5):
+        """See IProduct."""
+        # XXX Should use Branch.date_created. See bug 38598.
+        # -- David Allouche 2006-04-11
+        return shortlist(Branch.selectBy(productID=self.id,
+            orderBy='-id').limit(quantity))
 
     def getPackage(self, distrorelease):
         """See IProduct."""

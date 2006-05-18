@@ -176,7 +176,6 @@ class BugTaskNavigation(Navigation):
         if name.isdigit():
             return getUtility(IBugWatchSet)[name]
 
-    redirection('watches', '..')
     redirection('references', '..')
 
 
@@ -476,7 +475,7 @@ class BugTaskEditView(GeneralFormView):
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                edit_field_names += ['sourcepackagename', 'binarypackagename']
+                edit_field_names += ['sourcepackagename']
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
@@ -560,6 +559,12 @@ class BugTaskEditView(GeneralFormView):
     def process(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
+
+        if self.request.form.get('subscribe', False):
+            bugtask.bug.subscribe(self.user)
+            self.request.response.addNotification(
+                "You have been subscribed to this bug.")
+
         # Save the field names we extract from the form in a separate
         # list, because we modify this list of names later if the
         # bugtask is reassigned to a different product.
@@ -569,23 +574,45 @@ class BugTaskEditView(GeneralFormView):
         bugtask_before_modification = helpers.Snapshot(
             bugtask, providing=providedBy(bugtask))
 
-        # If the user is reassigning an upstream task to a different product,
-        # we'll clear out the milestone value, to avoid violating DB constraints
-        # that ensure an upstream task can't be assigned to a milestone on a
-        # different product.
+        # If the user is reassigning an upstream task to a different
+        # product, we'll clear out the milestone value, to avoid
+        # violating DB constraints that ensure an upstream task can't
+        # be assigned to a milestone on a different product.
         milestone_cleared = None
         if (IUpstreamBugTask.providedBy(bugtask) and
             (bugtask.product != new_values.get("product")) and
             'milestone' in field_names and bugtask.milestone):
             milestone_cleared = bugtask.milestone
             bugtask.milestone = None
-            # Remove the "milestone" field from the list of fields whose changes
-            # we want to apply, because we don't want the form machinery to try
-            # and set this value back to what it was!
+            # Remove the "milestone" field from the list of fields
+            # whose changes we want to apply, because we don't want
+            # the form machinery to try and set this value back to
+            # what it was!
             field_names.remove("milestone")
 
+        # We special case setting assignee and status, because there's
+        # a workflow associated with changes to these fields.
+        field_names_to_apply = list(field_names)
+        if "assignee" in field_names_to_apply:
+            field_names_to_apply.remove("assignee")
+        if "status" in field_names_to_apply:
+            field_names_to_apply.remove("status")
+
         changed = applyWidgetsChanges(
-            self, self.schema, target=bugtask, names=field_names)
+            self, self.schema, target=bugtask,
+            names=field_names_to_apply)
+
+        new_status = new_values.pop("status", None)
+        new_assignee = new_values.pop("assignee", None)
+        # Set the "changed" flag properly, just in case status and/or
+        # assignee happen to be the only values that changed. We
+        # explicitly verify that we got a new status and/or assignee,
+        # because our test suite doesn't always pass all form values.
+        if ((new_status and (bugtask.status != new_status)) or
+            (new_assignee and (bugtask.assignee != new_assignee))):
+            changed = True
+            bugtask.transitionToStatus(new_status)
+            bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             #XXX: Reset the bug task's status information. The right
@@ -593,10 +620,10 @@ class BugTaskEditView(GeneralFormView):
             #     Malone status, but it's not trivial to do at the
             #     moment. I will fix this later.
             #     -- Bjorn Tillenius, 2006-03-01
-            bugtask.status = BugTaskStatus.UNKNOWN
+            bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
             bugtask.priority = BugTaskPriority.UNKNOWN
             bugtask.severity = BugTaskSeverity.UNKNOWN
-            bugtask.assignee = None
+            bugtask.transitionToAssignee(None)
 
         if milestone_cleared:
             self.request.response.addWarningNotification(
@@ -661,7 +688,7 @@ class BugTaskStatusView(LaunchpadView):
         if IUpstreamBugTask.providedBy(self.context):
             self.label = 'Product fix request'
         else:
-            field_names += ['sourcepackagename', 'binarypackagename']
+            field_names += ['sourcepackagename']
             self.label = 'Source package fix request'
 
         self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
@@ -774,7 +801,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-class BugTaskSearchListingView(LaunchpadView):
+class BugTaskSearchListingView(GeneralFormView):
     """Base class for bug listings.
 
     Subclasses should define getExtraSearchParams() to filter the
@@ -948,11 +975,7 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def getAdvancedSearchPageHeading(self):
         """The header for the advanced search page."""
-        return "Bugs in %s: Advanced Search" % self.context.displayname
-
-    def getAdvancedSearchButtonLabel(self):
-        """The Search button for the advanced search page."""
-        return "Search bugs in %s" % self.context.displayname
+        return "Bugs in %s: Advanced search" % self.context.displayname
 
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
@@ -966,10 +989,10 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the component widget be shown on the advanced search page?"""
         context = self.context
         return (
-            IDistribution.providedBy(context) or
+            (IDistribution.providedBy(context) and
+             context.currentrelease is not None) or
             IDistroRelease.providedBy(context) or
-            ISourcePackage.providedBy(context) or
-            IDistributionSourcePackage.providedBy(context))
+            ISourcePackage.providedBy(context))
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
@@ -1034,39 +1057,6 @@ class BugTaskSearchListingView(LaunchpadView):
         return (
             self._upstreamContext() is not None and
             self.user is not None and self.user.inTeam(self.context.owner))
-
-    @property
-    def release_buglistings(self):
-        """Return a buglisting for each release.
-
-        The list is sorted newest release to oldest.
-
-        The count only considers bugs that the user would actually be
-        able to see in a listing.
-        """
-        distribution_context = self._distributionContext()
-        distrorelease_context = self._distroReleaseContext()
-
-        if distrorelease_context:
-            distribution = distrorelease_context.distribution
-        elif distribution_context:
-            distribution = distribution_context
-        else:
-            raise AssertionError, ("release_bug_counts called with "
-                                   "illegal context")
-
-        releases = getUtility(IDistroReleaseSet).search(
-            distribution=distribution, orderBy="-datereleased")
-
-        release_buglistings = []
-        for release in releases:
-            release_buglistings.append(
-                dict(
-                    title=release.displayname,
-                    url=canonical_url(release) + "/+bugs",
-                    count=release.open_bugtasks.count()))
-
-        return release_buglistings
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""

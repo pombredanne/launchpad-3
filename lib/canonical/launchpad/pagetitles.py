@@ -87,6 +87,8 @@ class LaunchbagBugID(SubstitutionHelper):
 
 # Functions and strings used as the titles of pages.
 
+bazaar_all_branches = 'All branches in the Launchpad Bazaar'
+
 bazaar_index = 'The Launchpad Bazaar'
 
 bazaar_sync_review = 'Review upstream repositories for Launchpad Bzr syncing'
@@ -114,7 +116,7 @@ branch_index = ContextDisplayName(smartquote('Bzr branch "%s"'))
 
 branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
-branchtarget_branches = ContextTitle('Branches for %s')
+branchtarget_branchlisting = ContextTitle('Details of Branches for %s')
 
 bug_activity = ContextId('Bug #%s - Activity log')
 
@@ -469,6 +471,8 @@ def people_list(context, view):
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
+person_branches = ContextDisplayName('Bazaar branches for %s')
+
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
 def person_bugs(context, view):
@@ -585,7 +589,7 @@ product_bugcontact = ContextTitle('Edit bug contact for %s')
 product_bugs = ContextDisplayName('Bugs in %s')
 
 product_branches = ContextDisplayName(
-    smartquote("%s's code branches in Launchpad"))
+    smartquote("%s's Bazaar branches registered in Launchpad"))
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
@@ -685,15 +689,21 @@ productseries_new = ContextDisplayName('Register a new %s release series')
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
+shipit_adminrequest = 'ShipIt admin request'
+
 shipit_index = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
+
+shipit_forbidden = 'Forbidden'
 
 shipit_myrequest = "Your ShipIt order"
 
 shipit_oops = 'Error: Oops'
 
 shipit_reports = 'ShipIt reports'
+
+shipit_requestcds = 'Your ShipIt Request'
 
 shipitrequests_index = 'ShipIt requests'
 

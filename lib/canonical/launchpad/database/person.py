@@ -34,8 +34,8 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    ILaunchpadStatisticSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
+    ShipItConstants)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -444,13 +444,16 @@ class Person(SQLBase):
         """See IPerson."""
         return self.teamowner is not None
 
-    def shippedShipItRequests(self):
+    def shippedShipItRequestsOfCurrentRelease(self):
         """See IPerson."""
         query = '''
-            ShippingRequest.recipient = %s AND
-            ShippingRequest.id IN (SELECT request FROM Shipment)
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.select(query)
+            ShippingRequest.recipient = %s
+            AND ShippingRequest.id = RequestedCDs.request
+            AND RequestedCDs.distrorelease = %s
+            AND ShippingRequest.id IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
+        return ShippingRequest.select(
+            query, clauseTables=['RequestedCDs'], distinct=True)
 
     def pastShipItRequests(self):
         """See IPerson."""
@@ -517,20 +520,40 @@ class Person(SQLBase):
         return Karma.selectBy(personID=self.id,
             orderBy='-datecreated')[:quantity]
 
+    # XXX: This cache should no longer be needed once CrowdControl lands,
+    # as apparently it will also cache this information.
+    # -- StuartBishop 20060510
+    _inTeam_cache = None
+
     def inTeam(self, team):
         """See IPerson."""
         if team is None:
             return False
+
+        if team.id == self.id: # Short circuit - would return True anyway
+            return True
+
+        if self._inTeam_cache is None: # Initialize cache
+            self._inTeam_cache = {}
+        else:
+            try:
+                return self._inTeam_cache[team.id] # Return from cache
+            except KeyError:
+                pass # Or fall through
+
         tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
         if tp is not None or self.id == team.teamownerID:
-            return True
+            in_team = True
         elif team.teamowner is not None and not team.teamowner.inTeam(team):
             # The owner is not a member but must retain his rights over
             # this team. This person may be a member of the owner, and in this
             # case it'll also have rights over this team.
-            return self.inTeam(team.teamowner)
+            in_team = self.inTeam(team.teamowner)
         else:
-            return False
+            in_team = False
+
+        self._inTeam_cache[team.id] = in_team
+        return in_team
 
     def hasMembershipEntryFor(self, team):
         """See IPerson."""
@@ -546,6 +569,8 @@ class Person(SQLBase):
         """See IPerson."""
         assert not ITeam.providedBy(self)
 
+        self._inTeam_cache = {} # Flush the cache used by the inTeam method
+
         active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
         tm = TeamMembership.selectOneBy(personID=self.id, teamID=team.id)
         if tm is None or tm.status not in active:
@@ -560,6 +585,8 @@ class Person(SQLBase):
         assert not self.isTeam(), (
             "Teams take no actions in Launchpad, thus they can't join() "
             "another team. Instead, you have to addMember() them.")
+
+        self._inTeam_cache = {} # Flush the cache used by the inTeam method
 
         expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
@@ -1056,7 +1083,8 @@ class PersonSet:
         return team
 
     def createPersonAndEmail(self, email, name=None, displayname=None,
-                             password=None, passwordEncrypted=False):
+                             password=None, passwordEncrypted=False,
+                             hide_email_addresses=False):
         """See IPersonSet."""
         if name is None:
             try:
@@ -1071,19 +1099,23 @@ class PersonSet:
             password = getUtility(IPasswordEncryptor).encrypt(password)
 
         displayname = displayname or name.capitalize()
-        person = self._newPerson(name, displayname, password=password)
+        person = self._newPerson(name, displayname, hide_email_addresses,
+                                 password=password)
 
         email = getUtility(IEmailAddressSet).new(email, person.id)
         return person, email
 
-    def _newPerson(self, name, displayname, password=None):
+    def _newPerson(self, name, displayname, hide_email_addresses,
+                   password=None):
         """Create a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
         assert self.getByName(name, ignore_merged=False) is None
-        person = Person(name=name, displayname=displayname, password=password)
+        person = Person(name=name, displayname=displayname,
+                        hide_email_addresses=hide_email_addresses,
+                        password=password)
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
                     person.displayname, wikinameset.exists)
@@ -1333,6 +1365,32 @@ class PersonSet:
             """ % vars()
             )
         skip.append(('wikiname', 'person'))
+
+        # Update the Branches that will not conflict, and fudge the names of
+        # ones that *do* conflict
+        cur.execute('''
+            SELECT product, name FROM Branch WHERE owner = %(to_id)d
+            ''' % vars())
+        possible_conflicts = set(tuple(r) for r in cur.fetchall())
+        cur.execute('''
+            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
+            ORDER BY id
+            ''' % vars())
+        for id, product, name in list(cur.fetchall()):
+            new_name = name
+            suffix = 1
+            while (product, new_name) in possible_conflicts:
+                new_name = '%s-%d' % (name, suffix)
+                suffix += 1
+            possible_conflicts.add((product, new_name))
+            new_name = new_name.encode('US-ASCII')
+            name = name.encode('US-ASCII')
+            cur.execute('''
+                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
+                WHERE owner = %(from_id)s AND name = %(name)s
+                    AND (%(product)s IS NULL OR product = %(product)s)
+                ''', vars())
+        skip.append(('branch','owner'))
 
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case

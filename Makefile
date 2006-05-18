@@ -41,9 +41,9 @@ check_merge: build check importdcheck
 ###	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 ###		PYTHON_VERSION=${PYTHON_VERSION}
 
-importdcheck:
-	cd database/schema; make test PYTHON=${PYTHON}
-	PYTHONPATH=lib lib/importd/test_all.py
+importdcheck: build
+	env PYTHONPATH=$(PYTHONPATH) \
+	${PYTHON} -t ./lib/importd/test_all.py
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the

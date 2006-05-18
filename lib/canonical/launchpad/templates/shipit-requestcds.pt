@@ -1,0 +1,168 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="body">
+
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
+  
+  <tal:shipit-is-open condition="view/standardShipItRequests">
+
+    <p class="informational message"
+       tal:define="status view/process_status"
+       tal:condition="status"
+       tal:content="status" />
+
+    <div class="error message"
+      tal:repeat="top_of_page_error view/top_of_page_errors"
+      tal:content="structure top_of_page_error">
+      Schema validation errors.
+    </div>
+
+    <tal:current_request condition="view/current_order">
+      <h1>Current Request Details</h1>
+      <ul>
+        <tal:block repeat="requested_cds view/current_order/getAllRequestedCDs">
+          <li tal:condition="requested_cds/quantity">
+            <strong tal:content="requested_cds/description" />
+          </li>
+        </tal:block>
+      </ul>
+      <div>
+        <form name="cancelrequest" action="" method="POST">
+          <input type="hidden" name="order" 
+                 tal:attributes="value view/current_order/id" />
+
+          <input type="submit" value="Cancel Request" name="cancel"
+                 class="formControls"/>
+        </form>
+      </div>
+    </tal:current_request>
+
+    <tal:pastrequests condition="view/user/pastShipItRequests"
+                      define="user view/user">
+      <h1>Shipped/Cancelled requests</h1>
+
+      <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
+    </tal:pastrequests>
+
+    <h1 tal:condition="not: view/current_order">Request CDs</h1>
+    <h1 tal:condition="view/current_order">Change your current request</h1>
+
+    <tal:edubuntu condition="view/is_edubuntu">
+      <p>Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
+        The <strong>PC</strong> Edition will run on almost all PCs.
+        This includes Intel x86-based systems like Intel Pentium and AMD
+        Athlon.
+      </p>
+    </tal:edubuntu>
+
+    <tal:not-edubuntu condition="not: view/is_edubuntu">
+      <p>
+        <span tal:replace="view/flavour/title" /> CDs are made specifically
+        for various types of computers. The available architectures for 
+        <span tal:replace="view/flavour/title" /> are:
+      </p>
+
+      <ul>
+        <li>
+          The <strong>PC</strong> Edition will run on almost all PCs.
+          This includes Intel x86-based systems like Intel Pentium and AMD
+          Athlon. Choose this if you are unsure.
+        </li>
+
+        <li>
+          The <strong>64-bit PC</strong> Edition will run on computers
+          based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
+          EM64T Xeon).
+        </li>
+
+        <li tal:condition="not: view/is_kubuntu">
+          The <strong>Mac</strong> Edition will run on Apple Macintosh
+          G3, G4, and G5 computers including iBooks and PowerBooks.
+        </li> 
+      </ul>
+    </tal:not-edubuntu>
+
+    <br />
+
+    <form name="shipit" action="" method="POST">
+
+    <div style="margin: 0em 5em" 
+         tal:define="selected_id view/selected_standardrequest">
+      <div tal:repeat="request_type view/standardShipItRequests">
+        <label>
+          <input type="radio" name="ordertype"
+            tal:attributes="value request_type/id;
+                            checked python:request_type.id == selected_id">
+          <span tal:content="request_type/description" />
+        </label>
+      </div>
+    </div>
+
+    <h3>Shipping address</h3>
+
+    <div class="informational message">
+      Please note that CDs for <span tal:replace="view/flavour/title" />
+      6.06 LTS will begin shipping in early June. Once shipping starts, it
+      can take up to 6 weeks for you to receive delivery.
+    </div>
+
+    <p><strong>Please Double check your address below before submitting your
+      request.</strong>
+    </p>
+
+    <metal:shipping_details
+      use-macro="context/@@+shipit-macros/shipping_details" />
+
+    <div style="margin-left: 20em">
+      <tal:current_request condition="view/current_order">
+        <input type="submit" value="Change Request" name="FORM_SUBMIT"
+               class="formControls"/>
+      </tal:current_request>
+
+      <tal:no_current_request condition="not: view/current_order">
+        <input type="submit" value="Request CDs" name="FORM_SUBMIT"
+               class="formControls"/>
+      </tal:no_current_request>
+    </div>
+
+    </form>
+
+  </tal:shipit-is-open>
+
+  <tal:shipit-is-closed condition="not: view/standardShipItRequests">
+    <h1>ShipIt is currently closed</h1>
+
+    <tal:pastrequests condition="view/user/pastShipItRequests"
+                      define="user view/user">
+      <h2>Shipped/Cancelled requests</h2>
+
+      <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
+    </tal:pastrequests>
+  </tal:shipit-is-closed>
+
+  </td>
+  </tr>
+  </table>  
+
+  <script type="text/javascript">
+    function updateWidgets() {
+      var form = document.forms['shipit'];
+      state = (form.extracds.checked == false);
+      document.getElementById("field.reason").disabled = state;
+    }
+  updateWidgets();
+  //</script>
+
+</div>
+
+</body>
+</html>
+

@@ -323,7 +323,9 @@ class BugAlsoReportInView(GeneralFormView):
         if product:
             valid_upstreamtask(self.context.bug, product)
         if distribution:
-            valid_distrotask(self.context.bug, distribution, sourcepackagename)
+            valid_distrotask(
+                self.context.bug, distribution, sourcepackagename,
+                on_create=True)
         if bugtracker is not None and remotebug is None:
             errors.append(LaunchpadValidationError(
                 "Please specify the remote bug number in the remote "
@@ -367,7 +369,7 @@ class BugAlsoReportInView(GeneralFormView):
         if not target.official_malone:
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
-            taskadded.status = BugTaskStatus.UNKNOWN
+            taskadded.transitionToStatus(BugTaskStatus.UNKNOWN)
             taskadded.priority = BugTaskPriority.UNKNOWN
             taskadded.severity = BugTaskSeverity.UNKNOWN
 

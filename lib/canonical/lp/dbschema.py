@@ -913,7 +913,7 @@ class TeamMembershipStatus(DBSchema):
         Proposed
 
         You are a proposed member of this team. To become an active member your
-        subscription has to bo approved by one of the team's administrators.
+        subscription has to be approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
@@ -2368,7 +2368,7 @@ class BranchLifecycleStatus(DBSchema):
 
         This branch has just been created, and we know nothing else about
         it.
-        """)
+        """, sortkey=60)
 
     EXPERIMENTAL = Item(10, """
         Experimental
@@ -2376,7 +2376,7 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains code that is considered experimental. It is
         still under active development and should not be merged into
         production infrastructure.
-        """)
+        """, sortkey=30)
 
     DEVELOPMENT = Item(30, """
         Development
@@ -2384,7 +2384,7 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains substantial work that is shaping up nicely, but
         is not yet ready for merging or production use. The work is
         incomplete, or untested.
-        """)
+        """, sortkey=20)
 
     MATURE = Item(50, """
         Mature
@@ -2393,21 +2393,21 @@ class BranchLifecycleStatus(DBSchema):
         completely addresses the issues it is supposed to, that it is tested,
         and that it has been found to be stable enough for the developer to
         recommend it to others for inclusion in their work.
-        """)
+        """, sortkey=10)
 
     MERGED = Item(70, """
         Merged
 
         This code has successfully been merged into its target branch(es),
         and no further development is anticipated on the branch.
-        """)
+        """, sortkey=40)
 
     ABANDONED = Item(80, """
         Abandoned
 
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
-        """)
+        """, sortkey=50)
 
 
 class BranchReviewStatus(DBSchema):
@@ -3019,45 +3019,69 @@ class MirrorSpeed(DBSchema):
     """The speed of a given mirror."""
 
     S128K = Item(1, """
-        128Kb per second
+        128 Kbps
 
         The upstream link of this mirror can make up to 128Kb per second.
         """)
 
     S256K = Item(2, """
-        256Kb per second
+        256 Kbps
 
         The upstream link of this mirror can make up to 256Kb per second.
         """)
 
     S512K = Item(3, """
-        512Kb per second
+        512 Kbps
 
         The upstream link of this mirror can make up to 512Kb per second.
         """)
 
     S1M = Item(4, """
-        1Mb per second
+        1 Mbps
 
         The upstream link of this mirror can make up to 1Mb per second.
         """)
 
     S2M = Item(5, """
-        2Mb per second
+        2 Mbps
 
         The upstream link of this mirror can make up to 2Mb per second.
         """)
 
     S10M = Item(6, """
-        10Mb per second
+        10 Mbps
 
         The upstream link of this mirror can make up to 10Mb per second.
         """)
 
     S100M = Item(7, """
-        100Mb per second
+        100 Mbps
 
         The upstream link of this mirror can make up to 100Mb per second.
+        """)
+
+    S1G = Item(8, """
+        1 Gbps
+
+        The upstream link of this mirror can make up to 1 gigabit per second.
+        """)
+
+    S2G = Item(9, """
+        2 Gbps
+
+        The upstream link of this mirror can make up to 2 gigabit per second.
+        """)
+
+    S4G = Item(10, """
+        4 Gbps
+
+        The upstream link of this mirror can make up to 4 gigabit per second.
+        """)
+
+    S10G = Item(11, """
+        10 Gbps
+
+        The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
 
@@ -3254,24 +3278,36 @@ class ShipItFlavour(DBSchema):
         The Ubuntu flavour.
         """)
 
+    KUBUNTU = Item(2, """
+        Kubuntu
+
+        The Kubuntu flavour.
+        """)
+
+    EDUBUNTU = Item(3, """
+        Edubuntu
+
+        The Edubuntu flavour.
+        """)
+
 
 class ShipItArchitecture(DBSchema):
     """The Distro Architecture, used only to link with ShippingRequest."""
 
     X86 = Item(1, """
-        Intel/X86
+        PC
 
-        x86 processors.
+        Intel/X86 processors.
         """)
 
     AMD64 = Item(2, """
-        AMD64
+        64-bit PC
 
         AMD64 or EM64T based processors.
         """)
 
     PPC = Item(3, """
-        PowerPC
+        Mac
 
         PowerPC processors.
         """)
@@ -3284,6 +3320,12 @@ class ShipItDistroRelease(DBSchema):
         Breezy Badger
 
         The Breezy Badger release.
+        """)
+
+    DAPPER = Item(2, """
+        6.06 LTS (Dapper Drake)
+
+        The Dapper Drake lont-term-support release.
         """)
 
 

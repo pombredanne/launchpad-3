@@ -19,8 +19,8 @@ __all__ = [
     'NotFoundError', 'NameNotAvailable', 'UnexpectedFormData',
     'ILaunchpadRoot', 'ILaunchpadApplication',
     'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
-    'IBazaarApplication', 'IFOAFApplication', 'IPasswordEncryptor',
-    'IReadZODBAnnotation', 'IWriteZODBAnnotation',
+    'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
+    'IWriteZODBAnnotation', 'ILaunchpadBrowserApplicationRequest',
     'IZODBAnnotation', 'IAuthorization',
     'IHasOwner', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
@@ -33,10 +33,8 @@ __all__ = [
     'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
-    'IBeforeTraverseEvent', 'BeforeTraverseEvent',
-    'IBreadcrumb', 'IBasicLaunchpadRequest',
-    'ILaunchpadBrowserApplicationRequest',
-    'IHasSecurityContact',
+    'IBeforeTraverseEvent', 'BeforeTraverseEvent', 'IBreadcrumb',
+    'IBasicLaunchpadRequest', 'IHasSecurityContact',
     ]
 
 
@@ -57,11 +55,12 @@ class ILaunchpadCelebrities(Interface):
 
     Celebrities are SQLBase instances that have a well known name.
     """
-    vcs_imports = Attribute("The 'vcs-imports' team.")
     admin = Attribute("The 'admins' team.")
-    ubuntu = Attribute("The ubuntu Distribution.")
-    debian = Attribute("The debian Distribution.")
+    ubuntu = Attribute("The Ubuntu Distribution.")
+    debian = Attribute("The Debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
+    vcs_imports = Attribute("The 'vcs-imports' team.")
+    bazaar_expert = Attribute("The Bazaar Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
     mirror_admin = Attribute("The Mirror Administrators.")
@@ -154,16 +153,17 @@ class IRegistryApplication(ILaunchpadApplication):
     """Registry application root."""
 
 
-class IFOAFApplication(ILaunchpadApplication):
-    """FOAF application root."""
-
-
 class IShipItApplication(ILaunchpadApplication):
     """ShipIt application root."""
 
 
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
+
+    all = Attribute("The full set of branches in The Bazaar")
+
+    def getMatchingBranches():
+        """Return the set of branches that match the given queries."""
 
 
 class IAuthApplication(Interface):

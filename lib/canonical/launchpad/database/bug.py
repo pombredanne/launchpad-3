@@ -54,6 +54,7 @@ class Bug(SQLBase):
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
     communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
                                         notNull=True, default=DEFAULT)
@@ -140,20 +141,49 @@ class Bug(SQLBase):
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 
+    def getSubscribersFromDuplicates(self):
+        """See IBug."""
+        if self.private:
+            # There are never any implicit subscribers to private bugs!
+            return []
+
+        subscribers_from_dupes = set()
+        for dupe in self.duplicates:
+            subscribers_from_dupes.update(dupe._getDirectSubscribers())
+
+        subscribers_from_dupes.difference_update(self._getDirectSubscribers())
+
+        return subscribers_from_dupes
+
+    def _getDirectSubscribers(self):
+        """Return a list of people subscribed directly to this bug.
+
+        For public bugs, this also includes assignees.
+        """
+        direct_subscribers = set()
+
+        for subscription in self.subscriptions:
+            direct_subscribers.add(subscription.person)
+
+        if not self.private:
+            # Collect implicit subscriptions. This only happens on public bugs.
+            for task in self.bugtasks:
+                if task.assignee is not None:
+                    direct_subscribers.add(task.assignee)
+
+        return direct_subscribers
+
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
         emails = Set()
-        for subscription in self.subscriptions:
-            emails.update(contactEmailAddresses(subscription.person))
+        for direct_subscriber in self._getDirectSubscribers():
+            emails.update(contactEmailAddresses(direct_subscriber))
 
-        if not self.private:
-            # Collect implicit subscriptions. This only happens on
-            # public bugs.
-            for task in self.bugtasks:
-                if task.assignee is not None:
-                    emails.update(contactEmailAddresses(task.assignee))
+        # Add subscribers of duplicates of this bug.
+        for dupe_subscriber in self.getSubscribersFromDuplicates():
+            emails.update(contactEmailAddresses(dupe_subscriber))
 
-        return sorted(emails)
+        return list(emails)
 
     def addChangeNotification(self, text, person, when=None):
         """See IBug."""
@@ -211,8 +241,12 @@ class Bug(SQLBase):
             if bug_branch.branch == branch:
                 return bug_branch
 
-        return BugBranch(
+        bug_branch = BugBranch(
             branch=branch, bug=self, whiteboard=whiteboard)
+
+        notify(SQLObjectCreatedEvent(bug_branch))
+
+        return bug_branch
 
     def linkCVE(self, cve, user=None):
         """See IBug."""
@@ -256,13 +290,13 @@ class BugSet:
             bug = Bug.selectOneBy(name=bugid)
             if bug is None:
                 raise NotFoundError(
-                    "Unable to locate bug with ID %s" % str(bugid))
+                    "Unable to locate bug with ID %s" % bugid)
         else:
             try:
                 bug = self.get(bugid)
             except ValueError:
                 raise NotFoundError(
-                    "Unable to locate bug with nickname %s" % str(bugid))
+                    "Unable to locate bug with nickname %s" % bugid)
         return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
@@ -326,9 +360,9 @@ class BugSet:
         return None
 
     def createBug(self, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, datecreated=None,
-        title=None, security_related=False, private=False, owner=None):
+                  binarypackagename=None, product=None, comment=None,
+                  description=None, msg=None, datecreated=None, title=None,
+                  security_related=False, private=False, owner=None):
         """See IBugSet."""
         if comment is description is msg is None:
             raise AssertionError(
@@ -337,6 +371,13 @@ class BugSet:
         # make sure we did not get TOO MUCH information
         assert comment is None or msg is None, (
             "Expected either a comment or a msg, but got both")
+
+        # Store binary package name in the description, because
+        # storing it as a separate field was a maintenance burden to
+        # developers.
+        if binarypackagename:
+            comment = "Binary package hint: %s\n\n%s" % (
+                binarypackagename.name, comment)
 
         # Create the bug comment if one was given.
         if comment:
@@ -376,10 +417,8 @@ class BugSet:
         # Create the task on a source package name if one was passed.
         if distribution:
             BugTaskSet().createTask(
-                bug=bug,
-                distribution=distribution,
+                bug=bug, distribution=distribution,
                 sourcepackagename=sourcepackagename,
-                binarypackagename=binarypackagename,
                 owner=owner)
 
         return bug

@@ -270,6 +270,7 @@ class POTemplateView(LaunchpadView):
 class POTemplateEditView(SQLObjectEditView):
     """View class that lets you edit a POTemplate object."""
     def __init__(self, context, request):
+        self.context = context
         # Restrict the info we show to the user depending on the
         # permissions he has.
         self.prepareForm()
@@ -283,7 +284,7 @@ class POTemplateEditView(SQLObjectEditView):
             # We do this check because this method can be called before we
             # know which user is getting this view (when we show them the
             # login form).
-            if not helpers.check_permission('launchpad.Admin', user):
+            if not helpers.check_permission('launchpad.Admin', self.context):
                 # The user is just a maintainer, we show only the fields
                 # 'name', 'description' and 'owner'.
                 self.fieldNames = ['name', 'description', 'owner']

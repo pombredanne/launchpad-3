@@ -120,6 +120,13 @@ class Distribution(SQLBase, BugTargetBase):
     def enabled_mirrors(self):
         return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
 
+    @property
+    def full_functionality(self):
+        """See IDistribution."""
+        if self.name == 'ubuntu':
+            return True
+        return False
+
     @cachedproperty
     def releases(self):
         # This is used in a number of places and given it's already
@@ -141,6 +148,15 @@ class Distribution(SQLBase, BugTargetBase):
                   ftp_base_url=None, rsync_base_url=None, file_list=None,
                   official_candidate=False, enabled=False, pulse_source=None):
         """See IDistribution."""
+
+        # NB this functionality is only available to distributions that have
+        # the full functionality of Launchpad enabled. This is Ubuntu and
+        # commercial derivatives that have been specifically given this
+        # ability
+
+        if not self.full_functionality:
+            return None
+
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
             country=country, content=content, pulse_type=pulse_type,
@@ -678,10 +694,11 @@ class DistributionSet:
         return iter(Distribution.select())
 
     def __getitem__(self, name):
-        try:
-            return Distribution.byName(name)
-        except SQLObjectNotFound:
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        distribution = self.getByName(name)
+        if distribution is None:
             raise NotFoundError(name)
+        return distribution
 
     def get(self, distributionid):
         """See canonical.launchpad.interfaces.IDistributionSet."""
@@ -694,9 +711,12 @@ class DistributionSet:
         """Returns all Distributions available on the database"""
         return Distribution.select()
 
-    def getByName(self, name):
-        """Returns a Distribution with name = name"""
-        return self[name]
+    def getByName(self, distroname):
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        try:
+            return Distribution.byName(distroname)
+        except SQLObjectNotFound:
+            return None
 
     def new(self, name, displayname, title, description, summary, domainname,
             members, owner):
