@@ -205,15 +205,18 @@ class BugTaskView(LaunchpadView):
     def initialize(self):
         if self.context.bug.isSubscribed(self.user):
             subscription_terms = [
-                SimpleTerm(self.user, self.user.name, 'Unsubscribe me')]
+                SimpleTerm(
+                    self.user, self.user.name, 'Unsubscribe me from this bug')]
         else:
             subscription_terms = [
-                SimpleTerm(self.user, self.user.name, 'Subscribe me')]
+                SimpleTerm(
+                    self.user, self.user.name, 'Subscribe me to this bug')]
         for team in self.user.teams_participated_in:
             if self.context.bug.isSubscribed(team):
                 subscription_terms.append(
                     SimpleTerm(
-                        team, team.name, 'Unsubscribe %s' % team.displayname))
+                        team, team.name,
+                        'Unsubscribe %s from this bug' % team.displayname))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         person_field = Choice(
             __name__='subscription',
@@ -248,6 +251,7 @@ class BugTaskView(LaunchpadView):
         """Subscribe or unsubscribe the user from the bug, if requested."""
         # establish if a subscription form was posted
         if (not self.user or self.request.method != 'POST' or
+            'cancel' in self.request.form or
             not self.subscription_widget.hasValidInput()):
             return
         subscription_person = self.subscription_widget.getInputValue()
