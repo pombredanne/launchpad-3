@@ -139,7 +139,7 @@ The status is now IMPORTED:
 
 The last update date is the one we got.
 
-    >>> str(potemplate.last_update_dated)
+    >>> str(potemplate.date_last_updated)
     '2004-07-11 16:16:00+09:00'
 
 The number of activities should be higher.
