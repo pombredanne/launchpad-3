@@ -3,8 +3,9 @@
 __metaclass__ = type
 
 import gettextpo
+import datetime
+import pytz
 from email.Utils import parseaddr
-from zope.app import datetimeutils
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
@@ -105,17 +106,8 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
         potemplate = pofile_or_potemplate
         # Expire old messages
         potemplate.expireAllMessages()
-        if parser.header is not None:
-            # Update the header
-            potemplate.header = parser.header.msgstr
-            pot_creation_date = parser.header['POT-Creation-Date']
-            try:
-                potemplate.date_last_updated = datetimeutils.parseDatetimetz(
-                    pot_creation_date)
-            except (datetimeutils.SyntaxError, datetimeutils.DateError,
-                    datetimeutils.DateTimeError, ValueError):
-                # invalid date format, leave the old value.
-                pass
+        UTC = pytz.timezone('UTC')
+        potemplate.date_last_updated = datetime.datetime.now(UTC)
     else:
         raise TypeError(
             'Bad argument %s, an IPOTemplate or IPOFile was expected.' %
