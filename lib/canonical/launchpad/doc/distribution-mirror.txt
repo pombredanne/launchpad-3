@@ -110,6 +110,49 @@ enabled_official_mirrors and enabled_mirrors properties of IDistribution.
      (u'unreachable-mirror', u'British Indian Ocean Territory'),
      (u'archive-404-mirror', u'British Indian Ocean Territory')]
 
+It's possible to retrieve a mirror by its name:
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import IDistributionMirror
+    >>> example_mirror = mirrorset.getByName('valid-mirror')
+    >>> verifyObject(IDistributionMirror, example_mirror)
+    True
+
+    >>> print mirrorset.getByName('non-existant-mirror')
+    None
+
+Or by any of its URL (HTTP, FTP or Rsync)
+But first we'll have to add some of this URLs to sample data
+
+    >>> from canonical.launchpad.ftests import login 
+    >>> login("mark@hbd.com")
+    >>> example_mirror.ftp_base_url = 'ftp://localhost/example-ftp'
+    >>> example_mirror.rsync_base_url = 'rsync://localhost/example-rsync'
+    >>> flush_database_updates()
+
+    >>> http_mirror = mirrorset.getByHttpUrl(
+    ...     'http://localhost:11375/valid-mirror')
+    >>> verifyObject(IDistributionMirror, http_mirror)
+    True
+
+    >>> print mirrorset.getByHttpUrl('http://non-existant-url')
+    None
+
+    >>> ftp_mirror = mirrorset.getByFtpUrl('ftp://localhost/example-ftp')
+    >>> verifyObject(IDistributionMirror, ftp_mirror)
+    True
+
+    >>> print mirrorset.getByFtpUrl('ftp://non-existant-url')
+    None
+
+    >>> rsync_mirror = mirrorset.getByRsyncUrl(
+    ...     'rsync://localhost/example-rsync')
+    >>> verifyObject(IDistributionMirror, rsync_mirror)
+    True
+
+    >>> print mirrorset.getByRsyncUrl('rsync://non-existant-url')
+    None
+
 
 Probing the mirrors
 -------------------

@@ -144,6 +144,18 @@ class IDistributionMirrorSet(Interface):
         it wasn't probed in the last PROBE_INTERVAL hours.
         """
 
+    def getByName(name):
+        """Return the mirror with the given name or None."""
+
+    def getByHttpUrl(url):
+        """Return the mirror with the given HTTP URL or None."""
+
+    def getByFtpUrl(url):
+        """Return the mirror with the given FTP URL or None."""
+
+    def getByRsyncUrl(url):
+        """Return the mirror with the given Rsync URL or None."""
+
 
 class IMirrorDistroArchRelease(Interface):
     """The mirror of the packages of a given Distro Arch Release"""

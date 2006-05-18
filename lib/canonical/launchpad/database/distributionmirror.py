@@ -232,6 +232,38 @@ class DistributionMirrorSet:
             query = 'id IN (%s)' % ids
         return DistributionMirror.select(query)
 
+    def getByName(self, name):
+        """See IDistributionMirrorSet"""
+        mirror = DistributionMirror.selectOneBy(name=name)
+        if mirror:
+            return mirror
+        else:
+            return None
+
+    def getByHttpUrl(self, url):
+        """See IDistributionMirrorSet"""
+        mirror = DistributionMirror.selectOneBy(http_base_url=url)
+        if mirror:
+            return mirror
+        else:
+            return None
+
+    def getByFtpUrl(self, url):
+        """See IDistributionMirrorSet"""
+        mirror = DistributionMirror.selectOneBy(ftp_base_url=url)
+        if mirror:
+            return mirror
+        else:
+            return None
+
+    def getByRsyncUrl(self, url):
+        """See IDistributionMirrorSet"""
+        mirror = DistributionMirror.selectOneBy(rsync_base_url=url)
+        if mirror:
+            return mirror
+        else:
+            return None
+
 
 class _MirrorReleaseMixIn:
     """A class containing some commonalities between MirrorDistroArchRelease
