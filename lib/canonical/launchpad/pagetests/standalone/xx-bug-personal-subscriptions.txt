@@ -44,7 +44,6 @@ should also show a message, and the link should change to "Unsubscribe".
   ...   print p_tag.string
   You have been subscribed to this bug.
 
-  >>> import re
   >>> subscriber_portlet_headers = soup.fetchText(
   ...     'Subscribers to bug 1:')
   >>> len(subscriber_portlet_headers)
@@ -86,3 +85,44 @@ spectacular fashion.
   >>> subscribe_link = browser.getLink('Subscribe')
   >>> subscribe_link.text
   'Subscribe'
+
+Let's subscribe one of Foo Bar's team to see what happens.
+
+  >>> browser.getLink('Subscribe Someone Else').click()
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1/+addsubscriber'
+
+  >>> browser.getControl('Person').value = 'launchpad'
+  >>> browser.getControl('Add').click()
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1'
+
+Now the subscribe link says 'Subscribe/Unsubscribe'.
+
+  >>> subscribe_link = browser.getLink('Subscribe')
+  >>> subscribe_link.text
+  'Subscribe/Unsubscribe'
+
+If we go to it, we'll have the option of both subscribing Foo Bar, and
+to unsubscribe the Launchpad team.
+
+  >>> subscribe_link.click()
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1/+subscribe'
+
+  >>> subscription_widget = browser.getControl(name='field.subscription')
+  >>> subscription_widget.options
+  ['name16', 'launchpad']
+
+Let's unsubscribe the Launchpad team.
+
+  >>> subscription_widget.value = ['launchpad']
+  >>> browser.getControl('Continue').click()
+
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1/'
+
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for p_tag in soup('p', 'informational message'):
+  ...   print p_tag.string
+  Launchpad Developers has been unsubscribed from this bug.
