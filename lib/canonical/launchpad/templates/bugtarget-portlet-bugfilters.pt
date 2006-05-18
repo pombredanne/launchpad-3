@@ -40,7 +40,7 @@
     (<span tal:content="context/unassigned_bugtasks/count">42</span>)
   </li>
   <li>
-    <a tal:attributes="href view/getSearchFilterURL">
+    <a tal:attributes="href view/getAllBugsEverReportedURL">
       All bugs ever reported
     </a>
     (<span tal:content="context/all_bugtasks/count">42</span>)
