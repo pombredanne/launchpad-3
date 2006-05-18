@@ -180,6 +180,13 @@
         tal:content="view/comment_on_change_error"
       >An error on comment on change.</div>
     </div>
+    <div tal:condition="python:not context.bug.isSubscribed(view.user)">
+      <input type="checkbox" name="subscribe" id="subscribe"
+             value="Subscribe" />
+      <label for="subscribe" style="font-weight: normal">
+        E-mail me about changes to this bug report
+      </label>
+    </div>
   </div>
   <div class="actions" tal:condition="context/required:launchpad.Edit">
     <input

@@ -529,7 +529,7 @@ ALTER TABLE binarypackagefile DISABLE TRIGGER ALL;
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (12, 40, 1, 1);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (16, 42, 1, 4);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
-INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (17, 44, 3, 3);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (17, 45, 3, 3);
 
 
 ALTER TABLE binarypackagefile ENABLE TRIGGER ALL;
@@ -2863,6 +2863,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (42, 42, 'linux-2.6.12_2.6.12.20_i386.deb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (43, 43, 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (44, 44, 'at-3.14156_all.udeb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (45, 45, 'Ubuntu-High-Pri-2006-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2913,6 +2914,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (42, '2005-10-30 18:00:27.899028', NULL, 3, 'a45ed906e4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (43, '2005-10-30 18:00:27.899028', NULL, 3, '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (44, '2005-10-30 18:00:27.899028', NULL, 3, 'b45ed906e4f5afdbc95d0dd47f3c5bc275da8a33', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (45, '2006-08-01 09:31:29.606407', NULL, 2, '43853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3247,6 +3249,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (58, 'Bugzilla Importer', NULL, NULL, NULL, 'bugzilla-importer', NULL, '''import'':3A,5A ''bugzilla'':2A,4A ''bugzilla-import'':1A', NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'mirror-admins', NULL, '''admin'':3A ''mirror'':2A,4A ''administr'':5A ''mirror-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (60, 'Registry Administrators', NULL, 1, 'Launchpad Registry Administrators Team', 'registry', NULL, '''registri'':1A,2A ''administr'':3A', NULL, NULL, 1, NULL, '2006-04-06 10:17:11.833824', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, '''admin'':4A,7A ''buildd'':3A,6A ''launchpad'':2A,5A ''launchpad-buildd-admin'':1A', NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -8454,45 +8457,35 @@ ALTER TABLE pushmirroraccess ENABLE TRIGGER ALL;
 
 ALTER TABLE requestedcds DISABLE TRIGGER ALL;
 
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (1, 1, 10, 1, 1, 1, 10);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (2, 1, 9, 1, 1, 2, 9);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (3, 1, 2, 1, 1, 3, 3);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (4, 2, 10, 1, 1, 1, 10);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (5, 2, 3, 1, 1, 2, 3);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (6, 2, 2, 1, 1, 3, 2);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (7, 3, 5, 1, 1, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (8, 3, 3, 1, 1, 2, 3);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (9, 3, 2, 1, 1, 3, 2);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (10, 4, 0, 1, 1, 1, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (11, 4, 3, 1, 1, 2, 3);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (12, 4, 0, 1, 1, 3, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (13, 5, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (14, 5, 3, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (15, 5, 9, 1, 1, 3, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (16, 6, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (17, 6, 9, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (18, 6, 9, 1, 1, 3, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (19, 7, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (20, 7, 6, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (21, 7, 9, 1, 1, 3, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (22, 8, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (23, 8, 8, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (24, 8, 4, 1, 1, 3, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (25, 9, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (26, 9, 3, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (27, 9, 19, 1, 1, 3, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (28, 10, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (29, 10, 3, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (30, 10, 9, 1, 1, 3, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (31, 11, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (32, 11, 6, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (33, 11, 9, 1, 1, 3, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (34, 12, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (35, 12, 6, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (36, 12, 9, 1, 1, 3, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (37, 13, 9, 1, 1, 1, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (38, 13, 6, 1, 1, 2, NULL);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (39, 13, 9, 1, 1, 3, NULL);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (1, 1, 8, 1, 2, 1, 8);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (2, 1, 1, 1, 2, 2, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (3, 1, 1, 1, 2, 3, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (4, 2, 5, 1, 2, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (7, 3, 10, 1, 2, 1, 10);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (11, 4, 1, 1, 2, 2, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (13, 5, 1, 1, 2, 3, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (14, 5, 1, 2, 2, 1, 1);
+
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (16, 6, 10, 2, 2, 1, 10);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (19, 7, 5, 2, 2, 2, 5);
+
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (22, 8, 9, 1, 2, 1, 9);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (23, 8, 8, 1, 2, 2, 8);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (24, 8, 4, 1, 2, 3, 4);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (25, 9, 9, 1, 2, 1, 9);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (26, 9, 3, 1, 2, 2, 3);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (27, 9, 19, 1, 2, 3, 19);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (28, 10, 9, 1, 2, 1, 9);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (29, 10, 3, 1, 2, 2, 3);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (30, 10, 9, 1, 2, 3, 9);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (31, 11, 9, 1, 2, 1, 9);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (32, 11, 6, 1, 2, 2, 6);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (33, 11, 9, 1, 2, 3, 9);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (34, 12, 9, 1, 2, 1, 9);
+--INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (35, 12, 6, 1, 2, 2, 6);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (36, 12, 10, 1, 2, 1, 10);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (37, 13, 5, 3, 2, 1, 5);
+
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (40, 14, 9, 1, 1, 1, 9);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (41, 14, 6, 1, 1, 2, 6);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (42, 14, 9, 1, 1, 3, 9);
@@ -8500,6 +8493,11 @@ INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, archite
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (44, 15, 6, 1, 1, 2, 6);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (45, 15, 9, 1, 1, 3, 9);
 
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (136, 16, 5, 3, 2, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (137, 16, 5, 2, 2, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (145, 17, 8, 2, 2, 1, 8);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (146, 17, 2, 2, 2, 2, 2);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (154, 18, 1, 3, 2, 1, 1);
 
 ALTER TABLE requestedcds ENABLE TRIGGER ALL;
 
@@ -8786,7 +8784,9 @@ ALTER TABLE shipitreport ENABLE TRIGGER ALL;
 ALTER TABLE shipment DISABLE TRIGGER ALL;
 
 INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode, request) VALUES (1, 'fdsa78fdsa78f', 1, '2005-08-01 18:38:24.526648', 1, NULL, 14);
-INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode, request) VALUES (2, 'fdsb78fdsa78f', 1, '2005-08-01 18:38:24.526648', 1, NULL, 15);
+INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode, request) VALUES (2, 'cdsb78fdsa78f', 1, '2005-08-01 18:38:24.526648', 1, NULL, 15);
+INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode, request) VALUES (3, 'bds078fdsa78f', 2, '2006-08-01 18:38:24.526648', 1, NULL, 17);
+INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode, request) VALUES (4, 'ads978fdsa78f', 2, '2006-08-01 18:38:24.526648', 1, NULL, 18);
 
 
 ALTER TABLE shipment ENABLE TRIGGER ALL;
@@ -8794,21 +8794,24 @@ ALTER TABLE shipment ENABLE TRIGGER ALL;
 
 ALTER TABLE shippingrequest DISABLE TRIGGER ALL;
 
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (1, 52, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason', false, 'No Privileges Person', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', '''person'':3A ''privileg'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (2, 22, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL, false, 'Stuart Bishop', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', '''bishop'':2A ''stuart'':1A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (3, 51, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL, false, 'Helge Kreutzmann', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', '''helg'':1A ''kreutzmann'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (4, 2, NULL, false, NULL, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Robert Collins', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027', '''collin'':2A ''robert'':1A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (5, 23, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (6, 28, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Celso Providelo', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027', '''celso'':1A ''providelo'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (7, 27, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Daniel Debonzi', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''daniel'':1A ''debonzi'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (8, 46, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Miroslav Kure', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''kure'':2A ''miroslav'':1A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (9, 50, NULL, false, NULL, '2005-05-04 18:38:24.526648', NULL, NULL, 'noreason', false, 'Valentina Commissari', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''valentina'':1A ''commissari'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (10, 14, NULL, false, NULL, '2005-05-03 18:38:24.526648', NULL, NULL, 'noreason', false, 'Dafydd Harries', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''harri'':2A ''dafydd'':1A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (11, 13, NULL, false, NULL, '2005-05-02 18:38:24.526648', NULL, NULL, 'noreason', false, 'Carlos Marin', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''carlo'':1A ''marin'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (12, 6, NULL, false, NULL, '2005-05-08 18:38:24.526648', NULL, NULL, 'noreason', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jeff'':1A ''waugh'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (13, 55, NULL, false, NULL, '2005-05-09 18:38:24.526648', NULL, NULL, 'noreason', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', true, NULL, 'noreason', true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (15, 23, 55, false, NULL, '2005-05-01 18:38:24.526648', true, NULL, 'noreason', false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (1, 52, 55, false, NULL, '2006-02-01 18:38:24.526648', true, NULL, NULL, false, 'No Privileges Person', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', '''person'':3A ''privileg'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (2, 22, NULL, false, NULL, '2006-04-01 18:38:24.526648', true, NULL, NULL, false, 'Stuart Bishop', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', '''bishop'':2A ''stuart'':1A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (3, 51, NULL, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'Helge Kreutzmann', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', '''helg'':1A ''kreutzmann'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (4, 2, NULL, false, NULL, '2006-01-01 18:38:24.526648', true, NULL, NULL, false, 'Robert Collins', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027', '''collin'':2A ''robert'':1A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (5, 23, NULL, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (6, 28, NULL, true, 55, '2006-02-01 18:38:24.526648', true, NULL, NULL, false, 'Celso Providelo', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027', '''celso'':1A ''providelo'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (7, 27, NULL, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'Daniel Debonzi', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''daniel'':1A ''debonzi'':2A');
+--INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (8, 46, NULL, false, NULL, '2006-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Miroslav Kure', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''kure'':2A ''miroslav'':1A');
+--INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (9, 50, NULL, false, NULL, '2006-05-04 18:38:24.526648', NULL, NULL, 'noreason', false, 'Valentina Commissari', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''valentina'':1A ''commissari'':2A');
+--INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (10, 14, NULL, false, NULL, '2006-05-03 18:38:24.526648', NULL, NULL, 'noreason', false, 'Dafydd Harries', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''harri'':2A ''dafydd'':1A');
+--INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (11, 13, NULL, false, NULL, '2006-05-02 18:38:24.526648', NULL, NULL, 'noreason', false, 'Carlos Marin', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''carlo'':1A ''marin'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (12, 6, NULL, false, NULL, '2006-03-08 18:38:24.526648', NULL, NULL, 'I want 100 more CDs.', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jeff'':1A ''waugh'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (13, 55, NULL, false, NULL, '2006-03-09 18:38:24.526648', NULL, NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', true, NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (15, 23, 55, false, NULL, '2005-05-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (16, 56, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jordi'':1A,2A ''mallach'':3A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (17, 8, 55, false, NULL, '2006-03-19 18:38:24.526648', true, NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (18, 23, 55, false, NULL, '2006-03-01 18:38:24.526648', true, NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
@@ -8817,6 +8820,7 @@ ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
 ALTER TABLE shippingrun DISABLE TRIGGER ALL;
 
 INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile) VALUES (1, '2005-08-01 18:38:24.526648', false, 35);
+INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile) VALUES (2, '2006-04-01 18:38:24.526648', false, 44);
 
 
 ALTER TABLE shippingrun ENABLE TRIGGER ALL;
@@ -9278,12 +9282,20 @@ ALTER TABLE sshkey ENABLE TRIGGER ALL;
 
 ALTER TABLE standardshipitrequest DISABLE TRIGGER ALL;
 
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (1, 5, 2, 3, '10 CDs (5 Intel/x86, 3 AMD64, 2 PowerPC)', true);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (2, 5, 0, 0, '5 CDs Intel/x86', false);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (3, 10, 2, 3, '15 CDs (10 Intel/x86, 3 AMD64, 2 PowerPC)', false);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (4, 10, 0, 0, '10 CDs Intel/x86', false);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (5, 0, 3, 0, '3 CDs PowerPC)', false);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (6, 0, 2, 0, '3 CDs AMD64', false);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (1, 8, 1, 1, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (2, 5, 0, 0, true, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (3, 0, 0, 1, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (4, 10, 0, 0, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (5, 0, 1, 0, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (6, 1, 0, 0, false, 1);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (7, 1, 0, 0, true, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (8, 5, 0, 0, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (9, 10, 0, 0, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (10, 0, 0, 1, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (11, 0, 0, 5, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (12, 8, 0, 2, false, 2);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (13, 5, 0, 0, true, 3);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour) VALUES (14, 1, 0, 0, false, 3);
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
@@ -9350,6 +9362,8 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (50, 1, 59, 3, '2005-10-13 13:03:41.668724', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (51, 1, 60, 3, '2006-04-06 10:17:11.833824', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (52, 28, 17, 2, '2006-04-25 10:17:11.833824', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (53, 16, 61, 3, '2006-05-15 22:23:29.062603', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (54, 28, 61, 3, '2006-05-15 22:29:29.062603', NULL, NULL, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9441,6 +9455,8 @@ INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
 INSERT INTO teamparticipation (id, team, person) VALUES (93, 59, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (94, 60, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (95, 17, 28);
+INSERT INTO teamparticipation (id, team, person) VALUES (96, 61, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (97, 61, 28);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9566,6 +9582,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (56);
 INSERT INTO validpersonorteamcache (id) VALUES (57);
 INSERT INTO validpersonorteamcache (id) VALUES (59);
 INSERT INTO validpersonorteamcache (id) VALUES (60);
+INSERT INTO validpersonorteamcache (id) VALUES (61);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;

@@ -256,6 +256,11 @@
     />
 
   <vocabulary
+    name="ShipItFlavour"
+    factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
+    />
+
+  <vocabulary
     name="SourcePackageName"
     factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
     />

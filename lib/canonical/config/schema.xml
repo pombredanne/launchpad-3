@@ -353,6 +353,18 @@
             required="no" default="/srv/bugs-mirror.debian.org/" />
     </sectiontype>
 
+    <sectiontype name="shipit">
+        <description>
+            Shipit-specific configuration options.
+        </description>
+        <key name="shipit_admins_email" datatype="string" required="yes" />
+        <key name="shipit_ubuntu_from_email" datatype="string" required="yes" />
+        <key name="shipit_edubuntu_from_email" datatype="string" 
+             required="yes" />
+        <key name="shipit_kubuntu_from_email" datatype="string" 
+             required="yes" />
+    </sectiontype>
+
     <sectiontype name="rosettaadmin">
         <description>
             Configuration for Rosetta admin tools
@@ -681,6 +693,7 @@
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
         <section name="*" type="malone" attribute="malone" />
+        <section name="*" type="shipit" attribute="shipit" />
         <section name="*" type="rosetta" attribute="rosetta" />
         <section name="*" type="librarian" attribute="librarian" />
         <section name="*" type="zopeless" attribute="zopeless" />
