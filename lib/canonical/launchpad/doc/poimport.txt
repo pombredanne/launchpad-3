@@ -123,6 +123,13 @@ We must approve the entry to be able to import it.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
 
+Store current date
+
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+    >>> saved_date = datetime.datetime.now(UTC)
+
 
 Second, we tell the PO template to import from the file data it has, but first
 check the number of activities the 'person' has done to be sure that Karma is
@@ -139,8 +146,8 @@ The status is now IMPORTED:
 
 The last update date is the one we got.
 
-    >>> str(potemplate.date_last_updated)
-    '2004-07-11 16:16:00+09:00'
+    >>> potemplate.date_last_updated > saved_date
+    True
 
 The number of activities should be higher.
 

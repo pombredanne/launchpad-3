@@ -106,6 +106,9 @@ def import_po(pofile_or_potemplate, file, importer, published=True):
         potemplate = pofile_or_potemplate
         # Expire old messages
         potemplate.expireAllMessages()
+        if parser.header is not None:
+            # Update the header
+            potemplate.header = parser.header.msgstr
         UTC = pytz.timezone('UTC')
         potemplate.date_last_updated = datetime.datetime.now(UTC)
     else:
