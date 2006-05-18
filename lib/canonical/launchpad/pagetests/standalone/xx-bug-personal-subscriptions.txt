@@ -13,8 +13,8 @@ the actions portlet.
   'http://localhost/products/firefox/+bug/1'
 
   >>> subscribe_link = browser.getLink('Subscribe')
-  >>> subscribe_link
-  <Link...>
+  >>> subscribe_link.text
+  'Subscribe'
 
 If they follow that link, they should be able to see the page that asks them
 if they want to subscribe. The "Subscribe" button should be visible on the
@@ -25,32 +25,44 @@ page.
   >>> subscription_widget = browser.getControl(name='field.subscription')
   >>> subscription_widget.options
   ['name16']
+  >>> subscription_widget.value
+  ['name16']
 
   >>> submit = browser.getControl('Continue')
 
 Now, let's POST that back to the bug home page. It should show the user. It
 should also show a message, and the link should change to "Unsubscribe".
 
-
   >>> submit.click()
 
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/'
 
-XXX: check properly that the user is subscribed.
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for p_tag in soup('p', 'informational message'):
+  ...   print p_tag.string
+  You have been subscribed to this bug.
 
-  >>> print browser.contents
-  <...
-  ...You have been subscribed to this...
-  ...Unsubscribe...
-  ...Foo Bar...
-
+  >>> import re
+  >>> subscriber_portlet_headers = soup.fetchText(
+  ...     'Subscribers to bug 1:')
+  >>> len(subscriber_portlet_headers)
+  1
+  >>> subscriber_portlet = subscriber_portlet_headers[0].parent.parent
+  >>> for li in subscriber_portlet.fetch('ul', 'people')[0].fetch('li'):
+  ...   print li.a.string
+  Steve Alexander
+  Sample Person
+  Foo Bar
 
 
 Now, we want to view the +subscribe page again. It should say "Unsubscribe"
 because we are now a subscriber.
 
   >>> subscribe_link = browser.getLink('Unsubscribe')
+  >>> subscribe_link.text
+  'Unsubscribe'
   >>> subscribe_link.click()
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/+subscribe'
@@ -58,13 +70,19 @@ because we are now a subscriber.
 And if we POST that back to the bug home page, we will be unsubscribed in a
 spectacular fashion.
 
+  >>> subscription_widget.value
+  ['name16']
   >>> submit = browser.getControl('Continue')
   >>> submit.click()
 
   >>> browser.url
   'http://localhost/products/firefox/+bug/1/'
 
-  >>> print browser.contents
-  <...
-  ...You have been unsubscribed from this...
-  ...Subscribe...
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> for p_tag in soup('p', 'informational message'):
+  ...   print p_tag.string
+  You have been unsubscribed from this bug.
+
+  >>> subscribe_link = browser.getLink('Subscribe')
+  >>> subscribe_link.text
+  'Subscribe'
