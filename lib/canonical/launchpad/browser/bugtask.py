@@ -707,9 +707,10 @@ class BugListingPortletView(LaunchpadView):
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
-        return self.getSearchFilterURL(
-            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
-            assignee_option='none')
+        unresolved_tasks_query_string = self.getSearchFilterURL(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
+
+        return unresolved_tasks_query_string + "&assignee_option=none"
 
     def getUnconfirmedBugsURL(self):
         """Return the URL for unconfirmed bugs on this bug target."""
@@ -724,17 +725,16 @@ class BugListingPortletView(LaunchpadView):
         # Add the bit that simulates the "omit dupes" checkbox being unchecked.
         return all_status_query_string + "&field.omit_dupes.used="
 
-    def getSearchFilterURL(self, **extra_params):
+    def getSearchFilterURL(self, assignee=None, severity=None, status=None):
         """Return a URL with search parameters."""
         search_params = []
 
-        assignee_option = extra_params.pop("assignee_option", None)
-        if assignee_option:
-            search_params.append(('assignee_option', assignee_option))
-
-        if extra_params:
-            for param_name, value in sorted(extra_params.items()):
-                search_params.append(('field.' + param_name, value))
+        if assignee:
+            search_params.append(('field.assignee', assignee))
+        if severity:
+            search_params.append(('field.severity', severity))
+        if status:
+            search_params.append(('field.status', status))
 
         query_string = urllib.urlencode(search_params, doseq=True)
 

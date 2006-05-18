@@ -350,7 +350,7 @@ Moving along...
     3
 
     >>> print bugfilters_portlet_view.getUnassignedBugsURL()
-    http://...?search=Search&assignee_option=none&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed
+    http://...?search=Search&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&assignee_option=none
 
     >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
     1
