@@ -9,7 +9,8 @@
 
 <body>
 
-  <div metal:fill-slot="main" tal:define="message view/rescore_build">
+  <div metal:fill-slot="main"
+       tal:define="message view/rescore_build; error view/error|nothing">
 
     <h1>Rescore <span tal:replace="context/title"/></h1>
 
@@ -19,9 +20,13 @@
       class="informational message"
     />
 
-    <div>
-      <p> This build <span tal:replace="context/buildstate/name"/>.</p>
+    <p
+      tal:condition="error"
+      tal:content="error"
+      class="error message"
+    />
 
+    <tal:can_rescore condition="context/can_be_rescored">
       <form name="RESCORE" action="" method="POST">
       <div><label for="SCORE">Priority:</label>
            <input name="SCORE" type="text" size="5"
@@ -30,7 +35,7 @@
            <input type="submit" value="Update"/>
       </div>
       </form>
-    </div>
+    </tal:can_rescore>
 
   </div>
 </body>
