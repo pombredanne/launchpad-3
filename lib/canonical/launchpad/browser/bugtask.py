@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces import (
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
     IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    valid_distrotask, valid_upstreamtask,
+    RESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
     BugDistroReleaseTargetDetails)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -711,7 +711,8 @@ class BugListingPortletView(LaunchpadView):
 
         search_params = BugTaskSearchParams(
             user=self.user, assignee=self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
 
         return self.context.searchTasks(search_params).count()
 
@@ -723,21 +724,34 @@ class BugListingPortletView(LaunchpadView):
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
-        return self.getSearchFilterURL(
-            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
-            unassigned='on')
+        unresolved_tasks_query_string = self.getSearchFilterURL(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
+
+        return unresolved_tasks_query_string + "&assignee_option=none"
 
     def getUnconfirmedBugsURL(self):
         """Return the URL for unconfirmed bugs on this bug target."""
         return self.getSearchFilterURL(
             status=dbschema.BugTaskStatus.UNCONFIRMED.title)
 
-    def getSearchFilterURL(self, **extra_params):
+    def getAllBugsEverReportedURL(self):
+        all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
+        all_status_query_string = self.getSearchFilterURL(
+            status=[status.title for status in all_statuses])
+
+        # Add the bit that simulates the "omit dupes" checkbox being unchecked.
+        return all_status_query_string + "&field.omit_dupes.used="
+
+    def getSearchFilterURL(self, assignee=None, severity=None, status=None):
         """Return a URL with search parameters."""
         search_params = []
-        if extra_params:
-            for param_name, value in sorted(extra_params.items()):
-                search_params.append(('field.' + param_name, value))
+
+        if assignee:
+            search_params.append(('field.assignee', assignee))
+        if severity:
+            search_params.append(('field.severity', severity))
+        if status:
+            search_params.append(('field.status', status))
 
         query_string = urllib.urlencode(search_params, doseq=True)
 
