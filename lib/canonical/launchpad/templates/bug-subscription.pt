@@ -26,7 +26,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Bug subscription</h1>
+  <h1>Bug subscriptions</h1>
 
   <p tal:condition="not: view/userIsSubscribed">
     If you subscribe to a bug it shows up on your

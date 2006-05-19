@@ -203,6 +203,10 @@ class BugTaskView(LaunchpadView):
         self.notices = []
 
     def initialize(self):
+        if self.user is None:
+            return
+
+        # Set up widgets in order to handle subscription requests.
         if self.context.bug.isSubscribed(self.user):
             subscription_terms = [
                 SimpleTerm(
@@ -216,7 +220,8 @@ class BugTaskView(LaunchpadView):
                 subscription_terms.append(
                     SimpleTerm(
                         team, team.name,
-                        'Unsubscribe %s from this bug' % team.displayname))
+                        'Unsubscribe <a href="%s">%s</a> from this bug' % (
+                            canonical_url(team), cgi.escape(team.displayname))))
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
         person_field = Choice(
             __name__='subscription',
