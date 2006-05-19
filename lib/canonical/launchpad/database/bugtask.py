@@ -553,38 +553,7 @@ class BugTaskSet:
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        if product:
-            assert distribution is None, (
-                "Can't pass both distribution and product.")
-            # Subscribe product bug and security contacts to all
-            # public bugs.
-            if not bug.private:
-                if product.bugcontact:
-                    bug.subscribe(product.bugcontact)
-                else:
-                    # Make sure that at least someone upstream knows
-                    # about this bug. :)
-                    bug.subscribe(product.owner)
-
-                if bug.security_related and product.security_contact:
-                    bug.subscribe(product.security_contact)
-        elif distribution:
-            # Subscribe bug and security contacts, if provided, to all
-            # public bugs.
-            if not bug.private:
-                if distribution.bugcontact:
-                    bug.subscribe(distribution.bugcontact)
-                if bug.security_related and distribution.security_contact:
-                    bug.subscribe(distribution.security_contact)
-
-            # Subscribe package bug contacts to public bugs, if package
-            # information was provided.
-            if sourcepackagename:
-                package = distribution.getSourcePackage(sourcepackagename)
-                if package.bugcontacts and not bug.private:
-                    for pkg_bugcontact in package.bugcontacts:
-                        bug.subscribe(pkg_bugcontact.bugcontact)
-        else:
+        if not product and not distribution:
             assert distrorelease is not None, 'Got no bugtask target'
             assert distrorelease != distrorelease.distribution.currentrelease, (
                 'Bugtasks cannot be opened on the current release.')

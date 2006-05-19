@@ -18,7 +18,8 @@ from sqlobject import SQLMultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
+    IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -149,42 +150,94 @@ class Bug(SQLBase):
 
         subscribers_from_dupes = set()
         for dupe in self.duplicates:
-            subscribers_from_dupes.update(dupe._getDirectSubscribers())
+            subscribers_from_dupes.update(dupe.direct_subscribers)
 
-        subscribers_from_dupes.difference_update(self._getDirectSubscribers())
+        subscribers_from_dupes.difference_update(self.direct_subscribers)
 
         return subscribers_from_dupes
 
-    def _getDirectSubscribers(self):
-        """Return a list of people subscribed directly to this bug.
-
-        For public bugs, this also includes assignees.
-        """
+    @property
+    def direct_subscribers(self):
+        """See canonical.launchpad.interfaces.IBug."""
         direct_subscribers = set()
 
         for subscription in self.subscriptions:
             direct_subscribers.add(subscription.person)
 
-        if not self.private:
-            # Collect implicit subscriptions. This only happens on public bugs.
-            for task in self.bugtasks:
-                if task.assignee is not None:
-                    direct_subscribers.add(task.assignee)
-
         return direct_subscribers
+
+    @property
+    def indirect_subscribers(self):
+        """See canonical.launchpad.interfaces.IBug."""
+        if self.private:
+            return []
+
+        indirect_subscribers = set()
+
+        # Assignees are indirect subscribers.
+        for bugtask in self.bugtasks:
+            if bugtask.assignee:
+                indirect_subscribers.add(bugtask.assignee)
+
+        return indirect_subscribers
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
         emails = Set()
-        for direct_subscriber in self._getDirectSubscribers():
+        for direct_subscriber in self.direct_subscribers:
             emails.update(contactEmailAddresses(direct_subscriber))
 
         # Add subscribers of duplicates of this bug.
         for dupe_subscriber in self.getSubscribersFromDuplicates():
             emails.update(contactEmailAddresses(dupe_subscriber))
 
-        # Add bug contacts.
-        
+        # Add bug contacts implicitly to public bugs.
+        if not self.private:
+            for bugtask in self.bugtasks:
+                if IUpstreamBugTask.providedBy(bugtask):
+                    product = bugtask.product
+                    # Add product bug and security contacts to recipient address
+                    # list.
+                    if product.bugcontact:
+                        emails.update(
+                            contactEmailAddresses(product.bugcontact))
+                    else:
+                        # Make sure that at least someone upstream knows
+                        # about this bug. :)
+                        emails.update(contactEmailAddresses(product.owner))
+
+                    if self.security_related and product.security_contact:
+                        emails.update(
+                            contactEmailAddresses(product.security_contact))
+                else:
+                    distribution = None
+                    if IDistroBugTask.providedBy(bugtask):
+                        distribution = bugtask.distribution
+                    else:
+                        distribution = bugtask.distrorelease.distribution
+
+                    assert distribution is not None, (
+                        "Expected value for distribution when looking up bug "
+                        "contacts. Got None instead.")
+
+                    # Add bug and security contacts to the recipient list.
+                    if distribution.bugcontact:
+                        emails.update(
+                            contactEmailAddresses(distribution.bugcontact))
+                    if self.security_related and distribution.security_contact:
+                        emails.update(
+                            contactEmailAddresses(
+                                distribution.security_contact))
+
+                    # Add package bug contacts to the recipient list.
+                    if bugtask.sourcepackagename:
+                        package = distribution.getSourcePackage(
+                            bugtask.sourcepackagename)
+                        if package.bugcontacts:
+                            for pkg_bugcontact in package.bugcontacts:
+                                emails.update(
+                                    contactEmailAddresses(
+                                        pkg_bugcontact.bugcontact))
 
         return list(emails)
 

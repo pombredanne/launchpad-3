@@ -17,7 +17,8 @@
         <implements interface="canonical.launchpad.interfaces.IBug" />
         <allow attributes="id private bugtasks subscriptions
                            getSubscribersFromDuplicates syncUpdate
-                           date_last_updated" />
+                           date_last_updated direct_subscribers
+                           indirect_subscribers" />
         <require
             permission="launchpad.View"
             attributes="datecreated name title description ownerID

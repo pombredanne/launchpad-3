@@ -29,24 +29,113 @@ This is slightly misleading though, because this only gives us the
 list of explicit subscriptions on the bug, when in fact, there are
 special cases where one can be "implicitly" subscribed to a bug.
 
-Implicit vs. Explicit Subscriptions
------------------------------------
+Direct vs. Indirect Subscriptions
+---------------------------------
 
-An explicit subscription has a row in the BugSubscription table. An implicit
-subscription does not.
+A direct subscription has a row in the BugSubscription table. An
+indirect subscription does not. For example, the bug reporter is
+*directly* subscribed to the bug report; a bug contact is indirectly
+subscribed.
+
+Indirect subscriptions are particularly useful for some of the "roles"
+associated with a bug, like bug contacts. Because the subscription is
+indirect--looked up at bugmail delivery time--new bug contacts
+automatically start getting the relevant bugmail. Users that choose to
+no longer be bug contacts automatically stop getting such mail.
+
+Let's create a new bug to demonstrate exactly how direct and indirect
+subscription lists are built.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILaunchBag)
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> personset = getUtility(IPersonSet)
+
+    >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
+    >>> linux_source.bugcontacts
+    []
+    >>> print linux_source.distribution.bugcontact
+    None
+
+    >>> foobar = getUtility(ILaunchBag).user
+    >>> print foobar.name
+    name16
+
+    >>> linux_source_bug = linux_source.createBug(
+    ...     title="a bug to test subscriptions",
+    ...     comment="test", owner=foobar)
+
+The list of direct subscribers to a bug is accessed via
+IBug.direct_subscribers.
+
+    >>> sorted(person.name for person in linux_source_bug.direct_subscribers)
+    [u'name16']
+
+    >>> sabdfl = personset.get(1)
+    >>> print sabdfl.name
+    sabdfl
+
+    >>> linux_source_bug.subscribe(sabdfl)
+    <BugSubscription ...>
+
+    >>> sorted(person.name for person in linux_source_bug.direct_subscribers)
+    [u'name16', u'sabdfl']
+
+The list of indirect subscribers is accessed via
+IBug.indirect_subscribers.
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    []
+
+Indirect subscribers can be:
+
+1. Assignees
+
+    >>> sample_person = personset.get(12)
+    >>> print sample_person.name
+    name12
+
+    >>> linux_source_bug.bugtasks[0].transitionToAssignee(sample_person)
+
+    >>> sorted(
+    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    [u'name12']
+
+2. Bug contacts
+
+XXX
+
+3. Subscribers (whether direct or indirect) from duplicate bugs
+
+XXX
+
+When a bug is marked private, all its indirect subscribers become direct
+subscribers.
+
+XXX
+
+    >>> sorted(person.name for person in linux_source_bug.direct_subscribers)
+    [u'name16', u'sabdfl']
+
+Direct subscriptions always take precedence over indirect
+subscriptions. If is directly subscribed to a bug, and *would* also
+appear in the indirect subscribers list, they will instead only be
+included in the direct subscribers list.
+
+XXX
 
 To get the entire list of email addresses that should receive a
 notification email on a bug, call
 IBug.notificationRecipientAddresses().
 
-   >>> bug.notificationRecipientAddresses()
-   ['mark@hbd.com', 'test@canonical.com']
+   >>> sorted(bug.notificationRecipientAddresses())
+   ['foo.bar@canonical.com', 'mark@hbd.com', 'test@canonical.com']
 
-To find out if someone is already explicitly subscribed to a bug, call
+To find out if someone is already directly subscribed to a bug, call
 IBug.isSubscribed, passing in an IPerson:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> personset = getUtility(IPersonSet)
     >>> bug.isSubscribed(personset.get(16))
     False
     >>> bug.isSubscribed(personset.get(12))
@@ -79,9 +168,6 @@ https://launchpad.net/bugs/5484.
 
 Let's have a look at an example for a distribution bug:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
-    >>> sample_person = personset.get(12)
     >>> ubuntu.bugcontact = sample_person
 
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -262,7 +348,7 @@ duplicate bugs are kept "in the loop" about the problem. Let's use bug
     ['test@canonical.com']
 
     >>> sorted(bug_ten.notificationRecipientAddresses())
-    ['foo.bar@canonical.com']
+    ['foo.bar@canonical.com', 'test@canonical.com']
 
 An IBug has a getSubscribersFromDuplicates() method, which returns a list
 of IPerson objects that are subscribed to this bug solely by virtue of
