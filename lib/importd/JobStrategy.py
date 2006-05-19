@@ -151,12 +151,34 @@ class CVSStrategy(CSCVSStrategy):
         CSCVSStrategy.__init__(self)
         self._repository=None #:pserver.
         self._repo=None       #actual repo instance
+
     def getCVSDirPath(self, aJob, dir):
         """return the cvs working dir path"""
         return os.path.join(self.getWorkingDir(aJob,dir), "cvsworking")
+
+    def _treeExists(self, path):
+        """Is this the path of an existing directory?
+
+        If the path exists, it must be a directory.
+        """
+        if os.path.isdir(path):
+            return True
+        assert not os.path.exists(path), (
+            "exists but is not a directory: %r" % cvs_path)
+        return False
+
     def getCVSTempRepoDirPath(self):
         """return the cvs temp local repo dir path"""
         return os.path.join(self.getWorkingDir(self.aJob,self.dir), "cvs_temp_repo")
+
+    def _existingCvsTree(self, path):
+        """Creates a CVS.WorkingTree instance for an existing CVS checkout.
+
+        Useful to override for testing.
+        """
+        tree = CVS.tree(path)
+        tree.logger(self.logger)
+        return tree
 
     def getCVSDir(self, aJob, dir):
         """ensure that there is a cvs checkout in the working dir/cvsworking,
@@ -165,26 +187,40 @@ class CVSStrategy(CSCVSStrategy):
         self.job=aJob
         repository=self.repository()
         path=self.getCVSDirPath(aJob,dir)
-        if os.access(path, os.F_OK):
+        if self._treeExists(path):
             assert (not self._tree)
-            self._tree=CVS.tree(path)
-            self._tree.logger(self.logger)
-            if self._tree.repository() != self.repo():
+            self._tree = self._existingCvsTree(path)
+            if self._repositoryHasChanged():
                 self.logger.error(
                     'Current checkout is stale - wrong repository, regetting.'
                     ' Was %s, should be %s', self._tree.repository().root,
                     self.repo().root)
-                self._tree=None
-                self.checkOut(aJob, path)
+                self._cvsReCheckOut(aJob, path)
             else:
-                self._tree.update()
                 if self._tree.has_changes():
                     self.logger.error('Local tree has changes, regetting.')
-                    self._tree=None
-                    self.checkOut(aJob, path)
-
+                    self._cvsReCheckOut(aJob, path)
+                else:
+                    self._tree.update()
         else:
-            self.checkOut(aJob, path)
+            self._cvsCheckOut(aJob, path)
+        self._updateCscvsCache()
+        return path
+
+    def _repositoryHasChanged(self):
+        """Is the repository of the tree different from ours?
+
+        Useful to override for testing.
+        """
+        # TODO: Fail if the module of the tree is different from ours,
+        # regardless of the value of the repositories.
+        # -- David Allouche 2006-05-19
+        assert self._tree is not None
+        return self._tree.repository() != self.repo()
+
+    def _updateCscvsCache(self):
+        """Initialise or update the cscvs cache."""
+        assert self._tree is not None
         try:
             catalog = self._tree.catalog(
                 False, False, None, 168, "update",
@@ -196,10 +232,14 @@ class CVSStrategy(CSCVSStrategy):
                     "%s revs on %s", len(catalog.getBranch(branch)), branch)
         finally:
             pass
-        return path
 
-    def checkOut(self, aJob, path):
-        shutil.rmtree(path, ignore_errors=True)
+    def _cvsReCheckOut(self, job, path):
+        """Make a new checkout to replace an existing one."""
+        self._tree=None
+        shutil.rmtree(path)
+        self._cvsCheckOut(job, path)
+
+    def _cvsCheckOut(self, aJob, path):
         self.logger.debug("getting from CVS: %s %s" % (self.repository(), aJob.module))
         tree = None
         try:
