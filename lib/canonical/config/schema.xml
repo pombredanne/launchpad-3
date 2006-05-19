@@ -169,7 +169,7 @@
                 what wherever possible.
             </description>
         </key>
-        <key name="root" datatype="existing-dirpath" required="yes">
+        <key name="root" datatype="string" required="yes">
             <description>
                 ROOT is the full path to a debian-style archive from where
                 the packages and its info will be read. This directory
@@ -618,6 +618,12 @@
                 BuilddMaster Datatbase user.
             </description>
         </key>
+        <key name="socket_timeout" datatype="integer" default="600">
+            <description>
+                The time in seconds that the builddmaster will wait for a
+                reply from buildd slave.
+            </description>
+        </key>
         <key name="uploader" datatype="string" required="yes">
             <description>
                 This is the command invoked by the buildd master when it wants
@@ -657,7 +663,7 @@
     </sectiontype>
 
     <sectiontype name="branchscanner">
-        <key name="dbuser" datatype="string">
+        <key name="dbuser" datatype="string" default="branchscanner">
             <description>
                 The database user for the branch-scanner to update branches.
             </description>
