@@ -600,9 +600,6 @@ class BugTaskSet:
             assignee=assignee,
             owner=owner,
             milestone=milestone)
-        if not bugtask.target_uses_malone:
-            bugtask.importance = dbschema.BugTaskImportance.UNKNOWN
-            bugtask.transitionToStatus(dbschema.BugTaskStatus.UNKNOWN)
 
         return bugtask
 

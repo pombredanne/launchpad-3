@@ -618,6 +618,12 @@
                 BuilddMaster Datatbase user.
             </description>
         </key>
+        <key name="socket_timeout" datatype="integer" default="600">
+            <description>
+                The time in seconds that the builddmaster will wait for a
+                reply from buildd slave.
+            </description>
+        </key>
         <key name="uploader" datatype="string" required="yes">
             <description>
                 This is the command invoked by the buildd master when it wants

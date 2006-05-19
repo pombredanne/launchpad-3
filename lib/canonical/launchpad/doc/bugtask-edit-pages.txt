@@ -112,6 +112,8 @@ XXX: We really should update the status from the bug watch, but that's
     >>> request = LaunchpadTestRequest(
     ...     form={
     ...         'FORM_SUBMIT': '',
+    ...         'field.status': 'Confirmed',
+    ...         'field.severity': 'Critical',
     ...         'field.bugwatch': '6'})
     >>> edit_view = getView(
     ...     thunderbird_task, '+editstatus-page', request)
@@ -120,6 +122,27 @@ XXX: We really should update the status from the bug watch, but that's
     True
     >>> thunderbird_task.status.title
     'Unknown'
+
+If we unlink the bug watch, the bugtask's status and severity will be
+set to their default values:
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={
+    ...         'FORM_SUBMIT': '',
+    ...         'field.bugwatch-empty-marker': '1'})
+    >>> edit_view = getView(
+    ...     thunderbird_task, '+editstatus-page', request)
+    >>> edit_view.process_form()
+    >>> thunderbird_task.bugwatch is None
+    True
+
+    >>> from canonical.launchpad.interfaces import IBugTask
+    >>> thunderbird_task.status == IBugTask['status'].default
+    True
+    >>> thunderbird_task.severity == IBugTask['severity'].default
+    True
+    >>> thunderbird_task.priority == IBugTask['priority'].default
+    True
 
 Milestone Editing Permissions
 -----------------------------

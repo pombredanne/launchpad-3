@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces import (
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
     IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES,
-    valid_distrotask, valid_upstreamtask,
+    RESOLVED_BUGTASK_STATUSES, valid_distrotask, valid_upstreamtask,
     BugDistroReleaseTargetDetails)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -60,7 +60,8 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, DBItemDisplayWidget, NewLineToSpacesWidget)
+    AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
+    NewLineToSpacesWidget)
 
 
 def get_sortorder_from_request(request):
@@ -474,14 +475,24 @@ class BugTaskEditView(GeneralFormView):
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
                 edit_field_names += ['sourcepackagename']
+            if self.context.bugwatch is not None:
+                # If the bugtask is linked to a bug watch, the bugtask
+                # is in read-only mode, since the status is pulled from
+                # the remote bug.
+                self.assignee_widget = CustomWidgetFactory(
+                    AssigneeDisplayWidget)
+                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                self.importance_widget = CustomWidgetFactory(
+                    DBItemDisplayWidget)
+            else:
+                edit_field_names += [
+                    'status', 'importance', 'assignee']
             display_field_names = [
                 field_name for field_name in self.fieldNames
                 if field_name not in edit_field_names + ['milestone']
                 ]
-            self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
-            self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-            self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
             self.milestone_widget = None
+            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
         else:
             # Set up the milestone widget as an input widget only if the
             # has launchpad.Edit permissions on the distribution, for
@@ -612,14 +623,20 @@ class BugTaskEditView(GeneralFormView):
             bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
-            #XXX: Reset the bug task's status information. The right
-            #     thing would be to convert the bug watch's status to a
-            #     Malone status, but it's not trivial to do at the
-            #     moment. I will fix this later.
-            #     -- Bjorn Tillenius, 2006-03-01
-            bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
-            bugtask.importance = BugTaskImportance.UNKNOWN
-            bugtask.transitionToAssignee(None)
+            if bugtask.bugwatch is None:
+                # Reset the status and importance to the default values,
+                # since Unknown isn't selectable in the UI.
+                bugtask.transitionToStatus(IBugTask['status'].default)
+                bugtask.importance = IBugTask['importance'].default
+            else:
+                #XXX: Reset the bug task's status information. The right
+                #     thing would be to convert the bug watch's status to a
+                #     Malone status, but it's not trivial to do at the
+                #     moment. I will fix this later.
+                #     -- Bjorn Tillenius, 2006-03-01
+                bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
+                bugtask.importance = BugTaskImportance.UNKNOWN
+                bugtask.transitionToAssignee(None)
 
         if milestone_cleared:
             self.request.response.addWarningNotification(
@@ -714,7 +731,8 @@ class BugListingPortletView(LaunchpadView):
 
         search_params = BugTaskSearchParams(
             user=self.user, assignee=self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
 
         return self.context.searchTasks(search_params).count()
 
@@ -726,21 +744,34 @@ class BugListingPortletView(LaunchpadView):
 
     def getUnassignedBugsURL(self):
         """Return the URL for critical bugs on this bug target."""
-        return self.getSearchFilterURL(
-            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
-            unassigned='on')
+        unresolved_tasks_query_string = self.getSearchFilterURL(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
+
+        return unresolved_tasks_query_string + "&assignee_option=none"
 
     def getUnconfirmedBugsURL(self):
         """Return the URL for unconfirmed bugs on this bug target."""
         return self.getSearchFilterURL(
             status=dbschema.BugTaskStatus.UNCONFIRMED.title)
 
-    def getSearchFilterURL(self, **extra_params):
+    def getAllBugsEverReportedURL(self):
+        all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
+        all_status_query_string = self.getSearchFilterURL(
+            status=[status.title for status in all_statuses])
+
+        # Add the bit that simulates the "omit dupes" checkbox being unchecked.
+        return all_status_query_string + "&field.omit_dupes.used="
+
+    def getSearchFilterURL(self, assignee=None, importance=None, status=None):
         """Return a URL with search parameters."""
         search_params = []
-        if extra_params:
-            for param_name, value in sorted(extra_params.items()):
-                search_params.append(('field.' + param_name, value))
+
+        if assignee:
+            search_params.append(('field.assignee', assignee))
+        if importance:
+            search_params.append(('field.importance', importance))
+        if status:
+            search_params.append(('field.status', status))
 
         query_string = urllib.urlencode(search_params, doseq=True)
 

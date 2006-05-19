@@ -9,7 +9,8 @@ from canonical.lp.dbschema import ( PackagePublishingStatus,
 from StringIO import StringIO
 
 from canonical.librarian.client import LibrarianClient
-from canonical.archivepublisher.pool import AlreadyInPool, NotInPool
+from canonical.archivepublisher.pool import (
+    AlreadyInPool, NotInPool, PoolFileOverwriteError)
 from canonical.database.constants import nowUTC
 
 from md5 import md5
@@ -139,8 +140,18 @@ class Publisher(object):
             source = pubrec.sourcepackagename.encode('utf-8')
             component = pubrec.componentname.encode('utf-8')
             filename = pubrec.libraryfilealiasfilename.encode('utf-8')
-            self._publish(source, component, filename, pubrec.libraryfilealias)
-
+            try:
+                self._publish(source, component, filename,
+                              pubrec.libraryfilealias)
+            except PoolFileOverwriteError:
+                # Skip publishing records which tries to overwrite
+                # a file in the pool and warn the user about it.
+                # Any further actions will require serious discussion
+                self._logger.error(
+                    "System is trying to overwrite %s/%s (%), "
+                    "skipping publishing record."%
+                    (component, filename, pubrec.libraryfilealias))
+                continue
             # XXX: if you used a variable for
             # pubrec.sourcepackagepublishing, the code below would flow
             # a lot nicer. -- kiko, 2005-09-23

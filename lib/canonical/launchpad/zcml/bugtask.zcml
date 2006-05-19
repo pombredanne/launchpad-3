@@ -274,18 +274,6 @@
             displayWidth="30" />
     </browser:addform>
 
-    <browser:addform
-        name="+addwatch"
-        schema="canonical.launchpad.interfaces.IBugWatch"
-        for="canonical.launchpad.interfaces.IBugTask"
-        class="canonical.launchpad.browser.BugWatchAddView"
-        fields="bugtracker remotebug"
-        arguments=""
-        keyword_arguments="bugtracker remotebug"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-watch-add.pt"
-        lp:url="malone/bugs/$Bugs.id/+addwatch" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         name="+index" />
