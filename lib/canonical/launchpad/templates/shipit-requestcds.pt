@@ -52,7 +52,8 @@
       <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
     </tal:pastrequests>
 
-    <h1>Request CDs</h1> 
+    <h1 tal:condition="not: view/current_order">Request CDs</h1>
+    <h1 tal:condition="view/current_order">Change your current request</h1>
 
     <tal:edubuntu condition="view/is_edubuntu">
       <p>Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
@@ -113,14 +114,14 @@
       can take up to 6 weeks for you to receive delivery.
     </div>
 
-    <p><strong>Double check your address below before submitting your
+    <p><strong>Please Double check your address below before submitting your
       request.</strong>
     </p>
 
     <metal:shipping_details
       use-macro="context/@@+shipit-macros/shipping_details" />
 
-    <div style="text-align: right">
+    <div style="margin-left: 20em">
       <tal:current_request condition="view/current_order">
         <input type="submit" value="Change Request" name="FORM_SUBMIT"
                class="formControls"/>
