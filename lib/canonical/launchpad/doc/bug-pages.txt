@@ -143,6 +143,9 @@ subscribed to it, 'Subscribe' is shown.
     >>> bug_menu.subscription().text
     'Subscribe'
 
+    >>> bug_menu.subscription().icon
+    'add'
+
 If we subscribe Foo Bar, 'Unsubscribe' is shown.
 
     >>> bug_one.subscribe(foo_bar)
@@ -150,6 +153,9 @@ If we subscribe Foo Bar, 'Unsubscribe' is shown.
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
     'Unsubscribe'
+
+    >>> bug_menu.subscription().icon
+    'remove'
 
 If we subscribe one of the teams that Foo Bar is a member of, it will
 still say 'Unsubscribe':
@@ -163,6 +169,9 @@ still say 'Unsubscribe':
     >>> bug_menu.subscription().text
     'Unsubscribe'
 
+    >>> bug_menu.subscription().icon
+    'remove'
+
 However, if we now unsubscribe Foo Bar, but leaving the Launchpad team
 subscribed, it will say 'Subscribe/Unsubscribe' since he will have the
 option of either subscribe himself or unsubscribe the Launchpad team.
@@ -172,6 +181,9 @@ option of either subscribe himself or unsubscribe the Launchpad team.
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
     'Subscribe/Unsubscribe'
+
+    >>> bug_menu.subscription().icon
+    'edit'
 
 He will have the possibility to unsubscribe only the team that he's a
 member of, so if we unsubscribe the Launchpad team and subscribe some
@@ -187,3 +199,17 @@ other team, it will say only 'Subscribe'.
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
     'Subscribe'
+
+    >>> bug_menu.subscription().icon
+    'add'
+
+If the user is logged out, it also says 'Subscribe/Unsubscribe', since
+we can't know if the user is subscribed or not.
+
+    >>> login(ANONYMOUS)
+    >>> bug_menu = BugContextMenu(bug_one_bugtask)
+    >>> bug_menu.subscription().text
+    'Subscribe/Unsubscribe'
+
+    >>> bug_menu.subscription().icon
+    'edit'
