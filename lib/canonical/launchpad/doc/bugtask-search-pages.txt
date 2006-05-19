@@ -336,7 +336,7 @@ it would not be included in the counts.
 The critical bugs link and counts consider only unresolved bugs.
 
     >>> print bugfilters_portlet_view.getCriticalBugsURL()
-    http://...?search=Search&field.severity=Critical&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed
+    http://...?search=Search&field.importance=Critical&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed
 
     >>> bugfilters_portlet_view.context.critical_bugtasks.count()
     1

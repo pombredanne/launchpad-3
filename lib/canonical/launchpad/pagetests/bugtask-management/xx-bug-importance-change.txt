@@ -24,7 +24,7 @@ Change a bug's importance as user Foo Bar.
   ... -----------------------------19142096961497584187956613781
   ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Normal
+  ... Medium
   ... -----------------------------19142096961497584187956613781
   ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 

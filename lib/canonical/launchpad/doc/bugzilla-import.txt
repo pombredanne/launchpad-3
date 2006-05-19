@@ -367,7 +367,7 @@ and attach a watch to the upstream bug tracker:
       Status: UNCONFIRMED
       Distro: debian
       Source package: evolution
-      Importance: MEDIUM
+      Importance: UNTRIAGED
       Watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
   Messages:
       Author: Sample Person
