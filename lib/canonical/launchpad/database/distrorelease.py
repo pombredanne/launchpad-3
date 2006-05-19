@@ -473,6 +473,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # the distribution
         langidset = set(
             language.id for language in Language.select('''
+                Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s
