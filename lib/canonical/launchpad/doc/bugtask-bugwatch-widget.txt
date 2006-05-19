@@ -1,0 +1,69 @@
+The Bug Watch Widget
+====================
+
+There's a custom widget used to link a bug watch to a bug task. It's a
+simple RadioWidget with some modifications.
+
+First we need to bind a BugWatch field to a bug task. Let's bind it to
+the Debian task in bug 1
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IBugTask
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bugwatch_field = IBugTask['bugwatch']
+    >>> debian_task = bug_one.bugtasks[2]
+    >>> debian_task.targetname
+    u'mozilla-firefox (Debian)'
+
+    >>> bugwatch_field = bugwatch_field.bind(debian_task)
+
+Now we can create a widget using a test request:
+
+    >>> from canonical.widgets.bugtask import BugTaskBugWatchWidget
+    >>> from zope.publisher.browser import TestRequest
+    >>> request = TestRequest()
+    >>> bugwatch_widget = BugTaskBugWatchWidget(
+    ...     bugwatch_field, bugwatch_field.vocabulary, request)
+
+We can assume that RadioWidget works probably, so let's look at what we
+changed; renderItems(). It renders all the items of the widget, with
+the one representing the value passed to the method as selected. Let's
+define a helper function to make it easier to see what's going on.
+
+    >>> import re
+    >>> checked = 'checked="checked"'
+    >>> label_re = '<label.*><input.*%s.* />&nbsp;(.*)</label>'
+    >>> selected_label = re.compile(label_re % checked)
+    >>> unselected_label = re.compile(label_re % '')
+    >>> def print_item(item):
+    ...     selected_match = selected_label.match(item)
+    ...     unselected_match = unselected_label.match(item)
+    ...     if selected_match:
+    ...         print 'SELECTED: %s' % selected_match.groups(1)
+    ...     else:
+    ...         print 'NOT SELECTED: %s' % unselected_match.groups(1)
+
+Now if we pass None to renderItems(), the first radio button will be
+selected.
+
+    >>> for item in bugwatch_widget.renderItems(None):
+    ...     print_item(item)
+    SELECTED: None, the status of the bug is updated manually.
+    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#123543</a>
+    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#2000</a>
+    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#42</a>
+    NOT SELECTED: Debian Bug tracker <a...>#304014</a>
+
+If we pass a bug watch to renderItems(), the corresponding radio button
+will be selected.
+
+    >>> mozilla_bugwatch = bug_one.watches[0]
+    >>> mozilla_bugwatch.title
+    u'The Mozilla.org Bug Tracker #123543'
+
+    >>> for item in bugwatch_widget.renderItems(mozilla_bugwatch):
+    ...     print_item(item)
+    NOT SELECTED: None, the status of the bug is updated manually.
+    SELECTED: The Mozilla.org Bug Tracker <a...>#123543</a>
+    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#2000</a>
+    NOT SELECTED: The Mozilla.org Bug Tracker <a...>#42</a>
+    NOT SELECTED: Debian Bug tracker <a...>#304014</a>

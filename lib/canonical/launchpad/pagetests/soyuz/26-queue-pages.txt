@@ -1,13 +1,52 @@
 
 Queue pages were designed to offer the ability to perform
-control and visualisation over the current uploade queue.
+control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroReleases.
 
 
-Visualise current queue, by default the NEW queue:
+This page requires logged in users:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+Check if anonymous actions fails:
+
+(considering this POST was maid by-hand since the UI would never allow
+such path.)
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=1&Accept=Accept""")
+  HTTP/1.1 500 Internal Server Error
+  Content-Length: ...
+  <BLANKLINE>
+  Application error.  Unauthenticated user POSTing to page that requires authentication.
+
+
+Non-admin (sample person) attempts to act on queue items fails:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=2&Accept=Accept""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...You do not have permission to act on queue items...
+
+
+Visualise current queue, by default the NEW queue, only requires
+normal user auth:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -18,23 +57,48 @@ Visualise current queue, by default the NEW queue:
   ...mozilla-firefox (i386)...
 
 
-Inspect the ACCEPTED queue
+Inspect the ACCEPTED queue, only requires normal user auth:
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Content-Length: 32
-  ... queue_state=accepted&queue_text=""")
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=2 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
-  ...No accepted queue items for...Breezy Badger Autotest.
+  ...The Accepted queue...is empty.
   ...
 
+Check if the non-admin are denied to see UNAPPROVED queue:
 
-Accept an item:
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=1 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...Sorry, you do not have permission to view this queue, we have excluded any packages from this listing...
+  ...
+
+Check admin access to UNAPPROVED queue:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=1 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...netapplet...
+
+
+Accept an item (requires Admin):
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Content-Length: 24
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
   ... QUEUE_ID=4&Accept=Accept""")
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -43,23 +107,37 @@ Accept an item:
   ...pmount (i386)...
   ...mozilla-firefox (i386)...
 
-
-Check if the item was moved to the correct place, the ACCEPTED queue:
+Check if repeated action causes a warning message:
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Content-Length: 32
-  ... queue_state=accepted&queue_text=""")
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=4&Accept=Accept""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...Accepting Results:<br><br>FAILED: alsa-utils (Queue item already accepted)...
+
+
+Check if the item was moved to the correct place, ACCEPTED queue:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=2 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...alsa-utils...
 
-
-Reject an item:
+Reject an item (requires Admin):
 
   >>> print http(r"""
   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Content-Length: 24
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
   ... QUEUE_ID=3&Reject=Reject""")
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -71,9 +149,10 @@ Reject an item:
 Check if the item was moved to the correct place, REJECTED queue:
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Content-Length: 32
-  ... queue_state=rejected&queue_text=""")
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=4 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...netapplet...
@@ -82,9 +161,10 @@ Check if the item was moved to the correct place, REJECTED queue:
 Use the text filter to inspect the NEW queue:
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Content-Length: 29
-  ... queue_state=new&queue_text=pm""")
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=0&queue_text=pm HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...pmount (i386)...
@@ -93,12 +173,10 @@ Use the text filter to inspect the NEW queue:
 Check if the results were already filtered:
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-  ... Content-Length: 27
-  ... queue_state=new&queue_text=""")
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=0&queue_text= HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...
-
-
