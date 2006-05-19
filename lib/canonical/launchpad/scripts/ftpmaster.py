@@ -20,8 +20,6 @@ import apt_pkg
 
 from zope.component import getUtility
 
-from canonical.launchpad.database import (
-    DistroArchReleaseBinaryPackage, DistroReleaseSourcePackageRelease)
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
     ILaunchpadCelebrities, NotFoundError)
@@ -135,7 +133,7 @@ class ArchiveOverrider:
         """
         spr = self.distrorelease.getSourcePackage(
             package_name).releasehistory[-1]
-        drspr = DistroReleaseSourcePackageRelease(self.distrorelease, spr)
+        drspr = self.distrorelease.getSourcePackageRelease(spr)
         try:
             current = drspr.current_published
         except NotFoundError, info:
@@ -162,8 +160,7 @@ class ArchiveOverrider:
                                   distroarchrelease.architecturetag))
                 return
 
-            darbp = DistroArchReleaseBinaryPackage(
-                distroarchrelease, binarypackagename)
+            darbp = distroarchrelease.getBinaryPackage(binarypackagename)
 
             try:
                 current = darbp.current_published
@@ -549,8 +546,7 @@ class ArchiveCruftChecker:
 
             for distroarchrelease in self.distrorelease.architectures:
                 binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-                darbp = DistroArchReleaseBinaryPackage(distroarchrelease,
-                                                       binarypackagename)
+                darbp = distroarchrelease.getBinaryPackage(binarypackagename)
                 try:
                     sbpph = darbp.supersede()
                     # We're blindly removing for all arches, if it's not there
