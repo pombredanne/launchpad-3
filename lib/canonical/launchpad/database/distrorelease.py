@@ -165,8 +165,9 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def distroreleaselanguages(self):
         result = DistroReleaseLanguage.select(
-            "DistroReleaseLanguage.language = Language.id "
-            "AND DistroReleaseLanguage.distrorelease = %d" % self.id,
+            "DistroReleaseLanguage.language = Language.id AND"
+            " DistroReleaseLanguage.distrorelease = %d AND"
+            " Language.visible = TRUE" % self.id,
             prejoinClauseTables=["Language"],
             clauseTables=["Language"],
             prejoins=["distrorelease"],
@@ -472,6 +473,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # the distribution
         langidset = set(
             language.id for language in Language.select('''
+                Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s
