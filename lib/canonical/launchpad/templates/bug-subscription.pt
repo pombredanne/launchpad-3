@@ -40,11 +40,9 @@
     <div class="field">
 
       <div>
-
         <div tal:content="structure view/subscription_widget">
-
+          <input type="radio" />
         </div>
-
       </div>
 
     </div>

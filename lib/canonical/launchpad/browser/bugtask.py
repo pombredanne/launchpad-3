@@ -203,6 +203,7 @@ class BugTaskView(LaunchpadView):
         self.notices = []
 
     def initialize(self):
+        """Set up the needed widgets."""
         if self.user is None:
             return
 
@@ -268,6 +269,7 @@ class BugTaskView(LaunchpadView):
                 self.context.bug.unsubscribe(self.user)
                 self.notices.append("You have been unsubscribed from this bug.")
         else:
+            # This method can only unsubscribe someone else, never subscribe.
             self.context.bug.unsubscribe(subscription_person)
             self.notices.append(
                 "%s has been unsubscribed from this bug." % cgi.escape(
