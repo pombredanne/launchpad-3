@@ -434,7 +434,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, open_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
         return result
 
     @property
@@ -451,7 +451,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, resolved_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
         return result
 
     def getDistroReleaseLanguage(self, language):

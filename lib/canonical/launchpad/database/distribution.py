@@ -187,7 +187,7 @@ class Distribution(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, open_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
 
         return result
 
@@ -205,7 +205,7 @@ class Distribution(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, resolved_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
         return result
 
     @property

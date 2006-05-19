@@ -15,8 +15,8 @@
    sodipodi:version="0.32"
    inkscape:version="0.43"
    sodipodi:docbase="/home/mpt/hacking/lp/2006-03-MaloneSimplifications/lib/canonical/launchpad/images"
-   sodipodi:docname="bug.svg"
-   inkscape:export-filename="/home/mpt/hacking/lp/2006-03-MaloneSimplifications/lib/canonical/launchpad/images/bug.png"
+   sodipodi:docname="bug-critical.svg"
+   inkscape:export-filename="/home/mpt/hacking/lp/2006-03-MaloneSimplifications/lib/canonical/launchpad/images/bug-critical.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90"
    version="1.0">
@@ -29,7 +29,7 @@
          offset="0.0000000"
          id="stop2307" />
       <stop
-         style="stop-color:#646464;stop-opacity:1;"
+         style="stop-color:#ed0075;stop-opacity:1;"
          offset="1"
          id="stop2308" />
     </linearGradient>
@@ -74,10 +74,10 @@
      gridspacingx="1px"
      gridoriginy="0px"
      gridoriginx="0px"
-     inkscape:window-width="872"
-     inkscape:window-height="587"
-     inkscape:window-x="2"
-     inkscape:window-y="47" />
+     inkscape:window-width="1024"
+     inkscape:window-height="693"
+     inkscape:window-x="0"
+     inkscape:window-y="25" />
   <metadata
      id="metadata4">
     <rdf:RDF>

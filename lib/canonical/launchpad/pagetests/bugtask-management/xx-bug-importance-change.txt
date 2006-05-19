@@ -1,4 +1,4 @@
-Edit a bug task's severity as user Foo Bar.
+Change a bug's importance as user Foo Bar.
 
   >>> print http(r"""
   ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+editstatus HTTP/1.1
@@ -22,19 +22,11 @@ Edit a bug task's severity as user Foo Bar.
   ... 
   ... 1
   ... -----------------------------19142096961497584187956613781
-  ... Content-Disposition: form-data; name="field.priority"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... High
+  ... Medium
   ... -----------------------------19142096961497584187956613781
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------19142096961497584187956613781
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------19142096961497584187956613781
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------19142096961497584187956613781

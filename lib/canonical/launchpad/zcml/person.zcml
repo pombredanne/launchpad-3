@@ -228,7 +228,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-      fields="status severity priority assignee owner milestone
+      fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"
@@ -240,7 +240,7 @@
       schema="canonical.launchpad.interfaces.IBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-      fields="status severity priority assignee owner milestone
+      fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-packagebugs-search.pt" />
@@ -265,7 +265,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-      fields="status severity priority assignee owner milestone
+      fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"
@@ -277,7 +277,7 @@
       schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
       class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-      fields="status severity priority assignee owner milestone
+      fields="status importance assignee owner milestone
               omit_dupes has_patch component has_no_package"
       permission="zope.Public"
       template="../templates/person-bugs.pt"
