@@ -169,7 +169,7 @@
                 what wherever possible.
             </description>
         </key>
-        <key name="root" datatype="existing-dirpath" required="yes">
+        <key name="root" datatype="string" required="yes">
             <description>
                 ROOT is the full path to a debian-style archive from where
                 the packages and its info will be read. This directory
@@ -663,7 +663,7 @@
     </sectiontype>
 
     <sectiontype name="branchscanner">
-        <key name="dbuser" datatype="string">
+        <key name="dbuser" datatype="string" default="branchscanner">
             <description>
                 The database user for the branch-scanner to update branches.
             </description>
