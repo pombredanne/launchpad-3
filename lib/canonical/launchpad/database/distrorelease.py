@@ -165,8 +165,9 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def distroreleaselanguages(self):
         result = DistroReleaseLanguage.select(
-            "DistroReleaseLanguage.language = Language.id "
-            "AND DistroReleaseLanguage.distrorelease = %d" % self.id,
+            "DistroReleaseLanguage.language = Language.id AND"
+            " DistroReleaseLanguage.distrorelease = %d AND"
+            " Language.visible = TRUE" % self.id,
             prejoinClauseTables=["Language"],
             clauseTables=["Language"],
             prejoins=["distrorelease"],
