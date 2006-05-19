@@ -587,10 +587,20 @@ class BugTaskEditView(GeneralFormView):
         # violating DB constraints that ensure an upstream task can't
         # be assigned to a milestone on a different product.
         milestone_cleared = None
+        milestone_ignored = False
         if (IUpstreamBugTask.providedBy(bugtask) and
             (bugtask.product != new_values.get("product")) and
-            'milestone' in field_names and bugtask.milestone):
-            milestone_cleared = bugtask.milestone
+            'milestone' in field_names):
+            # We *clear* the milestone value if one was already set. We *ignore*
+            # the milestone value if it was currently None, and the user tried
+            # to set a milestone value while also changing the product. This
+            # allows us to provide slightly clearer feedback messages.
+            if bugtask.milestone:
+                milestone_cleared = bugtask.milestone
+            else:
+                if self.milestone_widget.getInputValue() is not None:
+                    milestone_ignored = True
+
             bugtask.milestone = None
             # Remove the "milestone" field from the list of fields
             # whose changes we want to apply, because we don't want
@@ -643,6 +653,10 @@ class BugTaskEditView(GeneralFormView):
                 "The bug report for %s was removed from the %s milestone "
                 "because it was reassigned to a new product" % (
                     bugtask.targetname, milestone_cleared.displayname))
+        elif milestone_ignored:
+            self.request.response.addWarningNotification(
+                "The milestone setting was ignored because you reassigned the "
+                "bug to a new product")
 
         comment_on_change = self.request.form.get("comment_on_change")
 
