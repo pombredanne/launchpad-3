@@ -44,13 +44,16 @@ should also show a message, and the link should change to "Unsubscribe".
   ...   print p_tag.string
   You have been subscribed to this bug.
 
-  >>> subscriber_portlet_headers = soup.fetchText(
-  ...     'Subscribers to bug 1:')
-  >>> len(subscriber_portlet_headers)
-  1
-  >>> subscriber_portlet = subscriber_portlet_headers[0].parent.parent
-  >>> for li in subscriber_portlet.fetch('ul', 'people')[0].fetch('li'):
-  ...   print li.a.string
+  >>> def print_subscribers(bug_page):
+  ...     """Print the subscribers listed in the subscriber portlet."""
+  ...     soup = BeautifulSoup(bug_page)
+  ...     subscriber_portlet_headers = soup.fetchText(
+  ...        'Subscribers to bug 1:')
+  ...     assert len(subscriber_portlet_headers) == 1
+  ...     subscriber_portlet = subscriber_portlet_headers[0].parent.parent
+  ...     for li in subscriber_portlet.fetch('ul', 'people')[0].fetch('li'):
+  ...         print li.a.string
+  >>> print_subscribers(browser.contents)
   Steve Alexander
   Sample Person
   Foo Bar
@@ -97,6 +100,11 @@ Let's subscribe one of Foo Bar's team to see what happens.
   >>> browser.url
   'http://localhost/products/firefox/+bug/1'
 
+  >>> print_subscribers(browser.contents)
+  Steve Alexander
+  Sample Person
+  Launchpad Developers
+
 Now the subscribe link says 'Subscribe/Unsubscribe'.
 
   >>> subscribe_link = browser.getLink('Subscribe')
@@ -126,3 +134,35 @@ Let's unsubscribe the Launchpad team.
   >>> for p_tag in soup('p', 'informational message'):
   ...   print p_tag.string
   Launchpad Developers has been unsubscribed from this bug.
+
+  >>> print_subscribers(browser.contents)
+  Steve Alexander
+  Sample Person
+
+On the subscribe page there's a Cancel button as well, so if we go to
+that page and press the Cancel button, we will return to the bug page.
+
+  >>> subscribe_link = browser.getLink('Subscribe')
+  >>> subscribe_link.text
+  'Subscribe'
+
+  >>> subscribe_link.click()
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1/+subscribe'
+
+  >>> subscription_widget = browser.getControl(name='field.subscription')
+  >>> subscription_widget.value
+  ['name16']
+  >>> cancel_button = browser.getControl('Cancel')
+  >>> cancel_button.click()
+  >>> browser.url
+  'http://localhost/products/firefox/+bug/1/'
+  >>> soup = BeautifulSoup(browser.contents)
+
+Foo Bar wasn't subscribed to the bug.
+
+  >>> len(soup('p', 'informational message'))
+  0
+  >>> print_subscribers(browser.contents)
+  Steve Alexander
+  Sample Person
