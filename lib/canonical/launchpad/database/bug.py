@@ -244,8 +244,12 @@ class Bug(SQLBase):
             if bug_branch.branch == branch:
                 return bug_branch
 
-        return BugBranch(
+        bug_branch = BugBranch(
             branch=branch, bug=self, whiteboard=whiteboard)
+
+        notify(SQLObjectCreatedEvent(bug_branch))
+
+        return bug_branch
 
     def linkCVE(self, cve, user=None):
         """See IBug."""

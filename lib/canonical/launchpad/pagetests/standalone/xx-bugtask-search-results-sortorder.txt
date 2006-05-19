@@ -83,10 +83,10 @@ Default view:
   ...2...
   ...3...
 
-Sort by severity, then priority:
+Sort by importance:
 
   >>> print http("""
-  ... GET /distros/ubuntu/warty/+bugs?sortorder=title&sort=Sort HTTP/1.1
+  ... GET /distros/ubuntu/warty/+bugs?sortorder=-importance&sort=Sort HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
