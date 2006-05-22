@@ -37,7 +37,11 @@ class TimeoutTransport(xmlrpclib.Transport):
 
     def make_connection(self, host):
         conn = xmlrpclib.Transport.make_connection(self, host)
-        conn._conn.sock.settimeout(config.builddmaster.socket_timeout)
+        sock = conn._conn.sock
+        # XXX cprov 20060522: Most of the time the sock attribute is empty
+        # So the fix in unuseable right now.
+        if sock:
+            sock.settimeout(config.builddmaster.socket_timeout)
         return conn
 
 
