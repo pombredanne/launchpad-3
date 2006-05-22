@@ -1,0 +1,43 @@
+
+  Let's create a new standard request.
+
+  >>> print http(r"""
+  ... POST /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/standardoptions/+new HTTP/1.1
+  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... Content-Type: multipart/form-data; boundary=---------------------------103590410016027380951369533862
+  ... 
+  ... -----------------------------103590410016027380951369533862
+  ... Content-Disposition: form-data; name="field.flavour"
+  ... 
+  ... Ubuntu
+  ... -----------------------------103590410016027380951369533862
+  ... Content-Disposition: form-data; name="field.flavour-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------103590410016027380951369533862
+  ... Content-Disposition: form-data; name="field.quantityx86"
+  ... 
+  ... 1
+  ... -----------------------------103590410016027380951369533862
+  ... Content-Disposition: form-data; name="field.quantityamd64"
+  ... 
+  ... 1
+  ... -----------------------------103590410016027380951369533862
+  ... Content-Disposition: form-data; name="field.quantityppc"
+  ... 
+  ... 1
+  ... -----------------------------103590410016027380951369533862
+  ... Content-Disposition: form-data; name="field.isdefault.used"
+  ... 
+  ... 
+  ... -----------------------------103590410016027380951369533862
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------103590410016027380951369533862--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .
+  ...
+

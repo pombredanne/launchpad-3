@@ -56,5 +56,19 @@ class PageTestLayer(Interface):
     is a pagetest-related request.
     """
 
+
 class ShipItLayer(LaunchpadLayer):
     """The `ShipIt` layer."""
+
+
+class ShipItUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for Ubuntu layer."""
+
+
+class ShipItKUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for KUbuntu layer."""
+
+
+class ShipItEdUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for EdUbuntu layer."""
+

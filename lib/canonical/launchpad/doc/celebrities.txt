@@ -39,6 +39,15 @@ operations.
   >>> celebs.registry.id == registry.id
   True
 
+The buildd_admin celebrity has permission to perform routine task
+in the buildfarm
+
+  >>> buildd_admin = personset.getByName('launchpad-buildd-admins')
+  >>> celebs.buildd_admin.__class__ == buildd_admin.__class__
+  True
+  >>> celebs.buildd_admin.id == buildd_admin.id
+  True
+
 
   TODO: add interface verification test.
         ask debonzi to add these in general.

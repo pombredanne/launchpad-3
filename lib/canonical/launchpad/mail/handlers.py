@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 import re
-from urlparse import urlparse, urlunparse
+from urlparse import urlunparse
 
 import transaction
 from zope.component import getUtility
@@ -25,7 +25,7 @@ from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlparse
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
