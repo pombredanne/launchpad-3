@@ -251,14 +251,14 @@ class ConnectionWrapper:
     def commit(self):
         starttime = time.time()
         try:
-            super(CursorWrapper, self).commit()
+            self._conn.commit()
         finally:
             _log_statement(starttime, time.time(), self, 'COMMIT')
 
     def rollback(self):
         starttime = time.time()
         try:
-            super(CursorWrapper, self).rollback()
+            self._conn.rollback()
         finally:
             _log_statement(starttime, time.time(), self, 'ROLLBACK')
 
