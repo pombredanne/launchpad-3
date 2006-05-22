@@ -30,12 +30,12 @@ This means that we only display the status, it's not possible to edit it:
     ...
     LookupError: name 'field.status'
 
-Of course we can't edit the severity or assignee either.
+Of course we can't edit the importance or assignee either.
 
-    >>> browser.getControl(name='field.severity')
+    >>> browser.getControl(name='field.importance')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.severity'
+    LookupError: name 'field.importance'
 
     >>> browser.getControl(name='field.assignee')
     Traceback (most recent call last):
@@ -56,7 +56,7 @@ been reset to Unconfirmed.
     >>> status_control.displayValue
     ['Unconfirmed']
 
-    >>> browser.getControl(name='field.severity') is not None
+    >>> browser.getControl(name='field.importance') is not None
     True
     >>> browser.getControl(name='field.assignee') is not None
     True

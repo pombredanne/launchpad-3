@@ -31,7 +31,7 @@ class Milestone(SQLBase):
 
     # joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='milestone',
-        orderBy=['-severity', '-priority', 'id'])
+        orderBy=['-importance', 'datecreated', 'id'])
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
         orderBy=['-priority', 'status', 'delivery', 'title'])
 

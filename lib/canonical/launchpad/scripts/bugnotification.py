@@ -11,12 +11,13 @@ import rfc822
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.helpers import get_email_template, shortlist
 from canonical.launchpad.interfaces import IEmailAddressSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailnotification import (
     get_bugmail_replyto_address, generate_bug_add_email, MailWrapper,
     GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import EmailAddressStatus
 
@@ -129,8 +130,24 @@ def construct_email_notification(bug_notifications):
         else:
             # Since he added a comment, he's bound to have at least one
             # address.
-            email = getUtility(IEmailAddressSet).getByPerson(person)[0]
-            from_email = email.email
+            email_addresses = shortlist(
+                getUtility(IEmailAddressSet).getByPerson(person))
+            if len(email_addresses) > 0:
+                # We have no idea of which email address is best to use,
+                # just choose the first one.
+                email = email_addresses[0]
+                from_email = email.email
+            else:
+                # XXX: A user should always have at least one email
+                # address. Log an error with enough information so that
+                # we can debug why it is happening.
+                # -- Bjorn Tillenius, 2006-05-21
+                log.error(
+                    "The user %r has no email addresses. This happened"
+                    " while sending notifications for bug %s." % (
+                        person.name, bug.id))
+                from_email = "%s@%s" % (bug.id, config.launchpad.bugs_domain)
+
         msg['From'] = format_address(person.displayname, from_email)
 
     msg['Reply-To'] = get_bugmail_replyto_address(bug)

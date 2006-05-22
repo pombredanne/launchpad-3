@@ -127,10 +127,10 @@
                     Status:
                   </label>
                 </td>
-                <td tal:condition="view/severity_widget|nothing">
-                  <label tal:attributes="for view/severity_widget/name"
-                          tal:content="view/severity_widget/label">
-                    Severity:
+                <td tal:condition="view/importance_widget|nothing">
+                  <label tal:attributes="for view/importance_widget/name"
+                          tal:content="view/importance_widget/label">
+                    Importance:
                   </label>
                 </td>
                 <td tal:condition="view/attachmenttype_widget|nothing">
@@ -150,8 +150,8 @@
               <tr>
                 <td tal:condition="view/status_widget"
                     tal:content="structure view/status_widget" />
-                <td tal:condition="view/severity_widget"
-                    tal:content="structure view/severity_widget" />
+                <td tal:condition="view/importance_widget"
+                    tal:content="structure view/importance_widget" />
                 <td tal:condition="view/attachmenttype_widget"
                     tal:content="structure view/attachmenttype_widget" />
                 <td tal:condition="view/milestone_widget|nothing"

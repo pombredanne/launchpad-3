@@ -57,9 +57,11 @@ Let's take a look at what the notification email looks like:
     are sometimes not getting properly reflowed after rendering.
     <BLANKLINE>
     ** Affects: firefox (upstream)
-           Severity: Normal
-           Priority: Medium
+         Importance: Medium
              Status: Unconfirmed
+
+(In reality, the importance of a newly-reported bug would not have been
+decided yet, so it would appear as Untriaged.)
 
 
 Editing a bug
@@ -201,8 +203,7 @@ pretend we had just added task five:
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Also affects: mozilla-firefox (Ubuntu)
-         Severity: Normal
-         Priority: Medium
+       Importance: Medium
            Status: Unconfirmed
     -----------------------------
 
@@ -388,8 +389,7 @@ We can also add a bugwatch while adding a new bugtask.
     ...     print "-----------------------------"
     ** Also affects: firefox (upstream) via
        https://bugzilla.mozilla.org/show_bug.cgi?id=42
-         Severity: Major
-         Priority: Medium
+       Importance: High
            Status: Unconfirmed
     -----------------------------
 

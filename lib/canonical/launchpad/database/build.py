@@ -132,6 +132,11 @@ class Build(SQLBase):
                                    BuildStatus.CHROOTWAIT,
                                    BuildStatus.SUPERSEDED]
 
+    @property
+    def can_be_rescored(self):
+        """See IBuild."""
+        return self.buildstate is BuildStatus.NEEDSBUILD
+
     def reset(self):
         """See IBuild."""
         self.buildstate = BuildStatus.NEEDSBUILD
@@ -140,6 +145,7 @@ class Build(SQLBase):
         self.builder = None
         self.buildlog = None
         self.dependencies = None
+        self.createBuildQueueEntry()
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)

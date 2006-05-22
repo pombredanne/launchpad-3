@@ -165,8 +165,9 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def distroreleaselanguages(self):
         result = DistroReleaseLanguage.select(
-            "DistroReleaseLanguage.language = Language.id "
-            "AND DistroReleaseLanguage.distrorelease = %d" % self.id,
+            "DistroReleaseLanguage.language = Language.id AND"
+            " DistroReleaseLanguage.distrorelease = %d AND"
+            " Language.visible = TRUE" % self.id,
             prejoinClauseTables=["Language"],
             clauseTables=["Language"],
             prejoins=["distrorelease"],
@@ -264,14 +265,16 @@ class DistroRelease(SQLBase, BugTargetBase):
         result = POTemplate.selectBy(distroreleaseID=self.id)
         result.prejoin(['potemplatename'])
         result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
+        return sorted(result,
+            key=lambda x: (0-x.priority, x.potemplatename.name))
 
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
         result.prejoin(['potemplatename'])
         result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
+        return sorted(result,
+            key=lambda x: (0-x.priority, x.potemplatename.name))
 
     @property
     def fullreleasename(self):
@@ -431,7 +434,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, open_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
         return result
 
     @property
@@ -448,7 +451,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, resolved_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
         return result
 
     def getDistroReleaseLanguage(self, language):
@@ -470,6 +473,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         # the distribution
         langidset = set(
             language.id for language in Language.select('''
+                Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s

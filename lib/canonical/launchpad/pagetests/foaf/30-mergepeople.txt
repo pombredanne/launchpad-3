@@ -231,20 +231,23 @@
   ...informational message">The accounts have been merged successfully...
 
 
-  Hack to start a new transaction and clear caches etc.
+  XXX: Hack to start a new transaction and clear caches etc. This should
+  not be necessary, but it currently is.
+    -- kiko, 2006-05-15
 
   >>> def new_transaction():
+  ...     import time
+  ...     time.sleep(1)
+  ...     import gc
+  ...     while gc.collect():
+  ...       pass
   ...     import transaction
   ...     import canonical.database.sqlbase
   ...     transaction.abort()
   ...     canonical.database.sqlbase.flush_database_caches()
   ...     transaction.begin()
 
-  XXX: I've commented out the new_transaction() call to see if it makes
-       the test below pass. With this call not commented out, the team
-       owner sometimes is reported to be 'foo'.
-       -- Bjorn Tillenius, 2006-05-15
-  >>> #new_transaction()
+  >>> new_transaction()
 
   Now we make sure that the team we just created and was owned by 'foo' is now
   owned by 'no-priv'.

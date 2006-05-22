@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /shipit/++vh++http:shipit.async.com.br:80/++/exports HTTP/1.1
+  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/exports HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
   ... """)
   HTTP/1.1 200 Ok
