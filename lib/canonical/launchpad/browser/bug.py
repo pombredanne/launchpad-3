@@ -17,7 +17,9 @@ __all__ = [
     'BugTextView',
     'BugURL']
 
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
+from zope.app.form.browser.itemswidgets import SelectWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
@@ -238,6 +240,23 @@ class BugWithoutContextView:
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
+class BugTrackerWidget(SelectWidget):
+    """Custom widget for selecting a bug tracker.
+
+    This is needed since we don't want the bug tracker to be required,
+    but you still shouldn't be abled to select "(no option)".
+    """
+
+    firstItem = True
+
+    def renderItems(self, value):
+        """We don't want the (no option) value to be rendered."""
+        items = SelectWidget.renderItems(self, value)
+        if not self.context.required:
+            items = items[1:]
+        return items
+
+
 class BugAlsoReportInView(GeneralFormView):
     """View class for reporting a bug in other contexts."""
 
@@ -273,6 +292,7 @@ class BugAlsoReportInView(GeneralFormView):
 
     def initializeAndRender(self):
         """Process the widgets and render the page."""
+        self.bugtracker_widget = CustomWidgetFactory(BugTrackerWidget)
         self._setUpWidgets()
         # Add some javascript to make the bug watch widgets enabled only
         # when the checkbox is checked.
