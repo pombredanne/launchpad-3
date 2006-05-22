@@ -160,7 +160,7 @@ subscribed:
 
 Foo Bar is sent an email giving him complete information about the bug
 that has just been retargeted, including the title, description, status,
-priority, etc.
+importance, etc.
 
     >>> import email
 
@@ -194,19 +194,16 @@ priority, etc.
     interactive and dynamic SVG drawings.
     <BLANKLINE>
     ** Affects: firefox (upstream)
-           Severity: Minor
-           Priority: Wontfix
-         Assignee: Mark Shuttleworth
+         Importance: Low
+           Assignee: Mark Shuttleworth
              Status: Unconfirmed
     <BLANKLINE>
     ** Affects: pmount (Ubuntu)
-           Severity: Normal
-           Priority: Medium
+         Importance: Medium
              Status: Unconfirmed
     <BLANKLINE>
     ** Affects: mozilla-firefox (Debian)
-           Severity: Minor
-           Priority: High
+         Importance: Low
              Status: Confirmed
     <BLANKLINE>
     --

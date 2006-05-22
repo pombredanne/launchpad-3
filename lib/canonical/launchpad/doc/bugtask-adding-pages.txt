@@ -145,7 +145,7 @@ If the user chooses "Yes", a bugtask will be added to the bug.
     evolution (upstream)
     firefox (upstream)
 
-But since no bug watch was specified, the status, severity and priority
+But since no bug watch was specified, the status and importance
 are set to the default values.
 
     >>> alsa_task = bug_four.bugtasks[0]
@@ -153,10 +153,8 @@ are set to the default values.
     False
     >>> alsa_task.status.title
     'Unconfirmed'
-    >>> alsa_task.priority is None
-    True
-    >>> alsa_task.severity.title
-    'Normal'
+    >>> alsa_task.importance.title
+    'Untriaged'
 
 On the same form, we can add a bug watch. If we specify a remote bug
 tracker, but omit the remote bug number, an error message is given:
@@ -207,7 +205,7 @@ watch will be added without any confirmation neede:
 
 The bug watch got linked to the create task, and all the bug task's
 attribute got initialised to Unknown. The bugtask will be synced with
-the bug watch's status at a later stage.
+the bug watch's status later.
 
     >>> thunderbird_task = bug_four.bugtasks[1]
     >>> thunderbird_task.product.official_malone
@@ -217,9 +215,7 @@ the bug watch's status at a later stage.
 
     >>> thunderbird_task.status.title
     'Unknown'
-    >>> thunderbird_task.priority.title
-    'Unknown'
-    >>> thunderbird_task.severity.title
+    >>> thunderbird_task.importance.title
     'Unknown'
 
 

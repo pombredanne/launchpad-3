@@ -11,7 +11,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
       name="+table-view"
-      template="../templates/batchnavigator-table-view.pt"
+      template="../templates/bugs-listing-table.pt"
       permission="zope.Public" />
 
 </configure>
