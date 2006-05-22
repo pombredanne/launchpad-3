@@ -8,7 +8,7 @@ import logging
 import unittest
 
 from importd import JobStrategy
-from importd.tests import TestUtil, helpers
+from importd.tests import testutil, helpers
 
 
 class TestCvsStrategyCreation(unittest.TestCase):
@@ -67,7 +67,7 @@ class TestCvsStrategy(helpers.CscvsTestCase):
         job = self.job_helper.makeJob()
         cvspath = strategy.getCVSDirPath(job, basedir)
         strategy.aJob = job
-        strategy.logger = logging
+        strategy.logger = testutil.makeSilentLogger()
         path = strategy.getCVSDir(job, basedir)
         self.assertEqual(path, cvspath)
         catalog_path = os.path.join(cvspath, "CVS", "Catalog.sqlite")
@@ -76,16 +76,17 @@ class TestCvsStrategy(helpers.CscvsTestCase):
     def testSync(self):
         """test performing a sync"""
         strategy = JobStrategy.CVSStrategy()
+        logger = testutil.makeSilentLogger()
         self.assertRaises(AssertionError, strategy.sync, None, ".", None)
         self.assertRaises(AssertionError, strategy.sync, ".", None, None)
-        self.assertRaises(AssertionError, strategy.sync, None, None, logging)
+        self.assertRaises(AssertionError, strategy.sync, None, None, logger)
         aJob = self.job_helper.makeJob()
         self.setupSyncEnvironment()
         self.archive_manager.createMirror()
         basedir = self.sandbox_helper.sandbox_path
         # test that the initial sync does not rollback to mirror
         self.assertPatchlevels(master=['base-0'], mirror=[])
-        strategy.sync(aJob, basedir, logging)
+        strategy.sync(aJob, basedir, logger)
         self.assertPatchlevels(master=['base-0', 'patch-1'], mirror=[])
         # test that second sync does rollback to mirror
         self.mirrorBranch()
@@ -94,9 +95,9 @@ class TestCvsStrategy(helpers.CscvsTestCase):
         self.baz_tree_helper.setUpPatch()
         self.assertPatchlevels(master=['base-0', 'patch-1', 'patch-2'],
                                mirror=['base-0', 'patch-1'])
-        strategy.sync(aJob, ".", logging)
+        strategy.sync(aJob, ".", logger)
         self.assertPatchlevels(master=['base-0', 'patch-1'],
                                mirror=['base-0', 'patch-1'])
 
 
-TestUtil.register(__name__)
+testutil.register(__name__)

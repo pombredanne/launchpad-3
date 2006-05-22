@@ -3,10 +3,9 @@
 # Author: Gustavo Niemeyer <gustavo@niemeyer.net>
 #         David Allouche <david@allouche.net>
 
-import logging
+import os
 import random
 import time
-import os
 import unittest
 
 from bzrlib.branch import Branch as BzrBranch
@@ -17,7 +16,7 @@ from canonical.launchpad.database import (
     Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 
 from importd.bzrsync import BzrSync, RevisionModifiedError
-from importd.tests import TestUtil
+from importd.tests import testutil
 from importd.tests.helpers import WebserverHelper, ZopelessUtilitiesHelper
 
 
@@ -250,5 +249,5 @@ class TestBzrSync(unittest.TestCase):
                           bzrsync.syncRevision, FakeRevision)
 
 
-TestUtil.register(__name__)
+testutil.register(__name__)
 

@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProductSet)
 
 from importd import baz2bzr
-from importd.tests import TestUtil
+from importd.tests import testutil
 from importd.tests.helpers import SandboxHelper, ZopelessUtilitiesHelper
 
 
@@ -558,4 +558,4 @@ class TestBranch(unittest.TestCase):
         self.assertEqual(branch.url, None)
 
 
-TestUtil.register(__name__)
+testutil.register(__name__)
