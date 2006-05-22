@@ -13,6 +13,7 @@ __all__ = [
     'SprintAddView',
     'SprintEditView',
     'SprintTopicSetView',
+    'SprintMeetingExportView',
     ]
 
 from zope.component import getUtility
@@ -25,7 +26,8 @@ from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationFilter)
+    SprintSpecificationStatus, SpecificationFilter, SpecificationStatus,
+    SpecificationPriority)
 
 from canonical.database.sqlbase import flush_database_updates
 
@@ -253,3 +255,43 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
             self.request.response.redirect(
                 canonical_url(self.context)+'/+specs')
 
+
+class SprintMeetingExportView(LaunchpadView):
+    """View to provide information used the sprint meeting XML export view."""
+
+    def initialize(self):
+        self.attendees = []
+        attendees = set()
+        for attendance in self.context.attendances:
+            self.attendees.append(dict(
+                name=attendance.attendee.name,
+                displayname=attendance.attendee.displayname,
+                start=attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                end=attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
+            attendees.add(attendance.attendee)
+
+        self.specifications = []
+        for speclink in self.context.specificationLinks(
+            filter=[SprintSpecificationStatus.ACCEPTED]):
+            spec = speclink.specification
+
+            # skip sprints with no priority or less than low:
+            if (spec.priority is None or
+                spec.priority < SpecificationPriority.LOW):
+                continue
+
+            if spec.status not in [SpecificationStatus.BRAINDUMP,
+                                   SpecificationStatus.DRAFT]:
+                continue
+
+            # get the list of attendees that will attend the sprint
+            interested = set(sub.person for sub in spec.subscriptions)
+            interested = interested.intersection(attendees)
+            if spec.assignee is not None:
+                interested.add(spec.assignee)
+            if spec.drafter is not None:
+                interested.add(sepc.drafter)
+
+            self.specifications.append(dict(
+                spec=spec,
+                interested=interested))

@@ -130,6 +130,14 @@
     template="../templates/sprint-settopics.pt"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+temp-meeting-export"
+    class="canonical.launchpad.browser.sprint.SprintMeetingExportView"
+    permission="zope.Public"
+    template="../templates/sprint-meeting-export.pt"
+    />
+
   <!-- SprintSet -->
   <content class="canonical.launchpad.database.SprintSet">
     <allow interface="canonical.launchpad.interfaces.ISprintSet" />
