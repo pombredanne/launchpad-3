@@ -55,14 +55,15 @@ BuildQueue entries.
 
 Let's start the run-time tests:
 
-  >>> LOCAL_NOW = datetime.datetime.now(pytz.timezone('UTC'))
+  >>> def local_now():
+  ...   return datetime.datetime.now(pytz.timezone('UTC'))
 
  * 1000 points for component 'main',
  * 15 points for urgency HIGH.
  * nothing for queue_time
  * -5 points for ONE satified dependency
 
-  >>> time0 = LOCAL_NOW
+  >>> time0 = local_now()
   >>> bq0 = MockBuildQueue('Null', SourcePackageUrgency.HIGH, 'main',
   ...                      warty386, time0, 'mozilla-firefox (= 0.9)')
 
@@ -79,7 +80,7 @@ scoreBuildQueueEntry() method.
  * nothing for queue_time
  * -10 points for 1 unsatisfied dependency
 
-  >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=300)
+  >>> time1 = local_now() - datetime.timedelta(seconds=290)
   >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main',
   ...                      warty386, time1, 'mozilla-firefox (= 1.0)')
   >>> bm.scoreBuildQueueEntry(bq1)
@@ -94,7 +95,7 @@ scoreBuildQueueEntry() method.
 * 5 points for queue_time ( > 300 seconds)
 * -10 points for 1 unsatisfied dependency
 
-  >>> time2 = LOCAL_NOW - datetime.timedelta(seconds=310)
+  >>> time2 = local_now() - datetime.timedelta(seconds=310)
   >>> bq2 = MockBuildQueue('Zwei', SourcePackageUrgency.HIGH,
   ...                      'universe', warty386, time2, 'foo (= 1.0)')
   >>> bm.scoreBuildQueueEntry(bq2)
@@ -109,7 +110,7 @@ scoreBuildQueueEntry() method.
 * 10 points for queue_time ( > 900 seconds)
 * -5 points for ONE satisfied dependency
 
-  >>> time3 = LOCAL_NOW - datetime.timedelta(seconds=1000)
+  >>> time3 = local_now() - datetime.timedelta(seconds=1000)
   >>> bq3 = MockBuildQueue('Drei', SourcePackageUrgency.MEDIUM,
   ...                      'multiverse', hoary386, time3, 'pmount (= 0.1-1)')
   >>> bm.scoreBuildQueueEntry(bq3)
@@ -123,7 +124,7 @@ scoreBuildQueueEntry() method.
 * -10 points for ONE unsatisfied dependency
 * -5 points for ONE satisfied dependency
 
-  >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=3600)
+  >>> time4 = local_now() - datetime.timedelta(seconds=3500)
   >>> bq4 = MockBuildQueue('Vier', SourcePackageUrgency.EMERGENCY,
   ...                      'main', hoary386, time4,
   ...                      'mozilla-firefox (= 0.9), pmount (= 0.1-1)')
@@ -138,7 +139,7 @@ scoreBuildQueueEntry() method.
 * 20 points for queue_time ( > 3600 seconds)
 * -20 points for TWO unsatisfied dependency
 
-  >>> time5 = LOCAL_NOW - datetime.timedelta(seconds=4000)
+  >>> time5 = local_now() - datetime.timedelta(seconds=4000)
   >>> bq5 = MockBuildQueue('Funf', SourcePackageUrgency.LOW,
   ...                      'restricted', warty386, time5,
   ...                      'mozilla-firefox (= 1.0), pmount (= 0.2-1)')
@@ -155,7 +156,7 @@ scoreBuildQueueEntry() method.
 * nothing for queue_time NOW
 * -5 points for ONE satisfied dependency
 
-  >>> time6 = LOCAL_NOW
+  >>> time6 = local_now()
   >>> bq6 = MockBuildQueue('Sechs', SourcePackageUrgency.LOW,
   ...                      'main', warty386, time6,
   ...                      'mozilla-firefox')
@@ -167,7 +168,7 @@ scoreBuildQueueEntry() method.
 By setting manual attribute of a BuildQueue entry we prevent it to be
 rescored, which allows us to set an arbitrary value on it.
 
-  >>> time7 = LOCAL_NOW
+  >>> time7 = local_now()
   >>> bq7 = MockBuildQueue('Sieben', SourcePackageUrgency.LOW,
   ...                      'main', warty386, time7,
   ...                      'mozilla-firefox', manual=True)

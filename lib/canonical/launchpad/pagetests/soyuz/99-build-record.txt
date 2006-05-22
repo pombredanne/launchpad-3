@@ -94,7 +94,7 @@ w/o build record anymore.)
 it also checks input data sanity (bug # 44240):
 
   >>> print http(r"""
-  ... POST /+builds/+build/9/+rescore HTTP/1.1
+  ... POST /+builds/+build/8/+rescore HTTP/1.0
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 19
   ...
@@ -104,6 +104,18 @@ it also checks input data sanity (bug # 44240):
   ...Rescore i386 build of pmount 0.1-1 in ubuntu warty...
   ...priority must be an integer not "foo"...
 
+Also handles attempts to rescore a build in the wrong state:
+
+  >>> print http(r"""
+  ... POST /+builds/+build/13/+rescore HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 9
+  ...
+  ... RESCORE=6""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...i386 build of netapplet 0.99.6-1 in ubuntu warty...
+  ...Build can not be rescored...
 
 Build record inserted by gina that has an unknown build record.
 
