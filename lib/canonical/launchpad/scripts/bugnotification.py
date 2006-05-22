@@ -139,9 +139,8 @@ def construct_email_notification(bug_notifications):
                 from_email = email.email
             else:
                 # XXX: A user should always have at least one email
-                # address. Log an error with enough information so that
-                # we can debug why it is happening.
-                # -- Bjorn Tillenius, 2006-05-21
+                # address, but due to bug 33427, this isn't always the
+                # case. -- Bjorn Tillenius, 2006-05-21
                 log.error(
                     "The user %r has no email addresses. This happened"
                     " while sending notifications for bug %s." % (
