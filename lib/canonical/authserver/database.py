@@ -688,11 +688,16 @@ class DatabaseBranchDetailsStorage:
         result = []
         for (branch_id, url, owner_name) in transaction.fetchall():
             if url is not None:
+                # This is a pull branch, hosted externally.
                 pull_url = url
             elif owner_name == 'vcs-imports':
+                # This is an import branch, imported into bzr from
+                # another RCS system such as CVS.
                 prefix = config.launchpad.bzr_imports_root_url
                 pull_url = urlappend(prefix, '%08x' % branch_id)
             else:
+                # This is a push branch, hosted on the supermirror
+                # (pushed there by users via SFTP).
                 prefix = config.supermirrorsftp.branches_root
                 pull_url = os.path.join(prefix, split_branch_id(branch_id))
             result.append((branch_id, pull_url))
