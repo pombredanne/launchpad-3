@@ -19,6 +19,7 @@
         <key name="dbuser" datatype="string" default="session" />
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" default="session_prod" />
+        <key name="cookie" datatype="string" default="launchpad" />
     </sectiontype>
 
     <sectiontype name="launchpad_errorreports">
