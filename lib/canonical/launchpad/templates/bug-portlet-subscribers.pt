@@ -4,7 +4,6 @@
   <div class="portletBody portletContent"
        tal:define="indirect_subscribers context/indirect_subscribers">
 
-    <b>Direct:</b><br />
     <ul class="people">
       <li tal:repeat="subscriber context/direct_subscribers">
         <a href="#"
@@ -16,10 +15,9 @@
       </li>
     </ul>
 
-    <br />
-
     <div tal:condition="indirect_subscribers">
-      <b>Indirect:</b><br />
+      <br />
+      <b>Also notified:</b><br />
       <ul class="people">
         <li tal:repeat="subscriber indirect_subscribers">
           <a href="#"
