@@ -67,13 +67,6 @@ def setup_ui_factory(quiet):
         bzrlib.ui.ui_factory = BatchUIFactory()
 
 
-def make_printer(quiet):
-    if quiet:
-        return silent_printer
-    else:
-        return stdout_printer
-
-
 def parse_arguments(args):
     if args[0] == '-q':
         quiet = True
@@ -104,12 +97,8 @@ def main(args):
         print "Not exporting to bzr"
         return 0
     from_branch = pybaz.Version(from_branch)
-    progress_bar = bzrlib.ui.ui_factory.progress_bar()
-    printer = make_printer(quiet)
     baz_import.import_version(
-        to_location, from_branch, printer,
-        max_count=None, reuse_history_from=[],
-        progress_bar=progress_bar)
+        to_location, from_branch, max_count=None, reuse_history_from=[])
     if push_prefix is None:
         return 0
     begin()
