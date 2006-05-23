@@ -102,10 +102,10 @@ class ContentField(TextLine):
         raise NotImplementedError
 
     def _validate(self, input):
-        """Raise a LaunchpadValidationError if the name is not available.
+        """Raise a LaunchpadValidationError if the attribute is not available.
 
-        A name is not available if it's already in use by another object of
-        this same context.
+        A attribute is not available if it's already in use by another object 
+        of this same context.
         """
         TextLine._validate(self, input)
         assert self._content_iface is not None
