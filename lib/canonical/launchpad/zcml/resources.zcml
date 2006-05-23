@@ -43,10 +43,14 @@
     <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="branch" file="../images/info.png" />
     <resource name="bug" file="../images/bug.png" />
+    <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
-    <resource name="bug-low" file="../images/bug-low.png" />
     <resource name="bug-medium" file="../images/bug-medium.png" />
+    <resource name="bug-low" file="../images/bug-low.png" />
+    <resource name="bug-wishlist" file="../images/bug-wishlist.png" />
+    <resource name="bug-untriaged" file="../images/bug-untriaged.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
+    <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="close_icon.png" file="../images/close_icon.png" />

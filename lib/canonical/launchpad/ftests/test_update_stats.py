@@ -72,7 +72,7 @@ class UpdateStatsTest(LaunchpadTestCase):
                 stderr=subprocess.STDOUT
                 )
         (stdout, empty_stderr) = process.communicate()
-        
+
         # Ensure it returned a success code
         self.failUnlessEqual(
                 process.returncode, 0,
@@ -100,32 +100,38 @@ class UpdateStatsTest(LaunchpadTestCase):
 
         # Make sure existing DistroReleaseLanauge entries have been updated.
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage
-            WHERE currentcount = -1
+            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
+            WHERE DistroReleaseLanguage.language = Language.id AND
+                  Language.visible = TRUE AND currentcount = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage
-            WHERE updatescount = -1
-            """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
-        
-        cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage
-            WHERE rosettacount = -1
-            """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
-        
-        cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage
-            WHERE contributorcount = -1
+            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
+            WHERE DistroReleaseLanguage.language = Language.id AND
+                  Language.visible = TRUE AND updatescount = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
-            SELECT COUNT(*) FROM DistroReleaseLanguage
-            WHERE dateupdated < now() - '2 days'::interval
+            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
+            WHERE DistroReleaseLanguage.language = Language.id AND
+                  Language.visible = TRUE AND rosettacount = -1
+            """)
+        self.failUnlessEqual(cur.fetchone()[0], 0)
+
+        cur.execute("""
+            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
+            WHERE DistroReleaseLanguage.language = Language.id AND
+                  Language.visible = TRUE AND contributorcount = -1
+            """)
+        self.failUnlessEqual(cur.fetchone()[0], 0)
+
+        cur.execute("""
+            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
+            WHERE DistroReleaseLanguage.language = Language.id AND
+                  Language.visible = TRUE AND
+                  dateupdated < now() - '2 days'::interval
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
