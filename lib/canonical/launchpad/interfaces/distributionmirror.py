@@ -10,7 +10,7 @@ from zope.schema import Bool, Choice, Datetime, TextLine, Bytes, Int
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from canonical.launchpad.fields import ContentField, ContentNameField
+from canonical.launchpad.fields import UniqueField, ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import (
     valid_http_url, valid_ftp_url, valid_rsync_url, valid_webref,
@@ -33,7 +33,7 @@ class DistributionMirrorNameField(ContentNameField):
         return getUtility(IDistributionMirrorSet).getByName(name)
 
 
-class DistroUrlField(ContentField):
+class DistroUrlField(UniqueField):
     """Base class for the DistributionMirror unique Url fields."""
     errormessage = _(
         "%s is already registered by another distribution mirror.")
@@ -42,26 +42,26 @@ class DistroUrlField(ContentField):
     def _content_iface(self):
         return IDistributionMirror
 
-    def _getByAttribute(self, url):
-        assert self.attribute is not None
-        if self.attribute == 'http_base_url':
-            return getUtility(IDistributionMirrorSet).getByHttpUrl(url)
-        elif self.attribute == 'ftp_base_url':
-            return getUtility(IDistributionMirrorSet).getByFtpUrl(url)
-        elif self.attribute == 'rsync_base_url':
-            return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
-
 
 class DistroHttpUrlField(DistroUrlField):
     attribute = 'http_base_url'
+
+    def _getByAttribute(self, url):
+        return getUtility(IDistributionMirrorSet).getByHttpUrl(url)
 
 
 class DistroFtpUrlField(DistroUrlField):
     attribute = 'ftp_base_url'
 
+    def _getByAttribute(self, url):
+        return getUtility(IDistributionMirrorSet).getByFtpUrl(url)
+
 
 class DistroRsyncUrlField(DistroUrlField):
     attribute = 'rsync_base_url'
+
+    def _getByAttribute(self, url):
+        return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
 
 
 class IDistributionMirror(Interface):

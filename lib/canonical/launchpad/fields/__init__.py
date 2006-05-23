@@ -80,11 +80,12 @@ class PasswordField(Password):
                 "The password provided contains non-ASCII characters."))
 
 
-class ContentField(TextLine):
+class UniqueField(TextLine):
     """Base class for fields that are used by unique attributes."""
 
     errormessage = _("%s is already taken")
-    attribute = ''
+    attribute = None
+    _marker = object()
 
     @property
     def _content_iface(self):
@@ -105,12 +106,12 @@ class ContentField(TextLine):
         """Raise a LaunchpadValidationError if the attribute is not available.
 
         A attribute is not available if it's already in use by another object 
-        of this same context.
+        of this same context. The 'input' should be valid as per TextLine.
         """
         TextLine._validate(self, input)
         assert self._content_iface is not None
         if (self._content_iface.providedBy(self.context) and 
-            input == getattr(self.context, self.attribute, None)):
+            input == getattr(self.context, self.attribute, self._marker)):
             # The attribute wasn't changed.
             return
 
@@ -119,7 +120,7 @@ class ContentField(TextLine):
             raise LaunchpadValidationError(self.errormessage % input)
 
 
-class ContentNameField(ContentField):
+class ContentNameField(UniqueField):
     """Base class for fields that are used by unique 'name' attributes."""
 
     attribute = 'name'

@@ -234,35 +234,19 @@ class DistributionMirrorSet:
 
     def getByName(self, name):
         """See IDistributionMirrorSet"""
-        mirror = DistributionMirror.selectOneBy(name=name)
-        if mirror:
-            return mirror
-        else:
-            return None
+        return DistributionMirror.selectOneBy(name=name)
 
     def getByHttpUrl(self, url):
         """See IDistributionMirrorSet"""
-        mirror = DistributionMirror.selectOneBy(http_base_url=url)
-        if mirror:
-            return mirror
-        else:
-            return None
+        return DistributionMirror.selectOneBy(http_base_url=url)
 
     def getByFtpUrl(self, url):
         """See IDistributionMirrorSet"""
-        mirror = DistributionMirror.selectOneBy(ftp_base_url=url)
-        if mirror:
-            return mirror
-        else:
-            return None
+        return DistributionMirror.selectOneBy(ftp_base_url=url)
 
     def getByRsyncUrl(self, url):
         """See IDistributionMirrorSet"""
-        mirror = DistributionMirror.selectOneBy(rsync_base_url=url)
-        if mirror:
-            return mirror
-        else:
-            return None
+        return DistributionMirror.selectOneBy(rsync_base_url=url)
 
 
 class _MirrorReleaseMixIn:

@@ -118,11 +118,11 @@ It's possible to retrieve a mirror by its name:
     >>> verifyObject(IDistributionMirror, example_mirror)
     True
 
-    >>> print mirrorset.getByName('non-existant-mirror')
+    >>> print mirrorset.getByName('non-existent-mirror')
     None
 
-Or by any of its URL (HTTP, FTP or Rsync)
-But first we'll have to add some of this URLs to sample data
+Or by any of its URLs (HTTP, FTP or Rsync)
+First we'll have to add some of this URLs to sample data:
 
     >>> from canonical.launchpad.ftests import login 
     >>> login("mark@hbd.com")
@@ -130,19 +130,21 @@ But first we'll have to add some of this URLs to sample data
     >>> example_mirror.rsync_base_url = 'rsync://localhost/example-rsync'
     >>> flush_database_updates()
 
+The getBy*Url methods return the corresponding mirrors:
+
     >>> http_mirror = mirrorset.getByHttpUrl(
     ...     'http://localhost:11375/valid-mirror')
     >>> verifyObject(IDistributionMirror, http_mirror)
     True
 
-    >>> print mirrorset.getByHttpUrl('http://non-existant-url')
+    >>> print mirrorset.getByHttpUrl('http://non-existent-url')
     None
 
     >>> ftp_mirror = mirrorset.getByFtpUrl('ftp://localhost/example-ftp')
     >>> verifyObject(IDistributionMirror, ftp_mirror)
     True
 
-    >>> print mirrorset.getByFtpUrl('ftp://non-existant-url')
+    >>> print mirrorset.getByFtpUrl('ftp://non-existent-url')
     None
 
     >>> rsync_mirror = mirrorset.getByRsyncUrl(
@@ -150,7 +152,7 @@ But first we'll have to add some of this URLs to sample data
     >>> verifyObject(IDistributionMirror, rsync_mirror)
     True
 
-    >>> print mirrorset.getByRsyncUrl('rsync://non-existant-url')
+    >>> print mirrorset.getByRsyncUrl('rsync://non-existent-url')
     None
 
 
