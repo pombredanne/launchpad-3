@@ -170,9 +170,30 @@ All other requests are automatically approved.
    (16, u'jordi'), (17, u'jblack'), (18, u'ddaa')]
 
 
-It's also possible to search for requests containing CDs of a given flavour.
+It's also possible to search for requests containing CDs of a given flavour or
+of a given distrorelease (or both, obviously).
 
-  >>> ubuntu = ShipItFlavour.UBUNTU
+  >>> kubuntu = ShipItFlavour.KUBUNTU
+  >>> [(shipreq.recipient.displayname , shipreq.id)
+  ...  for shipreq in requestset.search(flavour=kubuntu)]
+  [(u'David Allouche', 5), (u'Daniel Henrique Debonzi', 7),
+   (u'Jordi Mallach', 16), (u'James Blackwell', 17)]
+
+  >>> from canonical.lp.dbschema import ShipItDistroRelease
+  >>> dapper = ShipItDistroRelease.DAPPER
+  >>> [(shipreq.recipient.displayname , shipreq.id)
+  ...  for shipreq in requestset.search(distrorelease=dapper)]
+  [(u'Robert Collins', 4), (u'No Privileges Person', 1),
+   (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
+   (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
+   (u'David Allouche', 18), (u'Jeff Waugh', 12), (u'Marilize Coetzee', 13),
+   (u'James Blackwell', 17), (u'Stuart Bishop', 2)]
+
+  >>> edubuntu = ShipItFlavour.EDUBUNTU
+  >>> [(shipreq.recipient.displayname , shipreq.id)
+  ...  for shipreq in requestset.search(distrorelease=dapper, flavour=edubuntu)]
+  [(u'Jordi Mallach', 16), (u'David Allouche', 18), (u'Marilize Coetzee', 13)]
+
 
 Another way of searching is by using any part of the recipient's name or the
 beginning of his email address.
@@ -264,7 +285,12 @@ based on shipit data.
 One of the reports we can generate gives us information about orders shipped
 to each country.
 
-  >>> csv_file = requestset.generateCountryBasedReport()
+The generateCountryBasedReport() method accepts a current_release_only
+argument that, if True, will include only requests of
+ShipItConstants.current_distrorelease.
+
+  >>> csv_file = requestset.generateCountryBasedReport(
+  ...     current_release_only=False)
   >>> for line in csv_file.readlines():
   ...     line.strip()
   'Country,Shipped Ubuntu x86 CDs,Shipped Ubuntu AMD64 CDs,Shipped Ubuntu PPC CDs,Shipped Kubuntu x86 CDs,Shipped Kubuntu AMD64 CDs,Shipped Kubuntu PPC CDs,Shipped Edubuntu x86 CDs,Shipped Edubuntu AMD64 CDs,Shipped Edubuntu PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent'
@@ -275,11 +301,28 @@ to each country.
   'Heard Island and McDonald Islands,5,0,0,0,0,0,0,0,0,1,0,5,100.00%,4.90%,Antarctica'
   '\xc3\x85land Islands,9,6,9,8,2,0,0,0,0,1,1,17,100.00%,33.33%,Europe'
 
+  >>> csv_file = requestset.generateCountryBasedReport(
+  ...     current_release_only=True)
+  >>> for line in csv_file.readlines():
+  ...     line.strip()
+  'Country,Shipped Ubuntu x86 CDs,Shipped Ubuntu AMD64 CDs,Shipped Ubuntu PPC CDs,Shipped Kubuntu x86 CDs,Shipped Kubuntu AMD64 CDs,Shipped Kubuntu PPC CDs,Shipped Edubuntu x86 CDs,Shipped Edubuntu AMD64 CDs,Shipped Edubuntu PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent'
+  'Bermuda,8,1,1,0,0,0,0,0,0,1,0,10,100.00%,18.52%,North America'
+  'British Indian Ocean Territory,0,0,1,6,5,0,6,0,0,4,1,3,100.00%,33.33%,Asia'
+  'Burkina Faso,10,0,0,0,0,0,0,0,0,1,0,10,100.00%,18.52%,Africa'
+  'China,0,1,0,0,0,0,0,0,0,1,0,1,100.00%,1.85%,Asia'
+  'Heard Island and McDonald Islands,5,0,0,0,0,0,0,0,0,1,0,5,100.00%,9.26%,Antarctica'
+  '\xc3\x85land Islands,0,0,0,8,2,0,0,0,0,1,1,5,100.00%,18.52%,Europe'
+
 
 There's another report which gives us the number of shipments of all shipment
 sizes we had.
 
-  >>> csv_file = requestset.generateShipmentSizeBasedReport()
+The generateShipmentSizeBasedReport() method accepts a current_release_only
+argument that, if True, will include only requests of
+ShipItConstants.current_distrorelease.
+
+  >>> csv_file = requestset.generateShipmentSizeBasedReport(
+  ...     current_release_only=False)
   >>> for line in csv_file.readlines():
   ...     line.strip()
   'Number of CDs,Number of Shipments'
@@ -288,6 +331,17 @@ sizes we had.
   '5,2'
   '10,4'
   '24,2'
+
+  >>> csv_file = requestset.generateShipmentSizeBasedReport(
+  ...     current_release_only=True)
+  >>> for line in csv_file.readlines():
+  ...     line.strip()
+  'Number of CDs,Number of Shipments'
+  '1,2'
+  '2,1'
+  '5,2'
+  '10,4'
+
 
 There's also a report of requests by week.
 

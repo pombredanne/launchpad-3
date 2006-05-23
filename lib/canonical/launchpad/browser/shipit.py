@@ -22,7 +22,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
-from canonical.lp.dbschema import ShipItFlavour, ShipItArchitecture
+from canonical.lp.dbschema import (
+    ShipItFlavour, ShipItArchitecture, ShipItDistroRelease)
 from canonical.launchpad.helpers import intOrZero, get_email_template
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
@@ -498,20 +499,55 @@ class ShipItRequestView(GeneralFormView):
             self.from_email_address, shipit_admins, subject, message, headers)
 
 
+class _SelectMenuOption:
+    """An option of a HTML <select>.
+
+    This class simply stores a name, a title and whether the option should be
+    selected or not.
+    """
+    
+    def __init__(self, name, title, is_selected=False):
+        self.name = name
+        self.title = title
+        self.is_selected = is_selected
+
+
 class ShippingRequestsView:
     """The view to list ShippingRequests that match a given criteria."""
 
     submitted = False
     selectedStatus = 'pending'
-    selectedFlavour = 'any'
+    selectedFlavourName = 'any'
+    selectedDistroReleaseName = ShipItConstants.current_distrorelease.name
     recipient_text = ''
 
-    def standardShipItRequests(self):
-        """Return a list with all standard ShipIt Requests."""
-        return getUtility(IStandardShipItRequestSet).getAll()
+    def _build_options(self, names_and_titles, selected_name):
+        """Return a list of _SelectMenuOption elements with the given names
+        and titles.
 
-    def all_flavours(self):
-        return ShipItFlavour.items
+        The option whose name is equal to selected_name also gets a
+        is_selected set to True.
+        """
+        options = []
+        for name, title in names_and_titles:
+            option = _SelectMenuOption(name, title)
+            if selected_name == name:
+                option.is_selected = True
+            options.append(option)
+        return options
+
+    def flavour_options(self):
+        names_and_titles = [
+            (flavour.name, flavour.title) for flavour in ShipItFlavour.items]
+        names_and_titles.append(('any', 'Any flavour'))
+        return self._build_options(names_and_titles, self.selectedFlavourName)
+
+    def release_options(self):
+        names_and_titles = [(release.name, release.title) 
+                            for release in ShipItDistroRelease.items]
+        names_and_titles.append(('any', 'Any'))
+        return self._build_options(
+            names_and_titles, self.selectedDistroReleaseName)
 
     def processForm(self):
         """Process the form, if it was submitted."""
@@ -532,18 +568,25 @@ class ShippingRequestsView:
         else:
             status = ShippingRequestStatus.ALL
 
-        requestset = getUtility(IShippingRequestSet)
-        self.selectedFlavour = request.get('flavourfilter')
-        if self.selectedFlavour == 'any':
+        self.selectedDistroReleaseName = request.get('releasefilter')
+        if self.selectedDistroReleaseName == 'any':
+            release = None
+        else:
+            release = ShipItDistroRelease.items[self.selectedDistroReleaseName]
+
+        self.selectedFlavourName = request.get('flavourfilter')
+        if self.selectedFlavourName == 'any':
             flavour = None
         else:
-            flavour = ShipItFlavour.items[self.selectedFlavour]
+            flavour = ShipItFlavour.items[self.selectedFlavourName]
 
         orderby = str(request.get('orderby'))
         self.recipient_text = request.get('recipient_text')
+
+        requestset = getUtility(IShippingRequestSet)
         results = requestset.search(
-            status=status, flavour=flavour, recipient_text=self.recipient_text,
-            orderBy=orderby)
+            status=status, flavour=flavour, distrorelease=release,
+            recipient_text=self.recipient_text, orderBy=orderby)
         self.batchNavigator = self._getBatchNavigator(results)
 
     def _getBatchNavigator(self, results):
