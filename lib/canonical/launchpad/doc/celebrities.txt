@@ -48,6 +48,14 @@ in the buildfarm
   >>> celebs.buildd_admin.id == buildd_admin.id
   True
 
+The bug_watch_updater celebrity updates the bug watches.
+
+  >>> bug_watch_updater = personset.getByName('bug-watch-updater')
+  >>> celebs.bug_watch_updater.__class__ == bug_watch_updater.__class__
+  True
+  >>> celebs.bug_watch_updater.id == bug_watch_updater.id
+  True
+
 
   TODO: add interface verification test.
         ask debonzi to add these in general.

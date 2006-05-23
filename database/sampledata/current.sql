@@ -1607,6 +1607,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (53, 'bugzilla-impor
 INSERT INTO emailaddress (id, email, person, status) VALUES (54, 'rosetta@launchpad.net', 30, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (55, 'salgado@ubuntu.com', 29, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (56, 'cprov@ubuntu.com', 28, 2);
+INSERT INTO emailaddress (id, email, person, status) VALUES (57, 'bugwatch@bugs.launchpad.net', 62, 1);
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -3250,6 +3251,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (59, 'Mirror Administrators', NULL, 1, 'Mirror Administrators', 'mirror-admins', NULL, '''admin'':3A ''mirror'':2A,4A ''administr'':5A ''mirror-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (60, 'Registry Administrators', NULL, 1, 'Launchpad Registry Administrators Team', 'registry', NULL, '''registri'':1A,2A ''administr'':3A', NULL, NULL, 1, NULL, '2006-04-06 10:17:11.833824', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (61, 'Launchpad Buildd Admins', NULL, 16, 'Buildd System administrators', 'launchpad-buildd-admins', NULL, '''admin'':4A,7A ''buildd'':3A,6A ''launchpad'':2A,5A ''launchpad-buildd-admin'':1A', NULL, NULL, 1, NULL, '2006-05-15 22:23:29.062603', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi, hide_email_addresses) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, '''bug'':2A,5A ''updat'':4A,7A ''watch'':3A,6A ''bug-watch-updat'':1A', NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -9436,6 +9438,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (94, 60, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (95, 17, 28);
 INSERT INTO teamparticipation (id, team, person) VALUES (96, 61, 16);
 INSERT INTO teamparticipation (id, team, person) VALUES (97, 61, 28);
+INSERT INTO teamparticipation (id, team, person) VALUES (98, 62, 62);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9672,6 +9675,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (48, 49, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (49, 50, 'https://wiki.ubuntu.com/', 'ValentinaCommissari');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'https://wiki.ubuntu.com/', 'HelgeKreutzmann');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.ubuntu.com/', 'NoPrivilegesPerson');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (52, 62, 'https://wiki.ubuntu.com/', 'BugWatchUpdater');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;
