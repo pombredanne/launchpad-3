@@ -6,9 +6,10 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
            'ShippingRequestPriority', 'IShipItReport', 'IShipItReportSet',
            'IShippingRequestAdmin', 'IShippingRequestEdit',
-           'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants']
+           'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
+           'IShippingRequestUser']
 
-from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
@@ -20,6 +21,10 @@ from canonical.launchpad.interfaces.validation import (
     validate_shipit_city, validate_shipit_addressline1,
     validate_shipit_addressline2, validate_shipit_organization,
     validate_shipit_province)
+from canonical.launchpad.fields import (
+    ShipItRecipientDisplayname, ShipItOrganization, ShipItCity,
+    ShipItProvince, ShipItAddressline1, ShipItAddressline2, ShipItPhone,
+    ShipItReason)
 
 from canonical.launchpad import _
 
@@ -46,6 +51,7 @@ class ShipItConstants:
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
     current_distrorelease = ShipItDistroRelease.DAPPER
+    max_size_for_auto_approval = 50
 
 
 class IEmptyDefaultChoice(IChoice):
@@ -104,8 +110,8 @@ class IShippingRequest(Interface):
     whocancelled = Int(
         title=_('Who Cancelled'), required=False, readonly=False)
 
-    reason = Text(
-        title=_('Want more CDs?'), required=False, readonly=False,
+    reason = ShipItReason(
+        title=_('Want more CDs?'), required=True, readonly=False,
         description=_("If none of the options above suit your needs, please "
                       "explain here how many CDs you want and why."))
 
@@ -113,31 +119,31 @@ class IShippingRequest(Interface):
         title=_('High Priority?'), required=False, readonly=False,
         description=_('Is this a high priority request?'))
 
-    recipientdisplayname = TextLine(
+    recipientdisplayname = ShipItRecipientDisplayname(
             title=_('Name'), required=True, readonly=False,
             constraint=validate_shipit_recipientdisplayname,
             description=_("The name of the person who's going to receive "
                           "this order.")
             )
-    addressline1 = TextLine(
+    addressline1 = ShipItAddressline1(
             title=_('Address'), required=True, readonly=False,
             constraint=validate_shipit_addressline1,
             description=_('The address to where the CDs will be shipped '
                           '(Line 1)')
             )
-    addressline2 = TextLine(
+    addressline2 = ShipItAddressline2(
             title=_(''), required=False, readonly=False,
             constraint=validate_shipit_addressline2,
             description=_('The address to where the CDs will be shipped '
                           '(Line 2)')
             )
-    city = TextLine(
+    city = ShipItCity(
             title=_('City/Town/etc'), required=True, readonly=False,
             constraint=validate_shipit_city,
             description=_('The City/Town/Village/etc to where the CDs will be '
                           'shipped.')
             )
-    province = TextLine(
+    province = ShipItProvince(
             title=_('State/Province'), required=False, readonly=False,
             constraint=validate_shipit_province,
             description=_('The State/Province/etc to where the CDs will be '
@@ -152,12 +158,12 @@ class IShippingRequest(Interface):
             title=_('Postcode'), required=False, readonly=False,
             description=_('The Postcode to where the CDs will be shipped.')
             )
-    phone = TextLine(
+    phone = ShipItPhone(
             title=_('Phone'), required=True, readonly=False,
             constraint=validate_shipit_phone,
             description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
             )
-    organization = TextLine(
+    organization = ShipItOrganization(
             title=_('Organization'), required=False, readonly=False,
             constraint=validate_shipit_organization,
             description=_('The Organization requesting the CDs')
@@ -184,6 +190,11 @@ class IShippingRequest(Interface):
         pending approval has self.approved == None.
         """
 
+    def isCustom():
+        """Return True if this order contains custom quantities of CDs of any
+        flavour.
+        """
+
     def getAllRequestedCDs():
         """Return all RequestedCDs of this ShippingRequest."""
 
@@ -192,9 +203,14 @@ class IShippingRequest(Interface):
         to the RequestedCDs objects of that architecture and flavour.
         """
 
-    def getQuantitiesByFlavour(flavour):
-        """Return a dictionary mapping ShipItArchitectures to the RequestedCDs
-        objects of that architecture and the given flavour.
+    def getQuantitiesOfFlavour(flavour):
+        """Return a dictionary mapping architectures to the quantity of 
+        requested CDs of the given flavour.
+        """
+
+    def containsCustomQuantitiesOfFlavour(flavour):
+        """Return True if this order contains custom quantities of CDs of the
+        given flavour.
         """
 
     def setQuantitiesBasedOnStandardRequest(request_type):
@@ -205,6 +221,17 @@ class IShippingRequest(Interface):
     def setQuantities(quantities):
         """Set the quantities of this request by either creating new
         RequestedCDs objects or changing existing ones.
+
+        :quantities: must be a dictionary mapping flavours to architectures
+                     and quantities, i.e.
+                     {ShipItFlavour.UBUNTU:
+                        {ShipItArchitecture.X86: quantity1,
+                         ShipItArchitecture.PPC: quantity2}
+                     }
+        """
+
+    def setRequestedQuantities(quantities):
+        """Set the requested quantities using the given values.
 
         :quantities: must be a dictionary mapping flavours to architectures
                      and quantities, i.e.
@@ -515,9 +542,9 @@ class IShipItReportSet(Interface):
         """Return all ShipItReport objects."""
 
 
-class IShippingRequestAdmin(Interface):
-    """A schema used to render and validate the page for shipit admins to
-    create/change ShippingRequests.
+class IShippingRequestQuantities(Interface):
+    """A schema used to render the quantity widgets for all different
+    architectures and flavours.
     """
 
     ubuntu_quantityx86 = Int(
@@ -541,6 +568,18 @@ class IShippingRequestAdmin(Interface):
     edubuntu_quantityx86 = Int(
         title=_('PC'), description=_('Quantity of Edubuntu PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
+
+
+class IShippingRequestUser(IShippingRequest, IShippingRequestQuantities):
+    """A schema used to render and validate the page for shipit users to
+    create/change ShippingRequests.
+    """
+
+
+class IShippingRequestAdmin(IShippingRequestQuantities):
+    """A schema used to render and validate the page for shipit admins to
+    create/change ShippingRequests.
+    """
 
     highpriority = IShippingRequest.get('highpriority')
     recipientdisplayname = IShippingRequest.get('recipientdisplayname')

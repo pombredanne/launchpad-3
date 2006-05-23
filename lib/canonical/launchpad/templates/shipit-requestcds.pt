@@ -95,14 +95,38 @@
 
     <div style="margin: 0em 5em" 
          tal:define="selected_id view/selected_standardrequest">
-      <div tal:repeat="request_type view/standardShipItRequests">
-        <label>
-          <input type="radio" name="ordertype"
-            tal:attributes="value request_type/id;
-                            checked python:request_type.id == selected_id">
-          <span tal:content="request_type/description" />
-        </label>
-      </div>
+      <tal:standard-request condition="not: view/should_show_custom_request">
+        <div tal:repeat="request_type view/standardShipItRequests">
+          <label>
+            <input type="radio" name="ordertype"
+              tal:attributes="value request_type/id;
+                              checked python:request_type.id == selected_id">
+            <span tal:content="request_type/description" />
+          </label>
+        </div>
+  
+        <p>You may also place a <a href="/customrequest">special request</a>.
+        Please note that these special requests require additional processing
+        and shipping time. We will consider special requests if you are a
+        teacher providing CDs to your students, if you are using the CDs at a
+        conference, or if you are involved in an organised event of some
+        sort.</p>
+      </tal:standard-request>
+
+      <tal:custom-request condition="view/should_show_custom_request">
+        <table>
+          <tr tal:repeat="widget view/quantity_widgets">
+            <span metal:use-macro="context/@@+shipit-macros/display_widget" />
+          </tr>
+        </table>
+
+        <div tal:define="widget nocall:view/reason_widget">
+          <label>Why are you requesting these CDs?</label>
+          <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
+        </div>
+
+        <input type="hidden" name="custom" value="1" />
+      </tal:custom-request>
     </div>
 
     <h3>Shipping address</h3>
@@ -120,7 +144,7 @@
     <metal:shipping_details
       use-macro="context/@@+shipit-macros/shipping_details" />
 
-    <div style="text-align: right">
+    <div style="width: 20em; text-align: right">
       <tal:current_request condition="view/current_order">
         <input type="submit" value="Change Request" name="FORM_SUBMIT"
                class="formControls"/>

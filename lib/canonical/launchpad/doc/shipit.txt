@@ -38,6 +38,16 @@ Let's create a new request for foo.bar@canonical.com.
   >>> quantities = {UBUNTU: {X86: 30, AMD64: 5, PPC: 2}}
   >>> request.setQuantities(quantities)
 
+A request can be a custom or a standard one; if the request contains custom
+quantities for any flavour, then that request is considered custom.
+
+  >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.KUBUNTU)
+  False
+  >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.UBUNTU)
+  True
+  >>> request.isCustom()
+  True
+
 We're not allowed to add a second request for the same recipient, while the
 existing one is not yet exported.
 
