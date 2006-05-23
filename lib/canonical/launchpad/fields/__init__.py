@@ -81,11 +81,10 @@ class PasswordField(Password):
 
 
 class UniqueField(TextLine):
-    """Base class for fields that are used by unique attributes."""
+    """Base class for fields that are used for unique attributes."""
 
     errormessage = _("%s is already taken")
     attribute = None
-    _marker = object()
 
     @property
     def _content_iface(self):
@@ -110,8 +109,9 @@ class UniqueField(TextLine):
         """
         TextLine._validate(self, input)
         assert self._content_iface is not None
+        _marker = object()
         if (self._content_iface.providedBy(self.context) and 
-            input == getattr(self.context, self.attribute, self._marker)):
+            input == getattr(self.context, self.attribute, _marker)):
             # The attribute wasn't changed.
             return
 
