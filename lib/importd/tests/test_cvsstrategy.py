@@ -48,6 +48,9 @@ class CvsStrategyTestCase(helpers.CscvsTestCase):
         self.cvspath = os.path.join(self.sandbox, 'importd@example.com',
                                     'test--branch--0', 'cvsworking')
 
+    def makeJob(self):
+        return self.job_helper.makeJob()
+
     def makeStrategy(self, job):
         strategy = JobStrategy.CVSStrategy()
         strategy.aJob = job
@@ -119,18 +122,34 @@ class TestGetCVSDirFunctional(CvsStrategyTestCase):
     def setUpCvsRevision(self):
         self.cscvs_helper.setUpCvsRevision()
 
+    def assertFileExists(self, path):
+        """Fail the test unless the file exists."""
+        self.assertTrue(
+            os.path.isfile(path), 'not a file: %r' % path)
+
+    def assertFileContentEqual(self, path, content):
+        """Fail the test unless the file exists and has the specified content.
+        """
+        self.assertFileExists(path)
+        a_file = open(path)
+        try:
+            self.assertEqual(a_file.read(), content)
+        finally:
+            a_file.close()
+
     def checkSourceFile(self, tree_path, revision):
         """Compare the contents of the source file to the expected value.
 
         :param tree_path: path of the tree to read the source file from.
         :param revision: revision of the sourcefile to expect.
         """
-        aFile = open(os.path.join(tree_path, 'file1'))
-        try:
-            data = aFile.read()
-        finally:
-            aFile.close()
-        self.assertEqual(data, self.cscvs_helper.sourcefile_data[revision])
+        file_path = os.path.join(tree_path, 'file1')
+        expected = self.cscvs_helper.sourcefile_data[revision]
+        self.assertFileContentEqual(file_path, expected)
+
+    def catalogPath(self, tree_path):
+        """Expected path name of the cscvs cache."""
+        return os.path.join(tree_path, 'CVS', 'Catalog.sqlite')
 
     def testGetCVSDir(self):
         # CVSStrategy.getCVSDir produces an updated CVS checkout and cache
@@ -138,8 +157,7 @@ class TestGetCVSDirFunctional(CvsStrategyTestCase):
         self.setUpCvsImport()
         self.callGetCVSDir()
         self.checkSourceFile(self.cvspath, 'import')
-        catalog_path = os.path.join(self.cvspath, "CVS", "Catalog.sqlite")
-        self.assertTrue(os.path.exists(catalog_path), 'catalog not created')
+        self.assertFileExists(self.catalogPath(self.cvspath))
         main_branch = self.strategy._tree.catalog().getBranch('MAIN')
         self.assertEqual(len(main_branch), 2)
         # run after cvs commit, tree and catalog must be updated
@@ -153,19 +171,57 @@ class TestGetCVSDirFunctional(CvsStrategyTestCase):
     def testRepositoryHasChanged(self):
         # CVSStrategy._repositoryHasChanged is False if on a fresh checkout
         self.setUpCvsImport()
-        self.strategy._cvsCheckOut(self.job, self.sandbox)
+        checkout_path = self.sandbox_helper.path('checkout')
+        self.strategy._cvsCheckOut(self.job, checkout_path)
         self.assertEqual(self.strategy._repositoryHasChanged(), False)
         tree = self.strategy._tree
+        self.assertEqual(tree.abspath(), checkout_path)
         # CVSStrategy._repositoryHasChanged is True if the job.repository is a
         # plausible non-existent repository.
-        job = self.job_helper.makeJob()
+        job = self.makeJob()
         job.repository = ':pserver:foo:aa@bad-host.example.com:/cvs'
         changed_strategy = self.makeStrategy(job)
         changed_strategy._tree = tree
         self.assertEqual(changed_strategy._repositoryHasChanged(), True)
 
-    # TODO: functional test reCheckOutCvsDir must reget, but not touch the
-    # Catalog.sqlite -- David Allouche 2006-05-19
+    def testCvsReCheckOut(self):
+        # CVSStrategy._cvsReCheckOut makes a fresh checkout from the
+        # job.repository while preserving Catalog.sqlite
+        self.setUpCvsImport()
+        checkout_path = self.sandbox_helper.path('checkout')
+        self.strategy._cvsCheckOut(self.job, checkout_path)
+        # _cvsCheckOut should not create the cscvs cache
+        catalog_path = self.catalogPath(checkout_path)
+        self.assertFalse(os.path.exists(catalog_path))
+        catalog_file = open(catalog_path, 'w')
+        print >> catalog_file, "Magic Cookie!"
+        catalog_file.close()
+        # remove the source file, and move the cvs repo so we can check that
+        # recheckout restores the file from the new repo
+        os.remove(os.path.join(checkout_path, 'file1'))
+        self.assertRaises(
+            AssertionError, self.checkSourceFile, checkout_path, 'import')
+        old_root = self.cscvs_helper.cvsroot
+        new_root = old_root + '-moved'
+        os.rename(old_root, new_root)
+        job = self.makeJob()
+        job.repository = new_root
+        # if _cvsCheckOut fails, the old checkout is untouched
+        class CheckOutFailure(Exception):
+            pass
+        def failingCheckOut(job, path):
+            raise CheckOutFailure
+        strategy = self.makeStrategy(job)
+        strategy._cvsCheckOut = failingCheckOut
+        self.assertRaises(
+            CheckOutFailure, strategy._cvsReCheckOut, job, checkout_path)
+        self.assertFalse(os.path.isfile(os.path.join(checkout_path, 'file1')))
+        self.assertFileContentEqual(catalog_path, "Magic Cookie!\n")
+        # recheckout with the new repo
+        strategy = self.makeStrategy(job)
+        strategy._cvsReCheckOut(job, checkout_path)
+        self.checkSourceFile(checkout_path, 'import')
+        self.assertFileContentEqual(catalog_path, "Magic Cookie!\n")
 
     # TODO: functional test _repositoryHasChanged
     # fails if the modules do not match    

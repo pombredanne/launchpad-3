@@ -4,10 +4,13 @@
 
 import os
 import shutil
+import tempfile
+
 import pybaz as arch
+from pybaz import Version
+
 import CVS
 import SCM
-from pybaz import Version
 import cscvs.arch
 
 
@@ -235,9 +238,31 @@ class CVSStrategy(CSCVSStrategy):
 
     def _cvsReCheckOut(self, job, path):
         """Make a new checkout to replace an existing one."""
-        self._tree=None
-        shutil.rmtree(path)
-        self._cvsCheckOut(job, path)
+        # Preserves the cscvs cache, and tries very hard to minimize the window
+        # where a failure would cause the cache to be lost
+        self._tree = None
+        catalog_name = 'CVS/Catalog.sqlite'
+        existing_catalog = os.path.join(path, catalog_name)
+        assert os.path.exists(existing_catalog), (
+            "no existing catalog: %r" % existing_catalog)
+        dirname, prefix = os.path.split(path)
+        temp_dir = tempfile.mkdtemp(prefix, '.tmp', dirname)
+        self._cvsCheckOut(job, temp_dir)
+        catalog_destination = os.path.dirname(
+            os.path.join(temp_dir, catalog_name))
+        assert os.path.isdir(catalog_destination), (
+            "no catalog destination: %r" % catalog_destination)
+        swap_dir = path + '.swap'
+        if os.path.isdir(swap_dir):
+            shutil.rmtree(swap_dir)
+        # start of critical section
+        os.rename(path, swap_dir)
+        os.rename(temp_dir, path)
+        catalog_orig = os.path.join(swap_dir, catalog_name)
+        catalog_dest = os.path.join(path, catalog_name)
+        os.rename(catalog_orig, catalog_dest)
+        # end of critical section
+        shutil.rmtree(swap_dir)
 
     def _cvsCheckOut(self, aJob, path):
         self.logger.debug("getting from CVS: %s %s" % (self.repository(), aJob.module))
