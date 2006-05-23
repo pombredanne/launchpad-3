@@ -36,7 +36,35 @@ class TestCvsStrategyCreation(unittest.TestCase):
         self.assertRaises(KeyError, JobStrategy.get, "CVS", "blargh")
 
 
-class TestCvsStrategy(helpers.CscvsTestCase):
+class CvsStrategyTestCase(helpers.CscvsTestCase):
+    """Common base for CVSStrategy test case classes."""
+
+    def setUp(self):
+        helpers.CscvsTestCase.setUp(self)
+        self.job = self.job_helper.makeJob()
+        self.logger = testutil.makeSilentLogger()
+        self.strategy = self.makeStrategy(self.job)
+        self.sandbox = self.sandbox_helper.sandbox_path
+        self.cvspath = os.path.join(self.sandbox, 'importd@example.com',
+                                    'test--branch--0', 'cvsworking')
+
+    def makeStrategy(self, job):
+        strategy = JobStrategy.CVSStrategy()
+        strategy.aJob = job
+        strategy.logger = self.logger
+        return strategy
+
+    def callGetCVSDir(self):
+        result = self.strategy.getCVSDir(self.job, self.sandbox)
+        self.assertEqual(result, self.cvspath)
+
+    def testGetCvsDirPath(self):
+        # CVSStrategy.getCvsDirPath is consistent with cvsTreePath
+        cvspath = self.strategy.getCVSDirPath(self.job, self.sandbox)
+        self.assertEqual(cvspath, self.cvspath)
+
+
+class TestCvsStrategy(CvsStrategyTestCase):
     """Test the functionality of CVSStrategy."""
 
     def assertPatchlevels(self, master, mirror):
@@ -51,28 +79,24 @@ class TestCvsStrategy(helpers.CscvsTestCase):
 
     def testGetWorkingDir(self):
         """test that the working dir is calculated & created correctly"""
-        strategy = JobStrategy.CVSStrategy()
-        job = self.job_helper.makeJob()
-        basedir = self.sandbox_helper.sandbox_path
         version = self.archive_manager_helper.makeVersion()
         workingdir = self.sandbox_helper.path(version.fullname)
-        self.assertEqual(strategy.getWorkingDir(job, basedir), workingdir)
+        self.assertEqual(
+            self.strategy.getWorkingDir(self.job, self.sandbox), workingdir)
         self.failUnless(os.path.exists(workingdir))
 
     def testSync(self):
         """test performing a sync"""
-        strategy = JobStrategy.CVSStrategy()
-        logger = testutil.makeSilentLogger()
+        strategy = self.strategy
+        logger = self.logger
         self.assertRaises(AssertionError, strategy.sync, None, ".", None)
         self.assertRaises(AssertionError, strategy.sync, ".", None, None)
         self.assertRaises(AssertionError, strategy.sync, None, None, logger)
-        aJob = self.job_helper.makeJob()
         self.setupSyncEnvironment()
         self.archive_manager.createMirror()
-        basedir = self.sandbox_helper.sandbox_path
         # test that the initial sync does not rollback to mirror
         self.assertPatchlevels(master=['base-0'], mirror=[])
-        strategy.sync(aJob, basedir, logger)
+        self.strategy.sync(self.job, self.sandbox, self.logger)
         self.assertPatchlevels(master=['base-0', 'patch-1'], mirror=[])
         # test that second sync does rollback to mirror
         self.mirrorBranch()
@@ -81,12 +105,12 @@ class TestCvsStrategy(helpers.CscvsTestCase):
         self.baz_tree_helper.setUpPatch()
         self.assertPatchlevels(master=['base-0', 'patch-1', 'patch-2'],
                                mirror=['base-0', 'patch-1'])
-        strategy.sync(aJob, ".", logger)
+        self.strategy.sync(self.job, ".", self.logger)
         self.assertPatchlevels(master=['base-0', 'patch-1'],
                                mirror=['base-0', 'patch-1'])
 
 
-class TestGetCVSDirFunctional(helpers.CscvsTestCase):
+class TestGetCVSDirFunctional(CvsStrategyTestCase):
     """Feature tests for CVS tree handling in CVSStrategy."""
 
     def setUpCvsImport(self):
@@ -108,20 +132,6 @@ class TestGetCVSDirFunctional(helpers.CscvsTestCase):
             aFile.close()
         self.assertEqual(data, self.cscvs_helper.sourcefile_data[revision])
 
-    def makeStrategy(self, job):
-        strategy = JobStrategy.CVSStrategy()
-        strategy.aJob = job
-        strategy.logger = testutil.makeSilentLogger()
-        return strategy
-
-    def callGetCVSDir(self):
-        job = self.job_helper.makeJob()
-        self.strategy = self.makeStrategy(job)
-        basedir = self.sandbox_helper.sandbox_path
-        self.cvspath = self.strategy.getCVSDirPath(job, basedir)
-        path = self.strategy.getCVSDir(job, basedir)
-        self.assertEqual(path, self.cvspath)
-
     def testGetCVSDir(self):
         # CVSStrategy.getCVSDir produces an updated CVS checkout and cache
         # initial run produces a checkout and a new catalog
@@ -133,6 +143,7 @@ class TestGetCVSDirFunctional(helpers.CscvsTestCase):
         main_branch = self.strategy._tree.catalog().getBranch('MAIN')
         self.assertEqual(len(main_branch), 2)
         # run after cvs commit, tree and catalog must be updated
+        self.strategy = self.makeStrategy(self.job)
         self.setUpCvsRevision()
         self.callGetCVSDir()
         self.checkSourceFile(self.cvspath, 'commit-1')
@@ -142,12 +153,9 @@ class TestGetCVSDirFunctional(helpers.CscvsTestCase):
     def testRepositoryHasChanged(self):
         # CVSStrategy._repositoryHasChanged is False if on a fresh checkout
         self.setUpCvsImport()
-        job = self.job_helper.makeJob()
-        strategy = self.makeStrategy(job)
-        basedir = self.sandbox_helper.sandbox_path
-        strategy._cvsCheckOut(job, basedir)
-        self.assertEqual(strategy._repositoryHasChanged(), False)
-        tree = strategy._tree
+        self.strategy._cvsCheckOut(self.job, self.sandbox)
+        self.assertEqual(self.strategy._repositoryHasChanged(), False)
+        tree = self.strategy._tree
         # CVSStrategy._repositoryHasChanged is True if the job.repository is a
         # plausible non-existent repository.
         job = self.job_helper.makeJob()
@@ -164,17 +172,11 @@ class TestGetCVSDirFunctional(helpers.CscvsTestCase):
     # -- David Allouche 2006-05-19
 
 
-class TestGetCVSDirUnits(helpers.CscvsTestCase):
+class TestGetCVSDirUnits(CvsStrategyTestCase):
     """Unit tests for CVS tree handling in CVSStrategy."""
 
     def setUp(self):
-        helpers.CscvsTestCase.setUp(self)
-        self.job = self.job_helper.makeJob()
-        self.basedir = self.sandbox_helper.sandbox_path
-        self.strategy = JobStrategy.CVSStrategy()
-        self.strategy.aJob = self.job
-        self.strategy.logger = testutil.makeSilentLogger()
-        self.cvspath = self.strategy.getCVSDirPath(self.job, self.basedir)
+        CvsStrategyTestCase.setUp(self)
         self.stub = StubDecorator()
         self.mock = MockDecorator()
         self.mock.override(self.strategy, [
@@ -183,7 +185,7 @@ class TestGetCVSDirUnits(helpers.CscvsTestCase):
 
     def callGetCVSDir(self):
         """Call getCVSDir and check the return value."""
-        value = self.strategy.getCVSDir(self.job, self.basedir)
+        value = self.strategy.getCVSDir(self.job, self.sandbox)
         self.assertEqual(value, self.cvspath)
 
     def testInitialCheckout(self):        

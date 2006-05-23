@@ -257,9 +257,6 @@ class CscvsHelper(object):
         cvsTree.commit(log="change 1")
         shutil.rmtree(sourcedir)
 
-    def setUpCvsToSyncWith(self):
-        """Setup a small CVS repository to sync with."""
-
     def doRevisionOne(self):
         """Import revision 1 from CVS to Bazaar."""
         archive_manager = self.archive_manager_helper.makeArchiveManager()
