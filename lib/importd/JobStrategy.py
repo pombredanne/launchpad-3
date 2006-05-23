@@ -215,10 +215,10 @@ class CVSStrategy(CSCVSStrategy):
 
         Useful to override for testing.
         """
-        # TODO: Fail if the module of the tree is different from ours,
-        # regardless of the value of the repositories.
-        # -- David Allouche 2006-05-19
         assert self._tree is not None
+        assert self._tree.module().name() == self.job.module, (
+            'checkout and job point to different modules: %r and %r'
+            % (self._tree.module().name(), self.job.module))
         return self._tree.repository() != self.repo()
 
     def _updateCscvsCache(self):

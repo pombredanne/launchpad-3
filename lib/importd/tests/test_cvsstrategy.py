@@ -54,6 +54,7 @@ class CvsStrategyTestCase(helpers.CscvsTestCase):
     def makeStrategy(self, job):
         strategy = JobStrategy.CVSStrategy()
         strategy.aJob = job
+        strategy.job = job
         strategy.logger = self.logger
         return strategy
 
@@ -178,11 +179,25 @@ class TestGetCVSDirFunctional(CvsStrategyTestCase):
         self.assertEqual(tree.abspath(), checkout_path)
         # CVSStrategy._repositoryHasChanged is True if the job.repository is a
         # plausible non-existent repository.
+        non_existent_repo = ':pserver:foo:aa@bad-host.example.com:/cvs'
         job = self.makeJob()
-        job.repository = ':pserver:foo:aa@bad-host.example.com:/cvs'
-        changed_strategy = self.makeStrategy(job)
-        changed_strategy._tree = tree
-        self.assertEqual(changed_strategy._repositoryHasChanged(), True)
+        job.repository = non_existent_repo
+        strategy = self.makeStrategy(job)
+        strategy._tree = tree
+        self.assertEqual(strategy._repositoryHasChanged(), True)
+        # CVSStrategy._repositoryHasChanged raises AssertionError if the
+        # job.module and the tree module are different, regardless of the the
+        # repository
+        job = self.makeJob()
+        job.module = 'changed'
+        strategy = self.makeStrategy(job)
+        strategy._tree = tree
+        self.assertRaises(AssertionError, strategy._repositoryHasChanged)
+        job.repository = non_existent_repo
+        strategy = self.makeStrategy(job)
+        strategy._tree = tree
+        self.assertRaises(AssertionError, strategy._repositoryHasChanged)
+        
 
     def testCvsReCheckOut(self):
         # CVSStrategy._cvsReCheckOut makes a fresh checkout from the
@@ -222,10 +237,6 @@ class TestGetCVSDirFunctional(CvsStrategyTestCase):
         strategy._cvsReCheckOut(job, checkout_path)
         self.checkSourceFile(checkout_path, 'import')
         self.assertFileContentEqual(catalog_path, "Magic Cookie!\n")
-
-    # TODO: functional test _repositoryHasChanged
-    # fails if the modules do not match    
-    # -- David Allouche 2006-05-19
 
 
 class TestGetCVSDirUnits(CvsStrategyTestCase):
