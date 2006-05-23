@@ -60,6 +60,13 @@
             link to it in order to keep track of its status. Malone
             synchronizes the status automatically for you.
       </p>
+      <script type="text/javascript"
+          tal:content="structure string: ${view/disable_bugwatch_widgets_js}">
+        <!--
+            Javascript to disable the bug watch widgets.
+          -->
+      </script>
+
 
     </div>
 

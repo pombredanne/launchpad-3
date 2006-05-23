@@ -240,7 +240,6 @@ Finally we can ask the upload to process itself.
   DEBUG: Verifying signature on .../data/ed_0.2-20.dsc
   DEBUG: Verifying source file ed_0.2-20.diff.gz
   DEBUG: Verifying binary ed_0.2-20_i386.deb
-  DEBUG: Performing overall file verification checks.
   DEBUG: Performing DSC verification.
   DEBUG: Verifying uploaded source package by unpacking it.
   DEBUG: Cleaning up source tree.
