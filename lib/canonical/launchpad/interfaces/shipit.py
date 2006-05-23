@@ -316,13 +316,20 @@ class IShippingRequestSet(Interface):
                recipient_text=None, include_cancelled=True):
         """Search for requests that match the given arguments."""
 
-    def generateShipmentSizeBasedReport():
+    def generateShipmentSizeBasedReport(current_release_only=False):
         """Generate a csv file with the size of shipments and the number of
         shipments of that size.
+
+        If current_release_only is True, then include only requests for CDs of
+        ShipItConstants.current_distrorelease.
         """
 
-    def generateCountryBasedReport():
-        """Generate a csv file with statiscs about orders placed by country."""
+    def generateCountryBasedReport(current_release_only=False):
+        """Generate a csv file with statiscs about orders placed by country.
+
+        If current_release_only is True, then include only requests for CDs of
+        ShipItConstants.current_distrorelease.
+        """
 
     def generateWeekBasedReport(start_date, end_date):
         """Generate a csv file with statistics about orders placed by week.
