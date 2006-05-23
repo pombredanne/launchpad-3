@@ -3317,7 +3317,7 @@ class ShipItDistroRelease(DBSchema):
     """The Distro Release, used only to link with ShippingRequest."""
 
     BREEZY = Item(1, """
-        Breezy Badger
+        5.10 (Breezy Badger)
 
         The Breezy Badger release.
         """)

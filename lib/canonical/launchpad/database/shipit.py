@@ -266,19 +266,26 @@ class ShippingRequestSet:
         except IndexError:
             return None
 
-    def search(self, status=ShippingRequestStatus.ALL, flavour=None, 
-               recipient_text=None, include_cancelled=False, 
+    def search(self, status=ShippingRequestStatus.ALL, flavour=None,
+               distrorelease=None, recipient_text=None, include_cancelled=False,
                orderBy=ShippingRequest.sortingColumns):
         """See IShippingRequestSet"""
         queries = []
-        clauseTables = []
+        clauseTables = set()
+
+        if distrorelease is not None:
+            queries.append("""
+                (RequestedCDs.request = ShippingRequest.id
+                 AND RequestedCDs.distrorelease = %s)
+                """ % sqlvalues(distrorelease))
+            clauseTables.add('RequestedCDs')
 
         if flavour is not None:
             queries.append("""
                 (RequestedCDs.request = ShippingRequest.id
                  AND RequestedCDs.flavour = %s)
                 """ % sqlvalues(flavour))
-            clauseTables.append('RequestedCDs')
+            clauseTables.add('RequestedCDs')
 
         if recipient_text:
             recipient_text = recipient_text.lower()

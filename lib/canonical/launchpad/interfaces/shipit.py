@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
     validate_shipit_city, validate_shipit_addressline1,
     validate_shipit_addressline2, validate_shipit_organization,
-    validate_shipit_province)
+    validate_shipit_province, validate_shipit_postcode)
 
 from canonical.launchpad import _
 
@@ -150,6 +150,7 @@ class IShippingRequest(Interface):
             )
     postcode = TextLine(
             title=_('Postcode'), required=False, readonly=False,
+            constraint=validate_shipit_postcode,
             description=_('The Postcode to where the CDs will be shipped.')
             )
     phone = TextLine(
