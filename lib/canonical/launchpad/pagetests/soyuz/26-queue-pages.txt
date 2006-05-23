@@ -41,6 +41,17 @@ Non-admin (sample person) attempts to act on queue items fails:
   ...You do not have permission to act on queue items...
 
 
+Check if non-admin are denied to see UNAPPROVED queue:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=1 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
+
 Visualise current queue, by default the NEW queue, only requires
 normal user auth:
 
@@ -68,17 +79,6 @@ Inspect the ACCEPTED queue, only requires normal user auth:
   ...The Accepted queue...is empty.
   ...
 
-Check if the non-admin are denied to see UNAPPROVED queue:
-
-  >>> print http(r"""
-  ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=1 HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: application/x-www-form-urlencoded
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...Sorry, you do not have permission to view this queue, we have excluded any packages from this listing...
-  ...
 
 Check admin access to UNAPPROVED queue:
 
