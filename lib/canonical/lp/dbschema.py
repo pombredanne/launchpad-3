@@ -79,6 +79,7 @@ __all__ = (
 'SourcePackageRelationships',
 'SourcePackageUrgency',
 'SpecificationDelivery',
+'SpecificationFilter',
 'SpecificationGoalStatus',
 'SpecificationPriority',
 'SpecificationSort',
