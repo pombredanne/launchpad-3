@@ -12,7 +12,8 @@
                                  order they should be diplayed in the UI.
   </tal:comment>
 
-  <table tal:attributes="cols view/ordered_architectures/count:len">
+  <table tal:attributes="cols view/ordered_architectures/count:len"
+         style="width: auto; margin-left: 0">
     <tr>
       <thead>
         <th>&nbsp;</th>
@@ -220,7 +221,7 @@
       </div>
     </div>
 
-    <div class="visualClear" id="body">
+    <div class="visualClear body">
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <tal:notifications define="notifications request/notifications"
                          condition="notifications">

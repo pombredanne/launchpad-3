@@ -160,9 +160,30 @@ All other requests are automatically approved.
    (16, u'jordi'), (17, u'jblack'), (18, u'ddaa')]
 
 
-It's also possible to search for requests containing CDs of a given flavour.
+It's also possible to search for requests containing CDs of a given flavour or
+of a given distrorelease (or both, obviously).
 
-  >>> ubuntu = ShipItFlavour.UBUNTU
+  >>> kubuntu = ShipItFlavour.KUBUNTU
+  >>> [(shipreq.recipient.displayname , shipreq.id)
+  ...  for shipreq in requestset.search(flavour=kubuntu)]
+  [(u'David Allouche', 5), (u'Daniel Henrique Debonzi', 7),
+   (u'Jordi Mallach', 16), (u'James Blackwell', 17)]
+
+  >>> from canonical.lp.dbschema import ShipItDistroRelease
+  >>> dapper = ShipItDistroRelease.DAPPER
+  >>> [(shipreq.recipient.displayname , shipreq.id)
+  ...  for shipreq in requestset.search(distrorelease=dapper)]
+  [(u'Robert Collins', 4), (u'No Privileges Person', 1),
+   (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
+   (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
+   (u'David Allouche', 18), (u'Jeff Waugh', 12), (u'Marilize Coetzee', 13),
+   (u'James Blackwell', 17), (u'Stuart Bishop', 2)]
+
+  >>> edubuntu = ShipItFlavour.EDUBUNTU
+  >>> [(shipreq.recipient.displayname , shipreq.id)
+  ...  for shipreq in requestset.search(distrorelease=dapper, flavour=edubuntu)]
+  [(u'Jordi Mallach', 16), (u'David Allouche', 18), (u'Marilize Coetzee', 13)]
+
 
 Another way of searching is by using any part of the recipient's name or the
 beginning of his email address.

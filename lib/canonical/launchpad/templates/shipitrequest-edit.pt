@@ -76,7 +76,7 @@
 
     <h2>Requested quantities</h2>
 
-    <table class="listing"
+    <table class="listing" style="width: auto; margin-left: 0"
            tal:attributes="cols view/ordered_architectures/count:len">
       <tr>
       <thead>
@@ -104,7 +104,7 @@
       tal:condition="not: view/contextCancelledOrShipped">
       <div style="text-align: right;" tal:condition="not: context/isDenied">
         <form name="denyrequest" action="" method="POST">
-          <input type="submit" value="Deny" name="DENY" />
+          <input type="submit" value="Deny &amp; Continue" name="DENY" />
         </form>
       </div>
     </tal:not-cancelled-or-shipped>
@@ -131,7 +131,7 @@
            tal:condition="not: view/contextCancelledOrShipped">
         <tal:block condition="not: context/cancelled">
           <tal:block condition="not: context/isApproved">
-            <input type="submit" value="Approve" name="APPROVE" />
+            <input type="submit" value="Approve &amp; Continue" name="APPROVE" />
           </tal:block>
           <tal:block condition="context/isApproved">
             <input type="submit" value="Change Approved Totals" name="CHANGE" />
