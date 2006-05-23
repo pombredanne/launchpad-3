@@ -50,6 +50,8 @@ class BranchToMirror:
             # If it isn't, we'll delete it and mirror from scratch.
             src_repo_format = self._source_branch.repository._format
             dest_repo_format = branch.repository._format
+            # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
+            # See bug 45277.
             if (src_repo_format.get_format_description() !=
                 dest_repo_format.get_format_description()):
                     shutil.rmtree(self.dest)

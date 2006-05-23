@@ -153,6 +153,8 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
                          mirrored_branch.last_revision())
 
         # Assert that the mirrored branch is in source's format
+        # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
+        # See bug 45277.
         self.assertEqual(
             self.repository_format.get_format_description(),
             mirrored_branch.repository._format.get_format_description())
