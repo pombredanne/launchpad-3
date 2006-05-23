@@ -197,4 +197,16 @@ tasks.
     >>> old_karma == new_karma
     True
 
+Finally, let's make sure that bug notifications were added:
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> for bug_notification in BugNotification.select():
+    ...     print "Bug %s changed by %s:" % (
+    ...         bug_notification.bug.id,
+    ...         bug_notification.message.owner.displayname)
+    ...     print bug_notification.message.text_contents
+    Bug 3 changed by Bug Watch Updater:
+    ** Changed in: mozilla-firefox (Debian)
+           Status: Unconfirmed => Confirmed
+
     >>> event_listener.unregister()
