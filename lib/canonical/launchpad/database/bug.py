@@ -142,20 +142,6 @@ class Bug(SQLBase):
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 
-    def getSubscribersFromDuplicates(self):
-        """See IBug."""
-        if self.private:
-            # There are never any implicit subscribers to private bugs!
-            return []
-
-        subscribers_from_dupes = set()
-        for dupe in self.duplicates:
-            subscribers_from_dupes.update(dupe.direct_subscribers)
-
-        subscribers_from_dupes.difference_update(self.direct_subscribers)
-
-        return subscribers_from_dupes
-
     @property
     def direct_subscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
@@ -174,12 +160,43 @@ class Bug(SQLBase):
 
         indirect_subscribers = set()
 
-        # Assignees are indirect subscribers.
         for bugtask in self.bugtasks:
+            # Assignees are indirect subscribers.
             if bugtask.assignee:
                 indirect_subscribers.add(bugtask.assignee)
 
-        return indirect_subscribers
+            # Bug contacts are indirect subscribers.
+            if (IDistroBugTask.providedBy(bugtask) or
+                IDistroReleaseBugTask.providedBy(bugtask)):
+                distribution = (
+                    bugtask.distribution or
+                    bugtask.distrorelease.distribution)
+
+                if distribution.bugcontact:
+                    indirect_subscribers.add(distribution.bugcontact)
+
+                if bugtask.sourcepackagename:
+                    sourcepackage = distribution.getSourcePackage(
+                        bugtask.sourcepackagename)
+                    indirect_subscribers.update(
+                        pbc.bugcontact for pbc in sourcepackage.bugcontacts)
+            else:
+                product = bugtask.product
+                if product.bugcontact:
+                    indirect_subscribers.add(product.bugcontact)
+                else:
+                    indirect_subscribers.add(product.owner)
+
+        # Subscribers, whether direct or indirect, from duplicate bugs become
+        # indirect subscribers of this bug.
+        for dupe in self.duplicates:
+            indirect_subscribers.update(dupe.direct_subscribers)
+            indirect_subscribers.update(dupe.indirect_subscribers)
+
+        # Direct subscriptions always take precedence over indirect
+        # subscriptions.
+        direct_subscribers = set(self.direct_subscribers)
+        return list(indirect_subscribers.difference(direct_subscribers))
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
@@ -187,57 +204,14 @@ class Bug(SQLBase):
         for direct_subscriber in self.direct_subscribers:
             emails.update(contactEmailAddresses(direct_subscriber))
 
-        # Add subscribers of duplicates of this bug.
-        for dupe_subscriber in self.getSubscribersFromDuplicates():
-            emails.update(contactEmailAddresses(dupe_subscriber))
 
-        # Add bug contacts implicitly to public bugs.
         if not self.private:
-            for bugtask in self.bugtasks:
-                if IUpstreamBugTask.providedBy(bugtask):
-                    product = bugtask.product
-                    # Add product bug and security contacts to recipient address
-                    # list.
-                    if product.bugcontact:
-                        emails.update(
-                            contactEmailAddresses(product.bugcontact))
-                    else:
-                        # Make sure that at least someone upstream knows
-                        # about this bug. :)
-                        emails.update(contactEmailAddresses(product.owner))
-
-                    if self.security_related and product.security_contact:
-                        emails.update(
-                            contactEmailAddresses(product.security_contact))
-                else:
-                    distribution = None
-                    if IDistroBugTask.providedBy(bugtask):
-                        distribution = bugtask.distribution
-                    else:
-                        distribution = bugtask.distrorelease.distribution
-
-                    assert distribution is not None, (
-                        "Expected value for distribution when looking up bug "
-                        "contacts. Got None instead.")
-
-                    # Add bug and security contacts to the recipient list.
-                    if distribution.bugcontact:
-                        emails.update(
-                            contactEmailAddresses(distribution.bugcontact))
-                    if self.security_related and distribution.security_contact:
-                        emails.update(
-                            contactEmailAddresses(
-                                distribution.security_contact))
-
-                    # Add package bug contacts to the recipient list.
-                    if bugtask.sourcepackagename:
-                        package = distribution.getSourcePackage(
-                            bugtask.sourcepackagename)
-                        if package.bugcontacts:
-                            for pkg_bugcontact in package.bugcontacts:
-                                emails.update(
-                                    contactEmailAddresses(
-                                        pkg_bugcontact.bugcontact))
+            for indirect_subscriber in self.indirect_subscribers:
+                emails.update(contactEmailAddresses(indirect_subscriber))
+        else:
+            assert self.indirect_subscribers == [], (
+                "Indirect subscribers found on private bug. "
+                "A private bug should never have implicit subscribers!")
 
         return list(emails)
 
