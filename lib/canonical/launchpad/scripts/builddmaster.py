@@ -1344,7 +1344,12 @@ class BuilddMaster:
         """Dispach Jobs according specific procesor"""
         self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s))"
                                % (proc.name, len(queueItems)))
-        builders = notes[proc]["builders"]
+        try:
+            builders = notes[proc]["builders"]
+        except KeyError:
+            self._logger.debug("No builder found.")
+            return
+
         builder = builders.firstAvailable()
 
         while builder is not None and len(queueItems) > 0:

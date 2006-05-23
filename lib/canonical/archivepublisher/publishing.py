@@ -2,6 +2,8 @@
 
 import os
 
+from zope.component import getUtility
+
 from canonical.lp.dbschema import ( PackagePublishingStatus,
     PackagePublishingPriority, PackagePublishingPocket,
     DistributionReleaseStatus)
@@ -9,8 +11,9 @@ from canonical.lp.dbschema import ( PackagePublishingStatus,
 from StringIO import StringIO
 
 from canonical.librarian.client import LibrarianClient
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.archivepublisher.pool import (
-    AlreadyInPool, NotInPool, PoolFileOverwriteError)
+    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
 from canonical.database.constants import nowUTC
 
 from md5 import md5
@@ -32,7 +35,7 @@ def package_name(filename):
     """Extract a package name from a debian package filename."""
     return (os.path.basename(filename).split("_"))[0]
 
-MEGABYTE=1024*1024
+MEGABYTE = 1024*1024
 
 def filechunks(file, chunk_size=4*MEGABYTE):
     """Return an iterator which reads chunks of the given file."""
@@ -113,17 +116,23 @@ class Publisher(object):
         # fetch from the library purely by aliasid (since that utterly
         # unambiguously identifies the file that we want)
         try:
-            outf = self._diskpool.openForAdd(component, source, filename)
-        except AlreadyInPool:
-            pass
-        else:
-            self.debug("Adding %s %s/%s from library" %
-                       (component, source, filename))
-            inf = self._library.getFileByAlias(alias)
-            for chunk in filechunks(inf):
-                outf.write(chunk)
-            outf.close()
-            inf.close()
+            self._diskpool.checkBeforeAdd(component, source, filename,
+                                          alias.content.sha1)
+        except NeedsSymlinkInPool, info:
+            self._diskpool.makeSymlink(component, source, filename)
+            return
+        except AlreadyInPool, info:
+            return
+
+        self.debug("Adding %s %s/%s from library" %
+                   (component, source, filename))
+
+        outf = self._diskpool.openForAdd(component, source, filename)
+        alias.open()
+        for chunk in filechunks(alias):
+            outf.write(chunk)
+        outf.close()
+        alias.close()
 
     def publish(self, records, isSource = True):
         """records should be an iterable of indexables which provide the
@@ -143,30 +152,26 @@ class Publisher(object):
             try:
                 self._publish(source, component, filename,
                               pubrec.libraryfilealias)
-            except PoolFileOverwriteError:
+            except PoolFileOverwriteError, info:
                 # Skip publishing records which tries to overwrite
                 # a file in the pool and warn the user about it.
                 # Any further actions will require serious discussion
                 self._logger.error(
                     "System is trying to overwrite %s/%s (%s), "
-                    "skipping publishing record."
-                    % (component, filename, pubrec.libraryfilealias))
+                    "skipping publishing record. (%s)"
+                    % (component, filename, pubrec.libraryfilealias, info))
                 continue
-            # XXX: if you used a variable for
-            # pubrec.sourcepackagepublishing, the code below would flow
-            # a lot nicer. -- kiko, 2005-09-23
+
             if isSource:
-                if pubrec.sourcepackagepublishing.status == \
-                   PackagePublishingStatus.PENDING:
-                    pubrec.sourcepackagepublishing.status = \
-                        PackagePublishingStatus.PUBLISHED
-                    pubrec.sourcepackagepublishing.datepublished = nowUTC
+                pub_sp = pubrec.sourcepackagepublishing
+                if pub_sp.status == PackagePublishingStatus.PENDING:
+                    pub_sp.status = PackagePublishingStatus.PUBLISHED
+                    pub_sp.datepublished = nowUTC
             else:
-                if pubrec.binarypackagepublishing.status == \
-                   PackagePublishingStatus.PENDING:
-                    pubrec.binarypackagepublishing.status = \
-                        PackagePublishingStatus.PUBLISHED
-                    pubrec.binarypackagepublishing.datepublished = nowUTC
+                pub_bp = pubrec.binarypackagepublishing
+                if pub_bp.status == PackagePublishingStatus.PENDING:
+                    pub_bp.status = PackagePublishingStatus.PUBLISHED
+                    pub_bp.datepublished = nowUTC
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):

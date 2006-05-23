@@ -92,8 +92,8 @@ class SourcePackageFilePublishing(SQLBase):
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
          foreignKey='SecureSourcePackagePublishingHistory')
 
-    libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
-                              default=None, notNull=True)
+    libraryfilealias = ForeignKey(
+        dbName='libraryfilealias', foreignKey='LibraryFileAlias')
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, default=None,
