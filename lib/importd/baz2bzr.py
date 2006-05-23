@@ -52,12 +52,21 @@ class BatchProgress(DummyProgress):
             assert current is not None
             print '%d/%d %s' % (current, total, msg)
 
+    def note(self, fmt_string, *args, **kwargs):
+        self.update(fmt_string % args)
+
 
 class BatchUIFactory(SilentUIFactory):
     """A UI Factory that prints line-by-line progress."""
 
     def progress_bar(self):
         return BatchProgress()
+
+    def nested_progress_bar(self):
+        if self._progress_bar_stack is None:
+            self._progress_bar_stack = bzrlib.progress.ProgressBarStack(
+                klass=BatchProgress)
+        return self._progress_bar_stack.get_nested()
 
 
 def setup_ui_factory(quiet):

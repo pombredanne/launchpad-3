@@ -359,6 +359,7 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
     # be killed by buildbot). Not too much to avoid hitting the string
     # concatenation bug in buildbot. One line per revision is good.
     expected_lines = [
+        'importing importd@example.com/test--branch--0 into bzrworking',
         '0/2 revisions',
         '1/2 revisions',
         '2/2 revisions',
