@@ -74,11 +74,9 @@ def bugtask_modified(bugtask, event):
         elif new_status == BugTaskStatus.CONFIRMED:
             user.assignKarma('bugaccepted')
 
-    if task_delta.severity is not None:
-        event.user.assignKarma('bugtaskseveritychanged')
+    if task_delta.importance is not None:
+        event.user.assignKarma('bugtaskimportancechanged')
 
-    if task_delta.priority is not None:
-        event.user.assignKarma('bugtaskprioritychanged')
 
 def translation_import_queue_entry_modified(entry, event):
     """Check changes made to <entry> and assign karma to user if needed."""

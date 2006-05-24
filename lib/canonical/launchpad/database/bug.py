@@ -54,6 +54,7 @@ class Bug(SQLBase):
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
     communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
                                         notNull=True, default=DEFAULT)
@@ -240,8 +241,12 @@ class Bug(SQLBase):
             if bug_branch.branch == branch:
                 return bug_branch
 
-        return BugBranch(
+        bug_branch = BugBranch(
             branch=branch, bug=self, whiteboard=whiteboard)
+
+        notify(SQLObjectCreatedEvent(bug_branch))
+
+        return bug_branch
 
     def linkCVE(self, cve, user=None):
         """See IBug."""
@@ -285,13 +290,13 @@ class BugSet:
             bug = Bug.selectOneBy(name=bugid)
             if bug is None:
                 raise NotFoundError(
-                    "Unable to locate bug with ID %s" % str(bugid))
+                    "Unable to locate bug with ID %s" % bugid)
         else:
             try:
                 bug = self.get(bugid)
             except ValueError:
                 raise NotFoundError(
-                    "Unable to locate bug with nickname %s" % str(bugid))
+                    "Unable to locate bug with nickname %s" % bugid)
         return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):

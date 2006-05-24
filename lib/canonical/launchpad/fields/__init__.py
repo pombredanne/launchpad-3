@@ -4,7 +4,6 @@ from zope.interface import implements
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces.validation import valid_password
 
 
 # Field Interfaces
@@ -27,6 +26,9 @@ class IBugField(IField):
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
+
+class IStrippedTextLine(ITextLine):
+    """A field with leading and trailing whitespaces stripped."""
 
 
 # Title
@@ -63,25 +65,26 @@ class BugField(Field):
     implements(IBugField)
 
 
-class StrippingTextLine(TextLine):
-
-    def fromUnicode(self, str):
-        return TextLine.fromUnicode(self, str.strip())
+class StrippedTextLine(TextLine):
+    implements(IStrippedTextLine)
 
 
 class PasswordField(Password):
     implements(IPasswordField)
 
     def _validate(self, value):
+        # Local import to avoid circular imports
+        from canonical.launchpad.interfaces.validation import valid_password
         if not valid_password(value):
             raise LaunchpadValidationError(_(
                 "The password provided contains non-ASCII characters."))
 
 
-class ContentNameField(TextLine):
-    """Base class for fields that are used by unique 'name' attributes."""
+class UniqueField(TextLine):
+    """Base class for fields that are used for unique attributes."""
 
-    errormessage = _("%s is already taken.") 
+    errormessage = _("%s is already taken")
+    attribute = None
 
     @property
     def _content_iface(self):
@@ -91,26 +94,38 @@ class ContentNameField(TextLine):
         """
         return None
 
-    def _getByName(self, name):
-        """Return the content object with the given name.
+    def _getByAttribute(self, input):
+        """Return the content object with the given attribute.
 
         Override this in subclasses.
         """
         raise NotImplementedError
 
-    def _validate(self, name):
-        """Raise a LaunchpadValidationError if the name is not available.
+    def _validate(self, input):
+        """Raise a LaunchpadValidationError if the attribute is not available.
 
-        A name is not available if it's already in use by another object of
-        this same context.
+        A attribute is not available if it's already in use by another object 
+        of this same context. The 'input' should be valid as per TextLine.
         """
-        TextLine._validate(self, name)
+        TextLine._validate(self, input)
         assert self._content_iface is not None
+        _marker = object()
         if (self._content_iface.providedBy(self.context) and 
-            name == getattr(self.context, self.__name__)):
-            # The name wasn't changed.
+            input == getattr(self.context, self.attribute, _marker)):
+            # The attribute wasn't changed.
             return
 
-        contentobj = self._getByName(name)
+        contentobj = self._getByAttribute(input)
         if contentobj is not None:
-            raise LaunchpadValidationError(self.errormessage % name)
+            raise LaunchpadValidationError(self.errormessage % input)
+
+
+class ContentNameField(UniqueField):
+    """Base class for fields that are used by unique 'name' attributes."""
+
+    attribute = 'name'
+
+    def _getByAttribute(self, name):
+        """Return the content object with the given name."""
+        return self._getByName(name)
+

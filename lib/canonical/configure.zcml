@@ -20,6 +20,16 @@
     <browser:skin
         name="shipit"
         interface="canonical.launchpad.layers.ShipItLayer"/>
+    <browser:skin
+        name="shipit-ubuntu"
+        interface="canonical.launchpad.layers.ShipItUbuntuLayer"/>
+    <browser:skin
+        name="shipit-kubuntu"
+        interface="canonical.launchpad.layers.ShipItKUbuntuLayer"/>
+    <browser:skin
+        name="shipit-edubuntu"
+        interface="canonical.launchpad.layers.ShipItEdUbuntuLayer"/>
+
     <!-- Set via overrides -->
     <browser:defaultSkin
         name="launchpad" />

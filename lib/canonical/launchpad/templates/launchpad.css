@@ -665,29 +665,25 @@ tr.highlight {
   vertical-align: bottom;
 }
 
-/* Bug Status, Severity, Priority markers */
+/* Bug status and importance markers: */
 .statusUnconfirmed { color: #993300; }
 .statusConfirmed   { color: Red; }
 .statusFixed       { color: Black; }
 .statusReleased    { color: Green; }
 .statusRejected    { color: Gray; }
 
-.severityCritical { color: Red; }
-.severityMajor    { color: #ff6600; }
-.severityNormal   { color: Green; }
-.severityMinor    { color: Black; }
-.severityWishlist { color: Blue; }
+.importanceCritical  { color: Red; }
+.importanceHigh      { color: #ff6600; }
+.importanceMedium    { color: Green; }
+.importanceLow       { color: Black; }
+.importanceWishlist  { color: Blue; }
+.importanceUntriaged { color: #999; }
 
-.severityCriticalRow { background-color: #E1A1A1; }
-.severityMajorRow    { background-color: #D9C08F; }
-.severityNormalRow   { background-color: #9FD98F; }
-.severityMinorRow    { background-color: #A5AFC8; }
-.severityWishlistRow { background-color: #8FA9D9; }
-
-.priorityHigh    { color: Red; }
-.priorityMedium  { color: Orange; }
-.priorityLow     { color: Black; }
-.priorityWontfix { color: Gray; }
+.importanceCriticalRow { background-color: #E1A1A1; }
+.importanceMajorRow    { background-color: #D9C08F; }
+.importanceMediumRow   { background-color: #9FD98F; }
+.importanceMinorRow    { background-color: #A5AFC8; }
+.importanceWishlistRow { background-color: #8FA9D9; }
 
 /* Spec definition, delivery and priority */
 

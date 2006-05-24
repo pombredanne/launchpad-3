@@ -66,7 +66,7 @@ spider -- StuartBishop 20050822
 
 >>> check("/rosetta/+about")
 
->>> check("/shipit/robots.txt")
+>>> check("/shipit-ubuntu/robots.txt")
 
 >>> check("/bounties")
 >>> check("/bounties/foomatic-widgets")
@@ -199,6 +199,7 @@ one.)
 
 >>> check_redirect("/products/firefox/+bug")
 >>> check("/products/firefox/+bug/1", auth=True)
+>>> check_not_found("/products/firefox/+bug/é")
 >>> check("/products/firefox/+bug/1/+edit", auth=True)
 >>> check("/products/firefox/+bug/1/+secrecy", auth=True)
 >>> check("/products/firefox/+bug/1/+duplicate", auth=True)
@@ -206,7 +207,6 @@ one.)
 >>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
 >>> check("/products/firefox/+bug/1/+addattachment", auth=True)
 >>> check("/products/firefox/+bug/1/+addurl", auth=True)
->>> check("/products/firefox/+bug/1/+addwatch", auth=True)
 >>> check("/products/firefox/+bug/1/+activity", auth=True)
 
 Viewing a bug in the context of an upstream where the bug has not yet
@@ -325,6 +325,7 @@ And this is for a person:
 >>> check("/people/name12/+branch/gnome-terminal/pushed/+lifecycle", auth=True)
 >>> check("/people/name16/+karma")
 >>> check_redirect("/people/name16/+bugs")
+>>> check_not_found("/people/name16/+bugs/1")
 >>> check("/people/name16/+reportedbugs")
 >>> check("/people/name16/+assignedbugs")
 >>> check("/people/name16/+packagebugs")
@@ -367,6 +368,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("//@@")
 >>> check("/rosetta/@@")
 >>> check("//rosetta/@@")
+>>> check_not_found("/rosetta/groups/testing-translation-team/pt_br")
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")

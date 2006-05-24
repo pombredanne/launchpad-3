@@ -92,3 +92,5 @@ Footnotes
   for Cprov (ubuntu team and launchpad-buildd-admin)
   ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
 
+  for Marilize Coetzee (shipit admin)
+  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0

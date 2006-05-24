@@ -8,7 +8,7 @@ from canonical.launchpad.scripts.supermirror.jobmanager import (
 from canonical.authserver.client.branchstatus import BranchStatusClient
 
 
-def mirror(managerClass=JobManager, urllibOpener=urllib.urlopen):
+def mirror(managerClass=JobManager):
     """Mirror all current branches that need to be mirrored."""
     mymanager = managerClass()
     client = BranchStatusClient()
@@ -19,9 +19,7 @@ def mirror(managerClass=JobManager, urllibOpener=urllib.urlopen):
         return 0
 
     try:
-        branchdata = urllibOpener(config.supermirror.branchlistsource)
-        for branch in mymanager.branchStreamToBranchList(branchdata, client):
-            mymanager.add(branch)
+        mymanager.addBranches(client)
         mymanager.run()
     finally:
         mymanager.unlock()
