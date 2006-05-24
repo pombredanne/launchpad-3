@@ -43,7 +43,7 @@
           <br />
 
           <form name="login" method="POST">
-            <table>
+            <table style="max-width: 20em; margin: 0 auto;">
               <tr>
                 <th>
                   <label for="email">E-mail address:</label>

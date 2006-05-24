@@ -56,8 +56,9 @@
   </tal:comment>
 
   <th>
-    <label tal:attributes="for widget/name" tal:content="widget/label">
-      Label:
+    <label tal:attributes="for widget/name">
+      <tal:label replace="widget/label">Label</tal:label
+      ><tal:colon condition="widget/label">:</tal:colon>
     </label>
   </th>
   <td>
@@ -97,7 +98,7 @@
       phone_widget
   </tal:comment>
 
-  <table>
+  <table style="margin: 0 auto;">
     <tr>
       <tal:block tal:define="widget nocall:view/recipientdisplayname_widget">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />

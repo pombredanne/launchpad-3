@@ -108,18 +108,16 @@
 
     <h3>Shipping address</h3>
 
-    <div class="informational message">
-      Please note that CDs for <span tal:replace="view/flavour/title" />
-      6.06 LTS will begin shipping in early June. Once shipping starts, it
-      can take up to 6 weeks for you to receive delivery.
-    </div>
-
-    <p><strong>Please Double check your address below before submitting your
-      request.</strong>
+    <p>
+      CDs for <span tal:replace="view/flavour/title" />
+      6.06 LTS will begin shipping in <strong>early June</strong>.
+      Once shipping starts, delivery can take up to six weeks.
     </p>
 
     <metal:shipping_details
       use-macro="context/@@+shipit-macros/shipping_details" />
+
+    <p>Please double-check your address before submitting your request.</p>
 
     <div style="margin-left: 20em">
       <tal:current_request condition="view/current_order">
