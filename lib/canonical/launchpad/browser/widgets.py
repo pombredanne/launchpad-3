@@ -8,12 +8,12 @@ __all__ = ['TitleWidget', 'SummaryWidget', 'DescriptionWidget',
            'ShipItRecipientDisplaynameWidget', 'ShipItOrganizationWidget',
            'ShipItCityWidget', 'ShipItProvinceWidget',
            'ShipItAddressline1Widget', 'ShipItAddressline2Widget',
-           'ShipItPhoneWidget', 'ShipItReasonWidget']
+           'ShipItPhoneWidget', 'ShipItReasonWidget', 'ShipItQuantityWidget']
 
 from zope.interface import implements
 
 from zope.schema.interfaces import IText
-from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget, IntWidget
 
 class TitleWidget(TextWidget):
     """A launchpad title widget; a little wider than a normal Textline."""
@@ -74,3 +74,9 @@ class ShipItReasonWidget(TextAreaWidget):
     """See IShipItReason"""
     width = 40
     height = 4
+
+
+class ShipItQuantityWidget(IntWidget):
+    """See IShipItQuantity"""
+    width = 8
+    displayMaxWidth = 3

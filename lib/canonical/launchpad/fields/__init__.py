@@ -1,5 +1,5 @@
-from zope.schema import Password, Text, TextLine, Field
-from zope.schema.interfaces import IPassword, IText, ITextLine, IField
+from zope.schema import Password, Text, TextLine, Field, Int
+from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
 from zope.interface import implements
 
 from canonical.launchpad import _
@@ -85,6 +85,9 @@ class IShipItReason(ITextLine):
     This is used so we can register a special widget with width constraints to
     this field. The size constraints are a requirement of the shipping company.
     """
+
+class IShipItQuantity(IInt):
+    """A field used for the quantity of CDs on shipit forms."""
 
 # Title
 # A field to capture a launchpad object title
@@ -215,4 +218,8 @@ class ShipItPhone(TextLine):
 
 class ShipItReason(Text):
     implements(IShipItReason)
+
+
+class ShipItQuantity(Int):
+    implements(IShipItQuantity)
 

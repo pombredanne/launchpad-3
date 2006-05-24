@@ -111,4 +111,12 @@
         permission="zope.Public"
         />
 
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.IShipItQuantity"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.launchpad.browser.ShipItQuantityWidget"
+        permission="zope.Public"
+        />
+
 </configure>

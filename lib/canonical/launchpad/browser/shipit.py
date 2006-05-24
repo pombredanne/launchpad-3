@@ -245,8 +245,11 @@ class ShipItRequestView(GeneralFormView):
         return self._renderForm()
 
     def renderStandardrequestForm(self):
+        # XXX: Need to do something about this redirect here 'cause we want to
+        # provide a link for people to go back from the custom request page to
+        # the standard one.
         if self.current_order and self.currentOrderIsCustom():
-            self.request.response.redirect('/customrequest')
+            self.request.response.redirect('/specialrequest')
         self.should_show_custom_request = False
         return self._renderForm()
 
@@ -450,7 +453,7 @@ class ShipItRequestView(GeneralFormView):
         if current_order.isAwaitingApproval():
             self._notifyShipItAdmins(current_order)
 
-        # We might be in the /customrequest page and the user might have
+        # We might be in the /specialrequest page and the user might have
         # changed the quantities to something that matches a standard request.
         # If that's the case, then redirect the user back to /myrequest.
         if self.current_order and not self.currentOrderIsCustom():

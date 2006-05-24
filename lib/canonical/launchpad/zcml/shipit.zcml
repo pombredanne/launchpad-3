@@ -134,12 +134,14 @@
         class="canonical.launchpad.browser.ShipItRequestView"
         permission="launchpad.AnyPerson"
         attribute="renderCustomrequestForm"
-        name="customrequest">
+        name="specialrequest">
     </browser:page>
 
     <!-- XXX: This needs to be moved into a normal browser:page declaration,
-    like customrequest/myrequest, to avoid having all these definitions of the
-    widgets' lenghts. -->
+    like specialrequest/myrequest, to avoid having all these definitions of the
+    widgets' lengths. 
+    Guilherme Salgado, 2006-05-24
+    -->
     <browser:generalform
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShippingRequestAdminView"

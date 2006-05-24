@@ -1,17 +1,17 @@
-  Let's test the /customrequest page, where users place custom requests and/or
+  Let's test the /specialrequest page, where users place custom requests and/or
   change existing ones.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://localhost/shipit-ubuntu/customrequest')
+  >>> browser.open('http://localhost/shipit-ubuntu/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-ubuntu/customrequest'
+  'http://localhost/shipit-ubuntu/specialrequest'
 
   First of all, we'll make sure a request is accepted only if all required 
   fields are filled.
 
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/customrequest'
+  'http://localhost/shipit-ubuntu/specialrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -56,7 +56,7 @@
   >>> browser.getControl(name='field.phone').value = '43242442'
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/customrequest'
+  'http://localhost/shipit-ubuntu/specialrequest'
 
   >>> browser.getControl(name='field.reason').value
   ''
@@ -80,7 +80,7 @@
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '10'
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/customrequest'
+  'http://localhost/shipit-ubuntu/specialrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
@@ -153,9 +153,9 @@
 
   For Ubuntu, we ship all three architectures (X86, AMD64, PPC)
 
-  >>> browser.open('http://localhost/shipit-ubuntu/customrequest')
+  >>> browser.open('http://localhost/shipit-ubuntu/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-ubuntu/customrequest'
+  'http://localhost/shipit-ubuntu/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>
@@ -166,9 +166,9 @@
 
   For Kubuntu, we ship only X86 and AMD64.
 
-  >>> browser.open('http://localhost/shipit-kubuntu/customrequest')
+  >>> browser.open('http://localhost/shipit-kubuntu/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-kubuntu/customrequest'
+  'http://localhost/shipit-kubuntu/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>
@@ -181,9 +181,9 @@
 
   And for Edubuntu, we ship only X86.
 
-  >>> browser.open('http://localhost/shipit-edubuntu/customrequest')
+  >>> browser.open('http://localhost/shipit-edubuntu/specialrequest')
   >>> browser.url
-  'http://localhost/shipit-edubuntu/customrequest'
+  'http://localhost/shipit-edubuntu/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86')
   <Control name='field.ubuntu_quantityx86' type='text'>

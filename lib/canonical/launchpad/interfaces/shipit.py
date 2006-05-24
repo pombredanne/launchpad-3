@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.fields import (
     ShipItRecipientDisplayname, ShipItOrganization, ShipItCity,
     ShipItProvince, ShipItAddressline1, ShipItAddressline2, ShipItPhone,
-    ShipItReason)
+    ShipItReason, ShipItQuantity)
 
 from canonical.launchpad import _
 
@@ -51,7 +51,7 @@ class ShipItConstants:
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
     current_distrorelease = ShipItDistroRelease.DAPPER
-    max_size_for_auto_approval = 50
+    max_size_for_auto_approval = 39
 
 
 class IEmptyDefaultChoice(IChoice):
@@ -391,17 +391,17 @@ class IStandardShipItRequest(Interface):
 
     flavour = Choice(title=_('Distribution Flavour'), required=True,
                      readonly=False, vocabulary='ShipItFlavour')
-    quantityx86 = Int(
+    quantityx86 = ShipItQuantity(
         title=_('PC CDs'), required=True, readonly=False,
         description=_('Number of PC CDs in this request.'),
         constraint=_validate_positive_int)
 
-    quantityppc = Int(
+    quantityppc = ShipItQuantity(
         title=_('Mac CDs'), required=True, readonly=False,
         description=_('Number of Mac CDs in this request.'),
         constraint=_validate_positive_int)
 
-    quantityamd64 = Int(
+    quantityamd64 = ShipItQuantity(
         title=_('64-bit PC CDs'), required=True, readonly=False,
         description=_('Number of 64-bit PC CDs in this request.'),
         constraint=_validate_positive_int)
@@ -555,25 +555,25 @@ class IShippingRequestQuantities(Interface):
     architectures and flavours.
     """
 
-    ubuntu_quantityx86 = Int(
+    ubuntu_quantityx86 = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Ubuntu PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
-    ubuntu_quantityppc = Int(
+    ubuntu_quantityppc = ShipItQuantity(
         title=_('Mac'), description=_('Quantity of Ubuntu Mac CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
-    ubuntu_quantityamd64 = Int(
+    ubuntu_quantityamd64 = ShipItQuantity(
         title=_('64-bit PC'), description=_('Quantity of Ubuntu 64-bit PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
 
-    kubuntu_quantityx86 = Int(
+    kubuntu_quantityx86 = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Kubuntu PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
-    kubuntu_quantityamd64 = Int(
+    kubuntu_quantityamd64 = ShipItQuantity(
         title=_('64-bit PC'),
         description=_('Quantity of Kubuntu 64-bit PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
 
-    edubuntu_quantityx86 = Int(
+    edubuntu_quantityx86 = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Edubuntu PC CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
 
@@ -606,26 +606,26 @@ class IShippingRequestEdit(Interface):
     approve/deny ShippingRequests.
     """
 
-    ubuntu_quantityx86approved = Int(
+    ubuntu_quantityx86approved = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Ubuntu X86 Approved CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
-    ubuntu_quantityppcapproved = Int(
+    ubuntu_quantityppcapproved = ShipItQuantity(
         title=_('Mac'), description=_('Quantity of Ubuntu PPC Approved CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
-    ubuntu_quantityamd64approved = Int(
+    ubuntu_quantityamd64approved = ShipItQuantity(
         title=_('64-bit PC'), 
         description=_('Quantity of Ubuntu AMD64 Approved CDs'), required=False, 
         readonly=False, constraint=_validate_positive_int)
 
-    kubuntu_quantityx86approved = Int(
+    kubuntu_quantityx86approved = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Kubuntu X86 Approved CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
-    kubuntu_quantityamd64approved = Int(
+    kubuntu_quantityamd64approved = ShipItQuantity(
         title=_('64-bit PC'),
         description=_('Quantity of Kubuntu AMD64 Approved CDs'), required=False,
         readonly=False, constraint=_validate_positive_int)
 
-    edubuntu_quantityx86approved = Int(
+    edubuntu_quantityx86approved = ShipItQuantity(
         title=_('PC'), description=_('Quantity of Edubuntu X86 Approved CDs'),
         required=False, readonly=False, constraint=_validate_positive_int)
 

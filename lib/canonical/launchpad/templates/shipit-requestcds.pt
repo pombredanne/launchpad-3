@@ -111,16 +111,32 @@
           </label>
         </div>
   
-        <p>You may also place a <a href="/customrequest">special request</a>.
+        <tal:comment condition="nothing">
+        # XXX: This is disabled for now, as we're having too many requests and
+        # it probably isn't a good idea to allow people to make special
+        # requests at this point.
+        # Guilherme Salgado, 2006-05-24
+
+        <p>You may also place a <a href="/specialrequest">special request</a>.
         Please note that these special requests require additional processing
         and shipping time. We will consider special requests if you are a
         teacher providing CDs to your students, if you are using the CDs at a
         conference, or if you are involved in an organised event of some
         sort.</p>
+        </tal:comment>
       </tal:standard-request>
 
       <tal:custom-request condition="view/should_show_custom_request">
-        <table>
+        <p>
+          Enter the number of CDs you would like to request below. Please note
+          that while we will consider all requests, due to extremely high demand
+          we may choose to send a smaller number of CDs, or refuse your request
+          altogether.  Remember that <a href="/myrequest">requesting a smaller 
+          number of CDs</a> will increase your chances of having the request 
+          approved, and that you can reuse the CDs!
+        </p>
+
+        <table style="width: auto; margin-left: 0">
           <tr tal:repeat="widget view/quantity_widgets">
             <span metal:use-macro="context/@@+shipit-macros/display_widget" />
           </tr>
@@ -138,12 +154,22 @@
     <h3>Shipping address</h3>
 
     <div class="informational message">
-      Please note that CDs for <span tal:replace="view/flavour/title" />
-      6.06 LTS will begin shipping in early June. Once shipping starts, it
-      can take up to 6 weeks for you to receive delivery.
+      <p tal:condition="not: view/should_show_custom_request">
+        Please note that CDs for <span tal:replace="view/flavour/title" />
+        6.06 LTS will begin shipping in early June. Once shipping starts, it
+        can take up to 6 weeks for you to receive delivery.
+      </p>
+
+      <p tal:condition="view/should_show_custom_request">
+        Please note that CDs for <span tal:replace="view/flavour/title" />
+        6.06 LTS will begin shipping in early June. Once shipping starts, it
+        can take up to 10 weeks for you to receive delivery of this special
+        request. Choose a <a href="/myrequest">standard option</a> for
+        quicker processing.
+      </p>
     </div>
 
-    <p><strong>Please Double check your address below before submitting your
+    <p><strong>Please double check your address below before submitting your
       request.</strong>
     </p>
 
