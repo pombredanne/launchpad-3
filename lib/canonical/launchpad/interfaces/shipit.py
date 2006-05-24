@@ -300,8 +300,8 @@ class IShippingRequestSet(Interface):
         Return None if there's no requests with status PENDING.
         """
 
-    def getUnshippedRequests(priority):
-        """Return all requests that are eligible for shipping.
+    def getUnshippedRequestsIDs(priority):
+        """Return the ID of all requests that are eligible for shipping.
 
         These are approved requests that weren't shipped yet.
         """

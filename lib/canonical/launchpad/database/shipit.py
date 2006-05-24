@@ -242,19 +242,30 @@ class ShippingRequestSet:
 
         return request
 
-    def getUnshippedRequests(self, priority):
+    def getUnshippedRequestsIDs(self, priority):
         """See IShippingRequestSet"""
-        query = ('ShippingRequest.cancelled IS FALSE AND '
-                 'ShippingRequest.approved IS TRUE AND '
-                 'ShippingRequest.id NOT IN (SELECT request FROM Shipment) ')
         if priority == ShippingRequestPriority.HIGH:
-            query += 'AND ShippingRequest.highpriority IS TRUE'
+            priorityfilter = 'AND ShippingRequest.highpriority IS TRUE'
         elif priority == ShippingRequestPriority.NORMAL:
-            query += 'AND ShippingRequest.highpriority IS FALSE'
+            priorityfilter = 'AND ShippingRequest.highpriority IS FALSE'
         else:
             # Nothing to filter, return all unshipped requests.
-            pass
-        return ShippingRequest.select(query)
+            priorityfilter = ''
+
+        query = """
+            SELECT ShippingRequest.id
+            FROM ShippingRequest
+            LEFT OUTER JOIN Shipment ON Shipment.request = ShippingRequest.id
+            WHERE Shipment.id IS NULL
+                  AND ShippingRequest.cancelled IS FALSE
+                  AND ShippingRequest.approved IS TRUE
+                  %(priorityfilter)s
+            ORDER BY daterequested, id
+            """ % {'priorityfilter': priorityfilter}
+
+        cur = cursor()
+        cur.execute(query)
+        return [id for (id,) in cur.fetchall()]
 
     def getOldestPending(self):
         """See IShippingRequestSet"""
@@ -325,8 +336,7 @@ class ShippingRequestSet:
 
     def exportRequestsToFiles(self, priority, ztm):
         """See IShippingRequestSet"""
-        request_ids = [
-            request.id for request in self.getUnshippedRequests(priority)]
+        request_ids = self.getUnshippedRequestsIDs(priority)
         # The SOFT_MAX_SHIPPINGRUN_SIZE is not a hard limit, and it doesn't
         # make sense to split a shippingrun into two just because there's 10 
         # requests more than the limit, so we only split them if there's at
