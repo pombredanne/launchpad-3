@@ -25,6 +25,8 @@
         input[type=submit] {
           font-family: sans-serif;
         }
+        label {font-weight: inherit;}
+        ul {margin-bottom: 1em;}
         .footer {
             clear: both;
             margin: 0;

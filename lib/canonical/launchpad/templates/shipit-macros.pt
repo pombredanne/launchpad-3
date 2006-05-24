@@ -98,7 +98,6 @@
       phone_widget
   </tal:comment>
 
-  <table style="margin: 0 auto;">
     <tr>
       <tal:block tal:define="widget nocall:view/recipientdisplayname_widget">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
@@ -144,7 +143,6 @@
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
-  </table>
 </metal:shipping_details>
 
 

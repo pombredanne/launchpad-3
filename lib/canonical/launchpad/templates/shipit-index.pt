@@ -79,8 +79,8 @@
                       type="submit"
                       name="loginpage_submit_login"
                       value="Log In" />
-                    [<a href="https://launchpad.net/+forgottenpassword"
-                      >Forgotten your password?</a>]
+                    (<a href="https://launchpad.net/+forgottenpassword"
+                      >Forgotten your password?</a>)
                   </div>
                 </td>
               </tr>
