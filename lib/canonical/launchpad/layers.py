@@ -41,14 +41,6 @@ class DebugLayer(Interface):
     """
 
     
-class InternalHTTPLayer(Interface):
-    """The `InternalHTTPLayer` layer.
-
-    This derives from Interface beacuse it is just a marker that this
-    is a request from inside the datacentre only.
-    """
-
-
 class PageTestLayer(Interface):
     """The `PageTestLayer` layer. (need to register a 404 view for this and
     for the debug page too.  and make the debugview a base class in the
@@ -64,5 +56,19 @@ class PageTestLayer(Interface):
     is a pagetest-related request.
     """
 
+
 class ShipItLayer(LaunchpadLayer):
     """The `ShipIt` layer."""
+
+
+class ShipItUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for Ubuntu layer."""
+
+
+class ShipItKUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for KUbuntu layer."""
+
+
+class ShipItEdUbuntuLayer(ShipItLayer):
+    """The `ShipIt` for EdUbuntu layer."""
+

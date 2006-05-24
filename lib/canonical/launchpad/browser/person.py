@@ -864,7 +864,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def getCriticalBugsURL(self, distributionsourcepackage):
         """Return the URL for critical bugs on distributionsourcepackage."""
         critical_bugs_params = {
-            'field.status': [], 'field.severity': "Critical"}
+            'field.status': [], 'field.importance': "Critical"}
 
         for status in UNRESOLVED_BUGTASK_STATUSES:
             critical_bugs_params["field.status"].append(status.title)
@@ -1734,8 +1734,9 @@ class PersonEditEmailsView:
             # inserted in the database.
             owner = email.person
             browsername = cgi.escape(owner.browsername)
+            owner_name = urllib.quote(owner.name)
             merge_url = ('%s/+requestmerge?field.dupeaccount=%s'
-                         % (canonical_url(getUtility(IPersonSet)), owner.name))
+                         % (canonical_url(getUtility(IPersonSet)), owner_name))
             self.message = (
                     "The email address '%s' is already registered by "
                     "<a href=\"%s\">%s</a>. If you think that is a "

@@ -32,14 +32,14 @@ from canonical.launchpad.interfaces import (
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 
-debbugsseveritymap = {'wishlist':  dbschema.BugTaskSeverity.WISHLIST,
-                      'minor':     dbschema.BugTaskSeverity.MINOR,
-                      'normal':    dbschema.BugTaskSeverity.NORMAL,
-                      None:        dbschema.BugTaskSeverity.NORMAL,
-                      'important': dbschema.BugTaskSeverity.MAJOR,
-                      'serious':   dbschema.BugTaskSeverity.MAJOR,
-                      'grave':     dbschema.BugTaskSeverity.MAJOR,
-                      'critical':  dbschema.BugTaskSeverity.CRITICAL}
+debbugsseveritymap = {None:        dbschema.BugTaskImportance.UNTRIAGED,
+                      'wishlist':  dbschema.BugTaskImportance.WISHLIST,
+                      'minor':     dbschema.BugTaskImportance.LOW,
+                      'normal':    dbschema.BugTaskImportance.MEDIUM,
+                      'important': dbschema.BugTaskImportance.HIGH,
+                      'serious':   dbschema.BugTaskImportance.HIGH,
+                      'grave':     dbschema.BugTaskImportance.HIGH,
+                      'critical':  dbschema.BugTaskImportance.CRITICAL}
 
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
@@ -99,12 +99,10 @@ class BugTask(SQLBase, BugTaskMixin):
         schema=dbschema.BugTaskStatus,
         default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
-    priority = dbschema.EnumCol(
-        dbName='priority', notNull=False, schema=dbschema.BugTaskPriority, default=None)
-    severity = dbschema.EnumCol(
-        dbName='severity', notNull=True,
-        schema=dbschema.BugTaskSeverity,
-        default=dbschema.BugTaskSeverity.NORMAL)
+    importance = dbschema.EnumCol(
+        dbName='importance', notNull=True,
+        schema=dbschema.BugTaskImportance,
+        default=dbschema.BugTaskImportance.UNTRIAGED)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
@@ -184,13 +182,13 @@ class BugTask(SQLBase, BugTaskMixin):
         # SQLBase.set() is called.
         SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
 
-    def setSeverityFromDebbugs(self, severity):
+    def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
         try:
-            self.severity = debbugsseveritymap[severity]
+            self.importance = debbugsseveritymap[severity]
         except KeyError:
             raise ValueError('Unknown debbugs severity "%s"' % severity)
-        return self.severity
+        return self.importance
 
     def transitionToStatus(self, new_status):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -298,12 +296,6 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             assignee_value = 'None'
 
-        # Calculate an appropriate display value for the priority.
-        if self.priority:
-            priority_value = self.priority.title
-        else:
-            priority_value = 'None'
-
         # Calculate an appropriate display value for the sourcepackage.
         if self.sourcepackagename:
             sourcepackagename_value = self.sourcepackagename.name
@@ -347,10 +339,10 @@ class BugTask(SQLBase, BugTaskMixin):
                  'componentname': component})
 
         header_value += ((
-            ' status=%(status)s; priority=%(priority)s; '
+            ' status=%(status)s; importance=%(importance)s; '
             'assignee=%(assignee)s;') %
             {'status': self.status.title,
-             'priority': priority_value,
+             'importance': self.importance.title,
              'assignee': assignee_value})
 
         return header_value
@@ -363,7 +355,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if assignee:
             assignee_html = (
-                '<img src="/@@/user.gif" /> '
+                '<img alt="" src="/@@/user.gif" /> '
                 '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
@@ -383,8 +375,7 @@ class BugTaskSet:
 
     _ORDERBY_COLUMN = {
         "id": "Bug.id",
-        "severity": "BugTask.severity",
-        "priority": "BugTask.priority",
+        "importance": "BugTask.importance",
         "assignee": "BugTask.assignee",
         "targetname": "BugTask.targetnamecache",
         "status": "BugTask.status",
@@ -416,8 +407,7 @@ class BugTaskSet:
         standard_args = {
             'bug': params.bug,
             'status': params.status,
-            'priority': params.priority,
-            'severity': params.severity,
+            'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
             'distrorelease': params.distrorelease,
@@ -545,6 +535,8 @@ class BugTaskSet:
                 orderby_arg.append(self._ORDERBY_COLUMN[orderby_col])
 
         # Make sure that the result always is ordered.
+        if 'Bug.id' not in orderby_arg and '-Bug.id' not in orderby_arg:
+            orderby_arg.append('Bug.id')
         orderby_arg.append('BugTask.id')
 
         query = " AND ".join(extra_clauses)
@@ -558,8 +550,7 @@ class BugTaskSet:
     def createTask(self, bug, owner, product=None, distribution=None,
                    distrorelease=None, sourcepackagename=None,
                    status=IBugTask['status'].default,
-                   priority=IBugTask['priority'].default,
-                   severity=IBugTask['severity'].default,
+                   importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         if product:
@@ -605,19 +596,14 @@ class BugTaskSet:
             distrorelease=distrorelease,
             sourcepackagename=sourcepackagename,
             status=status,
-            priority=priority,
-            severity=severity,
+            importance=importance,
             assignee=assignee,
             owner=owner,
             milestone=milestone)
-        if not bugtask.target_uses_malone:
-            bugtask.priority = dbschema.BugTaskPriority.UNKNOWN
-            bugtask.severity = dbschema.BugTaskSeverity.UNKNOWN
-            bugtask.transitionToStatus(dbschema.BugTaskStatus.UNKNOWN)
 
         return bugtask
 
-    def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
+    def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):
         filters = ['BugTask.bug = Bug.id',
                    'BugTask.product = Product.id',
@@ -628,10 +614,9 @@ class BugTaskSet:
             committed = dbschema.BugTaskStatus.FIXCOMMITTED
             filters.append('BugTask.status < %s' % sqlvalues(committed))
 
-        if minpriority is not None:
-            filters.append('BugTask.priority >= %s' % sqlvalues(minpriority))
-        if minseverity is not None:
-            filters.append('BugTask.severity >= %s' % sqlvalues(minseverity))
+        if minimportance is not None:
+            filters.append(
+                'BugTask.importance >= %s' % sqlvalues(minimportance))
 
         privacy_filter = self._getPrivacyFilter(user)
         if privacy_filter:

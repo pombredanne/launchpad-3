@@ -165,6 +165,9 @@ class IMirrorDistroArchRelease(Interface):
         """Return a dictionary mapping each different MirrorStatus to a URL on
         this mirror.
 
+        If there's not publishing records for this DistroArchRelease,
+        Component and Pocket, an empty dictionary is returned.
+
         These URLs should be checked and, if they are accessible, we know
         that's the current status of this mirror.
         """
@@ -189,6 +192,9 @@ class IMirrorDistroReleaseSource(Interface):
     def getURLsToCheckUpdateness():
         """Return a dictionary mapping each different MirrorStatus to a URL on
         this mirror.
+
+        If there's not publishing records for this DistroRelease, Component
+        and Pocket, an empty dictionary is returned.
 
         These URLs should be checked and, if they are accessible, we know
         that's the current status of this mirror.

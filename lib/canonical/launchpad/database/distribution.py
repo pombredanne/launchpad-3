@@ -120,6 +120,13 @@ class Distribution(SQLBase, BugTargetBase):
     def enabled_mirrors(self):
         return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
 
+    @property
+    def full_functionality(self):
+        """See IDistribution."""
+        if self.name == 'ubuntu':
+            return True
+        return False
+
     @cachedproperty
     def releases(self):
         # This is used in a number of places and given it's already
@@ -141,6 +148,15 @@ class Distribution(SQLBase, BugTargetBase):
                   ftp_base_url=None, rsync_base_url=None, file_list=None,
                   official_candidate=False, enabled=False, pulse_source=None):
         """See IDistribution."""
+
+        # NB this functionality is only available to distributions that have
+        # the full functionality of Launchpad enabled. This is Ubuntu and
+        # commercial derivatives that have been specifically given this
+        # ability
+
+        if not self.full_functionality:
+            return None
+
         return DistributionMirror(
             distribution=self, owner=owner, name=name, speed=speed,
             country=country, content=content, pulse_type=pulse_type,
@@ -171,7 +187,7 @@ class Distribution(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, open_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
 
         return result
 
@@ -189,7 +205,7 @@ class Distribution(SQLBase, BugTargetBase):
             BugTask.status IN %s
             """ % (self.id, resolved_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
-            orderBy=['-severity', 'datecreated'])
+            orderBy=['-importance', 'datecreated'])
         return result
 
     @property

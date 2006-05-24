@@ -183,7 +183,7 @@ def get_request_duration(now=None):
     return now - starttime
 
 
-def _log_statement(starttime, endtime, statement):
+def _log_statement(starttime, endtime, connection_wrapper, statement):
     """Log that a database statement was executed."""
     request_starttime = getattr(_local, 'request_start_time', None)
     if request_starttime is None:
@@ -192,7 +192,11 @@ def _log_statement(starttime, endtime, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((starttime, endtime, statement))
+    _local.request_statements.append((
+        starttime, endtime,
+        '/*%s*/ %s' % (id(connection_wrapper), statement)
+        ))
+
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
@@ -236,13 +240,27 @@ class ConnectionWrapper:
         self.__dict__['_conn'] = connection
 
     def cursor(self):
-        return CursorWrapper(self._conn.cursor())
+        return CursorWrapper(self, self._conn.cursor())
 
     def __getattr__(self, attr):
         return getattr(self._conn, attr)
 
     def __setattr__(self, attr, value):
         setattr(self._conn, attr, value)
+
+    def commit(self):
+        starttime = time.time()
+        try:
+            self._conn.commit()
+        finally:
+            _log_statement(starttime, time.time(), self, 'COMMIT')
+
+    def rollback(self):
+        starttime = time.time()
+        try:
+            self._conn.rollback()
+        finally:
+            _log_statement(starttime, time.time(), self, 'ROLLBACK')
 
 
 class CursorWrapper:
@@ -252,8 +270,9 @@ class CursorWrapper:
     request has expired.
     """
 
-    def __init__(self, cursor):
+    def __init__(self, connection_wrapper, cursor):
         self.__dict__['_cur'] = cursor
+        self.__dict__['_connection_wrapper'] = connection_wrapper
 
     def execute(self, statement, *args, **kwargs):
         """Execute an SQL query, provided that the current request hasn't
@@ -284,7 +303,10 @@ class CursorWrapper:
             try:
                 return self._cur.execute(statement, *args, **kwargs)
             finally:
-                _log_statement(starttime, time.time(), statement)
+                _log_statement(
+                        starttime, time.time(),
+                        self.__dict__['_connection_wrapper'], statement
+                        )
         except psycopg.ProgrammingError, error:
             if len(error.args):
                 errorstr = error.args[0]

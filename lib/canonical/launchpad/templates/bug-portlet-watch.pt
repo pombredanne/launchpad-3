@@ -23,10 +23,6 @@
             </li>
           </ul>
 
-         <ul style="text-align: right">
-          <li class="add"><a href="#" tal:attributes="href
-          string:$url/+addwatch">Add</a></li>
-        </ul>
     </div>
   </div>
 </div>

@@ -132,7 +132,8 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     def newmirror(self):
         text = 'Register a New Mirror'
-        return Link('+newmirror', text, icon='add')
+        enabled = self.context.full_functionality
+        return Link('+newmirror', text, enabled=enabled, icon='add')
 
     def officialmirrors(self):
         text = 'List Official Mirrors'

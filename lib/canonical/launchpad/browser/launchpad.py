@@ -35,6 +35,8 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, ICodeOfConductSet, IRegistryApplication,
     ISpecificationSet, ISprintSet, ITicketSet, IBuilderSet, IBountySet,
     ILaunchpadCelebrities, IBugSet, IBugTrackerSet, ICveSet)
+from canonical.launchpad.layers import (
+    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -415,7 +417,6 @@ class LaunchpadRootNavigation(Navigation):
 
     stepto_utilities = {
         'products': IProductSet,
-        'shipit': IShipItApplication,
         'people': IPersonSet,
         'distros': IDistributionSet,
         'sourcepackagenames': ISourcePackageNameSet,
@@ -447,6 +448,21 @@ class LaunchpadRootNavigation(Navigation):
     def calendar(self):
         # XXX permission=launchpad.AnyPerson
         return MergedCalendar()
+
+    @stepto('shipit-ubuntu')
+    def shipit_ubuntu(self):
+        setFirstLayer(self.request, ShipItUbuntuLayer)
+        return getUtility(IShipItApplication)
+
+    @stepto('shipit-kubuntu')
+    def shipit_kubuntu(self):
+        setFirstLayer(self.request, ShipItKUbuntuLayer)
+        return getUtility(IShipItApplication)
+
+    @stepto('shipit-edubuntu')
+    def shipit_edubuntu(self):
+        setFirstLayer(self.request, ShipItEdUbuntuLayer)
+        return getUtility(IShipItApplication)
 
 
 class SoftTimeoutView(LaunchpadView):
