@@ -88,9 +88,12 @@ class BuilddSlaveMonitorApp:
         return blist
 
     def cmd_reset(self, args):
+        if len(args) < 1:
+            return 'A builder ID wasn not passed'
+
         try:
             build_id = int(args[0])
-        except ValueError, IndexError:
+        except ValueError:
             return 'Argument must be the builder ID'
 
         try:
