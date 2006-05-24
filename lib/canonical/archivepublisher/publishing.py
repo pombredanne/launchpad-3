@@ -1,26 +1,26 @@
 # (C) Canonical Software Ltd. 2004, all rights reserved.
 
 import os
-
-from zope.component import getUtility
-
-from canonical.lp.dbschema import ( PackagePublishingStatus,
-    PackagePublishingPriority, PackagePublishingPocket,
-    DistributionReleaseStatus)
-
 from StringIO import StringIO
-
-from canonical.librarian.client import LibrarianClient
-from canonical.launchpad.interfaces import ILibraryFileAliasSet
-from canonical.archivepublisher.pool import (
-    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
-from canonical.database.constants import nowUTC
-
 from md5 import md5
 from sha import sha
 from datetime import datetime
 
+from zope.component import getUtility
+
+from canonical.archivepublisher.pool import (
+    AlreadyInPool, NotInPool, NeedsSymlinkInPool, PoolFileOverwriteError)
+from canonical.database.constants import nowUTC
+from canonical.launchpad.helpers import copy_and_close
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.librarian.client import LibrarianClient
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, PackagePublishingPriority,
+    PackagePublishingPocket, DistributionReleaseStatus)
+
+
 __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
+
 
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",
@@ -29,17 +29,13 @@ pocketsuffix = {
     PackagePublishingPocket.PROPOSED: "-proposed",
     PackagePublishingPocket.BACKPORTS: "-backports",
 }
+
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
+
 
 def package_name(filename):
     """Extract a package name from a debian package filename."""
     return (os.path.basename(filename).split("_"))[0]
-
-MEGABYTE = 1024*1024
-
-def filechunks(file, chunk_size=4*MEGABYTE):
-    """Return an iterator which reads chunks of the given file."""
-    return iter(lambda: file.read(chunk_size), '')
 
 def f_touch(*parts):
     """Touch the file named by the arguments concatenated as a path."""
@@ -60,6 +56,7 @@ def reorder_components(components):
             components.remove(comp)
     ret.extend(components)
     return ret
+
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -127,12 +124,9 @@ class Publisher(object):
         self.debug("Adding %s %s/%s from library" %
                    (component, source, filename))
 
-        outf = self._diskpool.openForAdd(component, source, filename)
+        pool_file = self._diskpool.openForAdd(component, source, filename)
         alias.open()
-        for chunk in filechunks(alias):
-            outf.write(chunk)
-        outf.close()
-        alias.close()
+        copy_and_close(alias, pool_file)
 
     def publish(self, records, isSource = True):
         """records should be an iterable of indexables which provide the

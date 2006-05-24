@@ -152,7 +152,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
                          'foo is happy')
 
         # try to publish 'foo' again with a different content, it
-        # raises and keep teh files with the original content.
+        # raises and keep the files with the original content.
         new_alias = self.addMockFile('foo.txt', 'foo is depressing')
         self.assertRaises(PoolFileOverwriteError,
                           p._publish, "foo", "main", "foo.txt", new_alias)
@@ -181,12 +181,12 @@ class TestPublisher(LaunchpadZopelessTestCase):
         content = 'am I a file or a symbolic link ?'
         alias = self.addMockFile('sim.txt', content)
 
+        # publish sim.txt in main and re-publish in universe
         p = Publisher(self._logger, cnf, self._dp, dist)
         p._publish( "sim", "main", "sim.txt", alias)
         p._publish( "sim", "universe", "sim.txt", alias)
 
-        # moving same contents/files between components,
-        # result in symbolic links
+        # check the resulted symbolic link
         sim_universe = "%s/universe/s/sim/sim.txt" % self._pooldir
         self.assertEqual(os.readlink(sim_universe),
                          '../../../main/s/sim/sim.txt')

@@ -10,14 +10,8 @@ POOL_DEBIAN = object()
 from sets import Set
 import os
 import tempfile
-import sha
 
-MEGABYTE = 1024*1024
-
-def filechunks(file, chunk_size=4*MEGABYTE):
-    """Return an iterator which reads chunks of the given file."""
-    return iter(lambda: file.read(chunk_size), '')
-
+from canonical.launchpad.helpers import sha1_from_path
 
 class Poolifier(object):
     """The Poolifier takes a (source name, component) tuple and tells you
@@ -44,12 +38,12 @@ class Poolifier(object):
         """Poolify a given source and component name. If the component is
         not supplied, the default set with the component() call is used.
         if that has not been supplied then an error is raised"""
-        
+
         if component is None:
             component = self._component
         if component is None:
             raise ValueError, "poolify needs a component"
-        
+
         if self._style is POOL_DEBIAN:
             if source.startswith("lib"):
                 return "%s/%s/%s" % (component,source[:4],source)
@@ -61,8 +55,10 @@ class Poolifier(object):
         self._component = component
 
     def unpoolify(self, path):
-        """Take a path and unpoolify it, returning a tuple of
-        component,source,leafname"""
+        """Take a path and unpoolify it.
+
+        Return a tuple of component, source, filename
+        """
         if self._style is POOL_DEBIAN:
             p = path.split("/")
             if len(p) < 3 or len(p) > 4:
@@ -128,15 +124,29 @@ class _diskpool_atomicfile:
         os.rename(self.tempname, self.targetfilename)
 
 
-class AlreadyInPool(Exception):
-    """Raised when an attempt is made to add a file already in the pool.
+class PoolPredicatedViolation(Exception):
+    """An attempt was made to do something the pool doesn't allow.
 
-    And the proposed file has the same content as the one in the pool.
+    Base class for exceptions raised where the action would violate
+    a predicate of the pool's design.
     """
 
 
-class NeedsSymlinkInPool(Exception):
-    """Raised when a symlink is required to publish a leaf in pool."""
+class AlreadyInPool(PoolPredicatedViolation):
+    """File is already in the pool with the same content.
+
+    No further action required
+    """
+
+
+class NeedsSymlinkInPool(PoolPredicatedViolation):
+    """Symbolic link is required to publish the file in pool.
+
+    File is already present in pool with the same content, but
+    in other location (different component, most of the cases)
+    Callsite must explicitly call diskpool.makeSymlink(..) method
+    in order to publish the file in the new location.
+    """
 
 
 class NotInPool(Exception):
@@ -146,7 +156,7 @@ class NotInPool(Exception):
 class PoolFileOverwriteError(Exception):
     """Raised when an attempt is made to overwrite a file in the pool.
 
-    And the proposed file has different content as the one in the pool.
+    The proposed file has different content as the one in pool.
     This exception is unexpected and when it happens we keep the original
     file in pool and prints a warning in the publisher log. It probably
     requires manual intervention in the archive.
@@ -175,20 +185,12 @@ class DiskPool:
     def debug(self, *args, **kwargs):
         self.logger.debug(*args,**kwargs)
 
-    def pathFor(self, comp, source, leaf = None):
-        if leaf:
-            return os.path.join(self.rootpath,
-                                self.poolifier.poolify(source, comp),
-                                leaf)
-        return os.path.join(self.rootpath,
-                            self.poolifier.poolify(source, comp))
-
-    def _checkpath(self, component, source):
-        """Ensure that the path exists for this source in this component."""
-        p = self.pathFor(component,source)
-        if not os.path.exists(p):
-            os.makedirs(p)
-        self.components.setdefault(component,{})
+    def pathFor(self, comp, source, file=None):
+        if file:
+            return os.path.join(
+                self.rootpath, self.poolifier.poolify(source, comp), file)
+        return os.path.join(
+            self.rootpath,self.poolifier.poolify(source, comp))
 
     def scan(self):
         """Scan the filesystem and build the internal representation ready
@@ -217,40 +219,36 @@ class DiskPool:
         # files is a dict of filename -> list of main component and list of
         # the components which contain links
 
-    def makeSymlink(self, component, sourcename, leafname):
-        """Creates a symbolic link in the archive.
+    def makeSymlink(self, component, sourcename, filename):
+        """Create a symbolic link in the archive.
 
-        It also updates the internal representation of the archive files.
+        This method also updates the internal representation of the
+        archive files.
         """
         self.debug("Making symlink in %s for %s/%s" %
-                   (component, sourcename, leafname))
-        targetpath = self.pathFor(component, sourcename, leafname)
-        sourcepath = self.pathFor(self.files[leafname].defcomp,
-                                  sourcename, leafname)
+                   (component, sourcename, filename))
+        targetpath = self.pathFor(component, sourcename, filename)
+        pool_file = self.files[filename]
+        sourcepath = self.pathFor(pool_file.defcomp, sourcename, filename)
         if not os.path.exists(os.path.dirname(targetpath)):
             os.makedirs(os.path.dirname(targetpath))
         relative_symlink(sourcepath, targetpath)
-        self.files[leafname].comps.add(component)
-        self.components[component][leafname] = True
+        pool_file.comps.add(component)
+        self.components[component][filename] = True
 
-
-    def getLeafHash(self, component, sourcename, leafname):
-        """Returns the SHA1 sum of the requested archive file.
+    def getAndCacheFileHash(self, component, sourcename, filename):
+        """Return the SHA1 sum of the requested archive file.
 
         It also updates its value in the internal cache.
         """
-        if not self.files[leafname].sha1:
-            targetpath = self.pathFor(component, sourcename, leafname)
-            target_file = open(targetpath)
-            target_hash = sha.new()
-            for chunk in filechunks(target_file):
-                target_hash.update(chunk)
-            target_file.close()
-            self.files[leafname].sha1 = target_hash.hexdigest()
+        pool_file = self.files[filename]
 
-        return self.files[leafname].sha1
+        if not pool_file.sha1:
+            targetpath = self.pathFor(component, sourcename, filename)
+            pool_file.sha1 = sha1_from_path(targetpath)
+        return pool_file.sha1
 
-    def checkBeforeAdd(self, component, sourcename, leafname, leaf_sha1):
+    def checkBeforeAdd(self, component, sourcename, filename, current_sha1):
         """Performs checks before add a file in the archive.
 
         Raises AlreadyInPool if the proposed file is already in the archive
@@ -262,120 +260,144 @@ class DiskPool:
 
         Raises PoolFileOverwrite if the proposed file is already present
         somewhere in the archive with a different content. This is a serious
-        archive corruption and must be analized ad hoc.
+        archive corruption and must be analysed ad hoc.
 
         Returns None for unknown/new files, which could be straight added into
         the archive.
         """
-        self._checkpath(component, sourcename)
+        # XXX cprov 20060524: This piece of code is dangerous, because
+        # it can add not allowed directories in the pool if something
+        # went wrong in the upload checks. We certainly can find a better
+        # way to have safe directories creation and a consistent data
+        # structure
 
-        if leafname not in self.files:
+        # create directory component if necessary
+        path = self.pathFor(component, sourcename)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        # pre-built self.components data structure
+        self.components.setdefault(component,{})
+
+
+        if filename not in self.files:
             # Early return means the file is new and can be added.
             return None
 
-        real_sha1 = self.getLeafHash(self.files[leafname].defcomp,
-                                     sourcename, leafname)
+        pool_file = self.files[filename]
 
-        if leaf_sha1 != real_sha1:
+        pool_sha1 = self.getAndCacheFileHash(
+            pool_file.defcomp, sourcename, filename)
+
+        if current_sha1 != pool_sha1:
             # we already have the same filename in the same path (component)
-            # This is a overwrite, which isn't allowed
-            raise PoolFileOverwriteError('%s != %s' % (leaf_sha1, real_sha1))
+            # and their sha1sum differ. raise error.
+            # When the sha1sums differ at this point, a serious inconsistency
+            # has been detected. This can happen, for instance, when we
+            # allow people to upload two packages with the same version
+            # number but different diff or original tarballs.
+            # This situation will arise only if one of the upstream checks
+            # fails to catch this sort of broken semantics.
+            raise PoolFileOverwriteError(
+                '%s != %s' % (current_sha1, pool_sha1))
 
-        if leafname not in self.components[component]:
-            # leaf/file is present, but it's in some other path (component)
+        if filename not in self.components[component]:
+            # file is present, but it's in some other path (component)
             # let's check the content of the proposed and the original files.
-            if leaf_sha1 != real_sha1:
-                # the contents doesn't match raise an error.
+            if current_sha1 != pool_sha1:
+                # Same situation as above, if it happens we should refuse
+                # to publish the file and look back to it's history and find
+                # where the upload checks have been failed
                 raise PoolFileOverwriteError(
-                    '%s != %s' % (leaf_sha1, real_sha1))
+                    '%s != %s' % (current_sha1, pool_sha1))
             # the contents do match, so request a symbolic link creation.
             raise NeedsSymlinkInPool()
 
         # the file is already present in the archive, in the right path and
-        # has the corect content, no add is requires and the archive is safe
+        # has the correct content, no add is requires and the archive is safe
         raise AlreadyInPool()
 
-    def openForAdd(self, component, sourcename, leafname):
-        """Open leafname for adding in the pool, making dirs as needed.
+    def openForAdd(self, component, sourcename, filename):
+        """Open filename for adding in the pool, making dirs as needed.
+
         Raises AlreadyInPool if the file is already there.
         """
         self.debug("Making new file in %s for %s/%s" %
-                   (component, sourcename, leafname))
+                   (component, sourcename, filename))
 
-        targetpath = self.pathFor(component, sourcename, leafname)
+        targetpath = self.pathFor(component, sourcename, filename)
         if not os.path.exists(os.path.dirname(targetpath)):
             os.makedirs(os.path.dirname(targetpath))
 
-        self.components[component][leafname] = False
-        self.files[leafname] = DiskPoolEntry(sourcename)
-        self.files[leafname].defcomp = component
+        self.components[component][filename] = False
+        self.files[filename] = DiskPoolEntry(sourcename)
+        self.files[filename].defcomp = component
         return _diskpool_atomicfile(targetpath, "wb", rootpath=self.rootpath)
 
-    def removeFile(self, component, sourcename, leafname):
+    def removeFile(self, component, sourcename, filename):
         """Remove a file from a given component.
         """
-        if leafname not in self.components[component]:
+        if filename not in self.components[component]:
             raise NotInPool()
         # Okay, it's there, if it's a symlink then we need to remove
         # it simply.
-        if self.components[component][leafname]:
+        if self.components[component][filename]:
             self.debug("Removing %s %s/%s as it is a symlink" %
-                       (component, sourcename, leafname))
-            os.remove(self.pathFor(component, sourcename, leafname))
+                       (component, sourcename, filename))
+            os.remove(self.pathFor(component, sourcename, filename))
             # remove it from the component
-            self.components[component].pop(leafname)
+            self.components[component].pop(filename)
             # remove the component from the symlink set
-            self.files[leafname].comps.remove(component)
+            self.files[filename].comps.remove(component)
             return
         # It's not a symlink, this means we need to check.
-        if len(self.files[leafname].comps) == 0:
+        if len(self.files[filename].comps) == 0:
             self.debug("Removing only instance of %s/%s from %s" %
-                       (sourcename, leafname, component))
+                       (sourcename, filename, component))
             # It's the only instance...
-            os.remove(self.pathFor(component, sourcename, leafname))
+            os.remove(self.pathFor(component, sourcename, filename))
             # Remove it from the component
-            self.components[component].pop(leafname)
+            self.components[component].pop(filename)
             # Remove it from the file list
-            self.files.pop(leafname)
+            self.files.pop(filename)
             return
         # It is not a symlink and it's not the only entry for it
         # We have to shuffle the symlinks around
-        comps = self.files[leafname].comps
+        comps = self.files[filename].comps
         targetcomponent = comps.pop()
         comps.add(targetcomponent)
-        self._shufflesymlinks(leafname, targetcomponent)
+        self._shufflesymlinks(filename, targetcomponent)
         # And now it's not the primary component any more.
-        self.removeFile(component, sourcename, leafname)
+        self.removeFile(component, sourcename, filename)
 
-    def _shufflesymlinks(self, leafname, targetcomponent):
-        """Shuffle the symlinks for leafname so that targetcomponent contains
+    def _shufflesymlinks(self, filename, targetcomponent):
+        """Shuffle the symlinks for filename so that targetcomponent contains
         the real file and the rest are symlinks to the right place..."""
         self.debug("Shuffling symlinks so primary for %s is in %s" %
-                   (leafname, targetcomponent))
-        if targetcomponent == self.files[leafname].defcomp:
+                   (filename, targetcomponent))
+        if targetcomponent == self.files[filename].defcomp:
             # Nothing to do, it's already the primary component
             return
-        if targetcomponent not in self.files[leafname].comps:
+        if targetcomponent not in self.files[filename].comps:
             raise ValueError("Target component %s not in set of %s" %
-                             (targetcomponent,leafname))
+                             (targetcomponent,filename))
         # Okay, so first up, we unlink the targetcomponent symlink
-        targetpath=self.pathFor(targetcomponent, self.files[leafname].source,
-                                 leafname)
+        targetpath=self.pathFor(targetcomponent, self.files[filename].source,
+                                 filename)
         os.remove(targetpath)
         # Now we rename the source file into the target component
-        os.rename(self.pathFor(self.files[leafname].defcomp,
-                                self.files[leafname].source,
-                                leafname),
+        os.rename(self.pathFor(self.files[filename].defcomp,
+                                self.files[filename].source,
+                                filename),
                   targetpath)
         # Update the data structures...
-        self.components[self.files[leafname].defcomp][leafname] = True
-        self.components[targetcomponent][leafname] = False
-        self.files[leafname].comps.add(self.files[leafname].defcomp)
-        self.files[leafname].defcomp = targetcomponent
-        self.files[leafname].comps.remove(targetcomponent)
+        self.components[self.files[filename].defcomp][filename] = True
+        self.components[targetcomponent][filename] = False
+        self.files[filename].comps.add(self.files[filename].defcomp)
+        self.files[filename].defcomp = targetcomponent
+        self.files[filename].comps.remove(targetcomponent)
         # Now we make the symlinks on the FS...
-        for comp in self.files[leafname].comps:
-            newpath = self.pathFor(comp, self.files[leafname].source, leafname)
+        for comp in self.files[filename].comps:
+            newpath = self.pathFor(comp, self.files[filename].source, filename)
             try:
                 os.remove(newpath)
             except OSError:
@@ -389,7 +411,7 @@ class DiskPool:
         component and every other component uses a symlink to the right
         place."""
         self.debug("Sanitising symlinks according %r" % preferredcomponents)
-        
+
         for f in self.files:
             smallest = len(preferredcomponents)+1
             if self.files[f].defcomp in preferredcomponents:
@@ -400,7 +422,7 @@ class DiskPool:
                         smallest = preferredcomponents.index(comp)
                 except ValueError:
                     pass # Value not in list basically
-            
+
             if smallest < len(preferredcomponents):
                 self._shufflesymlinks(f, preferredcomponents[smallest])
 
