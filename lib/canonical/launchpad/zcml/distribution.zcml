@@ -60,6 +60,22 @@
         name="+cdmirrors"
         template="../templates/distribution-mirrors.pt" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
+        permission="launchpad.Edit"
+        name="+disabledmirrors"
+        template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionUnofficialMirrorsView"
+        permission="launchpad.Edit"
+        name="+unofficialmirrors"
+        template="../templates/distribution-mirrors.pt" />
+
     <browser:generalform
         name="+newmirror"
         facet="overview"
@@ -68,11 +84,10 @@
         schema="canonical.launchpad.interfaces.IDistributionMirror"
         fields="owner name displayname description speed country
                 content http_base_url ftp_base_url rsync_base_url
-                pulse_type pulse_source enabled official_candidate"
+                enabled official_candidate"
         keyword_arguments="
             owner name displayname description speed country content 
-            http_base_url ftp_base_url rsync_base_url pulse_type pulse_source
-            enabled official_candidate"
+            http_base_url ftp_base_url rsync_base_url enabled official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
         <browser:widget 

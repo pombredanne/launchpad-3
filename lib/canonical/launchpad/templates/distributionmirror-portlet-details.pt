@@ -18,7 +18,8 @@
     <b>Content:</b>
     <span tal:content="context/content/title" /><br />
 
-    <b tal:condition="context/isOfficial">Official</b>
+    <b tal:condition="context/isOfficial">
+      Official <span tal:replace="context/distribution/title" /> Mirror</b>
     <b tal:condition="not: context/isOfficial">Not Official</b>
     <br />
 

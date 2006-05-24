@@ -55,7 +55,6 @@ class ProberTimeout(Exception):
 class ProberFactory(protocol.ClientFactory):
     """Factory using ProberProtocol to probe single URL existence."""
 
-    protocol = HTTP302AwareProber
     protocol = ProberProtocol
 
     def __init__(self, url, timeout=config.distributionmirrorprober.timeout):
@@ -188,11 +187,19 @@ class MirrorProberCallbacks(object):
         if arch_or_source_mirror is None:
             return
 
+        status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
+        if not status_url_mapping:
+            # We have no publishing records for self.release, self.pocket and
+            # self.component, so it's better to delete this
+            # MirrorDistroArchRelease/MirrorDistroReleaseSource than to keep
+            # it with an UNKNOWN status.
+            self.deleteMethod(self.release, self.pocket, self.component)
+            return
+
         deferredList = []
         # We start setting the status to unknown, and then we move on trying to
         # find one of the recently published packages mirrored there.
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
-        status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
             prober.deferred.addCallback(

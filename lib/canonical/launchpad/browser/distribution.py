@@ -15,6 +15,8 @@ __all__ = [
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionReleaseMirrorsView',
+    'DistributionDisabledMirrorsView',
+    'DistributionUnofficialMirrorsView',
     ]
 
 from zope.component import getUtility
@@ -114,7 +116,8 @@ class DistributionOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['edit', 'driver', 'search', 'allpkgs', 'members',
              'reassign', 'addrelease', 'builds', 'release_mirrors',
-             'archive_mirrors', 'newmirror', 'launchpad_usage']
+             'archive_mirrors', 'disabled_mirrors', 'unofficial_mirrors',
+             'newmirror', 'launchpad_usage']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -144,6 +147,16 @@ class DistributionOverviewMenu(ApplicationMenu):
     def archive_mirrors(self):
         text = 'Show Archive Mirrors'
         return Link('+archivemirrors', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def disabled_mirrors(self):
+        text = 'Show Disabled Mirrors'
+        return Link('+disabledmirrors', text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def unofficial_mirrors(self):
+        text = 'Show Unofficial Mirrors'
+        return Link('+unofficialmirrors', text, icon='info')
 
     def allpkgs(self):
         text = 'List All Packages'
@@ -424,3 +437,22 @@ class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.release_mirrors)
+
+
+class DistributionUnofficialMirrorsView(DistributionMirrorsView):
+
+    # Come on, overusing mirror_content to display unofficial mirrors is no
+    # big deal.
+    mirror_content = 'Unofficial'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.unofficial_mirrors)
+
+class DistributionDisabledMirrorsView(DistributionMirrorsView):
+
+    # Come on, overusing mirror_content to display disabled mirrors is no big
+    # deal.
+    mirror_content = 'Disabled'
+
+    def getMirrorsGroupedByCountry(self):
+        return self._groupMirrorsByCountry(self.context.disabled_mirrors)

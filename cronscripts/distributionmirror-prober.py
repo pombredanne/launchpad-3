@@ -151,6 +151,7 @@ def main(argv):
 
     for mirror_id in mirror_ids:
         mirror = mirror_set[mirror_id]
+        assert mirror.isOfficial(), 'Non-official mirrors should not be probed'
         if mirror.http_base_url is None:
             logger_obj.warning(
                 "Mirror '%s' of distribution '%s' doesn't have an http base "

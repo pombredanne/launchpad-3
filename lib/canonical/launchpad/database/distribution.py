@@ -9,6 +9,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
     SQLObjectNotFound)
+from sqlobject.sqlbuilder import AND, OR
 
 from canonical.cachedproperty import cachedproperty
 
@@ -125,6 +126,20 @@ class Distribution(SQLBase, BugTargetBase):
             official_approved=True, official_candidate=True, enabled=True)
 
     @property
+    def disabled_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        return DistributionMirror.selectBy(
+            distributionID=self.id, enabled=False)
+
+    @property
+    def unofficial_mirrors(self):
+        """See canonical.launchpad.interfaces.IDistribution."""
+        query = OR(DistributionMirror.q.official_candidate==False,
+                   DistributionMirror.q.official_approved==False) 
+        return DistributionMirror.select(
+            AND(DistributionMirror.q.distributionID==self.id, query))
+
+    @property
     def full_functionality(self):
         """See IDistribution."""
         if self.name == 'ubuntu':
@@ -147,7 +162,7 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
 
-    def newMirror(self, owner, name, speed, country, content, pulse_type,
+    def newMirror(self, owner, name, speed, country, content, pulse_type=None,
                   displayname=None, description=None, http_base_url=None,
                   ftp_base_url=None, rsync_base_url=None, file_list=None,
                   official_candidate=False, enabled=False, pulse_source=None):
@@ -157,7 +172,6 @@ class Distribution(SQLBase, BugTargetBase):
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
         # ability
-
         if not self.full_functionality:
             return None
 

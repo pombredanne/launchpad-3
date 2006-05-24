@@ -10,7 +10,7 @@
       <th>Name</th>
       <th>Speed</th>
       <th>Official?</th>
-      <th>Access Methods</th>
+      <th>URLs</th>
     </tr>
   </thead>
   <tbody>
@@ -33,3 +33,103 @@
   </tbody>
   </table>
 </metal:mirrors-table>
+
+
+<metal:mirror-content define-macro="mirror-content">
+  <tal:comment replace="nothing">
+  This macro expects the following variables defined:
+      :mirror: An IDistributionMirror
+  </tal:comment>
+
+    <tal:comment condition="nothing">
+      XXX: This use of "python:" here is to workaround
+      https://launchpad.net/products/launchpad/+bug/5768
+    </tal:comment>
+    <tal:archive-mirror 
+      condition="python: mirror.content.name == 'ARCHIVE'"
+      define="arch_releases mirror/getSummarizedMirroredArchReleases;
+              source_releases mirror/getSummarizedMirroredSourceReleases">
+
+      <h2>Architecture releases mirrored</h2>
+      <div tal:condition="not: arch_releases">
+        We have found no releases for any architectures on this mirror.
+        This is normal if we have not yet successfully verified the mirror.
+      </div>
+
+      <table tal:condition="arch_releases"
+             class="listing sortable" id="arches">
+      <thead>
+        <tr>
+          <th>Release</th>
+          <th>Architecture</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="arch_release arch_releases">
+          <td tal:content="arch_release/distro_arch_release/distrorelease/displayname" />
+          <td tal:content="arch_release/distro_arch_release/architecturetag" />
+          <td tal:content="arch_release/status/title" />
+        </tr>
+      </tbody>
+      </table>
+
+      <h2>Source releases mirrored</h2>
+      <div tal:condition="not: source_releases">
+        We have found no source releases on this mirror. This is normal
+        if we have not yet successfully verified the mirror.
+      </div>
+
+      <table tal:condition="source_releases" 
+             class="listing sortable" id="sources">
+      <thead>
+        <tr>
+          <th>Release</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="source_release source_releases">
+          <td tal:content="source_release/distrorelease/displayname" />
+          <td tal:content="source_release/status/title" />
+        </tr>
+      </tbody>
+      </table>
+    </tal:archive-mirror>
+
+    <tal:comment condition="nothing">
+      XXX: This use of "python:" here is to workaround
+      https://launchpad.net/products/launchpad/+bug/5768
+    </tal:comment>
+    <tal:release-mirror 
+      condition="python: mirror.content.name == 'RELEASE'"
+      define="flavours_by_release mirror/getCDImageMirroredFlavoursByRelease">
+
+      <h2>Releases mirrored</h2>
+      <div tal:condition="not: flavours_by_release">
+        We have found no CD images for any releases on this mirror.
+        This is normal if we have not yet successfully verified the mirror.
+      </div>
+
+      <table class="listing sortable" id="releases"
+             tal:condition="flavours_by_release">
+        <thead>
+          <tr>
+            <th>Release</th>
+            <th>Flavours</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="release_name flavours_by_release">
+            <td tal:content="release_name" />
+            <td>
+              <tal:flavours repeat="flavour flavours_by_release/?release_name">
+                <span tal:replace="flavour"
+                /><span tal:condition="not: repeat/flavour/end">,</span>
+              </tal:flavours>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </tal:release-mirror>
+</metal:mirror-content>

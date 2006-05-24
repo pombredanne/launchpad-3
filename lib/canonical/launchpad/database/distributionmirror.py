@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 
 from canonical.archivepublisher.publishing import pocketsuffix
 from canonical.archivepublisher.pool import Poolifier
@@ -78,7 +78,7 @@ class DistributionMirror(SQLBase):
     content = EnumCol(
         notNull=True, schema=MirrorContent)
     pulse_type = EnumCol(
-        notNull=True, schema=MirrorPulseType)
+        notNull=True, schema=MirrorPulseType, default=MirrorPulseType.PUSH)
     official_candidate = BoolCol(
         notNull=True, default=False)
     official_approved = BoolCol(
@@ -198,15 +198,65 @@ class DistributionMirror(SQLBase):
         return MirrorCDImageDistroRelease.selectBy(
             distribution_mirrorID=self.id)
 
+    def getCDImageMirroredFlavoursByRelease(self):
+        """See IDistributionMirror"""
+        flavours_by_release = {}
+        for cdimage in self.cdimage_releases:
+            distrorelease, flavour = cdimage.distrorelease, cdimage.flavour
+            flavours = flavours_by_release.setdefault(distrorelease.name, [])
+            if flavour not in flavours:
+                flavours.append(flavour)
+        return flavours_by_release
+
     @property
     def source_releases(self):
         """See IDistributionMirror"""
         return MirrorDistroReleaseSource.selectBy(distribution_mirrorID=self.id)
 
+    def getSummarizedMirroredSourceReleases(self):
+        """See IDistributionMirror"""
+        # Select the mirror with the worst status for each distrorelease.
+        query = """
+            SELECT DISTINCT ON (MirrorDistroReleaseSource.distribution_mirror,
+                                MirrorDistroReleaseSource.distrorelease)
+                   MirrorDistroReleaseSource.id
+            FROM MirrorDistroReleaseSource, DistributionMirror
+            WHERE DistributionMirror.id = 
+                        MirrorDistroReleaseSource.distribution_mirror
+                  AND DistributionMirror.distribution = %(distribution)s
+            ORDER BY MirrorDistroReleaseSource.distribution_mirror, 
+                     MirrorDistroReleaseSource.distrorelease, 
+                     MirrorDistroReleaseSource.status DESC
+            """ % sqlvalues(distribution=self.distribution)
+        cur = cursor()
+        cur.execute(query)
+        ids = ", ".join([str(id) for (id,) in cur.fetchall()])
+        return MirrorDistroReleaseSource.select("id IN (%s)" % ids)
+
     @property
     def arch_releases(self):
         """See IDistributionMirror"""
         return MirrorDistroArchRelease.selectBy(distribution_mirrorID=self.id)
+
+    def getSummarizedMirroredArchReleases(self):
+        """See IDistributionMirror"""
+        # Select the mirror with the worst status for each distro_arch_release.
+        query = """
+            SELECT DISTINCT ON (MirrorDistroArchRelease.distribution_mirror,
+                                MirrorDistroArchRelease.distro_arch_release)
+                   MirrorDistroArchRelease.id
+            FROM MirrorDistroArchRelease, DistributionMirror
+            WHERE DistributionMirror.id = 
+                        MirrorDistroArchRelease.distribution_mirror
+                  AND DistributionMirror.distribution = %(distribution)s
+            ORDER BY MirrorDistroArchRelease.distribution_mirror, 
+                     MirrorDistroArchRelease.distro_arch_release, 
+                     MirrorDistroArchRelease.status DESC
+            """ % sqlvalues(distribution=self.distribution)
+        cur = cursor()
+        cur.execute(query)
+        ids = ", ".join([str(id) for (id,) in cur.fetchall()])
+        return MirrorDistroArchRelease.select("id IN (%s)" % ids)
 
     def _getCDImageFileList(self):
         url = config.distributionmirrorprober.releases_file_list_url
@@ -279,6 +329,8 @@ class DistributionMirrorSet:
                 ON mirrorproberecord.distribution_mirror = distributionmirror.id
             WHERE distributionmirror.enabled IS TRUE
                 AND distributionmirror.content = %s
+                AND distributionmirror.official_candidate IS TRUE
+                AND distributionmirror.official_approved IS TRUE
             GROUP BY distributionmirror.id
             HAVING max(mirrorproberecord.date_created) IS NULL
                 OR max(mirrorproberecord.date_created) 
@@ -410,7 +462,8 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
 
     implements(IMirrorDistroArchRelease)
     _table = 'MirrorDistroArchRelease'
-    _defaultOrder = 'id'
+    _defaultOrder = [
+        'distro_arch_release', 'component', 'pocket', 'status', 'id']
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
@@ -476,7 +529,7 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
 
     implements(IMirrorDistroReleaseSource)
     _table = 'MirrorDistroReleaseSource'
-    _defaultOrder = 'id'
+    _defaultOrder = ['distrorelease', 'component', 'pocket', 'status', 'id']
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',

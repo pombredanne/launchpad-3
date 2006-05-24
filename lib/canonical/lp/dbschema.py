@@ -3063,6 +3063,12 @@ class MirrorSpeed(DBSchema):
         The upstream link of this mirror can make up to 10 gigabits per second.
         """)
 
+    S20G = Item(12, """
+        20 Gbps
+
+        The upstream link of this mirror can make up to 20 gigabits per second.
+        """)
+
 
 class MirrorStatus(DBSchema):
     """The status of a given mirror."""

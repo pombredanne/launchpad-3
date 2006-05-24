@@ -95,21 +95,27 @@ if we find out their contents are not in a mirror where they used to be.
     >>> new_mirror.arch_releases.count()
     0
 
-From every distribution, you can easily get a list with its official mirrors
-and another with all mirrors. This is available through the
-enabled_official_mirrors and enabled_mirrors properties of IDistribution.
+From every distribution, you can easily get a list with its official ARCHIVE
+or RELEASE mirrors. This is available through the archive_mirrors and 
+release_mirrors properties of IDistribution.
 
     >>> [(mirror.name, mirror.country.name) 
-    ...  for mirror in ubuntu.enabled_official_mirrors]
-    [(u'archive-mirror', u'Afghanistan')]
+    ...  for mirror in ubuntu.archive_mirrors]
+    [(u'archive-mirror', u'Afghanistan'),
+     (u'archive-404-mirror', u'British Indian Ocean Territory')]
 
     >>> [(mirror.name, mirror.country.name) 
-    ...  for mirror in ubuntu.enabled_mirrors]
-    [(u'archive-mirror', u'Afghanistan'), 
-     (u'invalid-mirror', u'British Indian Ocean Territory'),
-     (u'unreachable-mirror', u'British Indian Ocean Territory'),
-     (u'archive-404-mirror', u'British Indian Ocean Territory'),
+    ...  for mirror in ubuntu.release_mirrors]
+    [(u'unreachable-mirror', u'British Indian Ocean Territory'),
      (u'releases-mirror', u'British Indian Ocean Territory')]
+
+The list of unofficial mirrors can easily be obtained, so that the
+distribution owner can see them and mark the ones that should be official.
+
+    >>> [(mirror.name, mirror.country.name) 
+    ...  for mirror in ubuntu.unofficial_mirrors]
+    [(u'invalid-mirror', u'British Indian Ocean Territory'),
+     (u'foobarmirror', u'Brazil')]
 
 
 Probing the mirrors
@@ -119,8 +125,8 @@ The distributionmirror-prober script is used to check what a mirror contains
 and when it was last updated. This script should run at least once a day, so
 we know the information we display is always up to date.
 
-This script will probe only enabled ARCHIVE or RELEASE mirrors that weren't
-probed in the last 23 hours.
+This script will probe only official and enabled ARCHIVE or RELEASE mirrors
+that weren't probed in the last 23 hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.ARCHIVE)]
@@ -128,7 +134,7 @@ probed in the last 23 hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
-    [u'invalid-mirror', u'unreachable-mirror', u'releases-mirror']
+    [u'unreachable-mirror', u'releases-mirror']
 
     >>> valid_mirror = mirrorset[1]
     >>> valid_mirror.name
@@ -147,7 +153,7 @@ probed in the last 23 hours.
 
     >>> [mirror.name
     ...  for mirror in mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)]
-    [u'invalid-mirror', u'unreachable-mirror', u'releases-mirror']
+    [u'unreachable-mirror', u'releases-mirror']
 
     Now we change delete the MirrorProbeRecord we've just created, to make
     sure this mirror is probed by our prober script.
@@ -187,15 +193,17 @@ IDistributionMirror.disableAndNotifyOwner().
     >>> transaction.commit()
 
 
-- Checking what content is mirrored
+- Checking what content a mirror should contain
 
 After obtaining the list of mirrors that we need to probe, the script will
 then check what content is mirrored in each mirror. This is done by checking
-the existence of some control files on that mirror. These files are 
-Packages.gz (one file per [arch_release, component, pocket] tuple) and 
-Sources.gz (one per [release, component, pocket] tuple). The paths to these
-files are given by the guessPackagesPaths() and guessSourcesPaths() methods
-of IDistributionMirror.
+the existence of some control files on that mirror. 
+
+For Archive mirrors, these files are Packages.gz (one file per 
+[arch_release, component, pocket] tuple) and Sources.gz (one per 
+[release, component, pocket] tuple). The paths to these files are given
+by the guessPackagesPaths() and guessSourcesPaths() methods of
+IDistributionMirror.
 
     >>> [path 
     ...  for (release, pocket, component, path) in mirror.guessPackagesPaths()
@@ -224,6 +232,13 @@ of IDistributionMirror.
      u'dists/hoary-updates/restricted/source/Sources.gz',
      u'dists/hoary-proposed/main/source/Sources.gz',
      u'dists/hoary-proposed/restricted/source/Sources.gz']
+
+For Release mirrors, these files are listed in a file stored in
+http://releases.ubuntu.com/. This file is parsed by
+mirror.guessCDImagePaths(), which returns a list of (distrorelease, flavour
+name, path) elements.
+(For testing we have a sample of that file stored in our tree, which is
+pointed by the config.distributionmirrorprober.releases_file_list_url option)
 
     >>> for (dummy, dummy, paths) in sorted(mirror.guessCDImagePaths()):
     ...     for path in paths:
@@ -351,8 +366,8 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    Done.
     <BLANKLINE>
 
-    >>> import pdb; pdb.set_trace()
-    >>> x = mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)
+    >> import pdb; pdb.set_trace()
+    >> x = mirrorset.getMirrorsToProbe(MirrorContent.RELEASE)
 
     >>> cmd = 'cronscripts/distributionmirror-prober.py --content-type=release'
     >>> prober = subprocess.Popen(
@@ -363,10 +378,57 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     <BLANKLINE>
     >>> print stderr
     INFO    Probing Distribution Mirrors
-    INFO    Probed 3 mirrors.
-    INFO    Disabled 2 mirrors because no content was found on them.
+    INFO    Probed 2 mirrors.
+    INFO    Disabled 1 mirrors because no content was found on them.
     INFO    Done.
     <BLANKLINE>
 
     >>> LibrarianTestSetup().tearDown()
     >>> http_server.tearDown()
+    >>> transaction.commit()
+
+    >>> [(mirror.name, mirror.country.name) 
+    ...  for mirror in ubuntu.disabled_mirrors]
+    [(u'unreachable-mirror', u'British Indian Ocean Territory'),
+     (u'archive-404-mirror', u'British Indian Ocean Territory'),
+     (u'foobarmirror', u'Brazil')]
+
+
+Mirror content
+--------------
+
+Now that we've probed some mirrors, we can check the content that was found in
+them.
+
+First, let's check the source and arch releases of one archive mirrors.
+
+    >>> ubuntu.archive_mirrors.count() == 1
+    True
+    >>> archive_mirror = ubuntu.archive_mirrors[0]
+    >>> mirror_arch_releases = (
+    ...     archive_mirror.getSummarizedMirroredArchReleases())
+
+    (We only have a few publishing records, so most of the release mirrors
+     will have Unknown as their statuses)
+    >>> for mirror_arch_release in mirror_arch_releases:
+    ...     print (mirror_arch_release.distro_arch_release.displayname,
+    ...            mirror_arch_release.status.title)
+    (u'warty i386', 'Up to date')
+
+    >>> mirror_source_releases = (
+    ...     archive_mirror.getSummarizedMirroredSourceReleases())
+    >>> for mirror_source_release in mirror_source_releases:
+    ...     print (mirror_source_release.distrorelease.displayname,
+    ...            mirror_source_release.status.title)
+    (u'Warty', 'Up to date')
+    (u'Hoary', 'Up to date')
+
+
+And now check the releases and flavours mirrored on a releae mirror.
+
+    >>> ubuntu.release_mirrors.count() == 1
+    True
+    >>> release_mirror = ubuntu.release_mirrors[0]
+    >>> sorted(release_mirror.getCDImageMirroredFlavoursByRelease().items())
+    [(u'hoary', [u'ubuntu', u'kubuntu']), (u'warty', [u'ubuntu'])]
+

@@ -35,9 +35,11 @@ class IDistributionMirror(Interface):
     distribution = Attribute(_("The distribution that is mirrored"))
     name = TextLine(
         title=_('Name'), required=True, readonly=False,
+        description=_('A short and unique name for this mirror.'),
         constraint=name_validator)
     displayname = TextLine(
-        title=_('Display Name'), required=False, readonly=False)
+        title=_('Organisation Name'), required=False, readonly=False,
+        description=_('The name of the organization hosting this mirror.'))
     description = TextLine(
         title=_('Description'), required=False, readonly=False)
     http_base_url = TextLine(
@@ -86,6 +88,32 @@ class IDistributionMirror(Interface):
     source_releases = Attribute('All MirrorDistroReleaseSources of this mirror')
     arch_releases = Attribute('All MirrorDistroArchReleases of this mirror')
     last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
+
+    def getCDImageMirroredFlavoursByRelease():
+        """Return a dictionary mapping distrorelease names to lists of
+        flavour names, for the distrorelease/flavour pairs mirrored here.
+        
+        These flavour names are obtained from the file located at
+        config.distributionmirrorprober.releases_file_list_url.
+        """
+
+    def getSummarizedMirroredSourceReleases():
+        """Return a summarized list of this distribution_mirror's 
+        MirrorDistroReleaseSource objects.
+
+        Summarized, in this case, means that it ignores pocket and components
+        and returns the MirrorDistroReleaseSource with the worst status for
+        each distrorelease of this distribution mirror.
+        """
+
+    def getSummarizedMirroredArchReleases():
+        """Return a summarized list of this distribution_mirror's 
+        MirrorDistroArchRelease objects.
+
+        Summarized, in this case, means that it ignores pocket and components
+        and returns the MirrorDistroArchRelease with the worst status for
+        each distro_arch_release of this distribution mirror.
+        """
 
     def isOfficial():
         """Return True if this is an official mirror."""
@@ -181,8 +209,8 @@ class IDistributionMirrorSet(Interface):
         """Return the DistributionMirror with the given id."""
 
     def getMirrorsToProbe(content_type):
-        """Return all enabled mirrors with the given content type that need to
-        be probed.
+        """Return all official and enabled mirrors with the given content type
+        that need to be probed.
 
         A mirror needs to be probed either if it was never probed before or if
         it wasn't probed in the last PROBE_INTERVAL hours.

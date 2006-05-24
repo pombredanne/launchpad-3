@@ -53,8 +53,7 @@
         label="Change mirror details"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
         fields="name displayname description http_base_url ftp_base_url
-                rsync_base_url speed country content pulse_type pulse_source
-                enabled official_candidate"
+                rsync_base_url speed country content enabled official_candidate"
         template="../templates/distributionmirror-edit.pt">
     </browser:editform>
 
@@ -67,8 +66,7 @@
         label="Administer Distribution Mirror"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
         fields="name displayname description http_base_url ftp_base_url
-                rsync_base_url speed country content pulse_type pulse_source
-                enabled official_approved"
+                rsync_base_url speed country content enabled official_approved"
         template="../templates/distributionmirror-edit.pt">
     </browser:editform>
 

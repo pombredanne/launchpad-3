@@ -12,4 +12,4 @@ CREATE TABLE MirrorCDImageDistroRelease (
         distrorelease, flavour, distribution_mirror)
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 56, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 57, 0);

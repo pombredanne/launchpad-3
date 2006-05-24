@@ -103,6 +103,9 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "All enabled and official ARCHIVE mirrors of this Distribution.")
     release_mirrors = Attribute(
         "All enabled and official RELEASE mirrors of this Distribution.")
+    disabled_mirrors = Attribute("All disabled mirrors of this Distribution.")
+    unofficial_mirrors = Attribute(
+        "All unofficial mirrors of this Distribution.")
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
