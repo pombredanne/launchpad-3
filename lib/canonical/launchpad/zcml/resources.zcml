@@ -133,5 +133,6 @@
     <!-- Shipit EdUbuntu images (from www.edubuntu.org) -->
     <resource name="edubuntu-header.png" file="../images/edubuntu-header.png" />
     <resource name="edubuntu-headerlogo.png" file="../images/edubuntu-headerlogo.png" />
+    <resource name="edubuntu-icon" file="../images/edubuntu-icon.png" />
 
 </configure>
