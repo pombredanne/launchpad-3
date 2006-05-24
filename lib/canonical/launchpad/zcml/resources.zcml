@@ -112,14 +112,13 @@
     <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="treeCollapsed.gif" file="../images/treeCollapsed.gif" />
     <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />
-    <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
+    <resource name="ubuntu-icon" file="../images/ubuntu-icon.png" />
     <resource name="user.gif" file="../images/user.gif" />
     <resource name="user" file="../images/user.gif" />
 
     <!-- Shipit images (from www.ubuntu.com) -->
     <resource name="ubuntu-header-bg4.png" file="../images/ubuntu-header-bg4.png" />
     <resource name="ubuntu-header-image4.png" file="../images/ubuntu-header-image4.png" />
-    <resource name="ubuntu-favicon.ico" file="../images/ubuntu-favicon.ico" />
 
     <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
     <resource name="kubuntu-header-bg4.png" file="../images/kubuntu-header-bg4.png" />
