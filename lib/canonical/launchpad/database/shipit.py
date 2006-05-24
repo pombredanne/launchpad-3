@@ -341,8 +341,9 @@ class ShippingRequestSet:
         # make sense to split a shippingrun into two just because there's 10 
         # requests more than the limit, so we only split them if there's at
         # least 50% more requests than SOFT_MAX_SHIPPINGRUN_SIZE.
-        file_counter = 1
+        file_counter = 0
         while len(request_ids):
+            file_counter += 1
             ztm.begin()
             if len(request_ids) > SOFT_MAX_SHIPPINGRUN_SIZE * 1.5:
                 request_ids_subset = request_ids[:SOFT_MAX_SHIPPINGRUN_SIZE]
