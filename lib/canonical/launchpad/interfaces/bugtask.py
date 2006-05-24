@@ -28,6 +28,7 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
+from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -67,7 +68,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
-    # XXX: the status, severity and priority's vocabularies do not
+    # XXX: the status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
@@ -76,11 +77,9 @@ class IBugTask(IHasDateCreated, IHasBug):
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.UNCONFIRMED)
-    priority = Choice(
-        title=_('Priority'), vocabulary='BugTaskPriority', required=False)
-    severity = Choice(
-        title=_('Severity'), vocabulary='BugTaskSeverity',
-        default=dbschema.BugTaskSeverity.NORMAL)
+    importance = Choice(
+        title=_('Importance'), vocabulary='BugTaskImportance',
+        default=dbschema.BugTaskImportance.UNTRIAGED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
@@ -129,12 +128,12 @@ class IBugTask(IHasDateCreated, IHasBug):
         "A human-readable representation of the status of this IBugTask's bug "
         "in the other contexts in which it's reported.")
 
-    def setSeverityFromDebbugs(severity):
-        """Set the Malone BugTask severity on the basis of a debbugs
+    def setImportanceFromDebbugs(severity):
+        """Set the Malone BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
-        the Malone severity values, and returns the relevant Malone
-        severity.
+        the Malone importance values, and returns the relevant Malone
+        importance.
         """
 
     def transitionToStatus(new_status):
@@ -170,7 +169,7 @@ class IBugTask(IHasDateCreated, IHasBug):
 
         For an upstream task, this value might look like:
 
-          product=firefox; status=New; priority=None; assignee=None;
+          product=firefox; status=New; importance=Critical; assignee=None;
 
         See doc/bugmail-headers.txt for a complete explanation and more
         examples.
@@ -203,13 +202,9 @@ class IBugTaskSearch(Interface):
         value_type=IBugTask['status'],
         default=list(UNRESOLVED_BUGTASK_STATUSES),
         required=False)
-    severity = List(
-        title=_('Severity'),
-        value_type=IBugTask['severity'],
-        required=False)
-    priority = List(
-        title=_('Priority'),
-        value_type=IBugTask['priority'],
+    importance = List(
+        title=_('Importance'),
+        value_type=IBugTask['importance'],
         required=False)
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
@@ -279,19 +274,12 @@ class IBugTaskDelta(Interface):
         {'old' : BugTaskStatus.FOO, 'new' : BugTaskStatus.BAR}, or None,
         if no change was made to the status.
         """)
-    priority = Attribute(
-        """The change made to the priority for this task.
+    importance = Attribute(
+        """The change made to the importance of this task.
 
         The value is a dict like
-        {'old' : BugTaskPriority.FOO, 'new' : BugTaskPriority.BAR}, or None,
-        if no change was made to the priority.
-        """)
-    severity = Attribute(
-        """The change made to the severity of this task.
-
-        The value is a dict like
-        {'old' : BugTaskSeverity.FOO, 'new' : BugTaskSeverity.BAR}, or None,
-        if no change was made to the severity.
+        {'old' : BugTaskImportance.FOO, 'new' : BugTaskImportance.BAR}, or None,
+        if no change was made to the importance.
         """)
     assignee = Attribute(
         """The change made to the assignee of this task.
@@ -381,7 +369,7 @@ class BugTaskSearchParams:
     distribution = None
     distrorelease = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
-                 priority=None, severity=None, milestone=None,
+                 importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
@@ -389,8 +377,7 @@ class BugTaskSearchParams:
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
-        self.priority = priority
-        self.severity = severity
+        self.importance = importance
         self.milestone = milestone
         self.assignee = assignee
         self.sourcepackagename = sourcepackagename
@@ -466,8 +453,8 @@ class IBugTaskSet(Interface):
         """
 
     def createTask(bug, product=None, distribution=None, distrorelease=None,
-                   sourcepackagename=None, status=None, priority=None,
-                   severity=None, assignee=None, owner=None, milestone=None):
+                   sourcepackagename=None, status=None,
+                   importance=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug contacts will be automatically
@@ -476,7 +463,7 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distrorelease must be provided.
         """
 
-    def maintainedBugTasks(person, minseverity=None, minpriority=None,
+    def maintainedBugTasks(person, minimportance=None,
                            showclosed=None, orderby=None, user=None):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
@@ -485,8 +472,8 @@ class IBugTaskSet(Interface):
         returned. If you want closed tasks too, just pass
         showclosed=True.
 
-        If minseverity is not None, return only the bug tasks with severity 
-        greater than minseverity. The same is valid for minpriority/priority.
+        If minimportance is not None, return only the bug tasks with importance
+        greater than minimportance.
 
         If you want the results ordered, you have to explicitly specify an
         <orderBy>. Otherwise the order used is not predictable.
@@ -516,12 +503,15 @@ class IAddBugTaskForm(Interface):
     product = IUpstreamBugTask['product']
     distribution = IDistroBugTask['distribution']
     sourcepackagename = IDistroBugTask['sourcepackagename']
+    link_to_bugwatch = Bool(
+        title=_('Link to a bug in another bug tracker:'),
+        required=False)
     bugtracker = Choice(
         title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
         description=_("The bug tracker in which the remote bug is found. "
             "Choose from the list. You can register additional bug trackers "
             "from the Malone home page."))
-    remotebug = TextLine(
+    remotebug = StrippedTextLine(
         title=_('Remote Bug'), required=False, description=_(
             "The bug number of this bug in the remote bug tracker."))
 

@@ -61,10 +61,10 @@ class BranchToMirror:
         destination.
         """
         self.branch_status_client.startMirroring(self.branch_id)
-        self._openDestBranch()
 
         try: 
             self._openSourceBranch()
+            self._openDestBranch()
             self._pullSourceToDest()
         # add further encountered errors from the production runs here
         # ------ HERE ---------

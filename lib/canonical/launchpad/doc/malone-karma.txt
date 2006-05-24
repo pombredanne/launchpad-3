@@ -132,35 +132,22 @@ Accept a bug task:
     >>> make_sure_karma_is_added('bugaccepted', event, 5)
     True
 
-Change a bug task's severity:
+Change a bug task's importance:
 
-    >>> from canonical.lp.dbschema import BugTaskSeverity
-    >>> for severity in BugTaskSeverity.items:
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> bugtask.importance = BugTaskImportance.HIGH
+    >>> for importance in BugTaskImportance.items:
     ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    ...     bugtask.severity = severity
-    ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['severity'])
-    ...     print severity.name, make_sure_karma_is_added(
-    ...         'bugtaskseveritychanged', event, 1)
+    ...     bugtask.importance = importance
+    ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance'])
+    ...     print importance.name, make_sure_karma_is_added(
+    ...         'bugtaskimportancechanged', event, 1)
+    UNTRIAGED True
     WISHLIST True
-    MINOR True
-    NORMAL True
-    MAJOR True
-    CRITICAL True
-    UNKNOWN True
-
-Change a bug task's priority:
-
-    >>> from canonical.lp.dbschema import BugTaskPriority
-    >>> for priority in BugTaskPriority.items:
-    ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    ...     bugtask.priority = priority
-    ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['priority'])
-    ...     print priority.name, make_sure_karma_is_added(
-    ...         'bugtaskprioritychanged', event, 1)
-    WONTFIX True
     LOW True
     MEDIUM True
     HIGH True
+    CRITICAL True
     UNKNOWN True
 
 Create a new bug task:
@@ -192,17 +179,22 @@ Adding a comment generates a karma event, bug gives no points:
     True
 
 Now, let's ensure that we've covered every one of Malone's karma actions,
-except for updating the obsolete "summary":
+except for updating the obsolete "summary" and "priority":
 
     >>> from canonical.launchpad.database import KarmaCategory
     >>> bugs_category = KarmaCategory.byName('bugs')
     >>> bugs_karma_actions = bugs_category.karmaactions
-    >>> summary_change = getUtility(IKarmaActionSet).getByName('bugsummarychanged')
+    >>> summary_change = getUtility(
+    ...     IKarmaActionSet).getByName('bugsummarychanged')
     >>> added_karma_actions.add(summary_change)
+    >>> priority_change = getUtility(
+    ...     IKarmaActionSet).getByName('bugtaskprioritychanged')
+    >>> added_karma_actions.add(priority_change)
     >>> added_karma_actions == set(bugs_karma_actions)
     True
 
-XXX Matthew Paul Thomas 2006-03-22: On 2007-03-23, a year after bug summaries were
-removed, all the karma gained from updating bug summaries will have expired. Then the
-'bugsummarychanged' row should be removed from the database, and summary_change can be
-removed from this test.
+XXX Matthew Paul Thomas 2006-03-22: On 2007-03-23, a year after bug summaries
+were removed, all the karma gained from updating bug summaries will have
+expired. Then the 'bugsummarychanged' row should be removed from the database,
+and summary_change can be removed from this test. The same applies to the
+'bugtaskprioritychanged' row on about 2007-05-15.

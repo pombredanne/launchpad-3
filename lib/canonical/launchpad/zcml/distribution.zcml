@@ -234,6 +234,7 @@
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
+           height="10"
            width="62" />
     </browser:addform>
 
@@ -354,6 +355,7 @@
         module="canonical.launchpad.browser"
         classes="DistributionSetNavigation"
         />
+
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"

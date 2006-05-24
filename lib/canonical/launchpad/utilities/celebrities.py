@@ -87,6 +87,7 @@ class LaunchpadCelebrities:
     vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
     shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
+    buildd_admin = CelebrityDescriptor(IPersonSet, 'launchpad-buildd-admins')
     launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
     registry = CelebrityDescriptor(IPersonSet, 'registry')

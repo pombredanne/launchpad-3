@@ -171,7 +171,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
-        permission="launchpad.Edit"
+        permission="launchpad.Admin"
         facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView">
         <browser:page
@@ -307,11 +307,12 @@
            field="title"
            class="zope.app.form.browser.TextWidget"
            displayWidth="50"
-           extra="tabindex=1" />
+           extra="tabindex=2" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
-           extra="tabindex=2"
+           extra="tabindex=1"
+           height="12"
            width="62" />
         <browser:widget
            field="security_related"
