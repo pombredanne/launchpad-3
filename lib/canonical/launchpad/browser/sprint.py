@@ -295,3 +295,9 @@ class SprintMeetingExportView(LaunchpadView):
             self.specifications.append(dict(
                 spec=spec,
                 interested=interested))
+
+    def render(self):
+        self.request.response.setHeader('content-type',
+                                        'application/xml;charset=utf-8')
+        body = LaunchpadView.render(self)
+        return body.encode('utf-8')
