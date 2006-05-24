@@ -52,7 +52,8 @@
       <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
     </tal:pastrequests>
 
-    <h1>Request CDs</h1> 
+    <h1 tal:condition="not: view/current_order">Request CDs</h1>
+    <h1 tal:condition="view/current_order">Change your current request</h1>
 
     <tal:edubuntu condition="view/is_edubuntu">
       <p>Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
@@ -91,7 +92,12 @@
 
     <br />
 
-    <form name="shipit" action="" method="POST">
+    <!-- Without using setTimeout() to disable the submit button it'll be
+    disabled before the browser generates the request, which will cause the
+    request to not contain the name/value of the button.
+    -->
+    <form name="shipit" action="" method="POST"
+          onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
     <div style="margin: 0em 5em" 
          tal:define="selected_id view/selected_standardrequest">
@@ -113,14 +119,14 @@
       can take up to 6 weeks for you to receive delivery.
     </div>
 
-    <p><strong>Double check your address below before submitting your
+    <p><strong>Please Double check your address below before submitting your
       request.</strong>
     </p>
 
     <metal:shipping_details
       use-macro="context/@@+shipit-macros/shipping_details" />
 
-    <div style="text-align: right">
+    <div style="margin-left: 20em">
       <tal:current_request condition="view/current_order">
         <input type="submit" value="Change Request" name="FORM_SUBMIT"
                class="formControls"/>
@@ -152,6 +158,10 @@
   </table>  
 
   <script type="text/javascript">
+    function disableSubmitButton() {
+      var form = document.forms['shipit'];
+      form.FORM_SUBMIT.disabled = true;
+    }
     function updateWidgets() {
       var form = document.forms['shipit'];
       state = (form.extracds.checked == false);

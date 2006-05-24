@@ -44,8 +44,8 @@ class IBugWatch(IHasBug):
     needscheck = Attribute("A True or False indicator of whether or not "
         "this watch needs to be synchronised. The algorithm used considers "
         "the severity of the bug, as well as the activity on the bug, to "
-        "ensure that we spend most effort on high priority and high "
-        "activity bugs.")
+        "ensure that we spend most effort on high-importance and "
+        "high-activity bugs.")
 
     # required for launchpad pages
     title = Attribute('Bug watch title')

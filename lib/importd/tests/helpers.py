@@ -6,7 +6,6 @@ import sys
 import stat
 import shutil
 import unittest
-import logging
 
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from BaseHTTPServer import HTTPServer
@@ -25,13 +24,14 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IBranchSet, IProductSet)
 from canonical.launchpad.utilities import LaunchpadCelebrities
 from canonical.launchpad.database import PersonSet, BranchSet, ProductSet
-from zope.app.tests.placelesssetup import setUp as zopePlacelessSetUp
-from zope.app.tests.placelesssetup import tearDown as zopePlacelessTearDown
-from zope.app.tests import ztapi
+from zope.app.testing.placelesssetup import setUp as zopePlacelessSetUp
+from zope.app.testing.placelesssetup import tearDown as zopePlacelessTearDown
+from zope.app.testing import ztapi
 
 
 from importd import archivemanager
 from importd import Job
+from importd.tests import testutil
 
 
 __all__ = [
@@ -231,7 +231,8 @@ class CscvsHelper(object):
 
     def setUpCvsToSyncWith(self):
         """Setup a small CVS repository to sync with."""
-        repo = CVS.init(self.cvsroot)
+        logger = testutil.makeSilentLogger()
+        repo = CVS.init(self.cvsroot, logger)
         sourcedir = self.cvstreedir
         os.mkdir(sourcedir)
         self.writeSourceFile("import\n")
@@ -250,16 +251,17 @@ class CscvsHelper(object):
         archive_manager.createMaster()
         self.baz_tree_helper.setUpSigning()
         self.baz_tree_helper.setUpTree()
-        cvsrepo = CVS.Repository(self.cvsroot, logging)
+        logger = testutil.makeSilentLogger()
+        cvsrepo = CVS.Repository(self.cvsroot, logger)
         cvsrepo.get(module="test", dir=self.cvstreedir)
         argv = ["-b"]
         config = CVS.Config(self.cvstreedir)
         config.args = argv
-        cscvs.cmds.cache.cache(config, logging, argv)
+        cscvs.cmds.cache.cache(config, logger, argv)
         config = CVS.Config(self.cvstreedir)
         baz_tree_path = str(self.baz_tree_helper.tree)
         config.args = ["-Si", "1", baz_tree_path]
-        cscvs.cmds.totla.totla(config, logging, ["-Si", "1", baz_tree_path])
+        cscvs.cmds.totla.totla(config, logger, ["-Si", "1", baz_tree_path])
 
 
 class ZopelessHelper(harness.LaunchpadZopelessTestSetup):

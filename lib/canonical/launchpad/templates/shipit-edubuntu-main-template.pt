@@ -15,9 +15,6 @@
 
       <style type="text/css">
         <!-- 
-        #body {
-          padding: 1em;
-        }
         textarea, input[type=text], input[type=password] {
             border: solid 1px black;
             margin: 3px;
