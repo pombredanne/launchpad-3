@@ -164,5 +164,5 @@ Adding new builder still denied for non-members (Edgar, no membership):
   ... GET /+builds/+new HTTP/1.1
   ... Authorization: Basic ZWRnYXJAbW9udGVwYXJhZGlzby5ocjplZGdhcg==
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 403 Forbidden
   ...
