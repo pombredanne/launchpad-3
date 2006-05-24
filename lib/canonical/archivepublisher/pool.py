@@ -225,13 +225,16 @@ class DiskPool:
         This method also updates the internal representation of the
         archive files.
         """
-        self.debug("Making symlink in %s for %s/%s" %
-                   (component, sourcename, filename))
         targetpath = self.pathFor(component, sourcename, filename)
         pool_file = self.files[filename]
         sourcepath = self.pathFor(pool_file.defcomp, sourcename, filename)
+
+        self.debug("Making symlink from %s to %s" %
+                   (targetpath, sourcepath))
+
         if not os.path.exists(os.path.dirname(targetpath)):
             os.makedirs(os.path.dirname(targetpath))
+
         relative_symlink(sourcepath, targetpath)
         pool_file.comps.add(component)
         self.components[component][filename] = True

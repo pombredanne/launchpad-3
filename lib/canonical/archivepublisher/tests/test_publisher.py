@@ -24,6 +24,8 @@ from canonical.archivepublisher.pool import (
     DiskPool, Poolifier)
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeBinaryPublishing, FakeLogger, dist, drs)
+from canonical.lp.dbschema import PackagePublishingStatus
+
 
 cnf = Config(dist, drs)
 
@@ -71,16 +73,18 @@ class TestPublisher(LaunchpadZopelessTestCase):
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getMockPubSource(self, sourcename, component, leafname,
-                         section='', dr=''):
+                         section='', dr='',
+                         filecontent="I do not care about sources."):
         """Return a mock source publishing record."""
-        alias = self.addMockFile(leafname, "I do not care about sources.")
+        alias = self.addMockFile(leafname, filecontent)
         return FakeSourcePublishing(sourcename, component, leafname, alias,
                                     section, dr)
 
     def getMockPubBinary(self, sourcename, component, leafname,
-                         section='', dr='', priority=0, archtag=''):
+                         section='', dr='', priority=0, archtag='',
+                         filecontent="I do not care about binaries."):
         """Return a mock binary publishing record."""
-        alias = self.addMockFile(leafname, "I do not care about binaries.")
+        alias = self.addMockFile(leafname, filecontent)
         return FakeBinaryPublishing(sourcename, component, leafname, alias,
                                     section, dr, priority, archtag)
 
@@ -110,18 +114,20 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """canonical.archivepublisher.Publisher._publish should work"""
         from canonical.archivepublisher import Publisher
         p = Publisher(self._logger, cnf, self._dp, dist)
-        alias = self.addMockFile('foo.txt', 'Hello world')
-        p._publish( "foo", "main", "foo.txt", alias)
-        f = "%s/main/f/foo/foo.txt" % self._pooldir
-        os.stat(f) # Raises if it's not there. That'll do for now
+        pub_source = self.getMockPubSource( "foo", "main", "foo.txt",
+                                            filecontent='Hello world')
+        p.publishOne(pub_source)
+        self.assertEqual(pub_source.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PUBLISHED)
+        foo_name = "%s/main/f/foo/foo.txt" % self._pooldir
+        self.assertEqual(open(foo_name).read().strip(), 'Hello world')
 
-    def testPublishingOverwrite(self):
-        """_publish should raise PoolFileOverwrite
+    def testPublishingOverwriteFileInPool(self):
+        """publishOne refuses to overwrite a file in poll.
 
         And keep the original file contents
         """
-        from canonical.archivepublisher import (
-            Publisher, PoolFileOverwriteError)
+        from canonical.archivepublisher import Publisher
 
         # publish 'foo' by-hand and ensure it has a special content
         foo_name = "%s/main/f/foo/foo.txt" % self._pooldir
@@ -129,62 +135,76 @@ class TestPublisher(LaunchpadZopelessTestCase):
         os.mkdir(os.path.join(self._pooldir, 'main', 'f'))
         os.mkdir(os.path.join(self._pooldir, 'main', 'f', 'foo'))
         open(foo_name, 'w').write('Hello world')
+
         # try to publish 'foo' again, via publisher, and check the content
         self._dp.scan()
         p = Publisher(self._logger, cnf, self._dp, dist)
-        alias = self.addMockFile('foo.txt', 'BOOOOOOOOOM')
-        self.assertRaises(PoolFileOverwriteError,
-                          p._publish, "foo", "main", "foo.txt", alias)
+        pub_source = self.getMockPubSource("foo", "main", "foo.txt",
+                                           filecontent="Something")
+        p.publishOne(pub_source)
+        self.assertEqual(pub_source.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
 
-    def testPublishingTwice(self):
-        """It should raise PoolFileOverwrite when publishing a file twice."""
-        from canonical.archivepublisher import (
-            Publisher, PoolFileOverwriteError)
-
-        orig_alias = self.addMockFile('foo.txt', 'foo is happy')
+    def testPublishingDiferentContents(self):
+        """publishOne don't publish different contents with the same filename."""
+        from canonical.archivepublisher import Publisher
 
         p = Publisher(self._logger, cnf, self._dp, dist)
-        p._publish( "foo", "main", "foo.txt", orig_alias)
+        pub_source = self.getMockPubSource("foo", "main", "foo.txt",
+                                           filecontent='foo is happy')
+        p.publishOne(pub_source)
 
         foo_name = "%s/main/f/foo/foo.txt" % self._pooldir
-        self.assertEqual(open(foo_name).read().strip(),
-                         'foo is happy')
+        self.assertEqual(pub_source.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
         # try to publish 'foo' again with a different content, it
         # raises and keep the files with the original content.
-        new_alias = self.addMockFile('foo.txt', 'foo is depressing')
-        self.assertRaises(PoolFileOverwriteError,
-                          p._publish, "foo", "main", "foo.txt", new_alias)
-        self.assertEqual(open(foo_name).read().strip(),
-                         'foo is happy')
+        pub_source2 = self.getMockPubSource("foo", "main", "foo.txt",
+                                            'foo is depressing')
+        p.publishOne(pub_source2)
+        self.assertEqual(pub_source2.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PENDING)
+        self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
     def testPublishingAlreadyInPool(self):
         """It should work if file is already in Pool with the same content."""
         from canonical.archivepublisher import Publisher
-        alias = self.addMockFile('bar.txt', 'bar is good')
 
         p = Publisher(self._logger, cnf, self._dp, dist)
-        p._publish( "bar", "main", "bar.txt", alias)
-
+        pub_source = self.getMockPubSource("bar", "main", "bar.txt",
+                                           filecontent='bar is good')
+        p.publishOne(pub_source)
         bar_name = "%s/main/b/bar/bar.txt" % self._pooldir
-        self.assertEqual(open(bar_name).read().strip(),
-                         'bar is good')
+        self.assertEqual(open(bar_name).read().strip(), 'bar is good')
+        self.assertEqual(pub_source.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PUBLISHED)
 
-        p._publish("bar", "main", "bar.txt", alias)
+        pub_source2 = self.getMockPubSource("bar", "main", "bar.txt",
+                                            filecontent='bar is good')
+        p.publishOne(pub_source2)
+        self.assertEqual(pub_source2.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PUBLISHED)
 
     def testPublishingSymlink(self):
         """Publishing an existent file with the same content via symlink."""
-        from canonical.archivepublisher import (
-            Publisher, PoolFileOverwriteError)
+        from canonical.archivepublisher import Publisher
 
         content = 'am I a file or a symbolic link ?'
-        alias = self.addMockFile('sim.txt', content)
-
         # publish sim.txt in main and re-publish in universe
         p = Publisher(self._logger, cnf, self._dp, dist)
-        p._publish( "sim", "main", "sim.txt", alias)
-        p._publish( "sim", "universe", "sim.txt", alias)
+        pub_source = self.getMockPubSource( "sim", "main", "sim.txt",
+                                            filecontent=content)
+        pub_source2 = self.getMockPubSource( "sim", "universe", "sim.txt",
+                                            filecontent=content)
+        p.publishOne(pub_source)
+        p.publishOne(pub_source2)
+        self.assertEqual(pub_source.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source2.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PUBLISHED)
 
         # check the resulted symbolic link
         sim_universe = "%s/universe/s/sim/sim.txt" % self._pooldir
@@ -192,9 +212,11 @@ class TestPublisher(LaunchpadZopelessTestCase):
                          '../../../main/s/sim/sim.txt')
 
         # if the contests don't match it raises.
-        new_alias = self.addMockFile('sim.txt', 'It is all my fault')
-        self.assertRaises(PoolFileOverwriteError,
-                          p._publish, "sim", "restricted", "sim.txt", new_alias)
+        pub_source3 = self.getMockPubSource("sim", "restricted", "sim.txt",
+                                            filecontent='It is all my fault')
+        p.publishOne(pub_source3)
+        self.assertEqual(pub_source3.sourcepackagepublishing.status,
+                         PackagePublishingStatus.PENDING)
 
     def testZFullPublishSource(self):
         """Publishing a single sources"""

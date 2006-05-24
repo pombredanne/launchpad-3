@@ -100,35 +100,7 @@ class Publisher(object):
     def debug(self, *args, **kwargs):
         self._logger.debug(*args, **kwargs)
 
-    def _publish(self, source, component, filename, alias):
-        """Extract the given file from the librarian, construct the
-        path to it in the pool and store the file. (assuming it's not already
-        there).
-        """
-        #print "%s/%s/%s: Publish from %d" % (component, source, filename,
-        #                                     alias)
-        # Dir is ready, extract from the librarian...
-        # self._library should be a client for fetching from the library...
-        # We're going to assume here that we'll eventually be allowed to
-        # fetch from the library purely by aliasid (since that utterly
-        # unambiguously identifies the file that we want)
-        try:
-            self._diskpool.checkBeforeAdd(component, source, filename,
-                                          alias.content.sha1)
-        except NeedsSymlinkInPool, info:
-            self._diskpool.makeSymlink(component, source, filename)
-            return
-        except AlreadyInPool, info:
-            return
-
-        self.debug("Adding %s %s/%s from library" %
-                   (component, source, filename))
-
-        pool_file = self._diskpool.openForAdd(component, source, filename)
-        alias.open()
-        copy_and_close(alias, pool_file)
-
-    def publish(self, records, isSource = True):
+    def publish(self, records, isSource=True):
         """records should be an iterable of indexables which provide the
         following attributes:
 
@@ -138,34 +110,63 @@ class Publisher(object):
                sourcepackagename : SourcePackageName.name
                    componentname : Component.name
         """
-
         for pubrec in records:
-            source = pubrec.sourcepackagename.encode('utf-8')
-            component = pubrec.componentname.encode('utf-8')
-            filename = pubrec.libraryfilealiasfilename.encode('utf-8')
-            try:
-                self._publish(source, component, filename,
-                              pubrec.libraryfilealias)
-            except PoolFileOverwriteError, info:
-                # Skip publishing records which tries to overwrite
-                # a file in the pool and warn the user about it.
-                # Any further actions will require serious discussion
-                self._logger.error(
-                    "System is trying to overwrite %s/%s (%s), "
-                    "skipping publishing record. (%s)"
-                    % (component, filename, pubrec.libraryfilealias, info))
-                continue
+            self.publishOne(pubrec, isSource)
 
-            if isSource:
-                pub_sp = pubrec.sourcepackagepublishing
-                if pub_sp.status == PackagePublishingStatus.PENDING:
-                    pub_sp.status = PackagePublishingStatus.PUBLISHED
-                    pub_sp.datepublished = nowUTC
-            else:
-                pub_bp = pubrec.binarypackagepublishing
-                if pub_bp.status == PackagePublishingStatus.PENDING:
-                    pub_bp.status = PackagePublishingStatus.PUBLISHED
-                    pub_bp.datepublished = nowUTC
+    def publishOne(self, pubrec, isSource=True):
+        """Publish one publishing record.
+
+        Skip records which attempt to overwrite the archive (some file paths
+        with different content) and do not update the database.
+
+        Create symbolic link to files already present in different location
+        or add file from librarian if it's not present. Update the database
+        to represent the current archive state.
+        """
+        source = pubrec.sourcepackagename.encode('utf-8')
+        component = pubrec.componentname.encode('utf-8')
+        filename = pubrec.libraryfilealiasfilename.encode('utf-8')
+        alias = pubrec.libraryfilealias
+        try:
+            self._diskpool.checkBeforeAdd(component, source, filename,
+                                          alias.content.sha1)
+        except PoolFileOverwriteError, info:
+            # Skip publishing records which tries to overwrite
+            # a file in the pool and warn the user about it.
+            # Any further actions will require serious discussion
+            self._logger.error(
+                "System is trying to overwrite %s (%s), "
+                "skipping publishing record. (%s)"
+                % (self._diskpool.pathFor(component, source, filename),
+                   pubrec.libraryfilealias.id, info))
+            return
+
+        except NeedsSymlinkInPool, info:
+            self._diskpool.makeSymlink(component, source, filename)
+
+        except AlreadyInPool, info:
+            self.debug("%s is already in pool with the same content." %
+                       self._diskpool.pathFor(component, source, filename))
+
+        else:
+            pool_file = self._diskpool.openForAdd(component, source, filename)
+            alias.open()
+            copy_and_close(alias, pool_file)
+
+            self.debug("Added %s from library" %
+                       self._diskpool.pathFor(component, source, filename))
+
+        if isSource:
+            pub_sp = pubrec.sourcepackagepublishing
+            if pub_sp.status == PackagePublishingStatus.PENDING:
+                pub_sp.status = PackagePublishingStatus.PUBLISHED
+                pub_sp.datepublished = nowUTC
+        else:
+            pub_bp = pubrec.binarypackagepublishing
+            if pub_bp.status == PackagePublishingStatus.PENDING:
+                pub_bp.status = PackagePublishingStatus.PUBLISHED
+                pub_bp.datepublished = nowUTC
+
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):
