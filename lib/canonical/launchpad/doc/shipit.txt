@@ -207,13 +207,13 @@ Exporting requests
 
 When exporting requests, we'll want to get all approved requests that weren't
 approved yet, with a given priority. This is done using the
-getUnshippedRequests method of ShippingRequestSet.
+getUnshippedRequestsIDs method of ShippingRequestSet.
 
   >>> import transaction
   >>> transaction.commit()
   >>> high = ShippingRequestPriority.HIGH
-  >>> unshipped_requests = requestset.getUnshippedRequests(high)
-  >>> unshipped_requests.count()
+  >>> unshipped_requests = requestset.getUnshippedRequestsIDs(high)
+  >>> len(unshipped_requests)
   1
 
 To actually export the files and upload them to Librarian we use
@@ -240,8 +240,8 @@ priority requests.
 Now we do an export of all normal priority requests that are ready to be
 shipped, by running the shipit-exports cronscript.
 
-  >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
-  6
+  >>> sorted(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL))
+  [1, 2, 3, 4, 5, 7]
 
   >>> import subprocess
   >>> process = subprocess.Popen(
@@ -255,11 +255,12 @@ shipped, by running the shipit-exports cronscript.
 
   >>> transaction.commit()
   >>> flush_database_updates()
-  >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
+  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL))
   0
   >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
-  >>> run.requests.count()
-  6
+  >>> sorted([request.id for request in run.requests])
+  [1, 2, 3, 4, 5, 7]
+
   >>> run.requests[0].highpriority
   False
 
@@ -275,7 +276,12 @@ based on shipit data.
 One of the reports we can generate gives us information about orders shipped
 to each country.
 
-  >>> csv_file = requestset.generateCountryBasedReport()
+The generateCountryBasedReport() method accepts a current_release_only
+argument that, if True, will include only requests of
+ShipItConstants.current_distrorelease.
+
+  >>> csv_file = requestset.generateCountryBasedReport(
+  ...     current_release_only=False)
   >>> for line in csv_file.readlines():
   ...     line.strip()
   'Country,Shipped Ubuntu x86 CDs,Shipped Ubuntu AMD64 CDs,Shipped Ubuntu PPC CDs,Shipped Kubuntu x86 CDs,Shipped Kubuntu AMD64 CDs,Shipped Kubuntu PPC CDs,Shipped Edubuntu x86 CDs,Shipped Edubuntu AMD64 CDs,Shipped Edubuntu PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent'
@@ -286,11 +292,28 @@ to each country.
   'Heard Island and McDonald Islands,5,0,0,0,0,0,0,0,0,1,0,5,100.00%,4.90%,Antarctica'
   '\xc3\x85land Islands,9,6,9,8,2,0,0,0,0,1,1,17,100.00%,33.33%,Europe'
 
+  >>> csv_file = requestset.generateCountryBasedReport(
+  ...     current_release_only=True)
+  >>> for line in csv_file.readlines():
+  ...     line.strip()
+  'Country,Shipped Ubuntu x86 CDs,Shipped Ubuntu AMD64 CDs,Shipped Ubuntu PPC CDs,Shipped Kubuntu x86 CDs,Shipped Kubuntu AMD64 CDs,Shipped Kubuntu PPC CDs,Shipped Edubuntu x86 CDs,Shipped Edubuntu AMD64 CDs,Shipped Edubuntu PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent'
+  'Bermuda,8,1,1,0,0,0,0,0,0,1,0,10,100.00%,18.52%,North America'
+  'British Indian Ocean Territory,0,0,1,6,5,0,6,0,0,4,1,3,100.00%,33.33%,Asia'
+  'Burkina Faso,10,0,0,0,0,0,0,0,0,1,0,10,100.00%,18.52%,Africa'
+  'China,0,1,0,0,0,0,0,0,0,1,0,1,100.00%,1.85%,Asia'
+  'Heard Island and McDonald Islands,5,0,0,0,0,0,0,0,0,1,0,5,100.00%,9.26%,Antarctica'
+  '\xc3\x85land Islands,0,0,0,8,2,0,0,0,0,1,1,5,100.00%,18.52%,Europe'
+
 
 There's another report which gives us the number of shipments of all shipment
 sizes we had.
 
-  >>> csv_file = requestset.generateShipmentSizeBasedReport()
+The generateShipmentSizeBasedReport() method accepts a current_release_only
+argument that, if True, will include only requests of
+ShipItConstants.current_distrorelease.
+
+  >>> csv_file = requestset.generateShipmentSizeBasedReport(
+  ...     current_release_only=False)
   >>> for line in csv_file.readlines():
   ...     line.strip()
   'Number of CDs,Number of Shipments'
@@ -299,6 +322,17 @@ sizes we had.
   '5,2'
   '10,4'
   '24,2'
+
+  >>> csv_file = requestset.generateShipmentSizeBasedReport(
+  ...     current_release_only=True)
+  >>> for line in csv_file.readlines():
+  ...     line.strip()
+  'Number of CDs,Number of Shipments'
+  '1,2'
+  '2,1'
+  '5,2'
+  '10,4'
+
 
 There's also a report of requests by week.
 
