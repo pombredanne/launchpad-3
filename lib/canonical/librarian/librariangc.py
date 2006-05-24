@@ -56,7 +56,7 @@ def merge_duplicates(con):
             """, vars())
         dupes = [str(row[0]) for row in cur.fetchall()]
 
-        log.info(
+        log.debug(
                 "Found duplicate LibraryFileContents %s",
                 ' '.join(dupes)
                 )
@@ -75,7 +75,7 @@ def merge_duplicates(con):
                         dupe1_id, dupe1_path
                         )
             else:
-                log.error(
+                log.warning(
                         "LibraryFileContent %d data is missing (%s)",
                         dupe1_id, dupe1_path
                         )
@@ -205,7 +205,7 @@ def delete_unreferenced_aliases(con):
                     )
             """ % vars())
         assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
-        log.info(
+        log.debug(
                 "Deleting all LibraryFileAlias references to "
                 "LibraryFileContents %s", in_content_ids
                 )
@@ -241,7 +241,7 @@ def delete_unreferenced_content(con):
         # Delete old LibraryFileContent entries. Note that this will fail
         # if we screwed up and still have LibraryFileAlias entries referencing
         # it.
-        log.info("Deleting LibraryFileContents %s", in_garbage_ids)
+        log.debug("Deleting LibraryFileContents %s", in_garbage_ids)
         cur.execute("""
             DELETE FROM LibraryFileContent WHERE id in (%s)
             """ % in_garbage_ids)
@@ -250,7 +250,7 @@ def delete_unreferenced_content(con):
             # Remove the file from disk, if it hasn't already been
             path = get_file_path(garbage_id)
             if os.path.exists(path):
-                log.info("Deleting %s", path)
+                log.debug("Deleting %s", path)
                 os.unlink(path)
             else:
                 log.info("%s already deleted", path)
