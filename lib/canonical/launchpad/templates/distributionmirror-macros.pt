@@ -50,7 +50,7 @@
       define="arch_releases mirror/getSummarizedMirroredArchReleases;
               source_releases mirror/getSummarizedMirroredSourceReleases">
 
-      <h2>Architecture releases mirrored</h2>
+      <h2>Architecture Releases Mirrored</h2>
       <div tal:condition="not: arch_releases">
         We have found no releases for any architectures on this mirror.
         This is normal if we have not yet successfully verified the mirror.
@@ -67,14 +67,14 @@
       </thead>
       <tbody>
         <tr tal:repeat="arch_release arch_releases">
-          <td tal:content="arch_release/distro_arch_release/distrorelease/displayname" />
+          <td tal:content="arch_release/distro_arch_release/distrorelease/title" />
           <td tal:content="arch_release/distro_arch_release/architecturetag" />
           <td tal:content="arch_release/status/title" />
         </tr>
       </tbody>
       </table>
 
-      <h2>Source releases mirrored</h2>
+      <h2>Source Releases Mirrored</h2>
       <div tal:condition="not: source_releases">
         We have found no source releases on this mirror. This is normal
         if we have not yet successfully verified the mirror.
@@ -90,7 +90,7 @@
       </thead>
       <tbody>
         <tr tal:repeat="source_release source_releases">
-          <td tal:content="source_release/distrorelease/displayname" />
+          <td tal:content="source_release/distrorelease/title" />
           <td tal:content="source_release/status/title" />
         </tr>
       </tbody>
@@ -105,7 +105,7 @@
       condition="python: mirror.content.name == 'RELEASE'"
       define="flavours_by_release mirror/getCDImageMirroredFlavoursByRelease">
 
-      <h2>Releases mirrored</h2>
+      <h2>Releases And Flavours Mirrored</h2>
       <div tal:condition="not: flavours_by_release">
         We have found no CD images for any releases on this mirror.
         This is normal if we have not yet successfully verified the mirror.
@@ -124,7 +124,7 @@
             <td tal:content="release_name" />
             <td>
               <tal:flavours repeat="flavour flavours_by_release/?release_name">
-                <span tal:replace="flavour"
+                <span tal:replace="flavour/capitalize"
                 /><span tal:condition="not: repeat/flavour/end">,</span>
               </tal:flavours>
             </td>

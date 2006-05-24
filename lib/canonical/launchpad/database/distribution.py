@@ -49,7 +49,8 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus, MirrorContent,
-    TranslationPermission, SpecificationSort, SpecificationFilter)
+    TranslationPermission, SpecificationSort, SpecificationFilter,
+    MirrorPulseType)
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, NotFoundError,
@@ -162,10 +163,11 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
 
-    def newMirror(self, owner, name, speed, country, content, pulse_type=None,
-                  displayname=None, description=None, http_base_url=None,
-                  ftp_base_url=None, rsync_base_url=None, file_list=None,
-                  official_candidate=False, enabled=False, pulse_source=None):
+    def newMirror(self, owner, name, speed, country, content,
+                  pulse_type=MirrorPulseType.PUSH, displayname=None,
+                  description=None, http_base_url=None, ftp_base_url=None,
+                  rsync_base_url=None, file_list=None, official_candidate=False,
+                  enabled=False, pulse_source=None):
         """See IDistribution."""
 
         # NB this functionality is only available to distributions that have

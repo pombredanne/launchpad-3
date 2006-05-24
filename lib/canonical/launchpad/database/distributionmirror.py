@@ -203,7 +203,7 @@ class DistributionMirror(SQLBase):
         flavours_by_release = {}
         for cdimage in self.cdimage_releases:
             distrorelease, flavour = cdimage.distrorelease, cdimage.flavour
-            flavours = flavours_by_release.setdefault(distrorelease.name, [])
+            flavours = flavours_by_release.setdefault(distrorelease.title, [])
             if flavour not in flavours:
                 flavours.append(flavour)
         return flavours_by_release

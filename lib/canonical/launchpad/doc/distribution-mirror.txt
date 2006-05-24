@@ -11,7 +11,7 @@ to create a new mirror you should use the Distribution.newMirror method.
     ...     IDistroArchReleaseSet, IDistributionMirrorSet)
     >>> from canonical.lp.dbschema import (
     ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     MirrorPulseType, PackagePublishingStatus)
+    ...     PackagePublishingStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)
@@ -20,10 +20,9 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> speed = MirrorSpeed.S2M
     >>> country = getUtility(ICountrySet)['BR']
     >>> content = MirrorContent.ARCHIVE
-    >>> pulse_type = MirrorPulseType.PUSH
     >>> http_base_url = 'http://foo.bar.com/pub'
-    >>> new_mirror = ubuntu.newMirror(owner, name, speed, country, content,
-    ...                               pulse_type, http_base_url=http_base_url)
+    >>> new_mirror = ubuntu.newMirror(
+    ...     owner, name, speed, country, content, http_base_url=http_base_url)
     >>> new_mirror.isOfficial()
     False
 
@@ -33,8 +32,8 @@ functionality of Launchpad enabled:
     >>> kubuntu = distroset.get(5)
     >>> kubuntu.name
     u'kubuntu'
-    >>> poor_mirror = kubuntu.newMirror(owner, name, speed, country, content,
-    ...                               pulse_type, http_base_url=http_base_url)
+    >>> poor_mirror = kubuntu.newMirror(
+    ...     owner, name, speed, country, content, http_base_url=http_base_url)
     >>> print poor_mirror
     None
 
@@ -121,7 +120,7 @@ It's possible to retrieve a mirror by its name:
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IDistributionMirror
-    >>> example_mirror = mirrorset.getByName('valid-mirror')
+    >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
     True
 
@@ -475,5 +474,6 @@ And now check the releases and flavours mirrored on a releae mirror.
     True
     >>> release_mirror = ubuntu.release_mirrors[0]
     >>> sorted(release_mirror.getCDImageMirroredFlavoursByRelease().items())
-    [(u'hoary', [u'ubuntu', u'kubuntu']), (u'warty', [u'ubuntu'])]
+    [(u'The Hoary Hedgehog Release', [u'ubuntu', u'kubuntu']),
+     (u'The Warty Warthog Release', [u'ubuntu'])]
 
