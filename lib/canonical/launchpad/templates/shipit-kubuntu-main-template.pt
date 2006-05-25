@@ -23,9 +23,6 @@
         }
         label {font-weight: inherit;}
         ul {margin-bottom: 1em;}
-        #body {
-            margin: 1em;
-        }
         #search {
             top: 10px;
             right: 10px;

@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
     validate_shipit_city, validate_shipit_addressline1,
     validate_shipit_addressline2, validate_shipit_organization,
-    validate_shipit_province)
+    validate_shipit_province, validate_shipit_postcode)
 
 from canonical.launchpad import _
 
@@ -150,6 +150,7 @@ class IShippingRequest(Interface):
             )
     postcode = TextLine(
             title=_('Postcode'), required=False, readonly=False,
+            constraint=validate_shipit_postcode,
             description=_('The Postcode to where the CDs will be shipped.')
             )
     phone = TextLine(
@@ -299,8 +300,8 @@ class IShippingRequestSet(Interface):
         Return None if there's no requests with status PENDING.
         """
 
-    def getUnshippedRequests(priority):
-        """Return all requests that are eligible for shipping.
+    def getUnshippedRequestsIDs(priority):
+        """Return the ID of all requests that are eligible for shipping.
 
         These are approved requests that weren't shipped yet.
         """
@@ -315,13 +316,20 @@ class IShippingRequestSet(Interface):
                recipient_text=None, include_cancelled=True):
         """Search for requests that match the given arguments."""
 
-    def generateShipmentSizeBasedReport():
+    def generateShipmentSizeBasedReport(current_release_only=False):
         """Generate a csv file with the size of shipments and the number of
         shipments of that size.
+
+        If current_release_only is True, then include only requests for CDs of
+        ShipItConstants.current_distrorelease.
         """
 
-    def generateCountryBasedReport():
-        """Generate a csv file with statiscs about orders placed by country."""
+    def generateCountryBasedReport(current_release_only=False):
+        """Generate a csv file with statiscs about orders placed by country.
+
+        If current_release_only is True, then include only requests for CDs of
+        ShipItConstants.current_distrorelease.
+        """
 
     def generateWeekBasedReport(start_date, end_date):
         """Generate a csv file with statistics about orders placed by week.

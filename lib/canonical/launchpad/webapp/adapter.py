@@ -301,7 +301,9 @@ class CursorWrapper:
                 os.environ.get("LP_DEBUG_SQL")):
                 sys.stderr.write(statement + "\n")
             try:
-                return self._cur.execute(statement, *args, **kwargs)
+                return self._cur.execute(
+                        '/*%s*/ %s' % (id(self), statement), *args, **kwargs
+                        )
             finally:
                 _log_statement(
                         starttime, time.time(),

@@ -37,9 +37,6 @@
             font-size: 1em;
             font-weight: normal;
           }
-          #body {
-            margin: 1em;
-          }
           label {font-weight: inherit;}
           ul {margin-bottom: 1em;}
           :link {

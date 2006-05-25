@@ -15,10 +15,7 @@
 
       <style type="text/css">
         <!-- 
-        #body {
-          padding: 1em;
-        }
-        input[type=text], input[type=password], select, textarea {
+        textarea, input[type=text], input[type=password], select, textarea {
             border: solid 1px black;
             margin: 3px;
         }

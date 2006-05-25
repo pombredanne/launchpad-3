@@ -92,8 +92,12 @@
       </ul>
     </tal:not-edubuntu>
 
-    <form name="shipit" action="" method="POST">
-
+    <!-- Without using setTimeout() to disable the submit button it'll be
+    disabled before the browser generates the request, which will cause the
+    request to not contain the name/value of the button.
+    -->
+    <form name="shipit" action="" method="post"
+          onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
         <table style="margin: 0 auto;">
           <tbody>
@@ -163,6 +167,10 @@
   </table>  
 
   <script type="text/javascript">
+    function disableSubmitButton() {
+      var form = document.forms['shipit'];
+      form.FORM_SUBMIT.disabled = true;
+    }
     function updateWidgets() {
       var form = document.forms['shipit'];
       state = (form.extracds.checked == false);
