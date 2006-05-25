@@ -382,7 +382,8 @@ class BugTaskSet:
         "title": "Bug.title",
         "milestone": "BugTask.milestone",
         "dateassigned": "BugTask.dateassigned",
-        "datecreated": "BugTask.datecreated"}
+        "datecreated": "BugTask.datecreated",
+        "date_last_updated": "Bug.date_last_updated"}
 
     title = "A set of bug tasks"
 

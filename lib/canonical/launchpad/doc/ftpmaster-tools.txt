@@ -40,6 +40,24 @@ INFO
                                                                4/4
 							       total
 
+
+INFO by ID, return an error if it's not present in the specified queue:
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "breezy-autotest",
+  ...                             "-Q", "rejected", "info", "1"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stdout
+  Initialising connection to queue rejected
+  Running: "info 1"
+  Item 1 is in queue NEW
+  Aborting current transaction
+  <BLANKLINE>
+
+
 Check the custom uploads presentation:
 
   >>> process = subprocess.Popen([sys.executable, script, "-Q", "unapproved",

@@ -14,8 +14,8 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
-  <h1>Report a new bug</h1>
+  <div class="discreet" tal:content="context/title">Foo Series: main</div>
+  <h1>Report a bug</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -27,7 +27,7 @@
 
   <tal:uses_malone tal:condition="context/official_malone">
     <p>
-      Before reporting a bug, please ensure it hasn&#8217;t been <a
+      Please check that your bug hasn&#8217;t been <a
       tal:attributes="href string:${context/fmt:url}/+bugs">reported
       already</a>.
     </p>
@@ -67,12 +67,12 @@
 
   <div style="margin-top: 1em">
     <label tal:attributes="for view/title_widget/name">
-      Now summarize that in a few words:
+      Now, summarize that in a few words:
     </label>
     <div tal:content="structure view/title_widget" />
   </div>
 
-  <div style="margin-top: 1em">
+  <div style="margin-top: 2em">
     <span>
       <input class="hiddenType" id="field.security_related.used"
              name="field.security_related.used" type="hidden" value="" />

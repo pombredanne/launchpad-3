@@ -15,6 +15,7 @@ from canonical.database.postgresql import listReferences
 BATCH_SIZE = 1
 
 log = None
+debug = False
 
 def merge_duplicates(con):
     """Merge duplicate LibraryFileContent rows
@@ -54,19 +55,26 @@ def merge_duplicates(con):
             WHERE sha1=%(sha1)s AND filesize=%(filesize)s
             ORDER BY deleted, datecreated DESC
             """, vars())
-        dupes = [str(row[0]) for row in cur.fetchall()]
+        dupes = [row[0] for row in cur.fetchall()]
 
-        log.info(
-                "Found duplicate LibraryFileContents %s",
-                ' '.join(dupes)
-                )
+        if debug:
+            log.debug("Found duplicate LibraryFileContents")
+            # Spit out more info in case it helps work out where
+            # dupes are coming from.
+            for dupe_id in dupes:
+                cur.execute("""
+                    SELECT id, filename, mimetype FROM LibraryFileAlias
+                    WHERE content = %(dupe_id)s
+                    """, vars())
+                for id, filename, mimetype in cur.fetchall():
+                    log.debug("> %d %s %s" % (id, filename, mimetype))
 
         # Make sure the first file exists on disk. Don't merge if it
         # doesn't. This shouldn't happen on production, so we don't try
         # and cope - just report and skip. However, on staging this will
         # be more common because database records has been synced from
         # production but the actual librarian contents has not.
-        dupe1_id = int(dupes[0])
+        dupe1_id = dupes[0]
         dupe1_path = get_file_path(dupe1_id)
         if not os.path.exists(dupe1_path):
             if config.name == 'staging':
@@ -75,7 +83,7 @@ def merge_duplicates(con):
                         dupe1_id, dupe1_path
                         )
             else:
-                log.error(
+                log.warning(
                         "LibraryFileContent %d data is missing (%s)",
                         dupe1_id, dupe1_path
                         )
@@ -86,7 +94,7 @@ def merge_duplicates(con):
         # SHA1 enough that it becomes possible to create a SHA1 collision
         # with an identical filesize to an existing file. Which is pretty
         # unlikely. Where did I leave my tin foil hat?
-        for dupe2_id in (int(dupe) for dupe in dupes[1:]):
+        for dupe2_id in (dupe for dupe in dupes[1:]):
             dupe2_path = get_file_path(dupe2_id)
             # Check paths exist, because on staging they may not!
             if (os.path.exists(dupe2_path)
@@ -102,7 +110,7 @@ def merge_duplicates(con):
         # Update all the LibraryFileAlias entries to point to a single
         # LibraryFileContent
         prime_id = dupes[0]
-        other_ids = ', '.join(dupes[1:])
+        other_ids = ', '.join(str(dupe) for dupe in dupes[1:])
         log.debug(
                 "Making LibraryFileAliases referencing %s reference %s instead",
                 other_ids, prime_id
@@ -205,7 +213,7 @@ def delete_unreferenced_aliases(con):
                     )
             """ % vars())
         assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
-        log.info(
+        log.debug(
                 "Deleting all LibraryFileAlias references to "
                 "LibraryFileContents %s", in_content_ids
                 )
@@ -241,7 +249,7 @@ def delete_unreferenced_content(con):
         # Delete old LibraryFileContent entries. Note that this will fail
         # if we screwed up and still have LibraryFileAlias entries referencing
         # it.
-        log.info("Deleting LibraryFileContents %s", in_garbage_ids)
+        log.debug("Deleting LibraryFileContents %s", in_garbage_ids)
         cur.execute("""
             DELETE FROM LibraryFileContent WHERE id in (%s)
             """ % in_garbage_ids)
@@ -250,7 +258,7 @@ def delete_unreferenced_content(con):
             # Remove the file from disk, if it hasn't already been
             path = get_file_path(garbage_id)
             if os.path.exists(path):
-                log.info("Deleting %s", path)
+                log.debug("Deleting %s", path)
                 os.unlink(path)
             else:
                 log.info("%s already deleted", path)
