@@ -3,7 +3,7 @@
   First of all, let's see the requests that are still pending approval:
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?statusfilter=pending&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
+  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?statusfilter=pending&releasefilter=any&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
   ... """)
   HTTP/1.1 200 Ok
@@ -18,7 +18,7 @@
   Now we search for approved requests containing Ubuntu CDs.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?statusfilter=approved&flavourfilter=UBUNTU&orderby=daterequested&show=Show HTTP/1.1
+  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?statusfilter=approved&releasefilter=any&flavourfilter=UBUNTU&orderby=daterequested&show=Show HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
   ... """)
   HTTP/1.1 200 Ok
@@ -36,7 +36,7 @@
   Now check the approved ones containing Kubuntu CDs.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?statusfilter=approved&flavourfilter=KUBUNTU&orderby=daterequested&show=Show HTTP/1.1
+  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?statusfilter=approved&releasefilter=any&flavourfilter=KUBUNTU&orderby=daterequested&show=Show HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
   ... """)
   HTTP/1.1 200 Ok
@@ -59,7 +59,7 @@
   Kreutzmann.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?recipient_text=Kreutzmann&statusfilter=approved&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
+  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?recipient_text=Kreutzmann&statusfilter=approved&releasefilter=any&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
   ... """)
   HTTP/1.1 200 Ok
@@ -75,7 +75,7 @@
   And here we look for pending orders placed by Jeff Waugh.
 
   >>> print http(r"""
-  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?recipient_text=waugh&statusfilter=pending&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
+  ... GET /shipit-ubuntu/++vh++http:shipit.async.com.br:80/++/requests?recipient_text=waugh&statusfilter=pending&releasefilter=any&flavourfilter=any&orderby=daterequested&show=Show HTTP/1.1
   ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
   ... """)
   HTTP/1.1 200 Ok

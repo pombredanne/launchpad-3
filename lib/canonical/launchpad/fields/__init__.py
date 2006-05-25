@@ -80,10 +80,11 @@ class PasswordField(Password):
                 "The password provided contains non-ASCII characters."))
 
 
-class ContentNameField(TextLine):
-    """Base class for fields that are used by unique 'name' attributes."""
+class UniqueField(TextLine):
+    """Base class for fields that are used for unique attributes."""
 
-    errormessage = _("%s is already taken.") 
+    errormessage = _("%s is already taken")
+    attribute = None
 
     @property
     def _content_iface(self):
@@ -93,26 +94,38 @@ class ContentNameField(TextLine):
         """
         return None
 
-    def _getByName(self, name):
-        """Return the content object with the given name.
+    def _getByAttribute(self, input):
+        """Return the content object with the given attribute.
 
         Override this in subclasses.
         """
         raise NotImplementedError
 
-    def _validate(self, name):
-        """Raise a LaunchpadValidationError if the name is not available.
+    def _validate(self, input):
+        """Raise a LaunchpadValidationError if the attribute is not available.
 
-        A name is not available if it's already in use by another object of
-        this same context.
+        A attribute is not available if it's already in use by another object 
+        of this same context. The 'input' should be valid as per TextLine.
         """
-        TextLine._validate(self, name)
+        TextLine._validate(self, input)
         assert self._content_iface is not None
+        _marker = object()
         if (self._content_iface.providedBy(self.context) and 
-            name == getattr(self.context, self.__name__)):
-            # The name wasn't changed.
+            input == getattr(self.context, self.attribute, _marker)):
+            # The attribute wasn't changed.
             return
 
-        contentobj = self._getByName(name)
+        contentobj = self._getByAttribute(input)
         if contentobj is not None:
-            raise LaunchpadValidationError(self.errormessage % name)
+            raise LaunchpadValidationError(self.errormessage % input)
+
+
+class ContentNameField(UniqueField):
+    """Base class for fields that are used by unique 'name' attributes."""
+
+    attribute = 'name'
+
+    def _getByAttribute(self, name):
+        """Return the content object with the given name."""
+        return self._getByName(name)
+

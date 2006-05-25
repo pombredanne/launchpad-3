@@ -92,7 +92,12 @@
 
     <br />
 
-    <form name="shipit" action="" method="POST">
+    <!-- Without using setTimeout() to disable the submit button it'll be
+    disabled before the browser generates the request, which will cause the
+    request to not contain the name/value of the button.
+    -->
+    <form name="shipit" action="" method="POST"
+          onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
     <div style="margin: 0em 5em" 
          tal:define="selected_id view/selected_standardrequest">
@@ -153,6 +158,10 @@
   </table>  
 
   <script type="text/javascript">
+    function disableSubmitButton() {
+      var form = document.forms['shipit'];
+      form.FORM_SUBMIT.disabled = true;
+    }
     function updateWidgets() {
       var form = document.forms['shipit'];
       state = (form.extracds.checked == false);
