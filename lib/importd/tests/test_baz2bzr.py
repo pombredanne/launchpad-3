@@ -459,7 +459,23 @@ class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
             str(self.series_id), '/dev/null', self.mirror_prefix])
         self.assertOutputEqual(output, '\r\n'.join(self.expected_lines))
 
-    expected_lines = TestBaz2bzrImportFeature.expected_lines
+    expected_lines = TestBaz2bzrImportFeature.expected_lines[:-1] + [
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/4 fetch phase',
+        '1/4 fetch phase',
+        '2/4 fetch phase',
+        '']
 
 
 class TestBlacklistParser(unittest.TestCase):
