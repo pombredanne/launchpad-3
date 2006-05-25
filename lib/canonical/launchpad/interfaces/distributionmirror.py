@@ -20,10 +20,6 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad import _
 
 
-# XXX: This will be a problem when we do the pre-announcement run, because
-# some mirrors may have been probed less than 24 hours ago and then the run
-# will skip them.
-# -- Guilherme Salgado, 2006-05-03
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
 
@@ -211,27 +207,24 @@ class IDistributionMirror(Interface):
         release and flavour, in case it exists.
         """
 
-    def guessPackagesPaths():
-        """Guess all paths where we can probably find Packages.gz files on
-        this mirror.
+    def getExpectedPackagesPaths():
+        """Get all paths where we can find Packages.gz files on this mirror.
 
         Return a list containing, for each path, the DistroArchRelease,
         the PackagePublishingPocket and the Component to which that given
         Packages.gz file refer to and the path to the file itself.
         """
 
-    def guessSourcesPaths():
-        """Guess and return all paths where we can probably find Sources.gz
-        files on this mirror.
+    def getExpectedSourcesPaths():
+        """Get all paths where we can find Sources.gz files on this mirror.
 
         Return a list containing, for each path, the DistroRelease, the
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
         """
 
-    def guessCDImagePaths():
-        """Guess and return all paths where we can probably find CD image
-        files on this mirror.
+    def getExpectedCDImagePaths():
+        """Get all paths where we can find CD image files on this mirror.
 
         Return a list containing, for each DistroRelease and flavour, a list
         of CD image file paths for that DistroRelease and flavour.
@@ -252,12 +245,16 @@ class IDistributionMirrorSet(Interface):
     def __getitem__(mirror_id):
         """Return the DistributionMirror with the given id."""
 
-    def getMirrorsToProbe(content_type):
+    def getMirrorsToProbe(content_type, ignore_last_probe=False):
         """Return all official and enabled mirrors with the given content type
         that need to be probed.
 
         A mirror needs to be probed either if it was never probed before or if
         it wasn't probed in the last PROBE_INTERVAL hours.
+
+        If ignore_last_probe is True, then all mirrors of the given content
+        will be probed even if they were last probed in the last 
+        PROBE_INTERVAL hours.
         """
 
     def getByName(name):

@@ -49,8 +49,8 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger):
     was last synced to the main archive.
     """
     semaphore = DeferredSemaphore(BATCH_SIZE)
-    packages_paths = mirror.guessPackagesPaths()
-    sources_paths = mirror.guessSourcesPaths()
+    packages_paths = mirror.getExpectedPackagesPaths()
+    sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
     for release, pocket, component, path in all_paths:
         url = '%s/%s' % (mirror.http_base_url, path)
@@ -73,13 +73,13 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
     """Probe a release or release mirror for its contents.
     
     This is done by checking the list of files for each flavour and release
-    returned by mirror.guessCDImagePaths(). If a mirror contains all files for
-    a given release and flavour, then we consider that mirror is actually
-    mirroring that release and flavour.
+    returned by mirror.getExpectedCDImagePaths(). If a mirror contains all
+    files for a given release and flavour, then we consider that mirror is
+    actually mirroring that release and flavour.
     """
     semaphore = DeferredSemaphore(BATCH_SIZE)
     try:
-        cdimage_paths = mirror.guessCDImagePaths()
+        cdimage_paths = mirror.getExpectedCDImagePaths()
     except UnableToFetchCDImageFileList, e:
         logger.error(e)
         return
@@ -104,7 +104,8 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger):
 
 
 def parse_options(args):
-    parser = optparse.OptionParser(usage='%prog --content-type=archive|release')
+    parser = optparse.OptionParser(
+        usage='%prog --content-type=(archive|release) [--force]')
     parser.add_option(
         '--content-type',
         dest='content_type',
@@ -113,10 +114,40 @@ def parse_options(args):
         help='Probe only mirrors of the given type'
         )
 
+    parser.add_option(
+        '--force',
+        dest='force',
+        default=False,
+        action='store_true',
+        help='Force the probing of mirrors that have been probed recently'
+        )
+
     # Add the verbose/quiet options.
     logger_options(parser)
     options, args = parser.parse_args(args)
     return options
+
+
+def _sanity_check_mirror(mirror, logger):
+    """Check that the given mirror is official and has an http_base_url."""
+    assert mirror.isOfficial(), 'Non-official mirrors should not be probed'
+    if mirror.http_base_url is None:
+        logger.warning(
+            "Mirror '%s' of distribution '%s' doesn't have an http base "
+            "URL, we can't probe it."
+            % (mirror.name, mirror.distribution.name))
+        return False
+    return True
+
+
+def _create_probe_record(mirror, logfile):
+    """Create a probe record for the given mirror with the given logfile."""
+    logfile.seek(0)
+    filename = '%s-probe-logfile.txt' % mirror.name
+    log_file = getUtility(ILibraryFileAliasSet).create(
+        name=filename, size=len(logfile.getvalue()),
+        file=logfile, contentType='text/plain')
+    mirror.newProbeRecord(log_file)
 
 
 def main(argv):
@@ -143,7 +174,8 @@ def main(argv):
 
     ztm.begin()
 
-    results = mirror_set.getMirrorsToProbe(content_type)
+    results = mirror_set.getMirrorsToProbe(
+        content_type, ignore_last_probe=options.force)
     mirror_ids = [mirror.id for mirror in results]
     unchecked_mirrors = []
     logfiles = {}
@@ -151,12 +183,7 @@ def main(argv):
 
     for mirror_id in mirror_ids:
         mirror = mirror_set[mirror_id]
-        assert mirror.isOfficial(), 'Non-official mirrors should not be probed'
-        if mirror.http_base_url is None:
-            logger_obj.warning(
-                "Mirror '%s' of distribution '%s' doesn't have an http base "
-                "URL, we can't probe it."
-                % (mirror.name, mirror.distribution.name))
+        if not _sanity_check_mirror(mirror, logger_obj):
             continue
 
         probed_mirrors.append(mirror)
@@ -177,13 +204,7 @@ def main(argv):
     disabled_mirrors_count = 0
     ztm.begin()
     for mirror in probed_mirrors:
-        logfile = logfiles[mirror.id]
-        logfile.seek(0)
-        filename = '%s-probe-logfile.txt' % mirror.name
-        log_file = getUtility(ILibraryFileAliasSet).create(
-            name=filename, size=len(logfile.getvalue()),
-            file=logfile, contentType='text/plain')
-        probe_record = mirror.newProbeRecord(log_file)
+        _create_probe_record(mirror, logfiles[mirror.id])
         if not mirror.hasContent():
             disabled_mirrors_count += 1
             mirror.disableAndNotifyOwner()

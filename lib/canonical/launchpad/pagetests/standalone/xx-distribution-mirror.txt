@@ -97,7 +97,9 @@
 
   >>> 'mirror "mymirror"' in browser.contents
   True
-  >>> "This mirror can't be verified" in browser.contents
+  >>> "This mirror is an unofficial" in browser.contents
+  True
+  >>> "and will not be verified" in browser.contents
   True
 
   Now the mirror's owner mark it as enabled and as a candidate for being
@@ -118,7 +120,7 @@
   But that's not enough to make a mirror official, as we can see in the
   details portlet.
 
-  >>> 'Not Official' in browser.contents
+  >>> 'Unofficial' in browser.contents
   True
 
   To make a mirror official, one has to go to the +admin page, and the mirror
@@ -154,6 +156,6 @@
 
   And in the mirror's main page we can now see that it's an official mirror.
 
-  >>> 'Official Ubuntu Linux Mirror' in browser.contents
+  >>> 'Official' in browser.contents
   True
 

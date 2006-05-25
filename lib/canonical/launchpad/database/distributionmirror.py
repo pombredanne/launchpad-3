@@ -11,7 +11,6 @@ from datetime import datetime, timedelta, MINYEAR
 import urllib2
 import pytz
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol
@@ -20,7 +19,7 @@ from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.archivepublisher.publishing import pocketsuffix
 from canonical.archivepublisher.pool import Poolifier
@@ -32,7 +31,7 @@ from canonical.launchpad.interfaces import (
     IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
     IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL,
     IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease,
-    IDistributionSet, UnableToFetchCDImageFileList)
+    UnableToFetchCDImageFileList)
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.publishing import (
@@ -215,23 +214,21 @@ class DistributionMirror(SQLBase):
 
     def getSummarizedMirroredSourceReleases(self):
         """See IDistributionMirror"""
-        # Select the mirror with the worst status for each distrorelease.
         query = """
-            SELECT DISTINCT ON (MirrorDistroReleaseSource.distribution_mirror,
-                                MirrorDistroReleaseSource.distrorelease)
-                   MirrorDistroReleaseSource.id
-            FROM MirrorDistroReleaseSource, DistributionMirror
-            WHERE DistributionMirror.id = 
-                        MirrorDistroReleaseSource.distribution_mirror
-                  AND DistributionMirror.distribution = %(distribution)s
-            ORDER BY MirrorDistroReleaseSource.distribution_mirror, 
-                     MirrorDistroReleaseSource.distrorelease, 
-                     MirrorDistroReleaseSource.status DESC
-            """ % sqlvalues(distribution=self.distribution)
-        cur = cursor()
-        cur.execute(query)
-        ids = ", ".join([str(id) for (id,) in cur.fetchall()])
-        return MirrorDistroReleaseSource.select("id IN (%s)" % ids)
+            MirrorDistroReleaseSource.id IN (
+                SELECT DISTINCT ON (MirrorDistroReleaseSource.distribution_mirror,
+                                    MirrorDistroReleaseSource.distrorelease)
+                       MirrorDistroReleaseSource.id
+                FROM MirrorDistroReleaseSource, DistributionMirror
+                WHERE DistributionMirror.id = 
+                            MirrorDistroReleaseSource.distribution_mirror
+                      AND DistributionMirror.id = %(mirrorid)s
+                      AND DistributionMirror.distribution = %(distribution)s
+                ORDER BY MirrorDistroReleaseSource.distribution_mirror, 
+                         MirrorDistroReleaseSource.distrorelease, 
+                         MirrorDistroReleaseSource.status DESC)
+            """ % sqlvalues(distribution=self.distribution, mirrorid=self)
+        return MirrorDistroReleaseSource.select(query)
 
     @property
     def arch_releases(self):
@@ -240,23 +237,21 @@ class DistributionMirror(SQLBase):
 
     def getSummarizedMirroredArchReleases(self):
         """See IDistributionMirror"""
-        # Select the mirror with the worst status for each distro_arch_release.
         query = """
-            SELECT DISTINCT ON (MirrorDistroArchRelease.distribution_mirror,
-                                MirrorDistroArchRelease.distro_arch_release)
-                   MirrorDistroArchRelease.id
-            FROM MirrorDistroArchRelease, DistributionMirror
-            WHERE DistributionMirror.id = 
-                        MirrorDistroArchRelease.distribution_mirror
-                  AND DistributionMirror.distribution = %(distribution)s
-            ORDER BY MirrorDistroArchRelease.distribution_mirror, 
-                     MirrorDistroArchRelease.distro_arch_release, 
-                     MirrorDistroArchRelease.status DESC
-            """ % sqlvalues(distribution=self.distribution)
-        cur = cursor()
-        cur.execute(query)
-        ids = ", ".join([str(id) for (id,) in cur.fetchall()])
-        return MirrorDistroArchRelease.select("id IN (%s)" % ids)
+            MirrorDistroArchRelease.id IN (
+                SELECT DISTINCT ON (MirrorDistroArchRelease.distribution_mirror,
+                                    MirrorDistroArchRelease.distro_arch_release)
+                       MirrorDistroArchRelease.id
+                FROM MirrorDistroArchRelease, DistributionMirror
+                WHERE DistributionMirror.id = 
+                            MirrorDistroArchRelease.distribution_mirror
+                      AND DistributionMirror.id = %(mirrorid)s
+                      AND DistributionMirror.distribution = %(distribution)s
+                ORDER BY MirrorDistroArchRelease.distribution_mirror, 
+                         MirrorDistroArchRelease.distro_arch_release, 
+                         MirrorDistroArchRelease.status DESC)
+            """ % sqlvalues(distribution=self.distribution, mirrorid=self)
+        return MirrorDistroArchRelease.select(query)
 
     def _getCDImageFileList(self):
         url = config.distributionmirrorprober.releases_file_list_url
@@ -266,7 +261,7 @@ class DistributionMirror(SQLBase):
             raise UnableToFetchCDImageFileList(
                 'Unable to fetch %s: %s' % (url, e))
 
-    def guessCDImagePaths(self):
+    def getExpectedCDImagePaths(self):
         """See IDistributionMirror"""
         d = {}
         for line in self._getCDImageFileList().readlines():
@@ -275,18 +270,13 @@ class DistributionMirror(SQLBase):
             paths.append(path)
 
         paths = []
-        # XXX: We only probe Ubuntu release mirrors, but even so it'd be good
-        # if we could get the Ubuntu Distribution from somewhere else, instead
-        # of having it hardcoded here.
-        # -- Guilherme Salgado, 2006-05-11
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
         for key, value in d.items():
             flavour, releasename = key
-            release = ubuntu.getRelease(releasename)
+            release = self.distribution.getRelease(releasename)
             paths.append((release, flavour, value))
         return paths
 
-    def guessPackagesPaths(self):
+    def getExpectedPackagesPaths(self):
         """See IDistributionMirror"""
         paths = []
         for release in self.distribution.releases:
@@ -299,7 +289,7 @@ class DistributionMirror(SQLBase):
                         paths.append((arch_release, pocket, component, path))
         return paths
 
-    def guessSourcesPaths(self):
+    def getExpectedSourcesPaths(self):
         """See IDistributionMirror"""
         paths = []
         for release in self.distribution.releases:
@@ -320,7 +310,7 @@ class DistributionMirrorSet:
         """See IDistributionMirrorSet"""
         return DistributionMirror.get(mirror_id)
 
-    def getMirrorsToProbe(self, content_type):
+    def getMirrorsToProbe(self, content_type, ignore_last_probe=False):
         """See IDistributionMirrorSet"""
         query = """
             SELECT distributionmirror.id, max(mirrorproberecord.date_created)
@@ -332,10 +322,15 @@ class DistributionMirrorSet:
                 AND distributionmirror.official_candidate IS TRUE
                 AND distributionmirror.official_approved IS TRUE
             GROUP BY distributionmirror.id
-            HAVING max(mirrorproberecord.date_created) IS NULL
-                OR max(mirrorproberecord.date_created) 
-                    < %s - '%s hours'::interval
-            """ % sqlvalues(content_type, UTC_NOW, PROBE_INTERVAL)
+            """ % sqlvalues(content_type)
+
+        if not ignore_last_probe:
+            query += """
+                HAVING max(mirrorproberecord.date_created) IS NULL
+                    OR max(mirrorproberecord.date_created) 
+                        < %s - '%s hours'::interval
+                """ % sqlvalues(UTC_NOW, PROBE_INTERVAL)
+
         conn = DistributionMirror._connection
         ids = ", ".join(str(id) for (id, date_created) in conn.queryAll(query))
         query = '1 = 2'

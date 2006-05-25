@@ -58,8 +58,9 @@
         </p>
 
         <p tal:condition="not: context/isOfficial">
-          This mirror can't be verified because it's not one of the official
-          mirrors for this distribution.
+          This mirror is an unofficial 
+          <span tal:replace="context/distribution/title">Ubuntu</span> mirror,
+          and will not be verified.
         </p>
       </tal:no-last-probe>
 
@@ -69,8 +70,8 @@
 
           <tal:is-owner condition="context/required:launchpad.Edit">
             You can see the 
-            <a tal:attributes="href probe/log_file/url">log file</a> of that
-            probe, in case the statuses are not what you expect.
+            <a tal:attributes="href probe/log_file/url">log file</a> of the
+            probe.
           </tal:is-owner>
         </p>
       </tal:has-last-probe>
@@ -78,8 +79,19 @@
 
     <tal:has-last-probe condition="context/last_probe_record"
                         define="mirror context">
-      <metal:mirror-content
-        use-macro="context/@@+distributionmirror-macros/mirror-content" />
+      <tal:comment condition="nothing">
+        XXX: This use of "python:" here is to workaround
+        https://launchpad.net/products/launchpad/+bug/5768
+      </tal:comment>
+      <tal:archive-mirror condition="python: mirror.content.name == 'ARCHIVE'">
+        <metal:mirror-content
+          use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
+      </tal:archive-mirror>
+
+      <tal:release-mirror condition="python: mirror.content.name == 'RELEASE'">
+        <metal:mirror-content
+          use-macro="context/@@+distributionmirror-macros/release-mirror-content" />
+      </tal:release-mirror>
     </tal:has-last-probe>
 
 </div>

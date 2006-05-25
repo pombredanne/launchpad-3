@@ -133,36 +133,32 @@ class TestMirrorCDImageProberCallbacks(TestCase):
         # there's no MirrorCDImageRelease for that release and flavour.
         self.assertRaises(SQLObjectNotFound, mirror_cdimage_release.sync)
 
-    def test_failure_propagation(self):
+    def test_timeout_is_not_propagated(self):
         # Make sure that ensureOrDeleteMirrorCDImageRelease() does not 
-        # propagate ProberTimeOut or BadResponseCode failures.
-        try:
-            self.callbacks.ensureOrDeleteMirrorCDImageRelease(
-                [(defer.FAILURE, 
-                  Failure(ProberTimeout('localhost', '13424')))])
-        except Exception, e:
-            self.fail("A timeout shouldn't be propagated. Got %s" % e)
-        try:
-            self.callbacks.ensureOrDeleteMirrorCDImageRelease(
-                [(defer.FAILURE,
-                  Failure(BadResponseCode(str(httplib.NOT_FOUND))))])
-        except Exception, e:
-            self.fail("A bad response code shouldn't be propagated. Got %s" % e)
+        # propagate ProberTimeOut
+        failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
+            [(defer.FAILURE, 
+              Failure(ProberTimeout('localhost', '13424')))])
+        # Twisted callbacks may raise or return a failure; that's why we check
+        # the return value
+        self.failIf(isinstance(failure, Failure))
 
-        # Any failure that is not a ProberTimeout or BadResponseCode should be
-        # propagated because that is probably a bug in our code.
-        def got_result(result):
-            self.fail(
-                "Any failure that's not a timeout should be propagated.")
-        ok = []
-        def got_failure(failure):
-            ok.append(1)
-        d = defer.Deferred()
-        d.addCallbacks(got_result, got_failure)
-        dl = defer.DeferredList([d])
-        d.addErrback(self.callbacks.ensureOrDeleteMirrorCDImageRelease)
-        d.errback(Failure(ZeroDivisionError()))
-        self.assertEqual([1], ok)
+    def test_badresponse_is_not_propagated(self):
+        # Make sure that ensureOrDeleteMirrorCDImageRelease() does not 
+        # propagate BadResponseCode failures.
+        failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
+            [(defer.FAILURE,
+              Failure(BadResponseCode(str(httplib.NOT_FOUND))))])
+        # Twisted callbacks may raise or return a failure; that's why we check
+        # the return value
+        self.failIf(isinstance(failure, Failure))
+
+    def test_anything_but_timeouts_and_badresponses_are_propagated(self):
+        # Any failure that is not a ProberTimeout or a BadResponseCode should
+        # be propagated.
+        self.assertRaises(
+            Failure, self.callbacks.ensureOrDeleteMirrorCDImageRelease,
+            [(defer.FAILURE, Failure(ZeroDivisionError()))])
 
 
 class TestMirrorProberCallbacks(TestCase):
