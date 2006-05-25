@@ -112,8 +112,9 @@ class PlacelessAuthUtility:
             # Hack to make us not even think of using a session if there
             # isn't already a cookie in the request, or one waiting to be
             # set in the response.
-            if (request.cookies.get('launchpad') is not None or
-                request.response.getCookie('launchpad') is not None):
+            cookie_name = config.launchpad.session.cookie
+            if (request.cookies.get(cookie_name) is not None or
+                request.response.getCookie(cookie_name) is not None):
                 return self._authenticateUsingCookieAuth(request)
             else:
                 return None
