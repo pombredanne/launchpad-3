@@ -52,8 +52,19 @@
       <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
     </tal:pastrequests>
 
-    <h1 tal:condition="not: view/current_order">Request CDs</h1>
-    <h1 tal:condition="view/current_order">Change your current request</h1>
+    <tal:has-current-order condition="view/current_order">
+      <h1 tal:condition="view/currentOrderContainsCDsOfThisFlavour">
+        Change your current request
+      </h1>
+
+      <h1 tal:condition="not: view/currentOrderContainsCDsOfThisFlavour">
+        Request more CDs
+      </h1>
+    </tal:has-current-order>
+
+    <tal:no-current-order condition="not: view/current_order">
+      <h1 tal:condition="not: view/current_order">Request CDs</h1>
+    </tal:no-current-order>
 
     <tal:edubuntu condition="view/is_edubuntu">
       <p>Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
@@ -185,7 +196,12 @@
 
     <div style="margin-left: 20em">
       <tal:current_request condition="view/current_order">
-        <input type="submit" value="Change Request" name="FORM_SUBMIT"
+        <input tal:condition="view/currentOrderContainsCDsOfThisFlavour"
+               type="submit" value="Change Request" name="FORM_SUBMIT"
+               class="formControls"/>
+
+        <input tal:condition="not: view/currentOrderContainsCDsOfThisFlavour"
+               type="submit" value="Request more CDs" name="FORM_SUBMIT"
                class="formControls"/>
       </tal:current_request>
 
