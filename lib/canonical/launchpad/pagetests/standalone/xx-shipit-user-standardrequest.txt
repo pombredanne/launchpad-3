@@ -6,6 +6,11 @@
   >>> browser.url
   'http://localhost/shipit-ubuntu/myrequest'
 
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Request CDs...
+  ...
+
   First of all, we'll make sure a request is accepted only if all required 
   fields are filled.
 
