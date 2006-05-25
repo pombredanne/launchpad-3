@@ -17,6 +17,7 @@ from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
         IPerson, IPersonSet, IPasswordEncryptor
         )
@@ -66,7 +67,7 @@ class PlacelessAuthUtility:
         if login is not None:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
-            if principal is not None:
+            if principal is not None and IPerson(principal).is_valid_person:
                 password = credentials.getPassword()
                 if principal.validate(password):
                     request.setPrincipal(principal)
