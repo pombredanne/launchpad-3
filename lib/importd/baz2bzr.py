@@ -52,6 +52,9 @@ class BatchProgress(DummyProgress):
             assert current is not None
             print '%d/%d %s' % (current, total, msg)
 
+    def note(self, fmt_string, *args, **kwargs):
+        self.update(fmt_string % args)
+
 
 class BatchUIFactory(SilentUIFactory):
     """A UI Factory that prints line-by-line progress."""
@@ -59,19 +62,18 @@ class BatchUIFactory(SilentUIFactory):
     def progress_bar(self):
         return BatchProgress()
 
+    def nested_progress_bar(self):
+        if self._progress_bar_stack is None:
+            self._progress_bar_stack = bzrlib.progress.ProgressBarStack(
+                klass=BatchProgress)
+        return self._progress_bar_stack.get_nested()
+
 
 def setup_ui_factory(quiet):
     if quiet:
         bzrlib.ui.ui_factory = SilentUIFactory()
     else:
         bzrlib.ui.ui_factory = BatchUIFactory()
-
-
-def make_printer(quiet):
-    if quiet:
-        return silent_printer
-    else:
-        return stdout_printer
 
 
 def parse_arguments(args):
@@ -104,12 +106,8 @@ def main(args):
         print "Not exporting to bzr"
         return 0
     from_branch = pybaz.Version(from_branch)
-    progress_bar = bzrlib.ui.ui_factory.progress_bar()
-    printer = make_printer(quiet)
     baz_import.import_version(
-        to_location, from_branch, printer,
-        max_count=None, reuse_history_from=[],
-        progress_bar=progress_bar)
+        to_location, from_branch, max_count=None, reuse_history_from=[])
     if push_prefix is None:
         return 0
     begin()
