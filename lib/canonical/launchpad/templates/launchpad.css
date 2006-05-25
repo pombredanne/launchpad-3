@@ -90,9 +90,11 @@ body {
   padding: 0;
 }
 .body {
-  margin: 0.75em 0.75em 0;
+  margin: 1em 1%;
 }
-
+.columns {
+  margin: 1em 0;
+}
 :visited {
   background: none;
   color: #66a;
@@ -154,7 +156,7 @@ pre {
   right: 10px;
   top: 5px;
 }
-div.body table {
+div.body table, div.columns table {
   margin-left: auto;
   margin-right: auto;
   border-collapse: collapse;
@@ -386,8 +388,8 @@ ul.app>li.current {
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
-  margin-left: 26%; /* = 25% + 1% whitespace */
-  width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
+  margin-left: 24%; /* = 1% left margin + 22% left column + 1% gutter */
+  width: 52%;
 }
 * > #portal-column-content { /* hide from MSIE/Win 5 where "relative" breaks */
   position: relative; /* allow z-index to work */
@@ -396,28 +398,27 @@ ul.app>li.current {
 #portal-column-two {
   display: inline;
   float: left;
-  margin-left: 2%; /* whitespace */
-  width: 24%; /* = 25% - 1% whitespace */
+  margin-left: 1%;
+  width: 22%; /* leaves 1% right margin */
 }
 #portal-column-one {
   display: inline;
   float: left;
-  margin-left: -100%; /* flush with the left edge of the page */
-  width: 24%; /* = 25% - 1% whitespace */
+  margin-left: -98%; /* = -99% back to left edge + 1% left gutter */
+  width: 22%;
 }
-
 /* Column definitions for 2col layout: */
 #layout2col-main {
   display: inline;
   float: left;
-  margin-left: 25%;
+  margin-left: 24%; /* = 1% left margin + 22% left column + 1% gutter */
   width: 75%;
 }
 #layout2col-portlets {
   display: inline;
   float: left;
-  margin-left: -100%; /* flush with the left edge of the page */
-  width: 24%; /* = 25% - 1% whitespace */
+  margin-left: -98%; /* = -99% back to left edge + 1% left gutter */
+  width: 22%;
 }
 
 .sitemap, ul.facets {
