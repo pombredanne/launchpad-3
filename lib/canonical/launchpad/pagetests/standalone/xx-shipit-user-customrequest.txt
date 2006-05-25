@@ -45,8 +45,6 @@
 
   >>> browser.getControl(name='field.recipientdisplayname').value = 'Foo'
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '1'
-  >>> browser.getControl(name='field.ubuntu_quantityamd64').value = '0'
-  >>> browser.getControl(name='field.ubuntu_quantityppc').value = '0'
   >>> browser.getControl(name='field.organization').value = 'Baz'
   >>> browser.getControl(name='field.addressline1').value = 'Street'
   >>> browser.getControl(name='field.city').value = 'City'
@@ -88,17 +86,17 @@
   ...weeks to deliver, depending on the country of shipping...
 
 
-  All custom requests with less than 50 CDs are automatically approved.
+  All custom requests with less than 39 CDs are automatically approved.
 
   >>> from canonical.launchpad.interfaces import ShipItConstants
   >>> ShipItConstants.max_size_for_auto_approval
-  50
+  39
 
   >>> from canonical.launchpad.database import Person
   >>> Person.byName('name16').currentShipItRequest().approved
   True
 
-  But custom requests with more than 50 CDs have to be approved before they
+  But custom requests with more than 39 CDs have to be approved before they
   can be shipped.
 
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '51'
@@ -120,7 +118,7 @@
 
 
   If later the user asks for standard quantities of CDs of a different flavour,
-  the request will still be pending approval, becuase it contains more than 50
+  the request will still be pending approval, becuase it contains more than 39
   CDs in total.
 
   >>> browser.open('http://localhost/shipit-kubuntu/myrequest')

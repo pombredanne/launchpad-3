@@ -78,5 +78,6 @@ class ShipItReasonWidget(TextAreaWidget):
 
 class ShipItQuantityWidget(IntWidget):
     """See IShipItQuantity"""
-    width = 8
+    displayWidth = 4
     displayMaxWidth = 3
+    style = 'text-align: right'

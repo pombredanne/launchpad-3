@@ -127,21 +127,28 @@
       </tal:standard-request>
 
       <tal:custom-request condition="view/should_show_custom_request">
-        <p>
-          Enter the number of CDs you would like to request below. Please note
-          that while we will consider all requests, due to extremely high demand
-          we may choose to send a smaller number of CDs, or refuse your request
-          altogether.  Remember that <a href="/myrequest">requesting a smaller 
-          number of CDs</a> will increase your chances of having the request 
-          approved, and that you can reuse the CDs!
+        <p class="warning message">
+          Note that while we will consider all requests, due to extremely high
+          demand we may choose to send a smaller number of CDs, or refuse your
+          request altogether.
+          <br /><br />
+          Requesting a smaller number of CDs 
+          will increase your chances of having the request approved, and
+          remember, you can reuse the CDs!
         </p>
 
+        <br />
         <table style="width: auto; margin-left: 0">
+          <tr>
+            <td>&nbsp;</td>
+            <th style="text-align: left">Quantity</th>
+          </tr>
           <tr tal:repeat="widget view/quantity_widgets">
             <span metal:use-macro="context/@@+shipit-macros/display_widget" />
           </tr>
         </table>
 
+        <br />
         <div tal:define="widget nocall:view/reason_widget">
           <label>Why are you requesting these CDs?</label>
           <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />

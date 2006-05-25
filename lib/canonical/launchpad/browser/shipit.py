@@ -116,7 +116,12 @@ class ShipItLoginView(LoginOrRegister):
         if user.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
             self.request.response.redirect('requests')
         else:
-            self.request.response.redirect('myrequest')
+            current_order = user.currentShipItRequest()
+            if (current_order and
+                current_order.containsCustomQuantitiesOfFlavour(self.flavour)):
+                self.request.response.redirect('specialrequest')
+            else:
+                self.request.response.redirect('myrequest')
 
 
 def _get_flavour_from_layer(request):
@@ -213,19 +218,6 @@ class ShipItRequestView(GeneralFormView):
         return self.current_order.containsCustomQuantitiesOfFlavour(
             self.flavour)
 
-        quantities = self._getCurrentOrderQuantitiesOfThisFlavour()
-        if sum(quantities.values()) == 0:
-            # This is an existing order that contains CDs of other
-            # flavours only.
-            return False
-        else:
-            standardrequestset = getUtility(IStandardShipItRequestSet)
-            standard_request = standardrequestset.getByNumbersOfCDs(
-                self.flavour, quantities[ShipItArchitecture.X86],
-                quantities[ShipItArchitecture.AMD64],
-                quantities[ShipItArchitecture.PPC])
-            return standard_request is None
-
     def _setUpWidgets(self, context=None):
         # First we set up the standard widgets
         setUpWidgets(
@@ -245,11 +237,6 @@ class ShipItRequestView(GeneralFormView):
         return self._renderForm()
 
     def renderStandardrequestForm(self):
-        # XXX: Need to do something about this redirect here 'cause we want to
-        # provide a link for people to go back from the custom request page to
-        # the standard one.
-        if self.current_order and self.currentOrderIsCustom():
-            self.request.response.redirect('/specialrequest')
         self.should_show_custom_request = False
         return self._renderForm()
 
@@ -432,9 +419,6 @@ class ShipItRequestView(GeneralFormView):
 
         max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
         new_total_of_cds = current_order.getTotalCDs()
-        # XXX: Write to Jane about the max_size. That she can't have three
-        # options from different flavours whose sum of CDs is more than
-        # max_size_for_auto_approval.
         if new_total_of_cds > max_size_for_auto_approval:
             assert current_order.isCustom()
             # If the order was already approved and the guy is just reducing
@@ -453,11 +437,6 @@ class ShipItRequestView(GeneralFormView):
         if current_order.isAwaitingApproval():
             self._notifyShipItAdmins(current_order)
 
-        # We might be in the /specialrequest page and the user might have
-        # changed the quantities to something that matches a standard request.
-        # If that's the case, then redirect the user back to /myrequest.
-        if self.current_order and not self.currentOrderIsCustom():
-            self._nextURL = '/myrequest'
         return msg
 
     def validate(self, data):
@@ -477,7 +456,7 @@ class ShipItRequestView(GeneralFormView):
         if self.quantity_fields_mapping:
             total_cds = 0
             for field_name in self.quantity_fields_mapping.values():
-                total_cds += int(data[field_name])
+                total_cds += intOrZero(data[field_name])
             if total_cds == 0:
                 errors.append(LaunchpadValidationError(_(
                     "You can't make a request with 0 CDs")))
