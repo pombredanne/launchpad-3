@@ -554,6 +554,12 @@ class BugTaskSet:
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        if not bug.private and bug.security_related:
+            if product and product.security_contact:
+                bug.subscribe(product.security_contact)
+            elif distribution and distribution.security_contact:
+                bug.subscribe(distribution.security_contact)
+
         if not product and not distribution:
             assert distrorelease is not None, 'Got no bugtask target'
             assert distrorelease != distrorelease.distribution.currentrelease, (

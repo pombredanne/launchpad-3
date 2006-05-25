@@ -105,13 +105,6 @@ class IBug(IMessageTarget):
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
-    direct_subscribers = Attribute(
-        'A list of IPersons that are directly subscribed to this bug, i.e, '
-        'that have a row in the BugSubscription table for this bug.')
-    indirect_subscribers = Attribute(
-        'A list of IPersons that are indirectly subscribed to this bug, '
-        'i.e. that get bugmail but do not have a row in BugSubscription for '
-        'this bug. This includes bug contacts, subscribers from dupes, etc.')
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")
@@ -136,6 +129,20 @@ class IBug(IMessageTarget):
 
         Returns True if the user is explicitly subscribed to this bug
         (no matter what the type of subscription), otherwise False.
+        """
+
+    def getDirectSubscribers():
+        """A list of IPersons that are directly subscribed to this bug.
+
+        Direct subscribers have an entry in the BugSubscription table.
+        """
+
+    def getIndirectSubscribers():
+        """A list of IPersons that are indirectly subscribed to this bug.
+
+        Indirect subscribers get bugmail, but don't have an entry in the
+        BugSubscription table. This includes bug contacts, subscribers from
+        dupes, etc.)
         """
 
     def notificationRecipientAddresses():
