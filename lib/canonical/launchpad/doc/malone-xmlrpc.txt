@@ -1,0 +1,25 @@
+XML-RPC Integration with Malone
+===============================
+
+Malone provides an XML-RPC interface for filing bugs.
+
+    >>> from canonical.launchpad.xmlrpc import FileBugAPI
+
+    >>> filebug_api = FileBugAPI(None, None)
+
+    >>> filebug_api.report_bug("test xmlrpc bug")
+    'test xmlrpc bug'
+
+    >>> print http(r"""
+    ... POST /malone HTTP/1.0
+    ... Content-Type: text/xml
+    ...
+    ... <?xml version='1.0'?>
+    ... <methodCall>
+    ... <methodName>report_bug</methodName>
+    ... <params>
+    ... <param><string>foo</string></param>
+    ... </params>
+    ... </methodCall>
+    ... """)
+
