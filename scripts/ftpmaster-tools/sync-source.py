@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 # "Sync" a source package by generating an upload
 # Copyright (C) 2005, 2006  Canonical Software Ltd. <james.troup@canonical.com>
@@ -35,7 +34,7 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import (sqlvalues, cursor)
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 from canonical.launchpad.helpers import shortlist
@@ -68,6 +67,12 @@ origins = {
     "debian": { "name": "Debian",
                 "url": "http://ftp.debian.org/debian/",
                 "default suite": "unstable",
+                "default component": "main",
+                "dsc": "must be signed and valid"
+              },
+    "security": { "name": "Security",
+                "url": "http://security.debian.org/debian-security/",
+                "default suite": "sarge/updates",
                 "default component": "main",
                 "dsc": "must be signed and valid"
               },
@@ -435,17 +440,163 @@ origins = {
 
 ####################################
 
+"ftp.mowgli.ch-pub-debian": { "name": "ftp.mowgli.ch-pub-debian",
+        "url": "ftp://ftp.mowgli.ch/pub/debian/",
+        "default suite": "sid",
+        "default component": "unofficial",
+        "dsc": "can be unsigned"
+},
+
+"http.debian.or.jp-debian-jp": { "name": "http.debian.or.jp-debian-jp",
+        "url": "http://http.debian.or.jp/debian-jp/",
+        "default suite": "unstable-jp",
+        "default component": "main",
+        "dsc": "can be unsigned"
+},
+
+"http.debian.or.jp-debian-jp": { "name": "http.debian.or.jp-debian-jp",
+        "url": "http://http.debian.or.jp/debian-jp/",
+        "default suite": "unstable-jp",
+        "default component": "contrib",
+        "dsc": "can be unsigned"
+},
+
+"http.debian.or.jp-debian-jp": { "name": "http.debian.or.jp-debian-jp",
+        "url": "http://http.debian.or.jp/debian-jp/",
+        "default suite": "unstable-jp",
+        "default component": "non-free",
+        "dsc": "can be unsigned"
+},
+
+"mywebpages.comcast.net-ddamian-deb": { "name": "mywebpages.comcast.net-ddamian-deb",
+        "url": "http://mywebpages.comcast.net/ddamian/deb/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+},
+
+"people.debian.org-%7etora-deb": { "name": "people.debian.org-%7Etora-deb",
+        "url": "http://people.debian.org/~tora/deb/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+},
+
+"silcnet.org-download-client-deb": { "name": "silcnet.org-download-client-deb",
+        "url": "http://silcnet.org/download/client/deb/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+},
+
+"www.h.shuttle.de-mitch-stuff": { "name": "www.h.shuttle.de-mitch-stuff",
+        "url": "http://www.h.shuttle.de/mitch/stuff/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+},
+
+"www.assist.media.nagoya-u.ac.jp-%7ekatsu-debian": { "name": "www.assist.media.nagoya-u.ac.jp-%7Ekatsu-debian",
+        "url": "http://www.assist.media.nagoya-u.ac.jp/~katsu/debian/",
+        "default suite": "unstable",
+        "default component": "ALL",
+        "dsc": "can be unsigned"
+},
+
+"www.stud.tu-ilmenau.de-%7ethsc-in-debian": { "name": "www.stud.tu-ilmenau.de-%7Ethsc-in-debian",
+        "url": "http://www.stud.tu-ilmenau.de/~thsc-in/debian/",
+        "default suite": "unstable",
+        "default component": "main",
+        "dsc": "can be unsigned"
+},
+
+"debian.hinterhof.net": { "name": "debian.hinterhof.net",
+        "url": "http://debian.hinterhof.net/",
+        "default suite": "unstable",
+        "default component": "",
+        "dsc": "can be unsigned"
+},
+
+"home.planet.nl-%7eautar022": { "name": "home.planet.nl-%7Eautar022",
+        "url": "http://home.planet.nl/~autar022/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+},
+
+"dept-info.labri.fr-%7edanjean-debian": { "name": "dept-info.labri.fr-%7Edanjean-debian",
+        "url": "http://dept-info.labri.fr/~danjean/debian/",
+        "default suite": "unstable",
+        "default component": "main",
+        "dsc": "can be unsigned"
+},
+
+"noxa.de-%7esbeyer-debian": { "name": "noxa.de-%7Esbeyer-debian",
+        "url": "http://noxa.de/~sbeyer/debian/",
+        "default suite": "unstable",
+        "default component": "main",
+        "dsc": "can be unsigned"
+},
+
+"debian.wgdd.de-debian": { "name": "debian.wgdd.de-debian",
+        "url": "http://debian.wgdd.de/debian/",
+        "default suite": "sid",
+        "default component": "main",
+        "dsc": "can be unsigned"
+},
+
+"debian.wgdd.de-debian": { "name": "debian.wgdd.de-debian",
+        "url": "http://debian.wgdd.de/debian/",
+        "default suite": "sid",
+        "default component": "contrib",
+        "dsc": "can be unsigned"
+},
+
+"debian.wgdd.de-debian": { "name": "debian.wgdd.de-debian",
+        "url": "http://debian.wgdd.de/debian/",
+        "default suite": "sid",
+        "default component": "non-free",
+        "dsc": "can be unsigned"
+},
+
+"luca.pca.it-debian": { "name": "luca.pca.it-debian",
+        "url": "http://luca.pca.it/debian/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+},
+
+########################################
+
     }
 
 whoami = "Ubuntu Archive Auto-Sync <katie@jackass.ubuntu.com>"
 
 uid_mappings = {
     "auto": whoami,
-    "lathiat": "Trent Lloyd <lathiat@bur.st>",
+    "minghua": "Ming Hua <minghua@rice.edu>",
+    "lucas": "Lucas Nussbaum <lucas@ubuntu.com>",
+    "laserjock": "Jordan Mantha <mantha@chem.unr.edu>",
+    "zakame": "Zak B Elep <zakame@ubuntu.com>",
+    "lifeless": "Robert Collins <robert.collins@ubuntu.com>",
+    "rimbert": "Michael Rimbert <rimbert@purdue.edu>",
+    "salty": "Fabio Marzocca <thesaltydog@gmail.com>",
+    "dredg": "Niall Sheridan <niall@evil.ie>",
+    "potyra": "Stefan Potyra <daemon@poleboy.de>",
+    "wasabi": "Jerry Haltom <wasabi@larvalstage.net>",
+    "iwj": "Ian Jackson <iwj@ubuntu.com>",
+    "kobold": "Fabio Tranchitella <kobold@ubuntu.com>",
+    "jordi": "Jordi Mallach <jordi@ubuntu.com>",
+    "bmonty": "Benjamin Montgomery <bmontgom@montynet.org>",
+    "pef": "Loic Pefferkorn <loic@dev.erodia.net>",
+    "bd": "Barry deFreese <bddebian@comcast.net>",
+    "ivoks": "Ante Karamati� <ivoks@grad.hr>",
+    "jbailey": "Jeff Bailey <jbailey@ubuntu.com>",
+    "lathiat": "Trent Lloyd <lathiat@ubuntu.com>",
     "nafallo": "Christian Bjälevik <nafallo@magicalforest.se>",
     "riddell": "Jonathan Riddell <jonathan.riddell@ubuntu.com>",
     "corey": "Corey Burger <corey.burger@gmail.com>",
-    "droge": "Sebastian Dröge <mail@slomosnail.de>",
+    "droge": "Sebastian Dröge <slomo@ubuntu.com>",
     "mjg59": "Matthew Garrett <mjg59@srcf.ucam.org>",
     "mbreit": "Moritz Breit <mail@mobr.de>",
     "sh": "Stephan Hermann <sh@sourcecode.de>",
@@ -461,7 +612,7 @@ uid_mappings = {
     "diamond": "Stephen Shirley <diamond@nonado.net>",
     "reinhard": "Reinhard Tartler <siretart@tauware.de>", 
     "crimsun": "Daniel T Chen <crimsun@fungus.sh.nu>",
-    "jani": "Jani Monoses <jani@email.ro>",
+    "jani": "Jani Monoses <jani@ubuntu.com>",
     "keybuk": "Scott James Remnant <scott@ubuntu.com>",
     "mvo": "Michael Vogt <michael.vogt@ubuntu.com>",
     "thibaut": "Thibaut Varene <varenet@debian.org>",
@@ -490,35 +641,6 @@ def md5sum_file(filename):
     md5sum = apt_pkg.md5sum(file_handle)
     file_handle.close()
     return md5sum
-
-################################################################################
-
-def usage (exit_code=0):
-    print """Usage: josie [OPTIONS] [PACKAGE...]
-Sync source from one suite to another.
-
-General options:
-
-  -a, --all                  sync all packages
-  -b, --requested-by=UID     who the sync was requested by
-  -f, --force                force sync over the top of ubuntu changes
-  -h, --help                 show this help and exit
-  -k, --keybuk               write out list of modified+out-of-date pkgs
-  -n, --no-action            don't do anything
-  -v, --verbose              be more verbose
-
-Options controlling where to sync packages to:
-
-  -c, --in-component=CMPNT   limit syncs to packages in COMPONENT
-  -s, --to-suite=SUITE       sync to SUITE
-
-Options controlling where to sync packages from:
-
-  -C, --from-component=CMPNT sync from COMPONENT in DISTRO [default: main]
-  -D, --from-distro=DISTRO   sync from DISTRO [default: Debian]
-  -S, --from-suite=SUITE     sync from SUITE in DISTRO
-"""
-    sys.exit(exit_code)
 
 ################################################################################
 
@@ -569,7 +691,8 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
     changes += "Binary: %s\n" % (dsc["binary"])
     changes += "Architecture: source\n"
     changes += "Version: %s\n"% (dsc["version"])
-    changes += "Distribution: %s\n" % (suite)
+    # XXX: 'suite' forced to string to avoid unicode-vs-str grudge match
+    changes += "Distribution: %s\n" % (str(suite)) 
     changes += "Urgency: %s\n" % (urgency)
     changes += "Maintainer: %s\n" % (dsc["maintainer"])
     changes += "Changed-By: %s\n" % (requested_by)
@@ -767,7 +890,10 @@ def check_dsc(dsc, current_sources, current_binaries):
             # Check that a non-main source package is not trying to
             # override a main binary package
             if current_component == "main" and source_component != "main":
-                dak_utils.fubar("%s is in main but it's source (%s) is not." % (binary, source))
+                if not Options.forcemore:
+                    dak_utils.fubar("%s is in main but it's source (%s) is not." % (binary, source))
+                else:
+                    dak_utils.warn("%s is in main but it's source (%s) is not - continuing anyway." % (binary, source))
 
             # Check that a source package is not trying to override an
             # ubuntu-modified binary package
@@ -819,11 +945,18 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
                                section, priority, description, have_orig_tar_gz,
                                requested_by, origin)
 
-    sign_changes(changes, dsc)
+    # XXX Soyuz wants an unsigned changes
+    #sign_changes(changes, dsc)
+    output_filename = "%s_%s_source.changes" % (dsc["source"], upstr_version)
+    filehandle = open(output_filename, 'w')
+    # XXX The additional '\n' is to work around a bug in parsing
+    #     unsigned changes with our forked copy of parse_changes
+    filehandle.write(changes+'\n')
+    filehandle.close()
 
 ################################################################################
 
-def read_current_source(distrorelease, valid_components=""):
+def read_current_source(distrorelease, valid_components="", arguments=None):
     """Returns a dictionary of packages in 'suite' with their version as the
     attribute.  'component' is an optional list of (comma or whitespace
     separated) components to restrict the search to.
@@ -832,8 +965,15 @@ def read_current_source(distrorelease, valid_components=""):
     S = {}
     valid_components = dak_utils.split_args(valid_components)
 
-    spp = distrorelease.getAllSourceReleasesByStatus(
-        dbschema.PackagePublishingStatus.PUBLISHED)
+    # XXX FIXME: This searches all pockets of the distrorelease which
+    #            is not what we want.
+    if Options.all:
+        spp = distrorelease.getAllSourceReleasesByStatus(
+            dbschema.PackagePublishingStatus.PUBLISHED)
+    else:
+        spp = []
+        for package in arguments:
+            spp.extend(distrorelease.getPublishedReleases(package))
 
     for sp in spp:
         component = sp.component.name
@@ -864,20 +1004,50 @@ def read_current_binaries(distrorelease):
 """
     B = {}
 
-    for distroarchrelease in distrorelease.architectures:
-        bpp = distroarchrelease.getAllReleasesByStatus(
-            dbschema.PackagePublishingStatus.PUBLISHED)
+    # XXX FIXME: This searches all pockets of the distrorelease which
+    #            is not what we want.
 
-        for bp in bpp:
-            component = bp.component.name
-            version = bp.binarypackagerelease.version
-            pkg = bp.binarypackagerelease.binarypackagename.name
-        
-            if not B.has_key(pkg):
+    # XXX FIXME: this is insanely slow due to how SQLObject works.  It
+    #            can be limited, but only if we know what binaries we
+    #            want to check against, which we don't know till we
+    #            have the .dsc file and currently this function is
+    #            run well before that.
+    
+    #     for distroarchrelease in distrorelease.architectures:
+    #         bpp = distroarchrelease.getAllReleasesByStatus(
+    #             dbschema.PackagePublishingStatus.PUBLISHED)
+
+    #         for bp in bpp:
+    #             component = bp.component.name
+    #             version = bp.binarypackagerelease.version
+    #             pkg = bp.binarypackagerelease.binarypackagename.name
+    
+    #             if not B.has_key(pkg):
+    #                 B[pkg] = [version, component]
+    #             else:
+    #                 if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
+    #                     B[pkg] = [version, component]
+
+    # XXX: so... let's fall back on raw SQL
+    dar_ids = ", ".join([(str(dar.id)) for dar in distrorelease.architectures])
+    cur = cursor()
+    query = """
+SELECT bpn.name, bpr.version, c.name
+  FROM binarypackagerelease bpr, binarypackagename bpn, component c,
+       securebinarypackagepublishinghistory sbpph, distroarchrelease dar
+ WHERE bpr.binarypackagename = bpn.id AND sbpph.binarypackagerelease = bpr.id
+   AND sbpph.component = c.id AND sbpph.distroarchrelease = dar.id
+   AND sbpph.status = %s AND dar.id in (%s)""" \
+             % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
+    cur.execute(query)
+    print "Getting binaries for %s..." % (distrorelease.name)
+    for (pkg, version, component) in cur.fetchall():
+        if not B.has_key(pkg):
+            B[pkg] = [version, component]
+        else:
+            if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
                 B[pkg] = [version, component]
-            else:
-                if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
-                    B[pkg] = [version, component]
+
     return B
 
 ################################################################################
@@ -941,7 +1111,16 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
             if not filename.endswith("orig.tar.gz"):
                 dak_utils.fubar("%s (from %s) is in the DB but isn't an orig.tar.gz.  Help?" % (filename, pkg))
             if len(spfp_l) != 1:
-                dak_utils.fubar("%s (from %s) returns multiple IDs for orig.tar.gz.  Help?" % (filename, pkg))
+                # check if multiple library file alias point to the same
+                # content, this case is harmless, although nasty.
+                library_content_set = set(
+                    [spfp.libraryfilealias.content.id for spfp in spfp_l])
+                # Only dismiss if the contents diverge.
+                if len(library_content_set) > 1:
+                    dak_utils.fubar(
+                        "%s (from %s) returns multiple IDs for orig.tar.gz."
+                        "Help?" % (filename, pkg))
+
             spfp = spfp_l[0]
             have_orig_tar_gz = filename
             print "  - <%s: already in distro - downloading from librarian>" % (filename)
@@ -1046,12 +1225,12 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         else:
             if dest_version.find("ubuntu") != -1:
                 stat_uptodate_modified += 1;    
-                if Options.verbose:
+                if Options.moreverbose:
                     print "[Nothing to update (Modified)] %s_%s (vs %s)" \
                           % (pkg, dest_version, source_version)
             else:
                 stat_uptodate += 1
-                if Options.verbose:
+                if Options.moreverbose:
                     print "[Nothing to update] %s (%s [ubuntu] >= %s [debian])" \
                           % (pkg, dest_version, source_version)
 
@@ -1090,9 +1269,16 @@ def options_setup():
     parser.add_option("-f", "--force", dest="force",
                       default=False, action="store_true",
                       help="force sync over the top of Ubuntu changes")
+    parser.add_option("-F", "--force-more", dest="forcemore",
+                      default=False, action="store_true",
+                      help="force sync even when components don't match")
     parser.add_option("-n", "--noaction", dest="action",
                       default=True, action="store_false",
                       help="don't do anything")
+    # XXX FIXME: why the heck doesn't -v provide by logger provide Options.verbose?
+    parser.add_option("-V", "--moreverbose", dest="moreverbose",
+                      default=False, action="store_true",
+                      help="be even more verbose")
 
     # Options controlling where to sync packages to:
 
@@ -1119,8 +1305,9 @@ def options_setup():
     if not Options.todistro:
         Options.todistro = "ubuntu"
 
+    # XXX FIXME: use distro.currentrelease
     if not Options.tosuite:
-        Options.tosuite = "breezy"
+        Options.tosuite = "dapper"
 
     if not Options.fromdistro:
         Options.fromdistro = "debian"
@@ -1214,7 +1401,7 @@ def main():
     origin["component"] = Options.fromcomponent
 
     Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(Options.tosuite, Options.incomponent)
+    Suite = read_current_source(Options.tosuite, Options.incomponent, arguments)
     current_binaries = read_current_binaries(Options.tosuite)
     do_diff(Sources, Suite, origin, arguments, current_binaries)
 

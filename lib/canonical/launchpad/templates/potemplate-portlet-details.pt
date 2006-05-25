@@ -21,6 +21,8 @@
             <span tal:replace="context/potemplatename/translationdomain">
               foobar
             </span><br />
+            <b>Priority:</b>
+            <span tal:replace="context/priority">34</span><br />
             <b>Translation Group(s):</b><br />
             <img src="/@@/languages.gif">
             <tal:block repeat="group context/translationgroups">
