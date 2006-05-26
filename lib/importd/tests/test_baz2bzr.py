@@ -359,6 +359,7 @@ class TestBaz2bzrImportFeature(Baz2bzrTestCase):
     # be killed by buildbot). Not too much to avoid hitting the string
     # concatenation bug in buildbot. One line per revision is good.
     expected_lines = [
+        'importing importd@example.com/test--branch--0 into bzrworking',
         '0/2 revisions',
         '1/2 revisions',
         '2/2 revisions',
@@ -459,14 +460,22 @@ class TestBaz2bzrPublishFeature(Baz2bzrTestCase):
         self.assertOutputEqual(output, '\r\n'.join(self.expected_lines))
 
     expected_lines = TestBaz2bzrImportFeature.expected_lines[:-1] + [
-        'get destination history',
-        '0/2 inventory fetch',
-        '1/2 inventory fetch',
-        '2/2 inventory fetch',
-        'preparing to copy',
-        '1/2 copy',
-        '2/2 copy',
-        ''] # empty item denotes final newline
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/1 read knit index',
+        '1/1 read knit index',
+        '0/4 fetch phase',
+        '1/4 fetch phase',
+        '2/4 fetch phase',
+        '']
 
 
 class TestBlacklistParser(unittest.TestCase):
