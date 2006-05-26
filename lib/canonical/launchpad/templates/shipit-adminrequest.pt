@@ -44,8 +44,13 @@
 
       <h2>Shipping Details</h2>
 
-      <metal:shipping_details
-        use-macro="context/@@+shipit-macros/shipping_details" />
+      <table style="margin: 0 auto;">
+        <tbody>
+          <metal:shipping_details
+            use-macro="context/@@+shipit-macros/shipping_details"
+          />
+        </tbody>
+      </table>
 
       <br />
       <div style="text-align: right;">
