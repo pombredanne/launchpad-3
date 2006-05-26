@@ -321,6 +321,15 @@ class ShipItRequestView(GeneralFormView):
         assert self.current_order is not None
         return self.current_order.getQuantitiesOfFlavour(self.flavour)
 
+    def currentOrderContainsCDsOfThisFlavour(self):
+        """Return True if the current order contains any CDs of self.flavour.
+
+        You must not use this method if self.current_order is None.
+        """
+        assert self.current_order is not None
+        quantities = self.current_order.getQuantitiesOfFlavour(self.flavour)
+        return bool(sum(quantities.values()))
+
     @cachedproperty('_current_order')
     def current_order(self):
         return self.user.currentShipItRequest()
