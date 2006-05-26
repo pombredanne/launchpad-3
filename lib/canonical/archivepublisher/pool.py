@@ -388,10 +388,20 @@ class DiskPool:
                                  filename)
         os.remove(targetpath)
         # Now we rename the source file into the target component
-        os.rename(self.pathFor(self.files[filename].defcomp,
-                                self.files[filename].source,
-                                filename),
-                  targetpath)
+        sourcepath = self.pathFor(
+            self.files[filename].defcomp,self.files[filename].source,
+            filename)
+        # XXX cprov 20060526: if it fails the symlinks are severely broken
+        # or maybe we are writing them wrong. It needs manual fix !
+        # Nonetheless, we carry on checking other candidates.
+        # Use 'find -L . -type l' on pool to find out broken symlinks
+        # Normally they only can be fixed by remove the broken links and
+        # run a careful (-C) publication.
+        try:
+            os.rename(sourcepath, targetpath)
+        except OSError, info:
+            self.logger.error("CAN NOT SHUFFLE SYMLINKS FROM  %s TO %s (%s)"
+                              % (sourcepath, targetpath, info))
         # Update the data structures...
         self.components[self.files[filename].defcomp][filename] = True
         self.components[targetcomponent][filename] = False
