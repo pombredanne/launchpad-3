@@ -117,7 +117,7 @@
     <form name="shipit" action="" method="post"
           onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
-        <table style="margin: 0 auto;">
+        <table>
           <tbody>
             <tr>
               <th>I would like:</th>
@@ -141,12 +141,13 @@
         # requests at this point.
         # Guilherme Salgado, 2006-05-24
 
-        <p>You may also place a <a href="/specialrequest">special request</a>.
-        Please note that these special requests require additional processing
-        and shipping time. We will consider special requests if you are a
-        teacher providing CDs to your students, if you are using the CDs at a
-        conference, or if you are involved in an organised event of some
-        sort.</p>
+          <p>You can make a <a href="/specialrequest">special request</a>
+          for different quantities, but this will take longer to process.
+          We will consider it if you are a teacher giving CDs to your students,
+          or if you are distributing CDs at a conference or other organized
+          event.
+          </p>
+
         </tal:comment>
       </tal:standard-request>
 
@@ -188,7 +189,6 @@
 
         <input type="hidden" name="custom" value="1" />
       </tal:custom-request>
-    </div>
 
               </td>
             </tr>
@@ -196,7 +196,8 @@
               use-macro="context/@@+shipit-macros/shipping_details"
             />
             <tr>
-              <td colspan="2">
+              <td></td>
+              <td>
                 <p>
                   Please double-check your address
                   before submitting your request.
@@ -213,7 +214,7 @@
                class="formControls"/>
 
         <input tal:condition="not: view/currentOrderContainsCDsOfThisFlavour"
-               type="submit" value="Request more CDs" name="FORM_SUBMIT"
+               type="submit" value="Request More CDs" name="FORM_SUBMIT"
                class="formControls"/>
       </tal:current_request>
 

@@ -57,10 +57,11 @@
   </tal:comment>
 
   <th>
-    <label tal:attributes="for widget/name">
-      <tal:label replace="widget/label">Label</tal:label
-      ><tal:colon condition="widget/label">:</tal:colon>
-    </label>
+    <label
+      tal:condition="widget/label"
+      tal:attributes="for widget/name"
+      tal:content="string:${widget/label}:"
+    >Label:</label>
   </th>
   <td>
     <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
