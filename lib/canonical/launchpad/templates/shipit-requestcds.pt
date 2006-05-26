@@ -52,14 +52,32 @@
       <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
     </tal:pastrequests>
 
-    <h1 tal:condition="not: view/current_order">Request CDs</h1>
-    <h1 tal:condition="view/current_order">Change your current request</h1>
+    <tal:has-current-order condition="view/current_order">
+      <h1 tal:condition="view/currentOrderContainsCDsOfThisFlavour">
+        Change your current request
+      </h1>
 
-    <p>
-      CDs for <span tal:replace="view/flavour/title" />
-      6.06 LTS will begin shipping in <strong>early June</strong>.
-      Once shipping starts, delivery can take up to six weeks.
-    </p>
+      <h1 tal:condition="not: view/currentOrderContainsCDsOfThisFlavour">
+        Request more CDs
+      </h1>
+    </tal:has-current-order>
+
+    <tal:no-current-order condition="not: view/current_order">
+      <h1 tal:condition="not: view/current_order">Request CDs</h1>
+    </tal:no-current-order>
+
+            <p tal:condition="not: view/should_show_custom_request">
+              CDs for <span tal:replace="view/flavour/title" />
+              6.06 LTS will begin shipping in <strong>early June</strong>.
+              Once shipping starts, delivery can take up to six weeks.
+            </p>
+            <p tal:condition="view/should_show_custom_request">
+              CDs for <span tal:replace="view/flavour/title" />
+              6.06 LTS will begin shipping in <strong>early June</strong>.
+              Once shipping starts, delivery of special requests can take up to
+              <strong>ten weeks</strong>. For quicker processing, choose a
+              <a href="/myrequest">standard option</a> instead.
+            </p>
 
       <p tal:condition="view/is_edubuntu">
         Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
@@ -106,14 +124,71 @@
               <td
 
          tal:define="selected_id view/selected_standardrequest">
-      <div tal:repeat="request_type view/standardShipItRequests">
-        <label>
-          <input type="radio" name="ordertype"
-            tal:attributes="value request_type/id;
-                            checked python:request_type.id == selected_id">
-          <span tal:content="request_type/description" />
-        </label>
-      </div>
+
+      <tal:standard-request condition="not: view/should_show_custom_request">
+        <div tal:repeat="request_type view/standardShipItRequests">
+          <label>
+            <input type="radio" name="ordertype"
+              tal:attributes="value request_type/id;
+                              checked python:request_type.id == selected_id">
+            <span tal:content="request_type/description" />
+          </label>
+        </div>
+  
+        <tal:comment condition="nothing">
+        # XXX: This is disabled for now, as we're having too many requests and
+        # it probably isn't a good idea to allow people to make special
+        # requests at this point.
+        # Guilherme Salgado, 2006-05-24
+
+        <p>You may also place a <a href="/specialrequest">special request</a>.
+        Please note that these special requests require additional processing
+        and shipping time. We will consider special requests if you are a
+        teacher providing CDs to your students, if you are using the CDs at a
+        conference, or if you are involved in an organised event of some
+        sort.</p>
+        </tal:comment>
+      </tal:standard-request>
+
+      <tal:custom-request condition="view/should_show_custom_request">
+
+            <div class="warning message">
+              <p>
+                While we will consider all requests, due to extremely high
+
+          demand we may choose to send a smaller number of CDs, or refuse your
+          request altogether.
+          
+              </p>
+              <p>
+
+          Requesting a smaller number of CDs 
+          will increase your chances of having the request approved.
+          Remember, you can reuse the CDs!
+
+              </p>
+            </div>
+
+        <br />
+        <table style="width: auto; margin-left: 0">
+          <tr>
+            <td>&nbsp;</td>
+            <th style="text-align: left">Quantity</th>
+          </tr>
+          <tr tal:repeat="widget view/quantity_widgets">
+            <span metal:use-macro="context/@@+shipit-macros/display_widget" />
+          </tr>
+        </table>
+
+        <br />
+        <div tal:define="widget nocall:view/reason_widget">
+          <label>Why are you requesting these CDs?</label>
+          <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
+        </div>
+
+        <input type="hidden" name="custom" value="1" />
+      </tal:custom-request>
+    </div>
 
               </td>
             </tr>
@@ -133,7 +208,12 @@
               <td>
 
       <tal:current_request condition="view/current_order">
-        <input type="submit" value="Change Request" name="FORM_SUBMIT"
+        <input tal:condition="view/currentOrderContainsCDsOfThisFlavour"
+               type="submit" value="Change Request" name="FORM_SUBMIT"
+               class="formControls"/>
+
+        <input tal:condition="not: view/currentOrderContainsCDsOfThisFlavour"
+               type="submit" value="Request more CDs" name="FORM_SUBMIT"
                class="formControls"/>
       </tal:current_request>
 
