@@ -16,7 +16,7 @@ are the product bug contact are subscribed to this bug:
 
     >>> def subscriber_names(bug):
     ...     subscribers = (
-    ...         bug.direct_subscribers + bug.indirect_subscribers)
+    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
     ...     return sorted(subscriber.displayname for subscriber in subscribers)
 
     >>> login(ANONYMOUS)

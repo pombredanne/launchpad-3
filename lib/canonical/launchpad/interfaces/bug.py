@@ -131,13 +131,13 @@ class IBug(IMessageTarget):
         (no matter what the type of subscription), otherwise False.
         """
 
-    def getDirectSubcribers():
+    def getDirectSubscribers():
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
         """
 
-    def getIndirectSubcribers():
+    def getIndirectSubscribers():
         """A list of IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the

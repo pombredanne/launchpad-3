@@ -123,7 +123,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
     @property
     def bug_subscribers(self):
-        return self.bug.direct_subscribers + self.bug.indirect_subscribers
+        return self.bug.getDirectSubscribers() + self.bug.getIndirectSubscribers()
 
     @property
     def age(self):

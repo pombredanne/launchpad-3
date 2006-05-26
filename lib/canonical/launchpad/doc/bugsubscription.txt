@@ -66,10 +66,10 @@ subscriptions work.
     ...     comment="test", owner=foobar)
 
 The list of direct subscribers to a bug is accessed via
-IBug.direct_subscribers.
+IBug.getDirectSubscribers().
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.direct_subscribers)
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
     [u'name16']
 
     >>> sabdfl = personset.getByName("sabdfl")
@@ -78,14 +78,14 @@ IBug.direct_subscribers.
     <BugSubscription ...>
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.direct_subscribers)
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
     [u'name16', u'sabdfl']
 
 The list of indirect subscribers is accessed via
-IBug.indirect_subscribers.
+IBug.getIndirectSubscribers().
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     []
 
 The list of all bug subscribers can also be accessed via
@@ -110,7 +110,7 @@ Indirect subscribers can be:
     >>> linux_source_bug.bugtasks[0].transitionToAssignee(sample_person)
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'name12']
 
 2. Bug contacts
@@ -123,7 +123,7 @@ Indirect subscribers can be:
     [u'no-priv']
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'name12', u'no-priv']
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
@@ -131,7 +131,7 @@ Indirect subscribers can be:
     >>> linux_source.distribution.bugcontact = ubuntu_team
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'name12', u'no-priv', u'ubuntu-team']
 
 (Adding a product bugtask to demonstrate that the upstream bug contact
@@ -149,7 +149,7 @@ is also an indirect subscriber.)
     >>> firefox.bugcontact = lifeless
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'lifeless', u'name12', u'no-priv', u'ubuntu-team']
 
 If there were no upstream product bug contact, the product owner would
@@ -158,7 +158,7 @@ be used instead.
     >>> firefox.bugcontact = None
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'name12', u'no-priv', u'ubuntu-team']
 
     >>> previous_owner = firefox.owner
@@ -166,7 +166,7 @@ be used instead.
     >>> firefox.owner = lifeless
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'lifeless', u'name12', u'no-priv', u'ubuntu-team']
 
     >>> firefox.owner = previous_owner
@@ -181,7 +181,7 @@ be used instead.
     ...     comment="test", owner=keybuk)
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug_dupe.direct_subscribers)
+    ...     person.name for person in linux_source_bug_dupe.getDirectSubscribers())
     [u'keybuk']
 
 (Assigning stub to the dupe bug will demonstrate how he, as an indirect
@@ -193,14 +193,14 @@ target.)
 
     >>> sorted(
     ...     person.name for person in
-    ...     linux_source_bug_dupe.indirect_subscribers)
+    ...     linux_source_bug_dupe.getIndirectSubscribers())
     [u'no-priv', u'stub', u'ubuntu-team']
 
     >>> linux_source_bug_dupe.duplicateof = linux_source_bug
     >>> linux_source_bug_dupe.syncUpdate()
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'keybuk', u'lifeless', u'name12', u'no-priv', u'stub', u'ubuntu-team']
 
 When a bug is marked private, all its indirect subscribers become direct
@@ -214,7 +214,7 @@ subscribers.
     >>> from canonical.launchpad.interfaces import IBug
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.direct_subscribers)
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
     [u'name16', u'sabdfl']
 
     >>> notify(
@@ -228,7 +228,7 @@ subscribers.
     ...         bug_before_modification, linux_source_bug, ["private"]))
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.direct_subscribers)
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
     [u'keybuk', u'lifeless', u'name12', u'name16', u'no-priv', u'sabdfl',
      u'stub', u'ubuntu-team']
 
@@ -240,7 +240,7 @@ indirect subscriptions.
     >>> linux_source_bug.bugtasks[0].transitionToAssignee(
     ...     personset.getByName("martin-pitt"))
 
-    >>> linux_source_bug.indirect_subscribers
+    >>> linux_source_bug.getIndirectSubscribers()
     []
 
 Direct subscriptions always take precedence over indirect
@@ -251,11 +251,11 @@ indirect_subscribers will include only martin-pitt.
     >>> linux_source_bug.syncUpdate()
 
     >>> sorted(
-    ...     person.name for person in linux_source_bug.direct_subscribers)
+    ...     person.name for person in linux_source_bug.getDirectSubscribers())
     [u'keybuk', u'lifeless', u'name12', u'name16', u'no-priv', u'sabdfl',
      u'stub', u'ubuntu-team']
     >>> sorted(
-    ...     person.name for person in linux_source_bug.indirect_subscribers)
+    ...     person.name for person in linux_source_bug.getIndirectSubscribers())
     [u'martin-pitt']
 
 To get the entire list of email addresses that should receive a

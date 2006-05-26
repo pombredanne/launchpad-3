@@ -136,8 +136,8 @@ function will be used:
   ...         print 'Nick: %s' % bug.name
   ...     print 'Subscribers:'
   ...     subscriber_names = sorted(
-  ...         p.displayname for p in (bug.direct_subscribers +
-  ...                                 bug.indirect_subscribers))
+  ...         p.displayname for p in (bug.getDirectSubscribers() +
+  ...                                 bug.getIndirectSubscribers()))
   ...     for subscriber_name in subscriber_names:
   ...         print '    %s' % subscriber_name
   ...     for task in bug.bugtasks:

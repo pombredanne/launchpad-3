@@ -113,7 +113,7 @@ pmount is currently not subscribed to bug 1.
 
     >>> def subscriber_names(bug):
     ...     subscribers = (
-    ...         bug.direct_subscribers + bug.indirect_subscribers)
+    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
     ...     return sorted(subscriber.displayname for subscriber in subscribers)
 
     >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)

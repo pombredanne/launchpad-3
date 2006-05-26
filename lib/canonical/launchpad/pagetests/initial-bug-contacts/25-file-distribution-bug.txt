@@ -21,7 +21,7 @@ contact, the Launchpad Admins team.
 
     >>> def subscriber_names(bug):
     ...     subscribers = (
-    ...         bug.direct_subscribers + bug.indirect_subscribers)
+    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
     ...     return sorted(subscriber.name for subscriber in subscribers)
 
     >>> login(ANONYMOUS)
