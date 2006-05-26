@@ -133,7 +133,9 @@ class TestBzrSync(unittest.TestCase):
         working_tree.commit(message, committer=committer)
 
     def uncommitRevision(self):
-        uncommit(self.bzr_branch)
+        working_tree = self.bzr_branch.bzrdir.open_workingtree()
+        branch = working_tree.branch
+        uncommit(branch, tree=working_tree)
 
     def test_empty_branch(self):
         # Importing an empty branch does nothing.

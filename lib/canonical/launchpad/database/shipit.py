@@ -113,10 +113,6 @@ class ShippingRequest(SQLBase):
             total += requested_cds.quantity
         return total
 
-    def getQuantitiesByFlavour(self, flavour):
-        """See IShippingRequest"""
-        return self.getRequestedCDsGroupedByFlavourAndArch()[flavour]
-
     def _getRequestedCDsByFlavourAndArch(self, flavour, arch):
         query = AND(RequestedCDs.q.requestID==self.id,
                     RequestedCDs.q.flavour==flavour,
@@ -153,13 +149,24 @@ class ShippingRequest(SQLBase):
     def setApprovedQuantities(self, quantities):
         """See IShippingRequestSet"""
         assert self.isApproved()
-        self._setQuantities(quantities, only_approved=True)
+        self._setQuantities(quantities, set_approved=True)
+
+    def setRequestedQuantities(self, quantities):
+        """See IShippingRequestSet"""
+        self._setQuantities(quantities, set_requested=True)
 
     def setQuantities(self, quantities):
         """See IShippingRequestSet"""
-        self._setQuantities(quantities)
+        self._setQuantities(quantities, set_approved=True, set_requested=True)
 
-    def _setQuantities(self, quantities, only_approved=False):
+    def _setQuantities(self, quantities, set_approved=False,
+                       set_requested=False):
+        """Set the approved and/or requested quantities of this request.
+
+        :quantities: A dictionary like the described in
+                     IShippingRequestSet.setQuantities.
+        """
+        assert set_approved or set_requested
         for flavour, arches_and_quantities in quantities.items():
             for arch, quantity in arches_and_quantities.items():
                 assert quantity >= 0
@@ -168,9 +175,44 @@ class ShippingRequest(SQLBase):
                 if requested_cds is None:
                     requested_cds = RequestedCDs(
                         request=self, flavour=flavour, architecture=arch)
-                if not only_approved:
+                if set_approved:
+                    requested_cds.quantityapproved = quantity
+                if set_requested:
                     requested_cds.quantity = quantity
-                requested_cds.quantityapproved = quantity
+
+    def isCustom(self):
+        """See IShippingRequest"""
+        requested_cds = self.getAllRequestedCDs()
+        for flavour in ShipItFlavour.items:
+            if self.containsCustomQuantitiesOfFlavour(flavour):
+                return True
+        return False
+
+    def containsCustomQuantitiesOfFlavour(self, flavour):
+        """See IShippingRequest"""
+        quantities = self.getQuantitiesOfFlavour(flavour)
+        if not sum(quantities.values()):
+            # This is an existing order that contains CDs of other
+            # flavours only.
+            return False
+        else:
+            standardrequestset = getUtility(IStandardShipItRequestSet)
+            standard_request = standardrequestset.getByNumbersOfCDs(
+                flavour, quantities[ShipItArchitecture.X86],
+                quantities[ShipItArchitecture.AMD64],
+                quantities[ShipItArchitecture.PPC])
+            return standard_request is None
+
+    def getQuantitiesOfFlavour(self, flavour):
+        """See IShippingRequest"""
+        requested_cds = self.getRequestedCDsGroupedByFlavourAndArch()[flavour]
+        quantities = {}
+        for arch in ShipItArchitecture.items:
+            arch_requested_cds = requested_cds[arch]
+            # Any of {x86,amd64,ppc}_requested_cds can be None here, so we use
+            # a default value for getattr to make things easier.
+            quantities[arch] = getattr(arch_requested_cds, 'quantity', 0)
+        return quantities
 
     def isAwaitingApproval(self):
         """See IShippingRequest"""
@@ -341,8 +383,9 @@ class ShippingRequestSet:
         # make sense to split a shippingrun into two just because there's 10 
         # requests more than the limit, so we only split them if there's at
         # least 50% more requests than SOFT_MAX_SHIPPINGRUN_SIZE.
-        file_counter = 1
+        file_counter = 0
         while len(request_ids):
+            file_counter += 1
             ztm.begin()
             if len(request_ids) > SOFT_MAX_SHIPPINGRUN_SIZE * 1.5:
                 request_ids_subset = request_ids[:SOFT_MAX_SHIPPINGRUN_SIZE]
