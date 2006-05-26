@@ -258,8 +258,7 @@ class TestErrorHandling(unittest.TestCase):
         client.startMirroring = lambda branch_id: None
         self.branch._mirrorFailed = lambda err, m=None: self.errors.append(err)
         self.branch._openSourceBranch = lambda: None
-        self.branch._openDestBranch = lambda: None
-        self.branch._pullSourceToDest = lambda: None
+        self.branch._mirrorToDestBranch = lambda: None
 
     def _runMirrorAndCheckError(self, expected_error):
         self.branch.mirror()

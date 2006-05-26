@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 import httplib
-import os
 import shutil
 import socket
 import urllib2
@@ -47,7 +46,7 @@ class BranchToMirror:
         """Open the branch to pull from, useful to override in tests."""
         self._source_branch = bzrlib.branch.Branch.open(self.source)
 
-    def _openDestBranch(self):
+    def _mirrorToDestBranch(self):
         """Open the branch to pull to, creating a new one if necessary.
         
         Useful to override in tests.
@@ -55,36 +54,29 @@ class BranchToMirror:
         try:
             branch = bzrlib.bzrdir.BzrDir.open(self.dest).open_branch()
         except bzrlib.errors.NotBranchError:
-            # XXX Andrew Bennetts 2006-05-17: 
-            #    Unfortunately, we cannot use BzrDir.create_branch_convenience,
-            #    because it doesn't let us control the branch or repository
-            #    format.
             # Make a new branch in the same format as the source branch.
             branch = self._createDestBranch()
         else:
             # Check that destination branch is in the same format as the source.
-            # If it isn't, we'll delete it and mirror from scratch.
-            if not identical_formats(self._source_branch, branch):
+            if identical_formats(self._source_branch, branch):
+                # The destination exists, and is in the same format.  So all we
+                # need to do is pull the new revisions.
+                branch.pull(self._source_branch, overwrite=True)
+            else:
+                # The destination is in a different format to the source, so
+                # we'll delete it and mirror from scratch.
                 shutil.rmtree(self.dest)
                 branch = self._createDestBranch()
         self._dest_branch = branch
 
     def _createDestBranch(self):
-        """Create the branch to pull to."""
-        os.makedirs(self.dest) 
-        bzrdir_format = self._source_branch.bzrdir._format
-        bzrdir = bzrdir_format.initialize(self.dest)
-        repo_format = self._source_branch.repository._format
-        repo = repo_format.initialize(bzrdir)
-        branch_format = self._source_branch._format
-        branch = branch_format.initialize(bzrdir)
-        return branch
-
-    def _pullSourceToDest(self):
-        """Pull the contents of self._source_branch into self._dest_branch."""
-        assert self._source_branch is not None
-        assert self._dest_branch is not None
-        self._dest_branch.pull(self._source_branch, overwrite=True)
+        """Create the branch to pull to, and copy the source's contents."""
+        # XXX AndrewBennetts 2006-05-26:
+        #    sprout builds a working tree we don't need.
+        source = self._source_branch
+        revision = source.last_revision()
+        bzrdir = source.bzrdir.sprout(self.dest, revision_id=revision)
+        return bzrdir.open_branch()
 
     def _mirrorFailed(self, error_msg):
         """Log that the mirroring of this branch failed."""
@@ -98,15 +90,14 @@ class BranchToMirror:
 
         try: 
             self._openSourceBranch()
-            self._openDestBranch()
-            self._pullSourceToDest()
+            self._mirrorToDestBranch()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
         except urllib2.HTTPError, e:
             msg = str(e)
             if int(e.code) == httplib.UNAUTHORIZED:
-                # Maybe this will be caugnt in bzrlib one day, and then we'll
+                # Maybe this will be caught in bzrlib one day, and then we'll
                 # be able to get rid of this.
                 # https://launchpad.net/products/bzr/+bug/42383
                 msg = 'Private branch; required authentication'
