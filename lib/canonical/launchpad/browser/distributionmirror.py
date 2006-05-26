@@ -4,7 +4,7 @@ __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
-           'DistributionMirrorUploadFileListView']
+           'DistributionMirrorUploadFileListView', 'DistributionMirrorView']
 
 from StringIO import StringIO
 
@@ -13,6 +13,9 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.content_types import guess_content_type
 from zope.event import notify
 
+from sourcerer.deb.version import Version
+
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu, 
@@ -43,6 +46,47 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
     def admin(self):
         text = 'Administer this Mirror'
         return Link('+admin', text, icon='edit')
+
+
+class _FlavoursByDistroRelease:
+    """A simple class to help when rendering a table of releases and flavours
+    mirrored by a given Release mirror.
+    """
+
+    def __init__(self, distrorelease, flavours):
+        self.distrorelease = distrorelease
+        self.flavours = flavours
+
+
+class DistributionMirrorView(LaunchpadView):
+
+    def getSummarizedMirroredSourceReleases(self):
+        mirrors = self.context.getSummarizedMirroredSourceReleases()
+        return sorted(mirrors, reverse=True,
+                      key=lambda mirror: Version(mirror.distrorelease.version))
+
+    def getSummarizedMirroredArchReleases(self):
+        mirrors = self.context.getSummarizedMirroredArchReleases()
+        return sorted(
+            mirrors, reverse=True,
+            key=lambda mirror: Version(
+                mirror.distro_arch_release.distrorelease.version))
+
+    def getCDImageMirroredFlavoursByRelease(self):
+        """Return a list of _FlavoursByDistroRelease objects ordered
+        descending by version.
+        """
+        releases = {}
+        for cdimage in self.context.cdimage_releases:
+            release, flavour = cdimage.distrorelease, cdimage.flavour
+            flavours_by_release = releases.get(release)
+            if flavours_by_release is None:
+                flavours_by_release = _FlavoursByDistroRelease(release, [])
+                releases[release] = flavours_by_release
+            flavours_by_release.flavours.append(flavour)
+        flavours_by_releases = releases.values()
+        return sorted(flavours_by_releases, reverse=True,
+                      key=lambda item: Version(item.distrorelease.version))
 
 
 class DistributionMirrorAddView(GeneralFormView):

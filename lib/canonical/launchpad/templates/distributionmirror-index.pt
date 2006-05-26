@@ -77,18 +77,20 @@
       </tal:has-last-probe>
     </tal:last-probe>
 
-    <tal:has-last-probe condition="context/last_probe_record"
-                        define="mirror context">
+    <tal:has-last-probe condition="context/last_probe_record">
       <tal:comment condition="nothing">
         XXX: This use of "python:" here is to workaround
         https://launchpad.net/products/launchpad/+bug/5768
       </tal:comment>
-      <tal:archive-mirror condition="python: mirror.content.name == 'ARCHIVE'">
+      <tal:archive-mirror condition="python: context.content.name == 'ARCHIVE'"
+        define="arch_releases view/getSummarizedMirroredArchReleases;
+                source_releases view/getSummarizedMirroredSourceReleases">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
       </tal:archive-mirror>
 
-      <tal:release-mirror condition="python: mirror.content.name == 'RELEASE'">
+      <tal:release-mirror condition="python: context.content.name == 'RELEASE'"
+        define="flavours_by_releases view/getCDImageMirroredFlavoursByRelease">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/release-mirror-content" />
       </tal:release-mirror>

@@ -197,16 +197,6 @@ class DistributionMirror(SQLBase):
         return MirrorCDImageDistroRelease.selectBy(
             distribution_mirrorID=self.id)
 
-    def getCDImageMirroredFlavoursByRelease(self):
-        """See IDistributionMirror"""
-        flavours_by_release = {}
-        for cdimage in self.cdimage_releases:
-            distrorelease, flavour = cdimage.distrorelease, cdimage.flavour
-            flavours = flavours_by_release.setdefault(distrorelease.title, [])
-            if flavour not in flavours:
-                flavours.append(flavour)
-        return flavours_by_release
-
     @property
     def source_releases(self):
         """See IDistributionMirror"""

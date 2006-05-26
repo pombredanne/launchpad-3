@@ -39,6 +39,7 @@
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IDistributionMirror"
+        class="canonical.launchpad.browser.DistributionMirrorView"
         permission="zope.Public"
         facet="overview"
         template="../templates/distributionmirror-index.pt">

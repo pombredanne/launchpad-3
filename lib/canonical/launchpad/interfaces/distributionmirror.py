@@ -129,14 +129,6 @@ class IDistributionMirror(Interface):
     arch_releases = Attribute('All MirrorDistroArchReleases of this mirror')
     last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
 
-    def getCDImageMirroredFlavoursByRelease():
-        """Return a dictionary mapping distrorelease names to lists of
-        flavour names, for the distrorelease/flavour pairs mirrored here.
-        
-        These flavour names are obtained from the file located at
-        config.distributionmirrorprober.releases_file_list_url.
-        """
-
     def getSummarizedMirroredSourceReleases():
         """Return a summarized list of this distribution_mirror's 
         MirrorDistroReleaseSource objects.

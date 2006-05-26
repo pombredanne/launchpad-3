@@ -18,6 +18,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.lp.dbschema import MirrorContent
+from canonical.launchpad.interfaces import UnableToFetchCDImageFileList
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import (
@@ -186,14 +187,24 @@ def main(argv):
         if not _sanity_check_mirror(mirror, logger_obj):
             continue
 
+        # XXX: Some people registered mirrors on distros other than Ubuntu
+        # back in the old times, so now we need to do this small hack here.
+        # Guilherme Salgado, 2006-05-26
+        if not mirror.distribution.full_functionality:
+            logger_obj.warning(
+                "Mirror '%s' of distribution '%s' can't be probed --we only "
+                "probe Ubuntu mirrors." 
+                % (mirror.name, mirror.distribution.name))
+            continue
+
         probed_mirrors.append(mirror)
         logfile = StringIO()
         logfiles[mirror_id] = logfile
         probe_function(mirror, logfile, unchecked_mirrors, logger_obj)
 
-    if mirror_ids:
+    if probed_mirrors:
         reactor.run()
-        logger_obj.info('Probed %d mirrors.' % len(mirror_ids))
+        logger_obj.info('Probed %d mirrors.' % len(probed_mirrors))
     else:
         logger_obj.info('No mirrors to probe.')
     ztm.commit()
