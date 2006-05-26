@@ -160,14 +160,14 @@
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">
       <legend>Add comment to this bug</legend>
-          <b>Subject:</b>
+          <label for="subject">Subject:</label>
           <div>
-            <input name="subject" type="text" size="50"
+            <input id="subject" name="subject" type="text" size="50"
                    tal:attributes="value context/bug/followup_subject" />
           </div>
-          <b>Comment:</b>
+          <label for="comment">Comment:</label>
           <div>
-            <textarea name="comment" rows="10"></textarea>
+            <textarea id="comment" name="comment" rows="10"></textarea>
           </div>
           <div tal:condition="python:not context.bug.isSubscribed(view.user)">
             <input type="checkbox" name="subscribe" id="subscribe"
