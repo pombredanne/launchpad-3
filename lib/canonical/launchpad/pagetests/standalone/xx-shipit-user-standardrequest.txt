@@ -101,7 +101,7 @@
   ...</h1>...
 
   >>> browser.getControl(name='ordertype').value = ['10']
-  >>> browser.getControl('Request more CDs').click()
+  >>> browser.getControl('Request More CDs').click()
   >>> browser.url
   'http://localhost/shipit-kubuntu/myrequest'
 

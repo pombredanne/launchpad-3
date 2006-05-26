@@ -135,7 +135,7 @@
   disabled before the browser generates the request, which will cause the
   request to not contain the name/value of the button.
   -->
-  <form name="shipit" action="" method="post"
+  <form name="shipit" action="" method="POST"
         onsubmit="javascript: window.setTimeout('disableSubmitButton()', 1);">
 
   <table>
