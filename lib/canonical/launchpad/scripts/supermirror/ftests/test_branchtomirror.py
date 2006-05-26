@@ -36,6 +36,7 @@ from canonical.functional import FunctionalLayer
 
 
 class TestBranchToMirror(LaunchpadFunctionalTestCase):
+
     layer = FunctionalLayer
 
     testdir = None
@@ -73,6 +74,7 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
 
 
 class TestBranchToMirrorFormats(TestCaseWithRepository):
+
     layer = FunctionalLayer
 
     def setUp(self):
@@ -170,6 +172,7 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
 
 
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
+
     layer = FunctionalLayer
 
     def setUp(self):
