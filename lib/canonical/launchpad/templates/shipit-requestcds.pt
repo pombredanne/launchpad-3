@@ -52,8 +52,19 @@
       <metal:pastrequests use-macro="context/@@+shipit-macros/previous_requests" />
     </tal:pastrequests>
 
-    <h1 tal:condition="not: view/current_order">Request CDs</h1>
-    <h1 tal:condition="view/current_order">Change your current request</h1>
+    <tal:has-current-order condition="view/current_order">
+      <h1 tal:condition="view/currentOrderContainsCDsOfThisFlavour">
+        Change your current request
+      </h1>
+
+      <h1 tal:condition="not: view/currentOrderContainsCDsOfThisFlavour">
+        Request more CDs
+      </h1>
+    </tal:has-current-order>
+
+    <tal:no-current-order condition="not: view/current_order">
+      <h1 tal:condition="not: view/current_order">Request CDs</h1>
+    </tal:no-current-order>
 
     <tal:edubuntu condition="view/is_edubuntu">
       <p>Edubuntu CDs are available only in the <strong>PC</strong> Edition. 
@@ -101,25 +112,82 @@
 
     <div style="margin: 0em 5em" 
          tal:define="selected_id view/selected_standardrequest">
-      <div tal:repeat="request_type view/standardShipItRequests">
-        <label>
-          <input type="radio" name="ordertype"
-            tal:attributes="value request_type/id;
-                            checked python:request_type.id == selected_id">
-          <span tal:content="request_type/description" />
-        </label>
-      </div>
+      <tal:standard-request condition="not: view/should_show_custom_request">
+        <div tal:repeat="request_type view/standardShipItRequests">
+          <label>
+            <input type="radio" name="ordertype"
+              tal:attributes="value request_type/id;
+                              checked python:request_type.id == selected_id">
+            <span tal:content="request_type/description" />
+          </label>
+        </div>
+  
+        <tal:comment condition="nothing">
+        # XXX: This is disabled for now, as we're having too many requests and
+        # it probably isn't a good idea to allow people to make special
+        # requests at this point.
+        # Guilherme Salgado, 2006-05-24
+
+        <p>You may also place a <a href="/specialrequest">special request</a>.
+        Please note that these special requests require additional processing
+        and shipping time. We will consider special requests if you are a
+        teacher providing CDs to your students, if you are using the CDs at a
+        conference, or if you are involved in an organised event of some
+        sort.</p>
+        </tal:comment>
+      </tal:standard-request>
+
+      <tal:custom-request condition="view/should_show_custom_request">
+        <p class="warning message">
+          Note that while we will consider all requests, due to extremely high
+          demand we may choose to send a smaller number of CDs, or refuse your
+          request altogether.
+          <br /><br />
+          Requesting a smaller number of CDs 
+          will increase your chances of having the request approved, and
+          remember, you can reuse the CDs!
+        </p>
+
+        <br />
+        <table style="width: auto; margin-left: 0">
+          <tr>
+            <td>&nbsp;</td>
+            <th style="text-align: left">Quantity</th>
+          </tr>
+          <tr tal:repeat="widget view/quantity_widgets">
+            <span metal:use-macro="context/@@+shipit-macros/display_widget" />
+          </tr>
+        </table>
+
+        <br />
+        <div tal:define="widget nocall:view/reason_widget">
+          <label>Why are you requesting these CDs?</label>
+          <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
+        </div>
+
+        <input type="hidden" name="custom" value="1" />
+      </tal:custom-request>
     </div>
 
     <h3>Shipping address</h3>
 
     <div class="informational message">
-      Please note that CDs for <span tal:replace="view/flavour/title" />
-      6.06 LTS will begin shipping in early June. Once shipping starts, it
-      can take up to 6 weeks for you to receive delivery.
+      <p tal:condition="not: view/should_show_custom_request">
+        Please note that CDs for <span tal:replace="view/flavour/title" />
+        6.06 LTS will begin shipping in early June. Once shipping starts, it
+        can take up to 6 weeks for you to receive delivery.
+      </p>
+
+      <p tal:condition="view/should_show_custom_request">
+        Please note that CDs for <span tal:replace="view/flavour/title" />
+        6.06 LTS will begin shipping in early June. Once shipping starts, it
+        can take up to 10 weeks for you to receive delivery of this special
+        request. Choose a <a href="/myrequest">standard option</a> for
+        quicker processing.
+      </p>
     </div>
 
-    <p><strong>Please Double check your address below before submitting your
+    <p><strong>Please double check your address below before submitting your
       request.</strong>
     </p>
 
@@ -128,7 +196,12 @@
 
     <div style="margin-left: 20em">
       <tal:current_request condition="view/current_order">
-        <input type="submit" value="Change Request" name="FORM_SUBMIT"
+        <input tal:condition="view/currentOrderContainsCDsOfThisFlavour"
+               type="submit" value="Change Request" name="FORM_SUBMIT"
+               class="formControls"/>
+
+        <input tal:condition="not: view/currentOrderContainsCDsOfThisFlavour"
+               type="submit" value="Request more CDs" name="FORM_SUBMIT"
                class="formControls"/>
       </tal:current_request>
 
