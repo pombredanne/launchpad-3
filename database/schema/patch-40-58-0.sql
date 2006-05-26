@@ -1,6 +1,6 @@
 set client_min_messages=ERROR;
 
--- update the poexport view to allow potemplate exports
+-- Create the potexport view to allow potemplate exports
 
 CREATE OR REPLACE VIEW POTExport AS 
     SELECT (((COALESCE(potmsgset.id::text, 'X'::text) || '.'::text) ||
@@ -27,5 +27,5 @@ FROM pomsgid
     JOIN potemplate ON potemplate.id = potmsgset.potemplate
     JOIN potemplatename ON potemplatename.id = potemplate.potemplatename;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 58, 0);
 
