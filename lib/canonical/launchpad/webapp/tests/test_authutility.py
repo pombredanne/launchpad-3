@@ -46,6 +46,9 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
         ztapi.provideAdapter(IHTTPCredentials, ILoginPassword, BasicAuthAdapter)
 
     def tearDown(self):
+        ztapi.unprovideUtility(IPasswordEncryptor)
+        ztapi.unprovideUtility(IPlacelessLoginSource)
+        ztapi.unprovideUtility(IPlacelessAuthUtility)
         PlacelessSetup.tearDown(self)
 
     def _make(self, login, pwd):

@@ -67,7 +67,7 @@ class PlacelessAuthUtility:
         if login is not None:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
-            if principal is not None and IPerson(principal).is_valid_person:
+            if principal is not None:
                 password = credentials.getPassword()
                 if principal.validate(password):
                     request.setPrincipal(principal)
@@ -87,11 +87,10 @@ class PlacelessAuthUtility:
             # on each request.
             principal = login_src.getPrincipal(personid)
             if principal is None:
-                raise RuntimeError(
-                    "User is authenticated in session, but principal is not"
-                    " available in login source.")
-            elif not IPerson(principal).is_valid_person:
-                # No longer valid. eg. has been merged, as per Bug #33427
+                # User is authenticated in session, but principal is not"
+                # available in login source. This happens when account has
+                # become invalid for some reason, such as being merged
+                # (as per Bug #33427)
                 return None
             else:
                 request.setPrincipal(principal)
@@ -195,7 +194,7 @@ class LaunchpadLoginSource:
     def getPrincipal(self, id):
         """Return a principal based on the person with the provided id."""
         person = getUtility(IPersonSet).get(id)
-        if person is not None:
+        if person is not None and person.is_valid_person:
             return self._principalForPerson(person)
         else:
             return None
@@ -208,7 +207,7 @@ class LaunchpadLoginSource:
         signified by "login".
         """
         person = getUtility(IPersonSet).getByEmail(login)
-        if person is not None:
+        if person is not None and person.is_valid_person:
             return self._principalForPerson(person)
         else:
             return None
@@ -247,4 +246,5 @@ class LaunchpadPrincipal:
         pw1 = (pw or '').strip()
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
+
 
