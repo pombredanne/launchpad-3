@@ -1,5 +1,7 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
+
 import httplib
 import os
 import shutil
@@ -8,6 +10,20 @@ import urllib2
 
 import bzrlib.branch
 import bzrlib.errors
+
+
+__all__ = ['BranchToMirror']
+
+def identical_formats(branch_one, branch_two):
+    """Check if two branches have the same bzrdir, repo, and branch formats."""
+    # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
+    # See bug 45277.
+    b1, b2 = branch_one, branch_two
+    return (
+        b1.bzrdir._format.__class__ == b2.bzrdir._format.__class__ and 
+        b1.repository._format.__class__ == b2.repository._format.__class__ and
+        b1._format.__class__ == b2._format.__class__
+    )
 
 
 class BranchToMirror:
@@ -48,14 +64,9 @@ class BranchToMirror:
         else:
             # Check that destination branch is in the same format as the source.
             # If it isn't, we'll delete it and mirror from scratch.
-            src_repo_format = self._source_branch.repository._format
-            dest_repo_format = branch.repository._format
-            # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
-            # See bug 45277.
-            if (src_repo_format.get_format_description() !=
-                dest_repo_format.get_format_description()):
-                    shutil.rmtree(self.dest)
-                    branch = self._createDestBranch()
+            if not identical_formats(self._source_branch, branch):
+                shutil.rmtree(self.dest)
+                branch = self._createDestBranch()
         self._dest_branch = branch
 
     def _createDestBranch(self):

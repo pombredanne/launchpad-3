@@ -1,3 +1,9 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""Functional tests for branchtomirror.py."""
+
+__metaclass__ = type
+
 import httplib
 import os
 import shutil
@@ -324,9 +330,9 @@ class TestErrorHandling(unittest.TestCase):
     def testBzrErrorHandling(self):
         self.errors = []
         def stubOpenSourceBranch():
-            raise BzrError('A generig bzr error')
+            raise BzrError('A generic bzr error')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'A generig bzr error'
+        expected_msg = 'A generic bzr error'
         self._runMirrorAndCheckError(expected_msg)
 
 
