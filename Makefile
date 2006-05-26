@@ -26,20 +26,17 @@ newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
 check_merge: build check importdcheck
-
-
-###	# Work around the current idiom of 'make check' getting too long
-###	# because of hct and related tests. note that this is a short
-###	# term solution, the long term solution will need to be 
-###	# finer grained testing anyway.
-###	# Run all tests. test_on_merge.py takes care of setting up the
-###	# database.
-###	env PYTHONPATH=$(PYTHONPATH) \
-###	    ${PYTHON} -t ./test_on_merge.py -vv \
-###             --times=/tmp/test.times \
-###		--dir hct --dir sourcerer
-###	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-###		PYTHON_VERSION=${PYTHON_VERSION}
+	# Work around the current idiom of 'make check' getting too long
+	# because of hct and related tests. note that this is a short
+	# term solution, the long term solution will need to be 
+	# finer grained testing anyway.
+	# Run all tests. test_on_merge.py takes care of setting up the
+	# database.
+	env PYTHONPATH=$(PYTHONPATH) \
+	    ${PYTHON} -t ./test_on_merge.py -vv \
+	        --dir hct --dir sourcerer
+	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
