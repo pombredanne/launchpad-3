@@ -217,14 +217,10 @@ contact for thunderbird to see how this works.
     >>> from zope.event import notify
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.helpers import capture_state
+    >>> from canonical.launchpad.helpers import Snapshot
     >>> from canonical.launchpad.interfaces import IUpstreamBugTask
-    >>> from canonical.launchpad.components.bugtask import mark_task
 
-    >>> old_state = capture_state(
-    ...     bug_in_evolution, "status", "importance",
-    ...     "assignee", "product", "bugwatch", "milestone", "targetname")
-    >>> mark_task(old_state, IUpstreamBugTask)
+    >>> old_state = Snapshot(bug_in_evolution, providing=IUpstreamBugTask)
     >>> bug_in_evolution.product = thunderbird
     >>> bug_product_changed = SQLObjectModifiedEvent(
     ...     bug_in_evolution, old_state, ["product"])
