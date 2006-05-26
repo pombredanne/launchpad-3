@@ -134,7 +134,7 @@
   >>> browser.getControl(name='field.postcode').value = '43242342'
   >>> browser.getControl(name='field.country').value = ['226']
   >>> browser.getControl(name='field.phone').value = '43242442'
-  >>> browser.getControl('Change Request').click()
+  >>> browser.getControl('Request more CDs').click()
 
   >>> Person.byName('name16').currentShipItRequest().approved is None
   True
