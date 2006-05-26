@@ -1,0 +1,189 @@
+Rosetta gives Karma to the users that do some kind of actions.
+
+This test documents when and why Rosetta does it.
+
+    >>> import transaction
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     IKarmaActionSet, IPersonSet, ITranslationImportQueue)
+    >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.lp.dbschema import RosettaImportStatus
+
+    >>> translation_import_queue = getUtility(ITranslationImportQueue)
+    >>> karma_action_set = getUtility(IKarmaActionSet)
+
+Uploading a .pot file
+=====================
+
+The action of upload a .pot file is rewarded with some karma.
+The .pot files are supposed to come always from upstream so the action
+of upload it increases the value of our data because we are more up to date.
+
+Let's say that we have this .pot file to import:
+
+    >>> potemplate_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "Content-Type: text/plain; charset=CHARSET\n"
+    ...
+    ... msgid "foo"
+    ... msgstr ""
+    ... '''
+    >>> potemplate = POTemplate.get(1)
+
+And The Foo Bar user imports it.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> login('foo.bar@canonical.com')
+
+First, we check that he lacks any translation activity
+
+    >>> translation_activities = [
+    ...     activity
+    ...     for activity in foo_bar.activities
+    ...     if activity.action.category.name == 'translations'
+    ...     ]
+    >>> len(translation_activities)
+    0
+
+Do the import.
+
+    >>> comes_from_upstream = True
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     potemplate.path, potemplate_contents, comes_from_upstream,
+    ...     foo_bar, productseries=potemplate.productseries,
+    ...     potemplate=potemplate)
+    >>> entry.status = RosettaImportStatus.APPROVED
+
+The file data is stored in the Librarian, so we have to commit the transaction
+to make sure it's stored properly.
+
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+We tell the PO template to import from the file data it has.
+
+    >>> potemplate.importFromQueue()
+
+And we can see that the user got karma for the action he just did.
+
+    >>> translation_actions = [
+    ...     activity.action.name
+    ...     for activity in foo_bar.activities
+    ...     if activity.action.category.name == 'translations'
+    ...     ]
+    >>> len(translation_actions)
+    1
+    >>> u'translationtemplateimport' in translation_actions
+    True
+
+Let's do the same with a .po file.
+
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "bar"
+    ... '''
+    >>> pofile = potemplate.getPOFileByLang('es')
+
+We attach the new file as comming from upstream.
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, comes_from_upstream, foo_bar,
+    ...     productseries=potemplate.productseries, potemplate=potemplate,
+    ...     pofile=pofile)
+    >>> entry.status = RosettaImportStatus.APPROVED
+
+The file data is stored in the Librarian, so we have to commit the transaction
+to make sure it's stored properly.
+
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+We tell the PO file to import from the file data it has.
+
+    >>> pofile.importFromQueue()
+
+And we can see that the user got karma actions.
+
+    >>> translation_actions = [
+    ...     activity.action.name
+    ...     for activity in foo_bar.activities
+    ...     if activity.action.category.name == 'translations'
+    ...     ]
+
+We have previous action + the new one just done.
+
+    >>> len(translation_actions)
+    2
+    >>> u'translationimportupstream' in translation_actions;
+    True
+    >>> u'translationsuggestionapproved' in translation_actions
+    False
+    >>> u'translationsuggestionadded' in translation_actions
+    False
+    >>> u'translationreview' in translation_actions
+    False
+
+Now, the user is going to upload a local edition of a .po file.
+
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "bars"
+    ... '''
+
+We attach the new file as not comming from upstream.
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, not comes_from_upstream, foo_bar,
+    ...     productseries=potemplate.productseries, potemplate=potemplate,
+    ...     pofile=pofile)
+    >>> entry.status = RosettaImportStatus.APPROVED
+
+The file data is stored in the Librarian, so we have to commit the transaction
+to make sure it's stored properly.
+
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+We tell the PO file to import from the file data it has.
+
+    >>> pofile.importFromQueue()
+
+And we can see that the user got karma for the upload but not for the
+translation.
+
+    >>> translation_actions = [
+    ...     activity.action.name
+    ...     for activity in foo_bar.activities
+    ...     if activity.action.category.name == 'translations'
+    ...     ]
+
+We have previous actions + the new one just done.
+
+    >>> len(translation_actions)
+    3
+
+The user has rights to edit translations directly, so his suggestion is
+approved directly.
+
+    >>> u'translationsuggestionapproved' in translation_actions
+    True
+
+And is not noted as a suggestion addition.
+
+    >>> u'translationsuggestionadded' in translation_actions
+    False
+
+Even when the user is also a reviwer, he should not get karma for reviewing
+his own translations.
+
+    >>> u'translationreview' in translation_actions
+    False

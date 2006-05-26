@@ -445,9 +445,14 @@ class POMsgSet(SQLBase):
             validationstatus=validation_status)
 
         rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
-        if not published and person != rosetta_expert:
-            # The submission is not published and doesn't come from the
-            # Rosetta Experts team, we should assign karma.
+        if (not published and person.id != rosetta_expert.id and
+            person.id != submission.person.id and
+            submission.origin == RosettaTranlationOrigin.ROSETTAWEB):
+            # We only give karma for adding suggestions to people that send
+            # non published strings and aren't editors. Editors will get their
+            # subbmissions automatically approved, and thus, will get karma
+            # just when they get their submission autoapproved.
+            # The Rosetta Experts team never gets karma.
             person.assignKarma('translationsuggestionadded')
 
         # next, we need to update the existing active and possibly also

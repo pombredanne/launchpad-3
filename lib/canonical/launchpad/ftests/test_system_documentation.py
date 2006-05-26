@@ -209,6 +209,10 @@ special = {
     'pofile.txt': FunctionalDocFileSuite(
             'launchpad/doc/pofile.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'rosetta-karma.txt': FunctionalDocFileSuite(
+            'launchpad/doc/rosetta-karma.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
             )
     }
 
