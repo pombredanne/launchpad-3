@@ -142,7 +142,8 @@ class Bug(SQLBase):
         bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 
-    def getDirectSubscribers(self):
+    @property
+    def direct_subscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
         direct_subscribers = []
 
@@ -151,7 +152,8 @@ class Bug(SQLBase):
 
         return direct_subscribers
 
-    def getIndirectSubscribers(self):
+    @property
+    def indirect_subscribers(self):
         """See canonical.launchpad.interfaces.IBug."""
         if self.private:
             return []
@@ -189,26 +191,26 @@ class Bug(SQLBase):
         # Subscribers, whether direct or indirect, from duplicate bugs become
         # indirect subscribers of this bug.
         for dupe in self.duplicates:
-            indirect_subscribers.update(dupe.getDirectSubscribers())
-            indirect_subscribers.update(dupe.getIndirectSubscribers())
+            indirect_subscribers.update(dupe.direct_subscribers)
+            indirect_subscribers.update(dupe.indirect_subscribers)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
-        direct_subscribers = set(self.getDirectSubscribers())
+        direct_subscribers = set(self.direct_subscribers)
         return list(indirect_subscribers.difference(direct_subscribers))
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
         emails = Set()
-        for direct_subscriber in self.getDirectSubscribers():
+        for direct_subscriber in self.direct_subscribers:
             emails.update(contactEmailAddresses(direct_subscriber))
 
 
         if not self.private:
-            for indirect_subscriber in self.getIndirectSubscribers():
+            for indirect_subscriber in self.indirect_subscribers:
                 emails.update(contactEmailAddresses(indirect_subscriber))
         else:
-            assert self.getIndirectSubscribers() == [], (
+            assert self.indirect_subscribers == [], (
                 "Indirect subscribers found on private bug. "
                 "A private bug should never have implicit subscribers!")
 

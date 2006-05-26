@@ -125,7 +125,6 @@ our fake backend data:
   >>> bz = bugzilla.Bugzilla(None)
   >>> bz.backend = FakeBackend()
 
-
 In order to verify that things get imported correctly, the following
 function will be used:
 
@@ -136,8 +135,11 @@ function will be used:
   ...     if bug.name:
   ...         print 'Nick: %s' % bug.name
   ...     print 'Subscribers:'
-  ...     for sub in bug.subscriptions:
-  ...         print '    %s' % sub.person.displayname
+  ...     subscriber_names = sorted(
+  ...         p.displayname for p in (bug.direct_subscribers +
+  ...                                 bug.indirect_subscribers))
+  ...     for subscriber_name in subscriber_names:
+  ...         print '    %s' % subscriber_name
   ...     for task in bug.bugtasks:
   ...         print 'Task:', task.targetname
   ...         print '    Status:', task.status.name
@@ -185,8 +187,8 @@ Now we import bug #1 and check the results:
   Reporter: Sample Person
   Created: 2005-04-01 00:00:00+00:00
   Subscribers:
-      Sample Person
       Foo Bar
+      Sample Person
   Task: mozilla-firefox (Ubuntu)
       Status: UNCONFIRMED
       Distro: ubuntu
@@ -244,6 +246,7 @@ to notice:
   Subscribers:
       Foo Bar
       New User
+      Sample Person
   Task: Ubuntu
       Status: REJECTED
       Distro: ubuntu
@@ -278,6 +281,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
   Created: 2005-04-03 00:00:00+00:00
   Nick: xyz
   Subscribers:
+      Foo Bar
       Sample Person
   Task: netapplet (Ubuntu)
       Status: CONFIRMED
@@ -320,8 +324,8 @@ Next we import a fixed bug:
   Created: 2005-04-04 00:00:00+00:00
   Nick: foobar
   Subscribers:
-      Sample Person
       Foo Bar
+      Sample Person
   Task: mozilla-firefox (Ubuntu)
       Status: FIXRELEASED
       Distro: ubuntu

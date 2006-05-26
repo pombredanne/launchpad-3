@@ -8,5 +8,5 @@ def make_subscriptions_explicit_on_private_bug(bug, event):
     setting_bug_private = event.new_values.get("private", False)
     if not bug.private and setting_bug_private:
         # Make all indirect subscribers into direct subscribers.
-        for indirect_subscriber in bug.getIndirectSubscribers():
+        for indirect_subscriber in bug.indirect_subscribers:
             bug.subscribe(indirect_subscriber)

@@ -122,6 +122,10 @@ class BugTask(SQLBase, BugTaskMixin):
         dbName='targetnamecache', notNull=False, default=None)
 
     @property
+    def bug_subscribers(self):
+        return self.bug.direct_subscribers + self.bug.indirect_subscribers
+
+    @property
     def age(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         UTC = pytz.timezone('UTC')
