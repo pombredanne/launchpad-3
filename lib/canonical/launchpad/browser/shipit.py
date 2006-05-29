@@ -377,9 +377,18 @@ class ShipItRequestView(GeneralFormView):
         changing an existing one.
         """
         form = self.request.form
-        current_order = self.current_order
         need_notification = False
         reason = kw.get('reason')
+        requestset = getUtility(IShippingRequestSet)
+        # We issue a lock here to ensure that the user isn't creating
+        # another request behind our back before we go about creating
+        # this one. This should solve the problem of duplicate requests
+        # by serializing their creation.
+        requestset.lockTableInExclusiveMode()
+        # We also need to use self.user.currentShipItRequest() to make sure we
+        # actually issue a query in the database instead of risking to get a
+        # cached value from self.current_order.
+        current_order = self.user.currentShipItRequest()
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
                 self.user, kw.get('recipientdisplayname'), kw.get('country'),

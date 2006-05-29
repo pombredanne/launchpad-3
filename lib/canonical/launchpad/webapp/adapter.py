@@ -68,6 +68,12 @@ class SessionDatabaseAdapter(PsycopgAdapter):
             super(SessionDatabaseAdapter, self).connect()
             _reset_dirty_commit_flags(*flags)
 
+    def _connection_factory(self):
+        con = super(SessionDatabaseAdapter, self)._connection_factory()
+        con.set_isolation_level(0)
+        con.cursor().execute("SET client_encoding TO UNICODE")
+        return con
+
 
 class LaunchpadDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that performs some additional
