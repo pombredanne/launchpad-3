@@ -296,3 +296,63 @@ error result code and message describing the reason.
   INFO    Override Component to: 'main'
   ERROR   foo is not a valid section for ubuntu/hoary.
   <BLANKLINE>
+
+
+Check the behaviour of initialise_from_parent script. It basically
+call IDistroRelease.initialiseFromParent method with experimental extra
+checks and tasks.
+
+We need to create an initialisable DistroRelease as child of Ubuntu
+Hoary (we do it inside ubuntutest distribution to avoid conflicts in
+other tests)
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.ftests import login
+
+  >>> login("foo.bar@canonical.com")
+  >>> distribution_set = getUtility(IDistributionSet)
+  >>> ubuntutest = distribution_set['ubuntutest']
+  >>> ubuntu = distribution_set['ubuntu']
+  >>> hoary = ubuntu['hoary']
+
+  XXX cprov 20060529: new distrorelease should be provided by IDistribution
+
+  >>> from canonical.launchpad.interfaces import IDistroReleaseSet
+  >>> distrorelease_set = getUtility(IDistroReleaseSet)
+  >>> foobuntu = distrorelease_set.new(ubuntutest, 'foobuntu', 'FooBuntu',
+  ...                                  'The Foobuntu', 'yeck', 'doom',
+  ...                                  '888', hoary, hoary.owner)
+
+  >>> import transaction
+  >>> transaction.commit()
+
+
+  >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
+  ...                       "initialise-from-parent.py")
+  >>> process = subprocess.Popen([sys.executable, script, "-vv",
+  ...                             "-d", "ubuntutest", "foobuntu"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+  >>> print stderr
+  DEBUG   Acquiring lock
+  DEBUG   Initialising connection.
+  DEBUG   Check empty mutable queues in parentrelease
+  DEBUG   Check for no pending builds in parentrelease
+  DEBUG   Copying distroarchreleases from parent and setting nominatedarchindep.
+  DEBUG   initialising from parent, copying publishing records.
+  DEBUG   Committing transaction.
+  DEBUG   Releasing lock
+  <BLANKLINE>
+
+
+  >>> len(hoary.getPublishedReleases('pmount'))
+  1
+  >>> len(foobuntu.getPublishedReleases('pmount'))
+  1
+  >>> len(hoary['i386'].getReleasedPackages('pmount'))
+  1
+  >>> len(foobuntu['i386'].getReleasedPackages('pmount'))
+  1

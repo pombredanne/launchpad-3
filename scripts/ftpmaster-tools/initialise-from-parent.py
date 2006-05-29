@@ -22,7 +22,8 @@ from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import (
+    DistroReleaseQueueStatus, BuildStatus)
 from canonical.launchpad.interfaces import (
     IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
@@ -41,6 +42,10 @@ def main():
     parser.add_option("-d", "--distro", dest="distribution", metavar="DISTRO",
                       default="ubuntu",
                       help="Distribution name")
+
+    parser.add_option("-c", "--changeslist", dest="changeslist",
+                      metavar="CHANGESLIST", default=None,
+                      help="Distrorelease changes list address")
 
     (options, args) = parser.parse_args()
 
@@ -74,12 +79,20 @@ def main():
     log.debug('Check empty mutable queues in parentrelease')
     check_queue(distrorelease)
 
+    log.debug('Check for no pending builds in parentrelease')
+    check_builds(distrorelease)
+
     log.debug('Copying distroarchreleases from parent '
               'and setting nominatedarchindep.')
     copy_architectures(distrorelease)
 
     log.debug('initialising from parent, copying publishing records.')
     distrorelease.initialiseFromParent()
+
+    if options.changeslist:
+        log.debug('Setting %s changes list address to: %s'
+                  % (distrorelease.title, options.changeslist))
+        distrorelease.changeslist = options.changeslist
 
     if options.dryrun:
         log.debug('Dry-Run mode, transaction aborted.')
@@ -91,6 +104,17 @@ def main():
     log.debug("Releasing lock")
     lock.release()
     return 0
+
+
+def check_builds(distrorelease):
+    """Assertions for no remaining pending builds."""
+    parentrelease = distrorelease.parentrelease
+
+    pending_builds = parentrelease.getBuildRecords(
+        BuildStatus.NEEDSBUILD)
+
+    assert (pending_builds.count() == 0,
+            'Parent must not have PENDING builds')
 
 def check_queue(distrorelease):
     """Assertions on empty mutable queues in parentrelease."""

@@ -49,25 +49,23 @@ Test "reset" functionality:
   >>> firefox_build.can_be_reset
   False
 
-  >>> resetable_build = getUtility(IBuildSet).getByBuildID(9)
-
-  >>> resetable_build.title
+  >>> frozen_build = getUtility(IBuildSet).getByBuildID(9)
+  >>> frozen_build.title
   u'i386 build of pmount 0.1-1 in ubuntu warty'
+  >>> frozen_build.buildstate.title
+  'Failed to build'
+  >>> frozen_build.can_be_reset
+  False
 
+  >>> resetable_build = getUtility(IBuildSet).getByBuildID(17)
+  >>> resetable_build.title
+  u'i386 build of pmount 0.1-1 in ubuntu breezy-autotest'
   >>> resetable_build.buildstate.title
   'Failed to build'
-
   >>> resetable_build.can_be_reset
   True
-
   >>> resetable_build.builder.name
   u'bob'
-
-Save previous state:
-
-  >>> datebuilt = resetable_build.datebuilt
-  >>> builder = resetable_build.builder
-  >>> buildduration = resetable_build.buildduration
 
 Reset Build record in question:
 
@@ -83,14 +81,6 @@ Build record has no history and is NEEDSBUILD:
 
   >>> resetable_build.buildqueue_record is not None
   True
-
-Restore Build(9) to previous state to avoid mess with other tests.
-
-  >>> resetable_build.buildqueue_record.destroySelf()
-  >>> resetable_build.buildstate = BuildStatus.FAILEDTOBUILD
-  >>> resetable_build.datebuilt = datebuilt
-  >>> resetable_build.builder = builder
-  >>> resetable_build.buildduration = buildduration
 
 
 Initialize all the required arguments to create a binary package for a
@@ -208,7 +198,7 @@ collection of builds.
 We can find builds given a source package release and architecture tag.
 
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-  3
+  4
 
 We can find recent and pending builds for a given distrorelease.
 
@@ -227,7 +217,7 @@ Or for a given distroarchrelease.
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  10
+  11
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
@@ -240,7 +230,7 @@ Retrive the current PENDING builds
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
-  1
+  2
 
 Inspect the FAILED builds:
 
@@ -267,7 +257,7 @@ new BuildQueue record:
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
-  2
+  3
 
 Tweak lastscore:
 
@@ -281,12 +271,13 @@ Note that they are ordered by DESC lastscore, as expected:
   ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
   (9, 0, 100)
   (11, 0, 10)
+  (17, 0, 0)
 
 Using the optional name argument to filter build results:
 
   >>> builds = ubuntu.getBuildRecords(name='pm')
   >>> builds.count()
-  3
+  4
   >>> [(b.sourcepackagerelease.name, b.distrorelease.name) for b in builds]
-  [(u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
+  [(u'pmount', u'breezy-autotest'), (u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
 

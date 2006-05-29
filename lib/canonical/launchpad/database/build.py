@@ -23,7 +23,7 @@ from canonical.launchpad.database.binarypackagerelease import (
 from canonical.launchpad.database.builder import BuildQueue
 from canonical.launchpad.database.queue import DistroReleaseQueueBuild
 from canonical.lp.dbschema import (
-    EnumCol, BuildStatus, PackagePublishingPocket)
+    EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
 
 
 class Build(SQLBase):
@@ -127,10 +127,34 @@ class Build(SQLBase):
     @property
     def can_be_reset(self):
         """See IBuild."""
-        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
-                                   BuildStatus.MANUALDEPWAIT,
-                                   BuildStatus.CHROOTWAIT,
-                                   BuildStatus.SUPERSEDED]
+        # XXX cprov 20060529: these groups of constants are used in several
+        # places. I wonder how could we declare it only in one place, maybe
+        # together the own dbschema declaration or in its parent class, i.e
+        # mutable_releasestatus in IDistroRelease and failed_buildstates in
+        # IBuild.
+        mutable_releasestatus =[
+            DistributionReleaseStatus.EXPERIMENTAL,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.FROZEN
+            ]
+
+        failed_buildstates = [
+            BuildStatus.FAILEDTOBUILD,
+            BuildStatus.MANUALDEPWAIT,
+            BuildStatus.CHROOTWAIT,
+            BuildStatus.SUPERSEDED
+            ]
+
+        # refuse to reset builds in released pockets
+        released_pocket = (
+            (self.distrorelease.releasestatus not in mutable_releasestatus)
+            and
+            (self.pocket is PackagePublishingPocket.RELEASE)
+            )
+        if released_pocket:
+            return False
+
+        return self.buildstate in failed_buildstates
 
     @property
     def can_be_rescored(self):
