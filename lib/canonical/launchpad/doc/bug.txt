@@ -292,7 +292,7 @@ AssertionError: Expected either a comment or a msg, but got both
 So, let's continue:
 
 >>> print [subscription.person.id for subscription in public_bug.subscriptions]
-[16, 12]
+[16]
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:
