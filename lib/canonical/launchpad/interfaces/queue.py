@@ -139,6 +139,13 @@ class IDistroReleaseQueue(Interface):
         the given custom type.
         """
 
+    def syncUpdate():
+        """Write updates made on this object to the database.
+
+        This should be used when you can't wait until the transaction is
+        committed to have some updates actually written to the database.
+        """
+
 
 class IDistroReleaseQueueBuild(Interface):
     """A Queue item's related builds (for Lucille)"""
