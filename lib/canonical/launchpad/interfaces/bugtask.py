@@ -127,6 +127,15 @@ class IBugTask(IHasDateCreated, IHasBug):
     statuselsewhere = Attribute(
         "A human-readable representation of the status of this IBugTask's bug "
         "in the other contexts in which it's reported.")
+    # This property does various database queries. It is a property so a
+    # "snapshot" of its value will be taken when a bugtask is modified, which
+    # allows us to compare it to the current value and see if there are any new
+    # bugcontacts that should get an email containing full bug details (rather
+    # than just the standard change mail.) It is a property on IBugTask because
+    # we currently only ever need this value for events handled on IBugTask.
+    bug_subscribers = Attribute(
+        "A list of IPersons subscribed to the bug, whether directly or "
+        "indirectly.")
 
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
