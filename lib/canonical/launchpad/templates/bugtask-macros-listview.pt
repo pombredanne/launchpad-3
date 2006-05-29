@@ -68,24 +68,33 @@
     This macro expects that the callsite's view class has a shouldShowTargetName
     method.
   </tal:comment>
-
   <select name="orderby" id="orderby" size="1"
-          tal:define="orderby request/orderby|string:-priority,-severity">
-    <option value="-datecreated"
-            tal:attributes="selected python:orderby == '-datecreated'">newest first</option>
-    <option value="datecreated"
-            tal:attributes="selected python:orderby == 'datecreated'">oldest first</option>
-    <option value="-priority,-severity"
-            tal:attributes="selected python:orderby == '-priority,-severity'">priority, then severity</option>
-    <option value="-severity,-priority"
-            tal:attributes="selected python:orderby == '-severity,-priority'">severity, then priority</option>
-    <option value="title"
-            tal:attributes="selected python:orderby == 'title'">summary</option>
-    <option value="milestone"
-            tal:attributes="selected python:orderby == 'milestone'">milestone</option>
-    <option tal:condition="view/shouldShowTargetName|nothing"
-            tal:attributes="selected python:orderby == 'targetname'"
-            value="targetname">location</option>
+          tal:define="orderby request/orderby|string:-importance">
+    <option
+      value="-importance"
+      tal:attributes="selected python:orderby == '-importance'"
+    >by importance</option>
+    <option
+      value="milestone"
+      tal:attributes="selected python:orderby == 'milestone'"
+    >by milestone</option>
+    <option
+      tal:condition="view/shouldShowTargetName|nothing"
+      tal:attributes="selected python:orderby == 'targetname'"
+      value="targetname"
+    >by location</option>
+    <option
+      value="datecreated"
+      tal:attributes="selected python:orderby == 'datecreated'"
+    >newest</option>
+    <option
+      value="-datecreated"
+      tal:attributes="selected python:orderby == '-datecreated'"
+    >oldest</option>
+    <option
+      value="-date_last_updated"
+      tal:attributes="selected python:orderby == '-date_last_updated'"
+    >recently changed</option>
   </select>
 
 </metal:item>

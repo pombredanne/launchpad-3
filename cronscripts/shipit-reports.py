@@ -63,7 +63,7 @@ def main(argv):
     # ShipItNG. In future we'll have UI to specify a start/end date
     # for every report and then we'll be able to remove this.
     # -- Guilherme Salgado, 2005-11-24
-    start_date = date(2005, 9, 14)
+    start_date = date(2006, 5, 17)
     end_date = date.today()
     csv_file = requestset.generateWeekBasedReport(start_date, end_date)
     reportset.new(_createLibraryFileAlias(csv_file, 'OrdersByWeek'))

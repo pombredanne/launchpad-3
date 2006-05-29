@@ -121,59 +121,27 @@
         template="../templates/shipit-index.pt"
         lp:url="/shipit/+index" />
 
-    <browser:generalform
+    <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItRequestView"
-        schema="canonical.launchpad.interfaces.IShippingRequest"
         permission="launchpad.AnyPerson"
-        fields="recipientdisplayname addressline1 addressline2 city province
-                country postcode phone organization reason"
-        keyword_arguments="recipientdisplayname addressline1 addressline2 city
-                           province country postcode phone organization reason"
-        template="../templates/shipit-requestcds.pt"
+        attribute="renderStandardrequestForm"
         name="myrequest">
-        <browser:widget
-            field="reason"
-            class="zope.app.form.browser.TextAreaWidget"
-            width="40"
-            height="3" />
-        <browser:widget
-            field="recipientdisplayname"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="20"
-            displayMaxWidth="20" />
-        <browser:widget
-            field="organization"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="city"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="province"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="addressline1"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="addressline2"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="30"
-            displayMaxWidth="30" />
-        <browser:widget
-            field="phone"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="16"
-            displayMaxWidth="16" />
-    </browser:generalform>
+    </browser:page>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItRequestView"
+        permission="launchpad.AnyPerson"
+        attribute="renderCustomrequestForm"
+        name="specialrequest">
+    </browser:page>
+
+    <!-- XXX: This needs to be moved into a normal browser:page declaration,
+    like specialrequest/myrequest, to avoid having all these definitions of the
+    widgets' lengths. 
+    Guilherme Salgado, 2006-05-24
+    -->
     <browser:generalform
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShippingRequestAdminView"

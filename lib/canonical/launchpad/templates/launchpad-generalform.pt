@@ -64,7 +64,7 @@
         </div>
 
       </div>
-      <div class="actions">
+      <div class="actions" metal:define-slot="buttons">
           <input type="submit"
                  tabindex="1000"
                  value="Continue"

@@ -4,9 +4,9 @@
 
 Use them like this:
 
-  from canonical.lp.dbschema import BugTaskSeverity
+  from canonical.lp.dbschema import BugTaskImportance
 
-  print "SELECT * FROM Bug WHERE Bug.severity='%d'" % BugTaskSeverity.CRITICAL
+  print "SELECT * FROM Bug WHERE Bug.importance='%d'" % BugTaskImportance.CRITICAL
 
 """
 __metaclass__ = type
@@ -40,9 +40,8 @@ __all__ = (
 'BugTrackerType',
 'BugExternalReferenceType',
 'BugInfestationStatus',
-'BugTaskPriority',
 'BugRelationship',
-'BugTaskSeverity',
+'BugTaskImportance',
 'BuildStatus',
 'CodereleaseRelationships',
 'CveStatus',
@@ -80,6 +79,7 @@ __all__ = (
 'SourcePackageRelationships',
 'SourcePackageUrgency',
 'SpecificationDelivery',
+'SpecificationFilter',
 'SpecificationGoalStatus',
 'SpecificationPriority',
 'SpecificationSort',
@@ -2522,52 +2522,12 @@ class BugTaskStatus(DBSchema):
         """)
 
 
-class BugTaskPriority(DBSchema):
-    """Bug Task Priority
+class BugTaskImportance(DBSchema):
+    """Bug Task Importance
 
-    Each bug task in Malone can be assigned a priority by the
-    maintainer of the bug. The priority is an indication of the
-    maintainer's desire to fix the task. This schema documents the
-    priorities Malone allows.
-    """
-
-    UNKNOWN = Item(999, """
-        Unknown
-
-        The priority of this bug task is unknown.
-        """)
-
-    HIGH = Item(40, """
-        High
-
-        This is a high priority task for the maintainer.
-        """)
-
-    MEDIUM = Item(30, """
-        Medium
-
-        This is a medium priority task for the maintainer.
-        """)
-
-    LOW = Item(20, """
-        Low
-
-        This is a low priority task for the maintainer.
-        """)
-
-    WONTFIX = Item(10, """
-        Wontfix
-
-        The maintainer does not intend to fix this task.
-        """)
-
-
-class BugTaskSeverity(DBSchema):
-    """Bug Task Severity
-
-    A bug task has a severity, which is an indication of the
-    extent to which the bug impairs the stability and security of
-    the distribution or upstream in which it was reported.
+    Importance is used by developers and their managers to indicate how
+    important fixing a bug is. Importance is typically a combination of the
+    harm caused by the bug, and how often it is encountered.
     """
 
     UNKNOWN = Item(999, """
@@ -2584,22 +2544,22 @@ class BugTaskSeverity(DBSchema):
         security.
         """)
 
-    MAJOR = Item(40, """
-        Major
+    HIGH = Item(40, """
+        High
 
         This bug needs urgent attention from the maintainer or
         upstream. It affects local system security or data integrity.
         """)
 
-    NORMAL = Item(30, """
-        Normal
+    MEDIUM = Item(30, """
+        Medium
 
         This bug warrants an upload just to fix it, but can be put
         off until other major or critical bugs have been fixed.
         """)
 
-    MINOR = Item(20, """
-        Minor
+    LOW = Item(20, """
+        Low
 
         This bug does not warrant an upload just to fix it, but
         should if possible be fixed when next the maintainer does an
@@ -2613,6 +2573,13 @@ class BugTaskSeverity(DBSchema):
         new feature that does not yet exist in the package. It does
         not affect system stability, it might be a usability or
         documentation fix.
+        """)
+
+    UNTRIAGED = Item(5, """
+        Untriaged
+        
+        A relevant developer or manager has not yet decided how
+        important this bug is.
         """)
 
 
@@ -3317,7 +3284,7 @@ class ShipItDistroRelease(DBSchema):
     """The Distro Release, used only to link with ShippingRequest."""
 
     BREEZY = Item(1, """
-        Breezy Badger
+        5.10 (Breezy Badger)
 
         The Breezy Badger release.
         """)

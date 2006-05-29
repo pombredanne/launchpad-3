@@ -88,7 +88,6 @@ class IDistroReleaseQueue(Interface):
 
     sourcepackagerelease = Attribute("The source package release for this item")
 
-    age = Attribute("The age of this queue item.")
     displayname = Attribute("Generic displayname for a queue item")
     containsSource = Attribute("whether or not this upload contains sources")
     containsBuild = Attribute("whether or not this upload contains binaries")

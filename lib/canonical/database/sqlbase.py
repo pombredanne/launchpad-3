@@ -369,9 +369,9 @@ def quote(x):
     >>> quote("hello")
     "'hello'"
     >>> quote("'hello'")
-    "'\\'hello\\''"
+    "'''hello'''"
     >>> quote(r"\'hello")
-    "'\\\\\\'hello'"
+    "'\\\\''hello'"
 
     Note that we need to receive a Unicode string back, because our
     query will be a Unicode string (the entire query will be encoded
@@ -463,7 +463,7 @@ def sqlvalues(*values, **kwvalues):
     >>> sqlvalues(1)
     ('1',)
     >>> sqlvalues(1, "bad ' string")
-    ('1', "'bad \\\\' string'")
+    ('1', "'bad '' string'")
 
     You can also use it when using dict-style substitution.
 

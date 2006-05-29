@@ -1,55 +1,15 @@
 Setting the bug contact for an upstream requires launchpad.Edit
-permission on the product. Let's use mark@hbd.com to demonstrate.
+permission on the product.
 
-  >>> print http(r"""
-  ... GET /products/firefox/+bugcontact HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+    >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bugcontact HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Length: 239
-  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Referer: http://192.168.1.3:9000/products/firefox/+bugcontact
-  ... 
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.bugcontact"
-  ... 
-  ... robertc@robertcollins.net
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... ------------0xKhTmLbOuNdArY--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: .../products/firefox
-  ...
+    >>> browser.open("http://localhost:9000/products/firefox/+bugcontact")
+    >>> browser.getControl(name="field.bugcontact").value = (
+    ...     "robertc@robertcollins.net")
+    >>> browser.getControl("Change").click()
 
 Another example, this time with a team that has no "preferred email" set.
 
-  >>> print http(r"""
-  ... POST /products/firefox/+bugcontact HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Length: 239
-  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Referer: http://192.168.1.3:9000/products/firefox/+bugcontact
-  ... 
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.bugcontact"
-  ... 
-  ... guadamen
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... ------------0xKhTmLbOuNdArY--
-  ... """)
-  HTTP/1.1 303 See Other
-  ...
-  Location: .../products/firefox
-  ...
+    >>> browser.open("http://localhost:9000/products/firefox/+bugcontact")
+    >>> browser.getControl(name="field.bugcontact").value = "guadamen"
+    >>> browser.getControl("Change").click()
