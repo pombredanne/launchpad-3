@@ -7,19 +7,13 @@ Malone provides an XML-RPC interface for filing bugs.
 
     >>> filebug_api = FileBugAPI(None, None)
 
-    >>> filebug_api.report_bug("test xmlrpc bug")
-    'test xmlrpc bug'
+Reporting a bug on a product.
 
-    >>> print http(r"""
-    ... POST /malone HTTP/1.0
-    ... Content-Type: text/xml
-    ...
-    ... <?xml version='1.0'?>
-    ... <methodCall>
-    ... <methodName>report_bug</methodName>
-    ... <params>
-    ... <param><string>foo</string></param>
-    ... </params>
-    ... </methodCall>
-    ... """)
+    >>> filebug_api.report_product_bug(
+    ...     )
+
+Reporting a bug on a package.
+
+
+
 
