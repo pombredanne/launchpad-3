@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import httplib
+import os
 import shutil
 import socket
 import urllib2
@@ -73,10 +74,25 @@ class BranchToMirror:
         """Create the branch to pull to, and copy the source's contents."""
         # XXX AndrewBennetts 2006-05-26:
         #    sprout builds a working tree we don't need.
-        source = self._source_branch
-        revision = source.last_revision()
-        bzrdir = source.bzrdir.sprout(self.dest, revision_id=revision)
-        return bzrdir.open_branch()
+
+        # XXX AndrewBennetts 2006-05-30:
+        #    sprout also fails to preserve the repository format!  Bug #47494.
+        #    Here's what it should look like:
+        #        source = self._source_branch
+        #        revision = source.last_revision()
+        #        bzrdir = source.bzrdir.sprout(self.dest, revision_id=revision)
+        #        return bzrdir.open_branch()
+        #    For now, do it the dumb way:
+        os.makedirs(self.dest)
+        bzrdir_format = self._source_branch.bzrdir._format
+        bzrdir = bzrdir_format.initialize(self.dest)
+        repo_format = self._source_branch.repository._format
+        repo = repo_format.initialize(bzrdir)
+        branch_format = self._source_branch._format
+        branch = branch_format.initialize(bzrdir)
+        branch.pull(self._source_branch)
+        return branch
+        
 
     def _mirrorFailed(self, error_msg):
         """Log that the mirroring of this branch failed."""
