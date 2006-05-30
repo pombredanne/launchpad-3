@@ -98,7 +98,7 @@ class CodeOfConductSet:
             return CodeOfConduct(version)
         except NotFoundError:
             return None
-        
+
     def __iter__(self):
         """See ICodeOfConductSet."""
         releases = []
@@ -116,7 +116,7 @@ class CodeOfConductSet:
 
         # Return the available list of CoCs objects
         return iter(releases)
-        
+
 
 class CodeOfConductConf:
     """Abstract Component to store the current CoC configuration."""
@@ -129,8 +129,9 @@ class CodeOfConductConf:
 
     path = 'lib/canonical/launchpad/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
-    currentrelease = '1.0'
-    datereleased = '2005/04/12'
+    currentrelease = '1.0.1'
+    datereleased = '2006/04/03'
+
 
 class SignedCodeOfConduct(SQLBase):
     """Code of Conduct."""
@@ -195,7 +196,6 @@ class SignedCodeOfConductSet:
     def __getitem__(self, id):
         """Get a Signed CoC Entry."""
         return SignedCodeOfConduct.get(id)
-
 
     def __iter__(self):
         """Iterate through the Signed CoC."""
