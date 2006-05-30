@@ -65,10 +65,8 @@ class TestPublisher(LaunchpadZopelessTestCase):
 
         Returns a ILibraryFileAlias corresponding to the file uploaded.
         """
-        sio = StringIO(content)
-        size = len(content)
-        contentType = 'application/text'
-        alias_id = self.library.addFile(filename, size, sio, contentType)
+        alias_id = self.library.addFile(
+            filename, len(content), StringIO(content), 'application/text')
         LaunchpadZopelessTestSetup.txn.commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
@@ -111,7 +109,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
             self.assertEqual( case[3], p._pathfor(case[0], case[1], case[2]) )
 
     def testPublish(self):
-        """canonical.archivepublisher.Publisher._publish should work"""
+        """Test publishOne in normal conditions (new file)."""
         from canonical.archivepublisher import Publisher
         p = Publisher(self._logger, cnf, self._dp, dist)
         pub_source = self.getMockPubSource( "foo", "main", "foo.txt",
@@ -123,9 +121,9 @@ class TestPublisher(LaunchpadZopelessTestCase):
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
 
     def testPublishingOverwriteFileInPool(self):
-        """publishOne refuses to overwrite a file in poll.
+        """Test if publishOne refuses to overwrite a file in pool.
 
-        And keep the original file contents
+        Check if it also keeps the original file content.
         """
         from canonical.archivepublisher import Publisher
 
@@ -147,7 +145,7 @@ class TestPublisher(LaunchpadZopelessTestCase):
         self.assertEqual(open(foo_name).read().strip(), 'Hello world')
 
     def testPublishingDiferentContents(self):
-        """publishOne don't publish different contents with the same filename."""
+        """Test if publishOne refuses to overwrite its own publication."""
         from canonical.archivepublisher import Publisher
 
         p = Publisher(self._logger, cnf, self._dp, dist)
@@ -170,7 +168,11 @@ class TestPublisher(LaunchpadZopelessTestCase):
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
 
     def testPublishingAlreadyInPool(self):
-        """It should work if file is already in Pool with the same content."""
+        """Test if publishOne works if file is already in Pool.
+
+        It should identify that the file has the same content and
+        mark it as PUBLISHED.
+        """
         from canonical.archivepublisher import Publisher
 
         p = Publisher(self._logger, cnf, self._dp, dist)
@@ -189,7 +191,11 @@ class TestPublisher(LaunchpadZopelessTestCase):
                          PackagePublishingStatus.PUBLISHED)
 
     def testPublishingSymlink(self):
-        """Publishing an existent file with the same content via symlink."""
+        """Test if publishOne moving publication between components.
+
+        After check if the pool file contents as the same, it should
+        create a symlink in the new pointing to the original file.
+        """
         from canonical.archivepublisher import Publisher
 
         content = 'am I a file or a symbolic link ?'
@@ -240,7 +246,8 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """canonical.archivepublisher.Publisher.publishOverrides should work"""
         from canonical.archivepublisher import Publisher
         p = Publisher(self._logger, cnf, self._dp, dist)
-        src = [self.getMockPubSource("foo", "main", "foo.dsc", "misc", "warty")]
+        src = [self.getMockPubSource(
+            "foo", "main", "foo.dsc", "misc", "warty")]
         bin = [self.getMockPubBinary(
             "foo", "main", "foo.deb", "misc", "warty", 10, "i386")]
         p.publishOverrides(src, bin)
@@ -252,7 +259,8 @@ class TestPublisher(LaunchpadZopelessTestCase):
         """canonical.archivepublisher.Publisher.publishFileLists should work"""
         from canonical.archivepublisher import Publisher
         p = Publisher(self._logger, cnf, self._dp, dist)
-        src = [self.getMockPubSource("foo", "main", "foo.dsc", "misc", "warty")]
+        src = [self.getMockPubSource(
+            "foo", "main", "foo.dsc", "misc", "warty")]
         bin = [self.getMockPubBinary(
             "foo", "main", "foo.deb", "misc", "warty", 10, "i386")]
         p.publishFileLists(src, bin)

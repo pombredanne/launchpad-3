@@ -158,7 +158,7 @@ class PoolFileOverwriteError(Exception):
 
     The proposed file has different content as the one in pool.
     This exception is unexpected and when it happens we keep the original
-    file in pool and prints a warning in the publisher log. It probably
+    file in pool and print a warning in the publisher log. It probably
     requires manual intervention in the archive.
     """
 
