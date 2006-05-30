@@ -13,7 +13,7 @@ according the selected buildstate, by default All
   ...     """
   ...
   ...     label_present = "with names containing:" in contents
-  ...     field_present = '<input title="Package Name"' in contents
+  ...     field_present = '<input id="build_text"' in contents
   ...     if label_present and field_present:
   ...         return "present"
   ...     elif not label_present and not field_present:

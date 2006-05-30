@@ -5,7 +5,7 @@ simplification let's use the login of 'carlos' to do it.
   >>> from zope.testbrowser import Browser
   >>> browser = Browser()
   >>> browser.addHeader('Authorization',
-  ...                   'Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==')
+  ...                   'Basic carlos@canonical.com:test')
 
 Edit:
 
@@ -20,6 +20,7 @@ Edit:
   ...Manual Mode...
   ...Owner...
   ...Change...'
+
 
 Let's check we get a nice validation error if we submit the form with
 a bad url:

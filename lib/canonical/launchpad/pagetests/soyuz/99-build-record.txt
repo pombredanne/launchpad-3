@@ -94,12 +94,12 @@ w/o build record anymore.)
 it also checks input data sanity (bug # 44240):
 
   >>> print http(r"""
-  ... POST /+builds/+build/8/+rescore HTTP/1.0
+  ... POST /+builds/+build/9/+rescore HTTP/1.0
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 19
   ...
   ... SCORE=foo&RESCORE=1""")
-  HTTP/1.1 200 Ok
+  HTTP/1.0 200 Ok
   Content-Length: ...
   ...Rescore i386 build of pmount 0.1-1 in ubuntu warty...
   ...priority must be an integer not "foo"...
