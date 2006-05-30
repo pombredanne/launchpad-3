@@ -80,7 +80,7 @@
     class="canonical.launchpad.browser.TicketEditView"
     label="Change support request details"
     fields="description title"
-    permission="launchpad.Edit"
+    permission="launchpad.AnyPerson"
     template="../templates/ticket-edit.pt">
   </browser:editform>
 

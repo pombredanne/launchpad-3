@@ -1,9 +1,9 @@
 Editing Tickets
 ===============
 
-We should be able to edit the title and description of a ticket.
+Any logged in user should be able to edit the title and description of a ticket.
 
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
   >>> browser.open('http://localhost:9000/products/firefox/+ticket/2/+edit')
 
 When we post the form, we should be redirected back to the ticket page.
@@ -26,7 +26,15 @@ And viewing that page should show the updated information.
   >>> summary in browser.contents
   True
 
-We should also be able to edit the priority, assignee and status whiteboard.
+Only the requester should be able to edit the priority, assignee and status whiteboard.
+
+  # XXX matsubara 2006-05-30 Workaround for bug
+  # https://launchpad.net/bugs/45226
+  >>> from zope.testbrowser import Browser
+  >>> browser = Browser()
+  >>> browser.handleErrors = False
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://localhost:9000/products/firefox/+ticket/2/+edit')
 
   >>> browser.getLink('Change Priority/Assignee').click()
   >>> browser.url
