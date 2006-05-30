@@ -6,6 +6,11 @@
   >>> browser.url
   'http://localhost/shipit-ubuntu/myrequest'
 
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Request CDs...
+  ...
+
   First of all, we'll make sure a request is accepted only if all required 
   fields are filled.
 
@@ -82,18 +87,37 @@
   >>> Person.byName('name16').currentShipItRequest().approved
   True
 
+  If now we go to one of shipit.kubuntu or shipit.edubuntu, we'll be able to
+  add more CDs to our existing request.
+
+  >>> browser.open('http://localhost/shipit-kubuntu/myrequest')
+  >>> browser.url
+  'http://localhost/shipit-kubuntu/myrequest'
+
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...<h1>...
+  ...Request more CDs...
+  ...</h1>...
+
+  >>> browser.getControl(name='ordertype').value = ['10']
+  >>> browser.getControl('Request More CDs').click()
+  >>> browser.url
+  'http://localhost/shipit-kubuntu/myrequest'
+
+
   It's also possible to cancel an existing request.
 
   >>> browser.getControl('Cancel Request').click()
   >>> browser.url
-  'http://localhost/shipit-ubuntu/myrequest'
+  'http://localhost/shipit-kubuntu/myrequest'
 
   >>> print browser.contents
   <!DOCTYPE...
   ...Request Cancelled...
   ...Shipped/Cancelled requests...
   ...
-  ...10 CDs requested in...
+  ...11 CDs requested in...
   ...
 
   >>> Person.byName('name16').currentShipItRequest() is None

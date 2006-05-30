@@ -321,6 +321,15 @@ class ShipItRequestView(GeneralFormView):
         assert self.current_order is not None
         return self.current_order.getQuantitiesOfFlavour(self.flavour)
 
+    def currentOrderContainsCDsOfThisFlavour(self):
+        """Return True if the current order contains any CDs of self.flavour.
+
+        You must not use this method if self.current_order is None.
+        """
+        assert self.current_order is not None
+        quantities = self.current_order.getQuantitiesOfFlavour(self.flavour)
+        return bool(sum(quantities.values()))
+
     @cachedproperty('_current_order')
     def current_order(self):
         return self.user.currentShipItRequest()
@@ -368,9 +377,18 @@ class ShipItRequestView(GeneralFormView):
         changing an existing one.
         """
         form = self.request.form
-        current_order = self.current_order
         need_notification = False
         reason = kw.get('reason')
+        requestset = getUtility(IShippingRequestSet)
+        # We issue a lock here to ensure that the user isn't creating
+        # another request behind our back before we go about creating
+        # this one. This should solve the problem of duplicate requests
+        # by serializing their creation.
+        requestset.lockTableInExclusiveMode()
+        # We also need to use self.user.currentShipItRequest() to make sure we
+        # actually issue a query in the database instead of risking to get a
+        # cached value from self.current_order.
+        current_order = self.user.currentShipItRequest()
         if not current_order:
             current_order = getUtility(IShippingRequestSet).new(
                 self.user, kw.get('recipientdisplayname'), kw.get('country'),
