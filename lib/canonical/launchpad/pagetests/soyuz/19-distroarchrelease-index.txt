@@ -1,10 +1,9 @@
 Check if the DistroRelease Page is not Broken.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/warty/i386 HTTP/1.1
-  ...
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  <h1>...
-  ...
+  >>> from zope.testbrowser import Browser
+  >>> browser = Browser()
+
+  >>> browser.open("http://localhost:9000/distros/ubuntu/warty/i386")
+  >>> browser.contents
+  '...Search binary packages...'
+
