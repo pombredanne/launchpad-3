@@ -392,6 +392,16 @@ Let's check the procedures to verify/collect running build process:
   >>> buildergroup.updateBuild(bqItem11, librarian)
   WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
 
+Ensure GIVENBACK build preserve the history for future use. (we
+can't precise if logtail will contain any information, because it
+depends on how long the build took to be processed and how often we
+scanned it)
+
+  >>> assert bqItem11.builder is not None
+  >>> assert bqItem11.buildstart is not None
+  >>> assert bqItem11.lastscore is 0
+  >>> bqItem11.build.buildstate.title
+  'Needs building'
 
   WAITING - OK -> builder has finished the job and is waiting for
   master to collect its results

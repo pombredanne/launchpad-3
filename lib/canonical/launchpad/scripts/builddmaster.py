@@ -765,17 +765,20 @@ class BuilderGroup:
 
     def buildStatus_GIVENBACK(self, queueItem, slave, librarian, buildid,
                               filemap=None, dependencies=None):
-        """Handle automatic retry requested by builder.OA
+        """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents and request for automatic retry
-        on next queuebuilder cycle, which is done by reseting the the current
-        Build record.
+        later, the delay is controlled by reducing the lastscore to ZERO.
         """
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
         slave.clean()
-        queueItem.destroySelf()
+        # XXX cprov 20060530: Currently this information is not
+        # properly presented in the Web UI. We will discuss it in
+        # the next Paris Summit, infinity has some ideas about how
+        # to use this content. For now we just ensure it's stored.
+        queueItem.lastscore = 0
 
     def countAvailable(self):
         """Return the number of available builder slaves.
