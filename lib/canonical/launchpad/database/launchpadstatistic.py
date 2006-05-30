@@ -16,6 +16,12 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     ILaunchpadStatistic, ILaunchpadStatisticSet)
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.pomsgid import POMsgID
+
 
 class LaunchpadStatistic(SQLBase):
     """A table of Launchpad Statistics."""
@@ -58,4 +64,20 @@ class LaunchpadStatisticSet:
             return None
         return stat.value
 
-
+    def updateStatistics(self, ztm):
+        self.update('potemplate_count', POTemplate.select().count())
+        ztm.commit()
+        self.update('pofile_count', POFile.select().count())
+        ztm.commit()
+        self.update('pomsgid_count', POMsgID.select().count())
+        ztm.commit()
+        self.update('translator_count', Person.select(
+            "POSubmission.person=Person.id",
+            clauseTables=['POSubmission'],
+            distinct=True).count())
+        ztm.commit()
+        self.update('language_count', Language.select(
+            "POFile.language=Language.id",
+            clauseTables=['POFile'],
+            distinct=True).count())
+        ztm.commit()
