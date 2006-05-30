@@ -208,7 +208,7 @@ class TicketContextMenu(ContextMenu):
         summary = 'Create a bug report from this support request.'
         return Link('+makebug', text, summary, icon='add', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def administer(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')

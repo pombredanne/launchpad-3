@@ -10,13 +10,13 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
     IDistribution, ITeamMembership, IProductSeriesSource,
-    IProductSeriesSourceAdmin, IMilestone, IBug, IBugTask, ITranslator,
+    IProductSeriesSourceAdmin, IMilestone, IBug, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ITranslationImportQueueEntry,
+    IShippingRun, ISpecification, ITicket, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IBuild)
 
@@ -755,3 +755,13 @@ class AdminBuilderSet(AdminByBuilddAdmin):
 
 class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
+
+
+class AdminTicket(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITicket
+
+    def checkAuthenticated(self, user):
+        """Allow owner, admins or ticket target owners"""
+        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+                user.inTeam(self.obj.target.owner))
