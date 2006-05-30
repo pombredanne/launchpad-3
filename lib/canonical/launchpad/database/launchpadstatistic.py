@@ -64,7 +64,13 @@ class LaunchpadStatisticSet:
             return None
         return stat.value
 
-    def updateStatistics(self, ztm):
+    def _updateRosettaStatistics(self, ztm):
+        """See ILaunchpadStatisticSet."""
+        self._updateRosettaStatistics(ztm)
+        # ... add more update calls here.
+        # TODO: SteveAlexander, 2006-05-30
+
+    def _updateRosettaStatistics(self, ztm):
         self.update('potemplate_count', POTemplate.select().count())
         ztm.commit()
         self.update('pofile_count', POFile.select().count())
@@ -81,3 +87,4 @@ class LaunchpadStatisticSet:
             clauseTables=['POFile'],
             distinct=True).count())
         ztm.commit()
+

@@ -38,8 +38,5 @@ class ILaunchpadStatisticSet(Interface):
         """Return the current value of the requested statistic."""
 
     def updateStatistics(ztm):
-        """Update the Rosetta statistics in the system.
-
-        This should be extended to other statistics later.
-        """
+        """Update the statistics in the system."""
 
