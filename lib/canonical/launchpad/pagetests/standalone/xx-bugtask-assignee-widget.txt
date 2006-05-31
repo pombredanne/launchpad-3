@@ -29,19 +29,11 @@ button:
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.severity"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Minor
+  ... Low
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... High
-  ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
@@ -110,19 +102,11 @@ But, you can also assign the task to another person, of course:
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.severity"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Minor
+  ... Low
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... High
-  ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
@@ -191,19 +175,11 @@ Lastly, the widget also allows you to simply assign the task to nobody
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.severity"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Minor
+  ... Low
   ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.priority"
-  ... 
-  ... High
-  ... -----------------------------19759086281403130373932339922
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------19759086281403130373932339922

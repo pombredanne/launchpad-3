@@ -168,10 +168,6 @@ class IBranch(IHasOwner):
                       "URL. Use this if the branch is no longer available."))
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
-    pull_url = Attribute("URL to pull from.  Same as url, unless this is a "
-                         "push branch (url is None).  This url may be a "
-                         "Canonical-internal path, so we don't display this "
-                         "on the main website.")
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "
         "This is for in-datacentre services only and allows such services to "
@@ -241,7 +237,4 @@ class IBranchSet(Interface):
 
         Return the default value if no match was found.
         """
-
-    def get_supermirror_pull_queue():
-        """Get a list of branches the supermirror should pull now."""
 
