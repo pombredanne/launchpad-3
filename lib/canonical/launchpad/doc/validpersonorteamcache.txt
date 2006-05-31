@@ -94,6 +94,37 @@ We support changing the owner of a email address
     >>> is_valid(stub_id)
     True
 
+is_valid is set correctly no matter the order in which the tables are
+updated.
+
+    >>> cur.execute("""
+    ...     UPDATE EmailAddress SET status=1
+    ...     WHERE person = %(stub_id)s
+    ...     """, vars())
+    >>> is_valid(stub_id)
+    False
+
+    >>> cur.execute("""
+    ...     UPDATE Person SET password = NULL
+    ...     WHERE id = %(stub_id)s
+    ...     """, vars())
+    >>> is_valid(stub_id)
+    False
+
+    >>> cur.execute("""
+    ...     UPDATE Person SET password = 'whatever'
+    ...     WHERE id = %(stub_id)s
+    ...     """, vars())
+    >>> is_valid(stub_id)
+    False
+
+    >>> cur.execute("""
+    ...     UPDATE EmailAddress SET status=4
+    ...     WHERE person = %(stub_id)s AND email = 'stuart@stuartbishop.net'
+    ...     """, vars())
+    >>> is_valid(stub_id)
+    True
+
 Creating and deleting rows will populate things correctly
 
     >>> is_valid(888888)
