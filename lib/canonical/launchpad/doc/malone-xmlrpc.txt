@@ -7,13 +7,110 @@ Malone provides an XML-RPC interface for filing bugs.
 
     >>> filebug_api = FileBugAPI(None, None)
 
-Reporting a bug on a product.
+The report_bug API
+------------------
 
-    >>> filebug_api.report_product_bug(
-    ...     )
+The report_bug API is:
 
-Reporting a bug on a package.
+    filebug_api.report_bug(
+        product, distro, package, title, comment, status,
+        assignee, security_related, private, subscribers)
 
+Required args: Product or distro, title, comment.
+Optional args: package (and only if distro is specified), status,
+               assignee, security_related, private, subscribers
 
+The bug owner is the currently authenticated user, taken from the
+request.
 
+The return value is the bug URL.
 
+Examples
+--------
+
+Reporting a product bug.
+
+    >>> login("test@canonical.com")
+
+    >>> filebug_api.report_bug(
+    ...     'firefox', '', '', 'the title', 'the comment',
+    ...     '', '', '', '', [])
+    u'http://localhost:8086/bugs/11'
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugSet
+
+    >>> bugset = getUtility(IBugSet)
+    >>> bug = bugset.get(11)
+
+    >>> print bug.title
+    the title
+    >>> print bug.description
+    the comment
+    >>> print bug.owner.name
+    name12
+
+    >>> firefox_bug = bug.bugtasks[0]
+
+    >>> print firefox_bug.product.name
+    firefox
+
+Reporting a distro bug.
+
+    >>> filebug_api.report_bug(
+    ...     '', 'ubuntu', '', 'another bug', 'another comment',
+    ...     'confirmed', 'foo.bar@canonical.com', '', '', [])
+    u'http://localhost:8086/bugs/12'
+
+    >>> bug = bugset.get(12)
+
+    >>> print bug.title
+    another bug
+    >>> print bug.description
+    another comment
+    >>> print bug.owner.name
+    name12
+
+    >>> ubuntu_bug = bug.bugtasks[0]
+
+    >>> print ubuntu_bug.distribution.name
+    ubuntu
+    >>> ubuntu_bug.sourcepackagename is None
+    True
+    >>> print ubuntu_bug.status.title
+    Confirmed
+    >>> print ubuntu_bug.assignee.name
+    name16
+
+Reporting a package bug.
+
+    >>> filebug_api.report_bug(
+    ...     '', 'ubuntu', 'evolution', 'email is cool', 'email is nice',
+    ...     'inprogress', '', 'true', 'true', ["no-priv@canonical.com"])
+    u'http://localhost:8086/bugs/13'
+
+    >>> bug = bugset.get(13)
+
+    >>> print bug.title
+    email is cool
+    >>> print bug.description
+    email is nice
+    >>> bug.security_related
+    True
+    >>> bug.private
+    True
+    >>> sorted(p.name for p in bug.getDirectSubscribers())
+    [u'name12', u'no-priv']
+    >>> bug.getIndirectSubscribers()
+    []
+
+    >>> evolution_bug = bug.bugtasks[0]
+
+    >>> print evolution_bug.distribution.name
+    ubuntu
+    >>> print evolution_bug.sourcepackagename
+    evolution
+    >>> print evolution_bug.status.title
+    In Progress
+    >>> print evolution_bug.assignee.name
+    name16
