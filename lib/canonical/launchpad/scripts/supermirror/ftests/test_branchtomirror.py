@@ -1,3 +1,9 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""Functional tests for branchtomirror.py."""
+
+__metaclass__ = type
+
 import httplib
 import os
 import shutil
@@ -9,6 +15,9 @@ import urllib2
 import bzrlib.branch
 import bzrlib.errors
 from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests.repository_implementations.test_repository import (
+            TestCaseWithRepository)
+from bzrlib.transport import get_transport
 from bzrlib.weave import Weave
 from bzrlib.errors import (
     BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
@@ -27,6 +36,7 @@ from canonical.functional import FunctionalLayer
 
 
 class TestBranchToMirror(LaunchpadFunctionalTestCase):
+
     layer = FunctionalLayer
 
     testdir = None
@@ -63,7 +73,106 @@ class TestBranchToMirror(LaunchpadFunctionalTestCase):
                          mirrored_branch.last_revision())
 
 
+class TestBranchToMirrorFormats(TestCaseWithRepository):
+
+    layer = FunctionalLayer
+
+    def setUp(self):
+        super(TestBranchToMirrorFormats, self).setUp()
+        LaunchpadFunctionalTestSetup().setUp()
+        self.authserver = AuthserverTacTestSetup()
+        self.authserver.setUp()
+
+    def tearDown(self):
+        self.authserver.tearDown()
+        super(TestBranchToMirrorFormats, self).tearDown()
+        LaunchpadFunctionalTestSetup().tearDown()
+        test_root = TestCaseInTempDir.TEST_ROOT
+        if test_root is not None and os.path.exists(test_root):
+            shutil.rmtree(test_root)
+        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
+        # to create a new root when the next test is run.
+        # The TestCaseInTempDir is part of bzr's test infrastructure and the
+        # bzr test runner normally does this cleanup, but here we have to do
+        # that ourselves.
+        TestCaseInTempDir.TEST_ROOT = None
+
+    def testMirrorKnitAsKnit(self):
+        # Create a source branch in knit format, and check that the mirror is in
+        # knit format.
+        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self._testMirrorFormat()
+
+    def testMirrorMetaweaveAsMetaweave(self):
+        # Create a source branch in metaweave format, and check that the mirror
+        # is in metaweave format.
+        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self._testMirrorFormat()
+
+    def testMirrorWeaveAsWeave(self):
+        # Create a source branch in weave format, and check that the mirror is
+        # in weave format.
+        self.bzrdir_format = bzrlib.bzrdir.BzrDirFormat6()
+        self.repository_format = bzrlib.repository.RepositoryFormat6()
+        self._testMirrorFormat()
+
+    def testSourceFormatChange(self):
+        # Create and mirror a branch in weave format.
+        self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
+        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self._createSourceBranch()
+        self._mirror()
+        
+        # Change the branch to knit format.
+        shutil.rmtree('src-branch')
+        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self._createSourceBranch()
+
+        # Mirror again.  The mirrored branch should now be in knit format.
+        mirrored_branch = self._mirror()
+        self.assertEqual(
+            self.repository_format.get_format_description(),
+            mirrored_branch.repository._format.get_format_description())
+
+    def _createSourceBranch(self):
+        os.mkdir('src-branch')
+        tree = self.make_branch_and_tree('src-branch')
+        self.local_branch = tree.branch
+        self.build_tree(['foo'], transport=get_transport('./src-branch'))
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+        return tree
+
+    def _mirror(self):
+        # Mirror src-branch to dest-branch
+        client = BranchStatusClient()
+        to_mirror = BranchToMirror('src-branch', 'dest-branch', client, 1)
+        to_mirror.mirror()
+        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
+        return mirrored_branch
+
+    def _testMirrorFormat(self):
+        tree = self._createSourceBranch()
+        
+        mirrored_branch = self._mirror()
+        self.assertEqual(tree.last_revision(),
+                         mirrored_branch.last_revision())
+
+        # Assert that the mirrored branch is in source's format
+        # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
+        # See bug 45277.
+        self.assertEqual(
+            self.repository_format.get_format_description(),
+            mirrored_branch.repository._format.get_format_description())
+        self.assertEqual(
+            self.bzrdir_format.get_format_description(),
+            mirrored_branch.bzrdir._format.get_format_description())
+
+
 class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
+
     layer = FunctionalLayer
 
     def setUp(self):
@@ -152,8 +261,7 @@ class TestErrorHandling(unittest.TestCase):
         client.startMirroring = lambda branch_id: None
         self.branch._mirrorFailed = lambda err, m=None: self.errors.append(err)
         self.branch._openSourceBranch = lambda: None
-        self.branch._openDestBranch = lambda: None
-        self.branch._pullSourceToDest = lambda: None
+        self.branch._mirrorToDestBranch = lambda: None
 
     def _runMirrorAndCheckError(self, expected_error):
         self.branch.mirror()
@@ -224,9 +332,9 @@ class TestErrorHandling(unittest.TestCase):
     def testBzrErrorHandling(self):
         self.errors = []
         def stubOpenSourceBranch():
-            raise BzrError('A generig bzr error')
+            raise BzrError('A generic bzr error')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'A generig bzr error'
+        expected_msg = 'A generic bzr error'
         self._runMirrorAndCheckError(expected_msg)
 
 
