@@ -23,12 +23,76 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.z3batching.batch import _Batch
+
+class POTMsgSetBatchNavigator(BatchNavigator):
+
+    def __init__(self, results, request, size=1):
+        """Constructs a BatchNavigator instance.
+
+        results is an iterable of results. request is the web request
+        being processed. size is a default batch size which the callsite
+        can choose to provide.
+        """
+        # Get the closer context URL that we can with the information that we
+        # have inside the batch navigator (IPOTemplate's URL)
+        potemplate = results[0].potemplate
+        self.potemplate_url = str(canonical_url(potemplate))
+        ending_url = str(request.URL).replace(self.potemplate_url, '')
+        parsed_entries = ending_url.split('/')
+        # ending_url will be like: '/es/1/+translate' and we are interested
+        # on the numeric value after the /es/ part, that's the current batch
+        # number.
+        try:
+            # The URLs we use to navigato thru POTMsgSet objects start with 1,
+            # while the batching machinery starts with 0, that's why we need
+            # to remove '1'.
+            start = int(parsed_entries[2]) - 1
+        except ValueError:
+            start = 0
+
+        # This batch navigator class only supports batching of 1 element.
+        size = 1
+
+        request.form['start'] = str(start)
+        request.form['size'] = str(size)
+
+        BatchNavigator.__init__(self, results, request, size)
+
+    def generateBatchURL(self, batch):
+        """Return a custom batch URL for IPOMsgSet's views."""
+        url = ""
+        if batch is None:
+            return url
+
+        assert batch.size == 1, 'The batch size must be 1.'
+
+        qs = self.request.environment.get('QUERY_STRING', '')
+
+        start = batch.startNumber()
+        # I know this is a bit hacky but is the only way I found to get the
+        # new URL with all information I got with the Batch infrastructure.
+        ending_url = str(self.request.URL).replace(self.potemplate_url, '')
+        parsed_entries = ending_url.split('/')
+        # ending_url will be like:
+        # '/ILanguage.code/IPOTMsgSet.sequence/+translate' and we are
+        # interested on change the IPOTMsgSet.sequence with the str(start)
+        # value to handle this specific navigation URL schema.
+        parsed_entries[2] = str(start)
+        new_ending_url = '/'.join(parsed_entries)
+        url = '%s%s' % (self.potemplate_url, new_ending_url)
+        if qs:
+            # There are arguments that we should preserve.
+            url = '%s?%s' % (url, qs)
+        return url
+
 
 class CustomDropdownWidget(DropdownWidget):
 
     def _div(self, cssClass, contents, **kw):
         """Render the select widget without the div tag."""
         return contents
+
 
 class POMsgSetFacets(StandardLaunchpadFacets):
     usedfor = IPOMsgSet
@@ -169,7 +233,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         # Setup the batching for this page.
         potemplate = self.context.pofile.potemplate
-        self.batchnav = BatchNavigator(
+        self.batchnav = POTMsgSetBatchNavigator(
             potemplate.getPOTMsgSets(), self.request, size=1)
         current_batch = self.batchnav.currentBatch()
         self.start = self.batchnav.start
