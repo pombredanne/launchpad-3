@@ -181,7 +181,7 @@ class LoginOrRegister:
 
         appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email)
+        principal = loginsource.getPrincipalByLogin(email, must_be_valid=False)
         if principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
@@ -196,9 +196,13 @@ class LoginOrRegister:
                             person, email, email, LoginTokenType.VALIDATEEMAIL)
                 token.sendEmailValidationRequest(appurl)
                 return
-
-            logInPerson(self.request, principal, email)
-            self.redirectMinusLogin()
+            if person.is_valid_person:
+                logInPerson(self.request, principal, email)
+                self.redirectMinusLogin()
+            else:
+                # We should never get here, as any account in this situation
+                # should have a NULL password.
+                self.login_error = "This account cannot be used."
         else:
             self.login_error = "The email address and password do not match."
 

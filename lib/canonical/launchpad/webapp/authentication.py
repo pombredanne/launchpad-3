@@ -202,12 +202,14 @@ class LaunchpadLoginSource:
     def getPrincipals(self, name):
         raise NotImplementedError
 
-    def getPrincipalByLogin(self, login):
+    def getPrincipalByLogin(self, login, must_be_valid=True):
         """Return a principal based on the person with the email address
         signified by "login".
         """
         person = getUtility(IPersonSet).getByEmail(login)
-        if person is not None and person.is_valid_person:
+        if person is not None and (
+                not must_be_valid or person.is_valid_person
+                ):
             return self._principalForPerson(person)
         else:
             return None
