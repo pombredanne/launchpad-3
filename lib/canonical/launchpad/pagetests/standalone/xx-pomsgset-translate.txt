@@ -4,18 +4,12 @@ render just one message with all available information for it.
 When we are on the first message, we should be 100% sure that the 'First' and
 'Previous' links are hidden and 'Next' and 'Last' are the right ones.
 
-  >>> browser.open('http://localhost/')
-
-
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://localhost/distros/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/es/1/+translate')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Item...1...of...22...
 
   >>> browser.getLink('First')
   Traceback (most recent call last):
@@ -39,9 +33,6 @@ when we choose the next entry, all links should appear.
   >>> next.click()
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate'
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Item...2...of...22...
 
   >>> browser.getLink('First')
   <Link text='First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
@@ -58,9 +49,6 @@ And the last one.
   >>> last.click()
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate'
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Item...22...of...22...
 
   >>> browser.getLink('First')
   <Link text='First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
@@ -83,9 +71,6 @@ Let's test the ones at the end of the form.
   >>> prev.click()
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate'
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Item...21...of...22...
 
   >>> browser.getLink('First')
   <Link text='First' url='http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate'>
@@ -103,9 +88,6 @@ Now, we are going to check a message submission.
   ...     '+pots/evolution-2.2/es/13/+translate')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Item...13...of...22...
 
 Check that the message #13 is without translation.
 
@@ -118,9 +100,6 @@ Let's submit an invalid value for this message #13.
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Item...13...of...22...
   >>> 'There is an error in the translation you provided' in browser.contents
   True
   >>> "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same" in browser.contents
@@ -145,9 +124,6 @@ Now, it has the submitted value.
   ...     '+pots/evolution-2.2/es/13/+translate')
   >>> browser.url
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate'
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Item...13...of...22...
 
 Check that the message #13 has the new value we submitted.
 
@@ -163,7 +139,6 @@ Finally, check that we get more than one suggestion for textareas in this form.
   'http://localhost/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate'
   >>> print browser.contents
   <!DOCTYPE...
-  ...Item...14...of...22...
   ...textarea...
   ...name="msgset_143_es_translation_0"...
   ...Used elsewhere:...

@@ -34,7 +34,7 @@ Get the set of POTMsgSets that are untranslated.
 
 >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
 >>> len(potmsgsets)
-15
+13
 
 Test that the header is updated.
 

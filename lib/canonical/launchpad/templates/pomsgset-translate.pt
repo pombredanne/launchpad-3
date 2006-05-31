@@ -41,6 +41,10 @@
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
           <form method="POST" action="+translate">
+            <input type="hidden" name="start" value=""
+                   tal:attributes="value view/start" />
+            <input type="hidden" name="batch" value=""
+                   tal:attributes="value view/size" />
             <tal:comment replace="nothing">
               Suggestions from this alternative language will be displayed as
               well as suggestions from the translation language. In the case
@@ -56,7 +60,7 @@
         </div>
 
         <!-- The translation form. -->
-        <form method="post" action="+translate">
+        <form method="POST" action="+translate">
           <!-- the hidden elements -->
           <input type="hidden" name="alt"
                  tal:condition="view/second_lang_code"
@@ -65,41 +69,66 @@
             <thead>
               <tr class="results">
                 <td colspan="4">
-
-                  <!-- Show which messages are displayed. -->
-                  <div style="width: 50%; float: left;">
-                    Item
-                    <strong tal:content="view/context/potmsgset/sequence">5</strong>
-                    of
-                    <strong tal:content="view/context/potmsgset/potemplate/count:len">23</strong>
-                  </div>
-
                   <!-- Paging doodads. -->
-                  <div style="width: 50%; float: right; text-align: right;">
-
-                    <tal:comment tal:replace="nothing">
-                      Link to previous page and beginning, if this is not
-                      the beginning page.
-                    </tal:comment>
-
-                    <span class="previous" tal:condition="not:view/is_at_beginning">
-                      <a tal:attributes="href view/beginning_URL">First</a>
-                        &ndash;
-                      <a tal:attributes="href view/previous_URL">Previous</a>
-                      <span tal:condition="not:view/is_at_end">&ndash;</span>
-                    </span>
-
-                    <tal:comment tal:replace="nothing">
-                      Link to next page and end, if this is not the end page.
-                    </tal:comment>
-
-                    <!-- Offset of next page, if not at end. -->
-                    <span class="next" tal:condition="not:view/is_at_end">
-                      <a tal:attributes="href view/next_URL">Next</a>
-                      &ndash;
-                      <a tal:attributes="href view/end_URL">Last</a>
-                    </span>
-                  </div>
+                  <table tal:define="
+                    first_page_url view/batchnav/firstBatchURL;
+                    prev_page_url view/batchnav/prevBatchURL;
+                    next_page_url view/batchnav/nextBatchURL;
+                    last_page_url view/batchnav/lastBatchURL;
+                    total view/batchnav/batch/total"
+                    style="width: 100%;"
+                    >
+                    <tbody>
+                      <tr>
+                        <td style="white-space: nowrap">
+                          Message
+                          <strong tal:content="view/batchnav/batch/startNumber">1</strong>
+                          of
+                         <span tal:replace="total">42</span>
+                        </td>
+                        <td style="text-align: right; white-space: nowrap">
+                          <tal:first condition="first_page_url">
+                            <a tal:attributes="href first_page_url"
+                              rel="first">&laquo;&nbsp;First</a>
+                          </tal:first>
+                          <span tal:condition="not:first_page_url"
+                                class="unavailable">&laquo;&nbsp;First</span>
+                          <tal:previous condition="prev_page_url">
+                            &mdash;
+                            <a tal:attributes="href prev_page_url"
+                               rel="previous">Previous</a>
+                          </tal:previous>
+                          <span tal:condition="not:prev_page_url"
+                                class="unavailable">&mdash; Previous</span>
+                          <tal:intermediaries repeat="page_url view/batchnav/batchPageURLs">
+                            <a
+                              tal:condition="python:len(page_url) > 1"
+                              tal:content="python:page_url.keys()[0]"
+                              tal:attributes="href python:page_url.values()[0]"
+                              >[1]</a>
+                          </tal:intermediaries>
+                          <tal:next condition="next_page_url">
+                            &mdash;
+                            <a tal:attributes="href next_page_url" rel="next"
+                            >Next</a>
+                          </tal:next>
+                          <span
+                            tal:condition="not:next_page_url"
+                            class="unavailable"
+                            >&mdash; Next</span>
+                          <tal:last condition="last_page_url">
+                            &mdash;
+                            <a tal:attributes="href last_page_url" rel="last"
+                            >Last&nbsp;&raquo;</a>
+                          </tal:last>
+                          <span
+                            tal:condition="not:last_page_url"
+                            class="unavailable"
+                          >&mdash; Last&nbsp;&raquo;</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
               </tr>
             </thead>

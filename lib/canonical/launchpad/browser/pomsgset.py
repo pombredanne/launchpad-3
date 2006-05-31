@@ -7,15 +7,12 @@ __all__ = [
     'POMsgSetAppMenus'
     ]
 
-import re
 import gettextpo
-import urllib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
-from zope.app.form.browser import SelectWidget
+from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
 from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
@@ -25,8 +22,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
     canonical_url)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
-class CustomSelectWidget(SelectWidget):
+class CustomDropdownWidget(DropdownWidget):
 
     def _div(self, cssClass, contents, **kw):
         """Render the select widget without the div tag."""
@@ -114,10 +112,6 @@ class POMsgSetView(LaunchpadView):
         self.form_posted_needsreview = None
         self.error = None
 
-        # At this point, we don't know the alternative language selected.
-        self.second_lang_pofile = None
-        self.second_lang_msgset = None
-
         # We don't know the suggestions either.
         self._wiki_submissions = None
         self._current_submissions = None
@@ -136,14 +130,50 @@ class POMsgSetView(LaunchpadView):
         initial_value = {}
         if self.alt:
             initial_value['alternative_language'] = getUtility(
-                ILanguage)[self.alt]
+                ILanguageSet)[self.alt]
 
         # Initialize the widget to list languages.
         self.alternative_language_widget = CustomWidgetFactory(
-            CustomSelectWidget)
+            CustomDropdownWidget)
         setUpWidgets(
             self, IPOFileAlternativeLanguage, IInputWidget,
             names=['alternative_language'], initial=initial_value)
+
+        if not self.pofile.canEditTranslations(self.user):
+            # The user is not an official translator, we should show a
+            # warning.
+            self.request.response.addWarningNotification(
+                "You are not an official translator for this file. You can"
+                " still make suggestions, and your translations will be"
+                " stored and reviewed for acceptance later by the designated"
+                " translators.")
+
+        if not self.has_plural_form_information:
+            # Cannot translate this IPOFile without the plural form
+            # information. Show the info to add it to our system.
+            self.request.response.addErrorNotification("""
+<p>
+Rosetta can&#8217;t handle the plural items in this file, because it
+doesn&#8217;t yet know how plural forms work for %s.
+</p>
+<p>
+To fix this, please e-mail the <a
+href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
+with this information, preferably in the format described in the
+<a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
+</p>
+<p>
+This only needs to be done once per language. Thanks for helping Rosetta.
+</p>
+""" % self.pofile.language.englishname)
+
+        # Setup the batching for this page.
+        potemplate = self.context.pofile.potemplate
+        self.batchnav = BatchNavigator(
+            potemplate.getPOTMsgSets(), self.request, size=1)
+        current_batch = self.batchnav.currentBatch()
+        self.start = self.batchnav.start
+        self.size = current_batch.size
 
         # Handle any form submission.
         self.process_form()
@@ -264,80 +294,31 @@ class POMsgSetView(LaunchpadView):
         else:
             return self.alt
 
-    @property
-    def is_at_beginning(self):
-        """Return whether we are at the beginning of the form."""
-        return self.context.potmsgset.sequence == 1
-
-    @property
-    def is_at_end(self):
-        """Return whether we are at the end of the form."""
-        potmsgset = self.context.potmsgset
-        return potmsgset.sequence == len(potmsgset.potemplate)
-
-    @property
-    def beginning_URL(self):
-        """Return the URL to be at the beginning of the translation form."""
-        return self.createURL(sequence=1)
-
-    @property
-    def end_URL(self):
-        """Return the URL to be at the end of the translation form."""
-        number_msgsets = len(self.context.potmsgset.potemplate)
-        return self.createURL(sequence=number_msgsets)
-
-    @property
-    def previous_URL(self):
-        """Return the URL to get previous message set.
-        """
-        if self.context.potmsgset.sequence > 1:
-            return self.createURL(self.context.potmsgset.sequence - 1)
+    @cachedproperty
+    def second_lang_pofile(self):
+        """Return the IPOFile for the alternative translation or None."""
+        if self.second_lang_code is not None:
+            return self.context.pofile.potemplate.getPOFileByLang(
+                self.second_lang_code)
         else:
-            # We don't have more entries before this one, return always the
-            # first entry.
-            return self.createURL(1)
+            return None
 
-    @property
-    def next_URL(self):
-        """Return the URL to get next message set."""
-        number_msgsets = len(self.context.potmsgset.potemplate)
-        current_msgset = self.context.potmsgset.sequence
-        if current_msgset + 1 <= number_msgsets:
-            return self.createURL(sequence=current_msgset + 1)
+    @cachedproperty
+    def second_lang_msgset(self):
+        """Return the IPOMsgSet for the alternative translation or None."""
+        if self.second_lang_pofile is None:
+            return None
         else:
-            # We are in the last message, the next virtual message is the
-            # first one.
-            return self.createURL(sequence=1)
+            msgid = self.potmsgset.primemsgid_.msgid
+            try:
+                return self.second_lang_pofile[msgid]
+            except NotFoundError:
+                return None
 
     def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""
         self._table_index_value += 1
         return self._table_index_value
-
-    def createURL(self, sequence=None):
-        """Build the current URL."""
-        if sequence is None:
-            # We don't change the IPOMsgSet.
-            url = '%s/+translate' % canonical_url(self.context)
-        else:
-            assert sequence > 0, ("%r is not a valid sequence number." % name)
-
-            potmsgset = self.potmsgset.potemplate.getPOTMsgSetBySequence(
-                sequence)
-            pomsgset = potmsgset.getPOMsgSet(
-                self.context.pofile.language.code,
-                self.context.pofile.variant)
-            if pomsgset is None:
-                pomsgset = potmsgset.getDummyPOMsgSet(
-                    self.context.pofile.language.code,
-                    self.context.pofile.variant)
-            url = '%s/+translate' % canonical_url(pomsgset)
-
-        if self.second_lang_code is None:
-            return url
-        else:
-            query = urllib.urlencode({'alt': self.second_lang_code})
-            return '%s?%s' % (url, query)
 
     def _prepare_translations(self):
         """Prepare self.translations to be used."""
@@ -381,44 +362,6 @@ class POMsgSetView(LaunchpadView):
                 return None
         else:
             raise IndexError('Translation out of range')
-
-    def lang_selector(self):
-        second_lang_code = self.second_lang_code
-        langset = getUtility(ILanguageSet)
-        html = ('<select name="alt" title="Make suggestions from...">\n'
-                '<option value=""')
-        if self.second_lang_pofile is None:
-            html += ' selected="yes"'
-        html += '></option>\n'
-        for lang in langset.common_languages:
-            html += '<option value="' + lang.code + '"'
-            if second_lang_code == lang.code:
-                html += ' selected="yes"'
-            html += '>' + lang.englishname + '</option>\n'
-        html += '</select>\n'
-        return html
-
-    def set_second_lang_pofile(self, second_lang_pofile):
-        """Store the selected second_lang_pofile reference.
-
-        :second_lang_pofile: Is an IPOFile pointing to the language chosen by
-            the user as the second language to see translations from.
-        """
-        self.second_lang_pofile = second_lang_pofile
-
-        if self.second_lang_pofile:
-            msgid_text = self.potmsgset.primemsgid_.msgid
-            try:
-                self.second_lang_msgset = (
-                    second_lang_pofile[msgid_text]
-                    )
-            except NotFoundError:
-                # The second language doesn't have this message ID.
-                self.second_lang_msgset = None
-
-        # Force a refresh of self._second_language_submissions
-        self._second_language_submissions = None
-
 
     # The three functions below are tied to the UI policy. In essence, they
     # will present up to three proposed translations from each of the
@@ -595,14 +538,19 @@ class POMsgSetView(LaunchpadView):
 
         if self.form_posted_translations is None:
             # There are not translations interesting for us.
-            if not 'offset' in self.form:
+            if not u'show' in self.form:
                 # XXX CarlosPerelloMarin 20060509: We should stop doing this
                 # check when bug #41858 is fixed and we know exactly from
                 # where are we being used.
-                # We are in a the single message view, we should jump to te
-                # next message.
+                # We are in a the single message view, we don't have a
+                # filtering option.
                 self.redirecting = True
-                self.request.response.redirect(self.next_URL)
+                next_url = self.batchnav.nextBatchURL()
+                if not next_url:
+                    # We are already at the end of the batch, forward to the
+                    # first one.
+                    next_url = self.batchnav.firstBatchURL()
+                self.request.response.redirect(next_url)
             return
 
         has_translations = False
@@ -625,16 +573,19 @@ class POMsgSetView(LaunchpadView):
                 # Save the error message gettext gave us to show it to the
                 # user.
                 self.error = str(e)
-
-        if not 'offset' in self.form:
+        if not u'show' in self.form:
             # XXX CarlosPerelloMarin 20060509: We should stop doing this
             # check when bug #41858 is fixed and we know exactly from
             # where are we being used.
             if self.error is None:
-                # We are in a the single message view, we should jump to the
-                # next message.
+                # There are no errors, we should jump to the next message.
                 self.redirecting = True
-                self.request.response.redirect(self.next_URL)
+                next_url = self.batchnav.nextBatchURL()
+                if not next_url:
+                    # We are already at the end of the batch, forward to the
+                    # first one.
+                    next_url = self.batchnav.firstBatchURL()
+                self.request.response.redirect(next_url)
             else:
                 # Notify the errors.
                 self.request.response.addErrorNotification(
@@ -642,21 +593,29 @@ class POMsgSetView(LaunchpadView):
                     " Please, correct it before continuing.")
 
     def _select_alternate_language(self):
-        """Handle a form submission to filter translations."""
+        """Handle a form submission to choose other language suggestions."""
+        if u'show' in self.form:
+            # XXX CarlosPerelloMarin 20060509: We should stop doing this
+            # check when bug #41858 is fixed and we know exactly from
+            # where are we being used.
+            return
+
         selected_second_lang = self.alternative_language_widget.getInputValue()
         if selected_second_lang is None:
             self.alt = ''
         else:
             self.alt = selected_second_lang.code
 
-        if not 'offset' in self.form:
-            # XXX CarlosPerelloMarin 20060509: We should stop doing this
-            # check when bug #41858 is fixed and we know exactly from
-            # where are we being used.
-            # We need to redirect to the new URL based on the new given arguments.
-            self.redirecting = True
-            self.request.response.redirect(
-                self.createURL(sequence=self.context.potmsgset.sequence))
+        # Now, do the redirect to the new URL
+        current_batch_url = self.batchnav.generateBatchURL(
+            self.batchnav.currentBatch)
+        if self.alt:
+            # We selected an alternative language, we shouls append it to the
+            # URL and reload the page.
+            current_batch_url = '%s&alt=%s' % (current_batch_url, self.alt)
+
+        self.redirecting = True
+        self.request.response.redirect(current_batch_url)
 
     def render(self):
         if self.redirecting:

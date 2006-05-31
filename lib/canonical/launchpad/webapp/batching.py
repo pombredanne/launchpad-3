@@ -33,11 +33,13 @@ class BatchNavigator:
         """
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request.
-        start = request.get('start', 0)
+        self.start = request.get('start', 0)
         try:
-            start = int(start)
+            self.start = int(self.start)
         except ValueError:
-            start = 0
+            self.start = 0
+
+        self.default_size = size
 
         user_size = request.get('batch', None)
         if user_size:
@@ -49,7 +51,7 @@ class BatchNavigator:
         if size is None:
             size = config.launchpad.default_batch_size
 
-        self.batch = _Batch(results, start=start, size=size)
+        self.batch = _Batch(results, start=self.start, size=size)
         self.request = request
 
     def cleanQueryString(self, query_string):
@@ -62,7 +64,7 @@ class BatchNavigator:
 
     def generateBatchURL(self, batch):
         url = ""
-        if not batch:
+        if batch is None:
             return url
 
         qs = self.request.environment.get('QUERY_STRING', '')
@@ -73,7 +75,11 @@ class BatchNavigator:
         start = batch.startNumber() - 1
         size = batch.size
         base_url = str(self.request.URL)
-        url = "%s?%sstart=%d&batch=%d" % (base_url, qs, start, size)
+        url = "%s?%sstart=%d" % (base_url, qs, start)
+        if size != self.default_size:
+            # The default batch size should only be part of the URL if it's
+            # different from the default value.
+            url = "%s&batch=%d" % (url, size)
         return url
 
     def getBatches(self):
@@ -86,11 +92,25 @@ class BatchNavigator:
             batches.append(batch)
         return batches
 
+    def firstBatchURL(self):
+        batch = self.batch.firstBatch()
+        if self.start == 0:
+            # We are already on the first batch.
+            batch = None
+        return self.generateBatchURL(batch)
+
     def prevBatchURL(self):
         return self.generateBatchURL(self.batch.prevBatch())
 
     def nextBatchURL(self):
         return self.generateBatchURL(self.batch.nextBatch())
+
+    def lastBatchURL(self):
+        batch = self.batch.lastBatch()
+        if self.start == batch.start:
+            # We are already on the last batch.
+            batch = None
+        return self.generateBatchURL(batch)
 
     def batchPageURLs(self):
         batches = self.getBatches()

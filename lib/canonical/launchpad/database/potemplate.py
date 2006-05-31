@@ -23,7 +23,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPersonSet,
+    IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError, NameNotAvailable)
 from canonical.librarian.interfaces import ILibrarianClient
@@ -31,7 +31,6 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
-from canonical.launchpad.database.potemplatename import POTemplateName
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.translationimportqueue import (
@@ -103,7 +102,8 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __iter__(self):
         """See IPOTemplate."""
-        return self.getPOTMsgSets()
+        for potmsgset in self.getPOTMsgSets():
+            yield potmsgset
 
     def __getitem__(self, key):
         """See IPOTemplate."""
@@ -277,8 +277,7 @@ class POTemplate(SQLBase, RosettaStats):
             # Want only a subset specified by slice
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetsCount(self, current=True):
         """See IPOTemplate."""

@@ -58,21 +58,6 @@ We are at the beginning because this pomsgset is for the first item.
     >>> pomsgset_view.context.potmsgset.sequence == 1
     True
 
-And the view detects it.
-
-    >>> pomsgset_view.is_at_beginning
-    True
-
-And there are more than one message to translate.
-
-    >>> len(pomsgset_view.context.pofile.potemplate) > 1
-    True
-
-We cannot be at the end.
-
-    >>> pomsgset_view.is_at_end
-    False
-
 How many lines does the message have.
 
     >>> pomsgset_view.max_lines_count

@@ -346,8 +346,7 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetFuzzy(self, slice=None):
         """See IPOFile."""
@@ -364,8 +363,7 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
@@ -381,9 +379,8 @@ class POFile(SQLBase, RosettaStats):
                 POTMsgSet.id = POMsgSet.potmsgset AND
                 POMsgSet.pofile = %s
             WHERE
-                (POMsgSet.isfuzzy = TRUE OR
-                 POMsgSet.iscomplete = FALSE OR
-                 POMsgSet.id IS NULL) AND
+                 ((POMsgSet.isfuzzy = FALSE AND POMsgSet.iscomplete = FALSE) OR
+                  POMsgSet.id IS NULL) AND
                  POTMsgSet.sequence > 0 AND
                  POTMsgSet.potemplate = %s
             ORDER BY POTMsgSet.sequence
@@ -405,8 +402,7 @@ class POFile(SQLBase, RosettaStats):
                 'POTMsgSet.id IN (%s)' % ', '.join(ids),
             orderBy='POTMsgSet.sequence')
 
-            for potmsgset in results:
-                yield potmsgset
+            return results
 
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
@@ -427,8 +423,7 @@ class POFile(SQLBase, RosettaStats):
         if slice is not None:
             results = results[slice]
 
-        for potmsgset in results:
-            yield potmsgset
+        return results
 
     def hasMessageID(self, messageID):
         """See IPOFile."""
@@ -868,9 +863,10 @@ class DummyPOFile(RosettaStats):
     """
     implements(IPOFile)
 
-    def __init__(self, potemplate, language, owner=None):
+    def __init__(self, potemplate, language, variant=None, owner=None):
         self.potemplate = potemplate
         self.language = language
+        self.variant = variant
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
         self.lasttranslator = None

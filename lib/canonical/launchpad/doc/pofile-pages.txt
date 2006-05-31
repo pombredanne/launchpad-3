@@ -45,12 +45,8 @@ information.
     True
 
 As the request didn't get any argument, we should get the default values
-for the offset, the count of messages to show and the kind of messages to show.
+for the kind of messages to show.
 
-    >>> pofile_view.offset
-    0
-    >>> pofile_view.count
-    10
     >>> pofile_view.show
     'all'
 
@@ -72,39 +68,7 @@ And the view class detects it correctly.
     >>> pofile_view.has_plural_form_information
     False
 
-Now, let's check that the view class handles correctly the offset and count
-arguments when the request sets them.
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'offset': '7',
-    ...     'count': '8'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-As we can see, the view updates those attributes correctly.
-
-    >>> pofile_view.offset
-    7
-    >>> pofile_view.count
-    8
-
-And, what happens if we get broken values for the offset and count arguments?
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'offset': 'foo',
-    ...     'count': 'bar'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-As we wanted, the given values are ignored and the view class uses the default
-ones.
-
-    >>> pofile_view.offset
-    0
-    >>> pofile_view.count
-    10
-
-What about the argument to filter messagesets?
+Check the argument to filter messagesets.
 
     >>> request = LaunchpadTestRequest(form={
     ...     'show': 'translated'})
@@ -116,66 +80,6 @@ Yeah, it detects it correctly and stores the attribute as it should be.
     >>> pofile_view.show
     'translated'
 
-It's time to test the navigation.
-
-    >>> request = LaunchpadTestRequest()
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-By default, we are at the beginning.
-
-    >>> pofile_view.is_at_beginning
-    True
-
-And in this case, we have more messages than the ones rendered per page.
-
-    >>> pofile_view.count < len(pofile_view.context.potemplate)
-    True
-
-And thus, we cannot be at the end.
-
-    >>> pofile_view.is_at_end
-    False
-
-We move to the next 10 mesages.
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'offset': '10'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-Now, we are not at the beginning.
-
-    >>> pofile_view.is_at_beginning
-    False
-
-And as we have more than 20 messages with this IPOFile.
-
-    >>> len(pofile_view.context.potemplate) > 20
-    True
-
-We are neither at the end.
-
-    >>> pofile_view.is_at_end
-    False
-
-And finally, moving to the next 10 entries.
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'offset': '30'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-We continue far from the beginning.
-
-    >>> pofile_view.is_at_beginning
-    False
-
-But this time, we reached the end.
-
-    >>> pofile_view.is_at_end
-    True
-
 Let's move to the navigation URLS testing.
 
 We get a request without any argument.
@@ -184,131 +88,31 @@ We get a request without any argument.
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
-We get a clean URL without default values.
-
-    >>> pofile_view.createURL()
-    'http://127.0.0.1'
-
-That URL is exactly the same as the one pointing to the beginning of the
-translation form.
-
-    >>> pofile_view.beginning_URL
-    'http://127.0.0.1'
-
-And as we have 22 messages:
-
-    >>> len(pofile_view.context.potemplate)
-    22
-
-and a count of 10 messages per page:
-
-    >>> pofile_view.count
-    10
-
-The end URL has an offset of 20
-
-    >>> pofile_view.end_URL
-    'http://127.0.0.1?offset=20'
-
-Now, let's see what happens when we request a concrete offset.
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'offset': '10'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-The beginning URL does not change.
-
-    >>> pofile_view.beginning_URL
-    'http://127.0.0.1'
-
-The previous one is exactly the same as the beginning.
-
-    >>> pofile_view.previous_URL
-    'http://127.0.0.1'
-
-The next one increases the offset in 10 entries.
-
-    >>> pofile_view.next_URL
-    'http://127.0.0.1?offset=20'
-
-And as we saw before, we only have three pages to see all messages so
-the next page is also the ending one.
-
-    >>> pofile_view.end_URL
-    'http://127.0.0.1?offset=20'
-
-Let's complicate it a bit more changing the count of messages per page and
-requesting an offset out of range.
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'offset': '42',
-    ...     'count': '43'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-If the offset is too high, it should drop to accomodate the count.
-
-    >>> pofile_view.createURL()
-    'http://127.0.0.1?count=43'
-
-also, the count is higer than the number of entries so the end URL is the same
-as the base one.
-
-    >>> pofile_view.end_URL
-    'http://127.0.0.1?count=43'
-
-Now, we are going to check the show parameter.
-
-If we request the default value ('all'), the URL should not show that
-parameter.
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'show': 'all'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-And we don't show it.
-
-    >>> pofile_view.createURL()
-    'http://127.0.0.1'
-
-Let's try with another option that is not the default one...
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'show': 'translated'})
-    >>> pofile_view = getView(pofile_es, '+translate', request)
-    >>> pofile_view.initialize()
-
-This time, we get it.
-
-    >>> pofile_view.createURL()
-    'http://127.0.0.1?show=translated'
-
 It's time to test that we get the right message sets from the submitted form.
 
     >>> request = LaunchpadTestRequest()
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
-We get the first entry.
+We get the first entry that should be in the form, the one with id == 130.
 
-    >>> for pomsgset_view in pofile_view.pomsgset_views:
-    ...     if pomsgset_view.potmsgset.id == 130:
+    >>> for potmsgset in pofile_view.getSelectedPOTMsgSet():
+    ...     if potmsgset.id == 130:
     ...         break
 
 The id for this message set is the one we expected.
 
-    >>> pomsgset_view.potmsgset.id
+    >>> potmsgset.id
     130
 
 And as it's the first entry, its sequence number is also the right one.
 
-    >>> pomsgset_view.sequence
+    >>> potmsgset.sequence
     1
 
 Test that the associated msgid is the one we want.
 
+    >>> pomsgset_view = pofile_view.getPOMsgSetViewFromPOTMsgSet(potmsgset)
     >>> pomsgset_view.msgid
     u'evolution addressbook'
 
@@ -371,9 +175,9 @@ But first, let's see current values.
 Now we do the submit
 
     >>> request = LaunchpadTestRequest(form={
-    ...     'count': '10',
-    ...     'offset': '10',
-    ...     'alt': '',
+    ...     'batch': '10',
+    ...     'start': '10',
+    ...     'show': 'untranslated',
     ...     'msgset_130': None,
     ...     'msgset_130_es_translation_0': 'Foo',
     ...     'msgset_138': None,
@@ -392,19 +196,30 @@ And check again.
     >>> pofile_es.rosettaCount()
     1
 
+Also, we can see that the messages appears in the new URL.
+
+    >>> pofile_view.request.response.getHeader('Location')
+    'http://127.0.0.1?start=0&show=untranslated'
+
 Now, we are going to check the alternative language submission.
 
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> language_set = getUtility(ILanguageSet)
+    >>> french = language_set['fr']
+
     >>> request = LaunchpadTestRequest(form={
-    ...     'count': '10',
-    ...     'offset': '10',
-    ...     'field.alternative_language': 'French',
+    ...     'batch': '10',
+    ...     'start': '10',
+    ...     'field.alternative_language': french,
     ...     'select_alternate_language': 'Change'})
     >>> request.method = 'POST'
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
+    >>> pofile_view.request.response.getHeader('Location')
+    'http://127.0.0.1?start=10&alt=fr'
 
     >>> pofile_view.second_lang_code
-    'fr'
+    u'fr'
 
 Let's check that the upload form sets the right fields.
 
