@@ -26,8 +26,7 @@ and that going to the page anyway redirects to login.
 Log in.
 
   >>> browser = Browser()
-  >>> browser.addHeader('Authorization',
-  ...                   'Basic foo.bar@canonical.com:test')
+  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
 
 Check the link to change team members appears, and works.
 

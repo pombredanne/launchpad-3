@@ -24,8 +24,7 @@ Now we will try as Mark Shuttleworth on Debian, where he is the owner.
 This time we expect to be able to see the link and the page.
 
   >>> browser = Browser()
-  >>> browser.addHeader("Authorization",
-  ...                   "Basic mark@hbd.com:test")
+  >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
   >>> browser.open("http://localhost:9000/distros/debian")
   >>> browser.getLink("Add Release").click()
@@ -35,8 +34,7 @@ This time we expect to be able to see the link and the page.
 OK, let's test as Foo Bar, who is an administrator.
 
   >>> browser = Browser()
-  >>> browser.addHeader("Authorization",
-  ...                   "Basic foo.bar@canonical.com:test")
+  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
   >>> browser.open("http://localhost:9000/distros/ubuntu")
   >>> browser.getLink("Add Release").click()

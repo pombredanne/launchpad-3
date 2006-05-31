@@ -1,3 +1,5 @@
+Check the changelog for a source package can be viewed.
+
   >>> from zope.testbrowser import Browser
   >>> browser = Browser()
 

@@ -35,8 +35,7 @@ With anonymous access, Reset Build link should not be there
 Let's log in and the link should appear:
 
   >>> browser = Browser()
-  >>> browser.addHeader("Authorization",
-  ...                   "Basic foo.bar@canonical.com:test")
+  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
   >>> browser.open("http://localhost:9000/+builds/+build/9")
   >>> browser.getLink("Reset Build").click()
   >>> browser.contents
@@ -46,8 +45,7 @@ Let's log in and the link should appear:
 We'll also set up a second browser pointing at this page, for later.
 
   >>> browser2 = Browser()
-  >>> browser2.addHeader("Authorization",
-  ...                    "Basic foo.bar@canonical.com:test")
+  >>> browser2.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
   >>> browser2.open("http://localhost:9000/+builds/+build/9")
   >>> browser2.getLink("Reset Build").click()
 
@@ -115,8 +113,7 @@ pages as cprov (launchpad-buildd-admins member). Not using the better login
 method here, as don't know the password.
 
   >>> browser = Browser()
-  >>> browser.addHeader("Authorization",
-  ...                   "Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=")
+  >>> browser.addHeader("Authorization", "Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=")
 
   >>> browser.open("http://localhost:9000/+builds/+build/12")
   >>> browser.getLink("Reset Build").click()
@@ -147,8 +144,7 @@ Denied admistration of a builder:
 Adding new builder still denied for non-members (Edgar, no membership):
 
   >>> browser = Browser()
-  >>> browser.addHeader("Authorization",
-  ...                   "Basic edgar@monteparadiso.hr:test")
+  >>> browser.addHeader("Authorization", "Basic edgar@monteparadiso.hr:test")
 
   >>> try:
   ...     browser.open("http://localhost:9000/+builds/+new")
@@ -156,6 +152,7 @@ Adding new builder still denied for non-members (Edgar, no membership):
   ...     info
 
 (Disabled, as fixed by a change cprov has but hasn't landed)
-
+The commented line below will be the correct results section for the
+test case above once the other change lands.
 #  <HTTPError...
 

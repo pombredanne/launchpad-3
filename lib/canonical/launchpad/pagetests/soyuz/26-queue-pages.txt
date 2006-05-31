@@ -8,14 +8,12 @@ Currently the queue page is only available for DistroReleases.
 A browser to test as a regular user:
 
   >>> user_browser = Browser()
-  >>> user_browser.addHeader("Authorization",
-  ...                 "Basic test@canonical.com:test")
+  >>> user_browser.addHeader("Authorization", "Basic test@canonical.com:test")
 
 A browser to test as admin:
 
   >>> admin_browser = Browser()
-  >>> admin_browser.addHeader("Authorization",
-  ...                 "Basic foo.bar@canonical.com:test")
+  >>> admin_browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
 Finally, a browser with no auth at all:
 
@@ -118,8 +116,7 @@ Rejecting items. We're going to test doing this twice to the same item,
 so first we get a second browser on the same page.
 
   >>> admin_browser2 = Browser()
-  >>> admin_browser2.addHeader("Authorization",
-  ...                          "Basic: foo.bar@canonical.com:test")
+  >>> admin_browser2.addHeader("Authorization", "Basic: foo.bar@canonical.com:test")
   >>> admin_browser2.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
 
 Now reject our item from the first browser:

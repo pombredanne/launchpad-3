@@ -5,8 +5,7 @@ We will test as Foo Bar, who is an administrator.
 
   >>> from zope.testbrowser import Browser
   >>> browser = Browser()
-  >>> browser.addHeader("Authorization",
-  ...                   "Basic foo.bar@canonical.com:test")
+  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
   >>> browser.open("http://localhost:9000/distros/ubuntu/hoary")
   >>> browser.getLink("Add Port").click()
