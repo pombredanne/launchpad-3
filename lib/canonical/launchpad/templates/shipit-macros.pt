@@ -12,7 +12,8 @@
                                  order they should be diplayed in the UI.
   </tal:comment>
 
-  <table tal:attributes="cols view/ordered_architectures/count:len">
+  <table tal:attributes="cols view/ordered_architectures/count:len"
+         style="width: auto; margin-left: 0">
     <tr>
       <thead>
         <th>&nbsp;</th>
@@ -56,9 +57,11 @@
   </tal:comment>
 
   <th>
-    <label tal:attributes="for widget/name" tal:content="widget/label">
-      Label:
-    </label>
+    <label
+      tal:condition="widget/label"
+      tal:attributes="for widget/name"
+      tal:content="string:${widget/label}:"
+    >Label:</label>
   </th>
   <td>
     <span metal:use-macro="context/@@+shipit-macros/display_raw_widget" />
@@ -97,7 +100,6 @@
       phone_widget
   </tal:comment>
 
-  <table>
     <tr>
       <tal:block tal:define="widget nocall:view/recipientdisplayname_widget">
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
@@ -143,7 +145,6 @@
         <span metal:use-macro="context/@@+shipit-macros/display_widget" />
       </tal:block>
     </tr>
-  </table>
 </metal:shipping_details>
 
 
@@ -220,7 +221,7 @@
       </div>
     </div>
 
-    <div class="visualClear" id="body">
+    <div class="visualClear body">
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <tal:notifications define="notifications request/notifications"
                          condition="notifications">

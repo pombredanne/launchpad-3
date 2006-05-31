@@ -86,11 +86,15 @@
     <option
       value="datecreated"
       tal:attributes="selected python:orderby == 'datecreated'"
-    >oldest first</option>
+    >newest</option>
     <option
       value="-datecreated"
       tal:attributes="selected python:orderby == '-datecreated'"
-    >newest first</option>
+    >oldest</option>
+    <option
+      value="-date_last_updated"
+      tal:attributes="selected python:orderby == '-date_last_updated'"
+    >recently changed</option>
   </select>
 
 </metal:item>

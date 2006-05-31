@@ -29,7 +29,7 @@
     tal:define="errors view/errors|nothing"
     tal:condition="errors"
     tal:repeat="error errors"
-    tal:content="error"
+    tal:content="error/doc"
     class="error message"
   >Individual error.</p>
       
@@ -170,9 +170,9 @@
       >An error on comment on change.</div>
     </div>
     <div tal:condition="python:not context.bug.isSubscribed(view.user)">
-      <input type="checkbox" name="subscribe" id="subscribe"
-             value="Subscribe" />
-      <label for="subscribe" style="font-weight: normal">
+      <label style="font-weight: normal">
+        <input type="checkbox" name="subscribe" id="subscribe"
+               value="Subscribe" />
         E-mail me about changes to this bug report
       </label>
     </div>

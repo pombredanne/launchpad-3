@@ -8,7 +8,9 @@ __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
 
 from zope.schema import Bool, Choice, Datetime, TextLine, Bytes, Int
 from zope.interface import Interface, Attribute
+from zope.component import getUtility
 
+from canonical.launchpad.fields import UniqueField, ContentNameField
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import (
     valid_http_url, valid_ftp_url, valid_rsync_url, valid_webref,
@@ -20,6 +22,48 @@ from canonical.launchpad import _
 PROBE_INTERVAL = 24
 
 
+class DistributionMirrorNameField(ContentNameField):
+    errormessage = _("%s is already in use by another distribution mirror.")
+
+    @property
+    def _content_iface(self):
+        return IDistributionMirror
+
+    def _getByName(self, name):
+        return getUtility(IDistributionMirrorSet).getByName(name)
+
+
+class DistroUrlField(UniqueField):
+    """Base class for the DistributionMirror unique Url fields."""
+    errormessage = _(
+        "%s is already registered by another distribution mirror.")
+
+    @property
+    def _content_iface(self):
+        return IDistributionMirror
+
+
+class DistroHttpUrlField(DistroUrlField):
+    attribute = 'http_base_url'
+
+    def _getByAttribute(self, url):
+        return getUtility(IDistributionMirrorSet).getByHttpUrl(url)
+
+
+class DistroFtpUrlField(DistroUrlField):
+    attribute = 'ftp_base_url'
+
+    def _getByAttribute(self, url):
+        return getUtility(IDistributionMirrorSet).getByFtpUrl(url)
+
+
+class DistroRsyncUrlField(DistroUrlField):
+    attribute = 'rsync_base_url'
+
+    def _getByAttribute(self, url):
+        return getUtility(IDistributionMirrorSet).getByRsyncUrl(url)
+
+
 class IDistributionMirror(Interface):
     """A mirror of a given distribution."""
 
@@ -27,20 +71,20 @@ class IDistributionMirror(Interface):
     owner = Choice(title=_('Owner'), required=False, readonly=True,
                    vocabulary='ValidOwner')
     distribution = Attribute(_("The distribution that is mirrored"))
-    name = TextLine(
+    name = DistributionMirrorNameField(
         title=_('Name'), required=True, readonly=False,
         constraint=name_validator)
     displayname = TextLine(
         title=_('Display Name'), required=False, readonly=False)
     description = TextLine(
         title=_('Description'), required=False, readonly=False)
-    http_base_url = TextLine(
+    http_base_url = DistroHttpUrlField(
         title=_('HTTP URL'), required=False, readonly=False,
         constraint=valid_http_url)
-    ftp_base_url = TextLine(
+    ftp_base_url = DistroFtpUrlField(
         title=_('FTP URL'), required=False, readonly=False,
         constraint=valid_ftp_url)
-    rsync_base_url = TextLine(
+    rsync_base_url = DistroRsyncUrlField(
         title=_('Rsync URL'), required=False, readonly=False,
         constraint=valid_rsync_url)
     pulse_source = TextLine(
@@ -143,6 +187,18 @@ class IDistributionMirrorSet(Interface):
         A mirror needs to be probed either if it was never probed before or if
         it wasn't probed in the last PROBE_INTERVAL hours.
         """
+
+    def getByName(name):
+        """Return the mirror with the given name or None."""
+
+    def getByHttpUrl(url):
+        """Return the mirror with the given HTTP URL or None."""
+
+    def getByFtpUrl(url):
+        """Return the mirror with the given FTP URL or None."""
+
+    def getByRsyncUrl(url):
+        """Return the mirror with the given Rsync URL or None."""
 
 
 class IMirrorDistroArchRelease(Interface):

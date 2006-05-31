@@ -222,6 +222,15 @@
       attribute="__call__"
       />
 
+  <browser:page
+      name="+bugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.RedirectToAssignedBugsView"
+      permission="zope.Public"
+      attribute="__call__"
+      lp:url="/people/$Person.name/+assignedbugs" />
+
   <browser:generalform
       name="+assignedbugs"
       for="canonical.launchpad.interfaces.IPerson"

@@ -103,7 +103,7 @@
                 <img tal:condition="queue/containsBuild"
                      alt="[Build]" src="/@@/package-binary" title="Binary"/>
                 <img tal:condition="queue/containsInstaller"
-                     alt="[Installer]" src="/@@/ubuntu.gif"
+                     alt="[Installer]" src="/@@/ubuntu-icon"
                      title="Installer"/>
                 <img tal:condition="queue/containsTranslation"
                      alt="[Translation]" src="/@@/translations"

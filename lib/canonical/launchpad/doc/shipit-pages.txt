@@ -37,14 +37,14 @@ StandardShipItRequests.
     >>> from canonical.launchpad.systemhomes import ShipItApplication
     >>> shipit = ShipItApplication()
     >>> myrequest_view = create_view(shipit, 'myrequest')
-    >>> html = myrequest_view.render()
+    >>> html = myrequest_view.renderStandardrequestForm()
     >>> 'Request CDs' in html
     True
     >>> 'ShipIt is currently closed' in html
     False
 
     >>> myrequest_view.standardShipItRequests = lambda: []
-    >>> html = myrequest_view.render()
+    >>> html = myrequest_view.renderStandardrequestForm()
     >>> 'How many CDs would you like?' in html
     False
     >>> 'ShipIt is currently closed' in html
