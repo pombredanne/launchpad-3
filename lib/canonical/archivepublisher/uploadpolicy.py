@@ -212,8 +212,9 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         # XXX: dsilvers: 20060209: This is way too hairy/complex. bug#30983
         distrorelease_is_open = self.distrorelease.releasestatus in (
                 DistributionReleaseStatus.EXPERIMENTAL,
-                DistributionReleaseStatus.DEVELOPMENT,
-                DistributionReleaseStatus.FROZEN)
+                DistributionReleaseStatus.DEVELOPMENT)
+        # XXX cprov 20060531: FROZEN is considered closed as well.
+        # Not sure about the side-effects of this change.
         if self.pocket == PackagePublishingPocket.RELEASE:
             if distrorelease_is_open:
                 # RELEASE+open == okay
