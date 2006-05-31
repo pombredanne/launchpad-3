@@ -197,8 +197,8 @@ class TranslationImportQueueView(LaunchpadView):
         """
         # Get the filtering arguments.
         self.status = str(self.form.get('status', 'all'))
-        # but the file_extension must be in lower case.
         self.type = str(self.form.get('type', 'all'))
+        self.kind = str(self.form.get('kind', 'all'))
 
         # Fix the case to our needs.
         if self.status:
@@ -216,11 +216,14 @@ class TranslationImportQueueView(LaunchpadView):
         # Sanity checks so we don't accept broken input.
         if (not (self.status and self.type) or
             (self.status not in available_status) or
-            (self.type not in ('all', 'po', 'pot'))):
+            (self.type not in ('all', 'po', 'pot')) or
+            (self.kind not in ('all', 'distros', 'products'))):
             raise UnexpectedFormData(
                 'The queue filtering got an unexpected value.')
 
-        # Set to None status and type if they have the default value.
+        # Set to None kind, status and type if they have the default value.
+        if self.kind == 'all':
+            self.kind = None
         if self.status == 'ALL':
             # Selected all status, the status is None to get all values.
             self.status = None
@@ -241,7 +244,8 @@ class TranslationImportQueueView(LaunchpadView):
 
         # Setup the batching for this page.
         self.batchnav = BatchNavigator(self.context.getAllEntries(
-            status=self.status, file_extension=self.type), self.request)
+            kind=self.kind, status=self.status, file_extension=self.type),
+            self.request)
 
         # Flag to control whether the view page should be rendered.
         self.redirecting = False
