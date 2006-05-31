@@ -25,9 +25,9 @@
     <div class="userLog">
       <tal:login tal:content="structure context/@@login_status" />
     </div>
-    <div class="body">
-      <tal:replace tal:replace="structure context/@@+maintenancemessage" />
-      <tal:layout condition="columns1|nothing">
+    <div tal:condition="columns1|nothing" class="body">
+      <tal:maintenance replace="structure context/@@+maintenancemessage" />
+
         <div class="pageheading">
           <metal:block define-slot="pageheading">
           </metal:block>
@@ -40,8 +40,11 @@
         </tal:notifications>
         <metal:block define-slot="main">
         </metal:block>
-      </tal:layout>
-      <tal:layout condition="not: columns1|nothing">
+
+    </div>
+    <div tal:condition="not: columns1|nothing" class="columns">
+      <tal:maintenance replace="structure context/@@+maintenancemessage" />
+
         <div id="portal-columns">
           <div id="portal-column-content">
             <div class="pageheading">
@@ -122,19 +125,14 @@
         </div>
       </div>
       <!-- end column wrapper -->
-
       <div class="visualClear">&nbsp;</div>
-
-      </tal:layout>
-
-    </div><!-- class="body" -->
-
-  <div class="footer">
+    </div>
+    <div class="footer">
       Copyright 2004-2006 Canonical Ltd. &ndash;  <a
       href="/legal">Copyright&nbsp;terms</a> &ndash;
       <a href="/feedback">Help&nbsp;us&nbsp;improve</a> &ndash;
       <a href="/faq">FAQ</a>
-  </div>
-</body>
+    </div>
+  </body>
 </html>
 </metal:page>
