@@ -64,7 +64,7 @@ class LaunchpadStatisticSet:
             return None
         return stat.value
 
-    def _updateRosettaStatistics(self, ztm):
+    def updateStatistics(self, ztm):
         """See ILaunchpadStatisticSet."""
         self._updateRosettaStatistics(ztm)
         # ... add more update calls here.
