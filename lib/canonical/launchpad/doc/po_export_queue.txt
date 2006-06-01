@@ -20,7 +20,7 @@ We will need an IPOTemplate to test this class.
 We get a valid URL to download it.
 
   >>> potemplate_exporter.get_librarian_url()
-  'http://localhost:58000/46/evolution-2.2.pot'
+  'http://localhost:58000/.../evolution-2.2.pot'
 
 And the content is not empty.
 
