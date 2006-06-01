@@ -30,17 +30,17 @@
 
           Where 'literalvalue' is 'all' or any valid status.
         </tal:comment>
-        <select name="kind" title="Choose which kind of entries to show">
+        <select name="target" title="Choose which target of entries to show">
           <option value="all"
-            tal:attributes="selected request/htmlform:kind/selected/all">
+            tal:attributes="selected request/htmlform:target/selected/all">
             All files
           </option>
           <option value="products"
-            tal:attributes="selected request/htmlform:kind/selected/products">
+            tal:attributes="selected request/htmlform:target/selected/products">
             Only Products
           </option>
           <option value="distros"
-            tal:attributes="selected request/htmlform:kind/selected/distros">
+            tal:attributes="selected request/htmlform:target/selected/distros">
             Only Distributions
           </option>
         </select>

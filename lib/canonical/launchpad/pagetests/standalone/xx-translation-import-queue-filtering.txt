@@ -186,10 +186,10 @@ Let's check the products/distros filter.
 
 We get the list of pending imports for distributions.
 
-  >>> browser.open('http://localhost/rosetta/imports?kind=distros')
+  >>> browser.open('http://localhost/rosetta/imports?target=distros')
   >>> browser.url
-  'http://localhost/rosetta/imports?kind=distros'
-  >>> browser.getControl(name='kind').value
+  'http://localhost/rosetta/imports?target=distros'
+  >>> browser.getControl(name='target').value
   ['distros']
 
 It's empty because we only have entries for products.
@@ -200,10 +200,10 @@ It's empty because we only have entries for products.
 
 And for products.
 
-  >>> browser.open('http://localhost/rosetta/imports?kind=products')
+  >>> browser.open('http://localhost/rosetta/imports?target=products')
   >>> browser.url
-  'http://localhost/rosetta/imports?kind=products'
-  >>> browser.getControl(name='kind').value
+  'http://localhost/rosetta/imports?target=products'
+  >>> browser.getControl(name='target').value
   ['products']
   >>> print browser.contents
   <!DOCTYPE...

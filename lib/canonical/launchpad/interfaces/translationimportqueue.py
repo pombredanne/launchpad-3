@@ -185,15 +185,15 @@ class ITranslationImportQueue(Interface):
         """Return the ITranslationImportQueueEntry with the given id or None.
         """
 
-    def getAllEntries(kind=None, status=None, file_extension=None):
+    def getAllEntries(target=None, status=None, file_extension=None):
         """Return all entries this import queue has
 
-        :arg kind: Whether it's a 'distro' entry or a 'product' one.
+        :arg target: Whether it's a 'distro' entry or a 'product' one.
         :arg status: RosettaImportStatus entry.
         :arg file_extension: String with the file type extension, usually 'po'
             or 'pot'.
 
-        If either kind, status or file_extension are given, the returned
+        If either target, status or file_extension are given, the returned
         entries are filtered based on those values.
         """
 

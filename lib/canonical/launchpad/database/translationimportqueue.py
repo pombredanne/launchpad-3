@@ -524,11 +524,11 @@ class TranslationImportQueue:
         except SQLObjectNotFound:
             return None
 
-    def getAllEntries(self, kind=None, status=None, file_extension=None):
+    def getAllEntries(self, target=None, status=None, file_extension=None):
         """See ITranslationImportQueue."""
         queries = ["TRUE"]
-        if kind is not None:
-            if kind == 'distros':
+        if target is not None:
+            if target == 'distros':
                 queries.append('distrorelease IS NOT NULL')
             else:
                 queries.append('productseries IS NOT NULL')
