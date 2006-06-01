@@ -3,32 +3,43 @@ of the Translation import queue reviewers.
 
 First, we need to feed the import queue.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://localhost/products/alsa-utils/trunk/+translations-upload')
-  >>> browser.url
-  'http://localhost/products/alsa-utils/trunk/+translations-upload'
+XXX CarlosPerelloMarin 2005-06-01: We need to mix two styles of pagetest
+because the bug #47831. Seems like the new system doesn't work correctly
+to do file uploads.
 
   >>> import canonical.launchpad
   >>> import os.path
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
   ...     'pagetests/standalone/xx-translation-import-queue-edit-autofilling.tar.gz')
-  >>> file_control = browser.getControl(name='file')
-  >>> file_control.value = open(test_file_name)
-  >>> file_control.filename = 'foo.tar.gz'
-  >>> browser.getControl(name='translations_upload').click()
-  >>> browser.url
-  u'http://localhost/products/alsa-utils/trunk/+translations-upload'
-  >>> 'Thank you for your upload. 2 files from the tarball will be reviewed' in browser.contents
-  True
-  >>> print browser.contents
+  >>> tarball = open(test_file_name)
+  >>> print http(r"""
+  ... POST /products/alsa-utils/trunk/+translations-upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 530
+  ... Content-Type: multipart/form-data; boundary=---------------------------428463014358220843450431786
+  ... 
+  ... -----------------------------428463014358220843450431786
+  ... Content-Disposition: form-data; name="file"; filename="test-autofilling.tar.gz"
+  ... Content-Type: application/x-gzip
+  ... 
+  ... %s
+  ... -----------------------------428463014358220843450431786
+  ... Content-Disposition: form-data; name="translations_upload"
+  ... 
+  ... Request Upload
+  ... -----------------------------428463014358220843450431786--
+  ... """ % tarball.read(), handle_errors=False)
+  HTTP/1.1 200 Ok
+  ...Thank you for your upload. 2 files from the tarball will be reviewed...
 
 Let's check the values we get by default from the .pot file. As we can see,
 the form is completely empty.
 
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://localhost/rosetta/imports/2')
   >>> browser.url
-  u'http://localhost/rosetta/imports/2'
+  'http://localhost/rosetta/imports/2'
   >>> browser.getControl(name='field.potemplatename').value
   ''
   >>> browser.getControl(name='field.path').value
@@ -39,14 +50,14 @@ Let's fill the information.
   >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
   >>> browser.getControl(name='FORM_SUBMIT').click()
   >>> browser.url
-  u'http://localhost:9000/rosetta/imports'
+  'http://localhost/rosetta/imports'
 
 Now, as we already know the potemplatename, a new form load should
 give us that field with information.
 
   >>> browser.open('http://localhost/rosetta/imports/2')
   >>> browser.url
-  u'http://localhost/rosetta/imports/2'
+  'http://localhost/rosetta/imports/2'
   >>> browser.getControl(name='field.potemplatename').value
   'alsa-utils'
 
@@ -56,7 +67,7 @@ he checks that it's ok.
 
   >>> browser.open('http://localhost/rosetta/imports/1')
   >>> browser.url
-  u'http://localhost/rosetta/imports/1'
+  'http://localhost/rosetta/imports/1'
   >>> browser.getControl(name='field.potemplatename').value
   ''
   >>> browser.getControl(name='field.path').value
@@ -71,13 +82,13 @@ Let's add the potemplatename information and confirm the language selection.
   >>> browser.getControl(name='field.potemplatename').value = 'alsa-utils'
   >>> browser.getControl(name='FORM_SUBMIT').click()
   >>> browser.url
-  u'http://localhost:9000/rosetta/imports'
+  'http://localhost/rosetta/imports'
 
 And reloading the form, we should get all that information.
 
   >>> browser.open('http://localhost/rosetta/imports/1')
   >>> browser.url
-  u'http://localhost/rosetta/imports/1'
+  'http://localhost/rosetta/imports/1'
   >>> browser.getControl(name='field.potemplatename').value
   'alsa-utils'
   >>> browser.getControl(name='field.path').value

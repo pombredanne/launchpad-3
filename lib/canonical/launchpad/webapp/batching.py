@@ -16,7 +16,7 @@ class BatchNavigator:
 
     implements(IBatchNavigator)
 
-    def __init__(self, results, request, size=None):
+    def __init__(self, results, request, start=0, size=None):
         """Constructs a BatchNavigator instance.
 
         results is an iterable of results. request is the web request
@@ -33,11 +33,14 @@ class BatchNavigator:
         """
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request.
-        self.start = request.get('start', 0)
-        try:
-            self.start = int(self.start)
-        except ValueError:
-            self.start = 0
+        self.start = request.get('start', None)
+        if self.start is None:
+            self.start = start
+        else:
+            try:
+                self.start = int(self.start)
+            except ValueError:
+                self.start = start
 
         self.default_size = size
 
