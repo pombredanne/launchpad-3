@@ -547,8 +547,8 @@ class ProductDynMenu(LaunchpadView):
     def render(self):
         L = []
         L.append('<ul class="menu"')
-        L.append('    lpm:mid="products/%s/+menudata"' % self.context.name)
-        L.append('    lpm:midroot="products/%s/$$/+menudata"'
+        L.append('    lpm:mid="/products/%s/+menudata"' % self.context.name)
+        L.append('    lpm:midroot="/products/%s/$$/+menudata"'
             % self.context.name)
         L.append('>')
 
@@ -571,12 +571,12 @@ class ProductSetDynMenu(LaunchpadView):
     def render(self):
         L = []
         L.append('<ul class="menu"')
-        L.append('    lpm:mid="products/+menudata"')
+        L.append('    lpm:mid="/products/+menudata"')
         L.append('>')
         for product in self.context:
             # given in full because there was an error in the JS when
             # i use midpart / midbase.
-            L.append('<li class="container" lpm:mid="products/%s/+menudata">' % product.name)
+            L.append('<li class="container" lpm:mid="/products/%s/+menudata">' % product.name)
             L.append('<a href="/products/%s">' % product.name)
             L.append(product.name)
             L.append('</a>')

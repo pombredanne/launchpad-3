@@ -151,17 +151,19 @@ class Breadcrumbs(LaunchpadView):
                 % (firsturl,
                    cgi.escape(firsttext)))
 
-            lastcrumb = crumbs.pop()
+            #lastcrumb = crumbs.pop()
 
             for crumb in crumbs:
-                L.append('<li class="item"><a href="%s">%s</a></li>'
-                         % (crumb.url, cgi.escape(crumb.text)))
+                L.append('<li class="item" lpm:mid="/%s/+menudata">'
+                         '<a href="%s">%s</a>'
+                         '</li>'
+                         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
 
-            L.append(
-                '<li class="item">'
-                '<a href="%s">%s</a>'
-                '</li>'
-                % (lastcrumb.url, cgi.escape(lastcrumb.text)))
+            #L.append(
+            #    '<li class="item">'
+            #    '<a href="%s">%s</a>'
+            #    '</li>'
+            #    % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
 
 
