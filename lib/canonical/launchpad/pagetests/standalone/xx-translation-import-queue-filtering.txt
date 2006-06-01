@@ -3,6 +3,9 @@ import queue form.
 
 Let's add 100 files to the queue so we have enough entries to play with.
 
+XXX CarlosPerelloMarin 20060601: We cannot use the new pagetest for this
+upload, for more information, see bug #47831.
+
   >>> import canonical.launchpad
   >>> import os.path
   >>> test_file_name = os.path.join(
