@@ -1,5 +1,10 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
-"""The SIGUSR1 handler."""
+"""A SIGUSR1 handler for the Launchpad Web App.
+
+To aid debugging, we install a handler for the SIGUSR1 signal.  When
+received, a summary of the last request, recent OOPS IDs and last
+executed SQL statement is printed for each thread.
+"""
 
 import threading
 import signal
@@ -10,10 +15,13 @@ def sigusr1_handler(signum, frame):
     """Log status of running threads in response to SIGUSR1"""
     message = ['Thread summary:']
     for thread in threading.enumerate():
+        # if the thread has no lp_last_request attribute, it probably
+        # isn't an appserver thread.
+        if not hasattr(thread, 'lp_last_request'):
+            continue
         message.append('\t%s' % thread.getName())
-        message.append('\t\tLast Request: %s' %
-                       getattr(thread, 'lp_last_request', None))
-        message.append('\t\tLast five OOPS IDs: %s' %
+        message.append('\t\tLast Request: %s' % thread.lp_last_request)
+        message.append('\t\tMost recent OOPS IDs: %s' %
                        ', '.join(getattr(thread, 'lp_last_oops', [])))
         message.append('\t\tLast SQL statement: %s' %
                        getattr(thread, 'lp_last_sql_statement', None))
@@ -35,5 +43,5 @@ def end_request(event):
     if request.oopsid is not None:
         thread = threading.currentThread()
         last_oops_ids = getattr(thread, 'lp_last_oops', [])
-        # trim to at most four elements and append new ID
+        # make sure the OOPS ID list has at most 5 elements
         thread.lp_last_oops = last_oops_ids[-4:] + [request.oopsid]
