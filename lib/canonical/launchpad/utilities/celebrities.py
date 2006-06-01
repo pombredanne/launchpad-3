@@ -92,4 +92,5 @@ class LaunchpadCelebrities:
     mirror_admin = CelebrityDescriptor(IPersonSet, 'mirror-admins')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
     registry = CelebrityDescriptor(IPersonSet, 'registry')
+    bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
 

@@ -35,7 +35,7 @@ The simple search form returns only open bugtasks.
     >>> open_bugtasks = list(distro_search_listingview.search().batch)
     >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...  for bugtask in open_bugtasks]
-    [(3, 'UNCONFIRMED', 'MEDIUM'),
+    [(3, 'UNCONFIRMED', 'UNKNOWN'),
      (1, 'CONFIRMED', 'LOW'),
      (2, 'CONFIRMED', 'LOW')]
 
