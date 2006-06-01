@@ -239,9 +239,13 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 self.pocket.name, self.distrorelease.name))
 
     def autoApprove(self, upload):
-        """The insecure policy only auto-approves RELEASE pocket stuff."""
+        """The insecure policy only auto-approves RELEASE pocket stuff.
+
+        Additionally, we only auto-approve if the distrorelease is not FROZEN.
+        """
         if self.pocket == PackagePublishingPocket.RELEASE:
-            return True
+            if self.distrorelease.releasestatus != DistributionReleaseStatus.FROZEN:
+                return True
         return False
 
 # Register this as the 'insecure' policy

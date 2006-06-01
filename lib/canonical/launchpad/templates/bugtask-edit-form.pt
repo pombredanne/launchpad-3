@@ -29,7 +29,7 @@
     tal:define="errors view/errors|nothing"
     tal:condition="errors"
     tal:repeat="error errors"
-    tal:content="error"
+    tal:content="error/doc"
     class="error message"
   >Individual error.</p>
       
@@ -83,15 +83,9 @@
         </td>
         <td>
           <label
-            tal:attributes="for view/severity_widget/name"
-            tal:content="view/severity_widget/label"
-          >Severity</label>
-        </td>
-        <td>
-          <label
-            tal:attributes="for view/priority_widget/name"
-            tal:content="view/priority_widget/label"
-          >Priority</label>
+            tal:attributes="for view/importance_widget/name"
+            tal:content="view/importance_widget/label"
+          >Importance</label>
         </td>
         <td tal:condition="view/milestone_widget">
           <label
@@ -102,8 +96,7 @@
       </tr>
       <tr>
         <td tal:content="structure view/status_widget" />
-        <td tal:content="structure view/severity_widget" />
-        <td tal:content="structure view/priority_widget" />
+        <td tal:content="structure view/importance_widget" />
         <td tal:condition="view/milestone_widget"
             tal:content="structure view/milestone_widget" />
       </tr>
@@ -177,9 +170,9 @@
       >An error on comment on change.</div>
     </div>
     <div tal:condition="python:not context.bug.isSubscribed(view.user)">
-      <input type="checkbox" name="subscribe" id="subscribe"
-             value="Subscribe" />
-      <label for="subscribe" style="font-weight: normal">
+      <label style="font-weight: normal">
+        <input type="checkbox" name="subscribe" id="subscribe"
+               value="Subscribe" />
         E-mail me about changes to this bug report
       </label>
     </div>

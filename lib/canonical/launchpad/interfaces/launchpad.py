@@ -130,9 +130,6 @@ class IRosettaApplication(ILaunchpadApplication):
     def translation_groups():
         """Return a list of the translation groups in the system."""
 
-    def updateStatistics():
-        """Update the Rosetta statistics in the system."""
-
     def potemplate_count():
         """Return the number of potemplates in the system."""
 

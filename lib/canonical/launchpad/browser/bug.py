@@ -17,7 +17,9 @@ __all__ = [
     'BugTextView',
     'BugURL']
 
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetsError
+from zope.app.form.browser.itemswidgets import SelectWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
@@ -37,9 +39,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
-from canonical.lp.dbschema import (
-    BugTaskPriority, BugTaskSeverity, BugTaskStatus)
-
+from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 class BugSetNavigation(Navigation):
 
@@ -240,6 +240,23 @@ class BugWithoutContextView:
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
+class BugTrackerWidget(SelectWidget):
+    """Custom widget for selecting a bug tracker.
+
+    This is needed since we don't want the bug tracker to be required,
+    but you still shouldn't be abled to select "(no option)".
+    """
+
+    firstItem = True
+
+    def renderItems(self, value):
+        """We don't want the (no option) value to be rendered."""
+        items = SelectWidget.renderItems(self, value)
+        if not self.context.required:
+            items = items[1:]
+        return items
+
+
 class BugAlsoReportInView(GeneralFormView):
     """View class for reporting a bug in other contexts."""
 
@@ -273,19 +290,36 @@ class BugAlsoReportInView(GeneralFormView):
         """All the fields should be given as keyword arguments."""
         return self.fieldNames
 
+    def initializeAndRender(self):
+        """Process the widgets and render the page."""
+        self.bugtracker_widget = CustomWidgetFactory(BugTrackerWidget)
+        self._setUpWidgets()
+        # Add some javascript to make the bug watch widgets enabled only
+        # when the checkbox is checked.
+        self.disable_bugwatch_widgets_js = (
+            "<!--\n"
+            "setDisabled(!document.getElementById('%s').checked, '%s', '%s');"
+            "\n-->" % (
+                self.link_to_bugwatch_widget.name,
+                self.bugtracker_widget.name,
+                self.remotebug_widget.name))
+        checkbox_onclick = (
+            "onClick=\"setDisabled(!this.checked, '%s', '%s')\"" % (
+                self.bugtracker_widget.name, self.remotebug_widget.name))
+        self.link_to_bugwatch_widget.extra = checkbox_onclick
+
+        self.saved_process_form()
+        return self.index()
+
     def render_upstreamtask(self):
         self.label = "Request fix in a product"
         self.fieldNames.append('product')
-        self._setUpWidgets()
-        self.saved_process_form()
-        return self.index()
+        return self.initializeAndRender()
 
     def render_distrotask(self):
         self.label = "Request fix in a distribution"
         self.fieldNames.extend(['distribution', 'sourcepackagename'])
-        self._setUpWidgets()
-        self.saved_process_form()
-        return self.index()
+        return self.initializeAndRender()
 
     def getAllWidgets(self):
         """Return all the widgets used by this view."""
@@ -425,8 +459,7 @@ class BugAlsoReportInView(GeneralFormView):
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
             taskadded.transitionToStatus(BugTaskStatus.UNKNOWN)
-            taskadded.priority = BugTaskPriority.UNKNOWN
-            taskadded.severity = BugTaskSeverity.UNKNOWN
+            taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
         self._nextURL = canonical_url(taskadded)
@@ -558,12 +591,7 @@ class BugTextView(LaunchpadView):
         text.append('status: %s' % task.status.title)
         text.append('reporter: %s' % self.person_text(task.owner))
 
-        if task.priority:
-            text.append('priority: %s' % task.priority.title)
-        else:
-            text.append('priority: ')
-
-        text.append('severity: %s' % task.severity.title)
+        text.append('importance: %s' % task.importance.title)
 
         if task.assignee:
             text.append('assignee: %s' % self.person_text(task.assignee))

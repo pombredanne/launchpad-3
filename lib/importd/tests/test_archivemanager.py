@@ -4,7 +4,6 @@
 
 import os
 import shutil
-import unittest
 
 import gnarly.process
 import gnarly.process.unix_process
@@ -16,7 +15,7 @@ import pybaz.backends.forkexec
 pybaz.backend.spawning_strategy = pybaz.backends.forkexec.PyArchSpawningStrategy
 
 from importd import archivemanager
-from importd.tests import helpers, TestUtil
+from importd.tests import helpers, testutil
 
 
 __all__ = ['test_suite']
@@ -408,4 +407,4 @@ class TestMirrorIsEmpty(helpers.BazTreeTestCase):
         self.failIf(self.archive_manager.mirrorIsEmpty())
 
 
-TestUtil.register(__name__)
+testutil.register(__name__)

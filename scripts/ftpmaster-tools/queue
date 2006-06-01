@@ -172,6 +172,10 @@ class QueueAction:
             except NotFoundError, info:
                 raise QueueActionError('Queue Item not found: %s' % info)
 
+            if item.status != self.queue:
+                raise QueueActionError(
+                    'Item %s is in queue %s' % (item.id, item.status.name))
+
             self.items = [item]
             self.items_size = 1
             self.term = None

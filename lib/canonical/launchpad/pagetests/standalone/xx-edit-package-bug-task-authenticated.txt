@@ -31,19 +31,11 @@ Any authenticated user can edit a source package bug task.
   ... 
   ... 1
   ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.priority"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
   ... Medium
   ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------89019536856698512711194452
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------89019536856698512711194452
@@ -88,19 +80,11 @@ Any authenticated user can edit a source package bug task.
   ... 
   ... 1
   ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority"
+  ... Content-Disposition: form-data; name="field.importance"
   ... 
-  ... Low
+  ... Critical
   ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.priority-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity"
-  ... 
-  ... Normal
-  ... -----------------------------16131040782095479517127443199
-  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... Content-Disposition: form-data; name="field.importance-empty-marker"
   ... 
   ... 1
   ... -----------------------------16131040782095479517127443199
@@ -123,4 +107,4 @@ Any authenticated user can edit a source package bug task.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<option selected="selected" value="Low">Low</option>...
+  ...<option selected="selected" value="Critical">Critical</option>...
