@@ -57,6 +57,22 @@ INFO by ID, return an error if it's not present in the specified queue:
   Aborting current transaction
   <BLANKLINE>
 
+Same for wrong distribution/distrorelease
+
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "-R", "hoary",
+  ...                             "info", "1"],
+  ...                             stdout=subprocess.PIPE)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  1
+  >>> print stdout
+  Initialising connection to queue new
+  Running: "info 1"
+  Item 1 is in ubuntu/breezy-autotest
+  Aborting current transaction
+  <BLANKLINE>
+
 
 Check the custom uploads presentation:
 
