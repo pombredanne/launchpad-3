@@ -207,7 +207,6 @@ one.)
 >>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
 >>> check("/products/firefox/+bug/1/+addattachment", auth=True)
 >>> check("/products/firefox/+bug/1/+addurl", auth=True)
->>> check("/products/firefox/+bug/1/+addwatch", auth=True)
 >>> check("/products/firefox/+bug/1/+activity", auth=True)
 
 Viewing a bug in the context of an upstream where the bug has not yet
@@ -326,6 +325,7 @@ And this is for a person:
 >>> check("/people/name12/+branch/gnome-terminal/pushed/+lifecycle", auth=True)
 >>> check("/people/name16/+karma")
 >>> check_redirect("/people/name16/+bugs")
+>>> check_not_found("/people/name16/+bugs/1")
 >>> check("/people/name16/+reportedbugs")
 >>> check("/people/name16/+assignedbugs")
 >>> check("/people/name16/+packagebugs")

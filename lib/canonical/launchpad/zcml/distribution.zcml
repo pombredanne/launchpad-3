@@ -335,6 +335,7 @@
         module="canonical.launchpad.browser"
         classes="DistributionSetNavigation"
         />
+
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"

@@ -14,8 +14,7 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
-from canonical.lp.dbschema import (
-    BugTrackerType, BugTaskPriority, BugTaskSeverity)
+from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
 
 from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
@@ -102,8 +101,7 @@ class BugWatch(SQLBase):
         for linked_bugtask in self.bugtasks:
             linked_bugtask.transitionToStatus(malone_status)
             # We don't yet support updating the following values.
-            linked_bugtask.priority = BugTaskPriority.UNKNOWN
-            linked_bugtask.severity = BugTaskSeverity.UNKNOWN
+            linked_bugtask.importance = BugTaskImportance.UNKNOWN
             linked_bugtask.transitionToAssignee(None)
 
 
