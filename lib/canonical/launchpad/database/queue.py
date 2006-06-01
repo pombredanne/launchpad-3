@@ -42,6 +42,8 @@ from canonical.launchpad.database.publishing import (
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.archivepublisher.publishing import pocketsuffix
+
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
@@ -507,10 +509,13 @@ class DistroReleaseQueueCustom(SQLBase):
             process_debian_installer)
 
         temp_filename = self.temp_filename
+        full_distrorelease_name = "%s%s" % (
+            self.distroreleasequeue.distrorelease.name,
+            pocketsuffix[self.distroreleasequeue.pocket])
         try:
             process_debian_installer(
                 self.archive_config.archiveroot, temp_filename,
-                self.distroreleasequeue.distrorelease.name)
+                full_distrorelease_name)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
@@ -522,10 +527,13 @@ class DistroReleaseQueueCustom(SQLBase):
             process_dist_upgrader)
 
         temp_filename = self.temp_filename
+        full_distrorelease_name = "%s%s" % (
+            self.distroreleasequeue.distrorelease.name,
+            pocketsuffix[self.distroreleasequeue.pocket])
         try:
             process_dist_upgrader(
                 self.archive_config.archiveroot, temp_filename,
-                self.distroreleasequeue.distrorelease.name)
+                full_distrorelease_name)
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
