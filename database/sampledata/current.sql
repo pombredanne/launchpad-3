@@ -510,6 +510,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -1403,10 +1406,13 @@ ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionmirror DISABLE TRIGGER ALL;
 
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (1, 1, 'valid-mirror', 'http://localhost:11375/valid-mirror', NULL, NULL, NULL, NULL, 1, 1, 1, 1, NULL, true, true, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, false, true, 1, 'http://localhost:11375/valid-mirror/pulse');
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, false, true, 2, NULL);
-INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 16, 5, 32, 1, NULL, true, false, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (1, 1, 'archive-mirror', 'http://localhost:11375/valid-mirror', NULL, NULL, NULL, NULL, 1, 1, 1, 1, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (2, 1, 'invalid-mirror', 'http://localhost:11375/invalid-mirror', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, false, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (3, 1, 'unreachable-mirror', 'http://localhost:11375/timeout', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (4, 1, 'archive-404-mirror', 'http://localhost:11375/archive-mirror/', NULL, NULL, NULL, NULL, 16, 5, 32, 1, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (5, 1, 'releases-mirror', 'http://localhost:11375/valid-mirror/releases', NULL, NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (6, 1, 'releases-mirror2', 'http://localhost:11375/valid-mirror/releases2/', NULL, NULL, NULL, NULL, 16, 5, 82, 2, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (7, 1, 'archive-mirror2', 'http://localhost:11375/valid-mirror2/', NULL, NULL, NULL, NULL, 1, 1, 9, 1, NULL, true, true, true, 2, NULL);
 
 
 ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
@@ -2865,6 +2871,8 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (43, 43, 'alsa-utils_1.0.9a-4ubuntu1.dsc', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (44, 44, 'at-3.14156_all.udeb', 'application/x-debian-package', NULL, '2005-11-17 16:15:32.440132');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (45, 45, 'Ubuntu-High-Pri-2006-08-01.csv', 'text/plain', NULL, '2005-11-17 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (46, 46, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (47, 47, 'non-existent-mirrorprober-logfile.txt', 'text/plain', NULL, '2006-05-24 16:15:32.440132');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2916,6 +2924,8 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (43, '2005-10-30 18:00:27.899028', NULL, 3, '4e3961baf4f56fdbc95d0dd47f3c5bc275da8a33', false, NULL);
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (44, '2005-10-30 18:00:27.899028', NULL, 3, 'b45ed906e4f5afdbc95d0dd47f3c5bc275da8a33', false, NULL);
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (45, '2006-08-01 09:31:29.606407', NULL, 2, '43853c6197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (46, '2006-05-24 09:31:29.606407', NULL, 2, 'ab43246197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (47, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, NULL);
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3122,6 +3132,17 @@ ALTER TABLE mirror DISABLE TRIGGER ALL;
 ALTER TABLE mirror ENABLE TRIGGER ALL;
 
 
+ALTER TABLE mirrorcdimagedistrorelease DISABLE TRIGGER ALL;
+
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (1, 6, 1, 'ubuntu');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (2, 6, 1, 'kubuntu');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (3, 6, 3, 'ubuntu');
+INSERT INTO mirrorcdimagedistrorelease (id, distribution_mirror, distrorelease, flavour) VALUES (4, 6, 3, 'edubuntu');
+
+
+ALTER TABLE mirrorcdimagedistrorelease ENABLE TRIGGER ALL;
+
+
 ALTER TABLE mirrorcontent DISABLE TRIGGER ALL;
 
 
@@ -3131,6 +3152,10 @@ ALTER TABLE mirrorcontent ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroarchrelease DISABLE TRIGGER ALL;
 
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (1, 7, 1, 2, 10, 1);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (2, 7, 1, 2, 10, 2);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (3, 7, 1, 3, 10, 3);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket, component) VALUES (4, 7, 6, 2, 10, 1);
 
 
 ALTER TABLE mirrordistroarchrelease ENABLE TRIGGER ALL;
@@ -3138,6 +3163,11 @@ ALTER TABLE mirrordistroarchrelease ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrordistroreleasesource DISABLE TRIGGER ALL;
 
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (1, 7, 1, 1, 10, 1);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (2, 7, 3, 1, 10, 1);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (3, 7, 1, 4, 20, 1);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (4, 7, 3, 1, 20, 1);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distrorelease, status, pocket, component) VALUES (5, 7, 1, 2, 10, 2);
 
 
 ALTER TABLE mirrordistroreleasesource ENABLE TRIGGER ALL;
@@ -3145,6 +3175,8 @@ ALTER TABLE mirrordistroreleasesource ENABLE TRIGGER ALL;
 
 ALTER TABLE mirrorproberecord DISABLE TRIGGER ALL;
 
+INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (1, 6, 46, '2006-05-24 17:11:59.37369');
+INSERT INTO mirrorproberecord (id, distribution_mirror, log_file, date_created) VALUES (2, 7, 47, '2006-05-24 17:12:03.714206');
 
 
 ALTER TABLE mirrorproberecord ENABLE TRIGGER ALL;
