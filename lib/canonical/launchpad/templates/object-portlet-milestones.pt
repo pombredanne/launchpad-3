@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <ul>
+    <ul tal:condition="context/milestones">
       <li class="milestone" tal:repeat="milestone context/milestones">
         <a tal:content="milestone/name"
            tal:attributes="href milestone/fmt:url">
