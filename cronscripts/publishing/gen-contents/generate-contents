@@ -77,8 +77,10 @@ if test $COMPAREFILES = "yes" ; then
           mv "$new_contents" "$contents_dest"
           chmod ug=rw,o=r "$contents_dest"
         else
-          echo "   keeping current Contents file for $distro/$arch"
+          echo "   skipping new Contents file for $distro/$arch"
         fi
+      else
+          echo "   same Contents file for $distro/$arch"
       fi
     done
   done
