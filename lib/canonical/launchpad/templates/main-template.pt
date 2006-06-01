@@ -22,7 +22,7 @@
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body onload="lpmenu.initialize(['menuroot'], 
-                    'present_menu.cgi',
+                    '/',
                     'menupreload',
                     [],
                     '2em', 16, true);" id="document">
@@ -146,8 +146,8 @@
   </div>
 
     <div id="menupreload">
-      <ul class="menu" lpm:mid="root">
-        <li class="item"><a href="/products">Products</a></li>
+      <ul class="menu" lpm:mid="root" lpm:midbase="$$/+menudata">
+        <li class="container" lpm:midpart="products"><a href="/products">Products</a></li>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
         <li class="item"><a href="/projects">Projects</a></li>

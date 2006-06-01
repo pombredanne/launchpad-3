@@ -45,7 +45,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepthrough)
+    stepthrough, LaunchpadView)
 
 
 class ProductNavigation(
@@ -515,7 +515,7 @@ class ProductSeriesAddView(AddView):
         return self.series.name
 
 
-class ProductRdfView(object):
+class ProductRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
     template = ViewPageTemplateFile(
@@ -540,6 +540,24 @@ class ProductRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+
+class ProductSetDynMenu(LaunchpadView):
+
+    def render(self):
+        L = []
+        L.append('<ul class="menu"')
+        L.append('    lpm:mid="products/+menudata"')
+        L.append('    lpm:midroot="products/$$/+menudata"')
+        L.append('>')
+        for product in self.context:
+            L.append('<li class="item">')
+            L.append('<a href="/products/%s">' % product.name)
+            L.append(product.name)
+            L.append('</a>')
+            L.append('</li>')
+        L.append('</ul>')
+        return '\n'.join(L)
 
 
 class ProductSetView:
