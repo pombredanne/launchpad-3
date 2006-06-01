@@ -363,6 +363,11 @@ class ShipItRequestView(GeneralFormView):
         to be able to have a 'Cancel' button in a different <form> element.
         """
         if 'cancel' in self.request.form:
+            if self.current_order is None:
+                # This is probably a user reloading the form he submitted
+                # cancelling his request, so we'll just refresh the page so he
+                # can see that he has no current request, actually.
+                return ''
             self.current_order.cancel(self.user)
             self.process_status = 'Request Cancelled'
         else:
@@ -420,6 +425,11 @@ class ShipItRequestView(GeneralFormView):
             assert not self._extra_fields
             request_type = getUtility(IStandardShipItRequestSet).get(
                 request_type_id)
+            if request_type is None:
+                # Either a shipit admin removed this option after the user
+                # loaded the page or the user is poisoning the form.
+                return ("The option you've chosen was not found. Please select "
+                        "one from the list below.")
             current_order.setQuantitiesBasedOnStandardRequest(request_type)
             total_cds = request_type.totalCDs
         else:
@@ -730,17 +740,32 @@ class ShippingRequestApproveOrDenyView(
                     quantities[flavour][arch] = kw[field_name]
 
         if 'APPROVE' in form:
+            if not context.cancelled or not context.isApproved():
+                # This shipit request was changed behind our back; let's just
+                # refresh the page so the user can decide what to do with
+                # this request.
+                return
             context.approve(whoapproved=getUtility(ILaunchBag).user)
             context.highpriority = kw['highpriority']
             context.setApprovedQuantities(quantities)
             self._nextURL = self._makeNextURL(previous_action='approved')
         elif 'CHANGE' in form:
+            if not context.isApproved():
+                # This shipit request was changed behind our back; let's just
+                # refresh the page so the user can decide what to do with
+                # this request.
+                return
+            self._nextURL = self._makeNextURL(previous_action='changed')
             context.highpriority = kw['highpriority']
             context.setApprovedQuantities(quantities)
-            self._nextURL = self._makeNextURL(previous_action='changed')
         elif 'DENY' in form:
-            context.deny()
+            if context.isDenied():
+                # This shipit request was changed behind our back; let's just
+                # refresh the page so the user can decide what to do with
+                # this request.
+                return
             self._nextURL = self._makeNextURL(previous_action='denied')
+            context.deny()
         else:
             # Nothing to do.
             pass
