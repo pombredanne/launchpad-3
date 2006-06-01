@@ -509,16 +509,3 @@ First, let's check the source and arch releases of one archive mirror.
     (u'Warty', 'Up to date')
     (u'Hoary', 'Up to date')
 
-
-And now check the releases and flavours mirrored on a releae mirror.
-
-    >>> ubuntu.release_mirrors.count()
-    2
-    >>> release_mirror = ubuntu.release_mirrors[0]
-    >>> release_mirror.name
-    u'releases-mirror'
-
-    >>> sorted(release_mirror.getCDImageMirroredFlavoursByRelease().items())
-    [(u'The Hoary Hedgehog Release', [u'ubuntu', u'kubuntu']),
-     (u'The Warty Warthog Release', [u'ubuntu'])]
-
