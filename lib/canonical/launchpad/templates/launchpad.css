@@ -1199,9 +1199,6 @@ dl.faq ol {
 
 /* Dynamic menus */
 
-.menuroot {
-  font-size: 0.8em;
-}
 ul.menuroot, ul.menu {
   display: block;
 }
@@ -1213,9 +1210,10 @@ ul.menuroot, ul.menu {
 }
 ul.menuroot {
   top: 0px;
-  background-color: white;
+  background-color: #dee7ec;
   font-family: sans-serif;
   font-size: smaller;
+  width: 100%;
 }
 .menuroot {
   border: 1px solid;
@@ -1288,16 +1286,11 @@ ul.menuroot {
   border-bottom-width: 1px;
 }
 
-/"
-* html body {
-  margin: 0px;
-  padding: 0px;
-}"/
 * html .menuroot {
   font-size: 0.8em;
 }
 #menucontainer * html ul {
-  background-color: #ccddff;
+  background-color: #dee7ec;
   display: block;
   position: absolute;
   background-color: green;
@@ -1327,7 +1320,7 @@ ul.menuroot {
   padding: 0px;
   line-height: 2em;
   height: 2em;
-  background-color: #ccddff;
+  background-color: #dee7ec;
   min-width: 20em;
   color: black;
   cursor: default;
@@ -1343,7 +1336,7 @@ ul.menuroot {
 }
 * html .menuroot .item {
   float: left;
-  background-color: #ccddff;
+  background-color: #dee7ec;
 }
 * html .menu {
   z-index: 2;
@@ -1372,4 +1365,8 @@ ul.menuroot {
 }
 #menupreload {
   visibility: hidden;
+}
+
+* html .body {
+  padding-top: 1.5em;
 }
