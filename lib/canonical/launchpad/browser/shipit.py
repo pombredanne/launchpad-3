@@ -631,10 +631,6 @@ class ShippingRequestAdminMixinView:
     attributes, named like fieldname_widget.
     """
 
-    # The name of the RequestedCDs' attribute from where we get the number we
-    # use as initial value to our quantity widgets.
-    quantity_attrname = None
-
     # This is the order in which we display the distribution flavours
     # in the UI
     ordered_flavours = (
@@ -669,7 +665,15 @@ class ShippingRequestAdminMixinView:
             matrix.append(row)
         return matrix
 
-    def getQuantityWidgetsInitialValuesFromExistingOrder(self, order):
+    def getQuantityWidgetsInitialValuesFromExistingOrder(
+            self, order, quantity_attrname):
+        """Return a dictionary mapping the widget names listed in
+        self.quantity_fields_mapping to their initial values.
+
+        The value of each widget is the value of the quantity_attrname
+        attribute of the RequestedCDs object with the flavour and architecture
+        of that widget.
+        """
         initial = {}
         requested = order.getRequestedCDsGroupedByFlavourAndArch()
         for flavour in self.quantity_fields_mapping:
@@ -679,7 +683,7 @@ class ShippingRequestAdminMixinView:
                     continue
                 requested_cds = requested[flavour][arch]
                 if requested_cds is not None:
-                    value = getattr(requested_cds, self.quantity_attrname)
+                    value = getattr(requested_cds, quantity_attrname)
                 else:
                     value = 0
                 initial[field_name] = value
@@ -689,8 +693,6 @@ class ShippingRequestAdminMixinView:
 class ShippingRequestApproveOrDenyView(
         GeneralFormView, ShippingRequestAdminMixinView):
     """The page where admins can Approve/Deny existing requests."""
-
-    quantity_attrname = 'quantityapproved'
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
@@ -785,7 +787,15 @@ class ShippingRequestApproveOrDenyView(
     @property
     def initial_values(self):
         order = self.context
-        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(order)
+        if order.isApproved():
+            quantity_attrname = 'quantityapproved'
+        else:
+            # This order is not yet approved, so we use the requested
+            # quantities as the initial values of the approved quantities
+            # widgets.
+            quantity_attrname = 'quantity'
+        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(
+            order, quantity_attrname)
         initial['highpriority'] = order.highpriority
         return initial
 
@@ -809,8 +819,6 @@ class ShippingRequestApproveOrDenyView(
 
 class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
     """The page where admins can create new requests or change existing ones."""
-
-    quantity_attrname = 'quantity'
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
@@ -845,7 +853,8 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             return {}
 
         order = self.current_order
-        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(order)
+        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(
+            order, quantity_attrname='quantity')
         initial['highpriority'] = order.highpriority
 
         for field in self.shipping_details_fields:

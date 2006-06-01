@@ -220,7 +220,7 @@ class ShippingRequest(SQLBase):
 
     def isApproved(self):
         """See IShippingRequest"""
-        return self.approved
+        return self.approved == True
 
     def isDenied(self):
         """See IShippingRequest"""
