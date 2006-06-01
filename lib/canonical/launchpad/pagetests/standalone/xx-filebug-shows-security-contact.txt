@@ -1,0 +1,65 @@
+The bug filing form tells the user when there is no security contact for
+an upstream or distribution.
+
+    >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
+
+    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    There is no...security contact for...Mozilla Firefox...
+
+    >>> browser.open("http://localhost:9000/distros/ubuntu/+filebug")
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    There is no...security contact for...Ubuntu...
+
+    >>> browser.open(
+    ...     "http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+filebug")
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    There is no...security contact for...Ubuntu...
+
+The bug filing form also shows the security contact, when there is
+one. Let's set a security contact on each of Mozilla Firefox and Ubuntu
+to demonstrate.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSet, IDistributionSet, IPersonSet)
+
+(Login, to access various utilities, and set attributes.)
+
+    >>> from canonical.launchpad.ftests import login, logout
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> mozilla_firefox = getUtility(IProductSet).getByName("firefox")
+
+    >>> ubuntu.security_contact = getUtility(IPersonSet).getByName("no-priv")
+    >>> mozilla_firefox.security_contact = getUtility(IPersonSet).getByName(
+    ...     "name16")
+    >>> flush_database_updates()
+    >>> logout()
+
+    >>> browser.open("http://localhost:9000/products/firefox/+filebug")
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    The security contact for...Mozilla Firefox...Foo Bar...will be subscribed to this bug...
+
+    >>> browser.open("http://localhost:9000/distros/ubuntu/+filebug")
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    The security contact for...Ubuntu...No Privileges Person...will be subscribed to this bug...
+
+    >>> browser.open("http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+filebug")
+
+    >>> print browser.contents
+    <!DOCTYPE...
+    The security contact for...Ubuntu...No Privileges Person...will be subscribed to this bug...

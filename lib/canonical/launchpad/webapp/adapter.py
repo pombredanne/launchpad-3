@@ -68,6 +68,12 @@ class SessionDatabaseAdapter(PsycopgAdapter):
             super(SessionDatabaseAdapter, self).connect()
             _reset_dirty_commit_flags(*flags)
 
+    def _connection_factory(self):
+        con = super(SessionDatabaseAdapter, self)._connection_factory()
+        con.set_isolation_level(0)
+        con.cursor().execute("SET client_encoding TO UNICODE")
+        return con
+
 
 class LaunchpadDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that performs some additional
@@ -197,6 +203,10 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
         '/*%s*/ %s' % (id(connection_wrapper), statement)
         ))
 
+    # store the last executed statement as an attribute on the current
+    # thread
+    threading.currentThread().lp_last_sql_statement = statement
+
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""
@@ -301,7 +311,9 @@ class CursorWrapper:
                 os.environ.get("LP_DEBUG_SQL")):
                 sys.stderr.write(statement + "\n")
             try:
-                return self._cur.execute(statement, *args, **kwargs)
+                return self._cur.execute(
+                        '/*%s*/ %s' % (id(self), statement), *args, **kwargs
+                        )
             finally:
                 _log_statement(
                         starttime, time.time(),
