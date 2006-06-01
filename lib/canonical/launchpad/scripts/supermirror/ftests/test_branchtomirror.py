@@ -238,17 +238,7 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         mybranch.mirror()
         transaction.abort()
         branch = database.Branch.get(1)
-        if branch.mirror_failures == 0:
-            # Disabled due to Bug 39884. Remove after closing.
-            pass
-        else:
-            self.assertEqual(1, branch.mirror_failures)
-            # XXX Andrew Bennetts 2006-05-08: disabled failure to make merging
-            # bzr 0.8 easier.
-            #self.fail(
-            #    "Bug 39884 appears to be fixed. Close and remove this assert"
-            #    )
-
+        self.assertEqual(1, branch.mirror_failures)
 
 
 class TestErrorHandling(unittest.TestCase):
