@@ -16,7 +16,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification,
     IUpstreamBugTask, ITeamMembershipSet)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -197,7 +197,7 @@ def get_bugmail_error_address():
     return config.malone.bugmail_error_from_address
 
 
-def send_process_error_notification(to_addr, subject, error_msg,
+def send_process_error_notification(to_address, subject, error_msg,
                                     original_msg, failing_command=None):
     """Send a mail about an error occurring while using the email interface.
 
@@ -205,7 +205,7 @@ def send_process_error_notification(to_addr, subject, error_msg,
     request and attaches the original email which caused the error to
     happen.
 
-        :to_addr: The addres to send the notification to.
+        :to_address: The addres to send the notification to.
         :subject: The subject ot the notification.
         :error_msg: The error message that explains the error.
         :original_msg: The original message sent by the user.
@@ -225,7 +225,7 @@ def send_process_error_notification(to_addr, subject, error_msg,
     error_part = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
 
     msg = MIMEMultipart()
-    msg['To'] = to_addr
+    msg['To'] = to_address
     msg['From'] = get_bugmail_error_address()
     msg['Subject'] = subject
     msg.attach(error_part)
