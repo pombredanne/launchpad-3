@@ -129,7 +129,7 @@ The URLifier for these bug watches deals with SF.net's horrible URLs.
 Syncing the Status with Linked Bugtasks
 ---------------------------------------
 
-If the bug watch is linked to a bugtask, the bug watch  can sync its
+If the bug watch is linked to a bugtask, the bug watch can sync its
 status with it. Before we do this we need to login as the Bug Watch
 Updater and get a bug watch and a bugtask to test with.
 
