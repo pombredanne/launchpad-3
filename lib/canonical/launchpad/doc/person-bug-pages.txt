@@ -172,7 +172,7 @@ No search criteria (ordered by importance):
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [(bugtask.bug.id, bugtask.importance.name)
     ...  for bugtask in bugtask_batch_navigator.batch]
-    [(3, 'MEDIUM'),
+    [(3, 'UNKNOWN'),
      (1, 'LOW'),
      (2, 'LOW')]
 
@@ -208,7 +208,7 @@ Searching for all open bugs on Debian mozilla-firefox:
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [(bugtask.bug.id, bugtask.importance.name)
     ...  for bugtask in bugtask_batch_navigator.batch]
-    [(3, 'MEDIUM'),
+    [(3, 'UNKNOWN'),
      (1, 'LOW'),
      (2, 'LOW')]
 
