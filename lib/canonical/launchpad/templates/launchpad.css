@@ -247,9 +247,6 @@ ul {
   list-style-image: url(/@@/bullet.gif);
   margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
 }
-ul.menu {
-  font-size: smaller;
-}
 ol {
   margin: 0.5em 0 0 1.5em;
 }
@@ -1199,6 +1196,9 @@ dl.faq ol {
 
 /* Dynamic menus */
 
+ul.menu {
+  font-size: smaller;
+}
 ul.menuroot, ul.menu {
   display: block;
 }
@@ -1366,7 +1366,10 @@ ul.menuroot {
 #menupreload {
   visibility: hidden;
 }
-
 * html .body {
   padding-top: 1.5em;
 }
+#menuroot li {
+  list-style-image: none;
+}
+
