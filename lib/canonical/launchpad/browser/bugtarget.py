@@ -16,7 +16,7 @@ from zope.component import getUtility
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
-    IProduct, NotFoundError)
+    IProduct, NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 
 class FileBugView(SQLObjectAddView):
@@ -64,21 +64,21 @@ class FileBugView(SQLObjectAddView):
                             "the bug was in package %r; however, that package "
                             "was not published in %s."
                             % (packagename, context.displayname))
-                bug = context.createBug(
+                params = CreateBugParams(
                     title=title, comment=comment, private=private,
                     security_related=security_related, owner=current_user)
             else:
-                bugtarget = context.getSourcePackage(sourcepackagename.name)
-                bug = bugtarget.createBug(
+                context = context.getSourcePackage(sourcepackagename.name)
+                params = CreateBugParams(
                     title=title, comment=comment, private=private,
                     security_related=security_related, owner=current_user,
                     binarypackagename=binarypackagename)
         else:
-            bug = context.createBug(
+            params = CreateBugParams(
                 title=title, comment=comment, private=private,
                 security_related=security_related, owner=current_user)
 
-        self.addedBug = bug
+        self.addedBug = context.createBug(params)
         return self.addedBug
 
     def nextURL(self):

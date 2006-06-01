@@ -519,14 +519,15 @@ Generating notifications when a new bug is filed is just a special case
 of a comment notification. If we add a comment notification for the
 initial message of the bug, it will result in a bug filed notification:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, CreateBugParams)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> description = getUtility(IMessageSet).fromText(
     ...     'subject', 'a description of the bug.', sample_person,
     ...     datecreated=ten_minutes_ago)
-    >>> new_bug = getUtility(IBugSet).createBug(
-    ...     distribution=ubuntu, msg=description,
-    ...     owner=sample_person, title='new bug')
+    >>> params = CreateBugParams(
+    ...     msg=description, owner=sample_person, title='new bug')
+    >>> new_bug = ubuntu.createBug(params)
     >>> new_bug.addCommentNotification(description)
     >>> description == new_bug.initial_message
     True

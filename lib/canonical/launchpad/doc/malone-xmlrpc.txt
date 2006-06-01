@@ -16,8 +16,8 @@ The report_bug API is:
         product, distro, package, title, comment, status,
         assignee, security_related, private, subscribers)
 
-Required args: Product or distro, title, comment.
-Optional args: package (and only if distro is specified), status,
+Required args: product or distro, title, comment.
+Optional args: package (only allowed if distro is specified), status,
                assignee, security_related, private, subscribers
 
 The bug owner is the currently authenticated user, taken from the

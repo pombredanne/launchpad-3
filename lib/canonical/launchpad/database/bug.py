@@ -4,10 +4,9 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet']
 
-import re
-
-from sets import Set
 from email.Utils import make_msgid
+import re
+from sets import Set
 
 from zope.component import getUtility
 from zope.event import notify
@@ -20,7 +19,8 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
-from canonical.launchpad.helpers import contactEmailAddresses, shortlist
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, shortlist, Snapshot)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -88,7 +88,7 @@ class Bug(SQLBase):
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
-    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug', 
+    attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug',
         orderBy='id')
     specifications = RelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
@@ -337,8 +337,8 @@ class BugSet:
         admins = getUtility(ILaunchpadCelebrities).admin
         if user:
             if not user.inTeam(admins):
-                # Enforce privacy-awareness for logged-in, non-admin users, 
-                # so that they can only see the private bugs that they're 
+                # Enforce privacy-awareness for logged-in, non-admin users,
+                # so that they can only see the private bugs that they're
                 # allowed to see.
                 where_clauses.append("""
                     (Bug.private = FALSE OR
@@ -388,66 +388,76 @@ class BugSet:
             return item
         return None
 
-    def createBug(self, distribution=None, sourcepackagename=None,
-                  binarypackagename=None, product=None, comment=None,
-                  description=None, msg=None, datecreated=None, title=None,
-                  security_related=False, private=False, owner=None):
+    def createBug(self, bug_params):
         """See IBugSet."""
-        if comment is description is msg is None:
+        # Make a copy of the parameter object, because we might modify some of
+        # its attribute values below.
+        params = Snapshot(
+            bug_params, names=[
+                "owner", "title", "comment", "description", "msg",
+                "datecreated", "security_related", "private",
+                "distribution", "sourcepackagename", "binarypackagename",
+                "product"])
+
+        if not (params.comment or params.description or params.msg):
             raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
-        assert comment is None or msg is None, (
+        assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both")
 
         # Store binary package name in the description, because
         # storing it as a separate field was a maintenance burden to
         # developers.
-        if binarypackagename:
-            comment = "Binary package hint: %s\n\n%s" % (
-                binarypackagename.name, comment)
+        if params.binarypackagename:
+            params.comment = "Binary package hint: %s\n\n%s" % (
+                params.binarypackagename.name, params.comment)
 
         # Create the bug comment if one was given.
-        if comment:
+        if params.comment:
             rfc822msgid = make_msgid('malonedeb')
-            msg = Message(subject=title, distribution=distribution,
-                rfc822msgid=rfc822msgid, owner=owner)
+            params.msg = Message(
+                subject=params.title, distribution=params.distribution,
+                rfc822msgid=rfc822msgid, owner=params.owner)
             MessageChunk(
-                messageID=msg.id, sequence=1, content=comment, blobID=None)
+                messageID=params.msg.id, sequence=1, content=params.comment,
+                blobID=None)
 
         # Extract the details needed to create the bug and optional msg.
-        if not description:
-            description = msg.text_contents
+        if not params.description:
+            params.description = params.msg.text_contents
 
-        if not datecreated:
-            datecreated = UTC_NOW
+        if not params.datecreated:
+            params.datecreated = UTC_NOW
 
         bug = Bug(
-            title=title, description=description, private=private,
-            owner=owner.id, datecreated=datecreated,
-            security_related=security_related)
+            title=params.title, description=params.description,
+            private=params.private, owner=params.owner.id,
+            datecreated=params.datecreated,
+            security_related=params.security_related)
 
-        bug.subscribe(owner)
+        bug.subscribe(params.owner)
         # Subscribe the security contact, for security-related bugs.
-        if security_related:
-            if product and product.security_contact:
-                bug.subscribe(product.security_contact)
-            elif distribution and distribution.security_contact:
-                bug.subscribe(distribution.security_contact)
+        if params.security_related:
+            if params.product and params.product.security_contact:
+                bug.subscribe(params.product.security_contact)
+            elif params.distribution and params.distribution.security_contact:
+                bug.subscribe(params.distribution.security_contact)
 
         # Link the bug to the message.
-        BugMessage(bug=bug, message=msg)
+        BugMessage(bug=bug, message=params.msg)
 
         # Create the task on a product if one was passed.
-        if product:
-            BugTaskSet().createTask(bug=bug, product=product, owner=owner)
+        if params.product:
+            BugTaskSet().createTask(
+                bug=bug, product=params.product, owner=params.owner)
 
         # Create the task on a source package name if one was passed.
-        if distribution:
+        if params.distribution:
             BugTaskSet().createTask(
-                bug=bug, distribution=distribution,
-                sourcepackagename=sourcepackagename,
-                owner=owner)
+                bug=bug, distribution=params.distribution,
+                sourcepackagename=params.sourcepackagename,
+                owner=params.owner)
 
         return bug

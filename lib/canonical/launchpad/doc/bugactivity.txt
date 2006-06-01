@@ -55,7 +55,7 @@ are simple little functions.
   >>> from canonical.launchpad.database import (
   ...     BugPackageInfestation, BugProductInfestation)
   >>> from canonical.launchpad.interfaces import (
-  ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugSet, IBugTaskSet)
+  ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugTaskSet)
   >>> from canonical.launchpad.helpers import capture_state
 
 Here's a list of events that happen, and the resulting activity
@@ -65,10 +65,12 @@ logged:
 
 EVENT: user files a bug
 
-  >>> bug = getUtility(IBugSet).createBug(
-  ...     product=getUtility(IProductSet)['firefox'],
+  >>> from canonical.launchpad.interfaces import CreateBugParams
+  >>> firefox = getUtility(IProductSet)['firefox']
+  >>> params = CreateBugParams(
   ...     title="a test bug", comment="this is only a test bug\nplease ignore",
   ...     owner=user)
+  >>> bug = firefox.createBug(params)
   >>> bug.activity.count()
   0
   >>> object_created = SQLObjectCreatedEvent(bug)

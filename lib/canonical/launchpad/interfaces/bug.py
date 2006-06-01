@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
     'IBugSet',
@@ -17,12 +18,74 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.validation import non_duplicate_bug
-from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.fields import (ContentNameField, Title, BugField)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
+from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.interfaces.validation import non_duplicate_bug
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import (
-    ContentNameField, Title, BugField)
+
+
+class CreateBugParams:
+    """The parameters used to create a bug.
+
+    :title: The title of the bug, as a string.
+    :comment: The initial comment/default description.
+    :security_related: Is this bug security related? A boolean value.
+    :private: Is this a private bug? A boolean value.
+    """
+    def __init__(self, owner, title, comment=None, description=None, msg=None,
+                 datecreated=None, security_related=False, private=False):
+        self.owner = owner
+        self.title = title
+        self.comment = comment
+        self.description = description
+        self.msg = msg
+        self.datecreated = datecreated
+        self.security_related = security_related
+        self.private = private
+
+        self.distribution = None
+        self.sourcepackagename = None
+        self.binarypackagename = None
+        self.product = None
+
+    def setBugTarget(self, product=None, distribution=None,
+                     sourcepackagename=None, binarypackagename=None):
+        """Set the IBugTarget in which the bug is being reported.
+
+        :product: an IProduct
+        :distribution: an IDistribution
+        :sourcepackagename: an ISourcePackageName
+        :binarypackagename: an IBinaryPackageName
+
+        A product or distribution must be provided, or an AssertionError is
+        raised.
+
+        If product is specified, all other parameters must evaluate to False in
+        a boolean context, or an AssertionError will be raised.
+
+        If distribution is specified, sourcepackagename and binarypackagename
+        may optionally be provided. product must evaluate to False in a boolean
+        context, or an AssertionError will be raised.
+        """
+        assert product or distribution, (
+            "You must specify the product or distribution in which this "
+            "bug exists")
+
+        if product:
+            conflicting_context = (
+                distribution or sourcepackagename or binarypackagename)
+        elif distribution:
+            conflicting_context = product
+
+        assert not conflicting_context, (
+            "You must specify either an upstream context or a distribution "
+            "context, but not both.")
+
+        self.product = product
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
+        self.binarypackagename = binarypackagename
 
 
 class BugNameField(ContentNameField):
@@ -285,11 +348,10 @@ class IBugSet(Interface):
         """Find one or None bugs in Malone that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
-    def createBug(self, distribution=None, sourcepackagename=None,
-                  binarypackagename=None, product=None, comment=None,
-                  description=None, msg=None, datecreated=None, title=None,
-                  security_related=False, private=False, owner=None):
+    def createBug(self, bug_params):
         """Create a bug and return it.
+
+        :bug_params: A CreateBugParams object.
 
         Things to note when using this factory:
 

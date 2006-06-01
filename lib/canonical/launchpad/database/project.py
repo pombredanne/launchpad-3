@@ -165,7 +165,7 @@ class Project(SQLBase, BugTargetBase):
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, title, comment, private=False, security_related=False):
+    def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Can not file bugs against a project')
 
