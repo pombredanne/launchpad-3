@@ -1,183 +1,159 @@
-This page test has been disabled as per Bug 
+Queue pages were designed to offer the ability to perform
+control and visualisation over the current uploads queue.
+Currently the queue page is only available for DistroReleases.
 
-# Queue pages were designed to offer the ability to perform
-# control and visualisation over the current uploads queue.
-# Currently the queue page is only available for DistroReleases.
+  >>> from zope.testbrowser import Browser
+  >>> from urllib2 import HTTPError
+
+A browser to test as a regular user:
+
+  >>> user_browser = Browser()
+  >>> user_browser.addHeader("Authorization", "Basic test@canonical.com:test")
+
+A browser to test as admin:
+
+  >>> admin_browser = Browser()
+  >>> admin_browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+
+Finally, a browser with no auth at all:
+
+  >>> noauth_browser = Browser()
+
+This page requires auth:
+
+  >>> noauth_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+  >>> noauth_browser.url
+  'http://localhost:9000/distros/ubuntu/breezy-autotest/+queue/+login'
+
+Check if anonymous actions fails:
+(This POST is made by-hand since the UI would never allow it.)
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=1&Accept=Accept""")
+  HTTP/1.1 500 Internal Server Error
+  Content-Length: ...
+  <BLANKLINE>
+  Application error.  Unauthenticated user POSTing to page that requires authentication.
+
+
+Non-admin (sample person) attempts to act on queue items fails:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Content-Length: 25
+  ... QUEUE_ID=2&Accept=Accept""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...You do not have permission to act on queue items...
+
+
+Check if non-admin are denied to see UNAPPROVED queue:
+
+  >>> try:
+  ...     user_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue?queue_state=1")
+  ... except HTTPError, info:
+  ...     info
+  <HTTPError...
+
+Visualise current queue, by default the NEW queue, only requires
+normal user auth:
+
+  >>> user_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+  >>> user_browser.contents
+  '...Queue for Breezy Badger Autotest...
+  ...alsa-utils...
+  ...netapplet...
+  ...pmount (i386)...
+  ...mozilla-firefox (i386)...'
+
+Inspect the ACCEPTED queue
+
+  >>> user_browser.getControl(name="queue_state").displayValue=['Accepted']
+  >>> user_browser.getControl("Update").click()
+  >>> user_browser.contents
+  '...The Accepted queue...is empty...'
+
+Now we act on the queue, which requires admin.
+Go back to the "new" queue and accept an item:
+
+  >>> admin_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+
+  >>> admin_browser.getControl(name="QUEUE_ID").value=['4']
+  >>> admin_browser.getControl(name="Accept").click()
+  >>> admin_browser.contents
+  '...Accepting Results:<br><br>OK: alsa-utils...
+  ...netapplet...
+  ...pmount (i386)...
+  ...mozilla-firefox (i386)...'
+
+Breeze past the unaccepted queue to ensure admin can see it
+
+  >>> admin_browser.getControl(name="queue_state").displayValue=['Accepted']
+  >>> admin_browser.getControl("Update").click()
+  >>> admin_browser.contents
+  '...netapplet...'
+
+Check if the item was moved to the correct place, the ACCEPTED queue:
+
+  >>> admin_browser.getControl(name="queue_state").displayValue=['Accepted']
+  >>> admin_browser.getControl("Update").click()
+  >>> admin_browser.contents
+  '...alsa-utils...'
+
+Go back to the "new" queue, and check it's gone:
+
+  >>> admin_browser.getControl(name="queue_state").displayValue=['New']
+  >>> admin_browser.getControl("Update").click()
+  >>> 'alsa-utils' in admin_browser.contents
+  False
+
+Rejecting items. We're going to test doing this twice to the same item,
+so first we get a second browser on the same page.
+
+  >>> admin_browser2 = Browser()
+  >>> admin_browser2.addHeader("Authorization", "Basic: foo.bar@canonical.com:test")
+  >>> admin_browser2.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+
+Now reject our item from the first browser:
+
+  >>> admin_browser.getControl(name="QUEUE_ID").value=['3']
+  >>> admin_browser.getControl(name="Reject").click()
+  >>> admin_browser.contents
+  '...Rejecting Results:<br><br>OK: netapplet...
+  ...pmount (i386)...
+  ...mozilla-firefox (i386)...'
+
+# XXX malcc: The following tests are currently disabled, as they fail.
+# This appears to be due to a problem with changes being committed while
+# running tests, see bug 47239.
 # 
+# Check if the item was moved to the correct place, the REJECTED queue:
 # 
-# This page requires logged in users:
+#   >>> admin_browser.getControl(name="queue_state").displayValue=['Rejected']
+#   >>> admin_browser.getControl("Update").click()
+#   >>> admin_browser.contents
+#   '...netapplet...'
 # 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-#   ... """)
-#   HTTP/1.1 303 See Other
-#   ...
+# Now try to reject again, using the outdated state in the second browser.
 # 
-# Check if anonymous actions fails:
+#   >>> admin_browser2.getControl(name="QUEUE_ID").value=['3']
+#   >>> admin_browser2.getControl(name="Reject").click()
+#   >>> admin_browser2.contents
+#   '...Accepting Results...:<br><br>FAILED: alsa-utils...'
 # 
-# (considering this POST was maid by-hand since the UI would never allow
-# such path.)
-# 
-#   >>> print http(r"""
-#   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... Content-Length: 25
-#   ... QUEUE_ID=1&Accept=Accept""")
-#   HTTP/1.1 500 Internal Server Error
-#   Content-Length: ...
-#   <BLANKLINE>
-#   Application error.  Unauthenticated user POSTing to page that requires authentication.
-# 
-# 
-# Non-admin (sample person) attempts to act on queue items fails:
-# 
-#   >>> print http(r"""
-#   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-#   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... Content-Length: 25
-#   ... QUEUE_ID=2&Accept=Accept""")
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...You do not have permission to act on queue items...
-# 
-# 
-# Check if non-admin are denied to see UNAPPROVED queue:
-# 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=1 HTTP/1.1
-#   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... """)
-#   HTTP/1.1 403 Forbidden
-#   ...
-# 
-# 
-# Visualise current queue, by default the NEW queue, only requires
-# normal user auth:
-# 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-#   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... """)
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...Queue for Breezy Badger Autotest...
-#   ...alsa-utils...
-#   ...netapplet...
-#   ...pmount (i386)...
-#   ...mozilla-firefox (i386)...
-# 
-# 
-# Inspect the ACCEPTED queue, only requires normal user auth:
-# 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=2 HTTP/1.1
-#   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... """)
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...The Accepted queue...is empty.
-#   ...
-# 
-# 
-# Check admin access to UNAPPROVED queue:
-# 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=1 HTTP/1.1
-#   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... """)
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...netapplet...
-# 
-# 
-# Accept an item (requires Admin):
-# 
-#   >>> print http(r"""
-#   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-#   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... Content-Length: 25
-#   ... QUEUE_ID=4&Accept=Accept""")
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...Accepting Results:<br><br>OK: alsa-utils...
-#   ...netapplet...
-#   ...pmount (i386)...
-#   ...mozilla-firefox (i386)...
-# 
-# Check if repeated action causes a warning message:
-# 
-#   >>> print http(r"""
-#   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-#   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... Content-Length: 25
-#   ... QUEUE_ID=4&Accept=Accept""")
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...Accepting Results:<br><br>FAILED: alsa-utils (Queue item already accepted)...
-# 
-# 
-# Check if the item was moved to the correct place, ACCEPTED queue:
-# 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=2 HTTP/1.1
-#   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... """)
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...alsa-utils...
-# 
-# Reject an item (requires Admin):
-# 
-#   >>> print http(r"""
-#   ... POST /distros/ubuntu/breezy-autotest/+queue HTTP/1.1
-#   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... Content-Length: 25
-#   ... QUEUE_ID=3&Reject=Reject""")
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...Rejecting Results:<br><br>OK: netapplet...
-#   ...pmount (i386)...
-#   ...mozilla-firefox (i386)...
-# 
-# 
-# Check if the item was moved to the correct place, REJECTED queue:
-# 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=4 HTTP/1.1
-#   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... """)
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...netapplet...
-# 
-# 
-# Use the text filter to inspect the NEW queue:
-# 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=0&queue_text=pm HTTP/1.1
-#   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... Content-Type: application/x-www-form-urlencoded
-#   ... """)
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...pmount (i386)...
-# 
-# 
-# Check if the results were already filtered:
-# 
-#   >>> print http(r"""
-#   ... GET /distros/ubuntu/breezy-autotest/+queue?queue_state=0&queue_text= HTTP/1.1
-#   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-#   ... """)
-#   HTTP/1.1 200 Ok
-#   Content-Length: ...
-#   ...pmount (i386)...
-#   ...mozilla-firefox (i386)...
+ 
+Use the text filter to inspect the NEW queue:
+
+  >>> user_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
+  >>> user_browser.getControl(name="queue_text").value='pm'
+  >>> user_browser.getControl("Update").click()
+  >>> 'pmount (i386)' in user_browser.contents
+  True
+  >>> 'mozilla-firefox (i386)' in user_browser.contents
+  False
+
