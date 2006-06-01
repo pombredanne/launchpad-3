@@ -63,6 +63,15 @@
       permission="zope.Public"
       />
 
+  <!-- Macros for the forbidden pages; used by launchpad-forbidden.pt and
+  shipit-forbidden.pt, initially. -->
+  <browser:page
+      for="*"
+      name="+forbidden-page-macros"
+      template="../templates/launchpad-forbidden-macros.pt"
+      permission="zope.Public"
+      />
+
   <!-- Login and logout pages, and login status. -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadApplication"

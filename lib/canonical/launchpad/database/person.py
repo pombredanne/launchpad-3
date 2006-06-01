@@ -34,8 +34,8 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    ILaunchpadStatisticSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, ILaunchpadStatisticSet,
+    ShipItConstants)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -444,13 +444,16 @@ class Person(SQLBase):
         """See IPerson."""
         return self.teamowner is not None
 
-    def shippedShipItRequests(self):
+    def shippedShipItRequestsOfCurrentRelease(self):
         """See IPerson."""
         query = '''
-            ShippingRequest.recipient = %s AND
-            ShippingRequest.id IN (SELECT request FROM Shipment)
-            ''' % sqlvalues(self.id)
-        return ShippingRequest.select(query)
+            ShippingRequest.recipient = %s
+            AND ShippingRequest.id = RequestedCDs.request
+            AND RequestedCDs.distrorelease = %s
+            AND ShippingRequest.id IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
+        return ShippingRequest.select(
+            query, clauseTables=['RequestedCDs'], distinct=True)
 
     def pastShipItRequests(self):
         """See IPerson."""

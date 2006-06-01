@@ -63,8 +63,8 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
             # XXX: would also benefit from potemplate.sourcepackagename,
             # potemplate.potemplatename, latestsubmission.datecreated
             # and latestsubmission.person -- kiko, 2006-03-16
-            prejoins=["language", "latestsubmission"],
-            orderBy=['POFile.id'])
+            prejoins=["potemplate", "language", "latestsubmission"],
+            orderBy=['-POTemplate.priority', 'POFile.id'])
 
     @property
     def po_files_or_dummies(self):

@@ -37,4 +37,6 @@ class ILaunchpadStatisticSet(Interface):
     def value(name):
         """Return the current value of the requested statistic."""
 
+    def updateStatistics(ztm):
+        """Update the statistics in the system."""
 
