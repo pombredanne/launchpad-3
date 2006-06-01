@@ -205,8 +205,8 @@ def send_process_error_notification(to_address, subject, error_msg,
     request and attaches the original email which caused the error to
     happen.
 
-        :to_address: The addres to send the notification to.
-        :subject: The subject ot the notification.
+        :to_address: The address to send the notification to.
+        :subject: The subject of the notification.
         :error_msg: The error message that explains the error.
         :original_msg: The original message sent by the user.
         :failing_command: The command that caused the error to happen.
