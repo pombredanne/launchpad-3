@@ -39,37 +39,35 @@
   <div tal:condition="view/packagename_widget|nothing"
        style="margin-top: 1em">
     <label tal:attributes="for view/packagename_widget/name">
-      Do you know the affected package&#8217;s name?
+      In what package did you find this bug?
     </label>
     <ul style="list-style: none">
       <li>
         <input type="radio" name="packagename_option" value="none"
                id="no-package" checked />
         <label style="font-weight: normal" for="no-package">
-          No, I don't know
+          I don't know
         </label>
       </li>
       <li style="margin-top: 4px">
         <input type="radio" name="packagename_option" value="choose"
                id="choose" />
-        Yes, it&#8217;s:
         <span tal:content="structure view/packagename_widget" />
       </li>
     </ul>
   </div>
 
   <div style="margin-top: 1em">
-    <label tal:attributes="for view/comment_widget/name">
-      Describe the bug and how to reproduce it:
-    </label>
-    <div tal:content="structure view/comment_widget" />
+    <label tal:content="structure view/title_widget/label"
+           tal:attributes="for view/title_widget/name" />
+    <div tal:content="structure view/title_widget" />
   </div>
 
   <div style="margin-top: 1em">
-    <label tal:attributes="for view/title_widget/name">
-      Now summarize that in a few words:
+    <label tal:attributes="for view/comment_widget/name">
+      Further information, steps to reproduce, etc.
     </label>
-    <div tal:content="structure view/title_widget" />
+    <div tal:content="structure view/comment_widget" />
   </div>
 
   <div style="margin-top: 1em">

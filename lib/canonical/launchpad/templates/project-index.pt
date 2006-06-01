@@ -68,7 +68,7 @@
     </p>
 
     <p>
-        <img src="/@@/add.gif"><a href="+newproduct">Register another
+        <img alt="" src="/@@/add.gif" /><a href="+newproduct">Register another
         product</a> for this project.
     </p>
 

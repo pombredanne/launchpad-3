@@ -42,9 +42,6 @@ import os
 import sys
 import unittest
 
-from importd.tests.testutil import TestVisitor, TestSuite
-
-
 # XXX 2006-05-08 Andrew Bennetts:
 #    Same nasty hack as in test.py in the root directory of launchpad, more or
 #    less.  We need to remove the launchpad root directory from sys.path, so
@@ -52,6 +49,9 @@ from importd.tests.testutil import TestVisitor, TestSuite
 #    our test.py script instead.
 lp_root = os.path.realpath(os.path.join(__file__, '..', '..', '..'))
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != lp_root]
+
+
+from importd.tests.testutil import TestVisitor, TestSuite
 
 
 class ParameterisableTextTestRunner(unittest.TextTestRunner):

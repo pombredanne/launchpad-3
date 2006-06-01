@@ -38,6 +38,16 @@ Let's create a new request for foo.bar@canonical.com.
   >>> quantities = {UBUNTU: {X86: 30, AMD64: 5, PPC: 2}}
   >>> request.setQuantities(quantities)
 
+A request can be a custom or a standard one; if the request contains custom
+quantities for any flavour, then that request is considered custom.
+
+  >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.KUBUNTU)
+  False
+  >>> request.containsCustomQuantitiesOfFlavour(ShipItFlavour.UBUNTU)
+  True
+  >>> request.isCustom()
+  True
+
 We're not allowed to add a second request for the same recipient, while the
 existing one is not yet exported.
 
@@ -207,13 +217,13 @@ Exporting requests
 
 When exporting requests, we'll want to get all approved requests that weren't
 approved yet, with a given priority. This is done using the
-getUnshippedRequests method of ShippingRequestSet.
+getUnshippedRequestsIDs method of ShippingRequestSet.
 
   >>> import transaction
   >>> transaction.commit()
   >>> high = ShippingRequestPriority.HIGH
-  >>> unshipped_requests = requestset.getUnshippedRequests(high)
-  >>> unshipped_requests.count()
+  >>> unshipped_requests = requestset.getUnshippedRequestsIDs(high)
+  >>> len(unshipped_requests)
   1
 
 To actually export the files and upload them to Librarian we use
@@ -240,8 +250,8 @@ priority requests.
 Now we do an export of all normal priority requests that are ready to be
 shipped, by running the shipit-exports cronscript.
 
-  >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
-  6
+  >>> sorted(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL))
+  [1, 2, 3, 4, 5, 7]
 
   >>> import subprocess
   >>> process = subprocess.Popen(
@@ -255,11 +265,12 @@ shipped, by running the shipit-exports cronscript.
 
   >>> transaction.commit()
   >>> flush_database_updates()
-  >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
+  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL))
   0
   >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
-  >>> run.requests.count()
-  6
+  >>> sorted([request.id for request in run.requests])
+  [1, 2, 3, 4, 5, 7]
+
   >>> run.requests[0].highpriority
   False
 

@@ -112,18 +112,20 @@
     <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="treeCollapsed.gif" file="../images/treeCollapsed.gif" />
     <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />
-    <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
+    <resource name="ubuntu-icon" file="../images/ubuntu-icon.png" />
     <resource name="user.gif" file="../images/user.gif" />
     <resource name="user" file="../images/user.gif" />
 
     <!-- Shipit images (from www.ubuntu.com) -->
     <resource name="ubuntu-header-bg4.png" file="../images/ubuntu-header-bg4.png" />
     <resource name="ubuntu-header-image4.png" file="../images/ubuntu-header-image4.png" />
-    <resource name="ubuntu-favicon.ico" file="../images/ubuntu-favicon.ico" />
 
     <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
-    <resource name="kubuntu-header-bg4.png" file="../images/kubuntu-header-bg4.png" />
-    <resource name="kubuntu-crystal.png" file="../images/kubuntu-crystal.png" />
+    <resource name="kubuntu-header-bg-dapper.png"
+        file="../images/kubuntu-header-bg-dapper.png" />
+    <resource name="kubuntu-footer-bg-dapper.jpg"
+        file="../images/kubuntu-footer-bg-dapper.jpg" />
+    <resource name="kubuntu-header.png" file="../images/kubuntu-header.png" />
     <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
     <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" /> 
     <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />
@@ -133,5 +135,6 @@
     <!-- Shipit EdUbuntu images (from www.edubuntu.org) -->
     <resource name="edubuntu-header.png" file="../images/edubuntu-header.png" />
     <resource name="edubuntu-headerlogo.png" file="../images/edubuntu-headerlogo.png" />
+    <resource name="edubuntu-icon" file="../images/edubuntu-icon.png" />
 
 </configure>

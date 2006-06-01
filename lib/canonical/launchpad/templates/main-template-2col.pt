@@ -25,7 +25,7 @@
     <div class="userLog">
       <tal:login tal:content="structure context/@@login_status" />
     </div>
-    <div class="body">
+    <div class="columns">
       <tal:replace tal:replace="structure context/@@+maintenancemessage" />
         <div id="portal-columns">
           <div id="layout2col-main">
