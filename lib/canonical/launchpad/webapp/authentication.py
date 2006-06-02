@@ -68,11 +68,15 @@ class PlacelessAuthUtility:
             login_src = getUtility(IPlacelessLoginSource)
             principal = login_src.getPrincipalByLogin(login)
             if principal is not None:
-                password = credentials.getPassword()
-                if principal.validate(password):
-                    request.setPrincipal(principal)
-                    notify(BasicAuthLoggedInEvent(request, login, principal))
-                    return principal
+                person = getUtility(IPersonSet).get(principal.id)
+                if person.is_valid_person:
+                    password = credentials.getPassword()
+                    if principal.validate(password):
+                        request.setPrincipal(principal)
+                        notify(BasicAuthLoggedInEvent(
+                            request, login, principal
+                            ))
+                        return principal
 
     def _authenticateUsingCookieAuth(self, request):
         session = ISession(request)
@@ -92,10 +96,12 @@ class PlacelessAuthUtility:
                 # become invalid for some reason, such as being merged
                 # (as per Bug #33427)
                 return None
-            else:
+            elif Person.get(principal.id).is_valid_person:
                 request.setPrincipal(principal)
                 notify(CookieAuthPrincipalIdentifiedEvent(principal, request))
                 return principal
+            else:
+                return None
 
     def authenticate(self, request):
         """See IAuthenticationService."""
@@ -192,9 +198,15 @@ class LaunchpadLoginSource:
     implements(IPlacelessLoginSource)
 
     def getPrincipal(self, id):
-        """Return a principal based on the person with the provided id."""
+        """Return a principal based on the person with the provided id.
+        
+        Note that we currently need to be able to retrieve principals for
+        invalid People, as the login machinery needs the principal to
+        validate the password against so it may then email a validation
+        request to the user and inform them it has done so.
+        """
         person = getUtility(IPersonSet).get(id)
-        if person is not None and person.is_valid_person:
+        if person is not None:
             return self._principalForPerson(person)
         else:
             return None
@@ -202,14 +214,17 @@ class LaunchpadLoginSource:
     def getPrincipals(self, name):
         raise NotImplementedError
 
-    def getPrincipalByLogin(self, login, must_be_valid=True):
+    def getPrincipalByLogin(self, login):
         """Return a principal based on the person with the email address
         signified by "login".
+
+        Note that we currently need to be able to retrieve principals for
+        invalid People, as the login machinery needs the principal to
+        validate the password against so it may then email a validation
+        request to the user and inform them it has done so.
         """
         person = getUtility(IPersonSet).getByEmail(login)
-        if person is not None and (
-                not must_be_valid or person.is_valid_person
-                ):
+        if person is not None:
             return self._principalForPerson(person)
         else:
             return None

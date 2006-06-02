@@ -181,7 +181,7 @@ class LoginOrRegister:
 
         appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email, must_be_valid=False)
+        principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
