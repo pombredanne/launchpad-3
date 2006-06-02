@@ -62,8 +62,8 @@ class POTMsgSetBatchNavigator(BatchNavigator):
 
         assert batch.size == 1, 'The batch size must be 1.'
 
-        start = batch.startNumber()
-        url = '/'.join([self.start_path, str(start), self.page])
+        sequence = batch.startNumber()
+        url = '/'.join([self.start_path, str(sequence), self.page])
         qs = self.request.environment.get('QUERY_STRING', '')
         if qs:
             # There are arguments that we should preserve.
