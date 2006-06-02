@@ -72,7 +72,7 @@ Get a Snapshot of an Object
 You can create a simple snapshot of an object with Snapshot:
 
     >>> from zope.interface import Interface, implements, Attribute
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> class IFoo(Interface):
     ...     title = Attribute('title')
     ...     description = Attribute('description')

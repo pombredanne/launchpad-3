@@ -58,6 +58,7 @@ from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import (
     BugTaskPriority, BugTaskSeverity, BugTaskStatus)
 from canonical.widgets.bugtask import (
@@ -556,7 +557,7 @@ class BugTaskEditView(GeneralFormView):
         field_names = list(self.fieldNames)
         new_values = getWidgetsData(self, self.schema, field_names)
 
-        bugtask_before_modification = helpers.Snapshot(
+        bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
 
         # If the user is reassigning an upstream task to a different

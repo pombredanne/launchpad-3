@@ -130,7 +130,7 @@ package is already subscribed to the bug:
     >>> import transaction
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroBugTask, IDistroReleaseBugTask)
     >>> from canonical.launchpad.mail import stub
