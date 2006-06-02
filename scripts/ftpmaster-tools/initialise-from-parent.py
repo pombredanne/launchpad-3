@@ -23,7 +23,7 @@ from canonical.database.sqlbase import (
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, BuildStatus)
+    DistroReleaseQueueStatus, BuildStatus, PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
     IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
@@ -111,7 +111,7 @@ def check_builds(distrorelease):
     parentrelease = distrorelease.parentrelease
 
     pending_builds = parentrelease.getBuildRecords(
-        BuildStatus.NEEDSBUILD)
+        BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
     assert (pending_builds.count() == 0,
             'Parent must not have PENDING builds')
@@ -121,11 +121,14 @@ def check_queue(distrorelease):
     parentrelease = distrorelease.parentrelease
 
     new_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.NEW)
+        DistroReleaseQueueStatus.NEW,
+        pocket=PackagePublishingPocket.RELEASE)
     accepted_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.ACCEPTED)
+        DistroReleaseQueueStatus.ACCEPTED,
+        pocket=PackagePublishingPocket.RELEASE)
     unapproved_items = parentrelease.getQueueItems(
-        DistroReleaseQueueStatus.UNAPPROVED)
+        DistroReleaseQueueStatus.UNAPPROVED,
+        pocket=PackagePublishingPocket.RELEASE)
 
     assert (new_items.count() == 0,
             'Parent NEW queue must be empty')

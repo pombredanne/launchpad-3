@@ -91,6 +91,15 @@ Go back to the "new" queue and accept an item:
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
 
+Force duplicated action submit on a queue item and check if the system
+recognises it.
+
+  >>> admin_browser.reload()
+  >>> message = 'FAILED: alsa-utils (Queue item already accepted)'
+  >>> message in admin_browser.contents
+  True
+
+
 Breeze past the unaccepted queue to ensure admin can see it
 
   >>> admin_browser.getControl(name="queue_state").displayValue=['Accepted']
@@ -112,14 +121,7 @@ Go back to the "new" queue, and check it's gone:
   >>> 'alsa-utils' in admin_browser.contents
   False
 
-Rejecting items. We're going to test doing this twice to the same item,
-so first we get a second browser on the same page.
-
-  >>> admin_browser2 = Browser()
-  >>> admin_browser2.addHeader("Authorization", "Basic: foo.bar@canonical.com:test")
-  >>> admin_browser2.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")
-
-Now reject our item from the first browser:
+Rejecting items.
 
   >>> admin_browser.getControl(name="QUEUE_ID").value=['3']
   >>> admin_browser.getControl(name="Reject").click()
@@ -128,25 +130,6 @@ Now reject our item from the first browser:
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
 
-# XXX malcc: The following tests are currently disabled, as they fail.
-# This appears to be due to a problem with changes being committed while
-# running tests, see bug 47239.
-# 
-# Check if the item was moved to the correct place, the REJECTED queue:
-# 
-#   >>> admin_browser.getControl(name="queue_state").displayValue=['Rejected']
-#   >>> admin_browser.getControl("Update").click()
-#   >>> admin_browser.contents
-#   '...netapplet...'
-# 
-# Now try to reject again, using the outdated state in the second browser.
-# 
-#   >>> admin_browser2.getControl(name="QUEUE_ID").value=['3']
-#   >>> admin_browser2.getControl(name="Reject").click()
-#   >>> admin_browser2.contents
-#   '...Accepting Results...:<br><br>FAILED: alsa-utils...'
-# 
- 
 Use the text filter to inspect the NEW queue:
 
   >>> user_browser.open("http://localhost:9000/distros/ubuntu/breezy-autotest/+queue")

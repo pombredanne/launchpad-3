@@ -1519,7 +1519,7 @@ INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) 
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (2, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (3, 0, 10, 0, 1);
 INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (4, 0, 10, 0, 1);
-INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (5, 1, 10, 20, 1);
 
 
 ALTER TABLE distroreleasequeue ENABLE TRIGGER ALL;

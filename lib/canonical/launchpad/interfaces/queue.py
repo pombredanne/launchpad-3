@@ -308,7 +308,8 @@ class IDistroReleaseQueueSet(Interface):
 class IHasQueueItems(Interface):
     """An Object that has queue items"""
 
-    def getQueueItems(status=None, name=None, version=None, exact_match=False):
+    def getQueueItems(status=None, name=None, version=None,
+                      exact_match=False, pocket=None):
         """Get the union of builds, sources and custom queue items.
 
         Returns builds, sources and custom queue items in a given state,
@@ -318,5 +319,7 @@ class IHasQueueItems(Interface):
         binarypackage name or the filename match (SQL LIKE).
         'name' doesn't require 'version'
         'version' doesn't has effect on custom queue items
+        If pocket is specified return only queue items inside it, otherwise
+        return all pockets.
         Use 'exact_match' argument for precise results.
         """

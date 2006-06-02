@@ -281,3 +281,17 @@ Using the optional name argument to filter build results:
   >>> [(b.sourcepackagerelease.name, b.distrorelease.name) for b in builds]
   [(u'pmount', u'breezy-autotest'), (u'pmount', u'warty'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
 
+
+or using optional pocket argument:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+
+  >>> ubuntu.getBuildRecords(
+  ...    status=BuildStatus.NEEDSBUILD,
+  ...    pocket=PackagePublishingPocket.RELEASE).count()
+  3
+
+  >>> ubuntu.getBuildRecords(
+  ...    status=BuildStatus.NEEDSBUILD,
+  ...    pocket=PackagePublishingPocket.SECURITY).count()
+  0

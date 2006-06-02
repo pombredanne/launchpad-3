@@ -267,7 +267,8 @@ class BuildSet:
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
                             orderBy="-datebuilt")
 
-    def getBuildsByArchIds(self, arch_ids, status=None, name=None):
+    def getBuildsByArchIds(self, arch_ids, status=None, name=None,
+                           pocket=None):
         """See IBuildSet."""
         # If not distroarchrelease was found return None.
         if not arch_ids:
@@ -297,6 +298,10 @@ class BuildSet:
         # attempt to given status
         if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
+
+        # attempt to given pocket
+        if pocket:
+            condition_clauses.append('pocket=%s' % sqlvalues(pocket))
 
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
