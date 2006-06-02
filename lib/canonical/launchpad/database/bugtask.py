@@ -23,7 +23,7 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.searchbuilder import any, NULL
+from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
@@ -446,6 +446,8 @@ class BugTaskSet:
                     continue
                 where_arg = ",".join(sqlvalues(*arg_value.query_values))
                 clause += "IN (%s)" % where_arg
+            elif zope_isinstance(arg_value, not_equals):
+                clause += "!= %s" % sqlvalues(arg_value.value)
             elif arg_value is not NULL:
                 clause += "= %s" % sqlvalues(arg_value)
             else:
