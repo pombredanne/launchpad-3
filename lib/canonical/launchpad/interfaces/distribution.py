@@ -99,10 +99,13 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
 
-    enabled_official_mirrors = Attribute(
-        "All enabled official mirrors of this Distribution.")
-    enabled_mirrors = Attribute(
-        "All enabled mirrors of this Distribution.")
+    archive_mirrors = Attribute(
+        "All enabled and official ARCHIVE mirrors of this Distribution.")
+    release_mirrors = Attribute(
+        "All enabled and official RELEASE mirrors of this Distribution.")
+    disabled_mirrors = Attribute("All disabled mirrors of this Distribution.")
+    unofficial_mirrors = Attribute(
+        "All unofficial mirrors of this Distribution.")
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
