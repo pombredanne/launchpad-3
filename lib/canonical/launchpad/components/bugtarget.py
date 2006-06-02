@@ -10,7 +10,7 @@ from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
-    UNRESOLVED_BUGTASK_STATUSES, BugTaskSearchParams)
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, BugTaskSearchParams)
 
 class BugTargetBase:
     """Standard functionality for IBugTargets.
@@ -63,15 +63,19 @@ class BugTargetBase:
     @property
     def unassigned_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
+        valid_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
         unassigned_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user, assignee=NULL,
-            omit_dupes=True)
+            status=any(*valid_statuses), omit_dupes=True)
 
         return self.searchTasks(unassigned_tasks_query)
 
     @property
     def all_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        all_tasks_query = BugTaskSearchParams(user=getUtility(ILaunchBag).user)
+        valid_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
+        all_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*valid_statuses))
 
         return self.searchTasks(all_tasks_query)
