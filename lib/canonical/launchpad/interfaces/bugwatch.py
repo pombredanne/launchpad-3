@@ -13,7 +13,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.fields import StrippedTextLine, SnapshotAttribute
 from canonical.launchpad.interfaces import IHasBug
 
 class IBugWatch(IHasBug):
@@ -48,9 +48,9 @@ class IBugWatch(IHasBug):
         "activity bugs.")
 
     # required for launchpad pages
-    title = Attribute('Bug watch title')
+    title = SnapshotAttribute('Bug watch title')
 
-    url = Attribute('The URL at which to view the remote bug.')
+    url = SnapshotAttribute('The URL at which to view the remote bug.')
 
     def updateStatus(remote_status, malone_status):
         """Update the status of the bug watch and any linked bug task.

@@ -9,12 +9,13 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from canonical.launchpad import _
+
+from canonical.launchpad.fields import SnapshotAttribute
 
 class IMessageTarget(Interface):
     """An object that an be linked to a message."""
 
-    messages = Attribute("The messages related to this object, in reverse "
+    messages = SnapshotAttribute("The messages related to this object, in reverse "
         "order of creation (so newest first).")
 
     followup_subject = Attribute("The likely subject of the next message.")

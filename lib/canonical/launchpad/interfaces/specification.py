@@ -17,7 +17,8 @@ from zope.component import getUtility
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Summary, Title
+from canonical.launchpad.fields import (ContentNameField, Summary,
+    Title, SnapshotAttribute)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
@@ -161,14 +162,14 @@ class ISpecification(IHasOwner):
         vocabulary='Product')
     distribution = Choice(title=_('Distribution'), required=False,
         vocabulary='Distribution')
-    target = Attribute(
+    target = SnapshotAttribute(
         "The product or distribution to which this spec belongs.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
     feedbackrequests = Attribute('The set of feedback requests queued.')
-    bugs = Attribute('Bugs related to this spec')
+    bugs = SnapshotAttribute('Bugs related to this spec')
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
 

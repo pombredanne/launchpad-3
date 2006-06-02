@@ -28,7 +28,7 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
+from canonical.launchpad.fields import StrippedTextLine, SnapshotAttribute
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -119,8 +119,8 @@ class IBugTask(IHasDateCreated, IHasBug):
     target = Attribute("The software in which this bug should be fixed")
     target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
                               "officially"))
-    targetname = Attribute("The short, descriptive name of the target")
-    title = Attribute("The title of the bug related to this bugtask")
+    targetname = SnapshotAttribute("The short, descriptive name of the target")
+    title = SnapshotAttribute("The title of the bug related to this bugtask")
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(

@@ -90,7 +90,7 @@ returned:
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import ISpecification
     >>> unmodified_spec = Snapshot(ubuspec, providing=ISpecification)
-    >>> unmodified_spec.getDelta(ubuspec, jdub) is None
+    >>> ubuspec.getDelta(unmodified_spec, jdub) is None
     True
 
 Now, let's do a bunch of changes, and see what the result looks like:
