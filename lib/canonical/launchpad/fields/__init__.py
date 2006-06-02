@@ -1,6 +1,8 @@
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+
 from zope.schema import Password, Text, TextLine, Field
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField
-from zope.interface import implements
+from zope.interface import implements, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -116,3 +118,17 @@ class ContentNameField(TextLine):
         contentobj = self._getByName(name)
         if contentobj is not None:
             raise LaunchpadValidationError(self.errormessage % name)
+
+
+class SnapshotAttribute(Attribute):
+    """Indicates a snapshottable attribute.
+
+    This class is used to indicate that a certain attribute should be
+    'deep copied' when creating a Snapshot of an object. In practice,
+    this means that:
+
+        - SelectResults are converted to lists
+        - XXX
+
+    """
+
