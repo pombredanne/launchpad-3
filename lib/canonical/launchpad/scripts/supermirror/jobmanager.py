@@ -29,30 +29,23 @@ class JobManager:
         while self.branches_to_mirror:
             self.branches_to_mirror.pop(0).mirror()
 
-    def branchStreamToBranchList(self, inputstream, branch_status_client):
-        """Convert a stream of branch URLS to list of branch objects.
-        
-        This function takes a file handle associated with a text file of
-        the form:
-            
-            LAUNCHPAD_ID URL_FOR_BRANCH
-            ...
-            LAUNCHPAD_ID URL_FOR_BRANCH
+    def addBranches(self, branch_status_client):
+        """Queue branches from the list provided by the branch status client
 
-        This series of urls is converted into a python list of branch
-        objects of the appropriate type.
+        The BranchStatusClient.getBranchPullQueue() method returns a
+        list of (branch_id, url) pairs.  Each pair is converted to a
+        BranchToMirror object and added to the branches_to_mirror
+        list.
         """
-        branches = []
+        branches_to_pull = branch_status_client.getBranchPullQueue()
         destination = config.supermirror.branchesdest
-        for line in inputstream.readlines():
-            branch_id, branch_src = line.split(" ")
+        for branch_id, branch_src in branches_to_pull:
             branch_src = branch_src.strip()
             path = branchtarget(branch_id)
             branch_dest = os.path.join(destination, path)
             branch = BranchToMirror(
-                branch_src, branch_dest, branch_status_client, int(branch_id))
-            branches.append(branch)
-        return branches
+                branch_src, branch_dest, branch_status_client, branch_id)
+            self.add(branch)
 
     def lock(self, lockfilename=config.supermirror.masterlock):
         self.actualLock = lockfile.LockFile(lockfilename)

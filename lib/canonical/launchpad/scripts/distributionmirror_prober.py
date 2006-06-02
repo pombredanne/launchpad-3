@@ -90,7 +90,7 @@ class ProberFactory(protocol.ClientFactory):
     def setURL(self, url):
         self.url = url
         proxy = os.getenv('http_proxy')
-        if proxy is not None:
+        if proxy:
             scheme, host, port, path = self._parse(proxy)
             path = url
         else:
@@ -187,11 +187,19 @@ class MirrorProberCallbacks(object):
         if arch_or_source_mirror is None:
             return
 
+        status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
+        if not status_url_mapping:
+            # We have no publishing records for self.release, self.pocket and
+            # self.component, so it's better to delete this
+            # MirrorDistroArchRelease/MirrorDistroReleaseSource than to keep
+            # it with an UNKNOWN status.
+            self.deleteMethod(self.release, self.pocket, self.component)
+            return
+
         deferredList = []
         # We start setting the status to unknown, and then we move on trying to
         # find one of the recently published packages mirrored there.
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
-        status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
             prober.deferred.addCallback(
@@ -246,3 +254,38 @@ class MirrorProberCallbacks(object):
             logger.error(msg)
         return None
 
+
+class MirrorCDImageProberCallbacks(object):
+
+    def __init__(self, mirror, distrorelease, flavour, log_file):
+        self.mirror = mirror
+        self.distrorelease = distrorelease
+        self.flavour = flavour
+        self.log_file = log_file
+
+    def ensureOrDeleteMirrorCDImageRelease(self, result):
+        """Check if the result of the deferredList contains only success and
+        then ensure we have a MirrorCDImageRelease for self.distrorelease and
+        self.flavour.
+
+        If result contains one or more failures, then we ensure that
+        MirrorCDImageRelease is deleted.
+        """
+        for success_or_failure, response in result:
+            if success_or_failure == defer.FAILURE:
+                self.mirror.deleteMirrorCDImageRelease(
+                    self.distrorelease, self.flavour)
+                response.trap(ProberTimeout, BadResponseCode)
+                return None
+
+        mirror = self.mirror.ensureMirrorCDImageRelease(
+            self.distrorelease, self.flavour)
+        self.log_file.write(
+            "Found all ISO images for release %s and flavour %s.\n"
+            % (self.distrorelease.title, self.flavour))
+        return mirror
+
+    def logMissingURL(self, failure, url):
+        self.log_file.write(
+            "Failed %s: %s\n" % (url, failure.getErrorMessage()))
+        return failure

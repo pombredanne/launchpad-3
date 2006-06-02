@@ -15,6 +15,7 @@ from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
 
+from canonical.authserver.ftests.test_database import expected_branches_to_pull
 
 def _getPort():
     portDescription = config.authserver.port
@@ -193,6 +194,13 @@ class BranchAPITestCase(LaunchpadTestCase):
     def tearDown(self):
         self.tac.tearDown()
         LaunchpadTestCase.tearDown(self)
+
+    def testGetBranchPullQueue(self):
+        results = self.server.getBranchPullQueue()
+        self.assertEqual(len(results), len(expected_branches_to_pull))
+        for i, (branch_id, pull_url) in enumerate(sorted(results)):
+            self.assertEqual(expected_branches_to_pull[i],
+                             (branch_id, pull_url))
 
     def testStartMirroring(self):
         self.server.startMirroring(18)

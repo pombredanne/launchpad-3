@@ -17,8 +17,9 @@ from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
-from canonical.launchpad.interfaces import IPersonSet, IPasswordEncryptor
-
+from canonical.launchpad.interfaces import (
+        IPerson, IPersonSet, IPasswordEncryptor
+        )
 from canonical.launchpad.webapp.interfaces import ILoggedOutEvent
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
@@ -88,6 +89,9 @@ class PlacelessAuthUtility:
                 raise RuntimeError(
                     "User is authenticated in session, but principal is not"
                     " available in login source.")
+            elif not IPerson(principal).is_valid_person:
+                # No longer valid. eg. has been merged, as per Bug #33427
+                return None
             else:
                 request.setPrincipal(principal)
                 notify(CookieAuthPrincipalIdentifiedEvent(principal, request))

@@ -16,8 +16,7 @@ __all__ = [
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
-    'BugTaskPriorityVocabulary',
-    'BugTaskSeverityVocabulary',
+    'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
     'CveStatusVocabulary',
@@ -32,8 +31,8 @@ __all__ = [
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
-    'RemoteBugTaskPriorityVocabulary',
-    'RemoteBugTaskSeverityVocabulary',
+    'RemoteBugTaskImportanceVocabulary',
+    'ShipItFlavourVocabulary',
     'RemoteBugTaskStatusVocabulary',
     'SpecificationDeliveryVocabulary',
     'SpecificationPriorityVocabulary',
@@ -81,10 +80,8 @@ BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugTaskStatusVocabulary = vocab_factory(
     dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
-BugTaskPriorityVocabulary = vocab_factory(
-    dbschema.BugTaskPriority, noshow=[dbschema.BugTaskPriority.UNKNOWN])
-BugTaskSeverityVocabulary = vocab_factory(
-    dbschema.BugTaskSeverity, noshow=[dbschema.BugTaskSeverity.UNKNOWN])
+BugTaskImportanceVocabulary = vocab_factory(
+    dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS])
@@ -101,9 +98,9 @@ PackagePublishingPocketVocabulary = vocab_factory(
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
+ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
 RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
-RemoteBugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
-RemoteBugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
+RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
@@ -114,4 +111,3 @@ TeamSubscriptionPolicyVocabulary = vocab_factory(
 TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
 TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
-

@@ -81,8 +81,12 @@ Build record has no history and is NEEDSBUILD:
   >>> resetable_build.buildstate.value is 0
   True
 
+  >>> resetable_build.buildqueue_record is not None
+  True
+
 Restore Build(9) to previous state to avoid mess with other tests.
 
+  >>> resetable_build.buildqueue_record.destroySelf()
   >>> resetable_build.buildstate = BuildStatus.FAILEDTOBUILD
   >>> resetable_build.datebuilt = datebuilt
   >>> resetable_build.builder = builder
@@ -257,24 +261,19 @@ Force immediate update of the values:
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
-Note, by ordering the build by BuildQueue.lastscore, it doesn't notice
-the existence of builds missing buildqueue:
-
-  >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
-  >>> builds.count()
-  1
-
-Create the missing BuildQueue correspondent row and tweak lastscore:
-
-  >>> failed_bq = failed_build.createBuildQueueEntry()
-  >>> failed_bq.lastscore = 100
-  >>> flush_database_updates()
-
-Now we can see an extra PENDING build record:
+Note, by ordering the build by BuildQueue.lastscore, it already notice
+the existence of a new pending build, since reset already creates a
+new BuildQueue record:
 
   >>> builds = ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD)
   >>> builds.count()
   2
+
+Tweak lastscore:
+
+  >>> failed_build.buildqueue_record.lastscore = 100
+  >>> flush_database_updates()
+
 
 Note that they are ordered by DESC lastscore, as expected:
 

@@ -42,7 +42,7 @@
 
   </form>
 
-  <h2>Featured products</h2>
+  <h2>Featured software</h2>
 
   <table>
     <tbody>
@@ -94,15 +94,14 @@
   <table>
     <tr style="valign: top;">
       <td>
-        <b>Support tracker</b><br />
-        Launchpad lets your project track technical support requests
-        from your users. <a href="/support">Learn More...</a>
+        <a href="/support"><b>Support tracker</b></a><br />
+        Launchpad lets you track technical support requests
+        from users of your product.
       </td>
       <td>
-        <b>Meeting tracker</b><br />
+        <a href="/sprints/"><b>Meeting tracker</b></a><br />
         You can plan sprints and meetings, and keep track of the
         specifications and bugs to be addressed at the meeting.
-        <a href="/sprints/">Learn More...</a>
       </td>
     </tr>
   </table>

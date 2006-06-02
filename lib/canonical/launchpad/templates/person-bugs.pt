@@ -5,29 +5,6 @@
 
 <body>
 
-  <div metal:fill-slot="head_epilogue">
-    <style type="text/css">
-        .section-header {
-          padding-left: 3px;
-          color: #828282;
-          border: 1px solid #cfcfcf;
-          background-color: #E0E0E0;
-          text-align: left;
-        }
-
-        .section {
-          padding-top: 4px;
-          border-style: solid;
-          border-color: #cfcfcf;
-          border-width: 0px 1px 0px 1px;
-        }
-
-        label {
-          font-weight: normal;
-        }
-    </style>
-  </div>
-
     <metal:heading fill-slot="pageheading">
       <h1 tal:content="view/getSearchPageHeading"></h1>
     </metal:heading>
@@ -41,22 +18,7 @@
     <tal:do_not_show_advanced_form
       condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">
-        <form method="GET" name="search" action="">
-          <span tal:content="structure view/searchtext_widget" />
-          <input type="submit" name="search" value="Search" />
-          <a href="?advanced=1"><small>Advanced</small></a>
-          <div style="margin-top: 5px">
-            <small>
-              Sort by:
-              <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-            </small>
-          </div>
-        </form>
-        <script>
-          <!--
-              document.forms["search"].elements['field.searchtext'].focus();
-            -->
-        </script>
+        <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
         <br />
         <tal:buglisting content="structure batch_navigator/@@+table-view" />
       </div>

@@ -17,7 +17,7 @@ from zope.component import getUtility
 from canonical.lp import dbschema
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import ContentNameField, StrippedTextLine
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -141,7 +141,7 @@ class IRemoteBug(Interface):
         vocabulary='BugTracker', description=_("The bug tracker in which "
         "the remote bug is found."))
 
-    remotebug = TextLine(title=_('Remote Bug'), required=True,
+    remotebug = StrippedTextLine(title=_('Remote Bug'), required=True,
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug system."))
 
