@@ -232,7 +232,7 @@
     </span>
 
     <tal:searchbox replace="structure view/searchtext_widget" />
-    <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+    <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
     <input type="submit" name="search" value="Search" />
     <a tal:attributes="href view/getSimpleSearchURL">Simple search</a>
 
