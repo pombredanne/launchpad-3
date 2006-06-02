@@ -7,7 +7,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
-from canonical.launchpad.searchbuilder import any, NULL
+from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, BugTaskSearchParams)
@@ -63,19 +63,17 @@ class BugTargetBase:
     @property
     def unassigned_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        valid_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
         unassigned_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user, assignee=NULL,
-            status=any(*valid_statuses), omit_dupes=True)
+            status=any(*UNRESOLVED_BUGTASK_STATUSES), omit_dupes=True)
 
         return self.searchTasks(unassigned_tasks_query)
 
     @property
     def all_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        valid_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
         all_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
-            status=any(*valid_statuses))
+            status=not_equals(BugTaskStatus.UNKNOWN))
 
         return self.searchTasks(all_tasks_query)
