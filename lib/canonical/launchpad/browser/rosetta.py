@@ -35,7 +35,7 @@ class RosettaApplicationView:
 
     @property
     def ubuntu_translationrelease(self):
-        release = getUtility(ILaunchpadCelebrities).ubuntu.currentrelease
+        release = getUtility(ILaunchpadCelebrities).ubuntu.translation_target
         return release
 
     def ubuntu_languages(self):

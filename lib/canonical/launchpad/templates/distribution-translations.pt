@@ -21,7 +21,8 @@
 <div metal:fill-slot="main">
 
   <p>
-    If <span tal:replace="context/displayname">Ubuntu</span> is using
+    <tal:block condition="context/translation_target">If</tal:block>
+    <span tal:replace="context/displayname">Ubuntu</span> is using
     Launchpad for translations, you can choose a release and start
     translating.
   </p>
