@@ -428,7 +428,7 @@ class ShipItRequestView(GeneralFormView):
             if request_type is None:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
-                return ("The option you've chosen was not found. Please select "
+                return ("The option you chose was not found. Please select "
                         "one from the list below.")
             current_order.setQuantitiesBasedOnStandardRequest(request_type)
             total_cds = request_type.totalCDs
@@ -676,15 +676,15 @@ class ShippingRequestAdminMixinView:
         return matrix
 
     def getQuantityWidgetsInitialValuesFromExistingOrder(
-            self, order, quantity_attrname):
+            self, order, approved=False):
         """Return a dictionary mapping the widget names listed in
         self.quantity_fields_mapping to their initial values.
-
-        The value of each widget is the value of the quantity_attrname
-        attribute of the RequestedCDs object with the flavour and architecture
-        of that widget.
         """
         initial = {}
+        if approved:
+            quantity_attrname = 'quantityapproved'
+        else:
+            quantity_attrname = 'quantity'
         requested = order.getRequestedCDsGroupedByFlavourAndArch()
         for flavour in self.quantity_fields_mapping:
             for arch in self.quantity_fields_mapping[flavour]:
@@ -812,15 +812,11 @@ class ShippingRequestApproveOrDenyView(
     @property
     def initial_values(self):
         order = self.context
-        if order.isApproved():
-            quantity_attrname = 'quantityapproved'
-        else:
-            # This order is not yet approved, so we use the requested
-            # quantities as the initial values of the approved quantities
-            # widgets.
-            quantity_attrname = 'quantity'
+        # If this order is not yet approved, order.isApproved() will return
+        # False and then we'll get the requested quantities as the initial
+        # values for the approved quantities widgets.
         initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(
-            order, quantity_attrname)
+            order, approved=order.isApproved())
         initial['highpriority'] = order.highpriority
         return initial
 
@@ -879,7 +875,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
 
         order = self.current_order
         initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(
-            order, quantity_attrname='quantity')
+            order, approved=False)
         initial['highpriority'] = order.highpriority
 
         for field in self.shipping_details_fields:
@@ -947,7 +943,7 @@ class ShipItExportsView:
     """The view for the list of shipit exports."""
 
     def process_form(self):
-        """Process the form, marking the choosen ShippingRun as 'sent for
+        """Process the form, marking the chosen ShippingRun as 'sent for
         shipping'.
         """
         if self.request.method != 'POST':
