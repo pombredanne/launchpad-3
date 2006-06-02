@@ -218,7 +218,6 @@ priority, etc.
 Let's see that nothing unexpected happens when we set the source
 package to None.
 
-    >>> from canonical.launchpad.helpers import Snapshot
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 
