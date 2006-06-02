@@ -757,11 +757,11 @@ class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
 
-class AdminTicket(EditByOwnersOrAdmins):
-    permission = 'launchpad.Edit'
+class AdminTicket(AdminByAdminsTeam):
+    permission = 'launchpad.Admin'
     usedfor = ITicket
 
     def checkAuthenticated(self, user):
-        """Allow owner, admins or ticket target owners"""
-        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+        """Allow only admins and ticket target owners"""
+        return (AdminByAdminsTeam.checkAuthenticated(self, user) or
                 user.inTeam(self.obj.target.owner))

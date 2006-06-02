@@ -26,41 +26,8 @@ And viewing that page should show the updated information.
   >>> summary in browser.contents
   True
 
-Only the requester should be able to edit the priority, assignee and status whiteboard.
-
-  # XXX matsubara 2006-05-30 Workaround for bug
-  # https://launchpad.net/bugs/45226
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://localhost:9000/products/firefox/+ticket/2/+edit')
-
-  >>> browser.getLink('Change Priority/Assignee').click()
-  >>> browser.url
-  'http://localhost:9000/products/firefox/+ticket/2/+priority'
-
-POSTing the form should redirect to the ticket page.
-
-  >>> browser.getControl('Priority').value = ['High']
-  >>> browser.getControl('Assignee').value = 'sabdfl'
-  >>> browser.getControl('Status Whiteboard').value = 'bling=t'
-  >>> browser.getControl('Change').click()
-
-  >>> browser.url
-  'http://localhost:9000/products/firefox/+ticket/2'
-
-And looking at that page should show the new details.
-
-  >>> 'bling=t' in browser.contents
-  True
-  >>> 'High' in browser.contents
-  True
-  >>> 'Mark Shuttleworth' in browser.contents
-  True
-
-There should be a +admin page for the ticket. it should only be visible to
-Foo Bar as an administrator.
+There should be a +admin page for the ticket. It should be visible to
+ticket.target.owner.
 
   # XXX matsubara 2006-05-26 Workaround for bug
   # https://launchpad.net/bugs/45226
@@ -68,14 +35,15 @@ Foo Bar as an administrator.
   >>> browser = Browser()
   >>> browser.handleErrors = False
 
-  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://localhost:9000/products/firefox/+ticket/2')
+  >>> browser.addHeader(
+  ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> browser.open('http://localhost:9000/distros/ubuntu/+ticket/5')
   >>> browser.getLink('Administer').click()
 
 And the page should be visible too.
 
   >>> browser.url
-  'http://localhost:9000/products/firefox/+ticket/2/+admin'
+  'http://localhost:9000/distros/ubuntu/+ticket/5/+admin'
 
   >>> 'Administer request' in browser.contents
   True

@@ -136,7 +136,6 @@ class TicketContextMenu(ContextMenu):
     links = [
         'edit',
         'editsourcepackage',
-        'editpriority',
         'reject',
         'reopen',
         'history',
@@ -160,11 +159,6 @@ class TicketContextMenu(ContextMenu):
             self.is_not_resolved and self.context.distribution is not None)
         text = 'Change Source Package'
         return Link('+sourcepackage', text, icon='edit', enabled=enabled)
-
-    def editpriority(self):
-        text = 'Change Priority/Assignee'
-        return Link('+priority', text, icon='edit',
-                    enabled=self.is_not_resolved)
 
     def reject(self):
         text = 'Reject Request'
@@ -208,7 +202,7 @@ class TicketContextMenu(ContextMenu):
         summary = 'Create a bug report from this support request.'
         return Link('+makebug', text, summary, icon='add', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def administer(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
