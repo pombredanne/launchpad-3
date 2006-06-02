@@ -36,6 +36,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     canonical_url, redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.lp.dbschema import DistributionReleaseStatus
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -322,6 +323,21 @@ class DistributionView(BuildRecordsView):
         the given text.
         """
         return self.context.searchSourcePackages(self.text)
+
+    def secondary_translatable_releases(self):
+        """Return a list of IDistroRelease that aren't the translation_target.
+
+        It only includes the ones that are still supported.
+        """
+        releases = [
+            release
+            for release in self.context.releases
+            if (release.releasestatus != DistributionReleaseStatus.OBSOLETE
+                and (self.context.translation_target is None or
+                     self.context.translation_target.id != release.id))
+            ]
+
+        return sorted(releases, key=lambda a: a.version, reverse=True)
 
 
 class DistributionAllPackagesView(LaunchpadView):

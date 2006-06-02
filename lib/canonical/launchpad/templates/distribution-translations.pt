@@ -20,17 +20,41 @@
 
 <div metal:fill-slot="main">
 
-  <p>
-    <tal:block condition="context/translation_target">If</tal:block>
-    <span tal:replace="context/displayname">Ubuntu</span> is using
-    Launchpad for translations, you can choose a release and start
-    translating.
-  </p>
+  <tal:block condition="context/translation_target">
+    <p>
+      This distribution has a prefered release to be translated,
+      <span tal:replace="context/displayname">Ubuntu</span>. We encorage
+      you to translate it first.
+    </p>
 
-  <tal:block repeat="distrorelease context/releases">
-    <h2><span tal:replace="distrorelease/version">5.04</span>:
-        <span tal:replace="distrorelease/title">Hoary Hedgehog</span></h2>
-    <div tal:replace="structure distrorelease/@@+langchart" />
+    <h2>
+      <span tal:replace="context/translation_target/version">5.04</span>:
+      <span tal:replace="context/translation_target/title">
+        Hoary Hedgehog
+      </span>
+    </h2>
+    <div tal:replace="structure context/translation_target/@@+langchart" />
+  </tal:block>
+
+  <tal:block condition="view/secondary_translatable_releases">
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>Version</th>
+          <th>Release title</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="distrorelease view/secondary_translatable_releases"
+            tal:attributes="onclick
+               string:window.location='${distrorelease/fmt:url}/+translations'">
+          <td><a tal:attributes="href string:${distrorelease/fmt:url}/+translations"
+                 tal:content="distrorelease/version">version</a>
+          </td>
+          <td tal:content="distrorelease/title">title</td>
+        </tr>
+      </tbody>
+    </table>
   </tal:block>
 
 </div>
