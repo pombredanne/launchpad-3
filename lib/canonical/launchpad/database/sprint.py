@@ -10,7 +10,7 @@ __all__ = [
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, RelatedJoin)
+    ForeignKey, StringCol, SQLRelatedJoin)
 
 from canonical.launchpad.interfaces import ISprint, ISprintSet
 
@@ -56,7 +56,7 @@ class Sprint(SQLBase):
         return self.title
 
     # useful joins
-    attendees = RelatedJoin('Person',
+    attendees = SQLRelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',
         intermediateTable='SprintAttendance', orderBy='name')
 

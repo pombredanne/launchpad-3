@@ -19,7 +19,7 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
-    RelatedJoin, SQLObjectNotFound)
+    SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
@@ -125,12 +125,12 @@ class Person(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     hide_email_addresses = BoolCol(notNull=True, default=False)
 
-    # RelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = RelatedJoin('Language', joinColumn='person',
+    # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
+    languages = SQLRelatedJoin('Language', joinColumn='person',
                             otherColumn='language',
                             intermediateTable='PersonLanguage')
 
-    subscribed_branches = RelatedJoin(
+    subscribed_branches = SQLRelatedJoin(
         'Branch', joinColumn='person', otherColumn='branch',
         intermediateTable='BranchSubscription', orderBy='-id')
     ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
@@ -143,7 +143,7 @@ class Person(SQLBase):
     # https://launchpad.net/products/launchpad/+bug/33935
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
-    subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
+    subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
     karma_category_caches = SQLMultipleJoin('KarmaCache', joinColumn='person',
@@ -196,7 +196,7 @@ class Person(SQLBase):
         orderBy='-datecreated')
     created_tickets = SQLMultipleJoin('Ticket', joinColumn='owner',
         orderBy='-datecreated')
-    subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
+    subscribed_tickets = SQLRelatedJoin('Ticket', joinColumn='person',
         otherColumn='ticket', intermediateTable='TicketSubscription',
         orderBy='-datecreated')
 

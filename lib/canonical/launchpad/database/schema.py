@@ -6,7 +6,7 @@ __all__ = ['SchemaSet', 'Schema', 'Label']
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
@@ -71,7 +71,7 @@ class Label(SQLBase):
         StringCol(name='description', dbName='description', notNull=True),
         ]
 
-    _personsJoin = RelatedJoin('Person', joinColumn='label',
+    _personsJoin = SQLRelatedJoin('Person', joinColumn='label',
         otherColumn='person', intermediateTable='PersonLabel')
 
     def persons(self):

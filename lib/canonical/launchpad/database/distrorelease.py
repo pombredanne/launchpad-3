@@ -16,7 +16,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
-    RelatedJoin)
+    SQLRelatedJoin)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -112,10 +112,10 @@ class DistroRelease(SQLBase, BugTargetBase):
         orderBy='architecturetag')
     binary_package_caches = SQLMultipleJoin('DistroReleasePackageCache',
         joinColumn='distrorelease', orderBy='name')
-    components = RelatedJoin(
+    components = SQLRelatedJoin(
         'Component', joinColumn='distrorelease', otherColumn='component',
         intermediateTable='ComponentSelection')
-    sections = RelatedJoin(
+    sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
 
@@ -257,7 +257,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     @property
     def architecturecount(self):
         """See IDistroRelease."""
-        return len(list(self.architectures))
+        return self.architectures.count()
 
     @property
     def potemplates(self):
@@ -989,9 +989,9 @@ class DistroRelease(SQLBase, BugTargetBase):
                     arch.architecturetag))
         assert self.nominatedarchindep is not None, \
                "Must have a nominated archindep architecture."
-        assert len(self.components) == 0, \
+        assert self.components.count() == 0, \
                "Component selections must be empty."
-        assert len(self.sections) == 0, \
+        assert self.sections.count() == 0, \
                "Section selections must be empty."
 
         # MAINTAINER: dsilvers: 20051031

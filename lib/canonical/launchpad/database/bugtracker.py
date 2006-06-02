@@ -8,7 +8,7 @@ import urllib
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
 from canonical.launchpad.helpers import shortlist
@@ -40,7 +40,7 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     contactdetails = StringCol(notNull=False)
-    projects = RelatedJoin('Project', intermediateTable='ProjectBugTracker',
+    projects = SQLRelatedJoin('Project', intermediateTable='ProjectBugTracker',
         joinColumn='bugtracker', otherColumn='project',
         orderBy='name')
 

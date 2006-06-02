@@ -103,7 +103,7 @@ Also, an upstream bug task was added to it:
 
 And the entire body of the email was added as a comment:
 
-    >>> len(bug.messages)
+    >>> bug.messages.count()
     1
     >>> comment = bug.messages[0]
     >>> print comment.title
@@ -256,8 +256,8 @@ For that you can send mails to edit@malone-domain.
 
     >>> bug_four = bugset.get(4)
     >>> bug_five = bugset.get(5)
-    >>> bug_four_comments = len(bug_four.messages)
-    >>> bug_five_comments = len(bug_five.messages)
+    >>> bug_four_comments = bug_four.messages.count()
+    >>> bug_five_comments = bug_five.messages.count()
     >>> edit_mail = """From: test@canonical.com
     ... To: edit@malone-domain
     ... Date: Fri Jun 17 10:10:23 BST 2005
@@ -277,9 +277,9 @@ For that you can send mails to edit@malone-domain.
 
 No comments were added to the bugs:
 
-    >>> len(bug_four.messages) == bug_four_comments
+    >>> bug_four.messages.count() == bug_four_comments
     True
-    >>> len(bug_five.messages) == bug_five_comments
+    >>> bug_five.messages.count() == bug_five_comments
     True
 
 And the summaries were changed:

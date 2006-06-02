@@ -21,9 +21,12 @@ from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
 
+from sqlobject.main import SelectResults
+
 from zope.component import getUtility
 from zope.interface import implements, providedBy, directlyProvides
 from zope.interface.interfaces import IInterface
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.interfaces import IParticipation
 from zope.security.management import (
     newInteraction, endInteraction, checkPermission as zcheckPermission)
@@ -127,11 +130,20 @@ class Snapshot:
                 names.update(iface.names(all=True))
 
         for name in names:
-            #XXX: Need to check if the attribute exists, since
-            #     Person doesn't provides all attributes in
-            #     IPerson. -- Bjorn Tillenius, 2005-04-20
-            if hasattr(ob, name):
-                setattr(self, name, getattr(ob, name))
+            if not hasattr(ob, name):
+                #XXX: Need to check if the attribute exists, since
+                #     Person doesn't provides all attributes in IPerson.
+                #     -- Bjorn Tillenius, 2005-04-20
+                continue
+            value = getattr(ob, name)
+            if zope_isinstance(value, SelectResults):
+                # SQLMultipleJoin and SQLRelatedJoin return
+                # SelectResults, which doesn't really help the
+                # Snapshot object. We therefore list()ify the
+                # values; this isn't perfect but allows deltas do be
+                # generated reliably.
+                value = list(value)
+            setattr(self, name, value)
         if providing is not None:
             directlyProvides(self, providing)
 

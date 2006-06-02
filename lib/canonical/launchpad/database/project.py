@@ -15,7 +15,7 @@ from zope.interface import implements
 
 from sqlobject import (
         ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
-        SQLMultipleJoin, RelatedJoin)
+        SQLMultipleJoin, SQLRelatedJoin)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
@@ -70,14 +70,14 @@ class Project(SQLBase, BugTargetBase):
 
     # convenient joins
 
-    bounties = RelatedJoin('Bounty', joinColumn='project',
+    bounties = SQLRelatedJoin('Bounty', joinColumn='project',
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
     products = SQLMultipleJoin('Product', joinColumn='project',
                             orderBy='name')
 
-    bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
+    bugtrackers = SQLRelatedJoin('BugTracker', joinColumn='project',
                                otherColumn='bugtracker',
                                intermediateTable='ProjectBugTracker')
 

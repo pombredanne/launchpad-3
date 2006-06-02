@@ -11,7 +11,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
+    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -130,7 +130,7 @@ class Product(SQLBase, BugTargetBase):
     milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
         orderBy=['dateexpected', 'name'])
 
-    bounties = RelatedJoin(
+    bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
 

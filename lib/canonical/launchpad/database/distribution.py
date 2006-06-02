@@ -7,7 +7,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
 
 from canonical.cachedproperty import cachedproperty
@@ -90,7 +90,7 @@ class Distribution(SQLBase, BugTargetBase):
     uploadsender = StringCol(notNull=False, default=None)
     uploadadmin = StringCol(notNull=False, default=None)
 
-    bounties = RelatedJoin(
+    bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
     milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
