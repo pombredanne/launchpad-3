@@ -52,9 +52,9 @@ class Snapshot:
         for name in names:
             value = getattr(ob, name, _marker)
             if value is _marker:
-                # Some broken classes (such as Person) don't implement
+                # XXX: Some broken classes (such as Person) don't implement
                 # all the attributes in their interfaces, so we skip
-                # them here.
+                # them here. -- kiko, 2006-06-02
                 continue
             if zope_isinstance(value, SelectResults):
                 # SQLMultipleJoin and SQLRelatedJoin return
@@ -64,6 +64,7 @@ class Snapshot:
                 # generated reliably.
                 value = list(value)
             setattr(self, name, value)
+
         if providing is not None:
             directlyProvides(self, providing)
 
