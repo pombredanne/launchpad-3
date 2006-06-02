@@ -8,11 +8,7 @@
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <script type="text/javascript" src="/@@/MochiKit/Base.js"></script>
-    <script type="text/javascript" src="/@@/MochiKit/Async.js"></script>
-    <script type="text/javascript" src="/@@/MochiKit/Iter.js"></script>
-    <script type="text/javascript" src="/@@/MochiKit/DOM.js"></script>
-    <script type="text/javascript" src="/@@/MochiKit/Signal.js"></script>
+    <script type="text/javascript" src="/@@/MochiKit/MochiKit.js"></script>
     <script type="text/javascript" src="/@@/SignalWrapper.js"></script>
     <script type="text/javascript" src="/@@/lpmenu.js"></script>
     <!-- Launchpad style sheet -->
