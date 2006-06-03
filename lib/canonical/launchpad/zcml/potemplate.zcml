@@ -10,17 +10,17 @@
 
     <content class="canonical.launchpad.database.POTemplate">
       <allow interface="canonical.launchpad.interfaces.IPOTemplate" />
-        <require
-            permission="launchpad.Edit"
-            set_attributes="owner priority description"
-            />
-        <require
-            permission="launchpad.Admin"
-            set_attributes="potemplatename productseries distrorelease
-                            sourcepackagename sourcepackageversion
-                            binarypackagename languagepack path header
-                            iscurrent from_sourcepackagename"
-            />
+      <require
+        permission="launchpad.Edit"
+        set_attributes="owner priority description"
+        />
+      <require
+        permission="launchpad.Admin"
+        set_attributes="potemplatename productseries distrorelease
+                        sourcepackagename sourcepackageversion
+                        binarypackagename languagepack path header
+                        iscurrent from_sourcepackagename date_last_updated"
+      />
     </content>
 
     <browser:navigation

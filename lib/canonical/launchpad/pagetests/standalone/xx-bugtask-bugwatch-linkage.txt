@@ -30,12 +30,12 @@ This means that we only display the status, it's not possible to edit it:
     ...
     LookupError: name 'field.status'
 
-Of course we can't edit the severity or assignee either.
+Of course we can't edit the importance or assignee either.
 
-    >>> browser.getControl(name='field.severity')
+    >>> browser.getControl(name='field.importance')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.severity'
+    LookupError: name 'field.importance'
 
     >>> browser.getControl(name='field.assignee')
     Traceback (most recent call last):
@@ -56,7 +56,7 @@ been reset to Unconfirmed.
     >>> status_control.displayValue
     ['Unconfirmed']
 
-    >>> browser.getControl(name='field.severity') is not None
+    >>> browser.getControl(name='field.importance') is not None
     True
     >>> browser.getControl(name='field.assignee') is not None
     True
@@ -74,3 +74,32 @@ Let's try to actually edit the status to see that it works:
     >>> status_control.displayValue
     ['Rejected']
 
+From the edit page we can also create a new bug watch:
+
+    >>> browser.open(
+    ...     'http://localhost/distros/debian/+source/mozilla-firefox/'
+    ...     '+bug/1/+editstatus')
+    >>> bugwatch_control = browser.getControl(name='field.bugwatch')
+    >>> bugtracker_control = browser.getControl(name='field.bugtracker')
+    >>> remotebug_control = browser.getControl(name='field.remotebug')
+    >>> bugwatch_control.value = ['NEW']
+    >>> bugtracker_control.displayValue
+    ['Debian Bug tracker']
+    >>> remotebug_control.value = '1'
+
+    >>> submit_button = browser.getControl(name='FORM_SUBMIT')
+    >>> submit_button.click()
+    >>> browser.url
+    'http://localhost/distros/debian/+source/mozilla-firefox/+bug/1'
+
+We can see that the Debian task is linked to the newly created bug
+watch.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> debian_tr = soup.first('tr', {'class': 'highlight'})
+    >>> for td_tag in debian_tr('td'):
+    ...     print td_tag
+    <td...> <a...>mozilla-firefox (Debian)</a> </td>
+    ...
+    <td...> <a...> debbugs #1 </a> </td>

@@ -270,7 +270,7 @@ class MaloneHandler:
             send_process_error_notification(
                 str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
-                error.message, error.failing_command)
+                error.message, signed_msg, error.failing_command)
 
         return True
 

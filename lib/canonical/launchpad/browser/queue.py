@@ -57,6 +57,10 @@ class QueueItemsView(LaunchpadView):
             ]
 
         if not check_permission('launchpad.Admin', self.context):
+            # Omit the UNAPPROVED status, which the user is unable to
+            # view anyway. If he hand-hacks the URL, all he will get is
+            # a Forbidden which is enforced by the security wrapper for
+            # DistroReleaseQueue.
             valid_states.remove(DistroReleaseQueueStatus.UNAPPROVED)
 
         self.filtered_options = []
@@ -69,17 +73,6 @@ class QueueItemsView(LaunchpadView):
             self.filtered_options.append(
                 dict(name=state.title, value=state.value, selected=selected)
                 )
-
-        # enforce security again: only someone with launchpad.Admin on the
-        # distrorelease should be able to see the unapproved queue
-        # NB: sabdfl: this is not a rigorous way of enforcing this kind of
-        # security!
-        if (self.state == DistroReleaseQueueStatus.UNAPPROVED and
-            not check_permission('launchpad.Admin', self.context)):
-            self.error = (
-                "Sorry, you do not have permission to view this queue, "
-                "we have excluded any packages from this listing.")
-            return
 
         # request context queue items according the selected state
         queue_items = self.context.getQueueItems(

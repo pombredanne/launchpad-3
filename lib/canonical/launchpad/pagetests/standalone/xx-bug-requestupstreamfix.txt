@@ -66,8 +66,8 @@ We can add another upstream to the bug.
     >>> browser.url
     'http://localhost/products/evolution/+bug/3'
 
-But if we try to change it to a existing upstream bugtask, our validator
-enters in action.
+But if we try to change it to the target of an existing upstream bugtask,
+our validator springs into action.
 
     >>> browser.getLink("evolution (upstream)").click()
     >>> browser.url

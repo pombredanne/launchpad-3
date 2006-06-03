@@ -5,6 +5,9 @@
 __metaclass__ = type
 
 from difflib import unified_diff
+from email.MIMEText import MIMEText
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEMessage import MIMEMessage
 import re
 import textwrap
 
@@ -13,10 +16,10 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IDistroBugTask, IDistroReleaseBugTask, ISpecification,
+    IDistroBugTask, IDistroReleaseBugTask, ISpecification,
     IUpstreamBugTask, ITeamMembershipSet)
 from canonical.launchpad.mail import (
-    simple_sendmail, simple_sendmail_from_person, format_address)
+    sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
@@ -95,6 +98,29 @@ class MailWrapper:
         return '\n'.join(wrapped_lines)
 
 
+def _send_bug_details_to_new_bugcontacts(
+    bug, previous_subscribers, current_subscribers):
+    """Send an email containing full bug details to new bug subscribers.
+
+    This function is designed to handle situations where bugtasks get reassigned
+    to new products or sourcepackages, and the new bugcontacts need to be
+    notified of the bug.
+    """
+    prev_subs_set = set(previous_subscribers)
+    cur_subs_set = set(current_subscribers)
+
+    new_subs = cur_subs_set.difference(prev_subs_set)
+
+    # Send a notification to the new bug contacts that weren't subscribed to the
+    # bug before, which looks identical to a new bug report.
+    subject, contents = generate_bug_add_email(bug)
+    new_bugcontact_addresses = sorted([contactEmailAddresses(p) for p in new_subs])
+    if new_bugcontact_addresses:
+        send_bug_notification(
+            bug=bug, user=bug.owner, subject=subject, contents=contents,
+            to_addrs=new_bugcontact_addresses)
+
+
 def update_security_contact_subscriptions(modified_bugtask, event):
     """Subscribe the new security contact when a bugtask's product changes.
 
@@ -117,66 +143,6 @@ def update_security_contact_subscriptions(modified_bugtask, event):
                 new_product.security_contact)
 
 
-def update_bug_contact_subscriptions(modified_bugtask, event):
-    """Modify the bug Cc list when a bugtask is retargeted."""
-    bugtask_before_modification = event.object_before_modification
-    bugtask_after_modification = event.object
-
-    # We don't make any changes to subscriber lists on private bugs.
-    if bugtask_after_modification.bug.private:
-        return
-
-    is_upstream_task = IUpstreamBugTask.providedBy(modified_bugtask)
-    is_distro_task = IDistroBugTask.providedBy(modified_bugtask)
-    is_distrorelease_task = IDistroReleaseBugTask.providedBy(modified_bugtask)
-
-    # Calculate the list of new bug contacts, if any.
-    new_bugcontacts = []
-    if is_upstream_task:
-        if (bugtask_before_modification.product !=
-            bugtask_after_modification.product):
-            if bugtask_after_modification.product.bugcontact:
-                new_bugcontacts.append(
-                    bugtask_after_modification.product.bugcontact)
-    elif is_distro_task or is_distrorelease_task:
-        if bugtask_after_modification.sourcepackagename is None:
-            # No new bug contacts to be subscribed.
-            return
-
-        old_sp_name = bugtask_before_modification.sourcepackagename
-        new_sp_name = bugtask_after_modification.sourcepackagename
-        if old_sp_name != new_sp_name:
-            if is_distro_task:
-                distribution = bugtask_after_modification.distribution
-            else:
-                distribution = (
-                    bugtask_after_modification.distrorelease.distribution)
-            new_sourcepackage = (distribution.getSourcePackage(new_sp_name))
-
-            for package_bug_contact in new_sourcepackage.bugcontacts:
-                new_bugcontacts.append(package_bug_contact.bugcontact)
-
-    # Subscribe all the new bug contacts for the new package or product if they
-    # aren't already subscribed to this bug.
-    bug = bugtask_after_modification.bug
-    old_cc_list = get_cc_list(bug)
-    new_bugcontact_addresses = set()
-    for bugcontact in new_bugcontacts:
-        if not bug.isSubscribed(bugcontact):
-            bug.subscribe(bugcontact)
-            new_bugcontact_addresses.update(contactEmailAddresses(bugcontact))
-
-    # Send a notification to the new bug contacts that weren't
-    # subscribed to the bug before, which looks identical to a new bug
-    # report.
-    subject, contents = generate_bug_add_email(bug)
-    new_bugcontact_addresses.difference_update(old_cc_list)
-    if new_bugcontact_addresses:
-        send_bug_notification(
-            bug=bug, user=bug.owner, subject=subject, contents=contents,
-            to_addrs=new_bugcontact_addresses)
-
-
 def get_bugmail_replyto_address(bug):
     """Return an appropriate bugmail Reply-To address.
 
@@ -194,16 +160,18 @@ def get_bugmail_error_address():
     return config.malone.bugmail_error_from_address
 
 
-def send_process_error_notification(to_addrs, subject, error_msg, 
-                                    failing_command=None):
-    """Sends an error message.
+def send_process_error_notification(to_address, subject, error_msg,
+                                    original_msg, failing_command=None):
+    """Send a mail about an error occurring while using the email interface.
 
-    Tells the user that an error was encountered while processing
-    his request.
+    Tells the user that an error was encountered while processing his
+    request and attaches the original email which caused the error to
+    happen.
 
-        :to_addrs: The addresses to send the notification to.
-        :subject: The subject ot the notification.
+        :to_address: The address to send the notification to.
+        :subject: The subject of the notification.
         :error_msg: The error message that explains the error.
+        :original_msg: The original message sent by the user.
         :failing_command: The command that caused the error to happen.
     """
     if failing_command is not None:
@@ -217,7 +185,15 @@ def send_process_error_notification(to_addrs, subject, error_msg,
             'error_msg': error_msg}
     mailwrapper = MailWrapper(width=72)
     body = mailwrapper.format(body)
-    simple_sendmail(get_bugmail_error_address(), to_addrs, subject, body)
+    error_part = MIMEText(body.encode('utf-8'), 'plain', 'utf-8')
+
+    msg = MIMEMultipart()
+    msg['To'] = to_address
+    msg['From'] = get_bugmail_error_address()
+    msg['Subject'] = subject
+    msg.attach(error_part)
+    msg.attach(MIMEMessage(original_msg))
+    sendmail(msg)
 
 
 def notify_errors_list(message, file_alias_url):
@@ -248,13 +224,7 @@ def generate_bug_add_email(bug):
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
         bug_info += u"** Affects: %s\n" % bugtask.targetname
-        bug_info += u"       Severity: %s\n" % bugtask.severity.title
-
-        if bugtask.priority:
-            priority = bugtask.priority.title
-        else:
-            priority = "(none set)"
-        bug_info += u"       Priority: %s\n" % priority
+        bug_info += u"     Importance: %s\n" % bugtask.importance.title
 
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
@@ -419,8 +389,7 @@ def get_bug_edit_notification_texts(bug_delta):
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
-                ("severity", "title"), ("priority", "title"),
-                ("bugwatch", "title")):
+                ("importance", "title"), ("bugwatch", "title")):
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -466,13 +435,10 @@ def get_bug_edit_notification_texts(bug_delta):
                     added_bugtask.targetname)
                 change_info += u"   %s\n" % added_bugtask.bugwatch.url
             else:
-                change_info = u"** Also affects: %s\n" % added_bugtask.targetname
-            change_info += u"%13s: %s\n" % (u"Severity", added_bugtask.severity.title)
-            if added_bugtask.priority:
-                priority_title = added_bugtask.priority.title
-            else:
-                priority_title = "(none set)"
-            change_info += u"%13s: %s\n" % (u"Priority", priority_title)
+                change_info = u"** Also affects: %s\n" % (
+                    added_bugtask.targetname)
+            change_info += u"%13s: %s\n" % (u"Importance",
+                added_bugtask.importance.title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
                 change_info += u"%13s: %s <%s>\n" % (
@@ -668,7 +634,7 @@ def get_task_delta(old_task, new_task):
 
     # calculate the differences in the fields that both types of tasks
     # have in common
-    for field_name in ("status", "severity", "priority",
+    for field_name in ("status", "importance",
                        "assignee", "bugwatch", "milestone"):
         old_val = getattr(old_task, field_name)
         new_val = getattr(new_task, field_name)
@@ -757,7 +723,10 @@ def notify_bugtask_edited(modified_bugtask, event):
 
     add_bug_change_notifications(bug_delta)
 
-    update_bug_contact_subscriptions(modified_bugtask, event)
+    previous_subscribers = event.object_before_modification.bug_subscribers
+    current_subscribers = event.object.bug_subscribers
+    _send_bug_details_to_new_bugcontacts(
+        event.object.bug, previous_subscribers, current_subscribers)
     update_security_contact_subscriptions(modified_bugtask, event)
 
 
