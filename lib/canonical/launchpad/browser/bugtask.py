@@ -928,7 +928,6 @@ class BugTaskSearchListingView(LaunchpadView):
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" % field_name)
 
-        import pdb; pdb.set_trace()
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
         for orderby_col in orderby:

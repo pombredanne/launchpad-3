@@ -9,7 +9,7 @@ is raised.
     UnexpectedFormData: Unexpected value for field 'status'...
 
     >>> browser.open(
-    ...     "http://localhost:9000/distros/ubuntu/+bugs?search=Search&orderby=-priority%252C-severity")
+    ...     "http://localhost:9000/distros/ubuntu/+bugs?search=Search&orderby=foobar")
     Traceback (most recent call last):
       ...
-    UnexpectedFormData: Unknown sort column '-priority%2C-severity'
+    UnexpectedFormData: Unknown sort column 'foobar'
