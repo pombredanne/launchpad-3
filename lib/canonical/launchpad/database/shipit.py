@@ -220,7 +220,7 @@ class ShippingRequest(SQLBase):
 
     def isApproved(self):
         """See IShippingRequest"""
-        return self.approved
+        return self.approved == True
 
     def isDenied(self):
         """See IShippingRequest"""
@@ -238,6 +238,8 @@ class ShippingRequest(SQLBase):
         assert self.isApproved()
         self.approved = None
         self.whoapproved = None
+        for requestedcds in self.getAllRequestedCDs():
+            requestedcds.quantityapproved = 0
 
     def approve(self, whoapproved=None):
         """See IShippingRequest"""
