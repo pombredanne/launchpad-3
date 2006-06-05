@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 import gettextpo
+from urlparse import urljoin
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.browser import DropdownWidget
@@ -149,7 +150,8 @@ class POMsgSetView(LaunchpadView):
 
     __used_for__ = IPOMsgSet
 
-    def initialize(self):
+    def initialize(self, from_pofile=False):
+        self.from_pofile = from_pofile
         self.form = self.request.form
         self.potmsgset = self.context.potmsgset
         self.pofile = self.context.pofile
@@ -215,13 +217,12 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 </p>
 """ % self.pofile.language.englishname)
 
-        if not u'show' in self.form:
-            # XXX CarlosPerelloMarin 20060509: We should stop doing this
-            # check when bug #41858 is fixed and we know exactly from
-            # where are we being used.
-            # We are in a the single message view, we don't have a
-            # filtering option.
-
+        if self.from_pofile:
+            # We are being rendered as part of the IPOFile translation form.
+            self.batchnav = None
+            self.start = None
+            self.size = None
+        else:
             # Setup the batching for this page.
             potemplate = self.context.pofile.potemplate
             self.batchnav = POTMsgSetBatchNavigator(
@@ -229,10 +230,6 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             current_batch = self.batchnav.currentBatch()
             self.start = self.batchnav.start
             self.size = current_batch.size
-        else:
-            self.batchnav = None
-            self.start = None
-            self.size = None
 
         # Handle any form submission.
         self.process_form()
@@ -373,6 +370,38 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 return self.second_lang_pofile[msgid]
             except NotFoundError:
                 return None
+
+    @cachedproperty
+    def zoom_url(self):
+        """Return the URL where we should from the zoom icon."""
+        if self.from_pofile:
+            # We are viewing this class from an IPOFile, so we should point to
+            # a concrete entry.
+            return '/'.join([canonical_url(self.context), '+translate'])
+        else:
+            # We are viewing this class directly from an IPOMsgSet, we should
+            # point to the parent batch of messages.
+            pofile_batch_url = '+translate?start=%d' % (self.sequence - 1)
+            return '/'.join(
+                [canonical_url(self.context.pofile), pofile_batch_url])
+
+    @cachedproperty
+    def zoom_alt(self):
+        if self.from_pofile:
+            # We are viewing this class from an IPOFile, so we should point to
+            # a concrete entry.
+            return 'View all details of this message'
+        else:
+            return 'Return to multiple messages view.'
+
+    @cachedproperty
+    def zoom_icon(self):
+        if self.from_pofile:
+            # We are viewing this class from an IPOFile, so we should point to
+            # a concrete entry.
+            return '/@@/zoom-in'
+        else:
+            return '/@@/zoom-out'
 
     def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""
@@ -597,10 +626,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         if self.form_posted_translations is None:
             # There are not translations interesting for us.
-            if not u'show' in self.form:
-                # XXX CarlosPerelloMarin 20060509: We should stop doing this
-                # check when bug #41858 is fixed and we know exactly from
-                # where are we being used.
+            if not self.from_pofile:
                 # We are in a the single message view, we don't have a
                 # filtering option.
                 self.redirecting = True
@@ -632,10 +658,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 # Save the error message gettext gave us to show it to the
                 # user.
                 self.error = str(e)
-        if not u'show' in self.form:
-            # XXX CarlosPerelloMarin 20060509: We should stop doing this
-            # check when bug #41858 is fixed and we know exactly from
-            # where are we being used.
+        if not self.from_pofile:
+            # This page is being rendered as a single message view.
             if self.error is None:
                 # There are no errors, we should jump to the next message.
                 self.redirecting = True
@@ -653,10 +677,9 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
     def _select_alternate_language(self):
         """Handle a form submission to choose other language suggestions."""
-        if u'show' in self.form:
-            # XXX CarlosPerelloMarin 20060509: We should stop doing this
-            # check when bug #41858 is fixed and we know exactly from
-            # where are we being used.
+        if self.from_pofile:
+            # We are part of an IPOFile translation form, its view class will
+            # handle this submission.
             return
 
         selected_second_lang = self.alternative_language_widget.getInputValue()
