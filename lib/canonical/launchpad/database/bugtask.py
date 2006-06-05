@@ -558,6 +558,19 @@ class BugTaskSet:
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        # Sanitize arguments, ensuring they get reasonable defaults, are
+        # converted from strings to more appropriate values and, when necessary,
+        # and consistently set to None when they evaluate to False in a boolean
+        # context.
+        if not status:
+            status = IBugTask['status'].default
+        if not importance:
+            importance = IBugTask['importance'].default
+        if not assignee:
+            assignee = None
+        if not milestone:
+            milestone = None
+
         if not bug.private and bug.security_related:
             if product and product.security_contact:
                 bug.subscribe(product.security_contact)

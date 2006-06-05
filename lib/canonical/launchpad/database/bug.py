@@ -397,7 +397,7 @@ class BugSet:
                 "owner", "title", "comment", "description", "msg",
                 "datecreated", "security_related", "private",
                 "distribution", "sourcepackagename", "binarypackagename",
-                "product"])
+                "product", "status", "assignee", "subscribers"])
 
         if not (params.comment or params.description or params.msg):
             raise AssertionError(
@@ -445,19 +445,25 @@ class BugSet:
             elif params.distribution and params.distribution.security_contact:
                 bug.subscribe(params.distribution.security_contact)
 
+        # Subscribe other users.
+        for subscriber in params.subscribers:
+            bug.subscribe(subscriber)
+
         # Link the bug to the message.
         BugMessage(bug=bug, message=params.msg)
 
         # Create the task on a product if one was passed.
         if params.product:
             BugTaskSet().createTask(
-                bug=bug, product=params.product, owner=params.owner)
+                bug=bug, product=params.product, owner=params.owner,
+                status=params.status, assignee=params.assignee)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
             BugTaskSet().createTask(
                 bug=bug, distribution=params.distribution,
                 sourcepackagename=params.sourcepackagename,
-                owner=params.owner)
+                owner=params.owner, status=params.status,
+                assignee=params.assignee)
 
         return bug

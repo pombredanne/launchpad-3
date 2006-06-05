@@ -14,16 +14,28 @@ The report_bug API is:
 
     filebug_api.report_bug(
         product, distro, package, title, comment, status,
-        assignee, security_related, private, subscribers)
+        assignee_email, security_related, private, subscribers)
 
-Required args: product or distro, title, comment.
-Optional args: package (only allowed if distro is specified), status,
-               assignee, security_related, private, subscribers
+REQUIRED ARGS: product: the product name, as a string
+               distro: the distro name, as a string
+               title: a string
+               comment: a string
+
+(Only one of product or distro may be provided.)
+
+OPTIONAL ARGS: package: a string, allowed only if distro is specified
+               status: a string, identical to the email interface values
+               assignee_email: a string
+               security_related: a boolean
+               private: a boolean
+               subscribers: a list of email addresses
 
 The bug owner is the currently authenticated user, taken from the
 request.
 
-The return value is the bug URL.
+The return value is the bug URL, in short form, e.g.:
+
+    http://launchpad.net/bugs/42
 
 Examples
 --------
@@ -86,7 +98,7 @@ Reporting a package bug.
 
     >>> filebug_api.report_bug(
     ...     '', 'ubuntu', 'evolution', 'email is cool', 'email is nice',
-    ...     'inprogress', '', 'true', 'true', ["no-priv@canonical.com"])
+    ...     'inprogress', '', True, True, ["no-priv@canonical.com"])
     u'http://localhost:8086/bugs/13'
 
     >>> bug = bugset.get(13)
@@ -108,9 +120,7 @@ Reporting a package bug.
 
     >>> print evolution_bug.distribution.name
     ubuntu
-    >>> print evolution_bug.sourcepackagename
+    >>> print evolution_bug.sourcepackagename.name
     evolution
     >>> print evolution_bug.status.title
     In Progress
-    >>> print evolution_bug.assignee.name
-    name16
