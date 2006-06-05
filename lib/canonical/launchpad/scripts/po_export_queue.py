@@ -71,7 +71,14 @@ class POFormatHandler(Handler):
         """
 
         if is_potemplate(self.obj):
-            return self.obj.rawfile.url
+            potemplate_content = self.obj.export()
+            alias_set = getUtility(ILibraryFileAliasSet)
+            alias = alias_set.create(
+                name='%s.pot' % self.obj.potemplatename.name,
+                size=len(potemplate_content),
+                file=StringIO(potemplate_content),
+                contentType='application/x-po')
+            return alias.url
         else:
             self.obj.export()
             return self.obj.exportfile.url

@@ -20,6 +20,17 @@ Edit:
   ...Owner...
   ...Change...'
 
+
+Let's check we get a nice validation error if we submit the form with
+a bad url:
+
+  >>> url_field = browser.getControl("URL")
+  >>> url_field.value = "http://this.url.is.bad/because/it/has/a/path"
+  >>> change_button = browser.getControl("Change")
+  >>> change_button.click()
+  >>> browser.contents
+  '...Invalid builder url...'
+
 Change Mode:
 
   >>> browser.open("http://localhost:9000/+builds/bob/+mode")
