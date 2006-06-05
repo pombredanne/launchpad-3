@@ -41,6 +41,12 @@ class Snapshot:
                 for name in iface.names(all=True):
                     field = iface[name]
                     if IField.providedBy(field):
+                        # Only Fields are actually copied over to the
+                        # snapshot.
+                        # XXX: this is actually rather counterintuitive,
+                        # and I believe the proper solution is to just
+                        # make names mandatory, as per bug 48575.
+                        #   -- kiko, 2006-06-05
                         names.add(name)
 
         for name in names:
