@@ -200,8 +200,11 @@ class LoginOrRegister:
                 logInPerson(self.request, principal, email)
                 self.redirectMinusLogin()
             else:
-                # We should never get here, as any account in this situation
-                # should have a NULL password.
+                # Normally invalid accounts will have a NULL password
+                # so this will be rarely seen, if ever. An account with no
+                # valid email addresses might end up in this situation,
+                # such as having them flagged as OLD by a email bounce
+                # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
         else:
             self.login_error = "The email address and password do not match."
