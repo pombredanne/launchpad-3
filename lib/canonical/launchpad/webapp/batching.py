@@ -67,7 +67,7 @@ class BatchNavigator:
 
     def generateBatchURL(self, batch):
         url = ""
-        if batch is None:
+        if not batch:
             return url
 
         qs = self.request.environment.get('QUERY_STRING', '')

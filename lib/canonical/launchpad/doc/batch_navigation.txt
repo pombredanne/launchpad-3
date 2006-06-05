@@ -92,16 +92,24 @@ You can also create an empty batch that will not have any items:
 
   >>> null_batch_navigator = BatchNavigator(
   ...     None, build_request(), size=3)
+  >>> null_batch_navigator.firstBatchURL()
+  ''
   >>> null_batch_navigator.nextBatchURL()
   ''
   >>> null_batch_navigator.prevBatchURL()
+  ''
+  >>> null_batch_navigator.lastBatchURL()
   ''
 
   >>> null_batch_navigator = BatchNavigator(
   ...     [], build_request(), size=3)
+  >>> null_batch_navigator.firstBatchURL()
+  ''
   >>> null_batch_navigator.nextBatchURL()
   ''
   >>> null_batch_navigator.prevBatchURL()
+  ''
+  >>> null_batch_navigator.lastBatchURL()
   ''
 
 TODO:
