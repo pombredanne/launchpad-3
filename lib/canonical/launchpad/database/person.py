@@ -1316,8 +1316,6 @@ class PersonSet:
             # tables, because a real human should never have two accounts
             # in Launchpad that are active members of a given team and voted
             # in a given poll. -- GuilhermeSalgado 2005-07-07
-            # We also can't afford to change poll results after they are
-            # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
             # This table is handled entirely by triggers
@@ -1367,32 +1365,6 @@ class PersonSet:
             """ % vars()
             )
         skip.append(('wikiname', 'person'))
-
-        # Update shipit shipments
-        cur.execute('''
-            UPDATE ShippingRequest SET recipient=%(to_id)d
-            WHERE recipient = %(from_id)d
-                AND cancelled IS TRUE OR shipped IS TRUE OR approved IS FALSE
-            ''' % vars())
-        cur.execute('''
-            UPDATE ShippingRequest SET recipient=%(to_id)d
-            WHERE recipient = %(from_id)d
-                AND %(to_id)d NOT IN (
-                    SELECT recipient FROM ShippingRequest
-                    WHERE shipped IS FALSE AND cancelled IS FALSE AND
-                        approved IS NOT FALSE
-                    )
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM RequestedCDs USING ShippingRequest
-            WHERE RequestedCDs.request = ShippingRequest.id
-                AND recipient = %(from_id)d AND shipped IS FALSE
-            ''' % vars())
-        cur.execute('''
-            DELETE FROM ShippingRequest
-            WHERE recipient = %(from_id)d AND shipped IS FALSE
-            ''' % vars())
-        skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict
