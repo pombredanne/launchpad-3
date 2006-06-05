@@ -4,18 +4,24 @@
     prev_page_url context/prevBatchURL;
     next_page_url context/nextBatchURL;
     last_page_url context/lastBatchURL;
-    total context/batch/total"
+    total context/batch/total;
+    size context/batch/size"
   style="width: 100%;"
 >
   <tbody>
     <tr>
       <td style="white-space: nowrap">
         <strong tal:content="context/batch/startNumber">1</strong>
-        &rarr;
-        <strong tal:content="context/batch/endNumber">10</strong>
+        <tal:block condition="python: size > 1">
+          &rarr;
+          <strong tal:content="context/batch/endNumber">10</strong>
+        </tal:block>
         of
-        <span tal:replace="total">42</span> result<span
-            tal:omit-tag="" tal:condition="python: total != 1">s</span>
+        <span tal:replace="total">42</span>
+        <span tal:omit-tag=""
+              tal:condition="python: total == 1">entry</span>
+        <span tal:omit-tag=""
+              tal:condition="python: total != 1">entries</span>
       </td>
       <td style="text-align: right; white-space: nowrap">
         <tal:first condition="first_page_url">
