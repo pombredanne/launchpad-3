@@ -37,6 +37,9 @@
   </tal:block>
 
   <tal:block condition="view/secondary_translatable_releases">
+    <h2 tal:condition="context/translation_target">
+      Other releases of <span tal:replace="context/displayname">Ubuntu</span>
+    </h2>
     <table class="listing">
       <thead>
         <tr>
