@@ -29,7 +29,7 @@ Now it's time to test the initialisation of the view class.
     ...     distrorelease=release, sourcepackagename=sourcepackagename)
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
-    >>> request = LaunchpadTestRequest()
+    >>> request = LaunchpadTestRequest(form={'show': 'all' })
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
@@ -44,8 +44,7 @@ information.
     >>> pofile_view.has_plural_form_information
     True
 
-As the request didn't get any argument, we should get the default values
-for the kind of messages to show.
+We know that we want all messages.
 
     >>> pofile_view.show
     'all'
@@ -54,7 +53,7 @@ This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
 
     >>> pofile_tlh = potemplate.getDummyPOFile('tlh')
-    >>> request = LaunchpadTestRequest()
+    >>> request = LaunchpadTestRequest(form={'show': 'all' })
     >>> pofile_view = getView(pofile_tlh, '+translate', request)
     >>> pofile_view.initialize()
 
@@ -84,13 +83,13 @@ Let's move to the navigation URLS testing.
 
 We get a request without any argument.
 
-    >>> request = LaunchpadTestRequest()
+    >>> request = LaunchpadTestRequest(form={'show': 'all' })
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
 It's time to test that we get the right message sets from the submitted form.
 
-    >>> request = LaunchpadTestRequest()
+    >>> request = LaunchpadTestRequest(form={'show': 'all' })
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
@@ -144,7 +143,7 @@ Which is the one we wanted.
 Now, we are going to test the tab index generator to be sure the TAB key
 will work as expected when navigating over the translation form.
 
-    >>> request = LaunchpadTestRequest()
+    >>> request = LaunchpadTestRequest(form={'show': 'all' })
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
@@ -208,6 +207,7 @@ Now, we are going to check the alternative language submission.
     >>> french = language_set['fr']
 
     >>> request = LaunchpadTestRequest(form={
+    ...     'show': 'all',
     ...     'batch': '10',
     ...     'start': '10',
     ...     'field.alternative_language': french,
@@ -275,7 +275,7 @@ Let's check the traversal code.
 
 First, what happens if we get any method that is not supported?
 
-    >>> request = LaunchpadTestRequest()
+    >>> request = LaunchpadTestRequest(form={'show': 'all' })
     >>> request.method = 'PUT'
     >>> navigation = POFileNavigation(pofile_es, request)
     >>> navigation.traverse('1')

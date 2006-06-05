@@ -168,8 +168,8 @@ class TableBatchNavigator(BatchNavigator):
     """See canonical.launchpad.interfaces.ITableBatchNavigator."""
     implements(ITableBatchNavigator)
 
-    def __init__(self, results, request, size=None, columns_to_show=None):
-        BatchNavigator.__init__(self, results, request, size)
+    def __init__(self, results, request, start=0, size=None, columns_to_show=None):
+        BatchNavigator.__init__(self, results, request, start, size)
 
         self.show_column = {}
         if columns_to_show:

@@ -6,6 +6,7 @@ On this section, we are going to test the view class for an IPOFile.
     >>> from zope.component import getView
     >>> from canonical.launchpad.database import POMsgSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp import canonical_url
 
 All the tests will be submitted as comming from the Foo Bar person.
 
@@ -17,7 +18,8 @@ without the plural form information.
     >>> pomsgset = POMsgSet.get(1)
     >>> pofile_tlh = pomsgset.pofile.potemplate.getDummyPOFile('tlh')
     >>> pomsgset_tlh = pofile_tlh.getPOMsgSet(u'evolution addressbook')
-    >>> request = LaunchpadTestRequest()
+    >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> request = LaunchpadTestRequest(SERVER_URL=SERVER_URL)
     >>> pomsgset_view = getView(pomsgset_tlh, "+translate", request)
     >>> pomsgset_view.initialize()
 
@@ -112,11 +114,14 @@ But first, let's see current values.
 
 Now we do the submit
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'alt': None,
-    ...     'msgset_1': None,
-    ...     'msgset_1_es_translation_0': 'Foo',
-    ...     'submit_translations': 'Save &amp; Continue'})
+    >>> SERVER_URL = '/'.join([canonical_url(pomsgset), '+translate'])
+    >>> request = LaunchpadTestRequest(
+    ...     SERVER_URL=SERVER_URL,
+    ...     form={
+    ...         'alt': None,
+    ...         'msgset_1': None,
+    ...         'msgset_1_es_translation_0': 'Foo',
+    ...         'submit_translations': 'Save &amp; Continue'})
     >>> request.method = 'POST'
     >>> pomsgset_view = getView(pomsgset, "+translate", request)
     >>> pomsgset_view.initialize()

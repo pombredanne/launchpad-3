@@ -36,7 +36,7 @@ class POTMsgSetBatchNavigator(BatchNavigator):
         can choose to provide.
         """
         schema, netloc, path, parameters, query, fragment = (
-            urlparse.urlparse(str(request.URL)))
+            urlparse(str(request.URL)))
 
         # 'path' will be like: 'POTURL/LANGCODE/POTSEQUENCE/+translate' and
         # we are interested on the POTSEQUENCE.
