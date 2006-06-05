@@ -191,10 +191,15 @@ class ProjectView(object):
         # now redirect to view the project
         self.request.response.redirect(self.request.URL[-1])
 
+    #
+    # XXX: this code is broken -- see bug 47769
+    #
     def hasProducts(self):
-        # XXX: get rid of this crap using selectFirst()
         return len(list(self.context.products())) > 0
 
+    #
+    # XXX: this code is broken -- see bug 47769
+    #
     def productTranslationStats(self):
         for product in self.context.products():
             total = 0
