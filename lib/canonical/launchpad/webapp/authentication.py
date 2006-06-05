@@ -96,7 +96,7 @@ class PlacelessAuthUtility:
                 # become invalid for some reason, such as being merged
                 # (as per Bug #33427)
                 return None
-            elif Person.get(principal.id).is_valid_person:
+            elif getUtility(IPersonSet).get(principal.id).is_valid_person:
                 request.setPrincipal(principal)
                 notify(CookieAuthPrincipalIdentifiedEvent(principal, request))
                 return principal
