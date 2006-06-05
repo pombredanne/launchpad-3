@@ -7,12 +7,12 @@ Malone provides an XML-RPC interface for filing bugs.
 
     >>> filebug_api = FileBugAPI(None, None)
 
-The report_bug API
+The filebug API
 ------------------
 
-The report_bug API is:
+The filebug API is:
 
-    filebug_api.report_bug(
+    filebug_api.filebug(
         product, distro, package, title, comment, status,
         assignee_email, security_related, private, subscribers)
 
@@ -44,7 +44,7 @@ Reporting a product bug.
 
     >>> login("test@canonical.com")
 
-    >>> filebug_api.report_bug(
+    >>> filebug_api.filebug(
     ...     'firefox', '', '', 'the title', 'the comment',
     ...     '', '', '', '', [])
     u'http://localhost:8086/bugs/11'
@@ -69,7 +69,7 @@ Reporting a product bug.
 
 Reporting a distro bug.
 
-    >>> filebug_api.report_bug(
+    >>> filebug_api.filebug(
     ...     '', 'ubuntu', '', 'another bug', 'another comment',
     ...     'confirmed', 'foo.bar@canonical.com', '', '', [])
     u'http://localhost:8086/bugs/12'
@@ -96,7 +96,7 @@ Reporting a distro bug.
 
 Reporting a package bug.
 
-    >>> filebug_api.report_bug(
+    >>> filebug_api.filebug(
     ...     '', 'ubuntu', 'evolution', 'email is cool', 'email is nice',
     ...     'inprogress', '', True, True, ["no-priv@canonical.com"])
     u'http://localhost:8086/bugs/13'
@@ -124,3 +124,53 @@ Reporting a package bug.
     evolution
     >>> print evolution_bug.status.title
     In Progress
+
+Error Handling
+--------------
+
+Malone's xmlrpc interface provides extensive error handling. The various
+error conditions it recognizes are:
+
+Failing to specify a product or distribution.
+
+    >>> filebug_api.filebug()
+    <Fault 60: 'Required arguments missing. You must specify either a product or distrubtion in which the bug exists.'>
+
+Specifying *both* a product and distribution.
+
+    >>> filebug_api.filebug('firefox', 'ubuntu')
+    <Fault 70: 'Too many arguments. You may specify either a product or a distribution, but not both.'>
+
+Specifying a non-existent product.
+
+    >>> filebug_api.filebug('nosuchproduct')
+    <Fault 10: 'No such product: nosuchproduct'>
+
+Specifying a non-existent distribution.
+
+    >>> filebug_api.filebug('', 'nosuchdistro')
+    <Fault 80: 'No such distribution: nosuchdistro'>
+
+Specifying a non-existent package.
+
+XXX
+
+Missing title.
+
+XXX
+
+Missing comment.
+
+XXX
+
+Invalid status.
+
+XXX
+
+Invalid assignee.
+
+XXX
+
+Invalid subscribers.
+
+XXX

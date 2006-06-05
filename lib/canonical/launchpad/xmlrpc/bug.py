@@ -10,17 +10,28 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IProductSet, IPersonSet, IDistributionSet, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
+from canonical.launchpad.xmlrpc import faults
 from canonical.lp.dbschema import BugTaskStatus
 
 class FileBugAPI(LaunchpadXMLRPCView):
     """The XML-RPC API for filing bugs in Malone."""
 
-    def report_bug(self, product, distro, package, title, comment, status,
-                   assignee_email, security_related, private, subscribers):
+    def filebug(self, product=None, distro=None, package=None, title=None,
+                comment=None, status=None, assignee_email=None,
+                security_related=None, private=None, subscribers=None):
+        if product and distro:
+            return faults.FileBugGotProductAndDistro()
+
         if product:
             target = getUtility(IProductSet).getByName(product)
+            if target is None:
+                return faults.NoSuchProduct(product)
         elif distro:
             target = getUtility(IDistributionSet).getByName(distro)
+            if target is None:
+                return faults.NoSuchDistribution(distro)
+        else:
+            return faults.FileBugMissingProductOrDistribution()
 
         # Convert arguments into values that IBugTarget.createBug understands.
         personset = getUtility(IPersonSet)

@@ -63,7 +63,7 @@
 
     <xmlrpc:view
        for="canonical.launchpad.interfaces.IMaloneApplication"
-       methods="report_bug"
+       methods="filebug"
        class="canonical.launchpad.xmlrpc.FileBugAPI"
        permission="launchpad.AnyPerson"
        />
