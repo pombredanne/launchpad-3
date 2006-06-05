@@ -267,12 +267,6 @@ class ShippingRequestSet:
         except (SQLObjectNotFound, ValueError):
             return default
 
-    def lockTableInExclusiveMode(self):
-        """See IShippingRequestSet"""
-        cur = cursor()
-        cur.execute('LOCK TABLE ShippingRequest IN EXCLUSIVE MODE')
-        cur.execute('LOCK TABLE Shipment IN EXCLUSIVE MODE')
-
     def new(self, recipient, recipientdisplayname, country, city, addressline1,
             phone, addressline2=None, province=None, postcode=None,
             organization=None, reason=None, shockandawe=None):

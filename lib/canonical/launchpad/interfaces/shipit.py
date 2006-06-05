@@ -302,9 +302,6 @@ class ShippingRequestStatus:
 class IShippingRequestSet(Interface):
     """The set of all ShippingRequests"""
 
-    def lockTableInExclusiveMode():
-        """Lock the ShippingRequest table in EXCLUSIVE mode."""
-
     def new(recipient, recipientdisplayname, country, city, addressline1,
             phone, addressline2=None, province=None, postcode=None,
             organization=None, reason=None):
