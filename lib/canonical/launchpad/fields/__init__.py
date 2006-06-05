@@ -180,19 +180,6 @@ class UniqueField(TextLine):
             raise LaunchpadValidationError(self.errormessage % input)
 
 
-class SnapshotAttribute(Attribute):
-    """Indicates a snapshottable attribute.
-
-    This class is used to indicate that a certain attribute should be
-    'deep copied' when creating a Snapshot of an object. In practice,
-    this means that:
-
-        - SelectResults are converted to lists
-
-    In all other respects it behaves identically to a standard Attribute.
-    """
-
-
 class ContentNameField(UniqueField):
     """Base class for fields that are used by unique 'name' attributes."""
 

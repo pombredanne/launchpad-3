@@ -11,10 +11,9 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Field
 
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
-from canonical.launchpad.fields import SnapshotAttribute
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
 from canonical.launchpad import _
@@ -88,7 +87,7 @@ class ITicket(IHasOwner, IMessageTarget):
     is_resolved = Attribute("Whether the ticket is resolved.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
-    bugs = SnapshotAttribute('Bugs related to this ticket')
+    bugs = Field(title=_('Bugs related to this ticket'), readonly=True)
     specifications = Attribute("Specifications related to this support "
         "request.")
     reopenings = Attribute("Records of times when this was reopened.")

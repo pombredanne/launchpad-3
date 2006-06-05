@@ -22,13 +22,13 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, Text, TextLine, List)
+    Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
 
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine, SnapshotAttribute
+from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
@@ -117,8 +117,10 @@ class IBugTask(IHasDateCreated, IHasBug):
     target = Attribute("The software in which this bug should be fixed")
     target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
                               "officially"))
-    targetname = SnapshotAttribute("The short, descriptive name of the target")
-    title = SnapshotAttribute("The title of the bug related to this bugtask")
+    targetname = Text(title=_("The short, descriptive name of the target"),
+                      readonly=True)
+    title = Text(title=_("The title of the bug related to this bugtask"),
+                         readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
@@ -133,9 +135,9 @@ class IBugTask(IHasDateCreated, IHasBug):
     # bugcontacts that should get an email containing full bug details (rather
     # than just the standard change mail.) It is a property on IBugTask because
     # we currently only ever need this value for events handled on IBugTask.
-    bug_subscribers = SnapshotAttribute(
-        "A list of IPersons subscribed to the bug, whether directly or "
-        "indirectly.")
+    bug_subscribers = Field(
+        title=_("A list of IPersons subscribed to the bug, whether directly or "
+        "indirectly."), readonly=True)
 
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
