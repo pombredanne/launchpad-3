@@ -133,7 +133,7 @@ class IBugTask(IHasDateCreated, IHasBug):
     # bugcontacts that should get an email containing full bug details (rather
     # than just the standard change mail.) It is a property on IBugTask because
     # we currently only ever need this value for events handled on IBugTask.
-    bug_subscribers = Attribute(
+    bug_subscribers = SnapshotAttribute(
         "A list of IPersons subscribed to the bug, whether directly or "
         "indirectly.")
 
