@@ -117,6 +117,8 @@ class AbstractUploadPolicy:
         # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
         # but it's not too much of a hassle for now.
         # bug 3158
+        considered_archs = [arch_name for arch_name in upload.archs
+                            if not arch_name.endswith("_translations")]
         if upload.binaryful:
             max = 1
             if upload.sourceful:
@@ -124,12 +126,12 @@ class AbstractUploadPolicy:
                 # list in the upload. Thusly a sourceful upload with one build
                 # has two architectures listed.
                 max = 2
-            if 'all' in upload.archs:
+            if 'all' in considered_archs:
                 # Sometimes we get 'i386 all' which would count as two archs
                 # so if 'all' is present, we bump the permitted number up
                 # by one.
                 max += 1
-            if len(upload.archs) > max:
+            if len(considered_archs) > max:
                 upload.reject("Policy permits only one build per upload.")
 
     def filterRecipients(self, upload, recipients):
