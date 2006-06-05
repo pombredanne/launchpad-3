@@ -288,7 +288,6 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = re.sub(r"(?<![\(\|\&\!])\s*\(", "&(", query)
         ## plpy.debug('4.1 query is %s' % repr(query))
         # Whitespace not proceded by (|&! not followed by &|
-        # XXX: Remove \s's here
         query = re.sub(r"(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
         ## plpy.debug('4.2 query is %s' % repr(query))
 
@@ -319,7 +318,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         ## plpy.debug('7 query is %s' % repr(query))
 
         # An &, | or ! immediatly before a )
-        query = re.sub(r"[\&\|\!\s]*[\&\|\!]+(?=\))", "", query)
+        query = re.sub(r"[\&\|\!\s]*[\&\|\!]+\s*(?=\))", "", query)
         ## plpy.debug('8 query is %s' % repr(query))
 
         # An &,| or ! followed by another boolean.

@@ -4,6 +4,7 @@ PO Imports
 The tale of a PO template and a PO file and how they get imported into
 Rosetta.
 
+    >>> from zope.app import datetimeutils
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
 
@@ -80,6 +81,7 @@ This is the file that'll get imported.
     >>> potemplate_contents = r'''
     ... msgid ""
     ... msgstr ""
+    ... "POT-Creation-Date: 2004-07-11 16:16+0900\n"
     ... "Content-Type: text/plain; charset=CHARSET\n"
     ... "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ...
@@ -121,6 +123,14 @@ We must approve the entry to be able to import it.
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
 
+Store current date
+
+    >>> import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+    >>> saved_date = datetime.datetime.now(UTC)
+
+
 Now, we tell the PO template to import from the file data it has.
 
     >>> potemplate.importFromQueue(FakeLogger())
@@ -128,6 +138,11 @@ Now, we tell the PO template to import from the file data it has.
 The status is now IMPORTED:
 
     >>> entry.status == RosettaImportStatus.IMPORTED
+    True
+
+The last update date is the one we got.
+
+    >>> potemplate.date_last_updated > saved_date
     True
 
 Once we've done this, the correct message IDs should show up in the template.
@@ -411,6 +426,7 @@ The status is now IMPORTED:
 The header should be the old one as this one does not have any:
 
     >>> print potemplate.header
+    POT-Creation-Date: 2004-07-11 16:16+0900
     Content-Type: text/plain; charset=CHARSET
     Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
 
@@ -662,5 +678,3 @@ And there are no more entries to import
 
     >>> LibrarianTestSetup().tearDown()
     >>> LaunchpadFunctionalTestSetup().tearDown()
-
-

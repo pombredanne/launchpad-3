@@ -70,11 +70,9 @@ def bugtask_modified(bugtask, event):
         elif new_status == BugTaskStatus.CONFIRMED:
             user.assignKarma('bugaccepted')
 
-    if task_delta.severity is not None:
-        event.user.assignKarma('bugtaskseveritychanged')
+    if task_delta.importance is not None:
+        event.user.assignKarma('bugtaskimportancechanged')
 
-    if task_delta.priority is not None:
-        event.user.assignKarma('bugtaskprioritychanged')
 
 def spec_created(spec, event):
     """Assign karma to the user who created the spec."""

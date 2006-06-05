@@ -160,6 +160,10 @@ special = {
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
+    'po_export_queue.txt': FunctionalDocFileSuite(
+            'launchpad/doc/po_export_queue.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
     'librarian.txt': FunctionalDocFileSuite(
             'launchpad/doc/librarian.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown

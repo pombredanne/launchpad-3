@@ -176,11 +176,13 @@ bugtarget_filebug = ContextTitle('Report a bug about %s')
 
 bugtask_backport_fixing = BugTaskBackportingTitle()
 
+bugtask_confirm_unlinked = LaunchbagBugID('Bug #%d - Request a fix')
+
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = LaunchbagBugID('Bug #%d - Request fix in a product')
+bugtask_requestfix = bugtask_confirm_unlinked
 
 bugtask_view = BugTaskPageTitle()
 
@@ -278,11 +280,9 @@ distribution_members = ContextTitle('%s distribution members')
 distribution_memberteam = ContextTitle(
     smartquote("Change %s's distribution team"))
 
+distribution_mirrors = ContextTitle("Mirrors of %s")
+
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
-
-distribution_officialmirrors = ContextTitle("Official mirrors of %s")
-
-distribution_allmirrors = ContextTitle("All mirrors of %s")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
@@ -689,15 +689,21 @@ productseries_new = ContextDisplayName('Register a new %s release series')
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
+shipit_adminrequest = 'ShipIt admin request'
+
 shipit_index = 'ShipIt'
 
 shipit_exports = 'ShipIt exports'
+
+shipit_forbidden = 'Forbidden'
 
 shipit_myrequest = "Your ShipIt order"
 
 shipit_oops = 'Error: Oops'
 
 shipit_reports = 'ShipIt reports'
+
+shipit_requestcds = 'Your ShipIt Request'
 
 shipitrequests_index = 'ShipIt requests'
 

@@ -19,12 +19,19 @@ from zope.component import getUtility
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.errors import NoSuchRevision
 
+from sqlobject import AND, SQLObjectNotFound
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database import (
     Person, Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, NotFoundError)
+
+
+class RevisionModifiedError(Exception):
+    """An error indicating that a revision has been modified."""
+    pass
 
 
 class BzrSync:
@@ -40,185 +47,213 @@ class BzrSync:
             branch_url = self.db_branch.url
         self.bzr_branch = BzrBranch.open(branch_url)
         self.bzr_history = self.bzr_branch.revision_history()
-        self._seen_ids = set()
         self._admin = getUtility(ILaunchpadCelebrities).admin
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
 
-    def syncHistory(self, doparents=True):
-        """Import all revisions in the branch's revision-history.
-
-        :param doparents: If true, also import parents of imported revisions.
-        """
-        self.logger.info(
-            "synchronizing history for branch: %s" % self.bzr_branch.base)
-
+    def syncHistory(self):
+        """Import all revisions in the branch's revision-history."""
         # Keep track if something was actually loaded in the database.
-        didsomething = False
+        did_something = False
 
-        if doparents:
-            pending_parents = []
-        else:
-            pending_parents = None
+        self.logger.info(
+            "synchronizing ancestry for branch: %s", self.bzr_branch.base)
 
-        for revision_id in self.bzr_history:
-            didsomething |= self.syncRevision(revision_id, pending_parents)
-        if pending_parents:
-            didsomething |= self.syncPendingParents(pending_parents)
-        didsomething |= self.truncateHistory()
+        # synchronise Revision objects
+        ancestry = self.bzr_branch.repository.get_ancestry(
+            self.bzr_branch.last_revision())
+        for revision_id in ancestry:
+            if revision_id is None:
+                continue
+            # If the revision is a ghost, it won't appear in the repository.
+            try:
+                revision = self.bzr_branch.repository.get_revision(revision_id)
+            except NoSuchRevision:
+                continue
+            if self.syncRevision(revision):
+                did_something = True
 
-        return didsomething
+        
+        # now synchronise the RevisionNumber objects
+        if self.syncRevisionNumbers():
+            did_something = True
 
-    def syncRevision(self, revision_id, pending_parents=None):
+        return did_something
+
+    def syncRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
 
-        :param revision_id: GUID of the revision to import.
-        :type revision_id: str
-        :param pending_parents: append GUID of revision parents to that list,
-            for subsequent processing by `syncPendingParents`.
-        :type pending_parents: list or None
+        :param bzr_revision: the revision to import
+        :type bzr_revision: bzrlib.revision.Revision
         """
-        # Prevent the same revision from being synchronized twice.
-        # This may happen when processing parents, for instance.
-        if revision_id in self._seen_ids:
-            return False
-        self._seen_ids.add(revision_id)
+        revision_id = bzr_revision.revision_id
+        self.logger.debug("synchronizing revision: %s", revision_id)
 
-        self.logger.debug("synchronizing revision: %s" % revision_id)
-
-        # If didsomething is True, new information was found and
+        # If did_something is True, new information was found and
         # loaded into the database.
-        didsomething = False
-
-        try:
-            bzr_revision = self.bzr_branch.repository.get_revision(revision_id)
-        except NoSuchRevision:
-            return didsomething
+        did_something = False
 
         self.trans_manager.begin()
 
-        db_revision = Revision.selectOneBy(revision_id=revision_id)
-        if not db_revision:
+        try:
+            db_revision = Revision.byRevisionID(revision_id)
+        except SQLObjectNotFound:
+            db_revision = None
+        if db_revision is not None:
+            # Verify that the revision in the database matches the
+            # revision from the branch.  Currently we just check that
+            # the parent revision list matches.
+            db_parents = shortlist(RevisionParent.selectBy(
+                revisionID=db_revision.id, orderBy='sequence'))
+            bzr_parents = bzr_revision.parent_ids
+
+            seen_parents = set()
+            for sequence, parent_id in enumerate(bzr_parents):
+                if parent_id in seen_parents:
+                    continue
+                seen_parents.add(parent_id)
+                matching_parents = [db_parent for db_parent in db_parents
+                                    if db_parent.parent_id == parent_id]
+                if len(matching_parents) == 0:
+                    raise RevisionModifiedError(
+                        'parent %s was added since last scan' % parent_id)
+                elif len(matching_parents) > 1:
+                    raise RevisionModifiedError(
+                        'parent %s is listed multiple times in db' % parent_id)
+                if matching_parents[0].sequence != sequence:
+                    raise RevisionModifiedError(
+                        'parent %s reordered (old index %d, new index %d)'
+                        % (parent_id, matching_parents[0].sequence, sequence))
+            if len(seen_parents) != len(db_parents):
+                removed_parents = [db_parent.parent_id
+                                   for db_parent in db_parents
+                                   if db_parent.parent_id not in seen_parents]
+                raise RevisionModifiedError(
+                    'some parents removed since last scan: %s'
+                    % (removed_parents,))
+        else:
             # Revision not yet in the database. Load it.
             timestamp = bzr_revision.timestamp
             if bzr_revision.timezone:
                 timestamp += bzr_revision.timezone
             revision_date = datetime.fromtimestamp(timestamp, tz=UTC)
-            db_author = RevisionAuthor.selectOneBy(name=bzr_revision.committer)
-            if not db_author:
+            try:
+                db_author = RevisionAuthor.byName(bzr_revision.committer)
+            except SQLObjectNotFound:
                 db_author = RevisionAuthor(name=bzr_revision.committer)
             db_revision = Revision(revision_id=revision_id,
                                    log_body=bzr_revision.message,
                                    revision_date=revision_date,
                                    revision_author=db_author.id,
                                    owner=self._admin.id)
-            didsomething = True
-
-        if pending_parents is not None:
-            # Caller requested to be informed about pending parents.
-            # Provide information about them. Notice that the database
-            # scheme was changed to not use the parent_id as a foreign
-            # key, so they could be loaded right here, and just loading
-            # the revision themselves postponed to avoid recursion.
-            seen_parent_ids = set()
+            seen_parents = set()
             for sequence, parent_id in enumerate(bzr_revision.parent_ids):
-                if parent_id not in seen_parent_ids:
-                    seen_parent_ids.add(parent_id)
-                    pending_parents.append((revision_id, sequence, parent_id))
-
-        if revision_id in self.bzr_history:
-            # Revision is in history, so append it to the RevisionNumber
-            # table as well, if not yet there.
-            bzr_revno = self.bzr_history.index(revision_id) + 1
-            db_revno = RevisionNumber.selectOneBy(
-                sequence=bzr_revno, branchID=self.db_branch.id)
-
-            if db_revno and db_revno.revision.revision_id != revision_id:
-                db_revno.revision = db_revision.id
-                didsomething = True
-
-            if not db_revno:
-                db_revno = RevisionNumber(
-                    sequence=bzr_revno,
-                    revision=db_revision.id,
-                    branch=self.db_branch.id)
-                didsomething = True
-
-            # XXX: need to record parents immediately!
-            # -- David Allouche 2006-03-22
-
-            # XXX: check that recorded parent list is equal to parent list in
-            # branch. -- David Allouche 2006-03-22
-
-        if didsomething:
+                if parent_id in seen_parents:
+                    continue
+                seen_parents.add(parent_id)
+                RevisionParent(revision=db_revision.id, sequence=sequence,
+                               parent_id=parent_id)
+            did_something = True
+            
+        if did_something:
             self.trans_manager.commit()
         else:
             self.trans_manager.abort()
 
-        return didsomething
+        return did_something
 
-    def syncPendingParents(self, pending_parents, recurse=True):
-        """Load parents with the information provided by syncRevision()
+    def syncRevisionNumbers(self):
+        """Synchronise the revision numbers for the branch."""
+        self.logger.info(
+            "synchronizing revision numbers for branch: %s",
+            self.bzr_branch.base)
 
-        :param pending_parents: GUIDs of revisions to import.
-        :type pending_parents: iterable of str
-        :param recurse: If true, parents of parents will be loaded as well.
-        """
-        # Keep track if something was actually loaded in the database.
-        didsomething = False
+        did_something = False
+        self.trans_manager.begin()
+        # now synchronise the RevisionNumber objects
+        for (index, revision_id) in enumerate(self.bzr_history):
+            # sequence numbers start from 1
+            sequence = index + 1
+            if self.syncRevisionNumber(sequence, revision_id):
+                did_something = True
 
-        if recurse:
-            pending_parents = list(pending_parents)
-            sync_pending_parents = pending_parents
+        # finally truncate any further revision numbers (if they exist):
+        if self.truncateHistory():
+            did_something = True
+
+        if did_something:
+            self.trans_manager.commit()
         else:
-            sync_pending_parents = None
+            self.trans_manager.abort()
 
-        while pending_parents:
-            # Pop each element from the pending_parents queue and process it.
-            # If recurse is True, syncRevision() may append additional
-            # items to the list, which will be processed as well.
-            revision_id, sequence, parent_id = pending_parents.pop(0)
-            didsomething |= self.syncRevision(parent_id, sync_pending_parents)
-            db_revision = Revision.selectOneBy(revision_id=revision_id)
-            db_parent = RevisionParent.selectOneBy(revisionID=db_revision.id,
-                                                   parent_id=parent_id)
-            if db_parent:
-                assert db_parent.sequence == sequence, (
-                    "Revision %r already has parent %r  with index %d. But we"
-                    " tried to import this parent again with index %d."
-                    % (db_revision.revision_id, parent_id,
-                       db_parent.sequence, sequence))
-            else:
-                self.trans_manager.begin()
-                RevisionParent(revision=db_revision.id, parent_id=parent_id,
-                               sequence=sequence)
-                self.trans_manager.commit()
-                didsomething = True
+        return did_something
 
-        return didsomething
+    def syncRevisionNumber(self, sequence, revision_id):
+        """Import the revision number with the given sequence and revision_id
 
-    def truncateHistory(self):
+        :param sequence: the sequence number for this revision number
+        :type sequence: int
+        :param revision_id: GUID of the revision
+        :type revision_id: str
+        """
+        did_something = False
+
+        self.trans_manager.begin()
+
+        db_revision = Revision.byRevisionID(revision_id)
+        db_revno = RevisionNumber.selectOneBy(
+            sequence=sequence, branchID=self.db_branch.id)
+
+        # If the database revision history has diverged, so we
+        # truncate the database history from this point on.  The
+        # replacement revision numbers will be created in their place.
+        if db_revno is not None and db_revno.revision != db_revision:
+            if self.truncateHistory(sequence):
+                did_something = True
+            db_revno = None
+
+        if db_revno is None:
+            db_revno = RevisionNumber(
+                sequence=sequence,
+                revision=db_revision.id,
+                branch=self.db_branch.id)
+            did_something = True
+
+        if did_something:
+            self.trans_manager.commit()
+        else:
+            self.trans_manager.abort()
+
+        return did_something
+
+    def truncateHistory(self, from_rev=None):
         """Remove excess RevisionNumber rows.
 
-        That is needed when 'uncommit' or 'pull/push --overwrite' shortened the
-        revision history. RevisionNumber rows with a sequence matching entries
-        in the bzr history are updated by syncRevision, but we need to
-        separately delete the excess rows.
+        :param from_rev: truncate from this revision on (defaults to
+            truncating revisions past the current revision number).
+        :type from_rev:  int or None
+
+        If the revision history for the branch has changed, some of
+        the RevisionNumber objects will no longer be valid.  These
+        objects must be removed before the replacement RevisionNumbers
+        can be created in the database.
+
+        This function is expected to be called from within a transaction.
         """
-        db_history_len = self.db_branch.revision_history.count()
-        excess = db_history_len - len(self.bzr_history)
-        # syncRevision should be called on every item of the branch history
-        # before truncating history, so the history recorded in the database
-        # must be already at least as long as the history of the branch.
-        assert excess >= 0
-        if excess == 0:
-            return False
-        self.trans_manager.begin()
-        for revno in self.db_branch.latest_revisions(excess):
+        if from_rev is None:
+            from_rev = len(self.bzr_history) + 1
+
+        self.logger.debug("Truncating revision numbers from %d on", from_rev)
+        revnos = RevisionNumber.select(AND(
+            RevisionNumber.q.branchID == self.db_branch.id,
+            RevisionNumber.q.sequence >= from_rev))
+        did_something = False
+        for revno in revnos:
             revno.destroySelf()
-        self.trans_manager.commit()
-        return True
+            did_something = True
+
+        return did_something
 
 
 def main(branch_id):

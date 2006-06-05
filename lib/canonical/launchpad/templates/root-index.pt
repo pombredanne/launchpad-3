@@ -15,7 +15,7 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h1 i18n:translate="">Welcome to The Launchpad</h1>
+  <h1 i18n:translate="">Welcome to the Launchpad</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -42,7 +42,7 @@
 
   </form>
 
-  <h2>Featured products</h2>
+  <h2>Featured software</h2>
 
   <table>
     <tbody>
@@ -51,7 +51,7 @@
           <img alt="" src="/@@/product_icon.gif" />
         </td>
         <td>
-          <b><a href="/distros/ubuntu">The Ubuntu Distribution</a></b>
+          <b><a href="/distros/ubuntu">The Ubuntu distribution</a></b>
           <p class="lesser">
       Ubuntu is a Linux distribution that emphasises ease of use and free
       global distribution.
@@ -94,15 +94,14 @@
   <table>
     <tr style="valign: top;">
       <td>
-        <b>Support Ticket Tracker:</b><br />
-        Launchpad allows your project to track technical support requests
-        from your users. <a href="/support">Learn More...</a>
+        <a href="/support"><b>Support tracker</b></a><br />
+        Launchpad lets you track technical support requests
+        from users of your product.
       </td>
       <td>
-        <b>Meeting Tracker:</b><br />
+        <a href="/sprints/"><b>Meeting tracker</b></a><br />
         You can plan sprints and meetings, and keep track of the
         specifications and bugs to be addressed at the meeting.
-        <a href="/sprints/">Learn More...</a>
       </td>
     </tr>
   </table>

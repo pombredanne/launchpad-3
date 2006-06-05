@@ -35,7 +35,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        class="canonical.launchpad.browser.BugTargetBugListingView"
         facet="bugs"
         permission="zope.Public">
         <browser:page
@@ -44,17 +44,37 @@
             lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
-        permission="zope.Public">
-        <browser:page
-            name="+officialmirrors"
-            template="../templates/distribution-officialmirrors.pt" />
-        <browser:page
-            name="+allmirrors"
-            template="../templates/distribution-allmirrors.pt" />
-    </browser:pages>
+        class="canonical.launchpad.browser.DistributionArchiveMirrorsView"
+        permission="zope.Public"
+        name="+archivemirrors"
+        template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
+        permission="zope.Public"
+        name="+cdmirrors"
+        template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
+        permission="launchpad.Edit"
+        name="+disabledmirrors"
+        template="../templates/distribution-mirrors.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        class="canonical.launchpad.browser.DistributionUnofficialMirrorsView"
+        permission="launchpad.Edit"
+        name="+unofficialmirrors"
+        template="../templates/distribution-mirrors.pt" />
 
     <browser:generalform
         name="+newmirror"
@@ -64,11 +84,10 @@
         schema="canonical.launchpad.interfaces.IDistributionMirror"
         fields="owner name displayname description speed country
                 content http_base_url ftp_base_url rsync_base_url
-                pulse_type pulse_source enabled official_candidate"
+                enabled official_candidate"
         keyword_arguments="
             owner name displayname description speed country content 
-            http_base_url ftp_base_url rsync_base_url pulse_type pulse_source
-            enabled official_candidate"
+            http_base_url ftp_base_url rsync_base_url enabled official_candidate"
         permission="launchpad.AnyPerson"
         template="../templates/distribution-newmirror.pt">
         <browser:widget 
@@ -335,6 +354,7 @@
         module="canonical.launchpad.browser"
         classes="DistributionSetNavigation"
         />
+
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"

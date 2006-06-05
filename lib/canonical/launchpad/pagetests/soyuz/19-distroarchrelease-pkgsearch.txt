@@ -1,16 +1,14 @@
 Check if the DistroArchRelease package search page is not broken.
 This page is used to search binarypackages in a distroarchrelease context
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/warty/i386/+search HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> from zope.testbrowser import Browser
+  >>> browser = Browser()
 
-Make a search and check if the result page is not broken.
+  >>> browser.open("http://localhost:9000/distros/ubuntu/warty/i386")
+  >>> browser.getControl(name="text").value = "firefox"
+  >>> browser.getControl("Search").click()
+  >>> browser.url
+  'http://localhost:9000/distros/ubuntu/warty/i386/+search?text=firefox'
+  >>> browser.contents
+  '...Mozilla Firefox Web Browser...'
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/warty/i386/+search?name=firefox HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...

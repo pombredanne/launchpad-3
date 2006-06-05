@@ -77,7 +77,7 @@
   ... POST %s HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... password=zeca&SUBMIT_CHANGES=Submit""" % path)
+  ... VALIDATE=Confirm""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/people/salgado

@@ -267,12 +267,14 @@ class XMLRPCPublicationRequestFactory:
         LaunchpadXMLRPCPublication = LaunchpadBrowserPublication
         self._xmlrpc = LaunchpadXMLRPCPublication(db)
 
-    def __call__(self, input_stream, output_steam, env):
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        assert output_stream is None, 'output_stream is deprecated in Z3.2'
+
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
         if method in ['POST']:
-            request = LaunchpadXMLRPCRequest(input_stream, output_steam, env)
+            request = LaunchpadXMLRPCRequest(input_stream, env)
             request.setPublication(self._xmlrpc)
         else:
             raise NotImplementedError()
@@ -343,21 +345,6 @@ class PMDBHTTPServer(PublisherHTTPServer):
             raise
 
 
-class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
-    """RequestFactory that sets the InternalHTTPLayer on a request."""
-
-    # XXX: this is only used for supermirror-pull-list.txt, and that
-    # functionality should be provided by the internal xmlrpc server.
-    # See bug 40383. -- David Allouche 2005-04-20
-
-    def __call__(self, input_stream, env, output_stream=None):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        request = HTTPPublicationRequestFactory.__call__(
-            self, input_stream, env, output_stream)
-        canonical.launchpad.layers.setFirstLayer(
-            request, canonical.launchpad.layers.InternalHTTPLayer)
-        return request
-
 # XXX: SteveAlexander, 2006-03-16.  We'll replace these different servers
 #      with fewer ones, and switch based on the Host: header.
 #      http://httpd.apache.org/docs/2.0/mod/mod_proxy.html#proxypreservehost
@@ -388,11 +375,4 @@ debughttp = ServerType(
     DebugLayerRequestFactory,
     CommonAccessLogger,
     8082,
-    True)
-
-internalhttp = ServerType(
-    PublisherHTTPServer,
-    InternalHTTPLayerRequestFactory,
-    CommonAccessLogger,
-    8083,
     True)

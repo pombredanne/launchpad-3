@@ -1,6 +1,5 @@
 %(visibility)s bug reported:
 
-%(bug_info)s
-
-Description:
 %(description)s
+
+%(bug_info)s
