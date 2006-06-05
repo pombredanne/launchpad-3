@@ -218,8 +218,19 @@ To provide null-matching search criteria, use canonical.launchpad.searchbuilder.
 
     >>> params = BugTaskSearchParams(sourcepackagename=NULL, user=None)
     >>> bugtasks = ubuntu.searchTasks(params)
-    >>> print sorted([bugtask.bug.id for bugtask in bugtasks])
+    >>> print sorted(bugtask.bug.id for bugtask in bugtasks)
     [1, 2]
+
+For negating a search argument, use not_equals:
+
+    >>> from canonical.launchpad.searchbuilder import not_equals
+
+    >>> params = BugTaskSearchParams(
+    ...     importance=not_equals(BugTaskImportance.LOW), user=None)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
+
+    >>> print sorted(bugtask.bug.id for bugtask in bugtasks)
+    [4, 5, 6]
 
 There's also support for searching tasks based on a string of text, e.g.:
 
@@ -269,14 +280,14 @@ There are now three bugtasks open on packages in Ubuntu main.
 
     >>> params = BugTaskSearchParams(component=main, user=None)
     >>> main_tasks = ubuntu.searchTasks(params)
-    >>> sorted([bugtask.bug.id for bugtask in main_tasks])
+    >>> sorted(bugtask.bug.id for bugtask in main_tasks)
     [1, 10]
 
 And there is the one bug on a "universe" package that we just added:
 
     >>> params = BugTaskSearchParams(component=universe, user=None)
     >>> universe_tasks = ubuntu.searchTasks(params)
-    >>> sorted([bugtask.bug.title for bugtask in universe_tasks])
+    >>> sorted(bugtask.bug.title for bugtask in universe_tasks)
     [u'a bug in a universe package']
 
 Let's get all bugs on either main or universe:
@@ -284,7 +295,7 @@ Let's get all bugs on either main or universe:
     >>> params = BugTaskSearchParams(
     ...     component=any(main, universe), user=None)
     >>> main_or_universe_tasks = ubuntu.searchTasks(params)
-    >>> sorted([bugtask.bug.id for bugtask in main_or_universe_tasks])
+    >>> sorted(bugtask.bug.id for bugtask in main_or_universe_tasks)
     [1, 10, 11L]
 
 Bug Task Targets
@@ -683,7 +694,7 @@ if we query logged in as a user who can't see that bug).
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=foobar)
-    >>> sorted([bugtask.bug.id for bugtask in foobar_maintained_tasks])
+    >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
     [1, 4, 5, 7]
 
 Privacy and Launchpad Admins
@@ -711,7 +722,7 @@ we'll also see bug 1 again in the results, even though it's private.
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=ddaa)
-    >>> sorted([bugtask.bug.id for bugtask in foobar_maintained_tasks])
+    >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
     [1, 4, 5, 7]
 
 Trying to retrieve the bug directly will work fine:
