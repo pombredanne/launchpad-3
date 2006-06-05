@@ -510,6 +510,12 @@ class ShippingRequestSet:
                 "shippingrequest.country = %s AND "
                 "shippingrequest.id = shipment.request" % sqlvalues(country.id))
             clauseTables = ['Shipment']
+            if current_release_only:
+                base_query += """ 
+                    AND RequestedCDs.distrorelease = %s
+                    AND RequestedCDs.request = ShippingRequest.id
+                    """ % ShipItConstants.current_distrorelease
+                clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
                 base_query, clauseTables=clauseTables).count()
             if not total_shipped_requests:
