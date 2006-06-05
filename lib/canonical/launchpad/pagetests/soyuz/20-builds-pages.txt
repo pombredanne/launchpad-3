@@ -4,9 +4,27 @@ template/builds-list.pt. Basically they have a buildstate selector
 action via HTTP GET and present a batched list of build records
 according the selected buildstate, by default All
 
+  >>> def check_optional_search(contents):
+  ...     """Check if the label and/or the field for the optional
+  ...     "names containing" search are present in the given page contents.
+  ...
+  ...     Return "present" if they're both here, "not present" if they're
+  ...     both not here, and "mismatch" if only one or the other is here.
+  ...     """
+  ...
+  ...     label_present = "with names containing:" in contents
+  ...     field_present = '<input id="build_text"' in contents
+  ...     if label_present and field_present:
+  ...         return "present"
+  ...     elif not label_present and not field_present:
+  ...         return "not present"
+  ...     else:
+  ...         return "mismatch"
+  
   >>> from zope.testbrowser import Browser
   >>> browser = Browser()
 
+Check the contents of the distro builds list page.
   >>> browser.open("http://localhost:9000/distros/ubuntu/+builds")
   >>> browser.contents
   '...i386 build of pmount 0.1-1 in ubuntu hoary...
@@ -16,6 +34,19 @@ according the selected buildstate, by default All
   >>> browser.getControl("Update").click()
   >>> browser.contents
   '...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
+
+On this page, the "names containing" search field appears.
+
+  >>> print check_optional_search(browser.contents)
+  present
+
+Check the results of some searches on build state.
+
+  >>> browser.getControl(name="build_state").value = ['built']
+  >>> browser.getControl("Update").click()
+  >>> browser.contents
+  '...i386 build of pmount 0.1-1 in ubuntu hoary...
+  ...i386 build of mozilla-firefox 0.9 in ubuntu warty...'
 
   >>> browser.getControl(name="build_state").value = ['depwait']
   >>> browser.getControl("Update").click()
@@ -32,10 +63,13 @@ fact, the same mechanisms, we simply check if they render with no
 tracebacks:
 
   >>> browser.open("http://localhost:9000/distros/ubuntu/hoary/+builds")
-  >>> browser.open("http://localhost:9000/distros/ubuntu/hoary/i386/+builds")
   >>> browser.open("http://localhost:9000/distros/ubuntu/hoary/+source/pmount/+builds")
 
-Check Build home pages and friends:
+We check that the "names containing" field doesn't appear on the build list
+for an individual package.
+
+  >>> print check_optional_search(browser.contents)
+  not present
 
   >>> browser.open("http://localhost:9000/+builds/+build/7")
 

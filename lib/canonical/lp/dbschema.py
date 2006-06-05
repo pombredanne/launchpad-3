@@ -53,7 +53,6 @@ __all__ = (
 'LoginTokenType',
 'ManifestEntryType',
 'ManifestEntryHint',
-'MirrorFreshness',
 'MirrorContent',
 'MirrorPulseType',
 'MirrorSpeed',
@@ -2926,19 +2925,6 @@ class BuildStatus(DBSchema):
         """)
 
 
-class MirrorFreshness(DBSchema):
-    """ Mirror Freshness
-
-    This valeu indicates how up-to-date Mirror is.
-    """
-
-    UNKNOWN = Item(99, """
-        Freshness Unknown
-
-        The Freshness was never verified and is unknown.
-        """)
-
-
 class MirrorContent(DBSchema):
     """The content that is mirrored."""
 
@@ -2954,13 +2940,6 @@ class MirrorContent(DBSchema):
 
         Mirror containing released installation images for a given
         distribution.
-        """)
-
-    CDIMAGE = Item(3, """
-        CD Image
-
-        Mirrors containing CD images other than the installation ones, relesed
-        for a given distribution.
         """)
 
 
@@ -3049,6 +3028,12 @@ class MirrorSpeed(DBSchema):
         10 Gbps
 
         The upstream link of this mirror can make up to 10 gigabits per second.
+        """)
+
+    S20G = Item(12, """
+        20 Gbps
+
+        The upstream link of this mirror can make up to 20 gigabits per second.
         """)
 
 

@@ -14,3 +14,7 @@ NULL = "NULL"
 class any:
     def __init__(self, *query_values):
         self.query_values = query_values
+
+class not_equals:
+    def __init__(self, value):
+        self.value = value

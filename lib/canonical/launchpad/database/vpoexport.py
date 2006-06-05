@@ -95,13 +95,9 @@ class VPOExportSet:
 
         return self._select(where=where)
 
-    def get_potemplate_rows(self, potemplate, include_translations=True):
+    def get_potemplate_rows(self, potemplate):
         """See IVPOExportSet."""
         where = 'potemplate = %s' % sqlvalues(potemplate.id)
-
-        if not include_translations:
-            # Filter out translations and leave only the template export.
-            where = '%s AND language IS NULL' % where
 
         return self._select(where=where)
 

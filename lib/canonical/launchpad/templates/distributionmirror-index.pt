@@ -24,17 +24,6 @@
 
 <div metal:fill-slot="main">
 
-    <tal:comment condition="nothing">
-      XXX: This use of "python:" here is to workaround
-      https://launchpad.net/products/launchpad/+bug/5768
-    </tal:comment>
-    <tal:non-archive-mirror condition="python: context.content.name != 'ARCHIVE'">
-      <div tal:condition="not: context/file_list" class="portalMessage">
-        We cannot check if this mirror is up to date or not because a file
-        list wasn't uploaded yet.
-      </div>
-    </tal:non-archive-mirror>
-
     <div class="highlighted" style="font-size: 80%;"
          tal:condition="context/description">
       <p tal:replace="structure context/description/fmt:text-to-html">
@@ -64,74 +53,48 @@
       <h2>Last probe</h2>
 
       <tal:no-last-probe condition="not: probe">
-        <p>This mirror has never been verified.</p>
+        <p tal:condition="context/isOfficial">
+          This mirror has never been verified.
+        </p>
+
+        <p tal:condition="not: context/isOfficial">
+          This mirror is an unofficial 
+          <span tal:replace="context/distribution/title">Ubuntu</span> mirror,
+          and will not be verified.
+        </p>
       </tal:no-last-probe>
 
       <tal:has-last-probe condition="probe">
         <p>This mirror was last probed in 
           <span tal:replace="probe/date_created/fmt:date" />.
 
-        <tal:is-owner condition="context/required:launchpad.Edit">
-          You can see the 
-          <a tal:attributes="href probe/log_file/url">log file</a> of that
-          probe, in case the statuses are not what you expect.
-        </tal:is-owner>
-
+          <tal:is-owner condition="context/required:launchpad.Edit">
+            You can see the 
+            <a tal:attributes="href probe/log_file/url">log file</a> of the
+            probe.
+          </tal:is-owner>
         </p>
       </tal:has-last-probe>
     </tal:last-probe>
 
-    <h2>Architecture releases mirrored</h2>
-    <div tal:condition="not: context/arch_releases">
-      We have found no releases for any architectures on this mirror.
-      This is normal if we have not yet successfully verified the mirror.
-    </div>
+    <tal:has-last-probe condition="context/last_probe_record">
+      <tal:comment condition="nothing">
+        XXX: This use of "python:" here is to workaround
+        https://launchpad.net/products/launchpad/+bug/5768
+      </tal:comment>
+      <tal:archive-mirror condition="python: context.content.name == 'ARCHIVE'"
+        define="arch_releases view/getSummarizedMirroredArchReleases;
+                source_releases view/getSummarizedMirroredSourceReleases">
+        <metal:mirror-content
+          use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
+      </tal:archive-mirror>
 
-    <table tal:condition="context/arch_releases" class="listing">
-    <thead>
-      <tr>
-        <th>Release</th>
-        <th>Architecture</th>
-        <th>Component</th>
-        <th>Pocket</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="arch_release context/arch_releases">
-        <td tal:content="arch_release/distro_arch_release/distrorelease/name" />
-        <td tal:content="arch_release/distro_arch_release/architecturetag" />
-        <td tal:content="arch_release/component/name" />
-        <td tal:content="arch_release/pocket/title" />
-        <td tal:content="arch_release/status/title" />
-      </tr>
-    </tbody>
-    </table>
-
-    <h2>Source releases mirrored</h2>
-    <div tal:condition="not: context/source_releases">
-      We have found no source releases on this mirror. This is normal
-      if we have not yet successfully verified the mirror.
-    </div>
-
-    <table tal:condition="context/source_releases" class="listing">
-    <thead>
-      <tr>
-        <th>Release</th>
-        <th>Component</th>
-        <th>Pocket</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="source_release context/source_releases">
-        <td tal:content="source_release/distro_release/name" />
-        <td tal:content="source_release/component/name" />
-        <td tal:content="source_release/pocket/title" />
-        <td tal:content="source_release/status/title" />
-      </tr>
-    </tbody>
-    </table>
+      <tal:release-mirror condition="python: context.content.name == 'RELEASE'"
+        define="flavours_by_releases view/getCDImageMirroredFlavoursByRelease">
+        <metal:mirror-content
+          use-macro="context/@@+distributionmirror-macros/release-mirror-content" />
+      </tal:release-mirror>
+    </tal:has-last-probe>
 
 </div>
 
