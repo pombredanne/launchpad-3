@@ -740,10 +740,9 @@ class ShippingRequestApproveOrDenyView(
                     quantities[flavour][arch] = kw[field_name]
 
         if 'APPROVE' in form:
-            if not context.cancelled or not context.isApproved():
+            if context.cancelled or context.isApproved():
                 # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with
-                # this request.
+                # refresh the page so the user can decide what to do with it.
                 return
             context.approve(whoapproved=getUtility(ILaunchBag).user)
             context.highpriority = kw['highpriority']
@@ -752,8 +751,7 @@ class ShippingRequestApproveOrDenyView(
         elif 'CHANGE' in form:
             if not context.isApproved():
                 # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with
-                # this request.
+                # refresh the page so the user can decide what to do with it.
                 return
             self._nextURL = self._makeNextURL(previous_action='changed')
             context.highpriority = kw['highpriority']
@@ -761,8 +759,7 @@ class ShippingRequestApproveOrDenyView(
         elif 'DENY' in form:
             if context.isDenied():
                 # This shipit request was changed behind our back; let's just
-                # refresh the page so the user can decide what to do with
-                # this request.
+                # refresh the page so the user can decide what to do with it.
                 return
             self._nextURL = self._makeNextURL(previous_action='denied')
             context.deny()
