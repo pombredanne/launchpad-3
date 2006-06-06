@@ -25,10 +25,10 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.launchpad import _
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.event.sqlobjectevent import (
         SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent)
 from canonical.launchpad.webapp.generalform import NoRenderingOnRedirect
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 class SQLObjectEditView(EditView, NoRenderingOnRedirect):
     """An editview that publishes an SQLObjectModifiedEvent, that provides

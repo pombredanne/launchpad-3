@@ -69,7 +69,7 @@
   ... DENY=Deny""")
   HTTP/1.1 303 See Other
   ...
-  Location: http://shipit.async.com.br/requests/13/.
+  Location: http://shipit.async.com.br//requests/13?previous=13&denied=1
   <BLANKLINE>
 
 

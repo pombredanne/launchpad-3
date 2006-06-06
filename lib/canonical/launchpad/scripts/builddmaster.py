@@ -44,6 +44,7 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
 
+from canonical.archivepublisher.publishing import pocketsuffix
 
 # Constants used in build scoring
 SCORE_SATISFIEDDEP = 5
@@ -659,7 +660,8 @@ class BuilderGroup:
         extra_args = [
             "--log-file", "%s" %  uploader_logfilename,
             "-d", "%s" % queueItem.build.distribution.name,
-            "-r", "%s" % queueItem.build.distrorelease.name,
+            "-r", "%s" % (queueItem.build.distrorelease.name +
+                          pocketsuffix[queueItem.build.pocket]),
             "-b", "%s" % queueItem.build.id,
             "-J", "%s" % upload_leaf,
             "%s" % root,
@@ -1103,13 +1105,16 @@ class BuilddMaster:
 
         return logging.getLogger("%s.%s" % (self._logger.name, subname))
 
-    def scoreBuildQueueEntry(self, job):
+    def scoreBuildQueueEntry(self, job, now=None):
         """Score Build Job according several fields
 
         Generate a Score index according some job properties:
         * distribution release component
         * sourcepackagerelease urgency
         """
+        if now is None:
+            now = datetime.datetime.now(pytz.timezone('UTC'))
+            
         if job.manual:
             self._logger.debug("%s (%d) MANUALLY RESCORED"
                                % (job.name, job.lastscore))
@@ -1154,7 +1159,7 @@ class BuilddMaster:
         msg += "C+%d " % score_componentname[job.component_name]
 
         # Calculate the build queue time component of the score
-        eta = datetime.datetime.now(pytz.timezone('UTC')) - job.created
+        eta = now - job.created
         for limit, dep_score in queue_time_scores:
             if eta.seconds > limit:
                 score += dep_score

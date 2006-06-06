@@ -462,6 +462,13 @@
                 mirrors.
             </description>
         </key>
+        <key name="releases_file_list_url" datatype="string" 
+             default="http://releases.ubuntu.com/.manifest">
+            <description>
+                The URL to the file containing the list of ISO images that a
+                mirror must contain.
+            </description>
+        </key>
         <key name="timeout" datatype="integer" default="30">
             <description>
                 The time in seconds that the mirror prober will wait for a
