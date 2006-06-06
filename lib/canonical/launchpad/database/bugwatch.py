@@ -22,8 +22,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.helpers import Snapshot
+
 from canonical.launchpad.webapp import urlappend, urlsplit
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase

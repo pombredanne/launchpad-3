@@ -7,7 +7,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, RelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR
 
@@ -92,7 +92,7 @@ class Distribution(SQLBase, BugTargetBase):
     uploadsender = StringCol(notNull=False, default=None)
     uploadadmin = StringCol(notNull=False, default=None)
 
-    bounties = RelatedJoin(
+    bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
     milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
@@ -366,9 +366,9 @@ class Distribution(SQLBase, BugTargetBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # distributions, we need to be able to filter on the basis of:
@@ -381,7 +381,7 @@ class Distribution(SQLBase, BugTargetBase):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -394,11 +394,10 @@ class Distribution(SQLBase, BugTargetBase):
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

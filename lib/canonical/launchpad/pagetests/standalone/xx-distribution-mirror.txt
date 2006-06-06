@@ -139,7 +139,7 @@
   # headers.
   # https://launchpad.net/products/launchpad/+bug/45226
 
-  >>> from zope.testbrowser import Browser
+  >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.handleErrors = False
 
