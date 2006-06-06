@@ -75,6 +75,10 @@
       tal:attributes="selected python:orderby == '-importance'"
     >by importance</option>
     <option
+      value="status"
+      tal:attributes="selected python:orderby == 'status'"
+    >by status</option>
+    <option
       value="milestone"
       tal:attributes="selected python:orderby == 'milestone'"
     >by milestone</option>

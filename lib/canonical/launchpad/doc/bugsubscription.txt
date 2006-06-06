@@ -210,7 +210,7 @@ subscribers.
 
     >>> from canonical.launchpad.event import (
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent)
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IBug
 
     >>> sorted(
@@ -225,7 +225,7 @@ subscribers.
 
     >>> notify(
     ...     SQLObjectModifiedEvent(
-    ...         bug_before_modification, linux_source_bug, ["private"]))
+    ...         linux_source_bug, bug_before_modification, ["private"]))
 
     >>> sorted(
     ...     person.name for person in linux_source_bug.getDirectSubscribers())

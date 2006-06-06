@@ -6,7 +6,7 @@ __all__ = ['Manifest']
 
 from zope.interface import implements
 
-from sqlobject import SQLMultipleJoin, StringCol, RelatedJoin
+from sqlobject import SQLMultipleJoin, StringCol, SQLRelatedJoin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -28,7 +28,7 @@ class Manifest(SQLBase):
     entries = SQLMultipleJoin('ManifestEntry', joinColumn='manifest',
                            orderBy='sequence')
 
-    ancestors = RelatedJoin('Manifest', joinColumn='child',
+    ancestors = SQLRelatedJoin('Manifest', joinColumn='child',
                             otherColumn='parent',
                             intermediateTable='ManifestAncestry')
 

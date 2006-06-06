@@ -380,12 +380,6 @@ def validate_distribution_mirror_schema(form_values):
                   values suplied by the user.
     """
     errors = []
-    if (form_values['pulse_type'] == MirrorPulseType.PULL
-        and not form_values['pulse_source']):
-        errors.append(LaunchpadValidationError(_(
-            "You have choosen 'Pull' as the pulse type but have not "
-            "supplied a pulse source.")))
-
     if not (form_values['http_base_url'] or form_values['ftp_base_url']
             or form_values['rsync_base_url']):
         errors.append(LaunchpadValidationError(_(
