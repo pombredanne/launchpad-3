@@ -25,12 +25,14 @@ import urllib
 
 from zope.event import notify
 from zope.interface import providedBy
-from zope.schema.vocabulary import getVocabularyRegistry
+from zope.schema import Choice
+from zope.schema.vocabulary import (
+    getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.component import getUtility, getView
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget
+from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
 from zope.app.form.utility import (
-    setUpWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidget, setUpWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, IDisplayWidget, WidgetsError
 from zope.schema.interfaces import IList
 from zope.security.proxy import isinstance as zope_isinstance
@@ -228,6 +230,39 @@ class BugTaskView(LaunchpadView):
 
         self.notices = []
 
+    def initialize(self):
+        """Set up the needed widgets."""
+        if self.user is None:
+            return
+
+        # Set up widgets in order to handle subscription requests.
+        if self.context.bug.isSubscribed(self.user):
+            subscription_terms = [
+                SimpleTerm(
+                    self.user, self.user.name, 'Unsubscribe me from this bug')]
+        else:
+            subscription_terms = [
+                SimpleTerm(
+                    self.user, self.user.name, 'Subscribe me to this bug')]
+        for team in self.user.teams_participated_in:
+            if self.context.bug.isSubscribed(team):
+                subscription_terms.append(
+                    SimpleTerm(
+                        team, team.name,
+                        'Unsubscribe <a href="%s">%s</a> from this bug' % (
+                            canonical_url(team), cgi.escape(team.displayname))))
+        subscription_vocabulary = SimpleVocabulary(subscription_terms)
+        person_field = Choice(
+            __name__='subscription',
+            vocabulary=subscription_vocabulary, required=True)
+        self.subscription_widget = CustomWidgetFactory(RadioWidget)
+        setUpWidget(
+            self, 'subscription', person_field, IInputWidget, value=self.user)
+
+    def userIsSubscribed(self):
+        """Return whether the user is subscribed to the bug or not."""
+        return self.context.bug.isSubscribed(self.user)
+
     def process(self):
         """Process changes to the bug page.
 
@@ -249,14 +284,24 @@ class BugTaskView(LaunchpadView):
     def handleSubscriptionRequest(self):
         """Subscribe or unsubscribe the user from the bug, if requested."""
         # establish if a subscription form was posted
-        newsub = self.request.form.get('subscribe', None)
-        if newsub and self.user and self.request.method == 'POST':
-            if newsub == 'Subscribe':
+        if (not self.user or self.request.method != 'POST' or
+            'cancel' in self.request.form or
+            not self.subscription_widget.hasValidInput()):
+            return
+        subscription_person = self.subscription_widget.getInputValue()
+        if subscription_person == self.user:
+            if 'subscribe' in self.request.form:
                 self.context.bug.subscribe(self.user)
                 self.notices.append("You have been subscribed to this bug.")
-            elif newsub == 'Unsubscribe':
+            else:
                 self.context.bug.unsubscribe(self.user)
                 self.notices.append("You have been unsubscribed from this bug.")
+        else:
+            # This method can only unsubscribe someone else, never subscribe.
+            self.context.bug.unsubscribe(subscription_person)
+            self.notices.append(
+                "%s has been unsubscribed from this bug." % cgi.escape(
+                    subscription_person.displayname))
 
     def reportBugInContext(self):
         form = self.request.form
