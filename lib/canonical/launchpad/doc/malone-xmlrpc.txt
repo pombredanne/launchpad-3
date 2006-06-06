@@ -153,24 +153,40 @@ Specifying a non-existent distribution.
 
 Specifying a non-existent package.
 
-XXX
+    >>> filebug_api.filebug('', 'ubuntu', 'nosuchpackage')
+    <Fault 90: 'No such package: nosuchpackage'>
 
 Missing title.
 
-XXX
+    >>> filebug_api.filebug('firefox', '', '', '')
+    <Fault 100: 'Required parameter missing: title'>
 
 Missing comment.
 
-XXX
+    >>> filebug_api.filebug('firefox', '', '', 'the title', '')
+    <Fault 100: 'Required parameter missing: comment'>
 
 Invalid status.
 
-XXX
+    >>> filebug_api.filebug(
+    ...     'firefox', '', '', 'title', 'comment', 'nosuchstatus')
+    <Fault 110: 'Unknown value for status: nosuchstatus. Allowed values:
+    unconfirmed, needsinfo, rejected, confirmed, inprogress, fixcommitted,
+    fixreleased'>
 
 Invalid assignee.
 
-XXX
+    >>> filebug_api.filebug(
+    ...     'firefox', '', '', 'title', 'comment', '',
+    ...     'nosuch@assignee.com')
+    <Fault 20: 'Invalid assignee: No user with the email address
+    "nosuch@assignee.com" was found'>
 
-Invalid subscribers.
+Invalid subscriber.
 
-XXX
+    >>> filebug_api.filebug(
+    ...     'firefox', '', '', 'title', 'comment', '',
+    ...     'test@canonical.com', '', '',
+    ...     ["foo.bar@canonical.com", "nosuch@subscriber.com"])
+    <Fault 20: 'Invalid subscriber: No user with the email address
+    "nosuch@subscriber.com" was found'>

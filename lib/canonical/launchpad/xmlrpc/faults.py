@@ -12,10 +12,12 @@ __all__ = [
     'NoSuchPerson',
     'NoSuchBranch',
     'NoSuchBug',
+    'RequiredParameterMissing',
     ]
 
 import xmlrpclib
 
+from canonical.lp.dbschema import BugTaskStatus
 
 class LaunchpadFault(xmlrpclib.Fault):
     """Base class for a Launchpad XMLRPC fault.
@@ -51,10 +53,11 @@ class NoSuchPerson(LaunchpadFault):
 
     error_code = 20
     msg_template = (
-        "No such email is registered in Launchpad: %(email_address)s")
+        'Invalid %(type)s: No user with the email address '
+        '"%(email_address)s" was found')
 
-    def __init__(self, email_address):
-        LaunchpadFault.__init__(self, email_address=email_address)
+    def __init__(self, email_address, type="user"):
+        LaunchpadFault.__init__(self, type=type, email_address=email_address)
 
 
 class NoSuchBranch(LaunchpadFault):
@@ -116,3 +119,40 @@ class NoSuchDistribution(LaunchpadFault):
 
     def __init__(self, distro_name):
         LaunchpadFault.__init__(self, distro_name=distro_name)
+
+
+class NoSuchPackage(LaunchpadFault):
+    """There's no source or binary package with the name provided."""
+
+    error_code = 90
+    msg_template = "No such package: %(package_name)s"
+
+    def __init__(self, package_name):
+        LaunchpadFault.__init__(self, package_name=package_name)
+
+
+class RequiredParameterMissing(LaunchpadFault):
+    """A required parameter was not provided."""
+
+    error_code = 100
+    msg_template = "Required parameter missing: %(parameter_name)s"
+
+    def __init__(self, parameter_name):
+        LaunchpadFault.__init__(self, parameter_name=parameter_name)
+
+
+class NoSuchStatus(LaunchpadFault):
+    """There's no status with the name provided."""
+
+    error_code = 110
+    msg_template = (
+        "Unknown value for status: %(status_name)s. "
+        "Allowed values: %(allowed_statuses)s")
+
+    def __init__(self, status_name):
+        allowed_statuses = ", ".join(
+            status.name.lower() for status in BugTaskStatus.items
+                if status != BugTaskStatus.UNKNOWN)
+
+        LaunchpadFault.__init__(
+            self, status_name=status_name, allowed_statuses=allowed_statuses)
