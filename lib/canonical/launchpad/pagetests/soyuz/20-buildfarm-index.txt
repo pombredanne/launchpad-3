@@ -1,26 +1,27 @@
-
 Check important fields for builders page, overview-menu is hidden for
 public access:
 
-  >>> print http(r"""
-  ... GET /+builds/+index HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...bob...
+  >>> from mechanize import LinkNotFoundError
+  >>> from canonical.launchpad.helpers import backslashreplace
+
+  >>> browser.open("http://localhost:9000/+builds/+index")
+  >>> try:
+  ...     browser.getLink("Add New Builder")
+  ... except LinkNotFoundError:
+  ...     print "LinkNotFoundError"
+  LinkNotFoundError
+
+  >>> browser.contents
+  '...bob...
   ...bob...
   ...386...
   ...Mark Shuttleworth...
-  ...NOT OK : None (AUTO)...
-
+  ...NOT OK : None (AUTO)...'
 
 Check the overview-menu for authorized access (admins member)
 
-
-  >>> print http(r"""
-  ... GET /+builds/+index HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...Add New Builder...
+  >>> browser.addHeader("Authorization",
+  ...                   "Basic foo.bar@canonical.com:test")
+  >>> browser.open("http://localhost:9000/+builds/+index")
+  >>> browser.getLink("Add New Builder")
+  <Link text=...>

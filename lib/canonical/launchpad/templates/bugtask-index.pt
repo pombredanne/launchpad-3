@@ -6,7 +6,7 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <div>
-        <img alt="" src="/@@/bug" />
+        <tal:icon replace="structure context/fmt:icon" />
         Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>:
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
@@ -170,9 +170,9 @@
             <textarea name="comment" rows="10"></textarea>
           </div>
           <div tal:condition="python:not context.bug.isSubscribed(view.user)">
-            <input type="checkbox" name="subscribe" id="subscribe"
-                   value="Subscribe" />
-            <label for="subscribe" style="font-weight: normal">
+            <label style="font-weight: normal">
+              <input type="checkbox" name="subscribe" id="subscribe"
+                     value="Subscribe" />
               E-mail me about changes to this bug report
             </label>
           </div>

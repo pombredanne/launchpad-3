@@ -360,6 +360,13 @@ as NEW
   ...     IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
 
+Since we landed correct security adapters for DistroReleaseQueue,
+we need to perform further actions logged in as an admins, which have
+launchpad.Edit on the records:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login("foo.bar@canonical.com")
+
   >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')
   >>> release = distro['breezy-autotest']
 
@@ -478,8 +485,8 @@ XXX cprov 20060412: bug # 3989
 
   >>> flush_database_updates()
   >>> transaction.commit()
-  >>> from canonical.database.sqlbase import _clearCache
-  >>> _clearCache()
+  >>> from canonical.database.sqlbase import clear_current_connection_cache
+  >>> clear_current_connection_cache()
 
 Check if the 'etherwake' source package was correctly published and is
 in the filesystem archive, we are looking for the DSC, the gzipped
@@ -550,7 +557,7 @@ Invoke Publisher script again to land our changes in the archive
 
 Invalidates SQLObject cache to cope with publisher.
 
-  >>> _clearCache()
+  >>> clear_current_connection_cache()
 
 Check the publishing history again
 

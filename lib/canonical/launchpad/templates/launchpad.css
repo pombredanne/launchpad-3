@@ -90,9 +90,11 @@ body {
   padding: 0;
 }
 .body {
-  margin: 0.75em 0.75em 0;
+  margin: 1em 1%;
 }
-
+.columns {
+  margin: 1em 0;
+}
 :visited {
   background: none;
   color: #66a;
@@ -154,7 +156,7 @@ pre {
   right: 10px;
   top: 5px;
 }
-div.body table {
+div.body table, div.columns table {
   margin-left: auto;
   margin-right: auto;
   border-collapse: collapse;
@@ -266,12 +268,11 @@ ol {
   padding: 0;
   background-color: #f4f5f8; /* changed by sabdfl, 2005-10-22 */
 }
-.portlet h4 {
+.portlet h4 { /* the base portlet heading */
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   font-weight: normal;
-}
-.portlet h4 { /* the base portlet heading */
+  margin-top: 0;
   padding: 0em 0.3em 0em 0.75em;
   display: block;
   font-size: 1em;
@@ -386,8 +387,8 @@ ul.app>li.current {
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
-  margin-left: 26%; /* = 25% + 1% whitespace */
-  width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
+  margin-left: 24%; /* = 1% left margin + 22% left column + 1% gutter */
+  width: 52%;
 }
 * > #portal-column-content { /* hide from MSIE/Win 5 where "relative" breaks */
   position: relative; /* allow z-index to work */
@@ -396,28 +397,27 @@ ul.app>li.current {
 #portal-column-two {
   display: inline;
   float: left;
-  margin-left: 2%; /* whitespace */
-  width: 24%; /* = 25% - 1% whitespace */
+  margin-left: 1%;
+  width: 22%; /* leaves 1% right margin */
 }
 #portal-column-one {
   display: inline;
   float: left;
-  margin-left: -100%; /* flush with the left edge of the page */
-  width: 24%; /* = 25% - 1% whitespace */
+  margin-left: -98%; /* = -99% back to left edge + 1% left gutter */
+  width: 22%;
 }
-
 /* Column definitions for 2col layout: */
 #layout2col-main {
   display: inline;
   float: left;
-  margin-left: 25%;
+  margin-left: 24%; /* = 1% left margin + 22% left column + 1% gutter */
   width: 75%;
 }
 #layout2col-portlets {
   display: inline;
   float: left;
-  margin-left: -100%; /* flush with the left edge of the page */
-  width: 24%; /* = 25% - 1% whitespace */
+  margin-left: -98%; /* = -99% back to left edge + 1% left gutter */
+  width: 22%;
 }
 
 .sitemap, ul.facets {
@@ -665,29 +665,25 @@ tr.highlight {
   vertical-align: bottom;
 }
 
-/* Bug Status, Severity, Priority markers */
+/* Bug status and importance markers: */
 .statusUnconfirmed { color: #993300; }
 .statusConfirmed   { color: Red; }
 .statusFixed       { color: Black; }
 .statusReleased    { color: Green; }
 .statusRejected    { color: Gray; }
 
-.severityCritical { color: Red; }
-.severityMajor    { color: #ff6600; }
-.severityNormal   { color: Green; }
-.severityMinor    { color: Black; }
-.severityWishlist { color: Blue; }
+.importanceCritical  { color: Red; }
+.importanceHigh      { color: #ff6600; }
+.importanceMedium    { color: Green; }
+.importanceLow       { color: Black; }
+.importanceWishlist  { color: Blue; }
+.importanceUntriaged { color: #999; }
 
-.severityCriticalRow { background-color: #E1A1A1; }
-.severityMajorRow    { background-color: #D9C08F; }
-.severityNormalRow   { background-color: #9FD98F; }
-.severityMinorRow    { background-color: #A5AFC8; }
-.severityWishlistRow { background-color: #8FA9D9; }
-
-.priorityHigh    { color: Red; }
-.priorityMedium  { color: Orange; }
-.priorityLow     { color: Black; }
-.priorityWontfix { color: Gray; }
+.importanceCriticalRow { background-color: #E1A1A1; }
+.importanceMajorRow    { background-color: #D9C08F; }
+.importanceMediumRow   { background-color: #9FD98F; }
+.importanceMinorRow    { background-color: #A5AFC8; }
+.importanceWishlistRow { background-color: #8FA9D9; }
 
 /* Spec definition, delivery and priority */
 

@@ -28,6 +28,8 @@ from canonical.launchpad.interfaces import (
     TranslationConstants, NotFoundError, NameNotAvailable)
 from canonical.librarian.interfaces import ILibrarianClient
 
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
@@ -70,7 +72,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     productseries = ForeignKey(foreignKey='ProductSeries',
         dbName='productseries', notNull=False, default=None)
-    priority = IntCol(dbName='priority', notNull=False, default=None)
+    priority = IntCol(dbName='priority', notNull=True, default=DEFAULT)
     potemplatename = ForeignKey(foreignKey='POTemplateName',
         dbName='potemplatename', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
@@ -93,6 +95,8 @@ class POTemplate(SQLBase, RosettaStats):
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
+    date_last_updated = UtcDateTimeCol(dbName='date_last_updated',
+        default=DEFAULT)
 
     # joins
     pofiles = SQLMultipleJoin('POFile', joinColumn='potemplate')
@@ -537,9 +541,9 @@ class POTemplate(SQLBase, RosettaStats):
 
         # Store the object status before the changes to raise
         # change notifications later.
-        potemplate_before_modification = helpers.Snapshot(
+        potemplate_before_modification = Snapshot(
             self, providing=providedBy(self))
-        entry_before_modification = helpers.Snapshot(
+        entry_before_modification = Snapshot(
             entry_to_import, providing=providedBy(entry_to_import))
 
         try:
@@ -698,6 +702,20 @@ class POTemplateSubset:
 
         return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
+    def getAllOrderByDateLastUpdated(self):
+        """See IPOTemplateSet."""
+        query = []
+        if self.productseries is not None:
+            query.append('productseries = %s' % sqlvalues(self.productseries))
+        if self.distrorelease is not None:
+            query.append('distrorelease = %s' % sqlvalues(self.distrorelease))
+        if self.sourcepackagename is not None:
+            query.append('sourcepackagename = %s' % sqlvalues(
+                self.sourcepackagename))
+
+        return POTemplate.select(
+            ' AND '.join(query), orderBy=['-date_last_updated'])
+
 
 class POTemplateSet:
     implements(IPOTemplateSet)
@@ -722,6 +740,10 @@ class POTemplateSet:
             'POTemplate.potemplatename = POTemplateName.id AND'
             ' POTemplateName.name = %s' % sqlvalues(name),
             clauseTables=['POTemplateName']))
+
+    def getAllOrderByDateLastUpdated(self):
+        """See IPOTemplateSet."""
+        return POTemplate.select(orderBy=['-date_last_updated'])
 
     def getSubset(self, distrorelease=None, sourcepackagename=None,
                   productseries=None):

@@ -18,7 +18,9 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IBuilderSet, IBuild)
+    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IBuild)
+
+from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -57,21 +59,21 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class AdminDistributionMirrorByMirrorAdmins(AuthorizationBase):
+class AdminDistributionMirrorByDistroOwner(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        return user.inTeam(getUtility(ILaunchpadCelebrities).mirror_admin)
+        return user.inTeam(self.obj.distribution.owner)
 
 
-class EditDistributionMirrorByOwnerOrMirrorAdmins(AuthorizationBase):
+class EditDistributionMirrorByOwnerOrDistroOwner(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistributionMirror
 
     def checkAuthenticated(self, user):
-        mirror_admins = getUtility(ILaunchpadCelebrities).mirror_admin
-        return user.inTeam(self.obj.owner) or user.inTeam(mirror_admins)
+        distro_owner = self.obj.distribution.owner
+        return user.inTeam(self.obj.owner) or user.inTeam(distro_owner)
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -701,6 +703,41 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationImportQueue
 
 
+class EditDistroReleaseQueue(AdminByAdminsTeam):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroReleaseQueue
+
+    def checkAuthenticated(self, user):
+        """Check user presence in admins or distrorelease drivers teams."""
+        if AdminByAdminsTeam.checkAuthenticated(self, user):
+            return True
+
+        drivers = self.obj.distrorelease.drivers
+        for driver in drivers:
+            if user.inTeam(driver):
+                return True
+
+        return False
+
+
+class ViewDistroReleaseQueue(EditDistroReleaseQueue):
+    permission = 'launchpad.View'
+    usedfor = IDistroReleaseQueue
+
+    def checkAuthenticated(self, user):
+        """Allow only members of the admin team to view unapproved entries.
+
+        Any logged in user can view entries in other state.
+        """
+        if EditDistroReleaseQueue.checkAuthenticated(self, user):
+            return True
+        # deny access to non-admin on unapproved records
+        if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
+            return False
+
+        return True
+
+
 class AdminByBuilddAdmin(AuthorizationBase):
     permission = 'launchpad.Admin'
 
@@ -711,8 +748,10 @@ class AdminByBuilddAdmin(AuthorizationBase):
         return (user.inTeam(buildd_admin) or
                 user.inTeam(lp_admin))
 
+
 class AdminBuilderSet(AdminByBuilddAdmin):
     usedfor = IBuilderSet
+
 
 class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild

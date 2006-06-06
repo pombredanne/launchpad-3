@@ -16,10 +16,9 @@
             <p class="error" tal:content="view/login_error" />
           </tal:block>
 
-          <tal:block condition="not: view/login_error">
-            <h1>Welcome to the <span tal:replace="view/flavour/title" /> 
-              ShipIt Project</h1>
-          </tal:block>
+          <h1 tal:condition="not: view/login_error">
+            Welcome to ShipIt for <tal:flavor replace="view/flavour/title" />
+          </h1>
 
           <p>ShipIt lets you request <span tal:replace="view/flavour/title" />
              6.06 LTS (Dapper Drake) CDs that will be posted to you free of charge.
@@ -30,9 +29,9 @@
             class="informational message"
           />
 
-          <p>To make requests, or view or change existing requests, you need to
+          <p>To make requests, or view or change existing requests, first
           sign in using your <a href="https://launchpad.net">Launchpad</a>
-          account first.
+          account.
           <br />
           You can 
           <a tal:attributes="
@@ -44,7 +43,7 @@
           <br />
 
           <form name="login" method="POST">
-            <table>
+            <table style="max-width: 20em; margin: 0 auto;">
               <tr>
                 <th>
                   <label for="email">E-mail address:</label>
@@ -80,8 +79,8 @@
                       type="submit"
                       name="loginpage_submit_login"
                       value="Log In" />
-                    [<a href="https://launchpad.net/+forgottenpassword"
-                      >Forgotten your password?</a>]
+                    (<a href="https://launchpad.net/+forgottenpassword"
+                      >Forgotten your password?</a>)
                   </div>
                 </td>
               </tr>

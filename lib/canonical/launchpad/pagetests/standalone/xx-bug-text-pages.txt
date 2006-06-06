@@ -19,24 +19,21 @@ Get text page for a single bug.
   task: firefox (upstream)
   status: Unconfirmed
   reporter: Sample Person (name12)
-  priority: Wontfix
-  severity: Minor
+  importance: Low
   assignee: Mark Shuttleworth (sabdfl)
   milestone: 
   <BLANKLINE>
   task: mozilla-firefox (Ubuntu)
   status: Unconfirmed
   reporter: Foo Bar (name16)
-  priority: Medium
-  severity: Normal
+  importance: Medium
   assignee: 
   milestone: 
   <BLANKLINE>
   task: mozilla-firefox (Debian)
   status: Confirmed
   reporter: Sample Person (name12)
-  priority: High
-  severity: Minor
+  importance: Low
   assignee: 
   milestone: 
   <BLANKLINE>

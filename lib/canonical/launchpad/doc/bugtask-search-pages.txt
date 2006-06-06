@@ -27,14 +27,17 @@ The simple search form returns only open bugtasks.
     >>> form_values = {
     ...     'search': 'Search',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_search_listingview = create_view(
     ...     debian, "+bugs", form_values)
 
     >>> open_bugtasks = list(distro_search_listingview.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name) for bugtask in open_bugtasks]
-    [(1, 'CONFIRMED'), (2, 'CONFIRMED'), (3, 'UNCONFIRMED')]
+    >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
+    ...  for bugtask in open_bugtasks]
+    [(3, 'UNCONFIRMED', 'UNKNOWN'),
+     (1, 'CONFIRMED', 'LOW'),
+     (2, 'CONFIRMED', 'LOW')]
 
 And the advanced form allows us to query for specific bug statuses.
 
@@ -43,7 +46,7 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'advanced': 1,
     ...     'field.status': 'Fix Released',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(debian, '+bugs', form_values)
     >>> fix_released_bugtasks = list(distro_advanced_search_listingview.search().batch)
@@ -59,7 +62,7 @@ A triager may find it useful to query for bugs with no package:
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.has_no_package': 'on',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     ubuntu, '+bugs', form_values)
@@ -75,7 +78,7 @@ spaces.
     >>> form_values = {
     ...     'search': 'Search',
     ...     'field.searchtext': 'blackhole\n\rtrash\n\rfolder',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_search_listingview = create_view(
     ...     ubuntu, '+bugs', form_values)
@@ -91,7 +94,7 @@ We can filter our search results by reporter
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.owner': 'name12',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
@@ -108,7 +111,7 @@ But if we query for an invalid person, the view displays a nice error message
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.owner': 'invalid-reporter',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
@@ -122,7 +125,7 @@ The same if we try with an invalid assignee
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.assignee': 'invalid-assignee',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     debian, '+bugs', form_values)
@@ -137,7 +140,7 @@ Searching by component is possible, as long as the context has defined a
     ...     'search': 'Search bugs in Ubuntu',
     ...     'advanced': 1,
     ...     'field.component': 1,
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     ubuntu, '+bugs', form_values)
@@ -160,7 +163,7 @@ in each release. In this case, the component search widget is hidden.
     ...     'search': 'Search bugs in Gentoo',
     ...     'advanced': 1,
     ...     'field.component': 1,
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distro_advanced_search_listingview = create_view(
     ...     gentoo, '+bugs', form_values)
@@ -178,14 +181,16 @@ The simple search form returns only open bugtasks.
     >>> form_values = {
     ...     'search': 'Search',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distrorelease_search_listingview = create_view(
     ...     woody, "+bugs", form_values)
 
     >>> open_bugtasks = list(distrorelease_search_listingview.search().batch)
-    >>> [(bugtask.bug.id, bugtask.status.name) for bugtask in open_bugtasks]
-    [(3, 'UNCONFIRMED'), (2, 'UNCONFIRMED')]
+    >>> [(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
+    ...  for bugtask in open_bugtasks]
+    [(2, 'UNCONFIRMED', 'MEDIUM'),
+     (3, 'UNCONFIRMED', 'MEDIUM')]
 
 And now we'll change the status of one of the bugtasks, but first we need to
 be logged in.
@@ -196,7 +201,13 @@ be logged in.
     >>> login("test@canonical.com")
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> open_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> open_bugtask = getUtility(IBugTaskSet).get(18)
+    >>> open_bugtask.status.name
+    'UNCONFIRMED'
+    >>> open_bugtask.bug.id
+    3
+    >>> open_bugtask.transitionToStatus(BugTaskStatus.REJECTED)
     >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.
@@ -206,7 +217,7 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'advanced': 1,
     ...     'field.status': 'Rejected',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> distrorelease_advanced_search_view = create_view(woody, '+bugs', form_values)
     >>> rejected_bugtasks = list(distrorelease_advanced_search_view.search().batch)
@@ -226,7 +237,7 @@ The simple search form returns only open bugtasks.
     >>> form_values = {
     ...     'search': 'Search',
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> mozilla_search_listingview = create_view(
     ...     mozilla, "+bugs", form_values)
@@ -241,6 +252,7 @@ The simple search form returns only open bugtasks.
 And now we'll change the status of one of the bugtasks (we are still
 logged in from earlier):
 
+    >>> previous_status = open_bugtasks[0].status
     >>> open_bugtasks[0].transitionToStatus(BugTaskStatus.REJECTED)
     >>> flush_database_updates()
 
@@ -251,13 +263,16 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'advanced': 1,
     ...     'field.status': 'Rejected', 
     ...     'field.searchtext': '',
-    ...     'field.orderby': '-priority,-severity'}
+    ...     'field.orderby': '-importance'}
 
     >>> mozilla_search_listingview = create_view(mozilla, '+bugs', form_values)
     >>> rejected_bugtasks = list(mozilla_search_listingview.search().batch)
     >>> for bugtask in rejected_bugtasks:
     ...     print bugtask.bug.id, bugtask.product.name, bugtask.status.name
     5 firefox REJECTED
+
+    >>> open_bugtasks[0].transitionToStatus(previous_status)
+    >>> flush_database_updates()
 
 Check what milestones are displayed on the advanced search form:
 
@@ -270,3 +285,149 @@ Check what milestones are displayed on the advanced search form:
     ...     print value['title']
     Mozilla Firefox: 1.0
 
+Bug Filters Portlet
+-------------------
+
+The bug filters portlet has links to various "canned" searches, and
+shows the number of bugs matching that filter beside each. The counts
+are (mostly) gotten from the context object itself. Since these URLs and
+counts are dependant on the current user, we will log in as Sample
+Person.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> login("test@canonical.com")
+
+    >>> firefox = getUtility(IProductSet).get(4)
+    >>> print firefox.name
+    firefox
+
+    >>> bugfilters_portlet_view = create_view(firefox, '+portlet-bugfilters')
+
+    >>> print bugfilters_portlet_view.getOpenBugsURL()
+    http://...?search=Search&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed
+    >>> print bugfilters_portlet_view.context.open_bugtasks.count()
+    3
+
+    >>> print bugfilters_portlet_view.getBugsAssignedToMeURL()
+    http://...?search=Search&field.assignee=name12
+
+    >>> print bugfilters_portlet_view.getBugsAssignedToMeCount()
+    1
+
+If Sample Person were assigned to second bug, but that bug was a dupe,
+it would not be included in the counts.
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+
+    >>> bug_six_in_firefox = getUtility(IBugTaskSet).get(15)
+    >>> print bug_six_in_firefox.bug.duplicateof.id
+    5
+    >>> print bugfilters_portlet_view.user.displayname
+    Sample Person
+
+    >>> bug_six_in_firefox.transitionToAssignee(
+    ...     bugfilters_portlet_view.user)
+    >>> flush_database_updates()
+
+    >>> print bugfilters_portlet_view.getBugsAssignedToMeCount()
+    1
+
+The critical bugs link and counts consider only unresolved bugs.
+
+    >>> print bugfilters_portlet_view.getCriticalBugsURL()
+    http://...?search=Search&field.importance=Critical&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed
+
+    >>> bugfilters_portlet_view.context.critical_bugtasks.count()
+    1
+
+    >>> critical_task = bugfilters_portlet_view.context.critical_bugtasks[0]
+    >>> prev_status = critical_task.status
+    >>> critical_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> flush_database_updates()
+
+    >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
+    0
+
+    >>> critical_task.transitionToStatus(prev_status)
+    >>> flush_database_updates()
+
+Moving along...
+
+    >>> print bugfilters_portlet_view.getUnconfirmedBugsURL()
+    http://...?search=Search&field.status=Unconfirmed
+
+    >>> print bugfilters_portlet_view.context.unconfirmed_bugtasks.count()
+    3
+
+    >>> print bugfilters_portlet_view.getUnassignedBugsURL()
+    http://...?search=Search&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&assignee_option=none
+
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    1
+
+And finally, all bugs ever reported.
+
+    >>> print bugfilters_portlet_view.getAllBugsEverReportedURL()
+    http://...?search=Search&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.status=Fix+Released&field.status=Rejected&field.omit_dupes.used=
+
+    >>> print bugfilters_portlet_view.context.all_bugtasks.count()
+    4
+
+All counts ignore bugtasks with status Unknown. Let's set bug four's
+status in firefox to Unknown and note how the count is decremented by 1
+for the open, unconfirmed, unassigned, and all bugs ever reported
+counts.
+
+    >>> bug_four_in_firefox = getUtility(IBugTaskSet).get(13)
+
+    >>> print bug_four_in_firefox.bug.id
+    4
+    >>> print bug_four_in_firefox.product.name
+    firefox
+
+We'll examine the counts once more, to verify they are what we think
+they are.
+
+    >>> print bugfilters_portlet_view.context.open_bugtasks.count()
+    3
+    >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
+    1
+    >>> print bugfilters_portlet_view.context.unconfirmed_bugtasks.count()
+    3
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    1
+    >>> print bugfilters_portlet_view.context.all_bugtasks.count()
+    4
+
+Then change the status.
+
+    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.UNKNOWN)
+    >>> flush_database_updates()
+
+And the affected counts have been decremented.
+
+    >>> print bugfilters_portlet_view.context.open_bugtasks.count()
+    2
+    >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
+    1
+    >>> print bugfilters_portlet_view.context.unconfirmed_bugtasks.count()
+    2
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    0
+    >>> print bugfilters_portlet_view.context.all_bugtasks.count()
+    3
+
+The unassigned bug counts consider only bugs with an unresolved status.
+
+    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> flush_database_updates()
+
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    0
+
+    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
+    >>> flush_database_updates()
+
+    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
+    1
