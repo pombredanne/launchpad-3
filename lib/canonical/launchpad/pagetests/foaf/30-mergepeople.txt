@@ -29,15 +29,6 @@ The same will happen if we try to merge a team.
     >>> 'There are <strong>1</strong> input errors' in browser.contents
     True
 
-# Get instances of objects we need to ensure tests don't break if the ids
-# used in he sample data changes.
-# 
-#     >>> from canonical.launchpad.database import PersonSet
-#     >>> from canonical.launchpad.database import EmailAddressSet
-#     >>> dupe = PersonSet().getByName('foo')
-#     >>> email1 = EmailAddressSet().getByEmail('foo@baz.com')
-#     >>> email2 = EmailAddressSet().getByEmail('bar.foo@canonical.com')
-
 Then we find the duplicate account and request the merge.
 This redirects to the page which displays all email addresses owned by the
 duplicate account. Here the user choses the ones which he want to claim.
