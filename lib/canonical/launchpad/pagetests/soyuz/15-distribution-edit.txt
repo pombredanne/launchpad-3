@@ -2,8 +2,6 @@ Distribution information edit.
 This tests makes a modification in ubuntu distribution and check 
 if the page is not broken.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
 
   >>> browser.open("http://localhost:9000/distros/ubuntu")
