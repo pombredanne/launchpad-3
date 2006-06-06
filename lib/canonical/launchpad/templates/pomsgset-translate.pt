@@ -75,19 +75,11 @@
               </tr>
             </thead>
             <tbody>
-              <tal:comment replace="nothing">
-                We can control the amount of entries we could get from
-                suggestions defining 'maxentries'
-                This should be moved to python code, for more information,
-                look at bug #41858.
-              </tal:comment>
-              <tal:maxentries define="maxentries python:None">
-                <tal:block define="pomsgset_view nocall:view">
-                  <metal:pomsgsetview
-                    use-macro="view/@@+pomsgset-translate/pomsgset-view"
-                    />
-                </tal:block>
-              </tal:maxentries>
+              <tal:block define="pomsgset_view nocall:view">
+                <metal:pomsgsetview
+                  use-macro="view/@@+pomsgset-translate/pomsgset-view"
+                  />
+              </tal:block>
             </tbody>
             <tfoot>
               <tr>

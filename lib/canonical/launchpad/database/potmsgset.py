@@ -146,8 +146,7 @@ class POTMsgSet(SQLBase):
             pofile = self.potemplate.getDummyPOFile(language_code, variant)
 
         assert existing_pomsgset is None, (
-            "There is already a valid IPOMsgSet for the '%s' msgid on %s"
-            " translation for %s." % (
+            "There is already a valid IPOMsgSet for the '%s' msgid on %s" % (
                 self.primemsgid_.msgid, pofile.title))
 
         return DummyPOMsgSet(pofile, self)

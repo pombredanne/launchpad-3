@@ -143,22 +143,14 @@
                 </tr>
               </thead>
               <tbody class="greater">
-                <tal:comment replace="nothing">
-                  We can control the amount of entries we could get from
-                  suggestions defining 'maxentries'
-                  This should be moved to python code, for more information,
-                  look at bug #41858.
-                </tal:comment>
-                <tal:maxentries define="maxentries python:3">
-                  <tal:loop repeat="entry view/batchnav/currentBatch">
-                    <tal:pomsgsetview
-                      define="pomsgset_view python:view.getPOMsgSetViewFromPOTMsgSet(entry)">
-                      <metal:pomsgsetview
-                        use-macro="pomsgset_view/@@+pomsgset-translate/pomsgset-view"
-                        />
-                    </tal:pomsgsetview>
-                  </tal:loop>
-                </tal:maxentries>
+                <tal:loop repeat="entry view/batchnav/currentBatch">
+                  <tal:pomsgsetview
+                    define="pomsgset_view python:view.getPOMsgSetViewFromPOTMsgSet(entry)">
+                    <metal:pomsgsetview
+                      use-macro="pomsgset_view/@@+pomsgset-translate/pomsgset-view"
+                      />
+                  </tal:pomsgsetview>
+                </tal:loop>
               </tbody>
               <tfoot>
                 <tr>

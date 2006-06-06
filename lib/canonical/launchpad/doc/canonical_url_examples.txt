@@ -341,6 +341,19 @@ And we can get a particular PO file for this PO template by its language code.
     >>> canonical_url(pofile)
     u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
 
+Also, we can get the url to a PO msgset
+
+    >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
+    >>> pomsgset = potmsgset.getPOMsgSet('es')
+    >>> canonical_url(pomsgset)
+    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1'
+
+Even for a dummy PO msgset
+
+    >>> pomsgset = potmsgset.getDummyPOMsgSet('es_ES')
+    >>> canonical_url(pomsgset)
+    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es_ES/1'
+
 Upstream POTemplateSubsets work in much the same way, except they hang off a
 product release.  Let's get a product release.
 
@@ -356,6 +369,19 @@ with the distro subset.
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
     u'http://localhost:8086/products/evolution/trunk/+pots/evolution-2.2/es'
+
+Also, we can get the url to a PO msgset
+
+    >>> potmsgset = potemplate.getPOTMsgSetBySequence(1)
+    >>> pomsgset = potmsgset.getPOMsgSet('es')
+    >>> canonical_url(pomsgset)
+    u'http://localhost:8086/products/evolution/trunk/+pots/evolution-2.2/es/1'
+
+Even for a dummy PO msgset
+
+    >>> pomsgset = potmsgset.getDummyPOMsgSet('es_ES')
+    >>> canonical_url(pomsgset)
+    u'http://localhost:8086/products/evolution/trunk/+pots/evolution-2.2/es_ES/1'
 
 Rosetta also has translation groups.
 

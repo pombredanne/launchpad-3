@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'POMsgSetIndexView',
     'POMsgSetView',
     'POMsgSetFacets',
     'POMsgSetAppMenus'
@@ -138,6 +139,19 @@ class POMsgSetAppMenus(ApplicationMenu):
     def viewtemplate(self):
         text = 'View Template'
         return Link('../../', text, icon='languages')
+
+
+class POMsgSetIndexView:
+    """A view to forward to the translation form."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Redirect to the translation form."""
+        url = '%s/%s' % (canonical_url(self.context), '+translate')
+        self.request.response.redirect(url)
 
 
 class POMsgSetView(LaunchpadView):
@@ -403,6 +417,18 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         else:
             return '/@@/zoom-out'
 
+    @cachedproperty
+    def max_entries(self):
+        """Return the max number of entries to show as suggestions.
+
+        If there is no limit, we return None.
+        """
+        if self.from_pofile:
+            # Limit the amount of suggestions to 3.
+            return 3
+        else:
+            return None
+
     def generateNextTabIndex(self):
         """Return the tab index value to navigate the form."""
         self._table_index_value += 1
@@ -460,7 +486,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
     #   - items actually published or currently active elsewhere
     #   - new submissions to ANY similar pofile for the same msgset from
     #     people who did not have write permission THERE
-    def get_wiki_submissions(self, index, maxentries=None):
+    def get_wiki_submissions(self, index):
         # the UI expects these to come after suggested and current, and will
         # present at most three of them
         if self._wiki_submissions is not None:
@@ -468,21 +494,21 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         curr = self.getTranslation(index)
 
         wiki = self.context.getWikiSubmissions(index)
-        suggested = self.get_suggested_submissions(index, maxentries)
+        suggested = self.get_suggested_submissions(index)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]
-        current = self.get_current_submissions(index, maxentries)
+        current = self.get_current_submissions(index)
         current_texts = [c.potranslation.translation
                          for c in current]
         self._wiki_submissions = [submission for submission in wiki
             if submission.potranslation.translation != curr and
             submission.potranslation.translation not in suggested_texts and
             submission.potranslation.translation not in current_texts]
-        if maxentries is not None:
-            self._wiki_submissions = self._wiki_submissions[:maxentries]
+        if self.max_entries is not None:
+            self._wiki_submissions = self._wiki_submissions[:self.max_entries]
         return self._wiki_submissions
 
-    def get_current_submissions(self, index, maxentries=None):
+    def get_current_submissions(self, index):
         # the ui expectes these after the suggested ones and will show at
         # most 3 of them
         if self._current_submissions is not None:
@@ -490,18 +516,19 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         curr = self.getTranslation(index)
 
         current = self.context.getCurrentSubmissions(index)
-        suggested = self.get_suggested_submissions(index, maxentries)
+        suggested = self.get_suggested_submissions(index)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]
         self._current_submissions = [submission
             for submission in current 
             if submission.potranslation.translation != curr and
             submission.potranslation.translation not in suggested_texts]
-        if maxentries is not None:
-            self._current_submissions = self._current_submissions[:maxentries]
+        if self.max_entries is not None:
+            self._current_submissions = (
+                self._current_submissions[:self.max_entries])
         return self._current_submissions
 
-    def get_suggested_submissions(self, index, maxentries=None):
+    def get_suggested_submissions(self, index):
         # these are expected to be shown first, we will show at most 3 of
         # them
         if self._suggested_submissions is not None:
@@ -509,12 +536,12 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         self._suggested_submissions = list(
             self.context.getSuggestedSubmissions(index))
-        if maxentries is not None:
+        if self.max_entries is not None:
             self._suggested_submissions = (
-                self._suggested_submissions[:maxentries])
+                self._suggested_submissions[:self.max_entries])
         return self._suggested_submissions
 
-    def get_alternate_language_submissions(self, index, maxentries=None):
+    def get_alternate_language_submissions(self, index):
         """Get suggestions for translations from the alternate language for
         this potemplate."""
         if self._second_language_submissions is not None:
@@ -525,9 +552,9 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         sec_lang_potmsgset = self.second_lang_msgset.potmsgset
         self._second_language_submissions = (
             sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index))
-        if maxentries is not None:
+        if self.max_entries is not None:
             self._second_language_submissions = (
-                self._second_language_submissions[:maxentries])
+                self._second_language_submissions[:self.max_entries])
         return self._second_language_submissions
 
     def process_form(self):
