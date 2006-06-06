@@ -20,9 +20,6 @@ according the selected buildstate, by default All
   ...         return "not present"
   ...     else:
   ...         return "mismatch"
-  
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
 
 Check the contents of the distro builds list page.
   >>> browser.open("http://localhost:9000/distros/ubuntu/+builds")

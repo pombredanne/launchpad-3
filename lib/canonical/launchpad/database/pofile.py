@@ -53,6 +53,8 @@ from canonical.launchpad.components.poparser import (
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.librarian.interfaces import ILibrarianClient
 
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
     right group of translators, and the permission on the relevant project,
@@ -627,9 +629,9 @@ class POFile(SQLBase, RosettaStats):
 
         # Store the object status before the changes to raise
         # change notifications later.
-        pofile_before_modification = helpers.Snapshot(
+        pofile_before_modification = Snapshot(
             self, providing=providedBy(self))
-        entry_before_modification = helpers.Snapshot(
+        entry_before_modification = Snapshot(
             entry_to_import, providing=providedBy(entry_to_import))
 
         try:
