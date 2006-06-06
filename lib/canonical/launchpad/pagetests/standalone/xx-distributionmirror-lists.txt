@@ -43,7 +43,7 @@
   Unauthorized: ...
 
   # XXX: This is a workaround for https://launchpad.net/bugs/45226
-  >>> from zope.testbrowser import Browser
+  >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.handleErrors = False
 

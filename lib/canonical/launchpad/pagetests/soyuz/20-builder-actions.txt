@@ -2,8 +2,6 @@ Check if the buider action are available.
 All of them require authorization, some lp.Edit, some lp.Admin, for
 simplification let's use the login of 'carlos' to do it.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
 
 Edit:
