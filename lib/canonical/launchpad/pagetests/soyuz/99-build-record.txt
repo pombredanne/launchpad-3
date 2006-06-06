@@ -1,7 +1,7 @@
 
 Presenting Build Record details:
 
-  >>> from zope.testbrowser import Browser
+  >>> from zope.testbrowser.testing import Browser
   >>> from mechanize import LinkNotFoundError
   >>> from urllib2 import HTTPError
   >>> browser = Browser()

@@ -14,7 +14,7 @@ Check that we can't access the +admin page with Sample person
 
 Check that we can access the +admin page logged in as an Launchpad admin
 
-  >>> from zope.testbrowser import Browser
+  >>> from zope.testbrowser.testing import Browser
   >>> admin_browser = Browser()
   >>> admin_browser.handleErrors = False
   >>> admin_browser.addHeader(

@@ -1,9 +1,6 @@
 Check if BinaryPackageName page is not broken.
 This is a batched page that displays all binarypackagenames in Launchpad.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
-
   >>> browser.open("http://localhost:9000/binarypackagenames")
   >>> browser.contents
   '...pmount...'
@@ -17,7 +14,6 @@ Check if the binarypackagename search result page is not broken.
 
 Check if the add BinaryPackageName is not broken.
 
-  >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
   >>> browser.open("http://localhost:9000/binarypackagenames")
   >>> browser.getLink("Add...").click()

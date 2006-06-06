@@ -5,9 +5,6 @@ Check if the Distribution Search Packages link is present, and
 the page is not broken.
 This page is used to search packages in a distribution context.
 
-  >>> from zope.testbrowser import Browser
-  >>> browser = Browser()
-
   >>> browser.open("http://localhost:9000/distros/ubuntu")
   >>> browser.getLink("Search Packages").click()
   >>> browser.url

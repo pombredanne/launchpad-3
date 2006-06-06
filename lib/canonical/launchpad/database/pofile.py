@@ -51,6 +51,8 @@ from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.librarian.interfaces import ILibrarianClient
 
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 def _check_translation_perms(permission, translators, person):
     """Return True or False dependening on whether the person is part of the
     right group of translators, and the permission on the relevant project,

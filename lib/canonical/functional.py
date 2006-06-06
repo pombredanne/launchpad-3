@@ -11,7 +11,7 @@ import logging
 import doctest
 import sys
 from zope.testing.loggingsupport import Handler
-from zope.testbrowser import Browser
+from zope.testbrowser.testing import Browser
 
 from canonical.config import config
 from canonical.chunkydiff import elided_source
