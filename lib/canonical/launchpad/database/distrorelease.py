@@ -848,11 +848,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         default_clauses = ["""
             distroreleasequeue.distrorelease = %s""" % sqlvalues(self.id)]
 
-        # attempt to restrict result on a given pocket
+        # restrict result on a given pocket
         if pocket is not None:
             default_clauses.append(
                     "distroreleasequeue.pocket = %s" % sqlvalues(pocket))
 
+
+        # XXX cprov 20060606: We may reorganise this code, creating
+        # some new methods provided by IDistroReleaseQueueSet, as:
+        # getByStatus and getByName.
         if not status:
             assert not version and not exact_match
             return DistroReleaseQueue.select(

@@ -7,7 +7,7 @@ It performs two additional tasks before call initialiseFromParent:
 * copy_architectures (copy parent's architectures and set
                       nominatedarchindep properly)
 
-which may be integrated in the its workflow.
+which eventually may be integrated in the its workflow.
 """
 
 import _pythonpath
@@ -45,7 +45,8 @@ def main():
 
     parser.add_option("-c", "--changeslist", dest="changeslist",
                       metavar="CHANGESLIST", default=None,
-                      help="Distrorelease changes list address")
+                      help=("Optionally set the distrorelease changes "
+                            "list address"))
 
     (options, args) = parser.parse_args()
 
@@ -68,6 +69,7 @@ def main():
     execute_zcml_for_scripts()
 
     try:
+        # 'ubuntu' is the default option.distribution value
         distribution = getUtility(IDistributionSet)[options.distribution]
         distrorelease = distribution[distrorelease_name]
     except NotFoundError, info:
@@ -107,9 +109,15 @@ def main():
 
 
 def check_builds(distrorelease):
-    """Assertions for no remaining pending builds."""
+    """Assert there are no pending builds for parent release.
+
+    Only cares about the RELEASE pocket, which is the only one inherited
+    via initialiseFromParent method.
+    """
     parentrelease = distrorelease.parentrelease
 
+    # only the RELEASE pocket is inherited, so we only check
+    # pending build records for it.
     pending_builds = parentrelease.getBuildRecords(
         BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
@@ -117,9 +125,15 @@ def check_builds(distrorelease):
             'Parent must not have PENDING builds')
 
 def check_queue(distrorelease):
-    """Assertions on empty mutable queues in parentrelease."""
+    """Assert upload queue is empty on parent release.
+
+    Only cares about the RELEASE pocket, which is the only one inherited
+    via initialiseFromParent method.
+    """
     parentrelease = distrorelease.parentrelease
 
+    # only the RELEASE pocket is inherited, so we only check
+    # queue items for it.
     new_items = parentrelease.getQueueItems(
         DistroReleaseQueueStatus.NEW,
         pocket=PackagePublishingPocket.RELEASE)
@@ -142,6 +156,9 @@ def copy_architectures(distrorelease):
 
     Also set the nominatedarchindep properly in target.
     """
+    assert distrorelease.architectures.count() is 0, (
+        "Can not copy distroarchreleases from parent, there is already "
+        "distroarchrelease(s) initialised for this release.")
     flush_database_updates()
     cur = cursor()
     cur.execute("""

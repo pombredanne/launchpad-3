@@ -13,10 +13,8 @@ CONTENTARCHIVE='/srv/launchpad.net/ubuntu-contents'
 #CONTENTARCHIVE='/tmp/ubuntu-contents'
 
 # apt-ftparchive configuration file destination
-APTCONFSRC="apt-contents.conf"
-APTCONFDEST="$CONTENTARCHIVE/ubuntu-misc/apt-contents.conf"
-CONTENTHEADERSRC="Contents.top"
-CONTENTHEADERDEST="$CONTENTARCHIVE/ubuntu-misc/Contents.top"
+APTCONF="apt-contents.conf"
+CONTENTHEADER="Contents.top"
 
 # target distrorelease
 distros='dapper'
@@ -54,11 +52,11 @@ done
 
 if test $GENERATEFILES = "yes" ; then
    echo 'Running apt in your private tree to generate new contents ...'
-   cp $CONTENTHEADERSRC $CONTENTHEADERDEST
-   cp $APTCONFSRC $APTCONFDEST
-   apt-ftparchive generate $APTCONFDEST
+   cp $CONTENTHEADER $CONTENTARCHIVE/ubuntu-misc/
+   cp $APTCONF $CONTENTARCHIVE/ubuntu-misc/
+   apt-ftparchive generate $APTCONF
 else
-   echo "Skipping run apt-ftparchive"
+   echo "Skipping apt-ftparchive run"
 fi
 
 
@@ -70,17 +68,20 @@ if test $COMPAREFILES = "yes" ; then
       current_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/Contents-$arch"
       new_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/Contents-$arch.gz"
       contents_dest="$ARCHIVE/ubuntu/dists/$distro/Contents-$arch.gz"
+      # compare previously generated plain content file.
       if ! cmp -s $current_contents $last_contents; then
         if test $MOVEFILES = "yes"; then
           echo "   installing new Contents file for $distro/$arch"
+          # update cached plain content
           mv "$current_contents" "$last_contents"
+          # update real gzipped Content
           mv "$new_contents" "$contents_dest"
           chmod ug=rw,o=r "$contents_dest"
         else
-          echo "   skipping new Contents file for $distro/$arch"
+          echo "   not Installing updated Contents file for $distro/$arch"
         fi
       else
-          echo "   same Contents file for $distro/$arch"
+          echo "   skipping unmodified Contents file for $distro/$arch"
       fi
     done
   done

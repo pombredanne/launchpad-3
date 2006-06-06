@@ -146,12 +146,9 @@ class Build(SQLBase):
             ]
 
         # refuse to reset builds in released pockets
-        released_pocket = (
-            (self.distrorelease.releasestatus not in mutable_releasestatus)
-            and
-            (self.pocket is PackagePublishingPocket.RELEASE)
-            )
-        if released_pocket:
+        status = self.distrorelease.releasestatus
+        if (status not in mutable_releasestatus and
+            self.pocket == PackagePublishingPocket.RELEASE):
             return False
 
         return self.buildstate in failed_buildstates
@@ -163,6 +160,8 @@ class Build(SQLBase):
 
     def reset(self):
         """See IBuild."""
+        assert self.can_be_reset, "Build %s can not be reset" % self.id
+
         self.buildstate = BuildStatus.NEEDSBUILD
         self.datebuilt = None
         self.buildduration = None
@@ -299,7 +298,7 @@ class BuildSet:
         if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
 
-        # attempt to given pocket
+        # restrict to provided pocket
         if pocket:
             condition_clauses.append('pocket=%s' % sqlvalues(pocket))
 
