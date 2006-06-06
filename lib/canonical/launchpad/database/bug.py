@@ -13,14 +13,14 @@ from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import SQLMultipleJoin, RelatedJoin
+from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, shortlist, Snapshot)
+    contactEmailAddresses, shortlist)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -36,7 +36,7 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
-
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class Bug(SQLBase):
@@ -70,7 +70,7 @@ class Bug(SQLBase):
 
     # useful Joins
     activity = SQLMultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
-    messages = RelatedJoin('Message', joinColumn='bug',
+    messages = SQLRelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            orderBy='datecreated')
@@ -82,7 +82,7 @@ class Bug(SQLBase):
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     externalrefs = SQLMultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
-    cves = RelatedJoin('Cve', intermediateTable='BugCve',
+    cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     subscriptions = SQLMultipleJoin(
@@ -90,10 +90,10 @@ class Bug(SQLBase):
     duplicates = SQLMultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     attachments = SQLMultipleJoin('BugAttachment', joinColumn='bug',
         orderBy='id')
-    specifications = RelatedJoin('Specification', joinColumn='bug',
+    specifications = SQLRelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
-    tickets = RelatedJoin('Ticket', joinColumn='bug',
+    tickets = SQLRelatedJoin('Ticket', joinColumn='bug',
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')

@@ -30,7 +30,7 @@ class CreateBugParams:
 
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
-                 security_related=False, private=False, subscribers=None):
+                 security_related=False, private=False, subscribers=()):
         self.owner = owner
         self.title = title
         self.comment = comment

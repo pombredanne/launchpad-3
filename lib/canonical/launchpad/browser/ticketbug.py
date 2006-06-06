@@ -10,8 +10,8 @@ from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import ITicket, ITicketBug, IBugSet
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 __all__ = [

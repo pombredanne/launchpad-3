@@ -9,7 +9,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, RelatedJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import ITicket, ITicketSet
 
@@ -62,14 +62,14 @@ class Ticket(SQLBase):
     # useful joins
     subscriptions = SQLMultipleJoin('TicketSubscription',
         joinColumn='ticket', orderBy='id')
-    subscribers = RelatedJoin('Person',
+    subscribers = SQLRelatedJoin('Person',
         joinColumn='ticket', otherColumn='person',
         intermediateTable='TicketSubscription', orderBy='name')
     buglinks = SQLMultipleJoin('TicketBug', joinColumn='ticket',
         orderBy='id')
-    bugs = RelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
+    bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
         intermediateTable='TicketBug', orderBy='id')
-    messages = RelatedJoin('Message', joinColumn='ticket',
+    messages = SQLRelatedJoin('Message', joinColumn='ticket',
         otherColumn='message',
         intermediateTable='TicketMessage', orderBy='datecreated')
     reopenings = SQLMultipleJoin('TicketReopening', orderBy='datecreated',

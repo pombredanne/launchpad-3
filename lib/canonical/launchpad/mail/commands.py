@@ -9,7 +9,6 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.pathlookup import get_object
 from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
@@ -25,6 +24,8 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.searchbuilder import NULL
+
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
 

@@ -11,7 +11,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, RelatedJoin,
+    ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -21,8 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationDelivery, SpecificationStatus)
+    EnumCol, TranslationPermission, SpecificationSort, SpecificationFilter)
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
@@ -40,7 +39,6 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
     )
-from canonical.launchpad.helpers import shortlist
 
 
 class Product(SQLBase, BugTargetBase):
@@ -132,7 +130,7 @@ class Product(SQLBase, BugTargetBase):
     milestones = SQLMultipleJoin('Milestone', joinColumn = 'product',
         orderBy=['dateexpected', 'name'])
 
-    bounties = RelatedJoin(
+    bounties = SQLRelatedJoin(
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
 
@@ -337,9 +335,9 @@ class Product(SQLBase, BugTargetBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'Specification.status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
-            order = ['-datecreated', 'id']
+            order = ['-Specification.datecreated', 'Specification.id']
 
         # figure out what set of specifications we are interested in. for
         # products, we need to be able to filter on the basis of:
@@ -352,7 +350,7 @@ class Product(SQLBase, BugTargetBase):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -365,11 +363,10 @@ class Product(SQLBase, BugTargetBase):
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
             query = base
-        
+
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        results.prejoin(['assignee', 'approver', 'drafter'])
-        return results
+        return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

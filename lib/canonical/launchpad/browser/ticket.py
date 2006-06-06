@@ -24,7 +24,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView)
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.helpers import Snapshot
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class TicketSetNavigation(Navigation):

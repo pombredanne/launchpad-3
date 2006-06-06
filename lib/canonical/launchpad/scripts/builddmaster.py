@@ -44,6 +44,7 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
 
+from canonical.archivepublisher.publishing import pocketsuffix
 
 # Constants used in build scoring
 SCORE_SATISFIEDDEP = 5
@@ -659,7 +660,8 @@ class BuilderGroup:
         extra_args = [
             "--log-file", "%s" %  uploader_logfilename,
             "-d", "%s" % queueItem.build.distribution.name,
-            "-r", "%s" % queueItem.build.distrorelease.name,
+            "-r", "%s" % (queueItem.build.distrorelease.name +
+                          pocketsuffix[queueItem.build.pocket]),
             "-b", "%s" % queueItem.build.id,
             "-J", "%s" % upload_leaf,
             "%s" % root,

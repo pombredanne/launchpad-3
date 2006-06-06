@@ -1,6 +1,8 @@
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+
 from zope.schema import Password, Text, TextLine, Field, Int
 from zope.schema.interfaces import IPassword, IText, ITextLine, IField, IInt
-from zope.interface import implements
+from zope.interface import implements, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError

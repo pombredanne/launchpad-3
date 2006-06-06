@@ -5,7 +5,7 @@ __all__ = ['Country', 'CountrySet', 'Continent']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, RelatedJoin, ForeignKey
+from sqlobject import StringCol, SQLRelatedJoin, ForeignKey
 
 from canonical.launchpad.interfaces import (
     ICountry, ICountrySet, IContinent, NotFoundError)
@@ -32,7 +32,7 @@ class Country(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     continent = ForeignKey(
         dbName='continent', foreignKey='Continent', default=None)
-    languages = RelatedJoin(
+    languages = SQLRelatedJoin(
         'Language', joinColumn='country', otherColumn='language',
         intermediateTable='SpokenIn')
 

@@ -55,7 +55,7 @@ involves only creating a new message. We also subscribe the Ubuntu Team,
 so that they get notified about the changes as well:
 
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import ITicket, IPersonSet
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
@@ -114,9 +114,9 @@ bug that has been linked to the request:
 
     >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
     >>> params = CreateBugParams(
-    ...     owner=no_priv, title=unmodified_ticket.title,
-    ...     comment=unmodified_ticket.description)
-    >>> bug = unmodified_ticket.target.createBug(params)
+    ...     owner=no_priv, title=ubuntu_ticket.title,
+    ...     comment=ubuntu_ticket.description)
+    >>> bug = ubuntu_ticket.target.createBug(params)
     >>> ubuntu_ticket.linkBug(bug)
     <TicketBug...>
     >>> notify(SQLObjectModifiedEvent(
