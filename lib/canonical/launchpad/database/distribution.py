@@ -103,6 +103,8 @@ class Distribution(SQLBase, BugTargetBase):
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+    translation_focus = ForeignKey(dbName='translation_focus',
+        foreignKey='DistroRelease', notNull=False, default=None)
 
     @property
     def source_package_caches(self):
