@@ -17,11 +17,8 @@
           <strong tal:content="context/batch/endNumber">10</strong>
         </tal:block>
         of
-        <span tal:replace="total">42</span>
-        <span tal:omit-tag=""
-              tal:condition="python: total == 1">entry</span>
-        <span tal:omit-tag=""
-              tal:condition="python: total != 1">entries</span>
+        <span tal:replace="total">42</span> result<span
+            tal:omit-tag="" tal:condition="python: total != 1">s</span>
       </td>
       <td style="text-align: right; white-space: nowrap">
         <tal:first condition="first_page_url">
