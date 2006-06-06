@@ -177,7 +177,7 @@ class CVSStrategy(CSCVSStrategy):
     def getCVSDir(self, aJob, dir):
         """ensure that there is a cvs checkout in the working dir/cvsworking,
         with a fresh cache"""
-        assert not self._tree
+        assert self._tree is None
         self.job=aJob
         repository=self.repository()
         path=self.getCVSDirPath(aJob,dir)
@@ -240,7 +240,7 @@ class CVSStrategy(CSCVSStrategy):
             basedir=self.tarFirstBase(tar)
             if not basedir==self.aJob.module:
                 os.rename(self.getCVSTempRepoDirPath() + "/" + basedir, self.getCVSTempRepoDirPath() + "/" + self.aJob.module)
-            
+
         os.unlink(self.getWorkingDir(self.aJob, self.dir) + "/tarball")
 
     def repository(self):
@@ -257,9 +257,9 @@ class CVSStrategy(CSCVSStrategy):
         if self.sourceDirectory is None:
             if self.aJob.repositoryIsRsync():
                 raise RuntimeError("not implemented yet")
-            self.sourceDirectory = self.getCVSDir(self.aJob, self.dir) 
+            self.sourceDirectory = self.getCVSDir(self.aJob, self.dir)
         return self.sourceDirectory
-        
+
     def sourceTree(self):
         """return the CVS tree we are using"""
         assert self._tree is not None, "getCVSDir should have been run first"
@@ -286,7 +286,7 @@ class CvsWorkingTree:
         self._job = job
         self._path = path
         self.logger = logger
-    
+
     def cvsTreeExists(self):
         """Is this the path of an existing CVS checkout?
 
@@ -329,12 +329,11 @@ class CvsWorkingTree:
         :precondition: `treeExists` is true.
         """
         tree = self.cscvsCvsTree()
+        one_week = 168 # hours
         catalog = tree.catalog(
-            False, False, None, 168, "update",
+            False, False, None, one_week, "update",
             tlaBranchName=self._job.bazFullPackageVersion())
-        branches = catalog.branches
-        branches.sort()
-        for branch in branches:
+        for branch in sorted(catalog.branches):
             self.logger.critical(
                 "%s revs on %s", len(catalog.getBranch(branch)), branch)
 
@@ -384,6 +383,7 @@ class CvsWorkingTree:
             # don't leave partial CVS checkouts around
             if os.path.exists(path):
                 shutil.rmtree(path)
+            raise
         return tree
 
     def cvsCheckOut(self, repository):
@@ -429,7 +429,7 @@ class SVNStrategy(CSCVSStrategy):
             try:
                 if os.access(path, os.F_OK):
                     SCM.tree(path).update()
-                else:      
+                else:
                     self.logger.debug("getting from SVN: %s %s",
                                       (repository, self.aJob.module))
                     client=pysvn.Client()
@@ -440,11 +440,9 @@ class SVNStrategy(CSCVSStrategy):
                 raise
             self.sourceDirectory = path
         return self.sourceDirectory
-        
+
     def sourceTree(self):
         """return the svn tree we are using"""
         if self._tree is None:
             self._tree = SCM.tree(self.sourceDir())
         return self._tree
-
-
