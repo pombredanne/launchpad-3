@@ -3,49 +3,19 @@ We want to test that we can add a new DistroArchRelease (or "Port").
 
 We will test as Foo Bar, who is an administrator.
 
-  >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+addport HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
 
-OK, so lets try POSTING to the form.
+  >>> browser.open("http://localhost:9000/distros/ubuntu/hoary")
+  >>> browser.getLink("Add Port").click()
+  >>> browser.url
+  'http://localhost:9000/distros/ubuntu/hoary/+addport'
 
-  >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+addport HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 837
-  ... Content-Type: multipart/form-data; boundary=---------------------------185962309721203306911361655462
-  ... 
-  ... -----------------------------185962309721203306911361655462
-  ... Content-Disposition: form-data; name="field.architecturetag"
-  ... 
-  ... amd64
-  ... -----------------------------185962309721203306911361655462
-  ... Content-Disposition: form-data; name="field.processorfamily"
-  ... 
-  ... amd64
-  ... -----------------------------185962309721203306911361655462
-  ... Content-Disposition: form-data; name="field.processorfamily-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------185962309721203306911361655462
-  ... Content-Disposition: form-data; name="field.official.used"
-  ... 
-  ... 
-  ... -----------------------------185962309721203306911361655462
-  ... Content-Disposition: form-data; name="field.official"
-  ... 
-  ... on
-  ... -----------------------------185962309721203306911361655462
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------185962309721203306911361655462--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: .../hoary/amd64
+OK, so let's fill out the form and submit.
+
+  >>> browser.getControl("Architecture Tag").value = 'amd64'
+  >>> browser.getControl("Processor Family").value = ['amd64']
+  >>> browser.getControl("Official Support").selected = True
+  >>> browser.getControl("Add").click()
+  >>> browser.url
+  'http://localhost:9000/distros/ubuntu/hoary/amd64'
 

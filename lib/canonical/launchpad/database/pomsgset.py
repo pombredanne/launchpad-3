@@ -18,6 +18,9 @@ from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IPOMsgSet
+
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
@@ -448,7 +451,7 @@ class POMsgSet(SQLBase):
         notify(SQLObjectCreatedEvent(submission))
 
         # Store the object status before the changes.
-        object_before_modification = helpers.Snapshot(selection,
+        object_before_modification = Snapshot(selection,
             providing=providedBy(selection))
 
 

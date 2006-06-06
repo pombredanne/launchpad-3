@@ -12,13 +12,29 @@ __all__ = [
     ]
 
 
-from zope.schema import  Choice, Datetime, Int, Text, TextLine
+from zope.schema import  Choice, Datetime, Int, Text 
 from zope.interface import Interface, Attribute
 
+from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.interfaces import ISpecificationGoal, IHasOwner
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad import _
+
+
+class ProductSeriesNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another series.")
+
+    @property
+    def _content_iface(self):
+        return IProductSeries
+
+    def _getByName(self, name):
+        if self._content_iface.providedBy(self.context):
+            return self.context.product.getSeries(name)
+        else:
+            return self.context.getSeries(name)
 
 
 class IProductSeries(IHasOwner, ISpecificationGoal):
@@ -29,7 +45,7 @@ class IProductSeries(IHasOwner, ISpecificationGoal):
     id = Int(title=_('ID'))
     # field names
     product = Choice(title=_('Product'), required=True, vocabulary='Product')
-    name = TextLine(title=_('Name'), required=True, 
+    name = ProductSeriesNameField(title=_('Name'), required=True,
         description=_("The name of the series is a short, unique name "
         "that identifies it, being used in URLs. It must be all "
         "lowercase, with no special characters. For example, '2.0' "
