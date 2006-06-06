@@ -4,7 +4,10 @@ Editing Tickets
 Any logged in user should be able to edit the title and description of a ticket.
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-  >>> browser.open('http://localhost:9000/products/firefox/+ticket/2/+edit')
+  >>> browser.open('http://localhost/products/firefox/+ticket/2')
+  >>> browser.getLink('Edit Request').click()
+  >>> browser.url
+  'http://localhost/products/firefox/+ticket/2/+edit'
 
 When we post the form, we should be redirected back to the ticket page.
 
@@ -17,7 +20,7 @@ When we post the form, we should be redirected back to the ticket page.
   >>> browser.getControl('Change').click()
 
   >>> browser.url
-  'http://localhost:9000/products/firefox/+ticket/2'
+  'http://localhost/products/firefox/+ticket/2'
 
 And viewing that page should show the updated information.
 
@@ -31,19 +34,47 @@ ticket.target.owner.
 
   # XXX matsubara 2006-05-26 Workaround for bug
   # https://launchpad.net/bugs/45226
-  >>> from zope.testbrowser import Browser
+  >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.handleErrors = False
 
   >>> browser.addHeader(
   ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
-  >>> browser.open('http://localhost:9000/distros/ubuntu/+ticket/5')
+  >>> browser.open('http://localhost/distros/ubuntu/+ticket/5')
   >>> browser.getLink('Administer').click()
 
 And the page should be visible too.
 
   >>> browser.url
-  'http://localhost:9000/distros/ubuntu/+ticket/5/+admin'
+  'http://localhost/distros/ubuntu/+ticket/5/+admin'
 
   >>> 'Administer request' in browser.contents
   True
+
+Let's change the ticket status, priority, assignee and add some notes to the
+whiteboard.
+
+  >>> browser.getControl(name='field.status').value = ['Answered']
+  >>> browser.getControl('Priority').value = ['Wishlist']
+  >>> browser.getControl('Assignee').value = 'name16' 
+  >>> browser.getControl('Status Whiteboard').value = 'Some note'
+  >>> browser.getControl('Change').click()
+
+We're then redirected to the ticket page
+
+  >>> browser.url
+  'http://localhost/distros/ubuntu/+ticket/5'
+
+Where we can see the updated information
+
+  >>> 'Some note' in browser.contents
+  True
+  >>> 'Foo Bar' in browser.contents
+  True
+
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Status:...
+  ...Answered...
+  ...Priority:...
+  ...Wishlist...
