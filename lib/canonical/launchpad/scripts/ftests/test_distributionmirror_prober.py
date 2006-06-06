@@ -24,8 +24,8 @@ from canonical.launchpad.database import DistributionMirror, DistroRelease
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    ProberFactory, ProberTimeout, MirrorProberCallbacks,
-    BadResponseCode, MirrorCDImageProberCallbacks)
+    ProberFactory, MirrorProberCallbacks, BadResponseCode,
+    MirrorCDImageProberCallbacks, ProberTimeout)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 from canonical.functional import ZopelessLayer
@@ -72,29 +72,51 @@ class TestProberProtocol(TwistedTestCase):
     def tearDown(self):
         return self.port.stopListening()
 
-    def _createProberAndConnect(self, url):
+    def _createProberAndProbe(self, url):
         prober = ProberFactory(url)
-        reactor.connectTCP(prober.host, prober.port, prober)
-        return prober.deferred
+        return prober.probe()
+
+    def test_probe_sets_up_timeout_call(self):
+        prober = ProberFactory(self.urls['200'])
+        self.failUnless(getattr(prober, 'timeoutCall', None) is None)
+        deferred = prober.probe()
+        self.failUnless(getattr(prober, 'timeoutCall', None) is not None)
+        return deferred
 
     def test_200(self):
-        d = self._createProberAndConnect(self.urls['200'])
+        d = self._createProberAndProbe(self.urls['200'])
         def got_result(result):
             self.failUnless(
                 result == str(httplib.OK),
                 "Expected a '200' status but got '%s'" % result)
         return d.addCallback(got_result)
 
+    def test_success_cancel_timeout_call(self):
+        prober = ProberFactory(self.urls['200'])
+        deferred = prober.probe()
+        self.failUnless(prober.timeoutCall.active())
+        def check_timeout_call(result):
+            self.failIf(prober.timeoutCall.active())
+        return deferred.addCallback(check_timeout_call)
+
+    def test_failure_cancel_timeout_call(self):
+        prober = ProberFactory(self.urls['500'])
+        deferred = prober.probe()
+        self.failUnless(prober.timeoutCall.active())
+        def check_timeout_call(result):
+            self.failIf(prober.timeoutCall.active())
+        return deferred.addErrback(check_timeout_call)
+
     def test_notfound(self):
-        d = self._createProberAndConnect(self.urls['404'])
+        d = self._createProberAndProbe(self.urls['404'])
         return self.assertFailure(d, BadResponseCode)
 
     def test_500(self):
-        d = self._createProberAndConnect(self.urls['500'])
+        d = self._createProberAndProbe(self.urls['500'])
         return self.assertFailure(d, BadResponseCode)
 
     def test_timeout(self):
-        d = self._createProberAndConnect(self.urls['timeout'])
+        d = self._createProberAndProbe(self.urls['timeout'])
         return self.assertFailure(d, ProberTimeout)
 
 
@@ -135,10 +157,9 @@ class TestMirrorCDImageProberCallbacks(TestCase):
 
     def test_timeout_is_not_propagated(self):
         # Make sure that ensureOrDeleteMirrorCDImageRelease() does not 
-        # propagate ProberTimeOut
+        # propagate ProberTimeout
         failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
-            [(defer.FAILURE, 
-              Failure(ProberTimeout('localhost', '13424')))])
+            [(defer.FAILURE, Failure(ProberTimeout('http://localhost/', 5)))])
         # Twisted callbacks may raise or return a failure; that's why we check
         # the return value
         self.failIf(isinstance(failure, Failure))
@@ -154,8 +175,8 @@ class TestMirrorCDImageProberCallbacks(TestCase):
         self.failIf(isinstance(failure, Failure))
 
     def test_anything_but_timeouts_and_badresponses_are_propagated(self):
-        # Any failure that is not a ProberTimeout or a BadResponseCode should
-        # be propagated.
+        # Any failure that is not a ProberTimeout or a BadResponseCode
+        # should be propagated.
         self.assertRaises(
             Failure, self.callbacks.ensureOrDeleteMirrorCDImageRelease,
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
@@ -182,10 +203,10 @@ class TestMirrorProberCallbacks(TestCase):
 
     def test_failure_propagation(self):
         # Make sure that deleteMirrorRelease() does not propagate
-        # ProberTimeOut or BadResponseCode failures.
+        # ProberTimeout or BadResponseCode failures.
         try:
             self.callbacks.deleteMirrorRelease(
-                Failure(ProberTimeout('localhost', '13424')))
+                Failure(ProberTimeout('http://localhost/', 5)))
         except Exception, e:
             self.fail("A timeout shouldn't be propagated. Got %s" % e)
         try:
