@@ -20,41 +20,41 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="context/translation_target">
+  <tal:block condition="view/translation_focus">
     <p>
-      This distribution has a prefered release to be translated,
-      <span tal:replace="context/displayname">Ubuntu</span>. We encorage
-      you to translate it first.
+      The current translation focus for
+      <span tal:replace="context/displayname">Ubuntu</span> is
+      <span tal:replace="view/translation_focus/version">6.06</span>
+      (<span tal:replace="view/translation_focus/displayname">Dapper</span>),
+      and we encourage you to translate it first.
     </p>
 
     <h2>
-      <span tal:replace="context/translation_target/version">5.04</span>:
-      <span tal:replace="context/translation_target/title">
+      <span tal:replace="view/translation_focus/version">5.04</span>:
+      <span tal:replace="view/translation_focus/title">
         Hoary Hedgehog
       </span>
     </h2>
-    <div tal:replace="structure context/translation_target/@@+langchart" />
+    <div tal:replace="structure view/translation_focus/@@+langchart" />
   </tal:block>
 
   <tal:block condition="view/secondary_translatable_releases">
-    <h2 tal:condition="context/translation_target">
+    <h2 tal:condition="view/translation_focus">
       Other releases of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
     <table class="listing">
       <thead>
         <tr>
-          <th>Version</th>
-          <th>Release title</th>
+          <th>Release</th>
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="distrorelease view/secondary_translatable_releases"
-            tal:attributes="onclick
-               string:window.location='${distrorelease/fmt:url}/+translations'">
+        <tr tal:repeat="distrorelease view/secondary_translatable_releases">
           <td><a tal:attributes="href string:${distrorelease/fmt:url}/+translations"
-                 tal:content="distrorelease/version">version</a>
+                 tal:content=
+                    "string: ${distrorelease/version} ${distrorelease/title}"
+                >5.04 The Hoary Hedgehog Release</a>
           </td>
-          <td tal:content="distrorelease/title">title</td>
         </tr>
       </tbody>
     </table>

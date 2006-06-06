@@ -150,8 +150,8 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "this distribution. Currently only Ubuntu and some derivatives "
         "get the full functionality of LP")
 
-    translation_target = Choice(
-        title=_("Translation Target"),
+    translation_focus = Choice(
+        title=_("Translation Focus"),
         description=_(
             "The DistroRelease that should get the translation effort focus."
             ),

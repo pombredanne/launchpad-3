@@ -11,8 +11,8 @@
 </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:condition="context/translation_target"
-       tal:replace="structure context/translation_target/@@+portlet-langstats"
+  <div tal:condition="view/translation_focus"
+       tal:replace="structure view/translation_focus/@@+portlet-langstats"
        />
 </metal:leftportlets>
 

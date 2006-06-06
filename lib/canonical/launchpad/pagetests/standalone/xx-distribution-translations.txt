@@ -1,5 +1,5 @@
 This page shows a list of PO templates contained within all source packages
-for the distrorelease that is the translation target for a given distribution.
+for the distrorelease that is the translation focus for a given distribution.
 
   >>> browser.open('http://localhost/distros/ubuntu/+translations')
   >>> browser.url
@@ -25,9 +25,8 @@ disabled and appear in our list.
   >>> 'Portuguese (Brazil)' in browser.contents
   True
 
-
 Now, we are going to check that the language list we got is pointing to the
-right translation target.
+right translation focus.
 
   >>> browser.getLink('Spanish')
   <Link text='Spanish' url='http://localhost/distros/ubuntu/hoary/+lang/es'>
@@ -50,36 +49,51 @@ And the other Ubuntu distributions should be there too.
 We are not showing its translation status here, so we should have links to
 their particular translation status.
 
-  >>> browser.getLink('6.6.6')
-  <Link text='6.6.6' url='http://localhost/distros/ubuntu/breezy-autotest/+translations'>
-  >>> browser.getLink('5.10')
-  <Link text='5.10' url='http://localhost/distros/ubuntu/grumpy/+translations'>
-  >>> browser.getLink('4.10')
-  <Link text='4.10' url='http://localhost/distros/ubuntu/warty/+translations'>
+  >>> browser.getLink('6.6.6 Breezy Badger Autotest')
+  <Link text='6.6.6 Breezy Badger Autotest' url='http://localhost/distros/ubuntu/breezy-autotest/+translations'>
+  >>> browser.getLink('5.10 The Grumpy Groundhog Release')
+  <Link text='5.10 The Grumpy Groundhog Release' url='http://localhost/distros/ubuntu/grumpy/+translations'>
+  >>> browser.getLink('4.10 The Warty Warthog Release')
+  <Link text='4.10 The Warty Warthog Release' url='http://localhost/distros/ubuntu/warty/+translations'>
 
-But we are already showing the status for the translation target one,
-we should not have a link to it and thus, we get the link to a more general
-link from the portlets.
+But we are already showing the status for the translation focus one,
+we should not have a link to it.
 
-  >>> browser.getLink('5.04')
-  <Link text='hoary 5.04 (DEVELOPMENT)' url='http://localhost/distros/ubuntu/hoary'>
+  >>> 'http://localhost/distros/ubuntu/hoary/+translations' in browser.contents
+  False
 
-Let's try now a distribution that lacks a translation target.
-Debian is a good example.
+Let's try now a distribution that lacks a translation focus.
+Debian is a good example. We should get latest release as the translation focus.
 
   >>> browser.open('http://localhost/distros/debian/+translations')
   >>> browser.url
   'http://localhost/distros/debian/+translations'
-  >>> 'This distribution has a prefered release to be translated' in browser.contents
-  False
-  >>> 'Other releases of' in browser.contents
-  False
 
-But we still show the list of distrorelease to reach their translations.
+It doesn't have any translation, so we will get the defaul geoIP languages
+pointing to the latest release, Hoary.
 
-  >>> browser.getLink('3.0')
-  <Link text='3.0' url='http://localhost/distros/debian/woody/+translations'>
-  >>> browser.getLink('3.1')
-  <Link text='3.1' url='http://localhost/distros/debian/sarge/+translations'>
-  >>> browser.getLink('3.2')
-  <Link text='3.2' url='http://localhost/distros/debian/sid/+translations'>
+  >>> browser.getLink('Zulu')
+  <Link text='Zulu' url='http://localhost/distros/debian/sarge/+lang/zu'>
+
+And the other Ubuntu distributions should be there too.
+
+  >>> 'Other releases of Debian' in browser.contents
+  True
+  >>> 'Sid' in browser.contents
+  True
+  >>> 'WOODY' in browser.contents
+  True
+
+We are not showing its translation status here, so we should have links to
+their particular translation status.
+
+  >>> browser.getLink('3.2 Sid')
+  <Link text='3.2 Sid' url='http://localhost/distros/debian/sid/+translations'>
+  >>> browser.getLink('3.0 WOODY')
+  <Link text='3.0 WOODY' url='http://localhost/distros/debian/woody/+translations'>
+
+But we are already showing the status for the translation focus one,
+we should not have a link to it.
+
+  >>> 'http://localhost/distros/debian/sarge/+translations' in browser.contents
+  False
