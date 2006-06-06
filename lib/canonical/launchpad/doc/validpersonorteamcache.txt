@@ -17,6 +17,13 @@ cached list of Person.id that are considered 'valid'.
     >>> is_valid(stub_id)
     True
 
+Setup some constants we will use later
+
+    >>> from canonical.lp.dbschema import EmailAddressStatus
+    >>> new = EmailAddressStatus.NEW.value
+    >>> preferred = EmailAddressStatus.PREFERRED.value
+    >>> validated = EmailAddressStatus.VALIDATED.value
+
 This table is maintained by triggers, so that relevant changes to the data
 will be automatically reflected in the cache
 
@@ -65,12 +72,14 @@ A valid person needs to have a preferred email address set
     >>> is_valid(sabdfl_id)
     True
     >>> cur.execute("""
-    ...     UPDATE EmailAddress SET status=1 WHERE person = %(sabdfl_id)s
+    ...     UPDATE EmailAddress SET status=%(new)s
+    ...     WHERE person = %(sabdfl_id)s
     ...     """, vars())
     >>> is_valid(sabdfl_id)
     False
     >>> cur.execute("""
-    ...     UPDATE EmailAddress SET status=4 WHERE person = %(sabdfl_id)s
+    ...     UPDATE EmailAddress SET status=%(preferred)s
+    ...     WHERE person = %(sabdfl_id)s
     ...     """, vars())
     >>> is_valid(sabdfl_id)
     True
@@ -78,7 +87,8 @@ A valid person needs to have a preferred email address set
 We support changing the owner of a email address
 
     >>> cur.execute("""
-    ...     UPDATE EmailAddress SET person = %(stub_id)s, status = 2
+    ...     UPDATE EmailAddress
+    ...         SET person = %(stub_id)s, status = %(validated)s
     ...     WHERE email = 'mark@hbd.com'
     ...     """, vars())
     >>> is_valid(sabdfl_id)
@@ -86,11 +96,43 @@ We support changing the owner of a email address
     >>> is_valid(stub_id)
     True
     >>> cur.execute("""
-    ...     UPDATE EmailAddress SET person = %(sabdfl_id)s, status=4
+    ...     UPDATE EmailAddress
+    ...         SET person = %(sabdfl_id)s, status = %(preferred)s
     ...     WHERE email = 'mark@hbd.com'
     ...     """, vars())
     >>> is_valid(sabdfl_id)
     True
+    >>> is_valid(stub_id)
+    True
+
+is_valid is set correctly no matter the order in which the tables are
+updated.
+
+    >>> cur.execute("""
+    ...     UPDATE EmailAddress SET status = %(new)s
+    ...     WHERE person = %(stub_id)s
+    ...     """, vars())
+    >>> is_valid(stub_id)
+    False
+
+    >>> cur.execute("""
+    ...     UPDATE Person SET password = NULL
+    ...     WHERE id = %(stub_id)s
+    ...     """, vars())
+    >>> is_valid(stub_id)
+    False
+
+    >>> cur.execute("""
+    ...     UPDATE Person SET password = 'whatever'
+    ...     WHERE id = %(stub_id)s
+    ...     """, vars())
+    >>> is_valid(stub_id)
+    False
+
+    >>> cur.execute("""
+    ...     UPDATE EmailAddress SET status = %(preferred)s
+    ...     WHERE person = %(stub_id)s AND email = 'stuart@stuartbishop.net'
+    ...     """, vars())
     >>> is_valid(stub_id)
     True
 
@@ -106,8 +148,8 @@ Creating and deleting rows will populate things correctly
     False
     >>> cur.execute("""
     ...     INSERT INTO EmailAddress (person, email, status)
-    ...     VALUES (888888, 'tempy@example.com', 4)
-    ...     """)
+    ...     VALUES (888888, 'tempy@example.com', %(preferred)s)
+    ...     """, vars())
     >>> is_valid(888888)
     True
     >>> cur.execute("DELETE FROM EmailAddress WHERE person = 888888")
@@ -126,8 +168,8 @@ Note that teams don't need a preferred email address to be considered valid
     True
     >>> cur.execute("""
     ...     INSERT INTO EmailAddress (person, email, status)
-    ...     VALUES (999999, 'tempy@examplecom', 4)
-    ...     """)
+    ...     VALUES (999999, 'tempy@examplecom', %(preferred)s)
+    ...     """, vars())
     >>> is_valid(999999)
     True
     >>> cur.execute("DELETE FROM EmailAddress WHERE person = 999999")

@@ -203,6 +203,10 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
         '/*%s*/ %s' % (id(connection_wrapper), statement)
         ))
 
+    # store the last executed statement as an attribute on the current
+    # thread
+    threading.currentThread().lp_last_sql_statement = statement
+
 
 def _check_expired(timeout):
     """Checks whether the current request has passed the given timeout."""

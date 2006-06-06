@@ -56,9 +56,13 @@ from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.components.bugtask import NullBugTask
+
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
+
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget)
@@ -449,6 +453,8 @@ class BugTaskBackportView:
 class BugTaskEditView(GeneralFormView):
     """The view class used for the task +editstatus page."""
 
+    _missing_value = object()
+
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
@@ -579,7 +585,7 @@ class BugTaskEditView(GeneralFormView):
         field_names = list(self.fieldNames)
         new_values = getWidgetsData(self, self.schema, field_names)
 
-        bugtask_before_modification = helpers.Snapshot(
+        bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
 
         # If the user is reassigning an upstream task to a different
@@ -620,16 +626,20 @@ class BugTaskEditView(GeneralFormView):
             self, self.schema, target=bugtask,
             names=field_names_to_apply)
 
-        new_status = new_values.pop("status", None)
-        new_assignee = new_values.pop("assignee", None)
-        # Set the "changed" flag properly, just in case status and/or
-        # assignee happen to be the only values that changed. We
-        # explicitly verify that we got a new status and/or assignee,
-        # because our test suite doesn't always pass all form values.
-        if ((new_status and (bugtask.status != new_status)) or
-            (new_assignee and (bugtask.assignee != new_assignee))):
+        new_status = new_values.pop("status", self._missing_value)
+        new_assignee = new_values.pop("assignee", self._missing_value)
+        # Set the "changed" flag properly, just in case status and/or assignee
+        # happen to be the only values that changed. We explicitly verify that
+        # we got a new status and/or assignee, because our test suite doesn't
+        # always pass all form values.
+        if ((new_status is not self._missing_value) and
+            (bugtask.status != new_status)):
             changed = True
             bugtask.transitionToStatus(new_status)
+
+        if ((new_assignee is not self._missing_value) and
+            (bugtask.assignee != new_assignee)):
+            changed = True
             bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
