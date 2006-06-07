@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/sourcepackages">
   <h4>Distribution packaging:</h4>
 
   <div class="portletBody portletContent ">

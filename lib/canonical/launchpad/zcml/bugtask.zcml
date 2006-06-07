@@ -443,7 +443,7 @@
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"
       name="+subscribe"
-      class="canonical.launchpad.browser.BugView"
+      class="canonical.launchpad.browser.BugTaskView"
       permission="launchpad.AnyPerson"
       template="../templates/bug-subscription.pt" />
 

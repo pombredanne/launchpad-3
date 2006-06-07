@@ -10,9 +10,6 @@
            tal:content="spec/title">spec title here</a>
       </li>
     </ul>
-    <p tal:condition="not: context/specifications">
-      <i>No related specifications.</i>
-    </p>
 
   </div>
 
