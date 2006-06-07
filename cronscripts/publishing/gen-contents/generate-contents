@@ -68,7 +68,8 @@ if test $COMPAREFILES = "yes" ; then
       current_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/Contents-$arch"
       new_contents="$CONTENTARCHIVE/ubuntu/dists/$distro/Contents-$arch.gz"
       contents_dest="$ARCHIVE/ubuntu/dists/$distro/Contents-$arch.gz"
-      # compare previously generated plain content file.
+      # we don't want to overwrite existing files because they are
+      # precious and mirrors would need to refetch them.
       if ! cmp -s $current_contents $last_contents; then
         if test $MOVEFILES = "yes"; then
           echo "   installing new Contents file for $distro/$arch"
