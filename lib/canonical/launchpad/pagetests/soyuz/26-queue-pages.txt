@@ -2,7 +2,7 @@ Queue pages were designed to offer the ability to perform
 control and visualisation over the current uploads queue.
 Currently the queue page is only available for DistroReleases.
 
-  >>> from zope.testbrowser import Browser
+  >>> from zope.testbrowser.testing import Browser
   >>> from urllib2 import HTTPError
 
 A browser to test as a regular user:

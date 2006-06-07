@@ -131,7 +131,7 @@ when a bug contact for the new package is already subscribed to the bug:
     >>> import transaction
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import (
     ...     IDistroBugTask, IDistroReleaseBugTask)
     >>> from canonical.launchpad.mail import stub
@@ -215,7 +215,6 @@ importance, etc.
 Let's see that nothing unexpected happens when we set the source
 package to None.
 
-    >>> from canonical.launchpad.helpers import Snapshot
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
 

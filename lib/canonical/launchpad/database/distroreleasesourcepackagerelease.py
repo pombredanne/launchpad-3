@@ -249,3 +249,4 @@ class DistroReleaseSourcePackageRelease:
         current.datesuperseded = UTC_NOW
 
         return current
+

@@ -1,6 +1,6 @@
 We will test that we can add a distro release.
 
-  >>> from zope.testbrowser import Browser
+  >>> from zope.testbrowser.testing import Browser
   >>> from mechanize import LinkNotFoundError
   >>> browser = Browser()
 
@@ -23,7 +23,6 @@ and that going directly to the page redirects to login
 Now we will try as Mark Shuttleworth on Debian, where he is the owner.
 This time we expect to be able to see the link and the page.
 
-  >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic mark@hbd.com:test")
 
   >>> browser.open("http://localhost:9000/distros/debian")

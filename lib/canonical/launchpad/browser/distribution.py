@@ -25,6 +25,7 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
     NotFoundError)
@@ -36,6 +37,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, GetitemNavigation, stepthrough, stepto,
     canonical_url, redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.lp.dbschema import DistributionReleaseStatus
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -315,6 +317,17 @@ class DistributionView(BuildRecordsView):
 
         self.batchnav = BatchNavigator(results, self.request)
 
+    @cachedproperty
+    def translation_focus(self):
+        """Return the IDistroRelease where the translators should work.
+
+        If ther isn't a defined focus, we return latest release.
+        """
+        if self.context.translation_focus is None:
+            return self.context.currentrelease
+        else:
+            return self.context.translation_focus
+
     def search_results(self):
         """Return IDistributionSourcePackages according given a text.
 
@@ -322,6 +335,21 @@ class DistributionView(BuildRecordsView):
         the given text.
         """
         return self.context.searchSourcePackages(self.text)
+
+    def secondary_translatable_releases(self):
+        """Return a list of IDistroRelease that aren't the translation_focus.
+
+        It only includes the ones that are still supported.
+        """
+        releases = [
+            release
+            for release in self.context.releases
+            if (release.releasestatus != DistributionReleaseStatus.OBSOLETE
+                and (self.translation_focus is None or
+                     self.translation_focus.id != release.id))
+            ]
+
+        return sorted(releases, key=lambda a: a.version, reverse=True)
 
 
 class DistributionAllPackagesView(LaunchpadView):

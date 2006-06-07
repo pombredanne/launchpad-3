@@ -28,6 +28,8 @@ from canonical.launchpad.interfaces import (
     TranslationConstants, NotFoundError, NameNotAvailable)
 from canonical.librarian.interfaces import ILibrarianClient
 
+from canonical.launchpad.webapp.snapshot import Snapshot
+
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
@@ -539,9 +541,9 @@ class POTemplate(SQLBase, RosettaStats):
 
         # Store the object status before the changes to raise
         # change notifications later.
-        potemplate_before_modification = helpers.Snapshot(
+        potemplate_before_modification = Snapshot(
             self, providing=providedBy(self))
-        entry_before_modification = helpers.Snapshot(
+        entry_before_modification = Snapshot(
             entry_to_import, providing=providedBy(entry_to_import))
 
         try:

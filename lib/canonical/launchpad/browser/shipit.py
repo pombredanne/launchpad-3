@@ -363,6 +363,11 @@ class ShipItRequestView(GeneralFormView):
         to be able to have a 'Cancel' button in a different <form> element.
         """
         if 'cancel' in self.request.form:
+            if self.current_order is None:
+                # This is probably a user reloading the form he submitted
+                # cancelling his request, so we'll just refresh the page so he
+                # can see that he has no current request, actually.
+                return ''
             self.current_order.cancel(self.user)
             self.process_status = 'Request Cancelled'
         else:
@@ -420,6 +425,11 @@ class ShipItRequestView(GeneralFormView):
             assert not self._extra_fields
             request_type = getUtility(IStandardShipItRequestSet).get(
                 request_type_id)
+            if request_type is None:
+                # Either a shipit admin removed this option after the user
+                # loaded the page or the user is poisoning the form.
+                return ("The option you chose was not found. Please select "
+                        "one from the list below.")
             current_order.setQuantitiesBasedOnStandardRequest(request_type)
             total_cds = request_type.totalCDs
         else:
@@ -631,10 +641,6 @@ class ShippingRequestAdminMixinView:
     attributes, named like fieldname_widget.
     """
 
-    # The name of the RequestedCDs' attribute from where we get the number we
-    # use as initial value to our quantity widgets.
-    quantity_attrname = None
-
     # This is the order in which we display the distribution flavours
     # in the UI
     ordered_flavours = (
@@ -669,8 +675,16 @@ class ShippingRequestAdminMixinView:
             matrix.append(row)
         return matrix
 
-    def getQuantityWidgetsInitialValuesFromExistingOrder(self, order):
+    def getQuantityWidgetsInitialValuesFromExistingOrder(
+            self, order, approved=False):
+        """Return a dictionary mapping the widget names listed in
+        self.quantity_fields_mapping to their initial values.
+        """
         initial = {}
+        if approved:
+            quantity_attrname = 'quantityapproved'
+        else:
+            quantity_attrname = 'quantity'
         requested = order.getRequestedCDsGroupedByFlavourAndArch()
         for flavour in self.quantity_fields_mapping:
             for arch in self.quantity_fields_mapping[flavour]:
@@ -679,7 +693,7 @@ class ShippingRequestAdminMixinView:
                     continue
                 requested_cds = requested[flavour][arch]
                 if requested_cds is not None:
-                    value = getattr(requested_cds, self.quantity_attrname)
+                    value = getattr(requested_cds, quantity_attrname)
                 else:
                     value = 0
                 initial[field_name] = value
@@ -689,8 +703,6 @@ class ShippingRequestAdminMixinView:
 class ShippingRequestApproveOrDenyView(
         GeneralFormView, ShippingRequestAdminMixinView):
     """The page where admins can Approve/Deny existing requests."""
-
-    quantity_attrname = 'quantityapproved'
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
@@ -728,17 +740,29 @@ class ShippingRequestApproveOrDenyView(
                     quantities[flavour][arch] = kw[field_name]
 
         if 'APPROVE' in form:
+            if context.cancelled or context.isApproved():
+                # This shipit request was changed behind our back; let's just
+                # refresh the page so the user can decide what to do with it.
+                return
             context.approve(whoapproved=getUtility(ILaunchBag).user)
             context.highpriority = kw['highpriority']
             context.setApprovedQuantities(quantities)
             self._nextURL = self._makeNextURL(previous_action='approved')
         elif 'CHANGE' in form:
+            if not context.isApproved():
+                # This shipit request was changed behind our back; let's just
+                # refresh the page so the user can decide what to do with it.
+                return
+            self._nextURL = self._makeNextURL(previous_action='changed')
             context.highpriority = kw['highpriority']
             context.setApprovedQuantities(quantities)
-            self._nextURL = self._makeNextURL(previous_action='changed')
         elif 'DENY' in form:
-            context.deny()
+            if context.isDenied():
+                # This shipit request was changed behind our back; let's just
+                # refresh the page so the user can decide what to do with it.
+                return
             self._nextURL = self._makeNextURL(previous_action='denied')
+            context.deny()
         else:
             # Nothing to do.
             pass
@@ -785,7 +809,11 @@ class ShippingRequestApproveOrDenyView(
     @property
     def initial_values(self):
         order = self.context
-        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(order)
+        # If this order is not yet approved, order.isApproved() will return
+        # False and then we'll get the requested quantities as the initial
+        # values for the approved quantities widgets.
+        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(
+            order, approved=order.isApproved())
         initial['highpriority'] = order.highpriority
         return initial
 
@@ -809,8 +837,6 @@ class ShippingRequestApproveOrDenyView(
 
 class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
     """The page where admins can create new requests or change existing ones."""
-
-    quantity_attrname = 'quantity'
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
@@ -845,7 +871,8 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             return {}
 
         order = self.current_order
-        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(order)
+        initial = self.getQuantityWidgetsInitialValuesFromExistingOrder(
+            order, approved=False)
         initial['highpriority'] = order.highpriority
 
         for field in self.shipping_details_fields:
@@ -913,7 +940,7 @@ class ShipItExportsView:
     """The view for the list of shipit exports."""
 
     def process_form(self):
-        """Process the form, marking the choosen ShippingRun as 'sent for
+        """Process the form, marking the chosen ShippingRun as 'sent for
         shipping'.
         """
         if self.request.method != 'POST':
